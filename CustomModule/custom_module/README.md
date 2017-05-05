@@ -14,3 +14,8 @@ Current work around is as follows (in custom_module.js):
     jQuery('.form-item-commonGardenSelect').addClass('commonGardenClass');
     jQuery('.form-item-plantationSelect').addClass('plantationClass');
     jQuery('.form-item-natPopSelect').addClass('natPopClass');
+
+Resources:
+
+Constructing CHADO queries:
+http://api.tripal.info/api/tripal/tripal_core%21api%21tripal_core.chado_query.api.inc/group/tripal_chado_query_api/2.x
