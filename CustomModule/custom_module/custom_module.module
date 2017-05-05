@@ -36,6 +36,7 @@ function custom_module_menu(){
 
 }
 
+//This function is only necessary when using AJAX
 function custom_module_ajaxCallHandler(){
 
     global $user;
@@ -48,16 +49,20 @@ function custom_module_ajaxCallHandler(){
 
 }
 
+/*This function is what literally shows the form to the user
+* It contains all of the form elements.  They are all defined 
+* in Drupal's API format
+*/
 function custom_module_showCustomModuleForm(){
 
     $form = array();
     
-  /*$form['name'] = array(
+  $form['name'] = array(
  
       '#type' => 'textfield',
         '#title' => 'Enter Your Name'
 
-    );*/
+    );
 
     $form['primaryAuthor'] = array(
 
@@ -71,6 +76,14 @@ function custom_module_showCustomModuleForm(){
        ),
        '#default_value' => 0,
        '#description' => t('Some explanation as to who user should select as primary author.'),
+
+    );
+
+    $form['addSecondaryAuthor'] = array(
+
+      '#type' => 'submit',
+      '#value' => t('Add Secondary Author'),
+      '#submit' => array('secondary_author_function'),
 
     );
 
@@ -174,14 +187,21 @@ function custom_module_showCustomModuleForm(){
 
     $form['#suffix'] = '<input type="button" id="submitAjaxButton" value="Submit with Ajax"><br/><div id="msg-display-area"></div>';
 
-    //$form['#suffix'] = '<select id="formSelect"><option value="Select">Select....</option><option value="Select">Option #1</option><option value="Select">Option #2</option></select>';
 
+    /*This is the convention for adding JS files to your form.
+    * Since it is added directly to the form, I would imagine 
+    * it is only accessible to this specific form.  
+    */
     drupal_add_js(drupal_get_path('module', 'custom_module'). "/custom_module.js");
 
+    /*
+    * This is instantiating a user token.  It will be verified
+    * in the JS file and they will not be given acess to data 
+    * returned by AJAX if their token is invalid (if not logged
+    * in).
+    */
     global $user;
-
     $newToken = drupal_get_token("my secret value".$user->uid);
-
     drupal_add_js("var myToken='$newToken'", "inline");
 
     return $form;
