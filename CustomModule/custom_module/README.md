@@ -5,6 +5,9 @@ Server: 155.37.254.147
 Path:   /var/www/Drupal/sites/all/modules/CustomModule/custom_module
 All contents are in this directory, currently no need to look elsewhere.
 
+Status:
+Need to add the rest of the form components (textboxes, dropboxes, etc.), make the form dynamic (hide/show different parts of the form based on user's input), submit the form contents to database, and upload users' file(s) to database.
+
 Issues:
 
 Currently having an issue with getting class of select element in Drupal API to apply to title of select, description of select, and select element itself.  The class is currently only applied to the element itself.
