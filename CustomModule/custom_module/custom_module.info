@@ -3,4 +3,4 @@ description = Module to get familiar with Drupal Module Development.
 core = 7.x
 
 ; NEW LINE
-configure = admin/config/content/custom_module
+configure = admin/config/content/custom_module 
