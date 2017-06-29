@@ -32,30 +32,28 @@ jQuery(document).ready(function () {
 
     });
 
-    /* Function to test the hiding of elements
-     ** based on the user's selection in a drop down
-     */
+    //function below hides and shows menus according to user selection
+    
+    jQuery('#edit-study').change(function () {
 
-//    jQuery('#edit-study').change(function () {
-//
-//        if (jQuery('#edit-study').val() == 1)
-//        {
-//            jQuery('.commonGardenClass').show();
-//            jQuery('.plantationClass').hide();
-//            jQuery('.natPopClass').hide();
-//        } else if (jQuery('#edit-study').val() == 2)
-//        {
-//            jQuery('.commonGardenClass').hide();
-//            jQuery('.plantationClass').show();
-//            jQuery('.natPopClass').hide();
-//        } else if (jQuery('#edit-study').val() == 3)
-//        {
-//            jQuery('.commonGardenClass').hide();
-//            jQuery('.plantationClass').hide();
-//            jQuery('.natPopClass').show();
-//        }
-//
-//    }
+        if (jQuery('#edit-study').val() == 1)
+        {
+            jQuery('.commonGardenClass').show();
+            jQuery('.plantationClass').hide();
+            jQuery('.natPopClass').hide();
+        } else if (jQuery('#edit-study').val() == 2)
+        {
+            jQuery('.commonGardenClass').hide();
+            jQuery('.plantationClass').show();
+            jQuery('.natPopClass').hide();
+        } else if (jQuery('#edit-study').val() == 3)
+        {
+            jQuery('.commonGardenClass').hide();
+            jQuery('.plantationClass').hide();
+            jQuery('.natPopClass').show();
+        }
+
+    }
             );
 
 });
