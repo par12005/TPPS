@@ -36,25 +36,26 @@ jQuery(document).ready(function () {
      ** based on the user's selection in a drop down
      */
 
-    jQuery('#edit-study').change(function () {
-
-        if (jQuery('#edit-study').val() == 1)
-        {
-            jQuery('.commonGardenClass').show();
-            jQuery('.plantationClass').hide();
-            jQuery('.natPopClass').hide();
-        } else if (jQuery('#edit-study').val() == 2)
-        {
-            jQuery('.commonGardenClass').hide();
-            jQuery('.plantationClass').show();
-            jQuery('.natPopClass').hide();
-        } else if (jQuery('#edit-study').val() == 3)
-        {
-            jQuery('.commonGardenClass').hide();
-            jQuery('.plantationClass').hide();
-            jQuery('.natPopClass').show();
-        }
-
-    });
+//    jQuery('#edit-study').change(function () {
+//
+//        if (jQuery('#edit-study').val() == 1)
+//        {
+//            jQuery('.commonGardenClass').show();
+//            jQuery('.plantationClass').hide();
+//            jQuery('.natPopClass').hide();
+//        } else if (jQuery('#edit-study').val() == 2)
+//        {
+//            jQuery('.commonGardenClass').hide();
+//            jQuery('.plantationClass').show();
+//            jQuery('.natPopClass').hide();
+//        } else if (jQuery('#edit-study').val() == 3)
+//        {
+//            jQuery('.commonGardenClass').hide();
+//            jQuery('.plantationClass').hide();
+//            jQuery('.natPopClass').show();
+//        }
+//
+//    }
+            );
 
 });
