@@ -3,7 +3,7 @@
 //hook_init
 function custom_module_init() {
 
-    // drupal_set_message("Hello");
+    drupal_set_message("Hello");
 }
 
 function custom_module_menu() {
@@ -47,34 +47,23 @@ function custom_module_ajaxCallHandler() {
  * in Drupal's API format
  */
 
+
 function custom_module_showCustomModuleForm() {
 
     $form = array();
 
-    $form['name'] = array(
-      '#type' => 'textfield',
-      '#title' => 'Enter Your Name'
-    );
-
-    $form['primaryAuthor'] = array(
+    $form['primaryAuthor'] = array(                                             //This should be changed to a button that will generate new author fields
       '#type' => 'select',
       '#title' => t('Primary Author'),
       '#options' => array(
         0 => t('--Primary Author--'),
         1 => t('Author 1'),
         2 => t('Author 2'),
-        3 => t('Author n'),
+        3 => t('Author 3'),
       ),
       '#default_value' => 0,
-      '#description' => t('Some explanation as to who user should select as primary author.'),
-    );
-
-    $form['addSecondaryAuthor'] = array(
-      '#type' => 'submit',
-      '#value' => t('Add Secondary Author'),
-      '#submit' => array('secondary_author_function'),
-    );
-
+      );
+    
     $form['secondaryAuthor'] = array(
       '#type' => 'select',
       '#title' => t('Secondary Author'),
@@ -85,8 +74,8 @@ function custom_module_showCustomModuleForm() {
         3 => t('Author n'),
       ),
       '#default_value' => 0,
-      '#description' => t('Some explanation as to who user should select as secondary author.'),
-    );
+      '#attributes' => array('class' => array('secondaryAuthorClass')),
+      );
 
     $form['organization'] = array(
       '#type' => 'select',
@@ -98,68 +87,90 @@ function custom_module_showCustomModuleForm() {
         3 => t('Organization 3'),
       ),
       '#default_value' => 0,
-      '#description' => t('Some explanation as to what user should select for organization.'),
     );
-
-    $form['study'] = array(
+ 
+    $form['publicationStatus'] = array(
       '#type' => 'select',
-      '#title' => t('Please Your Study Type:'),
+      '#title' => t('Publication Status'),
       '#options' => array(
-        0 => t('--Study Type--'),
-        1 => t('Common Garden'),
-        2 => t('Plantation'),
-        3 => t('Natural Population'),
+        0 => t('In Preparation'),
+        1 => t('Submitted'),
+        2 => t('In press'),
+        3 => t('Published'),
       ),
-      '#default_value' => 0,
-      '#description' => t('Here, we will provide the user with a short description of the 3 options in order to get an accurate answer.'),
+      '#default_value' => 4,
     );
-
-    $form['commonGardenSelect'] = array(
+    
+    $form['year'] = array(
       '#type' => 'select',
-      '#title' => t('Sample question only applicable to common garden studies:'),
+      '#title' => t('Year'),
       '#options' => array(
-        0 => t('--Select--'),
+        0 => t('1994'),
+        1 => t('1995'),
+        2 => t('1996'),
+        3 => t('1997'),
       ),
-      '#default_value' => 0,
-      '#description' => t('One example of the questions asked to somone who performed a common garden study.'),
-      //This is the way to add a class to a form element:
-      '#attributes' => array('class' => array('commonGardenClass')),
-      '#title_attributes' => array('class' => array('commonGardenClass')),
-      '#description_attributes' => array('class' => array('commonGardenClass')),
+      '#default_value' => 4,
     );
-
-    $form['plantationSelect'] = array(
+    
+    
+     $form['title'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Title of paper')
+     );
+     
+     $form['abstract'] = array(
+       '#type' => 'textfield',
+       '#title' => t('Abstract'),
+     );
+     
+     $form['journal'] = array(
+       '#type' => 'select',
+       '#type' => t('Journal'),
+       '#options' => array(
+         0 => 'Journal 1',
+         1 => 'Journal 2',
+         3 => 'Journal 3',
+       ),
+     );
+     
+      $form['speciesNumber'] = array(
       '#type' => 'select',
-      '#title' => t('Sample question only applicable to plantation studies:'),
+      '#title' => t('Please Select the Number of Species under Study'),
       '#options' => array(
-        0 => t('--Select--'),
+        0 => t('--species--'),
+        1 => t('1'),
+        2 => t('2'),
+        3 => t('3'),
+        4 => t('4'),
+        5 => t('5'),
+        6 => t('6'),
+        7 => t('7'),
+        8 => t('8'),
+        9 => t('9'),
+        10 => t('10'),
       ),
-      '#default_value' => 0,
-      '#description' => t('One example of the questions asked to somone who performed a plantation study.'),
-      //This is the way to add a class to a form element:
-      '#attributes' => array('class' => array('plantationClass')),
+      '#default_value' => 1,
     );
-
-    $form['natPopSelect'] = array(
-      '#type' => 'select',
-      '#title' => t('Sample question only applicable to natural population studies:'),
-      '#options' => array(
-        0 => t('--Select--'),
-      ),
-      '#default_value' => 0,
-      '#description' => t('One example of the questions asked to somone who performed a natural population study.'),
-      //This is the way to add a class to a form element:
-      '#attributes' => array('class' => array('natPopClass')),
-    );
-
-    $form['submit'] = array(
-      '#type' => 'submit',
-      '#value' => 'Submit'
-    );
-
+      
+      $form['species'] = array(
+        '#type' => 'select',
+        '#title' => t('Species'),
+        '#options' => array(
+          0 => '---Select a Species---',
+          1 => 'Species 1',
+          2 => 'Species 2',
+          3 => 'Species 3',
+        ),
+        '#default_value' => 0,
+      );
+          
+//    
+    
     $form['#submit'][] = 'custom_module_showCustomModuleForm_submit';
 
-    $form['#suffix'] = '<input type="button" id="submitAjaxButton" value="Submit with Ajax"><br/><div id="msg-display-area"></div>';
+    $form['#suffix'] = '<input type="button" id="AddAuthor" value="AddAuthor"><br/><div id="msg-display-area"></div>';
+//    $form['#suffix'] = '<input type="button" id="submitAjaxButton1" value="Submit with Ajax1"><br/><div id="msg-display-area1"></div>';
 
 
     /* This is the convention for adding JS files to your form.
@@ -180,6 +191,58 @@ function custom_module_showCustomModuleForm() {
 
     return $form;
 }
+
+//Potentially important forms below:
+//
+//$form['commonGardenSelect'] = array(
+//      '#type' => 'select',
+//      '#title' => t('Sample question only applicable to common garden studies:'),
+//      '#options' => array(
+//        0 => t('--Select--'),
+//      ),
+//      '#default_value' => 0,
+//      '#description' => t('One example of the questions asked to somone who performed a common garden study.'),
+//      //This is the way to add a class to a form element:
+//      '#attributes' => array('class' => array('commonGardenClass')),
+//      '#title_attributes' => array('class' => array('commonGardenClass')),
+//      '#description_attributes' => array('class' => array('commonGardenClass')),
+//    );
+//
+//    $form['plantationSelect'] = array(
+//      '#type' => 'select',
+//      '#title' => t('Sample question only applicable to plantation studies:'),
+//      '#options' => array(
+//        0 => t('--Select--'),
+//      ),
+//      '#default_value' => 0,
+//      '#description' => t('One example of the questions asked to somone who performed a plantation study.'),
+//      //This is the way to add a class to a form element:
+//      '#attributes' => array('class' => array('plantationClass')),
+//    );
+//
+//    $form['natPopSelect'] = array(
+//      '#type' => 'select',
+//      '#title' => t('Sample question only applicable to natural population studies:'),
+//      '#options' => array(
+//        0 => t('--Select--'),
+//      ),
+//      '#default_value' => 0,
+//      '#description' => t('One example of the questions asked to somone who performed a natural population study.'),
+//      //This is the way to add a class to a form element:
+//      '#attributes' => array('class' => array('natPopClass')),
+//    );
+//$form['study'] = array(
+//      '#type' => 'select',
+//      '#title' => t('Please Select Your Study Type:'),
+//      '#options' => array(
+//        0 => t('--Study Type--'),
+//        1 => t('Common Garden'),
+//        2 => t('Plantation'),
+//        3 => t('Natural Population'),
+//      ),
+//      '#default_value' => 0,
+//      '#description' => t('Here, we will provide the user with a short description of the 3 options in order to get an accurate answer.'),
+//    );
 
 function custom_module_showCustomModuleForm_submit($form, &$form_state) {
 
