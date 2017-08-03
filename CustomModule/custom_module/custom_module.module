@@ -3,7 +3,7 @@
 //hook_init
 function custom_module_init() {
 
-    drupal_set_message("Hello");
+//    drupal_set_message("Hello");
 }
 
 function custom_module_menu() {
@@ -50,8 +50,6 @@ function custom_module_ajaxCallHandler() {
 
 function custom_module_showCustomModuleForm() {
 
-    $form = array();
-
     $form['primaryAuthor'] = array(                                             //This should be changed to a button that will generate new author fields
       '#type' => 'select',
       '#title' => t('Primary Author'),
@@ -64,19 +62,32 @@ function custom_module_showCustomModuleForm() {
       '#default_value' => 0,
       );
     
-    $form['secondaryAuthor'] = array(
+    $form['#suffix'] = '<input type="button" id="button" value="Add Author"><br/><div id="msg-display-area"></div>';
+//    $form['#suffix'] = '<input type="button" id="removeAuthor" value="removeAuthor"><br/><div id="msg-display-area"></div>';
+    
+    for($i = 0; $i < 30; $i++){
+       $form['secondaryAuthorForm' . $i] = array(
+      '#prefix' => '<div id= secondaryAuthor' . $i . '>',
       '#type' => 'select',
-      '#title' => t('Secondary Author'),
       '#options' => array(
         0 => t('--Secondary Author--'),
         1 => t('Author 1'),
         2 => t('Author 2'),
-        3 => t('Author n'),
+        3 => t('Other'),
       ),
       '#default_value' => 0,
-      '#attributes' => array('class' => array('secondaryAuthorClass')),
       );
-
+       
+       $form['secondaryAuthorCustomForm' . $i] = array(
+      '#suffix' => '</div>',
+      '#type' => 'textfield',
+      '#disabled' => true,
+      '#default_value' => '',
+      );
+    }
+    
+//  change the enable with jQuery -  do NOT alter the settings of other forms with jQuery.  
+    
     $form['organization'] = array(
       '#type' => 'select',
       '#title' => t('Organization'),
@@ -93,10 +104,11 @@ function custom_module_showCustomModuleForm() {
       '#type' => 'select',
       '#title' => t('Publication Status'),
       '#options' => array(
-        0 => t('In Preparation'),
-        1 => t('Submitted'),
-        2 => t('In press'),
-        3 => t('Published'),
+        0 => t('--Publication Status--'),
+        1 => t('In Preparation'),
+        2 => t('Submitted'),
+        3 => t('In press'),
+        4 => t('Published'),
       ),
       '#default_value' => 4,
     );
@@ -105,18 +117,18 @@ function custom_module_showCustomModuleForm() {
       '#type' => 'select',
       '#title' => t('Year'),
       '#options' => array(
-        0 => t('1994'),
-        1 => t('1995'),
-        2 => t('1996'),
-        3 => t('1997'),
+        0 => t('--Year--'),
+        1 => t('1994'),
+        2 => t('1995'),
+        3 => t('1996'),
+        4 => t('1997'),
       ),
       '#default_value' => 4,
     );
     
-    
      $form['title'] = array(
        '#type' => 'textfield',
-       '#title' => t('Title of paper')
+       '#title' => t('Title')
      );
      
      $form['abstract'] = array(
@@ -164,14 +176,25 @@ function custom_module_showCustomModuleForm() {
         ),
         '#default_value' => 0,
       );
-          
-//    
-    
-    $form['#submit'][] = 'custom_module_showCustomModuleForm_submit';
-
-    $form['#suffix'] = '<input type="button" id="AddAuthor" value="AddAuthor"><br/><div id="msg-display-area"></div>';
-//    $form['#suffix'] = '<input type="button" id="submitAjaxButton1" value="Submit with Ajax1"><br/><div id="msg-display-area1"></div>';
-
+      
+      for ($i = 0; $i < 9; $i++) {
+        $form['species' . $i] = array(
+        '#type' => 'select',
+        '#options' => array(
+          0 => '---Select a Species---',
+          1 => 'Species 1',
+          2 => 'Species 2',
+          3 => 'Species 3',
+        ),
+        '#default_value' => 0,
+      );
+} 
+      
+     
+      $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Submit',
+        );
 
     /* This is the convention for adding JS files to your form.
      * Since it is added directly to the form, I would imagine 
@@ -191,6 +214,38 @@ function custom_module_showCustomModuleForm() {
 
     return $form;
 }
+
+function custom_module_showCustomModuleForm_submit($form, &$form_state) {
+//    $primaryAuthor = $form_state['values']['primaryAuthor'];
+//    $organization = $form_state['values']['organization'];
+//    $publicationStatus = $form_state['values']['publicationStatus'];
+//    $year = $form_state['values']['year'];
+//    $title = $form_state['values']['title'];
+//    $abstract = $form_state['values']['abstract'];
+//    $species = $form_state['values']['species'];
+//    
+//    if ($species == 1){
+//        drupal_set_message('duplicating forms with jquery isnt a great idea');
+//    }
+//    else{
+//        }
+//        
+//    if ($primaryAuthor == ''){
+//        drupal_set_message('this isnt a good idea');
+//    }
+    
+    
+
+//    if ($form_state['values']['name'] == "") {
+//
+//        form_set_error("name", "Name cannot be empty");
+//    }
+//    else{
+//
+//        drupal_set_message("Hello, " . $form_state['values']['name'] . "!");
+//    }
+}
+
 
 //Potentially important forms below:
 //
@@ -243,15 +298,3 @@ function custom_module_showCustomModuleForm() {
 //      '#default_value' => 0,
 //      '#description' => t('Here, we will provide the user with a short description of the 3 options in order to get an accurate answer.'),
 //    );
-
-function custom_module_showCustomModuleForm_submit($form, &$form_state) {
-
-    if ($form_state['values']['name'] == "") {
-
-        form_set_error("name", "Name cannot be empty");
-    }
-    else {
-
-        drupal_set_message("Hello, " . $form_state['values']['name'] . "!");
-    }
-}

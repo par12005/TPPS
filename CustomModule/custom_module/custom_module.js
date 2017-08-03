@@ -1,11 +1,6 @@
 
 
 jQuery(document).ready(function () {
-
-    jQuery('.form-item-commonGardenSelect').addClass('commonGardenClass');
-    jQuery('.form-item-plantationSelect').addClass('plantationClass');
-    jQuery('.form-item-natPopSelect').addClass('natPopClass');
-    jQuery('#edit-species').clone().appendTo('#edit-species');
     
 //    jQuery('#submitAjaxButton').click(function () {
 //
@@ -29,84 +24,93 @@ jQuery(document).ready(function () {
 //            }
 //
 //
-//        });
+//        });                                                                                                          
 //
-//    });
-    
-    var numAuthors = 1;
+//    });    
 
-    jQuery('#AddAuthor').click(function()
-        {
-            var newAuthorForm = jQuery('#edit-secondaryauthor').clone().attr('id', '#edit-secondaryauthor' + numAuthors);
-            
-            newAuthorForm.insertAfter('#edit-secondaryauthor');
-   
-            var newButton = jQuery('#AddAuthor').clone().attr('id', '#AddAuthor' + numAuthors);
-            
-            newButton.click(function(){
-                jQuery(newAuthorForm).remove();                
-                jQuery(newButton).remove();   
-            });
-            
-            newButton.insertAfter('#edit-secondaryauthor');
-            
-        }
-            );
+    var numAuthors = 0;
     
+    jQuery('#button').click(function(){
+       jQuery('#secondaryAuthor' + numAuthors).show();
+       numAuthors++;
+    });
+    
+//    Secondary Authors forms are hidden and their corresponding buttons are created
+   
+
+    for(var i = 0; i <= 30; i++){
+        if (i <= 10){
+          jQuery('#edit-species' + i).hide();
+          jQuery('#secondaryAuthor' + i).hide();
+          
+          jQuery('#edit-secondaryauthorform' + i).change(function()
+          {
+              var formVal = jQuery(this).val();
+              var customForm = jQuery('#edit-secondaryauthorcustomform' + jQuery(this).attr('id').slice('-1'))
+              
+              if (formVal == 3){
+                  
+                customForm.attr('disabled', false);                  
+              }
+              
+              else{
+                  
+                customForm.attr('disabled', true);                  
+
+              }
+              
+          });
+              
+
+          
+          jQuery('#button').clone().attr('id', '#removeAuthor' + i).attr('value', 'Remove Author').appendTo('#secondaryAuthor' + i).click(function(){
+              jQuery(this.parentElement).hide();        
+          });
+
+          }
+          
+        else{
+            jQuery('#secondaryAuthor' + i).hide().addClass('secondaryAuthor');
+            
+            jQuery('#button').clone().attr('id', '#removeAuthor' + i).appendTo('#secondaryAuthor' + i).click(function(){
+                jQuery(this.parentElement).hide();
+
+          });
+          
+        }
+        
+    }
+    
+       
     var oldNumSpecies = jQuery('#edit-speciesnumber').val();
 
     jQuery('#edit-speciesnumber').change(function(){
+        var currentNumSpecies = jQuery('#edit-speciesnumber').val();
+                    
         if (jQuery('#edit-speciesnumber').val() > oldNumSpecies){
-            var currentNumSpecies = jQuery('#edit-speciesnumber').val();
             
             for(var i = oldNumSpecies; i < currentNumSpecies; i++){
-                var newSpeciesForm = jQuery('#edit-species').clone().attr('id', '#edit-species' + i);
-                
-                newSpeciesForm.change(function(){
-                    if (jQuery('#edit-speciesnumber').val() ){
-//                        remove the Form
-                    }                    
-                })
-                        
-                newSpeciesForm.insertAfter('#edit-species');
+                jQuery('#edit-species' + i).show();            
             }
             
             oldNumSpecies = currentNumSpecies;
         }
         
         else if (jQuery('#edit-speciesnumber').val() < oldNumSpecies){
-            var currentNumSpecies = jQuery('#edit-speciesnumber').val();
             
-            for(var i = oldNumSpecies; i >= currentNumSpecies; --i){
-                jQuery('#edit-species1').remove();
+            for(var i = oldNumSpecies; i >= currentNumSpecies; i--){
+                
+                jQuery('#edit-species' + i).val(0);
+                jQuery('#edit-species' + i).hide();
+                            
             }
             
-            oldNumSpecies = currentNumSpecies;``
+            oldNumSpecies = currentNumSpecies;       
         }
+        
         else{
+            
         }
     });
     
-//    push these changes please!!
-        
-//    jQuery('#edit-study').change(function () {
-//        if (jQuery('#edit-study').val() == 1)
-//        {
-//            jQuery('.commonGardenClass').show();
-//            jQuery('.plantationClass').hide();
-//            jQuery('.natPopClass').hide();
-//        } else if (jQuery('#edit-study').val() == 2)
-//        {
-//            jQuery('.commonGardenClass').hide();
-//            jQuery('.plantationClass').show();
-//            jQuery('.natPopClass').hide();
-//        } else if (jQuery('#edit-study').val() == 3)
-//        {
-//            jQuery('.commonGardenClass').hide();
-//            jQuery('.plantationClass').hide();
-//            jQuery('.natPopClass').show();
-//        }
-//    }
-//            );
-
 });  
