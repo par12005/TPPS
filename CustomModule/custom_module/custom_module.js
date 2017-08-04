@@ -26,7 +26,9 @@ jQuery(document).ready(function () {
 //
 //        });                                                                                                          
 //
-//    });    
+//    });
+
+    jQuery('#button').insertAfter('#edit-primaryauthor');
 
     var numAuthors = 0;
     
@@ -46,7 +48,7 @@ jQuery(document).ready(function () {
           jQuery('#edit-secondaryauthorform' + i).change(function()
           {
               var formVal = jQuery(this).val();
-              var customForm = jQuery('#edit-secondaryauthorcustomform' + jQuery(this).attr('id').slice('-1'))
+              var customForm = jQuery('#edit-secondaryauthorcustomform' + jQuery(this).attr('id').slice('-1'));
               
               if (formVal == 3){
                   
@@ -55,8 +57,8 @@ jQuery(document).ready(function () {
               
               else{
                   
-                customForm.attr('disabled', true);                  
-
+                customForm.attr('disabled', true);
+                customForm.attr('val', '');
               }
               
           });
@@ -64,6 +66,7 @@ jQuery(document).ready(function () {
 
           
           jQuery('#button').clone().attr('id', '#removeAuthor' + i).attr('value', 'Remove Author').appendTo('#secondaryAuthor' + i).click(function(){
+              
               jQuery(this.parentElement).hide();        
           });
 
@@ -83,6 +86,8 @@ jQuery(document).ready(function () {
     
        
     var oldNumSpecies = jQuery('#edit-speciesnumber').val();
+    
+//    Below function doesn't always show and hide the correct number of forms.
 
     jQuery('#edit-speciesnumber').change(function(){
         var currentNumSpecies = jQuery('#edit-speciesnumber').val();
@@ -100,8 +105,9 @@ jQuery(document).ready(function () {
             
             for(var i = oldNumSpecies; i >= currentNumSpecies; i--){
                 
-                jQuery('#edit-species' + i).val(0);
-                jQuery('#edit-species' + i).hide();
+                var currentSpeciesForm = jQuery('#edit-species' + i);
+                
+                currentSpeciesForm.hide().attr('enabled', false);
                             
             }
             
