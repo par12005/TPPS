@@ -42,35 +42,36 @@ function custom_module_ajaxCallHandler() {
     echo "Hello, " . filter_xss($_GET['name']) . "!";
 }
 
-/* This function is what literally shows the form to the user
- * It contains all of the form elements.  They are all defined 
- * in Drupal's API format
+/* This function is what shows the form to the user
+ * It contains all of the form elements. 
  */
 
 
 function custom_module_showCustomModuleForm() {
 
-    $form['primaryAuthor'] = array(                                             //This should be changed to a button that will generate new author fields
+    $form['primaryAuthor'] = array(                                             //Add a 
       '#type' => 'select',
       '#title' => t('Primary Author'),
       '#options' => array(
-        0 => t('--Primary Author--'),
+        0 => t('Author 0'),
         1 => t('Author 1'),
         2 => t('Author 2'),
         3 => t('Author 3'),
       ),
-      '#default_value' => 0,
+      '#required' => true,
+//      '#default_value' => 0,
       );
     
     $form['#suffix'] = '<input type="button" id="button" value="Add Author"><br/><div id="msg-display-area"></div>';
-//    $form['#suffix'] = '<input type="button" id="removeAuthor" value="removeAuthor"><br/><div id="msg-display-area"></div>';
     
     for($i = 0; $i < 30; $i++){
-       $form['secondaryAuthorForm' . $i] = array(
+       if ($i == 0){
+            $form['secondaryAuthorForm' . $i] = array(
       '#prefix' => '<div id= secondaryAuthor' . $i . '>',
       '#type' => 'select',
+      '#title' => t('Seconday Author'),
       '#options' => array(
-        0 => t('--Secondary Author--'),
+        0 => t('Author 0'),
         1 => t('Author 1'),
         2 => t('Author 2'),
         3 => t('Other'),
@@ -83,21 +84,41 @@ function custom_module_showCustomModuleForm() {
       '#type' => 'textfield',
       '#disabled' => true,
       '#default_value' => '',
+      );   
+       }
+       else{
+       $form['secondaryAuthorForm' . $i] = array(
+      '#prefix' => '<div id= secondaryAuthor' . $i . '>',
+      '#type' => 'select',
+      '#options' => array(
+        0 => t('--Secondary Author--'),
+        1 => t('Author 1'),
+        2 => t('Author 2'),
+        3 => t('Other'),
+      ),
       );
+       
+       $form['secondaryAuthorCustomForm' . $i] = array(
+      '#suffix' => '</div>',
+      '#type' => 'textfield',
+      '#disabled' => true,
+      '#default_value' => '',
+      );
+       }
     }
     
-//  change the enable with jQuery -  do NOT alter the settings of other forms with jQuery.  
+//  change the enable with jQuery -  do NOT alter the settings of other forms with jQuery. 
     
     $form['organization'] = array(
       '#type' => 'select',
       '#title' => t('Organization'),
       '#options' => array(
         0 => t('--Organization--'),
-        1 => t('Organization 1'),
-        2 => t('Organization 2'),
-        3 => t('Organization 3'),
+        1 => t('Organization 0'),
+        2 => t('Organization 1'),
+        3 => t('Organization 2'),
       ),
-      '#default_value' => 0,
+      '#required' => true,
     );
  
     $form['publicationStatus'] = array(
@@ -110,6 +131,7 @@ function custom_module_showCustomModuleForm() {
         3 => t('In press'),
         4 => t('Published'),
       ),
+      '#required' => true,
       '#default_value' => 4,
     );
     
@@ -123,34 +145,38 @@ function custom_module_showCustomModuleForm() {
         3 => t('1996'),
         4 => t('1997'),
       ),
-      '#default_value' => 4,
+      '#required' => true,
+      '#default_value' => 0,
     );
     
      $form['title'] = array(
        '#type' => 'textfield',
-       '#title' => t('Title')
+       '#title' => t('Title'),
+       '#required' => true,
      );
      
      $form['abstract'] = array(
        '#type' => 'textfield',
        '#title' => t('Abstract'),
+       '#required' => true,
      );
      
      $form['journal'] = array(
        '#type' => 'select',
        '#type' => t('Journal'),
        '#options' => array(
-         0 => 'Journal 1',
-         1 => 'Journal 2',
+         0 => '--Journal--',
+         1 => 'Journal 1',
+         2 => 'Journal 2',
          3 => 'Journal 3',
        ),
+       '#required' => true,
      );
      
       $form['speciesNumber'] = array(
       '#type' => 'select',
       '#title' => t('Please Select the Number of Species under Study'),
       '#options' => array(
-        0 => t('--species--'),
         1 => t('1'),
         2 => t('2'),
         3 => t('3'),
@@ -177,7 +203,7 @@ function custom_module_showCustomModuleForm() {
         '#default_value' => 0,
       );
       
-      for ($i = 0; $i < 9; $i++) {
+      for ($i = 0; $i < 10; $i++) {
         $form['species' . $i] = array(
         '#type' => 'select',
         '#options' => array(
@@ -186,11 +212,19 @@ function custom_module_showCustomModuleForm() {
           2 => 'Species 2',
           3 => 'Species 3',
         ),
+        '#disabled' => false,
         '#default_value' => 0,
       );
-} 
+}
+
+      $form['keywords'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Keywords'),
+        '#description' => t('Please submit keywords separated by commmas'),
+        '#required' => true,
+        );
       
-     
+      
       $form['submit'] = array(
         '#type' => 'submit',
         '#value' => 'Submit',
@@ -215,86 +249,195 @@ function custom_module_showCustomModuleForm() {
     return $form;
 }
 
-function custom_module_showCustomModuleForm_submit($form, &$form_state) {
-//    $primaryAuthor = $form_state['values']['primaryAuthor'];
-//    $organization = $form_state['values']['organization'];
-//    $publicationStatus = $form_state['values']['publicationStatus'];
-//    $year = $form_state['values']['year'];
-//    $title = $form_state['values']['title'];
-//    $abstract = $form_state['values']['abstract'];
-//    $species = $form_state['values']['species'];
-//    
-//    if ($species == 1){
-//        drupal_set_message('duplicating forms with jquery isnt a great idea');
-//    }
-//    else{
-//        }
-//        
-//    if ($primaryAuthor == ''){
-//        drupal_set_message('this isnt a good idea');
-//    }
+function custom_module_showCustomModuleForm_validate($form, $form_state){
     
+//    This should be fixed to prompt the user with multiple error messages
     
-
-//    if ($form_state['values']['name'] == "") {
-//
-//        form_set_error("name", "Name cannot be empty");
-//    }
-//    else{
-//
-//        drupal_set_message("Hello, " . $form_state['values']['name'] . "!");
-//    }
+    $primaryAuthor = $form_state['values']['primaryAuthor'];
+    $organization = $form_state['values']['organization'];
+    $publicationStatus = $form_state['values']['publicationStatus'];
+    $year = $form_state['values']['year'];
+    $title = $form_state['values']['title'];
+    $abstract = $form_state['values']['abstract'];
+    $species = $form_state['values']['species'];
+    $keywords = $form_state['values']['keywords'];
+    
+    $empty = 0;
+    $blank = '';
+    
+    if ($primaryAuthor == $empty){
+        form_set_error('', 'Please select a primary author.');
+    }
+    else{
+    }
+    
+    if ($organization == $empty){
+        form_set_error('', 'Please select the organization you are affiliated with.');
+    }
+    else{
+    }
+    
+    if ($publicationStatus == $empty){
+        form_set_error('','Please select the publication status of your submission.');
+    }
+    else{
+    }
+    
+    if ($year == $empty){
+        form_set_error('','Please select the year corresponding to your submission.');
+    }
+    else{
+        
+    }
+    
+    if ($title == $blank){
+        form_set_error('','Please enter the title of your submission.');
+    }
+    else{
+    }
+    
+    if ($abstract == $blank){
+        form_set_error('','Please enter an abstract for your submission.');
+    }
+    else{
+    }
+    
+    if ($keywords == $blank){
+        form_set_error('','Please include at least one keyword with your submission.');
+    }
+    else{
+        
+    }
+    
+    $speciesArray = array();
+    
+    for ($i = 0; $i < 10; $i++){
+        if ($form_state['values']['species' . $i] != 0){
+            array_push($speciesArray, $form_state['values']['species' . $i]);
+        }
+        else{       
+        }
+    }
+    
+    if (count($speciesArray) == $empty){
+        form_set_error('','Please select at least one species under study');
+    }
+    else{
+        
+    }
+    
+    $secondaryAuthorArray = Array();
+    
+    for ($i = 0; $i < 30; $i++){
+        if ($form_state['values']['secondaryAuthorForm' . $i] != $empty){
+            array_push($secondaryAuthorArray, $form_state['values']['secondaryAuthorForm' . $i]);
+        }
+        else{
+        }
+        
+        if ($form_state['values']['secondaryAuthorCustomForm' . $i] != $blank)
+        {
+            array_push($secondaryAuthorArray, $form_state['values']['secondaryAuthorCustomForm' . $i]);
+        }
+        
+        else{
+            
+        }
+    }
+    
 }
 
-
-//Potentially important forms below:
-//
-//$form['commonGardenSelect'] = array(
-//      '#type' => 'select',
-//      '#title' => t('Sample question only applicable to common garden studies:'),
-//      '#options' => array(
-//        0 => t('--Select--'),
-//      ),
-//      '#default_value' => 0,
-//      '#description' => t('One example of the questions asked to somone who performed a common garden study.'),
-//      //This is the way to add a class to a form element:
-//      '#attributes' => array('class' => array('commonGardenClass')),
-//      '#title_attributes' => array('class' => array('commonGardenClass')),
-//      '#description_attributes' => array('class' => array('commonGardenClass')),
-//    );
-//
-//    $form['plantationSelect'] = array(
-//      '#type' => 'select',
-//      '#title' => t('Sample question only applicable to plantation studies:'),
-//      '#options' => array(
-//        0 => t('--Select--'),
-//      ),
-//      '#default_value' => 0,
-//      '#description' => t('One example of the questions asked to somone who performed a plantation study.'),
-//      //This is the way to add a class to a form element:
-//      '#attributes' => array('class' => array('plantationClass')),
-//    );
-//
-//    $form['natPopSelect'] = array(
-//      '#type' => 'select',
-//      '#title' => t('Sample question only applicable to natural population studies:'),
-//      '#options' => array(
-//        0 => t('--Select--'),
-//      ),
-//      '#default_value' => 0,
-//      '#description' => t('One example of the questions asked to somone who performed a natural population study.'),
-//      //This is the way to add a class to a form element:
-//      '#attributes' => array('class' => array('natPopClass')),
-//    );
-//$form['study'] = array(
-//      '#type' => 'select',
-//      '#title' => t('Please Select Your Study Type:'),
-//      '#options' => array(
-//        0 => t('--Study Type--'),
-//        1 => t('Common Garden'),
-//        2 => t('Plantation'),
-//        3 => t('Natural Population'),
-//      ),
-//      '#default_value' => 0,
-//      '#description' => t('Here, we will provide the user with a short description of the 3 options in order to get an accurate answer.'),
-//    );
+function custom_module_showCustomModuleForm_submit($form, &$form_state) {
+    $primaryAuthor = $form_state['values']['primaryAuthor'];
+    $organization = $form_state['values']['organization'];
+    $publicationStatus = $form_state['values']['publicationStatus'];
+    $year = $form_state['values']['year'];
+    $title = $form_state['values']['title'];
+    $abstract = $form_state['values']['abstract'];
+    $species = $form_state['values']['species'];
+    $keywords = $form_state['values']['keywords'];
+    
+    $empty = 0;
+    $blank = '';
+    
+    if ($primaryAuthor == $empty){
+        drupal_set_message('Please select a primary author.');
+    }
+    else{
+    }
+    
+    if ($organization == $empty){
+        drupal_set_message('Please select the organization you are affiliated with.');
+    }
+    else{
+    }
+    
+    if ($publicationStatus == $empty){
+        drupal_set_message('Please select the publication status of your submission.');
+    }
+    else{
+    }
+    
+    if ($year == $empty){
+        drupal_set_message('Please select the year corresponding to your submission.');
+    }
+    else{
+        
+    }
+    
+    if ($title == $blank){
+        drupal_set_message('Please enter the title of your submission.');
+    }
+    else{
+    }
+    
+    if ($abstract == $blank){
+        drupal_set_message('Please enter an abstract for your submission.');
+    }
+    else{
+    }
+    
+    if ($keywords == $blank){
+        drupal_set_message('Please include at least one keyword with your submission.');
+    }
+    else{
+        
+    }
+    
+    $speciesArray = array();
+    
+    for ($i = 0; $i < 10; $i++){
+        if ($form_state['values']['species' . $i] != 0){
+            array_push($speciesArray, $form_state['values']['species' . $i]);
+        }
+        else{       
+        }
+    }
+    
+    if (count($speciesArray) == $empty){
+        drupal_set_message('Please select at least one species under study');
+    }
+    else{
+        
+    }
+    
+    $secondaryAuthorArray = Array();
+    
+    for ($i = 0; $i < 30; $i++){
+        if ($form_state['values']['secondaryAuthorForm' . $i] != $empty){
+            array_push($secondaryAuthorArray, $form_state['values']['secondaryAuthorForm' . $i]);
+        }
+        else{
+        }
+        
+        if ($form_state['values']['secondaryAuthorCustomForm' . $i] != $blank)
+        {
+            array_push($secondaryAuthorArray, $form_state['values']['secondaryAuthorCustomForm' . $i]);
+        }
+        
+        else{
+            
+        }
+    }
+   
+}
