@@ -6,17 +6,16 @@ Path:   /var/www/Drupal/sites/all/modules/CustomModule/custom_module
 All contents are in this directory, currently no need to look elsewhere.
 
 Status:
-Need to add the rest of the form components (textboxes, dropboxes, etc.), make the form dynamic (hide/show different parts of the form based on user's input), submit the form contents to database, and upload users' file(s) to database.
+All necessary jQeury functionality and error-checking has been successfully implemented.
+
+To do:
+Populate forms with information from the database.
+Implement login functionality.
+Allow users to submit a new species to the database.
+Implement a filtering mechanism so users don't have to scroll through thousands of possible options
 
 Issues:
-
-Currently having an issue with getting class of select element in Drupal API to apply to title of select, description of select, and select element itself.  The class is currently only applied to the element itself.
-Need to ask Stephen Ficklin or Lacey about this.
-Current work around is as follows (in custom_module.js):
-
-    jQuery('.form-item-commonGardenSelect').addClass('commonGardenClass');
-    jQuery('.form-item-plantationSelect').addClass('plantationClass');
-    jQuery('.form-item-natPopSelect').addClass('natPopClass');
+Edge case issues with adding authors.
 
 Resources:
 
