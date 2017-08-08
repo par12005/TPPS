@@ -28,21 +28,24 @@ jQuery(document).ready(function () {
 //
 //    });
 
-    jQuery('#button').insertAfter('#edit-primaryauthor');
+    var secondaryAuthorTitle = '<div id="secondaryAuthorTitle"> Secondary Author </div>';
+    
+    jQuery(secondaryAuthorTitle).appendTo('#primaryauthor');
+
+    jQuery('#button').appendTo('#secondaryAuthorTitle');
 
     var numAuthors = 0;
-    
+  
     jQuery('#button').click(function(){
        jQuery('#secondaryAuthor' + numAuthors).show();
        numAuthors++;
     });
     
 //    Secondary Authors forms are hidden and their corresponding buttons are created
-   
-
+    
     for(var i = 0; i <= 30; i++){
-        if (i <= 10){
-          jQuery('#edit-species' + i).hide();
+        if (i <= 15){
+          jQuery('#genusSpecies' + i).hide();
           jQuery('#secondaryAuthor' + i).hide();
           
           jQuery('#edit-secondaryauthorform' + i).change(function()
@@ -56,17 +59,31 @@ jQuery(document).ready(function () {
               }
               
               else{
-                  
                 customForm.attr('disabled', true);
-                customForm.attr('val', '');
               }
               
+          });
+          
+          jQuery('#edit-species' + i).change(function(){
+              
+              var speciesFormVal = jQuery(this).val();
+              var speciesCustomForm = jQuery('#edit-customspecies' + jQuery(this).attr('id').slice('-1'));
+            
+              
+              if (speciesFormVal == 3){
+                  
+                  speciesCustomForm.attr('disabled', false);
+              }
+              else{
+                  speciesCustomForm.attr('disabled', true);
+              }
           });
               
 
           
           jQuery('#button').clone().attr('id', '#removeAuthor' + i).attr('value', 'Remove Author').appendTo('#secondaryAuthor' + i).click(function(){
               
+              numAuthors--;              
               jQuery(this.parentElement).hide();        
           });
 
@@ -84,6 +101,7 @@ jQuery(document).ready(function () {
         
     }
     
+    
        
     var oldNumSpecies = jQuery('#edit-speciesnumber').val();
     
@@ -95,7 +113,7 @@ jQuery(document).ready(function () {
         if (jQuery('#edit-speciesnumber').val() > oldNumSpecies){
             
             for(var i = oldNumSpecies; i < currentNumSpecies; i++){
-                jQuery('#edit-species' + i).show();            
+                jQuery('#genusSpecies' + i).show();            
             }
             
             oldNumSpecies = currentNumSpecies;
@@ -105,7 +123,7 @@ jQuery(document).ready(function () {
             
             for(var i = oldNumSpecies; i >= currentNumSpecies; i--){
                 
-                var currentSpeciesForm = jQuery('#edit-species' + i);
+                var currentSpeciesForm = jQuery('#genusSpecies' + i);
                 
                 currentSpeciesForm.hide().attr('enabled', false);
                             
