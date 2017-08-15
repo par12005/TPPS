@@ -365,7 +365,6 @@ function custom_module_showCustomModuleForm_second_page() {
     );
   
     $form['commonGardenIrrigation'] = array(
-      '#prefix' => '<div id=commonGardenClass>',
       '#title' => t('Irrigation'),
       '#required' => True,
       '#type' => 'Select',
@@ -373,6 +372,8 @@ function custom_module_showCustomModuleForm_second_page() {
         0 => 'Not Modified',
         1 => 'Yes',
       ),
+      '#prefix' => '<div id=commonGardenClass>',
+      '#suffix' => '</div>',
     );
     
     $form['commonGardenIrrigationType'] = array(
@@ -453,9 +454,9 @@ function custom_module_showCustomModuleForm_second_page() {
         'Other perturbation'
           ),
       '#required' => True,
-      '#suffix' => '</div>',
+//      '#suffix' => '</div>',
     );
-    
+//    !!!
     return $form;
 }
 
