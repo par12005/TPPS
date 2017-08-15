@@ -69,9 +69,7 @@ jQuery(document).ready(function () {
               var speciesFormVal = jQuery(this).val();
               var speciesCustomForm = jQuery('#edit-customspecies' + jQuery(this).attr('id').slice('-1'));
             
-              
-              if (speciesFormVal == 3){
-                  
+              if (speciesFormVal == 0){
                   speciesCustomForm.attr('disabled', false);
               }
               else{
@@ -105,7 +103,7 @@ jQuery(document).ready(function () {
        
     var oldNumSpecies = jQuery('#edit-speciesnumber').val();
     
-//    Below function doesn't always show and hide the correct number of forms.
+
 
     jQuery('#edit-speciesnumber').change(function(){
         var currentNumSpecies = jQuery('#edit-speciesnumber').val();
