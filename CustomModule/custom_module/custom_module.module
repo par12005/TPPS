@@ -353,7 +353,6 @@ function custom_module_showCustomModuleForm_second_page() {
     
     $form['studyType'] = array(
       '#title' => t('Please select the type of study'),
-      '#required' => True,
       '#type' => 'select',
       '#options' => array(
         0 => 'Natural Population (Landscape)',
@@ -362,24 +361,24 @@ function custom_module_showCustomModuleForm_second_page() {
         3 => 'Experimental/Common Garden',
         4 => 'Plantation',
       ),
+      '#required' => true,
     );
-  
+    
     $form['commonGardenIrrigation'] = array(
       '#title' => t('Irrigation'),
-      '#required' => True,
-      '#type' => 'Select',
+      '#type' => 'select',
       '#options' => array(
         0 => 'Not Modified',
         1 => 'Yes',
       ),
-      '#prefix' => '<div id=commonGardenClass>',
-      '#suffix' => '</div>',
+      '#required' => true,
+      '#prefix' => '<div id=commonGardenClass>'
     );
     
     $form['commonGardenIrrigationType'] = array(
       '#title' => t('Type of Irrigation'),
       '#required' => True,
-      '#type' => 'Select',
+      '#type' => 'select',
       '#options' => array(
         0 => 'Type1',
       ),
@@ -387,17 +386,17 @@ function custom_module_showCustomModuleForm_second_page() {
     
     $form['commonGardenSalinity'] = array(
       '#title' => t('Salinity'),
-      '#type' => 'Select',
-      '#otpions' => array(
+      '#type' => 'select',
+      '#options' => array(
         'Controlled',
-        'Uncontrolled'
+        'Uncontrolled',
       ),
-      '#required' => True,
+      '#required' => true,
       );
     
     $form['commonGardenSalinityValue'] = array(
       '#title' => t('Salinity Value'),
-      '#type' => 'Select',
+      '#type' => 'select',
       '#options' => array(
         'No salinity',
         'Some salinity',
@@ -407,7 +406,7 @@ function custom_module_showCustomModuleForm_second_page() {
     
     $form['commonGardenBioticEnvironment'] = array(
       '#title' => t('Biotic Environment'),
-      '#type' => 'Select',
+      '#type' => 'select',
       '#options' => array(
         'Herbivores',
         'Mutulists',
@@ -416,12 +415,12 @@ function custom_module_showCustomModuleForm_second_page() {
         'Other',
         'None'
       ),
-      '#required' => True,
+      '#required' => true,
     );
     
-    $form['Seasons'] = array(
+    $form['commonGardenSeasons'] = array(
       '#title' => t('Seaons'),
-      '#type' => 'Select',
+      '#type' => 'checkboxes',
       '#options' => array(
         'Fall',
         'Winter',
@@ -431,9 +430,9 @@ function custom_module_showCustomModuleForm_second_page() {
       '#required' => True,
     );
     
-    $form['Treatments'] = array(
+    $form['commonGardensTreatments'] = array(
       '#title' => t('Treatments'),
-      '#type' => 'Select',
+      '#type' => 'checkboxes',
       '#options' => array(
         'Seasonal environment',
         'Antibiotic regime',
@@ -454,9 +453,176 @@ function custom_module_showCustomModuleForm_second_page() {
         'Other perturbation'
           ),
       '#required' => True,
-//      '#suffix' => '</div>',
+      '#suffix' => '</div>',
     );
-//    !!!
+    
+    $form['growthChamberCO2'] = array(
+      '#title' => t('CO2 controlled or uncontrolled'),
+      '#type' => 'select',
+      '#options' => array(
+        'Uncontrolled',
+        'Controlled'
+      ),
+      '#required' => true,
+      '#prefix' => '<div id=growthChamber>'
+    );
+    
+    $form['growthChamberCO2Uncontrolled'] = array(
+      '#title' => t('Uncontrolled CO2'),
+      '#type' => 'textfield',
+      '#required' => true      
+    );
+    
+    $form['growthChamberCO2Controlled'] = array(
+      '#title' => t('Controlled CO2'),
+      '#type' => 'textfield',
+      '#required' => true      
+    );
+
+    $form['growthChamberAirHumidity'] = array(
+      '#title' => t('Air Humidity controlled or uncontrolled'),
+      '#type' => 'select',
+      '#options' => array(
+        'Uncontrolled',
+        'Controlled'
+      ),
+      '#required' => true,
+    );
+    
+    $form['growthChamberAirHumidityUncontrolled'] = array(
+      '#title' => t('Uncontrolled air humidity'),
+      '#type' => 'textfield',
+      '#required' => true      
+    );
+    
+    $form['growthChamberAirHumidityControlled'] = array(
+      '#title' => t('Controlled air humidity'),
+      '#type' => 'textfield',
+      '#required' => true      
+    );    
+    
+    $form['growthChamberLightIntensity'] = array(
+      '#title' => t('Light intensity controlled or uncontrolled'),
+      '#type' => 'select',
+      '#options' => array(
+        'Uncontrolled',
+        'Controlled'
+      ),
+      '#required' => true,
+    );
+    
+    $form['growthChamberLightIntensityControlled'] = array(
+      '#title' => t('Uncontrolled air humidity'),
+      '#type' => 'textfield',
+      '#required' => true      
+    );
+    
+    $form['growthChamberAverageDayTemp'] = array(
+      '#title' => t('Average Day Temperature'),
+      '#type' => 'textfield',
+      '#required' => true,
+    );
+    
+    $form['growthChamberAverageNightTemp'] = array(
+      '#title' => t('Average Night Temperature'),
+      '#type' => 'textfield',
+      '#required' => true,
+    );
+    
+    $form['growthChamberTempRange'] = array(
+      '#title' => t('Temperature Range'),
+      '#type' => 'textfield',
+      '#required' => true,
+    );
+    
+    $form['growthChamberAeroponics'] = array(
+      '#title' => t('Aeroponics or Hydroponics'),
+      '#type' => 'select',
+      '#options' => array(
+        'Aeroponics',
+        'Hydroponics',
+        'Soil'
+      ),
+      '#required' => TRUE
+    );
+    
+    $form['growthChamberSoil'] = array(
+      '#title' => t('Soil'),
+      '#type' => 'select',
+      '#options' => array(
+        'Yes',
+        'No',
+      ),
+      '#required' => TRUE,    
+   );
+    
+    $form['growhtChamberSoilType'] = array(
+      '#title' => t('Soil Type'),
+      '#type' => 'select',
+      '#options' => array(
+        'Sand',
+        'Peat',
+        'Clay',
+        'Mixed',
+        'Other',
+      ),
+    );
+    
+    $form['growthChamberSoilContainerType'] = array(
+      '#title' => t('Container Type'),
+      '#type' => 'textfield'
+    );
+    
+    $form['growthChamberpH'] = array(
+      '#title' => t('pH'),
+      '#type' => 'select',
+      '#options' => array(
+        'Controlled',
+        'Uncontrolled,'
+      ),
+    );
+    
+    $form['growthChamberpHControlled'] = array(
+      '#title' => t('pH Controlled Value'),
+      '#type' => 'textfield'
+    );
+    
+    $form['growthChamberpHUncontrolled'] = array(
+      '#title' => t('pH Uncontrolled Average Value'),
+      '#type' => 'textfield'
+    );
+    
+    $form['growthChamberTreatments'] = array(
+      '#title' => t('Treatments'),
+      '#type' => 'checkboxes',
+      '#options' => array(
+        'Seasonal Environment',
+        'Air temperature regime',
+        'Soil Temperature regime',
+        'Antibiotic regime',
+        'Chemical administration',
+        'Disease status',
+        'Fertilizer regime',
+        'Fungicide regime',
+        'Gaseous regime',
+        'Gravity Growth hormone regime',
+        'Mechanical treatment',
+        'Mineral nutrient regime',
+        'Humidity regime',
+        'Non-mineral nutrient regime',
+        'Radiation (light, UV-B, X-ray) regime',
+        'Rainfall regime',
+        'Salt regime',
+        'Watering regime',
+        'Water temperature regime',
+        'Pesticide regime',
+        'pH regime',
+        'other perturbation',
+      ),
+      '#required' => TRUE,
+      '#suffix' => '</div>'
+    );
+    
     return $form;
 }
 

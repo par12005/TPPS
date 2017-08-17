@@ -135,4 +135,8 @@ jQuery(document).ready(function () {
         }
     });
     
+    //Second Page jQuery functionality below
+    
+    jQuery('.commonGardenClass').hide();
+    
 });  
