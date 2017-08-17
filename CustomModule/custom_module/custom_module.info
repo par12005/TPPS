@@ -4,3 +4,4 @@ core = 7.x
 
 ; NEW LINE
 configure = admin/config/content/custom_module 
+files[] = custom_module.js

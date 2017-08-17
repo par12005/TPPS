@@ -1,5 +1,3 @@
-
-
 jQuery(document).ready(function () {
     
 //    jQuery('#submitAjaxButton').click(function () {
@@ -134,9 +132,29 @@ jQuery(document).ready(function () {
             
         }
     });
+   
+    jQuery('#growthChamberClass').hide();
+    jQuery('#commonGardenClass').hide();
     
-    //Second Page jQuery functionality below
-    
-    jQuery('.commonGardenClass').hide();
-    
-});  
+    jQuery('#edit-studytype').change(function()
+    {
+        var studyTypeVal = jQuery('#edit-studytype').val();
+            if (studyTypeVal == 3){
+                jQuery('#growthChamberClass').hide();
+                jQuery('#commonGardenClass').show();
+            }
+            
+            else if (studyTypeVal == 1){
+                jQuery('#growthChamberClass').show();
+                jQuery('#commonGardenClass').hide();
+          
+            }
+            
+            else{
+                jQuery('#growthChamberClass').hide();
+                jQuery('#commonGardenClass').hide();
+            }
+            
+    });
+      
+});

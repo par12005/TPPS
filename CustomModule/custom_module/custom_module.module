@@ -244,7 +244,6 @@ function custom_module_showCustomModuleForm() {
         '#value' => t('Submit'),
         );
       
-//      $form['#submit'][] = 'custom_module_showCustomModuleForm';
           
     /* This is the convention for adding JS files to your form.
      * Since it is added directly to the form, I would imagine 
@@ -372,7 +371,7 @@ function custom_module_showCustomModuleForm_second_page() {
         1 => 'Yes',
       ),
       '#required' => true,
-      '#prefix' => '<div id=commonGardenClass>'
+      '#prefix' => '<div id = commonGardenClass>'
     );
     
     $form['commonGardenIrrigationType'] = array(
@@ -458,13 +457,13 @@ function custom_module_showCustomModuleForm_second_page() {
     
     $form['growthChamberCO2'] = array(
       '#title' => t('CO2 controlled or uncontrolled'),
+      '#prefix' => '<div id = growthChamberClass>',
       '#type' => 'select',
       '#options' => array(
         'Uncontrolled',
         'Controlled'
       ),
-      '#required' => true,
-      '#prefix' => '<div id=growthChamber>'
+      '#required' => true
     );
     
     $form['growthChamberCO2Uncontrolled'] = array(
