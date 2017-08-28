@@ -76,7 +76,7 @@ function custom_module_showCustomModuleForm() {
             $form['secondaryAuthorForm' . $i] = array(
       '#prefix' => '<div id= secondaryAuthor' . $i . '>',
       '#type' => 'select',
-      '#options' => $authorArr,
+      '#options' => array_merge(array(0 => 'Other'),$authorArr),
       '#default_value' => 0,
       );
        
@@ -91,7 +91,7 @@ function custom_module_showCustomModuleForm() {
        $form['secondaryAuthorForm' . $i] = array(
       '#prefix' => '<div id= secondaryAuthor' . $i . '>',
       '#type' => 'select',
-      '#options' => $authorArr,
+      '#options' => array_merge(array(0 => 'Other'),$authorArr),
       );
        
        $form['secondaryAuthorCustomForm' . $i] = array(
@@ -289,7 +289,7 @@ function custom_module_showCustomModuleForm_submit($form, &$form_state) {
 }
 
 function custom_module_showCustomModuleForm_second_page() {
-    $form['startDate'] = array(
+    $form['startDate']= array(
       '#title' => t('Starting Date'),
       '#required' => True,
       '#type' => 'textfield',
@@ -328,7 +328,7 @@ function custom_module_showCustomModuleForm_second_page() {
         2 => 'Not Modified',
       ),
       '#required' => true,
-      '#prefix' => '<div id = commonGardenClass>'
+      '#prefix' => '<div id=commonGardenClass>'
     );
     
     $form['commonGardenIrrigationType'] = array(
@@ -415,26 +415,33 @@ function custom_module_showCustomModuleForm_second_page() {
       '#required' => True,
       '#suffix' => '</div>',
     );
+//    
+//    growth chamber below
+//    
     
     $form['growthChamberCO2'] = array(
       '#title' => t('CO2 controlled or uncontrolled'),
       '#prefix' => '<div id = growthChamberClass>',
       '#type' => 'select',
       '#options' => array(
-        'Uncontrolled',
-        'Controlled'
+        0 =>'Controlled',
+        1 => 'Uncontrolled'
       ),
       '#required' => true
     );
     
-    $form['growthChamberCO2Uncontrolled'] = array(
-      '#title' => t('Uncontrolled CO2'),
+    $form['growthChamber_CO2Controlled'] = array(
+      '#prefix' => '<div class=growthChamberChildrenControlledCO2>',
+      '#suffix' => '</div>',
+      '#title' => t('Controlled CO2'),
       '#type' => 'textfield',
       '#required' => true      
     );
     
-    $form['growthChamberCO2Controlled'] = array(
-      '#title' => t('Controlled CO2'),
+     $form['growthChamber_CO2Uncontrolled'] = array(
+      '#prefix' => '<div class=growthChamberChildrenUncontrolledCO2>',
+      '#suffix' => '</div>',
+      '#title' => t('Uncontrolled CO2'),
       '#type' => 'textfield',
       '#required' => true      
     );
@@ -443,36 +450,42 @@ function custom_module_showCustomModuleForm_second_page() {
       '#title' => t('Air Humidity controlled or uncontrolled'),
       '#type' => 'select',
       '#options' => array(
-        'Uncontrolled',
-        'Controlled'
+        0 => 'Controlled',
+        1 => 'Uncontrolled',
       ),
       '#required' => true,
     );
     
-    $form['growthChamberAirHumidityUncontrolled'] = array(
-      '#title' => t('Uncontrolled air humidity'),
-      '#type' => 'textfield',
-      '#required' => true      
-    );
-    
-    $form['growthChamberAirHumidityControlled'] = array(
+     $form['growthChamber_AirHumidityControlled'] = array(
       '#title' => t('Controlled air humidity'),
+      '#prefix' => '<div class=growthChamberChildrenAirHumidityControlled>',
+      '#suffix' => '</div>',
       '#type' => 'textfield',
       '#required' => true      
     );    
+    
+    $form['growthChamber_AirHumidityUncontrolled'] = array(
+      '#title' => t('Uncontrolled air humidity'),
+      '#prefix' => '<div class=growthChamberChildrenAirHumidityUncontrolled>',
+      '#suffix' => '</div>',
+      '#type' => 'textfield',
+      '#required' => true      
+    );
     
     $form['growthChamberLightIntensity'] = array(
       '#title' => t('Light intensity controlled or uncontrolled'),
       '#type' => 'select',
       '#options' => array(
-        'Uncontrolled',
-        'Controlled'
+        0 => 'Controlled',
+        1 =>'Uncontrolled',
       ),
       '#required' => true,
     );
     
-    $form['growthChamberLightIntensityControlled'] = array(
+    $form['growthChamber_LightIntensityControlled'] = array(
       '#title' => t('Controlled Light Intensity'),
+      '#prefix' => '<div class=growthChamberChildrenLight>',
+      '#suffix' => '</div>',
       '#type' => 'textfield',
       '#required' => true      
     );
@@ -510,16 +523,19 @@ function custom_module_showCustomModuleForm_second_page() {
       '#title' => t('Soil'),
       '#type' => 'select',
       '#options' => array(
-        'Yes',
-        'No',
+        0 => 'Yes',
+        1 =>'No',
       ),
       '#required' => TRUE,    
    );
     
-    $form['growhtChamberSoilType'] = array(
+    $form['growthChamber_SoilType'] = array(
       '#title' => t('Soil Type'),
+      '#prefix' => '<div id=growthChamberChildrenSoilType>',
+      '#suffix' => '</div>',
       '#type' => 'select',
       '#options' => array(
+        '-Select-',
         'Sand',
         'Peat',
         'Clay',
@@ -528,29 +544,36 @@ function custom_module_showCustomModuleForm_second_page() {
       ),
     );
     
-    $form['growthChamberSoilContainerType'] = array(
+    $form['growthChamber_SoilContainerType'] = array(
       '#title' => t('Container Type'),
-      '#type' => 'textfield'
+      '#prefix' => '<div id=growthChamberChildrenSoilContainer>',
+      '#suffix' => '</div>',
+      '#type' => 'textfield',
     );
     
     $form['growthChamberpH'] = array(
       '#title' => t('pH'),
       '#type' => 'select',
       '#options' => array(
-        'Controlled',
-        'Uncontrolled,'
+       -1 => '-Select',
+       0 => 'Controlled',
+       1 =>'Uncontrolled',
       ),
     );
     
-    $form['growthChamberpHControlled'] = array(
+    $form['growthChamber_pHControlled'] = array(
       '#title' => t('pH Controlled Value'),
+      '#prefix' => '<div class=growthChamberChildrenPHControlled>',
+      '#suffix' => '</div>',
       '#type' => 'textfield'
     );
     
-    $form['growthChamberpHUncontrolled'] = array(
+    $form['growthChamber_pHUncontrolled'] = array(
       '#title' => t('pH Uncontrolled Average Value'),
-      '#type' => 'textfield'
-    );
+      '#prefix' => '<div class=growthChamberChildrenPHUncontrolled>',
+      '#suffix' => '</div>',
+      '#type' => 'textfield',
+      );
     
     $form['growthChamberTreatments'] = array(
       '#title' => t('Treatments'),
