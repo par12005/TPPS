@@ -5,17 +5,20 @@ Server: 155.37.254.147
 Path:   /var/www/Drupal/sites/all/modules/CustomModule/custom_module
 All contents are in this directory, currently no need to look elsewhere.
 
-Status:
-All necessary jQeury functionality and error-checking has been successfully implemented.
-
 To do:
-Populate forms with information from the database.
-Implement login functionality.
-Allow users to submit a new species to the database.
-Implement a filtering mechanism so users don't have to scroll through thousands of possible options
 
-Issues:
-Edge case issues with adding authors.
+1) custom_module.js 
+    i) Features a lot of redundant methods.  
+    ii) Drupal forms should have CSS classes that jQuery toggles between.
+    iii) Synchronous function call should be removed.
+    iv) Buttons shouldn't be created on the client side and then attached to forms.
+
+2) custom_module.module
+    i) Forms should not be generated in a for loop.
+    ii) Certain forms should be populated based on the value of other forms.
+
+3) General
+    i) Error-checking should be improved
 
 Resources:
 

@@ -18,7 +18,7 @@ function custom_module_menu() {
       'access arguments' => array('access content'),
       'type' => MENU_NORMAL_ITEM
     );
-    
+
     $items['secondPage'] = array(
       'title' => 'TPPS Development',
       'page callback' => 'drupal_get_form',
@@ -50,11 +50,11 @@ function custom_module_ajaxCallHandler() {
 }
 
 function custom_module_showCustomModuleForm() {
-    
+
     $authorArr = array();
     $authorResults = db_query('SELECT contact.contact_id, contact.name FROM chado.contact WHERE contact.type_id = 71 ORDER BY contact.name LIMIT 200');
-    
-    foreach($authorResults as $r){
+
+    foreach ($authorResults as $r) {
         $authorArr[$r->contact_id] = $r->name;
     }
 
@@ -63,60 +63,58 @@ function custom_module_showCustomModuleForm() {
       '#suffix' => '</div>',
       '#type' => 'select',
       '#title' => t('Primary Author'),
-      '#options' => $authorArr,        
+      '#options' => $authorArr,
       '#required' => true,
       '#default_value' => 0,
-      );
-    
-    
+    );
+
+
     $form['#suffix'] = '<input type="button" id="button" value="Add Author"><br/><div></div>';
-    
-    for($i = 0; $i < 30; $i++){
-       if ($i == 0){
+
+    for ($i = 0; $i < 30; $i++) {
+        if ($i == 0) {
             $form['secondaryAuthorForm' . $i] = array(
-      '#prefix' => '<div id= secondaryAuthor' . $i . '>',
-      '#type' => 'select',
-      '#options' => array_merge(array(0 => 'Other'),$authorArr),
-      '#default_value' => 0,
-      );
-       
-       $form['secondaryAuthorCustomForm' . $i] = array(
-      '#suffix' => '</div>',
-      '#type' => 'textfield',
-      '#disabled' => true,
-      '#default_value' => '',
-      );   
-       }
-       else{
-       $form['secondaryAuthorForm' . $i] = array(
-      '#prefix' => '<div id= secondaryAuthor' . $i . '>',
-      '#type' => 'select',
-      '#options' => array_merge(array(0 => 'Other'),$authorArr),
-      );
-       
-       $form['secondaryAuthorCustomForm' . $i] = array(
-      '#suffix' => '</div>',
-      '#type' => 'textfield',
-      '#disabled' => true,
-      '#default_value' => '',
-      );
-       }
+              '#prefix' => '<div id= secondaryAuthor' . $i . '>',
+              '#type' => 'select',
+              '#options' => array_merge(array(0 => 'Other'), $authorArr),
+            );
+
+            $form['secondaryAuthorCustomForm' . $i] = array(
+              '#suffix' => '</div>',
+              '#type' => 'textfield',
+              '#disabled' => True,
+            );
+        }
+        else {
+            $form['secondaryAuthorForm' . $i] = array(
+              '#prefix' => '<div id= secondaryAuthor' . $i . '>',
+              '#type' => 'select',
+              '#options' => array_merge(array(-1 => '-Select-', 0 => 'Other'), $authorArr),
+            );
+
+            $form['secondaryAuthorCustomForm' . $i] = array(
+              '#suffix' => '</div>',
+              '#type' => 'textfield',
+              '#disabled' => True,
+
+            );
+        }
     }
-    
+
     $organizationArr = array();
-    $organizationResults = db_query('SELECT contact.contact_id, contact.name FROM chado.contact WHERE contact.type_id = 72 ORDER BY contact.name LIMIT 200');    
-    
-    foreach($organizationResults as $r){
+    $organizationResults = db_query('SELECT contact.contact_id, contact.name FROM chado.contact WHERE contact.type_id = 72 ORDER BY contact.name LIMIT 200');
+
+    foreach ($organizationResults as $r) {
         $organizationArr[$r->contact_id] = $r->name;
     }
-    
+
     $form['organization'] = array(
       '#type' => 'select',
       '#title' => t('Organization'),
       '#options' => $organizationArr,
       '#required' => true,
     );
- 
+
     $form['publicationStatus'] = array(
       '#type' => 'select',
       '#title' => t('Publication Status'),
@@ -129,12 +127,12 @@ function custom_module_showCustomModuleForm() {
       ),
       '#required' => true,
     );
-    
+
     $yearArr = Array();
-    for($i = 1950; $i <= 2017; $i++){
+    for ($i = 1950; $i <= 2017; $i++) {
         array_push($yearArr, $i);
-    }                              
-    
+    }
+
     $form['year'] = array(
       '#type' => 'select',
       '#title' => t('Year'),
@@ -142,120 +140,113 @@ function custom_module_showCustomModuleForm() {
       '#required' => true,
     );
 
-     $form['title'] = array(
-       '#type' => 'textfield',
-       '#title' => t('Title'),
-       '#required' => true,
-     );
-     
-     $form['abstract'] = array(
-       '#type' => 'textfield',
-       '#title' => t('Abstract'),
-       '#required' => true,
-     );
-     
-     $journalArr = Array();
-     $journalResults = db_query('SELECT DISTINCT series_name FROM chado.pub ORDER BY series_name LIMIT 200');
-     
-     foreach($journalResults as $r){
-         array_push($journalArr, $r->series_name);
-     }
+    $form['title'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Title'),
+      '#required' => true,
+    );
 
-     $form['jorunal'] = array(
+    $form['abstract'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Abstract'),
+      '#required' => true,
+    );
+
+    $journalArr = Array();
+    $journalResults = db_query('SELECT DISTINCT series_name FROM chado.pub ORDER BY series_name LIMIT 200');
+
+    foreach ($journalResults as $r) {
+        array_push($journalArr, $r->series_name);
+    }
+
+    $form['journal'] = array(
       '#type' => 'select',
       '#title' => t('Journal'),
       '#options' => $journalArr,
       '#default_value' => 1,
     );
-     
-     $speciesNumberRange = range(0,15);
-     
-      $form['speciesNumber'] = array(
+
+    $speciesNumberRange = range(0, 15);
+
+    $form['speciesNumber'] = array(
       '#type' => 'select',
       '#title' => t('Please Select the Number of Species under Study'),
       '#options' => $speciesNumberRange,
       '#default_value' => 0,
     );
-     
-      $genusResult = db_query('SELECT DISTINCT genus FROM chado.organism ORDER BY genus LIMIT 200');
-      $genusArr = Array();
-      
-      foreach($genusResult as $r){
-          $genusArr[] = $r->genus;
-      }
-      
-      $speciesResult = db_query('SELECT DISTINCT organism_id, species FROM chado.organism ORDER BY species LIMIT 200');
-      $speciesArr = array();
-          
-      foreach($speciesResult as $r){
-          $speciesArr[$r->organism_id] = $r->species;
-      }
-          
-      for($i = 0; $i < 15; $i++){
-       if ($i == 0){
-            $form['genus' . $i] = array(
-      '#prefix' => '<div id= genusSpecies' . $i . '>',
-      '#title' => t('Genus'),
-      '#type' => 'select',
-      '#options' => $genusArr,
-      '#disabled' => True,
-      );
-       
-       $form['species' . $i] = array(
-      '#type' => 'select',
-      '#title' => t('Species'),
-      '#options' => array_merge(array(0 => 'Other'), $speciesArr),
-            '#disabled' => True,
 
-      );
-       
-      $form['customSpecies' . $i] = array(
-       '#suffix' => '</div>',
-       '#type' => 'textfield',
-             '#disabled' => True,
+    $genusResult = db_query('SELECT DISTINCT genus FROM chado.organism ORDER BY genus LIMIT 200');
+    $genusArr = Array();
 
-     );
-      
-       }
-       
-       else{
-       $form['genus' . $i] = array(
-      '#prefix' => '<div id= genusSpecies' . $i . '>',
-      '#title' => t('Genus'),
-      '#type' => 'select',
-      '#options' => $genusArr,
-       '#disabled' => True,
-
-      );
-      $form['species' . $i] = array(
-      '#type' => 'select',
-      '#title' => t('Species'),
-      '#options' => array_merge(array(0 => 'Other'), $speciesArr),
-      '#disabled' => True,
-
-      );
-       }
-     $form['customSpecies' . $i] = array(
-       '#suffix' => '</div>',
-       '#type' => 'textfield',
-       '#disabled' => True,
-       );  
-     
+    foreach ($genusResult as $r) {
+        $genusArr[] = $r->genus;
     }
 
-      $form['keywords'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Keywords'),
-        '#description' => t('Please enter keywords separated by commmas'),
-        '#required' => true,
+    $speciesResult = db_query('SELECT DISTINCT organism_id, species FROM chado.organism ORDER BY species LIMIT 200');
+    $speciesArr = array();
+
+    foreach ($speciesResult as $r) {
+        $speciesArr[$r->organism_id] = $r->species;
+    }
+
+    for ($i = 0; $i < 15; $i++) {
+        if ($i == 0) {
+            $form['genus' . $i] = array(
+              '#prefix' => '<div id= genusSpecies' . $i . '>',
+              '#title' => t('Genus'),
+              '#type' => 'select',
+              '#options' => $genusArr,
+              '#disabled' => True,
+            );
+
+            $form['species' . $i] = array(
+              '#type' => 'select',
+              '#title' => t('Species'),
+              '#options' => array_merge(array(0 => 'Other'), $speciesArr),
+              '#disabled' => True,
+            );
+
+            $form['customSpecies' . $i] = array(
+              '#suffix' => '</div>',
+              '#type' => 'textfield',
+              '#disabled' => True,
+            );
+        }
+        else {
+            $form['genus' . $i] = array(
+              '#prefix' => '<div id= genusSpecies' . $i . '>',
+              '#title' => t('Genus'),
+              '#type' => 'select',
+              '#options' => $genusArr,
+              '#disabled' => True,
+            );
+            $form['species' . $i] = array(
+              '#type' => 'select',
+              '#title' => t('Species'),
+              '#options' => array_merge(array(0 => 'Other'), $speciesArr),
+              '#disabled' => True,
+            );
+        }
+        $form['customSpecies' . $i] = array(
+          '#suffix' => '</div>',
+          '#type' => 'textfield',
+          '#disabled' => True,
         );
-      
-      $form['submit'] = array(
-        '#type' => 'submit',
-        '#value' => t('Submit'),
-        );
-      
-          
+    }
+
+    $form['keywords'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Keywords'),
+      '#description' => t('Please enter keywords separated by commmas'),
+      '#required' => true,
+    );
+
+    $form['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Submit'),
+    );
+
+
     /* This is the convention for adding JS files to your form.
      * Since it is added directly to the form, I would imagine 
      * it is only accessible to this specific form.  
@@ -274,39 +265,157 @@ function custom_module_showCustomModuleForm() {
 
     return $form;
 }
- 
+
 function custom_module_showCustomModuleForm_validate($form, &$form_state) {
+
+    for ($i = 1; $i <= 10; $i++){
+        print "<pre>";
+        print_r($form_state['values']['secondaryAuthorCustkhasdjkladsjkdljklldsaljkdjlkomForm' . $i]);
+        print "</pre>";
+//        array_push($secondaryAuthorArr, array($form_state['values']['secondaryAuthorForm' . $i], $form_state['values']['secondaryAuthorCustomForm' . $i]));
+        
+    }
     
-//  Is there an obvious way to validate key_words
+    
 }
 
 function custom_module_showCustomModuleForm_submit($form, &$form_state) {
 //    Values in the fields need to be submitted to a junk table in chado schema
-    $form_state['redirect'] = 'secondPage';
+//    $form_state['values'] for secondary author textfield is blank?
+    $primaryAuthor = $form_state['values']['primaryAuthor'];
+    $orginization = $form_state['values']['organization'];
+    $publicationStatus = $form_state['values']['publicationStatus'];
+    $journal = $form_state['values']['journal'];
+    $title = $form_state['values']['title'];
+    $year = $form_state['values']['year'];
+    $abstract = $form_state['values']['abstract'];
     
-    $rawKeywords = $form_state['values']['keywords'];
-    $keyWords = explode(',', $rawKeywords); 
+    
+    $rawKeywords = $form_state['values']['keywords']; 
+    $keyWords = explode(',', $rawKeywords);      
+    
+//    $secondaryAuthorArr = array();
+//    
+//    }
+    
+
+    $form_state['redirect'] = 'secondPage';
+ 
 }
 
 function custom_module_showCustomModuleForm_second_page() {
-    $form['startDate']= array(
+//    I have no idea why the title of startingDate is so big
+
+    $form['startingDate'] = array(
+      '#prefix' => '<div class="container-inline">', 
+      '#type' => 'fieldset',
       '#title' => t('Starting Date'),
-      '#required' => True,
-      '#type' => 'textfield',
+      '#tree' => TRUE,
     );
     
-    $form['endDate'] = array(
-      '#title' => t('End Date'),
-      '#required' => True,
-      '#type' => 'textfield',
+    $form['startingDate'][1] = array(
+      '#type' => 'fieldset',
+      '#tree' => TRUE,
+    );
+    $form['startingDate'][1]['Month'] = array(
+      '#type' => 'select',
+      '#options' => array(
+        '-Select-',
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+      ),
+      '#required' => true,
+      '#title' => t('Month'),
     );
     
+    $yearArr = Array();
+    for ($i = 1950; $i <= 2017; $i++) {
+        array_push($yearArr, $i);
+    }
+    
+    $form['startingDate'][1]['Year'] = array(
+      '#type' => 'select',
+      '#options' => array_merge(array('-Select-'), $yearArr), 
+      '#title' => t('Year')
+      );
+    
+//    Day field should change based on the result of the month field
+    
+    $dayArr = Array();
+    for ($i = 1; $i <= 31; $i++) {
+        array_push($dayArr, $i);
+    }
+      
+    $form['startingDate'][1]['Day'] = array(
+    '#type' => 'select',
+    '#options' => array_merge(array('-Select-'), $dayArr),
+    '#title' => t('Day'),
+    '#suffix' => '</div>'
+    );
+      
+    $form['endingDate'] = array(
+    '#prefix' => '<div class="container-inline">', 
+    '#type' => 'fieldset',
+    '#title' => t('Ending Date'),
+    '#tree' => TRUE,
+    );
+    
+     $form['endingDate'][1] = array(
+      '#type' => 'fieldset',
+      '#tree' => TRUE,
+    );
+    $form['endingDate'][1]['Month'] = array(
+      '#type' => 'select',
+      '#options' => array(
+        '-Select-',
+        'January',
+        'February',
+        'March',
+        'April',
+        'May',
+        'June',
+        'July',
+        'August',
+        'September',
+        'October',
+        'November',
+        'December'
+      ),
+      '#title' => t('Month'),
+    );
+   
+    $form['endingDate'][1]['Year'] = array(
+      '#type' => 'select',
+      '#options' => array_merge(array('-Select-'), $yearArr), 
+      '#title' => t('Year')
+      );
+    
+//    Day field should change based on the result of the month field
+    
+      
+    $form['endingDate'][1]['Day'] = array(
+    '#type' => 'select',
+    '#options' => array_merge(array('-Select-'), $dayArr),
+    '#title' => t('Day'),
+    '#suffix' => '</div>'
+    );
+
     $form['location'] = array(
       '#title' => t('Please input the location or locations in your study'),
       '#required' => True,
       '#type' => 'textfield',
     );
-    
+
     $form['studyType'] = array(
       '#title' => t('Please select the type of study'),
       '#type' => 'select',
@@ -319,18 +428,18 @@ function custom_module_showCustomModuleForm_second_page() {
       ),
       '#required' => true,
     );
-    
+
     $form['commonGardenIrrigation'] = array(
       '#title' => t('Irrigation'),
       '#type' => 'select',
       '#options' => array(
-        1 =>'Yes',
+        1 => 'Yes',
         2 => 'Not Modified',
       ),
       '#required' => true,
       '#prefix' => '<div id=commonGardenClass>'
     );
-    
+
     $form['commonGardenIrrigationType'] = array(
       '#title' => t('Type of Irrigation'),
       '#prefix' => '<div id=commonGardenIrrigationType>',
@@ -338,10 +447,10 @@ function custom_module_showCustomModuleForm_second_page() {
       '#required' => True,
       '#type' => 'select',
       '#options' => array(
-        0 => 'Type1',
+        0 => 'Type 1',
       ),
     );
-    
+
     $form['commonGardenSalinity'] = array(
       '#title' => t('Salinity'),
       '#type' => 'select',
@@ -350,8 +459,8 @@ function custom_module_showCustomModuleForm_second_page() {
         2 => 'Uncontrolled',
       ),
       '#required' => true,
-      );
-    
+    );
+
     $form['commonGardenSalinityValue'] = array(
       '#title' => t('Salinity Value'),
       '#prefix' => '<div id=commonGardenSalinityValue>',
@@ -363,7 +472,7 @@ function custom_module_showCustomModuleForm_second_page() {
         'A lot of salinity',
       ),
     );
-    
+
     $form['commonGardenBioticEnvironment'] = array(
       '#title' => t('Biotic Environment'),
       '#type' => 'select',
@@ -377,7 +486,7 @@ function custom_module_showCustomModuleForm_second_page() {
       ),
       '#required' => true,
     );
-    
+
     $form['commonGardenSeasons'] = array(
       '#title' => t('Seaons'),
       '#type' => 'checkboxes',
@@ -389,7 +498,7 @@ function custom_module_showCustomModuleForm_second_page() {
       ),
       '#required' => True,
     );
-    
+
     $form['commonGardensTreatments'] = array(
       '#title' => t('Treatments'),
       '#type' => 'checkboxes',
@@ -411,39 +520,39 @@ function custom_module_showCustomModuleForm_second_page() {
         'Pesticide regime',
         'pH regime',
         'Other perturbation'
-          ),
+      ),
       '#required' => True,
       '#suffix' => '</div>',
     );
 //    
 //    growth chamber below
 //    
-    
+
     $form['growthChamberCO2'] = array(
       '#title' => t('CO2 controlled or uncontrolled'),
       '#prefix' => '<div id = growthChamberClass>',
       '#type' => 'select',
       '#options' => array(
-        0 =>'Controlled',
+        0 => 'Controlled',
         1 => 'Uncontrolled'
       ),
       '#required' => true
     );
-    
+
     $form['growthChamber_CO2Controlled'] = array(
       '#prefix' => '<div class=growthChamberChildrenControlledCO2>',
       '#suffix' => '</div>',
       '#title' => t('Controlled CO2'),
       '#type' => 'textfield',
-      '#required' => true      
+      '#required' => true
     );
-    
-     $form['growthChamber_CO2Uncontrolled'] = array(
+
+    $form['growthChamber_CO2Uncontrolled'] = array(
       '#prefix' => '<div class=growthChamberChildrenUncontrolledCO2>',
       '#suffix' => '</div>',
       '#title' => t('Uncontrolled CO2'),
       '#type' => 'textfield',
-      '#required' => true      
+      '#required' => true
     );
 
     $form['growthChamberAirHumidity'] = array(
@@ -455,59 +564,59 @@ function custom_module_showCustomModuleForm_second_page() {
       ),
       '#required' => true,
     );
-    
-     $form['growthChamber_AirHumidityControlled'] = array(
+
+    $form['growthChamber_AirHumidityControlled'] = array(
       '#title' => t('Controlled air humidity'),
       '#prefix' => '<div class=growthChamberChildrenAirHumidityControlled>',
       '#suffix' => '</div>',
       '#type' => 'textfield',
-      '#required' => true      
-    );    
-    
+      '#required' => true
+    );
+
     $form['growthChamber_AirHumidityUncontrolled'] = array(
       '#title' => t('Uncontrolled air humidity'),
       '#prefix' => '<div class=growthChamberChildrenAirHumidityUncontrolled>',
       '#suffix' => '</div>',
       '#type' => 'textfield',
-      '#required' => true      
+      '#required' => true
     );
-    
+
     $form['growthChamberLightIntensity'] = array(
       '#title' => t('Light intensity controlled or uncontrolled'),
       '#type' => 'select',
       '#options' => array(
         0 => 'Controlled',
-        1 =>'Uncontrolled',
+        1 => 'Uncontrolled',
       ),
       '#required' => true,
     );
-    
+
     $form['growthChamber_LightIntensityControlled'] = array(
       '#title' => t('Controlled Light Intensity'),
       '#prefix' => '<div class=growthChamberChildrenLight>',
       '#suffix' => '</div>',
       '#type' => 'textfield',
-      '#required' => true      
+      '#required' => true
     );
-    
+
     $form['growthChamberAverageDayTemp'] = array(
       '#title' => t('Average Day Temperature'),
       '#type' => 'textfield',
       '#required' => true,
     );
-    
+
     $form['growthChamberAverageNightTemp'] = array(
       '#title' => t('Average Night Temperature'),
       '#type' => 'textfield',
       '#required' => true,
     );
-    
+
     $form['growthChamberTempRange'] = array(
       '#title' => t('Temperature Range'),
       '#type' => 'textfield',
       '#required' => true,
     );
-    
+
     $form['growthChamberAeroponics'] = array(
       '#title' => t('Aeroponics or Hydroponics'),
       '#type' => 'select',
@@ -518,17 +627,17 @@ function custom_module_showCustomModuleForm_second_page() {
       ),
       '#required' => TRUE
     );
-    
+
     $form['growthChamberSoil'] = array(
       '#title' => t('Soil'),
       '#type' => 'select',
       '#options' => array(
         0 => 'Yes',
-        1 =>'No',
+        1 => 'No',
       ),
-      '#required' => TRUE,    
-   );
-    
+      '#required' => TRUE,
+    );
+
     $form['growthChamber_SoilType'] = array(
       '#title' => t('Soil Type'),
       '#prefix' => '<div id=growthChamberChildrenSoilType>',
@@ -543,38 +652,38 @@ function custom_module_showCustomModuleForm_second_page() {
         'Other',
       ),
     );
-    
+
     $form['growthChamber_SoilContainerType'] = array(
       '#title' => t('Container Type'),
       '#prefix' => '<div id=growthChamberChildrenSoilContainer>',
       '#suffix' => '</div>',
       '#type' => 'textfield',
     );
-    
+
     $form['growthChamberpH'] = array(
       '#title' => t('pH'),
       '#type' => 'select',
       '#options' => array(
-       -1 => '-Select',
-       0 => 'Controlled',
-       1 =>'Uncontrolled',
+        -1 => '-Select',
+        0 => 'Controlled',
+        1 => 'Uncontrolled',
       ),
     );
-    
+
     $form['growthChamber_pHControlled'] = array(
       '#title' => t('pH Controlled Value'),
       '#prefix' => '<div class=growthChamberChildrenPHControlled>',
       '#suffix' => '</div>',
       '#type' => 'textfield'
     );
-    
+
     $form['growthChamber_pHUncontrolled'] = array(
       '#title' => t('pH Uncontrolled Average Value'),
       '#prefix' => '<div class=growthChamberChildrenPHUncontrolled>',
       '#suffix' => '</div>',
       '#type' => 'textfield',
-      );
-    
+    );
+
     $form['growthChamberTreatments'] = array(
       '#title' => t('Treatments'),
       '#type' => 'checkboxes',
@@ -605,18 +714,17 @@ function custom_module_showCustomModuleForm_second_page() {
       '#required' => TRUE,
       '#suffix' => '</div>'
     );
-    
+
     drupal_add_js(drupal_get_path('module', 'custom_module') . "/custom_module.js");
-    
+
     return $form;
 }
 
-function custom_module_showCustomModuleForm_second_page_validate($form, &$form_state)
-{
+function custom_module_showCustomModuleForm_second_page_validate($form, &$form_state) {
 //    To be implemented
-    
 }
-function custom_module_showCustomModuleForm_second_page_submit($form, &$form_state){ 
+
+function custom_module_showCustomModuleForm_second_page_submit($form, &$form_state) {
 
 //    To be implemented
 }

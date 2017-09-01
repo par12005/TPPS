@@ -135,6 +135,8 @@ jQuery(document).ready(function () {
     jQuery('#growthChamberClass').hide();
     jQuery('#commonGardenClass').hide();
     
+//    Common garden funcitons below. The follow code is extremely redundant and should be refactored.
+    
     jQuery('#edit-commongardenirrigation').change(function()
     {
         var irrigationVal = jQuery(this).val();
@@ -167,7 +169,7 @@ jQuery(document).ready(function () {
         }
     });
     
-// grwoth chamber functions below
+// Growth chamber functions below
 
     function hideAndShow(param1, param2, param3, param4){
         jQuery(param1).show();
@@ -221,8 +223,6 @@ jQuery(document).ready(function () {
          
         }
     });
-        
-//        This code is redundant
         
     jQuery('#edit-growthchamberlightintensity').change(function()
     {
@@ -286,7 +286,9 @@ jQuery(document).ready(function () {
             
         }
     });
-//    there is obviously a much better and readable way to make jQuery run synchronously
+    
+//    there is obviously a much better and more readable way to do this
+
     jQuery('#edit-studytype').change(function()
     {
         var studyTypeVal = jQuery('#edit-studytype').val();
