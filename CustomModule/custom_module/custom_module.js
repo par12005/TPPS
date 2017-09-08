@@ -120,8 +120,7 @@ jQuery(document).ready(function () {
                 jQuery('#genusSpecies' + i).hide();
                 jQuery('#edit-genus' + i).attr('disabled', true);
                 jQuery('#edit-species' + i).attr('disabled', true);
-               
-                            
+      
             }
             
             oldNumSpecies = currentNumSpecies;       
