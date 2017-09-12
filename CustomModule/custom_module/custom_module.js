@@ -25,6 +25,8 @@ jQuery(document).ready(function () {
 //        });                                                                                                          
 //
 //    });
+
+//Successfully pushed changes
     
     var secondaryAuthorTitle = '<div id="secondaryAuthorTitle"> Secondary Author </div>';
     
