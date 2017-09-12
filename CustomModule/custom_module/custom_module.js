@@ -52,12 +52,11 @@ jQuery(document).ready(function () {
               var customForm = jQuery('#edit-secondaryauthorcustomform' + jQuery(this).attr('id').slice('-1'));
               
               if (formVal == 0){
-                  
-                customForm.attr('disabled', false).show();                  
+                customForm.show();                  
               }
               
               else{
-                customForm.attr('disabled', true).hide();
+                customForm.hide();
               }
               
           });
@@ -68,10 +67,10 @@ jQuery(document).ready(function () {
               var speciesCustomForm = jQuery('#edit-customspecies' + jQuery(this).attr('id').slice('-1'));
             
               if (speciesFormVal == 0){
-                  speciesCustomForm.attr('disabled', false).hide();
+                  speciesCustomForm.attr.show();
               }
               else{
-                  speciesCustomForm.attr('disabled', true).hide();
+                  speciesCustomForm.attr.hide();
               }
           });
               
@@ -107,8 +106,6 @@ jQuery(document).ready(function () {
             
             for(var i = oldNumSpecies; i < currentNumSpecies; i++){
                 jQuery('#genusSpecies' + i).show();
-                jQuery('#edit-genus' + i).attr('disabled', false);
-                jQuery('#edit-species' + i).attr('disabled', false);
             }
             
             oldNumSpecies = currentNumSpecies;
@@ -118,9 +115,6 @@ jQuery(document).ready(function () {
             
             for(var i = oldNumSpecies; i >= currentNumSpecies; i--){
                 jQuery('#genusSpecies' + i).hide();
-                jQuery('#edit-genus' + i).attr('disabled', true);
-                jQuery('#edit-species' + i).attr('disabled', true);
-      
             }
             
             oldNumSpecies = currentNumSpecies;       
@@ -143,13 +137,11 @@ jQuery(document).ready(function () {
         if (irrigationVal == 1){
             
             jQuery('#commonGardenIrrigationType').show();
-            jQuery('#edit-commongardenirrigationtype').attr('disabled', false); 
         }
         
         else{
 
             jQuery('#commonGardenIrrigationType').hide();
-            jQuery('#edit-commongardenirrigationtype').attr('disabled', true); 
         }
 //        
     });
@@ -159,23 +151,18 @@ jQuery(document).ready(function () {
         var salinityVal = jQuery(this).val();
         
         if (salinityVal == 1){
-            jQuery('#commonGardenSalinityValue').show();
-            jQuery('#edit-commongardensalinityvalue').attr('disabled', false);            
+            jQuery('#commonGardenSalinityValue').show();         
         }
         else{
             jQuery('#commonGardenSalinityValue').hide();
-            jQuery('#edit-commongardensalinityvalue').attr('disabled', true);
         }
     });
     
-// Growth chamber functions below
+// Growth chamber functions below   
 
-    function hideAndShow(param1, param2, param3, param4){
+    function hideAndShow(param1, param2){
         jQuery(param1).show();
-        jQuery(param2).hide();
-        jQuery(param3).attr('disabled', false);
-        jQuery(param4).attr('disabled', true);
-        
+        jQuery(param2).hide();        
     }
 
     jQuery('#edit-growthchamberco2').change(function()
@@ -183,17 +170,14 @@ jQuery(document).ready(function () {
         if (jQuery(this).val() == 0){
             hideAndShow('.growthChamberChildrenControlledCO2',
                         '.growthChamberChildrenUncontrolledCO2',
-                        '#edit-growthchamber-co2controlled',
-                        '#edit-growthchamber-co2uncontrolled'
                         );
             
         }
         else if (jQuery(this).val() == 1){
             hideAndShow('.growthChamberChildrenUncontrolledCO2',
                         '.growthChamberChildrenControlledCO2',
-                        '#edit-growthchamber-co2uncontrolled',
-                        '#edit-growthchamber-co2controlled');
-        }
+                        );
+                    }
         else {
         }
     });
@@ -205,8 +189,6 @@ jQuery(document).ready(function () {
         {
         hideAndShow('.growthChamberChildrenAirHumidityControlled',
                     '.growthChamberChildrenAirHumidityUncontrolled',
-                    '#edit-growthchamber-airhumiditycontrolled',
-                    '#edit-growthchamber-airhumidityuncontrolled'
                     );
         }
         
@@ -214,8 +196,6 @@ jQuery(document).ready(function () {
         {
          hideAndShow('.growthChamberChildrenAirHumidityUncontrolled',
                     '.growthChamberChildrenAirHumidityControlled',
-                    '#edit-growthchamber-airhumidityuncontrolled',
-                    '#edit-growthchamber-airhumiditycontrolled'
                     );
         }
         else{
@@ -227,13 +207,10 @@ jQuery(document).ready(function () {
     {
         if (jQuery(this).val() == 0){
             jQuery('.growthChamberChildrenLight').show();
-            jQuery('#edit-growthchamber-lightintensitycontrolled').attr('dsiabled', false);  
         }
         else if (jQuery(this).val() == 1){
             jQuery('.growthChamberChildrenLight').hide();
-            jQuery('#edit-growthchamber-lightintensitycontrolled').attr('dsiabled', true);
-            
-        }
+                  }
         else{
             
         }
@@ -243,12 +220,10 @@ jQuery(document).ready(function () {
     jQuery('#edit-growthchambersoil').change(function()
     {
         if (jQuery(this).val() == 0){
-            jQuery("[id^='edit-growthchamber-soil']").attr('disabled', false);
             jQuery("[id^=growthChamberChildrenSoil]").show();
         }
         
         else if (jQuery(this).val() == 1){
-            jQuery("[id^='edit-growthchamber-soil']").attr('disabled', true);
             jQuery("[id^=growthChamberChildrenSoil]").hide();
             
         }
@@ -267,18 +242,14 @@ jQuery(document).ready(function () {
             hideAndShow(
                     '.growthChamberChildrenPHControlled',
                     '.growthChamberChildrenPHUncontrolled',
-                    '#edit-growthchamber-phcontrolled',
-                    '#edit-growthchamber-phuncontrolled',
-                    );            
+            );            
         }
         
         else if (jQuery(this).val() == 1){
             hideAndShow(
                     '.growthChamberChildrenPHUncontrolled',
                     '.growthChamberChildrenPHControlled',
-                    '#edit-growthchamber-phuncontrolled',
-                    '#edit-growthchamber-phcontrolled',
-                    );
+            );
         }
         
         else{
@@ -300,9 +271,8 @@ jQuery(document).ready(function () {
                     promise = deferred.promise();
                     promise.then(jQuery('#growthChamberClass').show()).then(
                                     jQuery("[id^='edit-growthchamber']").show()).then(
-                                        jQuery("[id^='edit-growthchamber']").attr('disabled', false)).then(                                   
-                                            jQuery("[class^='growthChamberChildren']").hide()).then(
-                                                jQuery("[id^='edit-growthchamber-']").attr('disabled', true));
+                                        jQuery("[class^='growthChamberChildren']").hide());
+                                         
                     deferred.resolve();
                 }
                 
@@ -317,12 +287,8 @@ jQuery(document).ready(function () {
                     promise.then(
                         jQuery('#growthChamberClass').hide()).then(
                             jQuery('#commonGardenClass').show()).then(
-                                jQuery("[id^='edit-growthchamber']").attr('disabled', true)).then(
-                                    jQuery("[id^='edit-commongarden']").attr('disabled', false)).then(
-                                         jQuery('#commonGardenIrrigationType').hide()).then(
-                                            jQuery('#edit-commongardenirrigationtype').attr('disabled', true)).then(
-                                                jQuery('#commonGardenSalinityValue').hide()).then(
-                                                    jQuery('#edit-commongardensalinityvalue').attr('disabled', true));
+                                jQuery('#commonGardenIrrigationType').hide()).then(
+                                    jQuery('#commonGardenSalinityValue').hide());
                     deferred.resolve();
                 }
                 

@@ -78,7 +78,7 @@ function custom_module_showCustomModuleForm() {
     }
 
     $form['primaryAuthor'] = array(
-      '#prefix' => '<div id= primaryauthor>',
+      '#prefix' => '<div id=primaryauthor>',
       '#suffix' => '</div>',
       '#type' => 'select',
       '#title' => t('Primary Author'),
@@ -100,21 +100,18 @@ function custom_module_showCustomModuleForm() {
             $form['secondaryAuthorCustomForm' . $i] = array(
               '#suffix' => '</div>',
               '#type' => 'textfield',
-              '#disabled' => True,
             );
         }
         else {
             $form['secondaryAuthorForm' . $i] = array(
               '#prefix' => '<div id= secondaryAuthor' . $i . '>',
               '#type' => 'select',
-              '#options' => array_merge(array(-1 => '-Select-', 0 => 'Other'), $authorArr),
+              '#options' => array_merge(array(0 => 'Other'), $authorArr),
             );
 
             $form['secondaryAuthorCustomForm' . $i] = array(
               '#suffix' => '</div>',
               '#type' => 'textfield',
-              '#disabled' => True,
-
             );
         }
     }
@@ -214,20 +211,17 @@ function custom_module_showCustomModuleForm() {
               '#title' => t('Genus'),
               '#type' => 'select',
               '#options' => $genusArr,
-              '#disabled' => True,
             );
 
             $form['species' . $i] = array(
               '#type' => 'select',
               '#title' => t('Species'),
               '#options' => array_merge(array(0 => 'Other'), $speciesArr),
-              '#disabled' => True,
             );
 
             $form['customSpecies' . $i] = array(
               '#suffix' => '</div>',
               '#type' => 'textfield',
-              '#disabled' => True,
             );
         }
         else {
@@ -236,19 +230,16 @@ function custom_module_showCustomModuleForm() {
               '#title' => t('Genus'),
               '#type' => 'select',
               '#options' => $genusArr,
-              '#disabled' => True,
             );
             $form['species' . $i] = array(
               '#type' => 'select',
               '#title' => t('Species'),
               '#options' => array_merge(array(0 => 'Other'), $speciesArr),
-              '#disabled' => True,
             );
         }
         $form['customSpecies' . $i] = array(
           '#suffix' => '</div>',
           '#type' => 'textfield',
-          '#disabled' => True,
         );
     }
 
@@ -286,15 +277,6 @@ function custom_module_showCustomModuleForm() {
 
 function custom_module_showCustomModuleForm_validate($form, &$form_state) {
 
-    for ($i = 1; $i <= 10; $i++){
-        print "<pre>";
-        print_r($form_state['values']['secondaryAuthorCustomForm' . $i]);
-        print "</pre>";
-//        array_push($secondaryAuthorArr, array($form_state['values']['secondaryAuthorForm' . $i], $form_state['values']['secondaryAuthorCustomForm' . $i]));
-        
-    }
-    
-    
 }
 
 function custom_module_showCustomModuleForm_submit($form, &$form_state) {
@@ -305,10 +287,28 @@ function custom_module_showCustomModuleForm_submit($form, &$form_state) {
     $publicationStatus = $form_state['values']['publicationStatus'];
     $journal = $form_state['values']['journal'];
     $title = $form_state['values']['title'];
-//    $year = $form_state['values']['year'];
+    $year = $form_state['values']['year'];
     $abstract = $form_state['values']['abstract'];
     
-//    $submitArr = array($primaryAuthor, $orginization, $publicationStatus, $journal, $title, $year, $abstract);
+    $submitArr = array($primaryAuthor, $orginization, $publicationStatus, $journal, $title, $year, $abstract);
+    for ($i = 0; $i <= 10; $i++){
+        if ($form_state['values']['secondaryAuthorForm' . $i] == 'Other'){
+//            send $form_state['values']['secondaryAuthorCustomForm' . $i] to temporary table
+        }
+        
+        else{
+//            send $form_state['values']['secondaryAuthorForm' . $i] to temporary table
+        }
+        
+        if ($form_state['values']['species' . $i] == 'Other'){
+//            send $form_state['values']['customSpecies' . $i] to temporary table            
+        }
+        
+        else{
+//            send $form_state['values']['species' . $i] to temporary table
+        }
+    }
+
 //     foreach($submitArr as $r) {
 //        db_query('INSERT INTO chado.custom_table_version 2 (custom_field) '
 //            . 'VALUES (' . $r 
@@ -379,6 +379,7 @@ function custom_module_showCustomModuleForm_second_page() {
     $form['startingDate'][1]['Year'] = array(
       '#type' => 'select',
       '#options' => array_merge(array('-Select-'), $yearArr), 
+      '#required' => true,
       '#title' => t('Year')
       );
     
@@ -393,6 +394,8 @@ function custom_module_showCustomModuleForm_second_page() {
     '#type' => 'select',
     '#options' => array_merge(array('-Select-'), $dayArr),
     '#title' => t('Day'),
+    '#required' => true,
+
     '#suffix' => '</div>'
     );
       
@@ -424,12 +427,14 @@ function custom_module_showCustomModuleForm_second_page() {
         'November',
         'December'
       ),
+      '#required' => true, 
       '#title' => t('Month'),
     );
    
     $form['endingDate'][1]['Year'] = array(
       '#type' => 'select',
       '#options' => array_merge(array('-Select-'), $yearArr), 
+      '#required' => true,
       '#title' => t('Year')
       );
     
@@ -440,6 +445,7 @@ function custom_module_showCustomModuleForm_second_page() {
     '#type' => 'select',
     '#options' => array_merge(array('-Select-'), $dayArr),
     '#title' => t('Day'),
+    '#required' => true,
     '#suffix' => '</div>'
     );
 
@@ -469,7 +475,6 @@ function custom_module_showCustomModuleForm_second_page() {
         1 => 'Yes',
         2 => 'Not Modified',
       ),
-      '#required' => true,
       '#prefix' => '<div id=commonGardenClass>'
     );
 
@@ -477,7 +482,6 @@ function custom_module_showCustomModuleForm_second_page() {
       '#title' => t('Type of Irrigation'),
       '#prefix' => '<div id=commonGardenIrrigationType>',
       '#suffix' => '</div>',
-      '#required' => True,
       '#type' => 'select',
       '#options' => array(
         0 => 'Type 1',
@@ -491,7 +495,6 @@ function custom_module_showCustomModuleForm_second_page() {
         1 => 'Controlled',
         2 => 'Uncontrolled',
       ),
-      '#required' => true,
     );
 
     $form['commonGardenSalinityValue'] = array(
@@ -517,7 +520,6 @@ function custom_module_showCustomModuleForm_second_page() {
         'Other',
         'None'
       ),
-      '#required' => true,
     );
 
     $form['commonGardenSeasons'] = array(
@@ -529,7 +531,6 @@ function custom_module_showCustomModuleForm_second_page() {
         'Spring',
         'Summer',
       ),
-      '#required' => True,
     );
 
     $form['commonGardensTreatments'] = array(
@@ -554,7 +555,6 @@ function custom_module_showCustomModuleForm_second_page() {
         'pH regime',
         'Other perturbation'
       ),
-      '#required' => True,
       '#suffix' => '</div>',
     );
 //    
@@ -569,24 +569,21 @@ function custom_module_showCustomModuleForm_second_page() {
         0 => 'Controlled',
         1 => 'Uncontrolled'
       ),
-      '#required' => true
-    );
+      );
 
     $form['growthChamber_CO2Controlled'] = array(
       '#prefix' => '<div class=growthChamberChildrenControlledCO2>',
       '#suffix' => '</div>',
       '#title' => t('Controlled CO2'),
       '#type' => 'textfield',
-      '#required' => true
-    );
+      );
 
     $form['growthChamber_CO2Uncontrolled'] = array(
       '#prefix' => '<div class=growthChamberChildrenUncontrolledCO2>',
       '#suffix' => '</div>',
       '#title' => t('Uncontrolled CO2'),
       '#type' => 'textfield',
-      '#required' => true
-    );
+      );
 
     $form['growthChamberAirHumidity'] = array(
       '#title' => t('Air Humidity controlled or uncontrolled'),
@@ -595,24 +592,21 @@ function custom_module_showCustomModuleForm_second_page() {
         0 => 'Controlled',
         1 => 'Uncontrolled',
       ),
-      '#required' => true,
-    );
+      );
 
     $form['growthChamber_AirHumidityControlled'] = array(
       '#title' => t('Controlled air humidity'),
       '#prefix' => '<div class=growthChamberChildrenAirHumidityControlled>',
       '#suffix' => '</div>',
       '#type' => 'textfield',
-      '#required' => true
-    );
+      );
 
     $form['growthChamber_AirHumidityUncontrolled'] = array(
       '#title' => t('Uncontrolled air humidity'),
       '#prefix' => '<div class=growthChamberChildrenAirHumidityUncontrolled>',
       '#suffix' => '</div>',
       '#type' => 'textfield',
-      '#required' => true
-    );
+     );
 
     $form['growthChamberLightIntensity'] = array(
       '#title' => t('Light intensity controlled or uncontrolled'),
@@ -621,34 +615,29 @@ function custom_module_showCustomModuleForm_second_page() {
         0 => 'Controlled',
         1 => 'Uncontrolled',
       ),
-      '#required' => true,
-    );
+     );
 
     $form['growthChamber_LightIntensityControlled'] = array(
       '#title' => t('Controlled Light Intensity'),
       '#prefix' => '<div class=growthChamberChildrenLight>',
       '#suffix' => '</div>',
       '#type' => 'textfield',
-      '#required' => true
-    );
+     );
 
     $form['growthChamberAverageDayTemp'] = array(
       '#title' => t('Average Day Temperature'),
       '#type' => 'textfield',
-      '#required' => true,
-    );
+     );
 
     $form['growthChamberAverageNightTemp'] = array(
       '#title' => t('Average Night Temperature'),
       '#type' => 'textfield',
-      '#required' => true,
-    );
+     );
 
     $form['growthChamberTempRange'] = array(
       '#title' => t('Temperature Range'),
       '#type' => 'textfield',
-      '#required' => true,
-    );
+     );
 
     $form['growthChamberAeroponics'] = array(
       '#title' => t('Aeroponics or Hydroponics'),
@@ -658,8 +647,7 @@ function custom_module_showCustomModuleForm_second_page() {
         'Hydroponics',
         'Soil'
       ),
-      '#required' => TRUE
-    );
+     );
 
     $form['growthChamberSoil'] = array(
       '#title' => t('Soil'),
@@ -668,8 +656,7 @@ function custom_module_showCustomModuleForm_second_page() {
         0 => 'Yes',
         1 => 'No',
       ),
-      '#required' => TRUE,
-    );
+     );
 
     $form['growthChamber_SoilType'] = array(
       '#title' => t('Soil Type'),
@@ -744,8 +731,7 @@ function custom_module_showCustomModuleForm_second_page() {
         'pH regime',
         'other perturbation',
       ),
-      '#required' => TRUE,
-      '#suffix' => '</div>'
+     '#suffix' => '</div>'
     );
 
     drupal_add_js(drupal_get_path('module', 'custom_module') . "/custom_module.js");
@@ -754,8 +740,57 @@ function custom_module_showCustomModuleForm_second_page() {
 }
 
 function custom_module_showCustomModuleForm_second_page_validate($form, &$form_state) {
-//    To be implemented
+    $studyType = $form_state['values']['studyType'];
+    
+    $CO2 = $form_state['values']['growthChamberCO2'];
+    $UncontrolledCO2 = $form_state['values']['growthChamber_CO2Controlled'];
+    $ControlledCO2 = $form_state['values']['growthChamber_CO2Controlled'];
+    
+    $airHumidity = $form_state['values']['growthChamberAirHumidity'];
+    $controlledairHumidity = $form_state['values']['growthChamber_AirHumidityControlled'];
+    $controlledairHumidity = $form_state['values']['growthChamber_AirHumidityUncontrolled'];
+    
+    $lightIntensity = $form_state['values']['growthChamberLightIntensity'];
+    $controlledLightIntensity = $form_state['values']['growthChamber_LightIntensityControlled'];
+    
+    
+    $soil = $form_state['values']['growthChamberSoil'];
+    $soilType = $form_state['values']['growthChamber_SoilType'];
+    $soilContainerType = $form_state['values']['growthChamber_SoilContainerType'];
+    
+    if ($studyType == 'Growth Chamber'){
+        
+        if ($CO2 == 'Controlled' && $ControlledCO2 == '') {
+            form_set_error('Please input a value for controlled CO2');
+            
+        }
+        
+        else if ($CO2 == 'Uncontrolled' && $UncontrolledCO2 == ''){
+            form_set_error('Please input a value for uncontrolled CO2');
+    }
+    
+        if ($airHumidity == 'Controlled' && $controlledairHumidity == ''){
+            form_set_error('Please input a value for controlled air humidity');
+        }
+        
+        elseif($airHumidity == 'Uncontrolled' && $UncontrolledCO2 == ''){
+            form_set_error('Please input a value for uncontrolled air humidity');
+        }
+        
+        if ($lightIntensity == 'Controlled' && $controlledLightIntensity == ''){
+            form_set_error('Please input a value for light intensity');
+        }
+        
+    
+    elseif ($studyType == 'Experimental/Common Garden'){
+        
+    }
+    else{
+        
+    }
 }
+
+    }
 
 function custom_module_showCustomModuleForm_second_page_submit($form, &$form_state) {
    $startMonth = $form_state['values']['startingDate'][1]['Month'];
@@ -768,8 +803,6 @@ function custom_module_showCustomModuleForm_second_page_submit($form, &$form_sta
    
    $location = $form_state['values']['location'];
    $studyType = $form_state['values']['studyType'];
-   
-//   Common garden values
     
    $form_state['redirect'] = 'thirdPage';
    
