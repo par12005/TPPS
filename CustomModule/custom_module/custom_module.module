@@ -36,16 +36,6 @@ function custom_module_menu() {
       'access arguments' => array('access content'),
       'type' => MENU_NORMAL_ITEM
     );
-    
-    $items['fourthPage'] = array(
-      'title' => 'TPPS Development',
-      'page callback' => 'drupal_get_form',
-      'page arguments' => array('custom_module_showCustomModuleForm_fourth_page'),
-      'access callback' => 'user_access',
-      'access arguments' => array('access content'),
-      'type' => MENU_NORMAL_ITEM
-    );
-
 
     $items['getHello'] = array(
       'page callback' => 'custom_module_ajaxCallHandler',
@@ -828,55 +818,276 @@ function custom_module_showCustomModuleForm_third_page() {
         'Genotype x Environment'
       ),
       '#required' => TRUE,
-    ); 
-    
-    $form['location'][1] = array(
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
     );
-    $form['location'][1]['longitude'] = array(
+    
+    $form['tree-access'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Tree Accession Information'),
+      '#tree' => TRUE
+    );
+
+    $form['tree-access']['identifier'] = array(
       '#type' => 'textfield',
-      '#title' => t('Longitude'),
+      '#title' => t('Identifier'),
       '#required' => TRUE
     );
-    
-    $form['location'][1]['latitude'] = array(
+
+    $form['tree-access']['location']['type'] = array(
+      '#type' => 'select',
+      '#title' => t('Location Type'),
+      '#options' => array(
+        0 => 'Please select a location type',
+        1 => 'Latitude/Longitude',
+        2 => 'Custom Location'
+      )
+    );
+
+    $form['tree-access']['location']['latitude'] = array(
       '#type' => 'textfield',
       '#title' => t('Latitude'),
-      '#required' => TRUE
+      '#states' => array(
+        'visible' => array(
+          ':input[name="tree-access[location][type]"]' => array('value' => '1')
+        ),
+        'required' => array(
+          ':input[name="tree-access[location][type]"]' => array('value' => '1')
+        ),
+        'disabled' => array(
+          ':input[name="tree-access[location][type]"]' => array('value' => '2')
+        )
+      ),
     );
-    
-    $form['location'][1]['customLocation'] = array(
+
+    $form['tree-access']['location']['longitude'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Longitude'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="tree-access[location][type]"]' => array('value' => '1')
+        ),
+        'required' => array(
+          ':input[name="tree-access[location][type]"]' => array('value' => '1')
+        ),
+        'disabled' => array(
+          ':input[name="tree-access[location][type]"]' => array('value' => '2')
+        )
+      ),
+    );
+
+    $form['tree-access']['location']['customLocation'] = array(
       '#type' => 'textfield',
       '#title' => t('Enter a custom location'),
-      'disabled' => TRUE
+      '#states' => array(
+        'visible' => array(
+          ':input[name="tree-access[location][type]"]' => array('value' => '2')
+        ),
+        'required' => array(
+          ':input[name="tree-access[location][type]"]' => array('value' => '2')
+        ),
+        'disabled' => array(
+          ':input[name="tree-access[location][type]"]' => array('value' => '1')
+        )
+      ),
     );
-    
-    $form['age'] = array(
+
+    $form['tree-access']['age'] = array(
       '#type' => 'textfield',
       '#title' => t('Age and development Stage'),
       '#required' => TRUE
     );
-    
-    $form['tissue'] = array(
+
+    $form['tree-access']['tissue'] = array(
       '#type' => 'select',
       '#title' => t('Tissue types'),
       '#options' => array(
-        'Option 1',
-        'Option 2'
+        'Tissue 1',
+        'Tissue 2'
       ),
     );
-    
-    $form['clone'] = array(
+
+    $form['tree-access']['clone'] = array(
       '#type' => 'textfield',
       '#title' => t('Clone and or pedigree information')
+    );
+
+    $num_pheno = array();
+
+    for($i = 0; $i < 20; $i++){
+        $num_pheno[$i] = $i + 1;
+    }
+    $num_pheno[20] = '>20';
+
+    $form['phenotype'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Phenotype information:'),
+      '#tree' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          array(
+            array(':input[name="dataType"]' => array('value' => '0')),
+            'or',
+            array(':input[name="dataType"]' => array('value' => '2')),
+            'or',
+            array(':input[name="dataType"]' => array('value' => '3')),
+          )
+        )
+      )
+    );
+
+    $form['phenotype']['number'] = array(
+      '#type' => 'select',
+      '#title' => t('Number of Phenotypes'),
+      '#options' => $num_pheno,
+    );
+
+    for($i = 0; $i < 20; $i++){
+
+        $visible_values = array();
+        array_push($visible_values, array(':input[name="phenotype[number]"]' => array('value' => "$i")));
+
+        for ($j = $i + 1; $j < 20; $j++){
+            array_push($visible_values, 'or');
+            array_push($visible_values, array(':input[name="phenotype[number]"]' => array('value' => "$j")));
+        }
+
+        $phenotype_label = $i + 1;
+        $form['phenotype'][$i] = array(
+          '#type' => 'fieldset',
+          '#title' => t("Phenotype $phenotype_label"),
+          '#states' => array(
+            'visible' => array($visible_values)
+          )
+        );
+
+        $form['phenotype'][$i]['name'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Name'),
+        );
+
+        $form['phenotype'][$i]['phenotype_or_environmental'] = array(
+          '#type' => 'radios',
+          '#title' => t('Phenotype or Environmental Variable:'),
+          '#options' => array(
+            0 => t('Phenotype'),
+            1 => t('Environmental Variable'),
+          ),
+        );
+
+        $form['phenotype'][$i]['type'] = array(
+          '#type' => 'select',
+          '#title' => t('Type'),
+          '#options' => array(
+            0 => 'Please select a type',
+            1 => 'Binary',
+            2 => 'Quantitative',
+            3 => 'Qualitative'
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+            )
+          )
+        );
+
+        $form['phenotype'][$i]['binary'] = array(
+          '#type' => 'fieldset',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="phenotype[' . $i . '][type]"]' => array('value' => '1')
+            )
+          ),
+        );
+
+        $form['phenotype'][$i]['binary'][1] = array(
+          '#type' => 'textfield',
+          '#title' => t('Type 1:'),
+        );
+
+        $form['phenotype'][$i]['binary'][2] = array(
+          '#type' => 'textfield',
+          '#title' => t('Type 2:'),
+        );
+
+        $form['phenotype'][$i]['quantitative'] = array(
+          '#type' => 'fieldset',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="phenotype[' . $i . '][type]"]' => array('value' => '2')
+            )
+          ),
+        );
+
+        $form['phenotype'][$i]['quantitative']['min'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Minimum value:'),
+        );
+
+        $form['phenotype'][$i]['quantitative']['max'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Maximum value:'),
+        );
+
+        $form['phenotype'][$i]['description'] = array(
+          '#type' => 'textarea',
+          '#title' => t('Please provide a short description of your phenotype:'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+            )
+          )
+        );
+
+        $form['phenotype'][$i]['units'] = array(
+          '#type' => 'select',
+          '#title' => t('Units:'),
+          '#options' => array(
+            0 => 'Please select a unit type',
+            1 => 'mm',
+            2 => 'cm',
+            3 => 'm',
+            4 => 'Degrees Celsius',
+            5 => 'Degrees Fahrenheit',
+            6 => 'Other'
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+            )
+          )
+        );
+
+        $form ['phenotype'][$i]['units-other'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Define Unit type'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="phenotype[' . $i . '][units]"]' => array('value' => '6')
+            )
+          )
+        );
+    }
+
+    $form['phenotype']['upload'] = array(
+      '#type' => 'file',
+      '#title' => t('Phenotype file'),
+      '#title_display' => 'invisible',
+      '#states' => array( 
+        'visible' => array(
+          ':input[name="phenotype[number]"]' => array('value' => '20')
+        )
+      )
     );
     
     $form['submit'] = array(
       '#type' => 'submit',
-      '#title' => t('Submit')
+      '#title' => t('Submit'),
+      '#value' => t('Submit')
     );
+    
+    
 
+    drupal_add_js(drupal_get_path('module', 'custom_module') . "/custom_module.js");
+    
     return $form;
 }
 
@@ -886,8 +1097,4 @@ function custom_module_showCustomModuleForm_third_page_validate($form, &$form_st
 
 function custom_module_showCustomModuleForm_third_page_submit($form, &$form_state) {
     $form_state['redirect'] = 'fourthPage';
-}
-
-function custom_module_showCustomModuleForm_fourth_page(){
-    return $form;
 }

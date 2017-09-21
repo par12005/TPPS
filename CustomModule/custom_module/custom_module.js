@@ -27,6 +27,7 @@ jQuery(document).ready(function () {
 //    });
 
 //Successfully pushed changes
+//changes go to server
     
     var secondaryAuthorTitle = '<div id="secondaryAuthorTitle"> Secondary Author </div>';
     
@@ -307,5 +308,4 @@ jQuery(document).ready(function () {
             }
             
     });
-      
 });
