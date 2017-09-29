@@ -43,6 +43,20 @@ function custom_module_menu() {
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK
     );
+    
+    $items['structure/autocomplete'] = array(
+      'title' => 'Autocomplete for Ontological terms',
+      'page callback' => '_structure_autocomplete',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
+    
+    $items['developmental/autocomplete'] = array(
+      'title' => 'Autocomplete for Ontological terms',
+      'page callback' => '_development_autocomplete',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
 
     return $items;
 }
@@ -322,406 +336,1296 @@ function custom_module_showCustomModuleForm_submit($form, &$form_state) {
 }
 
 function custom_module_showCustomModuleForm_second_page() {
-//    I have no idea why the title of startingDate is so big
+    
+    function studyDate($type, &$form){
+        
+        $form[$type . 'Date'] = array(
+          '#prefix' => '<div class="container-inline">', 
+          '#type' => 'fieldset',
+          '#title' => t($type . ' Date'),
+          '#tree' => TRUE,
+        );
+        
+        $yearArr = array();
+        $yearArr[0] = '-Select-';
+        for ($i = 1950; $i <= 2017; $i++) {
+            $index = $i - 1949;
+            $yearArr[$index] = $i;
+        }
+        
 
-    $form['startingDate'] = array(
-      '#prefix' => '<div class="container-inline">', 
-      '#type' => 'fieldset',
-      '#title' => t('Starting Date'),
-      '#tree' => TRUE,
+        $form[$type . 'Date']['year'] = array(
+          '#type' => 'select',
+          '#title' => t('Year'),
+          '#options' => $yearArr,
+          '#default_value' => 0,
+          '#required' => true,
+        );
+        
+        $form[$type . 'Date']['month'] = array(
+          '#type' => 'select',
+          '#title' => t('Month'),
+          '#options' => array(
+            0 => '-Select-',
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December'
+          ),
+          '#default_value' => 0,
+          '#required' => true,
+          '#states' => array(
+            'invisible' => array(
+              ':input[name="' . $type . 'Date[year]"]' => array('value' => '0')
+            )
+          )
+        );
+        
+        $dayArr31 = Array();
+        for ($i = 1; $i <= 31; $i++) {
+            array_push($dayArr31, $i);
+        }
+        
+        $dayArr30 = Array();
+        for ($i = 1; $i <= 30; $i++) {
+            array_push($dayArr30, $i);
+        }
+        
+        $dayArr29 = Array();
+        for ($i = 1; $i <= 29; $i++) {
+            array_push($dayArr29, $i);
+        }
+
+        $form[$type . 'Date']['day31'] = array(
+          '#type' => 'select',
+          '#options' => array_merge(array('-Select-'), $dayArr31),
+          '#title' => t('Day'),
+          '#states' => array(
+            'visible' => array(
+              array(
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '1')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '3')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '5')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '7')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '8')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '10')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '12')),
+              )
+            ),
+            'required' => array(
+              array(
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '1')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '3')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '5')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '7')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '8')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '10')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '12')),
+              )
+            ),
+          )
+        );
+        
+        $form[$type . 'Date']['day30'] = array(
+          '#type' => 'select',
+          '#options' => array_merge(array('-Select-'), $dayArr30),
+          '#title' => t('Day'),
+          '#states' => array(
+            'visible' => array(
+              array(
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '4')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '6')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '9')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '11')),
+              )
+            ),
+            'required' => array(
+              array(
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '4')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '6')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '9')),
+                'or',
+                array(':input[name="' . $type . 'Date[month]"]' => array('value' => '11')),
+              )
+            ),
+          )
+        );
+        
+        $form[$type . 'Date']['day29'] = array(
+          '#type' => 'select',
+          '#options' => array_merge(array('-Select-'), $dayArr29),
+          '#title' => t('Day'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $type . 'Date[month]"]' => array('value' => '2')
+            ),
+            'required' => array(
+              ':input[name="' . $type . 'Date[month]"]' => array('value' => '2')
+            )
+          ),
+          '#suffix' => '</div>'
+        );
+        
+        return $form;
+    }
+    
+    function studyLocation(&$form){
+        
+        $form['studyLocation'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Study Location:'),
+          '#tree' => TRUE,
+        );
+        
+        $form['studyLocation']['type'] = array(
+          '#type' => 'select',
+          '#title' => t('Location Format:'),
+          '#options' => array(
+            0 => 'Please select a location type',
+            1 => 'Latitude/Longitude',
+            2 => 'Custom Location'
+          ),
+          '#default_value' => 0,
+          '#required' => TRUE
+        );
+
+        $form['studyLocation']['latitude'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Latitude'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="studyLocation[type]"]' => array('value' => '1')
+            ),
+            'required' => array(
+              ':input[name="studyLocation[type]"]' => array('value' => '1')
+            ),
+            'disabled' => array(
+              ':input[name="studyLocation[type]"]' => array('value' => '2')
+            )
+          ),
+        );
+
+        $form['studyLocation']['longitude'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Longitude'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="studyLocation[type]"]' => array('value' => '1')
+            ),
+            'required' => array(
+              ':input[name="studyLocation[type]"]' => array('value' => '1')
+            ),
+            'disabled' => array(
+              ':input[name="studyLocation[type]"]' => array('value' => '2')
+            )
+          ),
+        );
+
+        $form['studyLocation']['customLocation'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Enter a custom location'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="studyLocation[type]"]' => array('value' => '2')
+            ),
+            'required' => array(
+              ':input[name="studyLocation[type]"]' => array('value' => '2')
+            ),
+            'disabled' => array(
+              ':input[name="studyLocation[type]"]' => array('value' => '1')
+            )
+          ),
+        );
+        
+        return $form;
+    }
+    
+    function naturalPopulation(&$form){
+        
+        $form['naturalPopulation']['season'] = array(
+          '#type' => 'select',
+          '#title' => t('Season:'),
+          '#options' => array(
+            0 => 'Please select a season',
+            1 => 'Spring',
+            2 => 'Summer',
+            3 => 'Fall',
+            4 => 'Winter',
+          ),
+          '#default_value' => 0,
+        );
+        
+        $form['naturalPopulation']['assessions'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Number of times the populations were assessed (on average):')
+        );
+        
+        return $form;
+    }
+    
+    function growthChamber(&$form){
+        
+        function co2(&$form){
+            
+            $form['growthChamber']['co2Control'] = array(
+              '#type' => 'fieldset',
+              '#tree' => true
+            );
+
+            $form['growthChamber']['co2Control']['option'] = array(
+              '#type' => 'select',
+              '#title' => t('CO2 controlled or uncontrolled'),
+              '#options' => array(
+                0 => 'Please select CO2 control',
+                1 => 'Controlled',
+                2 => 'Uncontrolled'
+              ),
+              '#default_value' => 0,
+              '#states' => array(
+                'required' => array(
+                  ':input[name="studyType"]' => array('value' => '2')
+                )
+              )
+            );
+
+            $form['growthChamber']['co2Control']['controlled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Controlled CO2 Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="growthChamber[co2Control][option]"]' => array('value' => '1')
+                ),
+                'required' => array(
+                  ':input[name="growthChamber[co2Control][option]"]' => array('value' => '1')
+                )
+              )
+            );
+
+            $form['growthChamber']['co2Control']['uncontrolled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Average CO2 Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="growthChamber[co2Control][option]"]' => array('value' => '2')
+                ),
+                'required' => array(
+                  ':input[name="growthChamber[co2Control][option]"]' => array('value' => '2')
+                )
+              )
+            );
+            
+            return $form;
+        }
+        
+        function humidity(&$form){
+            
+            $form['growthChamber']['humidityControl'] = array(
+              '#type' => 'fieldset',
+              '#tree' => true,
+            );
+
+            $form['growthChamber']['humidityControl']['option'] = array(
+              '#type' => 'select',
+              '#title' => t('Air Humidity controlled or uncontrolled'),
+              '#options' => array(
+                0 => 'Please select air humidity control',
+                1 => 'Controlled',
+                2 => 'Uncontrolled'
+              ),
+              '#default_value' => 0,
+              '#states' => array(
+                'required' => array(
+                  ':input[name="studyType"]' => array('value' => '2')
+                )
+              )
+            );
+
+            $form['growthChamber']['humidityControl']['controlled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Controlled Air Humidity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="growthChamber[humidityControl][option]"]' => array('value' => '1')
+                ),
+                'required' => array(
+                  ':input[name="growthChamber[humidityControl][option]"]' => array('value' => '1')
+                )
+              )
+            );
+
+            $form['growthChamber']['humidityControl']['uncontrolled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Average Air Humidity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="growthChamber[humidityControl][option]"]' => array('value' => '2')
+                ),
+                'required' => array(
+                  ':input[name="growthChamber[humidityControl][option]"]' => array('value' => '2')
+                )
+              )
+            );
+            
+            return $form;
+        }
+        
+        function light(&$form){
+            
+            $form['growthChamber']['lightControl'] = array(
+              '#type' => 'fieldset',
+              '#tree' => true,
+            );
+
+            $form['growthChamber']['lightControl']['option'] = array(
+              '#type' => 'select',
+              '#title' => t('Light Intensity controlled or uncontrolled'),
+              '#options' => array(
+                0 => 'Please select Light Intensity control',
+                1 => 'Controlled',
+                2 => 'Uncontrolled'
+              ),
+              '#default_value' => 0,
+              '#states' => array(
+                'required' => array(
+                  ':input[name="studyType"]' => array('value' => '2')
+                )
+              )
+            );
+
+            $form['growthChamber']['lightControl']['controlled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Controlled Light Intensity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="growthChamber[lightControl][option]"]' => array('value' => '1')
+                ),
+                'required' => array(
+                  ':input[name="growthChamber[lightControl][option]"]' => array('value' => '1')
+                )
+              )
+            );
+
+            $form['growthChamber']['lightControl']['uncontrolled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Average Light Intensity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="growthChamber[lightControl][option]"]' => array('value' => '2')
+                ),
+                'required' => array(
+                  ':input[name="growthChamber[lightControl][option]"]' => array('value' => '2')
+                )
+              )
+            );
+            
+            return $form;
+        }
+        
+        function ph(&$form){
+            
+            $form['growthChamber']['rooting']['ph'] = array(
+              '#type' => 'fieldset',
+              '#tree' => true
+            );
+
+            $form['growthChamber']['rooting']['ph']['option'] = array(
+              '#type' => 'select',
+              '#title' => t('pH controlled or uncontrolled'),
+              '#options' => array(
+                0 => 'Please select pH control',
+                1 => 'Controlled',
+                2 => 'Uncontrolled'
+              ),
+              '#default_value' => 0,
+              '#states' => array(
+                'required' => array(
+                  ':input[name="studyType"]' => array('value' => '2')
+                )
+              )
+            );
+
+            $form['growthChamber']['rooting']['ph']['controlled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Controlled pH Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="growthChamber[rooting][ph][option]"]' => array('value' => '1')
+                ),
+                'required' => array(
+                  ':input[name="growthChamber[rooting][ph][option]"]' => array('value' => '1')
+                )
+              )
+            );
+
+            $form['growthChamber']['rooting']['ph']['uncontrolled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Average pH Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="growthChamber[rooting][ph][option]"]' => array('value' => '2')
+                ),
+                'required' => array(
+                  ':input[name="growthChamber[rooting][ph][option]"]' => array('value' => '2')
+                )
+              )
+            );
+            
+            return $form;
+        }
+        
+        co2($form);
+        
+        humidity($form);
+        
+        light($form);
+        
+
+        $form['growthChamber']['temp'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Temperature Information:'),
+          '#description' => t('Please provide temperatures in Degrees Celsius'),
+          '#tree' => true,
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '2')
+            )
+          )
+        );
+
+        $form['growthChamber']['temp']['day'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Average Day Temperature'),
+        );
+
+        $form['growthChamber']['temp']['night'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Average Night Temperature'),
+        );
+
+        $form['growthChamber']['temp']['range'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Temperature Range'),
+        );
+        
+        $form['growthChamber']['rooting'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Rooting Information:'),
+          '#tree' => true,
+        );
+        
+        $form['growthChamber']['rooting']['option'] = array(
+          '#type' => 'select',
+          '#title' => t('Rooting Type:'),
+          '#options' => array(
+            0 => 'Please select a rooting type',
+            1 => 'Aeroponics',
+            2 => 'Hydroponics',
+            3 => 'Soil',
+          ),
+          '#default_value' => 0,
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '2')
+            )
+          )
+        );
+        
+        $form['growthChamber']['rooting']['soil'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Soil Information:'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="growthChamber[rooting][option]"]' => array('value' => '3')
+            )
+          )
+        );
+        
+        $form['growthChamber']['rooting']['soil']['type'] = array(
+          '#type' => 'select',
+          '#title' => t('Soil Type:'),
+          '#options' => array(
+            0 => 'Please select a soil type',
+            1 => 'Sand',
+            2 => 'Peat',
+            3 => 'Clay',
+            4 => 'Mixed',
+            5 => 'Other'
+          ),
+          '#states' => array(
+            'required' => array(
+              ':input[name="growthChamber[rooting][option]"]' => array('value' => '3')
+            )
+          )
+        );
+        
+        $form['growthChamber']['rooting']['soil']['other'] = array(
+          '#type' => 'textfield',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="growthChamber[rooting][soil][type]"]' => array('value' => '5')
+            ),
+            'required' => array(
+              ':input[name="growthChamber[rooting][soil][type]"]' => array('value' => '5')
+            )
+          )
+        );
+        
+        $form['growthChamber']['rooting']['soil']['container'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Soil Container Type:'),
+          '#states' => array (
+            'required' => array(
+              ':input[name="growthChamber[rooting][option]"]' => array('value' => '3')
+            )
+          )
+        );
+        
+        ph($form);
+        
+        $treatment_options = drupal_map_assoc(array(
+            t('Seasonal Environment'),
+            t('Air temperature regime'),
+            t('Soil Temperature regime'),
+            t('Antibiotic regime'),
+            t('Chemical administration'),
+            t('Disease status'),
+            t('Fertilizer regime'),
+            t('Fungicide regime'),
+            t('Gaseous regime'),
+            t('Gravity Growth hormone regime'),
+            t('Mechanical treatment'),
+            t('Mineral nutrient regime'),
+            t('Humidity regime'),
+            t('Non-mineral nutrient regime'),
+            t('Radiation (light, UV-B, X-ray) regime'),
+            t('Rainfall regime'),
+            t('Salt regime'),
+            t('Watering regime'),
+            t('Water temperature regime'),
+            t('Pesticide regime'),
+            t('pH regime'),
+            t('other perturbation'),
+          ));
+        
+        $form['growthChamber']['rooting']['treatment'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Rooting Treatments:'),
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '2')
+            )
+          )
+        );
+        
+        foreach($treatment_options as $key => $option){
+            $form['growthChamber']['rooting']['treatment']["$option"] = array(
+              '#type' => 'checkbox',
+              '#title' => t("$option")
+            );
+            $form['growthChamber']['rooting']['treatment']["$option-description"] = array(
+              '#type' => 'textfield',
+              '#description' => t("$option Description"),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="growthChamber[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE)
+                ),
+                'required' => array(
+                  ':input[name="growthChamber[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE)
+                )
+              )
+            );
+        }
+        
+        return $form;
+    }
+    
+    function greenhouse(&$form){
+        
+        function greenco2(&$form){
+            
+            $form['greenhouse']['co2Control'] = array(
+              '#type' => 'fieldset',
+              '#tree' => true
+            );
+
+            $form['greenhouse']['co2Control']['option'] = array(
+              '#type' => 'select',
+              '#title' => t('CO2 controlled or uncontrolled'),
+              '#options' => array(
+                0 => 'Please select CO2 control',
+                1 => 'Controlled',
+                2 => 'Uncontrolled'
+              ),
+              '#default_value' => 0,
+              '#states' => array(
+                'required' => array(
+                  ':input[name="studyType"]' => array('value' => '3')
+                )
+              )
+            );
+
+            $form['greenhouse']['co2Control']['controlled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Controlled CO2 Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="greenhouse[co2Control][option]"]' => array('value' => '1')
+                ),
+                'required' => array(
+                  ':input[name="greenhouse[co2Control][option]"]' => array('value' => '1')
+                )
+              )
+            );
+
+            $form['greenhouse']['co2Control']['uncontrolled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Average CO2 Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="greenhouse[co2Control][option]"]' => array('value' => '2')
+                ),
+                'required' => array(
+                  ':input[name="greenhouse[co2Control][option]"]' => array('value' => '2')
+                )
+              )
+            );
+            
+            return $form;
+        }
+        
+        function greenhumidity(&$form){
+            
+            $form['greenhouse']['humidityControl'] = array(
+              '#type' => 'fieldset',
+              '#tree' => true,
+            );
+
+            $form['greenhouse']['humidityControl']['option'] = array(
+              '#type' => 'select',
+              '#title' => t('Air Humidity controlled or uncontrolled'),
+              '#options' => array(
+                0 => 'Please select air humidity control',
+                1 => 'Controlled',
+                2 => 'Uncontrolled'
+              ),
+              '#default_value' => 0,
+              '#states' => array(
+                'required' => array(
+                  ':input[name="studyType"]' => array('value' => '3')
+                )
+              )
+            );
+
+            $form['greenhouse']['humidityControl']['controlled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Controlled Air Humidity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="greenhouse[humidityControl][option]"]' => array('value' => '1')
+                ),
+                'required' => array(
+                  ':input[name="greenhouse[humidityControl][option]"]' => array('value' => '1')
+                )
+              )
+            );
+
+            $form['greenhouse']['humidityControl']['uncontrolled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Average Air Humidity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="greenhouse[humidityControl][option]"]' => array('value' => '2')
+                ),
+                'required' => array(
+                  ':input[name="greenhouse[humidityControl][option]"]' => array('value' => '2')
+                )
+              )
+            );
+            
+            return $form;
+        }
+        
+        function greenlight(&$form){
+            
+            $form['greenhouse']['lightControl'] = array(
+              '#type' => 'fieldset',
+              '#tree' => true,
+            );
+
+            $form['greenhouse']['lightControl']['option'] = array(
+              '#type' => 'select',
+              '#title' => t('Light Intensity controlled or uncontrolled'),
+              '#options' => array(
+                0 => 'Please select Light Intensity control',
+                1 => 'Controlled',
+                2 => 'Uncontrolled'
+              ),
+              '#default_value' => 0,
+              '#states' => array(
+                'required' => array(
+                  ':input[name="studyType"]' => array('value' => '3')
+                )
+              )
+            );
+
+            $form['greenhouse']['lightControl']['controlled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Controlled Light Intensity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="greenhouse[lightControl][option]"]' => array('value' => '1')
+                ),
+                'required' => array(
+                  ':input[name="greenhouse[lightControl][option]"]' => array('value' => '1')
+                )
+              )
+            );
+
+            $form['greenhouse']['lightControl']['uncontrolled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Average Light Intensity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="greenhouse[lightControl][option]"]' => array('value' => '2')
+                ),
+                'required' => array(
+                  ':input[name="greenhouse[lightControl][option]"]' => array('value' => '2')
+                )
+              )
+            );
+            
+            return $form;
+        }
+        
+        function greenph(&$form){
+            
+            $form['greenhouse']['rooting']['ph'] = array(
+              '#type' => 'fieldset',
+              '#tree' => true
+            );
+
+            $form['greenhouse']['rooting']['ph']['option'] = array(
+              '#type' => 'select',
+              '#title' => t('pH controlled or uncontrolled'),
+              '#options' => array(
+                0 => 'Please select pH control',
+                1 => 'Controlled',
+                2 => 'Uncontrolled'
+              ),
+              '#default_value' => 0,
+              '#states' => array(
+                'required' => array(
+                  ':input[name="studyType"]' => array('value' => '3')
+                )
+              )
+            );
+
+            $form['greenhouse']['rooting']['ph']['controlled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Controlled pH Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="greenhouse[rooting][ph][option]"]' => array('value' => '1')
+                ),
+                'required' => array(
+                  ':input[name="greenhouse[rooting][ph][option]"]' => array('value' => '1')
+                )
+              )
+            );
+
+            $form['greenhouse']['rooting']['ph']['uncontrolled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Average pH Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="greenhouse[rooting][ph][option]"]' => array('value' => '2')
+                ),
+                'required' => array(
+                  ':input[name="greenhouse[rooting][ph][option]"]' => array('value' => '2')
+                )
+              )
+            );
+            
+            return $form;
+        }
+        
+        greenco2($form);
+        
+        greenhumidity($form);
+        
+        greenlight($form);
+
+        $form['greenhouse']['temp'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Temperature Information:'),
+          '#description' => t('Please provide temperatures in Degrees Celsius'),
+          '#tree' => true,
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '3')
+            )
+          )
+        );
+
+        $form['greenhouse']['temp']['day'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Average Day Temperature'),
+        );
+
+        $form['greenhouse']['temp']['night'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Average Night Temperature'),
+        );
+
+        $form['greenhouse']['temp']['range'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Temperature Range'),
+        );
+        
+        $form['greenhouse']['rooting'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Rooting Information:'),
+          '#tree' => true,
+        );
+        
+        $form['greenhouse']['rooting']['option'] = array(
+          '#type' => 'select',
+          '#title' => t('Rooting Type:'),
+          '#options' => array(
+            0 => 'Please select a rooting type',
+            1 => 'Aeroponics',
+            2 => 'Hydroponics',
+            3 => 'Soil',
+          ),
+          '#default_value' => 0,
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '3')
+            )
+          )
+        );
+        
+        $form['greenhouse']['rooting']['soil'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Soil Information:'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="greenhouse[rooting][option]"]' => array('value' => '3')
+            )
+          )
+        );
+        
+        $form['greenhouse']['rooting']['soil']['type'] = array(
+          '#type' => 'select',
+          '#title' => t('Soil Type:'),
+          '#options' => array(
+            0 => 'Please select a soil type',
+            1 => 'Sand',
+            2 => 'Peat',
+            3 => 'Clay',
+            4 => 'Mixed',
+            5 => 'Other'
+          ),
+          '#states' => array(
+            'required' => array(
+              ':input[name="greenhouse[rooting][option]"]' => array('value' => '3')
+            )
+          )
+        );
+        
+        $form['greenhouse']['rooting']['soil']['other'] = array(
+          '#type' => 'textfield',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="greenhouse[rooting][soil][type]"]' => array('value' => '5')
+            ),
+            'required' => array(
+              ':input[name="greenhouse[rooting][soil][type]"]' => array('value' => '5')
+            )
+          )
+        );
+        
+        $form['greenhouse']['rooting']['soil']['container'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Soil Container Type:'),
+          '#states' => array (
+            'required' => array(
+              ':input[name="greenhouse[rooting][option]"]' => array('value' => '3')
+            )
+          )
+        );
+        
+        greenph($form);
+        
+        $treatment_options = drupal_map_assoc(array(
+            t('Seasonal Environment'),
+            t('Air temperature regime'),
+            t('Soil Temperature regime'),
+            t('Antibiotic regime'),
+            t('Chemical administration'),
+            t('Disease status'),
+            t('Fertilizer regime'),
+            t('Fungicide regime'),
+            t('Gaseous regime'),
+            t('Gravity Growth hormone regime'),
+            t('Mechanical treatment'),
+            t('Mineral nutrient regime'),
+            t('Humidity regime'),
+            t('Non-mineral nutrient regime'),
+            t('Radiation (light, UV-B, X-ray) regime'),
+            t('Rainfall regime'),
+            t('Salt regime'),
+            t('Watering regime'),
+            t('Water temperature regime'),
+            t('Pesticide regime'),
+            t('pH regime'),
+            t('other perturbation'),
+          ));
+        
+        $form['greenhouse']['rooting']['treatment'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Rooting Treatments:'),
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '3')
+            )
+          )
+        );
+        
+        foreach($treatment_options as $key => $option){
+            $form['greenhouse']['rooting']['treatment']["$option"] = array(
+              '#type' => 'checkbox',
+              '#title' => t("$option")
+            );
+            $form['greenhouse']['rooting']['treatment']["$option-description"] = array(
+              '#type' => 'textfield',
+              '#description' => t("$option Description"),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="greenhouse[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE)
+                ),
+                'required' => array(
+                  ':input[name="greenhouse[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE)
+                )
+              )
+            );
+        }
+        
+        return $form;
+    }
+    
+    function commonGarden(&$form){
+        
+        function salinity(&$form){
+            
+            $form['commonGarden']['salinity'] = array(
+              '#type' => 'fieldset',
+              '#tree' => true
+            );
+
+            $form['commonGarden']['salinity']['option'] = array(
+              '#type' => 'select',
+              '#title' => t('Salinity controlled or uncontrolled'),
+              '#options' => array(
+                0 => 'Please select Salinity control',
+                1 => 'Controlled',
+                2 => 'Uncontrolled'
+              ),
+              '#default_value' => 0,
+              '#states' => array(
+                'required' => array(
+                  ':input[name="studyType"]' => array('value' => '4')
+                )
+              )
+            );
+
+            $form['commonGarden']['salinity']['controlled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Controlled Salinity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="commonGarden[salinity][option]"]' => array('value' => '1')
+                ),
+                'required' => array(
+                  ':input[name="commonGarden[salinity][option]"]' => array('value' => '1')
+                )
+              )
+            );
+
+            $form['commonGarden']['salinity']['uncontrolled'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Average Salinity Value:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="commonGarden[salinity][option]"]' => array('value' => '2')
+                ),
+                'required' => array(
+                  ':input[name="commonGarden[salinity][option]"]' => array('value' => '2')
+                )
+              )
+            );
+            
+            return $form;
+        }
+        
+        $form['commonGarden']['irrigation'] = array(
+          '#type' => 'fieldset',
+          '#tree' => true,
+        );
+        
+        $form['commonGarden']['irrigation']['option'] = array(
+          '#type' => 'select',
+          '#title' => t('Irrigation type:'),
+          '#options' => array(
+            0 => 'Please select an irrigation type',
+            1 => 'Irrigation from top',
+            2 => 'Irrigation from bottom',
+            3 => 'Drip Irrigation',
+            4 => 'Other',
+            5 => 'No Irrigation',
+          ),
+          '#default_value' => 0,
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '4')
+            )
+          )
+        );
+        
+        $form['commonGarden']['irrigation']['other'] = array(
+          '#type' => 'textfield',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="commonGarden[irrigation][option]"]' => array('value' => '4')
+            ),
+            'required' => array(
+              ':input[name="commonGarden[irrigation][option]"]' => array('value' => '4')
+            )
+          )
+        );
+        
+        salinity($form);
+        
+        $form['commonGarden']['bioticEnv'] = array(
+          '#type' => 'fieldset',
+          '#tree' => true,
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '4')
+            )
+          )
+        );
+        
+        $form['commonGarden']['bioticEnv']['option'] = array(
+          '#type' => 'checkboxes',
+          '#title' => t('Biotic Environment'),
+          '#options' => drupal_map_assoc(array(
+            t('Herbivores'),
+            t('Mutulists'),
+            t('Pathogens'),
+            t('Endophytes'),
+            t('Other'),
+            t('None'),
+          )),
+        );
+        
+        $form['commonGarden']['bioticEnv']['other'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Please specify Biotic Environment Type:'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="commonGarden[bioticEnv][option][Other]"]' => array('checked' => TRUE)
+            ),
+            'required' => array(
+              ':input[name="commonGarden[bioticEnv][option][Other]"]' => array('checked' => TRUE)
+            )
+          )
+        );
+        
+        $form['commonGarden']['season'] = array(
+          '#type' => 'checkboxes',
+          '#title' => t('Seasons:'),
+          '#options' => drupal_map_assoc(array(
+            t('Spring'),
+            t('Summer'),
+            t('Fall'),
+            t('Winter'),
+          )),
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '4')
+            )
+          )
+        );
+        
+        $treatment_options = drupal_map_assoc(array(
+            t('Seasonal environment'),
+            t('Antibiotic regime'),
+            t('Chemical administration'),
+            t('Disease status'),
+            t('Fertilizer regime'),
+            t('Fungicide regime'),
+            t('Gaseous regime'),
+            t('Gravity Growth hormone regime'),
+            t('Herbicide regime'),
+            t('Mechanical treatment'),
+            t('Mineral nutrient regime'),
+            t('Non-mineral nutrient regime'),
+            t('Salt regime'),
+            t('Watering regime'),
+            t('Pesticide regime'),
+            t('pH regime'),
+            t('Other perturbation')
+          ));
+        
+        $form['commonGarden']['treatment'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Treatments:'),
+          '#states' => array(
+            'required' => array(
+              ':input[name="studyType"]' => array('value' => '4')
+            )
+          )
+        );
+        
+        foreach($treatment_options as $key => $option){
+            $form['commonGarden']['treatment']["$option"] = array(
+              '#type' => 'checkbox',
+              '#title' => t("$option")
+            );
+            $form['commonGarden']['treatment']["$option-description"] = array(
+              '#type' => 'textfield',
+              '#description' => t("$option Description"),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="commonGarden[treatment][' . $option . ']"]' => array('checked' => TRUE)
+                ),
+                'required' => array(
+                  ':input[name="commonGarden[treatment][' . $option . ']"]' => array('checked' => TRUE)
+                )
+              )
+            );
+        }
+        
+        return $form;
+    }
+    
+    studyDate('Starting', $form);
+    
+    studyDate('Ending', $form);
+    
+    studyLocation($form);
+
+    $form['studyType'] = array(
+      '#type' => 'select',
+      '#title' => t('Study Type:'),
+      '#options' => array(
+        0 => 'Please select the type of study',
+        1 => 'Natural Population (Landscape)',
+        2 => 'Growth Chamber',
+        3 => 'Greenhouse',
+        4 => 'Experimental/Common Garden',
+        5 => 'Plantation',
+      ),
+      '#default_value' => 0,
+      '#required' => true,
     );
+
+    $form['naturalPopulation'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Natural Population/Landscape Information:'),
+      '#tree' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="studyType"]' => array('value' => '1')
+        ),
+        'required' => array(
+          ':input[name="studyType"]' => array('value' => '1')
+        ),
+        'enabled' => array(
+          ':input[name="studyType"]' => array('value' => '1')
+        )
+      )
+    );
+    
+    naturalPopulation($form);
+    
+    $form['growthChamber'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Growth Chamber Information:'),
+      '#tree' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="studyType"]' => array('value' => '2')
+        ),
+        'enabled' => array(
+          ':input[name="studyType"]' => array('value' => '2')
+        )
+      )
+    );
+    
+    growthChamber($form);
+    
+    $form['greenhouse'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Greenhouse Information:'),
+      '#tree' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="studyType"]' => array('value' => '3')
+        ),
+        'enabled' => array(
+          ':input[name="studyType"]' => array('value' => '3')
+        )
+      )
+    );
+    
+    greenhouse($form);
+    
+    $form['commonGarden'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Common Garden Information:'),
+      '#tree' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="studyType"]' => array('value' => '4')
+        ),
+        'enabled' => array(
+          ':input[name="studyType"]' => array('value' => '4')
+        )
+      )
+    );
+    
+    commonGarden($form);
     
     $form['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Submit'),
-    );
-    
-    $form['startingDate'][1] = array(
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-    );
-    $form['startingDate'][1]['Month'] = array(
-      '#type' => 'select',
-      '#options' => array(
-        '-Select-',
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December'
-      ),
-      '#required' => true,
-      '#title' => t('Month'),
-    );
-    
-    $yearArr = Array();
-    for ($i = 1950; $i <= 2017; $i++) {
-        array_push($yearArr, $i);
-    }
-    
-    $form['startingDate'][1]['Year'] = array(
-      '#type' => 'select',
-      '#options' => array_merge(array('-Select-'), $yearArr), 
-      '#required' => true,
-      '#title' => t('Year')
-      );
-    
-//    Day field should change based on the result of the month field
-    
-    $dayArr = Array();
-    for ($i = 1; $i <= 31; $i++) {
-        array_push($dayArr, $i);
-    }
-      
-    $form['startingDate'][1]['Day'] = array(
-    '#type' => 'select',
-    '#options' => array_merge(array('-Select-'), $dayArr),
-    '#title' => t('Day'),
-    '#required' => true,
-
-    '#suffix' => '</div>'
-    );
-      
-    $form['endingDate'] = array(
-    '#prefix' => '<div class="container-inline">', 
-    '#type' => 'fieldset',
-    '#title' => t('Ending Date'),
-    '#tree' => TRUE,
-    );
-    
-     $form['endingDate'][1] = array(
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-    );
-    $form['endingDate'][1]['Month'] = array(
-      '#type' => 'select',
-      '#options' => array(
-        '-Select-',
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December'
-      ),
-      '#required' => true, 
-      '#title' => t('Month'),
-    );
-   
-    $form['endingDate'][1]['Year'] = array(
-      '#type' => 'select',
-      '#options' => array_merge(array('-Select-'), $yearArr), 
-      '#required' => true,
-      '#title' => t('Year')
-      );
-    
-//    Day field should change based on the result of the month field
-    
-      
-    $form['endingDate'][1]['Day'] = array(
-    '#type' => 'select',
-    '#options' => array_merge(array('-Select-'), $dayArr),
-    '#title' => t('Day'),
-    '#required' => true,
-    '#suffix' => '</div>'
-    );
-
-    $form['location'] = array(
-      '#title' => t('Please input the location or locations in your study'),
-      '#required' => True,
-      '#type' => 'textfield',
-    );
-
-    $form['studyType'] = array(
-      '#title' => t('Please select the type of study'),
-      '#type' => 'select',
-      '#options' => array(
-        0 => 'Natural Population (Landscape)',
-        1 => 'Growth Chamber',
-        2 => 'Greenhouse',
-        3 => 'Experimental/Common Garden',
-        4 => 'Plantation',
-      ),
-      '#required' => true,
-    );
-
-    $form['commonGardenIrrigation'] = array(
-      '#title' => t('Irrigation'),
-      '#type' => 'select',
-      '#options' => array(
-        1 => 'Yes',
-        2 => 'Not Modified',
-      ),
-      '#prefix' => '<div id=commonGardenClass>'
-    );
-
-    $form['commonGardenIrrigationType'] = array(
-      '#title' => t('Type of Irrigation'),
-      '#prefix' => '<div id=commonGardenIrrigationType>',
-      '#suffix' => '</div>',
-      '#type' => 'select',
-      '#options' => array(
-        0 => 'Type 1',
-      ),
-    );
-
-    $form['commonGardenSalinity'] = array(
-      '#title' => t('Salinity'),
-      '#type' => 'select',
-      '#options' => array(
-        1 => 'Controlled',
-        2 => 'Uncontrolled',
-      ),
-    );
-
-    $form['commonGardenSalinityValue'] = array(
-      '#title' => t('Salinity Value'),
-      '#prefix' => '<div id=commonGardenSalinityValue>',
-      '#suffix' => '</div>',
-      '#type' => 'select',
-      '#options' => array(
-        'No salinity',
-        'Some salinity',
-        'A lot of salinity',
-      ),
-    );
-
-    $form['commonGardenBioticEnvironment'] = array(
-      '#title' => t('Biotic Environment'),
-      '#type' => 'select',
-      '#options' => array(
-        'Herbivores',
-        'Mutulists',
-        'Pathogens',
-        'Endophytes',
-        'Other',
-        'None'
-      ),
-    );
-
-    $form['commonGardenSeasons'] = array(
-      '#title' => t('Seaons'),
-      '#type' => 'checkboxes',
-      '#options' => array(
-        'Fall',
-        'Winter',
-        'Spring',
-        'Summer',
-      ),
-    );
-
-    $form['commonGardensTreatments'] = array(
-      '#title' => t('Treatments'),
-      '#type' => 'checkboxes',
-      '#options' => array(
-        'Seasonal environment',
-        'Antibiotic regime',
-        'Chemical administration',
-        'Disease status',
-        'Fertilizer regime',
-        'Fungicide regime',
-        'Gaseous regime',
-        'Gravity Growth hormone regime',
-        'Herbicide regime',
-        'Mechanical treatment',
-        'Mineral nutrient regime',
-        'Non-mineral nutrient regime',
-        'Salt regime',
-        'Watering regime',
-        'Pesticide regime',
-        'pH regime',
-        'Other perturbation'
-      ),
-      '#suffix' => '</div>',
-    );
-//    
-//    growth chamber below
-//    
-
-    $form['growthChamberCO2'] = array(
-      '#title' => t('CO2 controlled or uncontrolled'),
-      '#prefix' => '<div id = growthChamberClass>',
-      '#type' => 'select',
-      '#options' => array(
-        0 => 'Controlled',
-        1 => 'Uncontrolled'
-      ),
-      );
-
-    $form['growthChamber_CO2Controlled'] = array(
-      '#prefix' => '<div class=growthChamberChildrenControlledCO2>',
-      '#suffix' => '</div>',
-      '#title' => t('Controlled CO2'),
-      '#type' => 'textfield',
-      );
-
-    $form['growthChamber_CO2Uncontrolled'] = array(
-      '#prefix' => '<div class=growthChamberChildrenUncontrolledCO2>',
-      '#suffix' => '</div>',
-      '#title' => t('Uncontrolled CO2'),
-      '#type' => 'textfield',
-      );
-
-    $form['growthChamberAirHumidity'] = array(
-      '#title' => t('Air Humidity controlled or uncontrolled'),
-      '#type' => 'select',
-      '#options' => array(
-        0 => 'Controlled',
-        1 => 'Uncontrolled',
-      ),
-      );
-
-    $form['growthChamber_AirHumidityControlled'] = array(
-      '#title' => t('Controlled air humidity'),
-      '#prefix' => '<div class=growthChamberChildrenAirHumidityControlled>',
-      '#suffix' => '</div>',
-      '#type' => 'textfield',
-      );
-
-    $form['growthChamber_AirHumidityUncontrolled'] = array(
-      '#title' => t('Uncontrolled air humidity'),
-      '#prefix' => '<div class=growthChamberChildrenAirHumidityUncontrolled>',
-      '#suffix' => '</div>',
-      '#type' => 'textfield',
-     );
-
-    $form['growthChamberLightIntensity'] = array(
-      '#title' => t('Light intensity controlled or uncontrolled'),
-      '#type' => 'select',
-      '#options' => array(
-        0 => 'Controlled',
-        1 => 'Uncontrolled',
-      ),
-     );
-
-    $form['growthChamber_LightIntensityControlled'] = array(
-      '#title' => t('Controlled Light Intensity'),
-      '#prefix' => '<div class=growthChamberChildrenLight>',
-      '#suffix' => '</div>',
-      '#type' => 'textfield',
-     );
-
-    $form['growthChamberAverageDayTemp'] = array(
-      '#title' => t('Average Day Temperature'),
-      '#type' => 'textfield',
-     );
-
-    $form['growthChamberAverageNightTemp'] = array(
-      '#title' => t('Average Night Temperature'),
-      '#type' => 'textfield',
-     );
-
-    $form['growthChamberTempRange'] = array(
-      '#title' => t('Temperature Range'),
-      '#type' => 'textfield',
-     );
-
-    $form['growthChamberAeroponics'] = array(
-      '#title' => t('Aeroponics or Hydroponics'),
-      '#type' => 'select',
-      '#options' => array(
-        'Aeroponics',
-        'Hydroponics',
-        'Soil'
-      ),
-     );
-
-    $form['growthChamberSoil'] = array(
-      '#title' => t('Soil'),
-      '#type' => 'select',
-      '#options' => array(
-        0 => 'Yes',
-        1 => 'No',
-      ),
-     );
-
-    $form['growthChamber_SoilType'] = array(
-      '#title' => t('Soil Type'),
-      '#prefix' => '<div id=growthChamberChildrenSoilType>',
-      '#suffix' => '</div>',
-      '#type' => 'select',
-      '#options' => array(
-        '-Select-',
-        'Sand',
-        'Peat',
-        'Clay',
-        'Mixed',
-        'Other',
-      ),
-    );
-//this is a comment
-    $form['growthChamber_SoilContainerType'] = array(
-      '#title' => t('Container Type'),
-      '#prefix' => '<div id=growthChamberChildrenSoilContainer>',
-      '#suffix' => '</div>',
-      '#type' => 'textfield',
-    );
-
-    $form['growthChamberpH'] = array(
-      '#title' => t('pH'),
-      '#type' => 'select',
-      '#options' => array(
-        -1 => '-Select',
-        0 => 'Controlled',
-        1 => 'Uncontrolled',
-      ),
-    );
-
-    $form['growthChamber_pHControlled'] = array(
-      '#title' => t('pH Controlled Value'),
-      '#prefix' => '<div class=growthChamberChildrenPHControlled>',
-      '#suffix' => '</div>',
-      '#type' => 'textfield'
-    );
-
-    $form['growthChamber_pHUncontrolled'] = array(
-      '#title' => t('pH Uncontrolled Average Value'),
-      '#prefix' => '<div class=growthChamberChildrenPHUncontrolled>',
-      '#suffix' => '</div>',
-      '#type' => 'textfield',
-    );
-
-    $form['growthChamberTreatments'] = array(
-      '#title' => t('Treatments'),
-      '#type' => 'checkboxes',
-      '#options' => array(
-        'Seasonal Environment',
-        'Air temperature regime',
-        'Soil Temperature regime',
-        'Antibiotic regime',
-        'Chemical administration',
-        'Disease status',
-        'Fertilizer regime',
-        'Fungicide regime',
-        'Gaseous regime',
-        'Gravity Growth hormone regime',
-        'Mechanical treatment',
-        'Mineral nutrient regime',
-        'Humidity regime',
-        'Non-mineral nutrient regime',
-        'Radiation (light, UV-B, X-ray) regime',
-        'Rainfall regime',
-        'Salt regime',
-        'Watering regime',
-        'Water temperature regime',
-        'Pesticide regime',
-        'pH regime',
-        'other perturbation',
-      ),
-     '#suffix' => '</div>'
     );
 
     drupal_add_js(drupal_get_path('module', 'custom_module') . "/custom_module.js");
@@ -730,7 +1634,7 @@ function custom_module_showCustomModuleForm_second_page() {
 }
 
 function custom_module_showCustomModuleForm_second_page_validate($form, &$form_state) {
-    $studyType = $form_state['values']['studyType'];
+    /*$studyType = $form_state['values']['studyType'];
     
     $CO2 = $form_state['values']['growthChamberCO2'];
     $UncontrolledCO2 = $form_state['values']['growthChamber_CO2Controlled'];
@@ -778,7 +1682,7 @@ function custom_module_showCustomModuleForm_second_page_validate($form, &$form_s
     else{
         
     }
-}
+}*/
 
     }
 
@@ -820,271 +1724,495 @@ function custom_module_showCustomModuleForm_third_page() {
       '#required' => TRUE,
     );
     
-    $form['tree-access'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Tree Accession Information'),
-      '#tree' => TRUE
-    );
+    function tree_access(&$form){
+        
+        $form['tree-access'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Tree Accession Information'),
+          '#tree' => TRUE
+        );
 
-    $form['tree-access']['identifier'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Identifier'),
-      '#required' => TRUE
-    );
+        $form['tree-access']['identifier'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Identifier'),
+          '#required' => TRUE
+        );
 
-    $form['tree-access']['location']['type'] = array(
-      '#type' => 'select',
-      '#title' => t('Location Type'),
-      '#options' => array(
-        0 => 'Please select a location type',
-        1 => 'Latitude/Longitude',
-        2 => 'Custom Location'
-      )
-    );
-
-    $form['tree-access']['location']['latitude'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Latitude'),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="tree-access[location][type]"]' => array('value' => '1')
-        ),
-        'required' => array(
-          ':input[name="tree-access[location][type]"]' => array('value' => '1')
-        ),
-        'disabled' => array(
-          ':input[name="tree-access[location][type]"]' => array('value' => '2')
-        )
-      ),
-    );
-
-    $form['tree-access']['location']['longitude'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Longitude'),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="tree-access[location][type]"]' => array('value' => '1')
-        ),
-        'required' => array(
-          ':input[name="tree-access[location][type]"]' => array('value' => '1')
-        ),
-        'disabled' => array(
-          ':input[name="tree-access[location][type]"]' => array('value' => '2')
-        )
-      ),
-    );
-
-    $form['tree-access']['location']['customLocation'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Enter a custom location'),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="tree-access[location][type]"]' => array('value' => '2')
-        ),
-        'required' => array(
-          ':input[name="tree-access[location][type]"]' => array('value' => '2')
-        ),
-        'disabled' => array(
-          ':input[name="tree-access[location][type]"]' => array('value' => '1')
-        )
-      ),
-    );
-
-    $form['tree-access']['age'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Age and development Stage'),
-      '#required' => TRUE
-    );
-
-    $form['tree-access']['tissue'] = array(
-      '#type' => 'select',
-      '#title' => t('Tissue types'),
-      '#options' => array(
-        'Tissue 1',
-        'Tissue 2'
-      ),
-    );
-
-    $form['tree-access']['clone'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Clone and or pedigree information')
-    );
-
-    $num_pheno = array();
-
-    for($i = 0; $i < 20; $i++){
-        $num_pheno[$i] = $i + 1;
-    }
-    $num_pheno[20] = '>20';
-
-    $form['phenotype'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Phenotype information:'),
-      '#tree' => TRUE,
-      '#states' => array(
-        'visible' => array(
-          array(
-            array(':input[name="dataType"]' => array('value' => '0')),
-            'or',
-            array(':input[name="dataType"]' => array('value' => '2')),
-            'or',
-            array(':input[name="dataType"]' => array('value' => '3')),
+        $form['tree-access']['location']['type'] = array(
+          '#type' => 'select',
+          '#title' => t('Location Type'),
+          '#options' => array(
+            0 => 'Please select a location type',
+            1 => 'Latitude/Longitude',
+            2 => 'Custom Location'
           )
-        )
-      )
-    );
+        );
 
-    $form['phenotype']['number'] = array(
-      '#type' => 'select',
-      '#title' => t('Number of Phenotypes'),
-      '#options' => $num_pheno,
-    );
+        $form['tree-access']['location']['latitude'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Latitude'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="tree-access[location][type]"]' => array('value' => '1')
+            ),
+            'required' => array(
+              ':input[name="tree-access[location][type]"]' => array('value' => '1')
+            ),
+            'disabled' => array(
+              ':input[name="tree-access[location][type]"]' => array('value' => '2')
+            )
+          ),
+        );
 
-    for($i = 0; $i < 20; $i++){
+        $form['tree-access']['location']['longitude'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Longitude'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="tree-access[location][type]"]' => array('value' => '1')
+            ),
+            'required' => array(
+              ':input[name="tree-access[location][type]"]' => array('value' => '1')
+            ),
+            'disabled' => array(
+              ':input[name="tree-access[location][type]"]' => array('value' => '2')
+            )
+          ),
+        );
 
-        $visible_values = array();
-        array_push($visible_values, array(':input[name="phenotype[number]"]' => array('value' => "$i")));
+        $form['tree-access']['location']['customLocation'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Enter a custom location'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="tree-access[location][type]"]' => array('value' => '2')
+            ),
+            'required' => array(
+              ':input[name="tree-access[location][type]"]' => array('value' => '2')
+            ),
+            'disabled' => array(
+              ':input[name="tree-access[location][type]"]' => array('value' => '1')
+            )
+          ),
+        );
 
-        for ($j = $i + 1; $j < 20; $j++){
-            array_push($visible_values, 'or');
-            array_push($visible_values, array(':input[name="phenotype[number]"]' => array('value' => "$j")));
+        $form['tree-access']['age'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Age and development Stage'),
+          '#required' => TRUE
+        );
+
+        $form['tree-access']['tissue'] = array(
+          '#type' => 'select',
+          '#title' => t('Tissue types'),
+          '#options' => array(
+            'Tissue 1',
+            'Tissue 2'
+          ),
+        );
+
+        $form['tree-access']['clone'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Clone and or pedigree information')
+        );
+        
+        return $form;
+    }
+    
+    function phenotype(&$form){
+        
+        $num_pheno = array();
+        
+        for($i = 0; $i < 20; $i++){
+            $num_pheno[$i] = $i + 1;
+        }
+        $num_pheno[20] = '>20';
+
+        $form['phenotype'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Phenotype Information:'),
+          '#tree' => TRUE,
+          '#states' => array(
+            'visible' => array(
+              array(
+                array(':input[name="dataType"]' => array('value' => '0')),
+                'or',
+                array(':input[name="dataType"]' => array('value' => '2')),
+                'or',
+                array(':input[name="dataType"]' => array('value' => '3')),
+              )
+            ),
+            'required' => array(
+              array(
+                array(':input[name="dataType"]' => array('value' => '0')),
+                'or',
+                array(':input[name="dataType"]' => array('value' => '2')),
+                'or',
+                array(':input[name="dataType"]' => array('value' => '3')),
+              )
+            )
+          )
+        );
+
+        $form['phenotype']['number'] = array(
+          '#type' => 'select',
+          '#title' => t('Number of Phenotypes'),
+          '#options' => $num_pheno,
+        );
+
+        for($i = 0; $i < 20; $i++){
+
+            $visible_values = array();
+            array_push($visible_values, array(':input[name="phenotype[number]"]' => array('value' => "$i")));
+
+            for ($j = $i + 1; $j < 20; $j++){
+                array_push($visible_values, 'or');
+                array_push($visible_values, array(':input[name="phenotype[number]"]' => array('value' => "$j")));
+            }
+
+            $phenotype_label = $i + 1;
+            $form['phenotype'][$i] = array(
+              '#type' => 'fieldset',
+              '#title' => t("Phenotype $phenotype_label"),
+              '#states' => array(
+                'visible' => array($visible_values)
+              )
+            );
+
+            $form['phenotype'][$i]['name'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Name'),
+            );
+
+            $form['phenotype'][$i]['phenotype_or_environmental'] = array(
+              '#type' => 'radios',
+              '#title' => t('Phenotype or Environmental Variable:'),
+              '#options' => array(
+                0 => t('Phenotype'),
+                1 => t('Environmental Variable'),
+              ),
+            );
+
+            $form['phenotype'][$i]['type'] = array(
+              '#type' => 'select',
+              '#title' => t('Type'),
+              '#options' => array(
+                0 => 'Please select a type',
+                1 => 'Binary',
+                2 => 'Quantitative',
+                3 => 'Qualitative'
+              ),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+                )
+              )
+            );
+
+            $form['phenotype'][$i]['binary'] = array(
+              '#type' => 'fieldset',
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][type]"]' => array('value' => '1')
+                )
+              ),
+            );
+
+            $form['phenotype'][$i]['binary'][1] = array(
+              '#type' => 'textfield',
+              '#title' => t('Type 1:'),
+            );
+
+            $form['phenotype'][$i]['binary'][2] = array(
+              '#type' => 'textfield',
+              '#title' => t('Type 2:'),
+            );
+
+            $form['phenotype'][$i]['quantitative'] = array(
+              '#type' => 'fieldset',
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][type]"]' => array('value' => '2')
+                )
+              ),
+            );
+
+            $form['phenotype'][$i]['quantitative']['min'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Minimum value:'),
+            );
+
+            $form['phenotype'][$i]['quantitative']['max'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Maximum value:'),
+            );
+
+            $form['phenotype'][$i]['description'] = array(
+              '#type' => 'textarea',
+              '#title' => t('Please provide a short description of your phenotype:'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+                )
+              )
+            );
+
+            $form['phenotype'][$i]['units'] = array(
+              '#type' => 'select',
+              '#title' => t('Units:'),
+              '#options' => array(
+                0 => 'Please select a unit type',
+                1 => 'mm',
+                2 => 'cm',
+                3 => 'm',
+                4 => 'Degrees Celsius',
+                5 => 'Degrees Fahrenheit',
+                6 => 'Other'
+              ),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+                )
+              )
+            );
+
+            $form['phenotype'][$i]['units-other'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Define Unit type'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][units]"]' => array('value' => '6')
+                )
+              )
+            );
+            
+            $form['phenotype'][$i]['structure'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Plant Structure:'),
+              '#description' => t('Please choose a term that describes the plant structure the phenotype was measured on.'),
+              '#autocomplete_path' => 'structure/autocomplete',
+              '#maxlength' => 128
+            );
+            
+            $form['phenotype'][$i]['developmental'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Developmental Stage:'),
+              '#description' => t('Please choose a term that describes the developmental stage the phenotype was measured on.'),
+              '#autocomplete_path' => 'developmental/autocomplete',
+              '#maxlength' => 128
+            );
         }
 
-        $phenotype_label = $i + 1;
-        $form['phenotype'][$i] = array(
-          '#type' => 'fieldset',
-          '#title' => t("Phenotype $phenotype_label"),
-          '#states' => array(
-            'visible' => array($visible_values)
-          )
-        );
-
-        $form['phenotype'][$i]['name'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Name'),
-        );
-
-        $form['phenotype'][$i]['phenotype_or_environmental'] = array(
-          '#type' => 'radios',
-          '#title' => t('Phenotype or Environmental Variable:'),
-          '#options' => array(
-            0 => t('Phenotype'),
-            1 => t('Environmental Variable'),
-          ),
-        );
-
-        $form['phenotype'][$i]['type'] = array(
-          '#type' => 'select',
-          '#title' => t('Type'),
-          '#options' => array(
-            0 => 'Please select a type',
-            1 => 'Binary',
-            2 => 'Quantitative',
-            3 => 'Qualitative'
-          ),
-          '#states' => array(
+        $form['phenotype']['upload'] = array(
+          '#type' => 'file',
+          '#title' => t('Phenotype file'),
+          '#title_display' => 'invisible',
+          '#states' => array( 
             'visible' => array(
-              ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+              ':input[name="phenotype[number]"]' => array('value' => '20')
             )
           )
         );
-
-        $form['phenotype'][$i]['binary'] = array(
-          '#type' => 'fieldset',
-          '#states' => array(
-            'visible' => array(
-              ':input[name="phenotype[' . $i . '][type]"]' => array('value' => '1')
-            )
-          ),
-        );
-
-        $form['phenotype'][$i]['binary'][1] = array(
-          '#type' => 'textfield',
-          '#title' => t('Type 1:'),
-        );
-
-        $form['phenotype'][$i]['binary'][2] = array(
-          '#type' => 'textfield',
-          '#title' => t('Type 2:'),
-        );
-
-        $form['phenotype'][$i]['quantitative'] = array(
-          '#type' => 'fieldset',
-          '#states' => array(
-            'visible' => array(
-              ':input[name="phenotype[' . $i . '][type]"]' => array('value' => '2')
-            )
-          ),
-        );
-
-        $form['phenotype'][$i]['quantitative']['min'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Minimum value:'),
-        );
-
-        $form['phenotype'][$i]['quantitative']['max'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Maximum value:'),
-        );
-
-        $form['phenotype'][$i]['description'] = array(
-          '#type' => 'textarea',
-          '#title' => t('Please provide a short description of your phenotype:'),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
-            )
-          )
-        );
-
-        $form['phenotype'][$i]['units'] = array(
-          '#type' => 'select',
-          '#title' => t('Units:'),
-          '#options' => array(
-            0 => 'Please select a unit type',
-            1 => 'mm',
-            2 => 'cm',
-            3 => 'm',
-            4 => 'Degrees Celsius',
-            5 => 'Degrees Fahrenheit',
-            6 => 'Other'
-          ),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
-            )
-          )
-        );
-
-        $form ['phenotype'][$i]['units-other'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Define Unit type'),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="phenotype[' . $i . '][units]"]' => array('value' => '6')
-            )
-          )
-        );
+        
+        return $form;
     }
+    
+    function genotype(&$form){
+        
+        $form['genotype'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Genotype Information:'),
+          '#tree' => TRUE,
+          '#states' => array(
+            'visible' => array(
+              array(
+                array(':input[name="dataType"]' => array('value' => '0')),
+                'or',
+                array(':input[name="dataType"]' => array('value' => '1')),
+                'or',
+                array(':input[name="dataType"]' => array('value' => '2')),
+                'or',
+                array(':input[name="dataType"]' => array('value' => '4')),
+              )
+            )
+          )
+        );
 
-    $form['phenotype']['upload'] = array(
-      '#type' => 'file',
-      '#title' => t('Phenotype file'),
-      '#title_display' => 'invisible',
-      '#states' => array( 
-        'visible' => array(
-          ':input[name="phenotype[number]"]' => array('value' => '20')
-        )
-      )
-    );
+        $form['genotype']['marker-type'] = array(
+          '#type' => 'select',
+          '#title' => t('Marker Type:'),
+          '#options' => array(
+            0 => 'Please select a Marker type',
+            1 => 'SNPs',
+            2 => 'SSRs/cpSSRs',
+            3 => 'Other',
+          )
+        );
+
+        $form['genotype']['SNPs'] = array(
+          '#type' => 'fieldset',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="genotype[marker-type]"]' => array('value' => '1')
+            )
+          )
+        );
+
+        $form['genotype']['SNPs']['genotyping-design'] = array(
+          '#type' => 'select',
+          '#title' => t('Define Genotyping Design'),
+          '#options' => array(
+            0 => 'Please select a Genotyping Design',
+            1 => 'GBS',
+            2 => 'Targeted Capture',
+            3 => 'Whole Genome Resequencing',
+            4 => 'RNA-Seq',
+            5 => 'Genotyping Array'
+          )
+        );
+
+        $form['genotype']['SNPs']['GBS'] = array(
+          '#type' => 'select',
+          '#title' => t('GBS Type'),
+          '#options' => array(
+            0 => 'Please select a GBS type',
+            1 => 'RADSeq',
+            2 => 'ddRAD-Seq',
+            3 => 'NextRAD',
+            4 => 'RAPTURE',
+            5 => 'Other'
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="genotype[SNPs][genotyping-design]"]' => array('value' => '1')
+            )
+          )
+        );
+
+        $form['genotype']['SNPs']['GBS-other'] = array(
+          '#type' => 'textfield',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="genotype[SNPs][GBS]"]' => array('value' => '5'),
+              ':input[name="genotype[SNPs][genotyping-design]"]' => array('value' => '1')
+            )
+          )
+        );
+
+        $form['genotype']['SNPs']['targeted-capture'] = array(
+          '#type' => 'select',
+          '#title' => t('Targeted Capture Type'),
+          '#options' => array(
+            0 => 'Please select a Targeted Capture Type',
+            1 => 'Exome Capture',
+            2 => 'Other'
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="genotype[SNPs][genotyping-design]"]' => array('value' => '2')
+            )
+          )
+        );
+
+        $form['genotype']['SNPs']['targeted-capture-other'] = array(
+          '#type' => 'textfield',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="genotype[SNPs][targeted-capture]"]' => array('value' => '2'),
+              ':input[name="genotype[SNPs][genotyping-design]"]' => array('value' => '2')
+            )
+          )
+        );
+
+        $form['genotype']['SNPs']['bioproject'] = array(
+          '#type' => 'textfield',
+          '#title' => 'BioProject ID:'
+        );
+
+        $form['genotype']['SNPs']['SNP-file-type'] = array(
+          '#type' => 'select',
+          '#title' => 'SNP File:',
+          '#options' => array(
+            0 => 'Please select an SNP file type',
+            1 => '.VCF',
+            2 => 'Spreadsheet',
+          )
+        );
+
+        $form['genotype']['SNPs']['SNP-VCF'] = array(
+          '#type' => 'file',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="genotype[SNPs][SNP-file-type]"]' => array('value' => '1')
+            )
+          )
+        );
+
+        $form['genotype']['SNPs']['SNP-spreadsheet'] = array(
+          '#type' => 'file',
+          '#description' => t('Please provide a spreadsheet with the following columns:<br>'
+              . '   SNP Name<br>   Type(indel/SNP)<br>   Location<br>   Quality Score<br>   Allele/Reference Allele<br><br>'
+              . 'Optional columns:<br>'
+              . '   Coverage Depth<br>   Mapping Quality Score<br>'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="genotype[SNPs][SNP-file-type]"]' => array('value' => '2')
+            )
+          )
+        );
+
+        $form['genotype']['SSRs/cpSSRs'] = array(
+          '#type' => 'fieldset',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="genotype[marker-type]"]' => array('value' => '2')
+            )
+          )
+        );
+
+        $form['genotype']['SSRs/cpSSRs']['define-type'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Define Type:'),
+        );
+
+        $form['genotype']['SSRs/cpSSRs']['load-file'] = array(
+          '#type' => 'file',
+          '#title' => t('Load File with primer information and marker for each individual genotype:'),
+        );
+
+        $form['genotype']['other'] = array(
+          '#type' => 'fieldset',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="genotype[marker-type]"]' => array('value' => '3')
+            )
+          )
+        );
+
+        $form['genotype']['other']['define-type'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Define Type:'),
+        );
+
+        $form['genotype']['other']['load-file'] = array(
+          '#type' => 'file',
+          '#title' => t('Load File:')
+        );
+        
+        return $form;
+    };
+    
+    tree_access($form);
+    
+    phenotype($form);
+    
+    genotype($form);
     
     $form['submit'] = array(
       '#type' => 'submit',
       '#title' => t('Submit'),
       '#value' => t('Submit')
     );
-    
-    
 
     drupal_add_js(drupal_get_path('module', 'custom_module') . "/custom_module.js");
     
@@ -1096,5 +2224,37 @@ function custom_module_showCustomModuleForm_third_page_validate($form, &$form_st
 }
 
 function custom_module_showCustomModuleForm_third_page_submit($form, &$form_state) {
+    $form_state['redirect'] = 'fourthPage';
+}
+
+function _structure_autocomplete($string){
+    $matches = array();
+    $result = db_select('chado.cv', 'cv')
+        ->fields('cv', array('name'))
+        ->condition('name', '%' . db_like($string) . '%', 'LIKE')
+        ->execute();
+    
+    foreach($result as $row){
+        $matches[$row->name] = check_plain($row->name);
+    }
+    
+    drupal_json_output($matches);
+}
+
+function _development_autocomplete($string){
+    $matches = array();
+    $result = db_select('chado.cv', 'cv')
+        ->fields('cv', array('name'))
+        ->condition('name', '%' . db_like($string) . '%', 'LIKE')
+        ->execute();
+    
+    foreach($result as $row){
+        $matches[$row->name] = check_plain($row->name);
+    }
+    
+    drupal_json_output($matches);
+}
+
+function custom_module_showCustomModuleForm_fourth_page_submit($form, &$form_state) {
     $form_state['redirect'] = 'fourthPage';
 }
