@@ -1991,7 +1991,52 @@ function custom_module_showCustomModuleForm_third_page() {
               '#title' => t('Plant Structure:'),
               '#description' => t('Please choose a term that describes the plant structure the phenotype was measured on.'),
               '#autocomplete_path' => 'structure/autocomplete',
-              '#maxlength' => 128
+              '#maxlength' => 128,
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+                )
+              )
+            );
+            
+            $form['phenotype'][$i]['structure-custom'] = array(
+              '#type' => 'fieldset',
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+                )
+              )
+            );
+            
+            $form['phenotype'][$i]['structure-custom']['check'] = array(
+              '#type' => 'checkbox',
+              '#title' => t('None of these terms meet my needs')
+            );
+            
+            $form['phenotype'][$i]['structure-custom']['term'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Please enter the name of your custom term'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][structure-custom][check]"]' => array('checked' => TRUE)
+                ),
+                'required' => array(
+                  ':input[name="phenotype[' . $i . '][structure-custom][check]"]' => array('checked' => TRUE)
+                ),
+              )
+            );
+            
+            $form['phenotype'][$i]['structure-custom']['definition'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Please enter the definition of your custom term'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][structure-custom][check]"]' => array('checked' => TRUE)
+                ),
+                'required' => array(
+                  ':input[name="phenotype[' . $i . '][structure-custom][check]"]' => array('checked' => TRUE)
+                ),
+              )
             );
             
             $form['phenotype'][$i]['developmental'] = array(
@@ -1999,7 +2044,52 @@ function custom_module_showCustomModuleForm_third_page() {
               '#title' => t('Developmental Stage:'),
               '#description' => t('Please choose a term that describes the developmental stage the phenotype was measured on.'),
               '#autocomplete_path' => 'developmental/autocomplete',
-              '#maxlength' => 128
+              '#maxlength' => 128,
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+                )
+              )
+            );
+            
+            $form['phenotype'][$i]['developmental-custom'] = array(
+              '#type' => 'fieldset',
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][phenotype_or_environmental]"]' => array('value' => '0')
+                )
+              )
+            );
+            
+            $form['phenotype'][$i]['developmental-custom']['check'] = array(
+              '#type' => 'checkbox',
+              '#title' => t('None of these terms meet my needs')
+            );
+            
+            $form['phenotype'][$i]['developmental-custom']['term'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Please enter the name of your custom term'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][developmental-custom][check]"]' => array('checked' => TRUE)
+                ),
+                'required' => array(
+                  ':input[name="phenotype[' . $i . '][developmental-custom][check]"]' => array('checked' => TRUE)
+                ),
+              )
+            );
+            
+            $form['phenotype'][$i]['developmental-custom']['definition'] = array(
+              '#type' => 'textfield',
+              '#title' => t('Please enter the definition of your custom term'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="phenotype[' . $i . '][developmental-custom][check]"]' => array('checked' => TRUE)
+                ),
+                'required' => array(
+                  ':input[name="phenotype[' . $i . '][developmental-custom][check]"]' => array('checked' => TRUE)
+                ),
+              )
             );
         }
 
@@ -2037,7 +2127,9 @@ function custom_module_showCustomModuleForm_third_page() {
             )
           )
         );
-
+        
+        //need to change this to 'checkboxes'
+        //will also need to change states values in the sections that depend on this menu
         $form['genotype']['marker-type'] = array(
           '#type' => 'select',
           '#title' => t('Marker Type:'),
@@ -2230,12 +2322,17 @@ function custom_module_showCustomModuleForm_third_page_submit($form, &$form_stat
 function _structure_autocomplete($string){
     $matches = array();
     $result = db_select('chado.cv', 'cv')
-        ->fields('cv', array('name'))
+        ->fields('cv', array('name', 'definition'))
         ->condition('name', '%' . db_like($string) . '%', 'LIKE')
         ->execute();
     
     foreach($result as $row){
-        $matches[$row->name] = check_plain($row->name);
+        if ($row->definition != ""){
+            $matches[$row->name] = check_plain($row->name . ":  " . $row->definition);
+        }
+        else{
+            $matches[$row->name] = check_plain($row->name . ":  No definition on record");
+        }
     }
     
     drupal_json_output($matches);
@@ -2244,12 +2341,17 @@ function _structure_autocomplete($string){
 function _development_autocomplete($string){
     $matches = array();
     $result = db_select('chado.cv', 'cv')
-        ->fields('cv', array('name'))
+        ->fields('cv', array('name', 'definition'))
         ->condition('name', '%' . db_like($string) . '%', 'LIKE')
         ->execute();
     
     foreach($result as $row){
-        $matches[$row->name] = check_plain($row->name);
+        if ($row->definition != ""){
+            $matches[$row->name] = check_plain($row->name . ":  " . $row->definition);
+        }
+        else{
+            $matches[$row->name] = check_plain($row->name . ":  No definition on record");
+        }
     }
     
     drupal_json_output($matches);
