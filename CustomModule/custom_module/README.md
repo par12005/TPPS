@@ -22,6 +22,8 @@ To do:
 
 Resources:
 
+Newest TPPS Flow Concept document: https://docs.google.com/document/d/1fyRlf18j5fq8D2l5Yvx9X-VdUqlrkSvoLC9KGbDnrU8/edit?usp=sharing
+
 Old TGDR Submission Pipeline for reference: https://dendrome.ucdavis.edu/tgdr/DataImporter.php
 
 Fairly Comprehensive Walkthrough of Drupal Module Dev (Covers Forms, AJAX, and tokens):
