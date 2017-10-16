@@ -1377,14 +1377,14 @@ function custom_module_showCustomModuleForm_second_page() {
           )
         );
 
-        $form['greenhouse']['temp']['day'] = array(
+        $form['greenhouse']['temp']['high'] = array(
           '#type' => 'textfield',
-          '#title' => t('Average Day Temperature'),
+          '#title' => t('Average High Temperature:'),
         );
 
-        $form['greenhouse']['temp']['night'] = array(
+        $form['greenhouse']['temp']['low'] = array(
           '#type' => 'textfield',
-          '#title' => t('Average Night Temperature'),
+          '#title' => t('Average Low Temperature:'),
         );
         
         $form['greenhouse']['rooting'] = array(
@@ -1489,7 +1489,7 @@ function custom_module_showCustomModuleForm_second_page() {
         
         $form['greenhouse']['rooting']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Rooting Treatments:'),
+          '#title' => t('Treatments:'),
           '#states' => array(
             'required' => array(
               ':input[name="studyType"]' => array('value' => '3')
@@ -1594,7 +1594,7 @@ function custom_module_showCustomModuleForm_second_page() {
         
         $form['commonGarden']['irrigation']['option'] = array(
           '#type' => 'select',
-          '#title' => t('Irrigation type:'),
+          '#title' => t('Irrigation Type:'),
           '#options' => array(
             0 => 'Please select an irrigation type',
             1 => 'Irrigation from top',
@@ -1637,7 +1637,7 @@ function custom_module_showCustomModuleForm_second_page() {
         
         $form['commonGarden']['bioticEnv']['option'] = array(
           '#type' => 'checkboxes',
-          '#title' => t('Biotic Environment'),
+          '#title' => t('Biotic Environment:'),
           '#options' => drupal_map_assoc(array(
             t('Herbivores'),
             t('Mutulists'),
@@ -1922,9 +1922,19 @@ function custom_module_showCustomModuleForm_second_page_validate($form, &$form_s
                 valid_ph($growth_chamber);
                 
                 //consider using some counter variable to take every other item in $treatment. 
+                $selected = false;
+                $description = false;
                 
-                foreach ($treatment as $key => $value){
-                    print_r($key . ' => ' . $value . ';<br>');
+                foreach ($treatment as $field => $value){
+                    if (!$description){
+                        $description = true;
+                        $selected = $value;
+                        continue;
+                    }
+                    elseif ($selected == '1' and $value == ''){
+                        form_set_error("growthChamber][rooting][treatment][$field", "$field: field is required.");
+                    }
+                    $description = false;
                 }
             }
             
@@ -1947,9 +1957,160 @@ function custom_module_showCustomModuleForm_second_page_validate($form, &$form_s
             break;
         case '3':
             //greenhouse
+            $green_temp_high = $greenhouse['temp']['high'];
+            $green_temp_low = $greenhouse['temp']['low'];
+            
+            function green_valid_humidity($greenhouse){
+                $humidity_control = $greenhouse['humidityControl']['option'];
+                $humidity_controlled = $greenhouse['humidityControl']['controlled'];
+                if ($humidity_control == '0'){
+                    form_set_error('greenhouse][humidityControl][option', 'Air Humidity controlled or uncontrolled: field is required.');
+                }
+                elseif ($humidity_control == '1' and $humidity_controlled == ''){
+                    form_set_error('greenhouse][humidityControl][controlled', 'Controlled Air Humidity Value: field is required.');
+                }
+            }
+            
+            function green_valid_light($greenhouse){
+                $light_control = $greenhouse['lightControl']['option'];
+                $light_controlled = $greenhouse['lightControl']['controlled'];
+                if ($light_control == '0'){
+                    form_set_error('greenhouse][lightControl][option', 'Light Intensity controlled or uncontrolled: field is required.');
+                }
+                elseif ($light_control == '1' and $light_controlled == ''){
+                    form_set_error('greenhouse][lightControl][controlled', 'Controlled Light Intensity Value: field is required.');
+                }
+            }
+            
+            function green_valid_ph($greenhouse){
+                $ph_control = $greenhouse['rooting']['ph']['option'];
+                $ph_controlled = $greenhouse['rooting']['ph']['controlled'];
+                if ($ph_control == '0'){
+                    form_set_error('greenhouse][rooting][ph][option', 'pH controlled or uncontrolled: field is required.');
+                }
+                elseif ($ph_control == '1' and $ph_controlled == ''){
+                    form_set_error('greenhouse][rooting][ph][controlled', 'Controlled pH Value: field is required.');
+                }
+            }
+            
+            function green_valid_rooting($greenhouse){
+                $rooting_option = $greenhouse['rooting']['option'];
+                $soil_type = $greenhouse['rooting']['soil']['type'];
+                $soil_container = $greenhouse['rooting']['soil']['container'];
+                $soil_other = $greenhouse['rooting']['soil']['other'];
+                $treatment = $greenhouse['rooting']['treatment'];
+                
+                if ($rooting_option == '0'){
+                    form_set_error('greenhouse][rooting][option', 'Rooting Type: field is required.');
+                }
+                elseif($rooting_option == '3'){
+                    if ($soil_type == '0'){
+                        form_set_error('greenhouse][rooting][soil][type', 'Soil Type: field is required.');
+                    }
+                    elseif($soil_type == '5' and $soil_other == ''){
+                        form_set_error('greenhouse][rooting][soil][other', 'Custom Soil Type: field is required.');
+                    }
+
+                    if($soil_container == ''){
+                        form_set_error('greenhouse][rooting][soil][container', 'Soil Container Type: field is required.');
+                    }
+                }
+                
+                green_valid_ph($greenhouse);
+                
+                //consider using some counter variable to take every other item in $treatment. 
+                $selected = false;
+                $description = false;
+                
+                foreach ($treatment as $field => $value){
+                    if (!$description){
+                        $description = true;
+                        $selected = $value;
+                        continue;
+                    }
+                    elseif ($selected == '1' and $value == ''){
+                        form_set_error("greenhouse][rooting][treatment][$field", "$field: field is required.");
+                    }
+                    $description = false;
+                }
+            }
+            
+            green_valid_humidity($greenhouse);
+            
+            green_valid_light($greenhouse);
+            
+            if ($green_temp_high == ''){
+                form_set_error('greenhouse][temp][high', 'Average High Temperature: field is required.');
+            }
+            
+            if ($green_temp_low == ''){
+                form_set_error('greenhouse][temp][low', 'Average Low Temperature: field is required.');
+            }
+            
+            green_valid_rooting($greenhouse);
+            
             break;
         case '4':
             //common garden
+            $irrigation_option = $common_garden['irrigation']['option'];
+            $custom_irrigation = $common_garden['irrigation']['other'];
+            $biotic_env = $common_garden['bioticEnv']['option'];
+            $biotic_env_check = ($biotic_env['Herbivores'] . $biotic_env['Mutulists'] . $biotic_env['Pathogens'] . $biotic_env['Endophytes'] . $biotic_env['Other'] . $biotic_env['None']);
+            $custom_biotic_env = $common_garden['bioticEnv']['other'];
+            $seasons = $common_garden['season'];
+            $seasons_check = ($seasons['Spring'] . $seasons['Summer'] . $seasons['Fall'] . $seasons['Winter']);
+            $treatment = $common_garden['treatment'];
+            
+            function valid_salinity($common_garden){
+                $salinity_control = $common_garden['salinity']['option'];
+                $salinity_controlled = $common_garden['salinity']['controlled'];
+                $salinity_uncontrolled = $common_garden['salinity']['uncontrolled'];
+                if ($salinity_control == '0'){
+                    form_set_error('commonGarden][salinity][option', 'Salinity controlled or uncontrolled: field is required.');
+                }
+                elseif ($salinity_control == '1' and $salinity_controlled == ''){
+                    form_set_error('commonGarden][salinity][controlled', 'Controlled Salinity Value: field is required.');
+                }
+                elseif ($salinity_control == '2' and $salinity_uncontrolled == ''){
+                    form_set_error('commonGarden][salinity][uncontrolled', 'Average Salinity Value: field is required.');
+                }
+            }
+            
+            if ($irrigation_option == '0'){
+                form_set_error('commonGarden][irrigation][option', 'Irrigation Type: field is required.');
+            }
+            elseif($irrigation_option == '4' and $custom_irrigation == ''){
+                form_set_error('commonGarden][irrigation][other', 'Custom Irrigation Type: field is required.');
+            }
+            
+            valid_salinity($common_garden);
+            
+            if ($biotic_env_check == '000000'){
+                form_set_error('commonGarden][bioticEnv][option', 'Biotic Environment: field is required.');
+            }
+            elseif($biotic_env['Other'] != '0' and $custom_biotic_env == ''){
+                form_set_error('commonGarden][bioticEnv][other', 'Custom Biotic Environment: field is required.');
+            }
+            
+            if ($seasons_check == '0000'){
+                form_set_error('commonGarden][season', 'Seasons: field is required.');
+            }
+            
+            $selected = false;
+            $description = false;
+
+            foreach ($treatment as $field => $value){
+                if (!$description){
+                    $description = true;
+                    $selected = $value;
+                    continue;
+                }
+                elseif ($selected == '1' and $value == ''){
+                    form_set_error("commonGarden][treatment][$field", "$field: field is required.");
+                }
+                $description = false;
+            }
+            
             break;
         default:
             form_set_error('');
