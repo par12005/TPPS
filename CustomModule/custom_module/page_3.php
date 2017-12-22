@@ -545,9 +545,9 @@ function page_3_validate_form(&$form, &$form_state){
         }
     }
     
-    if (empty(form_get_errors())){
+    /*if (empty(form_get_errors())){
         form_set_error('submit', 'validation success');
-    }
+    }*/
 }
 
 function page_3_submit_form(&$form, &$form_state){
