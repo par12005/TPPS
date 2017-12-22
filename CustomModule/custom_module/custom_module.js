@@ -96,10 +96,8 @@ jQuery(document).ready(function () {
         var organism_remove = jQuery('#edit-organism-remove');
         var organism_number = jQuery('#edit-organism-number')[0].value;
         var organisms = jQuery('#edit-organism').children('div').children('fieldset');
-        var custom_species = jQuery('input').filter(function(){ return this.id.match(/edit-organism-.-custom-species/); });
         
         jQuery('#edit-organism-number').hide();
-        custom_species.hide();
         organisms.hide();
         
         if (organism_number > 0){
@@ -224,20 +222,47 @@ jQuery(document).ready(function () {
         
     }
     
+    function Genotype(organism_number){
+        var bioproject_field = jQuery("#edit-organism-" + organism_number + "-genotype-bioproject-id");
+        var bioproject_area = jQuery("#BioProject-organism-" + organism_number);
+        
+        bioproject_field.on('focusout', function(){
+            var bioproject_accession = bioproject_field[0].value;
+            var bioproject_id = bioproject_accession.substring(5);
+            var content_url = "https://www.ncbi.nlm.nih.gov/bioproject/?term=" + bioproject_accession;
+            //var content_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=bioproject&term=" + bioproject_accession;
+            //bioproject_area.html("<object data='" + content_url + "'/>");
+            
+            //bioproject_area.html("<a target='blank' href='" + content_url +"'>Click here</a> to view the BioProject you have provided");
+            //bioproject_area.append("<br>The following Assembly ID's were found associated with this BioProject Accession number:<br><object id='bioproject_content' data='https://www.ncbi.nlm.nih.gov/assembly?LinkName=bioproject_assembly_all&from_uid=" + bioproject_id + "&report=uilist' style='width: 100%; height:75px;'/>")
+            
+            //console.log(jQuery(bioproject_area));
+        });
+    }
+    
     jQuery("#edit-step").hide();
     
-    if (jQuery("#edit-step")[0].value === 'Hellopage'){
-        Secondary_Authors();
-        Organism();
-    }
-    else if(jQuery("#edit-step")[0].value === 'thirdPage'){
-        var number_of_organisms = jQuery("input").filter(function(){ return this.id.match(/edit-organism-.-phenotype-number/); }).length;
-        
-        for(var i = 1; i <= number_of_organisms; i++){
-            Phenotype(i);
+    
+    if(jQuery("#edit-step").length > 0){
+        if (jQuery("#edit-step")[0].value === 'Hellopage'){
+            Secondary_Authors();
+            Organism();
+        }
+        else if(jQuery("#edit-step")[0].value === 'thirdPage'){
+            var number_of_organisms = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.$/); }).length;
+            var phenotypes = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.-phenotype/);});
+            var genotypes = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.-genotype/);});
+
+            for(var i = 1; i <= number_of_organisms; i++){
+                if (phenotypes.length !== 0){
+                    Phenotype(i);
+                }
+                if (genotypes.length !== 0){
+                    Genotype(i);
+                }
+            }
         }
     }
-    
     
     //jQuery('#block-menu-devel').children('ul').children().hide();
     

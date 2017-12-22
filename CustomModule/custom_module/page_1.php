@@ -151,8 +151,13 @@ function page_1_create_form(&$form, $form_state){
             );
             
             $form['publication']['secondaryAuthors']['file'] = array(
-              '#type' => 'file',
-              '#title' => t('Please upload a file containing the names of all of your authors.'),
+              '#type' => 'managed_file',
+              '#title' => t('Please upload csv a file containing the names of all of your authors, and title the columns "last", "first", and "mi", in any order.'),
+              '#upload_location' => 'public://',
+              '#upload_validators' => array(
+                'file_validate_extensions' => array('csv')
+              ),
+              '#default_value' => isset($values['publication']['secondaryAuthors']['file']) ? $values['publication']['secondaryAuthors']['file'] : NULL,
               '#states' => array(
                 'visible' => array(
                   ':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
@@ -268,7 +273,7 @@ function page_1_create_form(&$form, $form_state){
         return $form;
     }
     
-    function organism(&$form, $values, $form_state){
+    function organism(&$form, $values){
         
         $form['organism'] = array(
           '#type' => 'fieldset',
@@ -300,7 +305,7 @@ function page_1_create_form(&$form, $form_state){
             
             $form['organism']["$i"] = array(
               '#type' => 'fieldset',
-              '#title' => t("Organism $i:"),
+              '#title' => t("Tree Species $i:"),
             );
             
             $form['organism']["$i"]['species'] = array(
@@ -308,11 +313,6 @@ function page_1_create_form(&$form, $form_state){
               '#title' => t('Species:'),
               '#autocomplete_path' => "species/autocomplete",
               '#default_value' => isset($values['organism']["$i"]['species']) ? $values['organism']["$i"]['species'] : NULL,
-            );
-            
-            $form['organism']["$i"]['custom-species'] = array(
-              '#type' => 'textfield',
-              '#default_value' => isset($values['organism']["$i"]['custom-species']) ? $values['organism']["$i"]['custom-species'] : "TRUE",
             );
         }
         
@@ -323,7 +323,7 @@ function page_1_create_form(&$form, $form_state){
     
     publication($form, $values);
     
-    organism($form, $values, $form_state);
+    organism($form, $values);
     
     /*
     $form['keywords'] = array(
@@ -337,18 +337,6 @@ function page_1_create_form(&$form, $form_state){
       '#type' => 'submit',
       '#value' => t('Next'),
     );
-    
-    //drupal_add_js(drupal_get_path('module', 'custom_module') . "/custom_module.js");
-
-    /*
-     * This is instantiating a user token.  It will be verified
-     * in the JS file and they will not be given acess to data 
-     * returned by AJAX if their token is invalid (if not logged
-     * in).
-     */
-    global $user;
-    $newToken = drupal_get_token("my secret value" . $user->uid);
-    drupal_add_js("var myToken='$newToken'", "inline");
     
     return $form;
 }
@@ -378,6 +366,24 @@ function page_1_validate_form(&$form, &$form_state){
         $organism = $form_values['organism'];
         $organism_number = $form_values['organism']['number'];
         
+        function validate_secondary_authors($secondary_authors_file){
+            if ($secondary_authors_file != ""){
+                $file = file(file_load($secondary_authors_file)->uri);
+                $file_contents = explode("\r", $file[0]);
+                $columns = explode(",", $file_contents[0]);
+
+                if (count($columns) != 3){
+                    $column_string = str_replace(',', ', ', $file_contents[0]);
+                    form_set_error('publication][secondaryAuthors][file', "Secondary Authors file: Must provide last name, first name, and middle initial. The provided file has: $column_string.");
+                }
+                //print_r($columns);
+                //print_r("files stored in " . file_create_url('public://'));
+            }
+            else{
+                form_set_error('publication][secondaryAuthors][file', 'Secondary Authors file: field is required.');
+            }
+        }
+        
         if ($primary_author == ''){
             form_set_error('primaryAuthor', 'Primary Author: field is required.');
         }
@@ -397,6 +403,9 @@ function page_1_validate_form(&$form, &$form_state){
                         form_set_error("publication][secondaryAuthors][$i", "Secondary Author $i: field is required.");
                     }
                 }
+            }
+            elseif ($secondary_authors_check == '1'){
+                validate_secondary_authors($secondary_authors_file);
             }
 
             if ($publication_status == 2 and $year_submitted == 0){
@@ -422,26 +431,11 @@ function page_1_validate_form(&$form, &$form_state){
             }
         }
         
-        $indexed_species = db_select('chado.organism', 'organism')
-            ->fields('organism', array('genus', 'species'))
-            ->orderBy('genus')
-            ->orderBy('species')
-            ->execute();
-        
         for ($i = 1; $i <= $organism_number; $i++){
             $species = $organism[$i]['species'];
-            $form_state['values']['organism']["$i"]['custom-species'] = "TRUE";
             
             if ($species == ''){
                 form_set_error("organism[$i][species", "Tree Species $i: field is required.");
-            }
-            else{
-                foreach ($indexed_species as $row){
-                    if ($species === ($row->genus . " " . $row->species)){
-                        $form_state['values']['organism']["$i"]['custom-species'] = "FALSE";
-                        break;
-                    }
-                }
             }
         }
     }
