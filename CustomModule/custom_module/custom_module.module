@@ -211,7 +211,7 @@ function custom_module_showCustomModuleForm_master_submit($form, &$form_state){
             }
             else{
                 submit_all($form, $form_state);
-                $form_state['stage'] = 'submitted';
+                drupal_goto('<front>');
             }
             break;
         
