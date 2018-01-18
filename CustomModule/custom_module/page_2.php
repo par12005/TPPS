@@ -1261,6 +1261,7 @@ function page_2_validate_form(&$form, &$form_state){
     $growth_chamber = $form_values['growthChamber'];
     $greenhouse = $form_values['greenhouse'];
     $common_garden = $form_values['commonGarden'];
+    $plantation = $form_values['plantation'];
     
     if ($start_date['year'] == '0'){
         form_set_error('StartingDate][year', 'Year: field is required.');
@@ -1597,6 +1598,17 @@ function page_2_validate_form(&$form, &$form_state){
             break;
         case '5':
             //Plantation
+            $seasons = $plantation['season'];
+            $seasons_check = ($seasons['Spring'] . $seasons['Summer'] . $seasons['Fall'] . $seasons['Winter']);
+            if ($seasons_check == '0000'){
+                form_set_error('plantation][season', 'Seasons: field is required.');
+            }
+            
+            $assessions = $plantation['assessions'];
+            if ($assessions == ''){
+                form_set_error('plantation][assessions', 'Number of times the populations were assessed: field is required.');
+            }
+            
             break;
         default:
             form_set_error('');
