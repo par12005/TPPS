@@ -1,9 +1,6 @@
 TGDR 
 
-Directory Location:
-Server: 155.37.254.147
-Path:   /var/www/Drupal/sites/all/modules/CustomModule/custom_module
-All contents are in this directory, currently no need to look elsewhere.
+
 
 To do:
 
