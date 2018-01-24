@@ -516,6 +516,41 @@ function page_3_validate_form(&$form, &$form_state){
             }
             
         }
+        elseif ($file_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'){
+            $location = '/var/www/Drupal/sites/default/files/' . file_load($accession)->filename;
+            
+            $content = parse_xlsx($location);
+            $columns = $content['headers'];
+            $provided_columns = explode(",", $provided_columns);
+            $id_omitted = TRUE;
+            $location_omitted = TRUE;
+            
+            foreach($columns as $key => $col){
+                $columns[$key] = trim($col);
+                if (preg_match('/^(id|ID|Id|Identifier|identifier|IDENTIFIER)$/', $columns[$key]) == 1){
+                    $id_omitted = FALSE;
+                }
+                elseif (preg_match('/^(location|Location|LOCATION)$/', $columns[$key]) == 1){
+                    $location_omitted = FALSE;
+                }
+            }
+            
+            foreach($provided_columns as $key => $col){
+                $provided_columns[$key] = trim($col);
+            }
+            
+            if (array_diff($columns, $provided_columns) == array()){
+                if ($id_omitted){
+                    form_set_error("tree-accession", 'Tree Accession file: We were unable to find your "Identifier" column. Please resubmit your file with a column named "Identifier", with an identifier for each tree.');
+                }
+                if ($location_omitted){
+                    form_set_error("tree-accession", 'Tree Accession file: We were unable to find your "Location" column. Please resubmit your file with a column named "Location", with the location of each tree.');
+                }
+            }
+            else{
+                form_set_error("tree-accession-columns", 'Tree Accession Columns: provided columns do not match file.');
+            }
+        }
     }
     
     $form_values = $form_state['values'];
