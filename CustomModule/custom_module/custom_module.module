@@ -124,10 +124,28 @@ function custom_module_showCustomModuleForm_master($form, &$form_state){
         $form_state['stage'] = 'Hellopage';
     }
     
+    switch ($form_state['stage']){
+        case 'Hellopage':
+            $page_number = 1;
+            $page_desc = 'Author and Species Information';
+            break;
+        case 'secondPage':
+            $page_number = 2;
+            $page_desc = 'Experimental Conditions';
+            break;
+        case 'thirdPage':
+            $page_number = 3;
+            $page_desc = 'Submit Data';
+            break;
+        default:
+            break;
+    }
+    
     $form['step'] = array(
       '#type' => 'textfield',
       '#disabled' => TRUE,
       '#default_value' => $form_state['stage'],
+      '#prefix' => "<div id='progress'>Page $page_number of 3: $page_desc</div>",
     );
     
     switch ($form_state['stage']){

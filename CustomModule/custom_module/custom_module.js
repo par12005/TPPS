@@ -243,12 +243,16 @@ jQuery(document).ready(function () {
     jQuery("#edit-step").hide();
     
     
-    if(jQuery("#edit-step").length > 0){
+    if (jQuery("#edit-step").length > 0){
+        
+        jQuery("#progress").css('font-size', '1.5rem');
+        jQuery("#progress").css('margin-bottom', '30px');
+        
         if (jQuery("#edit-step")[0].value === 'Hellopage'){
             Secondary_Authors();
             Organism();
         }
-        else if(jQuery("#edit-step")[0].value === 'thirdPage'){
+        else if (jQuery("#edit-step")[0].value === 'thirdPage'){
             var number_of_organisms = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.$/); }).length;
             var phenotypes = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.-phenotype/);});
             var genotypes = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.-genotype/);});
