@@ -275,7 +275,7 @@ function page_3_create_form(&$form, $form_state){
       '#title' => t("Please provide a file with information regarding the accession of the trees used in this study:"),
       '#upload_location' => 'public://',
       '#upload_validators' => array(
-        'file_validate_extensions' => array('tsv csv xlsx'),
+        'file_validate_extensions' => array('txt csv xlsx'),
       ),
       '#default_value' => isset($values['tree-accession']) ? $values['tree-accession'] : NULL,
       '#description' => 'Columns with information describing the Identifier of the tree and the location of the tree are required.'
