@@ -5,11 +5,17 @@ TGDR
 To do:
 
 1) Progress Bar
+
 2) Location thumbnail for Lat/Long
+
 3) File upload checks for Genotype
+
 4) Thumbnail of NCBI BioProject site when given BioProject accession number
+
 5) Load WGS/TSA files from BioProject rather than manually from the user, where applicable
+
 6) Compare sequence headers in VCF files to WGS/TSA files
+
 7) Give users a unique TreeGenes Accession Number
 
 Resources:
