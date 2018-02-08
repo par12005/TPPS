@@ -4,18 +4,19 @@ TGDR
 
 To do:
 
-1) custom_module.js 
-    i) Features a lot of redundant methods.  
-    ii) Drupal forms should have CSS classes that jQuery toggles between.
-    iii) Synchronous function call should be removed.
-    iv) Buttons shouldn't be created on the client side and then attached to forms.
+1) Progress Bar
 
-2) custom_module.module
-    i) Forms should not be generated in a for loop.
-    ii) Certain forms should be populated based on the value of other forms.
+2) Location thumbnail for Lat/Long
 
-3) General
-    i) Error-checking should be improved
+3) File upload checks for Genotype
+
+4) Thumbnail of NCBI BioProject site when given BioProject accession number
+
+5) Load WGS/TSA files from BioProject rather than manually from the user, where applicable
+
+6) Compare sequence headers in VCF files to WGS/TSA files
+
+7) Give users a unique TreeGenes Accession Number
 
 Resources:
 
