@@ -1432,19 +1432,6 @@ function parse_xlsx($location){
     
 }
 
-/*  this function will hopefully eventually be able to pull data from ncbi directly
-function get_assembly_GI_number($form, $form_state){
-    $bioproject_id = $form_state['values']['genotype'];
-    $bioproject_data = new SimpleXMLElement(file_get_contents('https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=' . $bioproject_id));
-
-    $result = array();
-    foreach ($bioproject_data->LinkSet->LinkSetDb->Link as $link){
-        array_push($result, 0 + $link->Id);
-    }
-    
-    return $result;
-}*/
-
 function custom_module_showCustomModuleForm_test_page($form, &$form_state){
     include_once  'test_page.php';
     

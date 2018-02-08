@@ -1,21 +1,5 @@
 jQuery(document).ready(function () {
     
-    /*jQuery('#submitAjaxButton').click(function () {
-        alert('You clicked on the ajax button');
-        jQuery.ajax({
-            url: Drupal.settings.basePath + 'getHello',
-            data: {
-                name: jQuery("#edit-name").val(),
-                token: myToken
-            },
-            success: function (data) {
-                jQuery("#msg-display-area").empty();
-                jQuery("#msg-display-area").append(data);
-                jQuery('#edit-study').hide();
-            }
-        });
-    });*/
-    
     function Secondary_Authors(){
         var secondary_authors_button_add = jQuery('#edit-publication-secondaryauthors-add');
         var secondary_authors_button_remove = jQuery('#edit-publication-secondaryauthors-remove');
@@ -222,24 +206,6 @@ jQuery(document).ready(function () {
         
     }
     
-    function Genotype(organism_number){
-        var bioproject_field = jQuery("#edit-organism-" + organism_number + "-genotype-bioproject-id");
-        var bioproject_area = jQuery("#BioProject-organism-" + organism_number);
-        
-        bioproject_field.on('focusout', function(){
-            var bioproject_accession = bioproject_field[0].value;
-            var bioproject_id = bioproject_accession.substring(5);
-            var content_url = "https://www.ncbi.nlm.nih.gov/bioproject/?term=" + bioproject_accession;
-            //var content_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=bioproject&term=" + bioproject_accession;
-            //bioproject_area.html("<object data='" + content_url + "'/>");
-            
-            //bioproject_area.html("<a target='blank' href='" + content_url +"'>Click here</a> to view the BioProject you have provided");
-            //bioproject_area.append("<br>The following Assembly ID's were found associated with this BioProject Accession number:<br><object id='bioproject_content' data='https://www.ncbi.nlm.nih.gov/assembly?LinkName=bioproject_assembly_all&from_uid=" + bioproject_id + "&report=uilist' style='width: 100%; height:75px;'/>")
-            
-            //console.log(jQuery(bioproject_area));
-        });
-    }
-    
     jQuery("#edit-step").hide();
     
     
@@ -261,13 +227,7 @@ jQuery(document).ready(function () {
                 if (phenotypes.length !== 0){
                     Phenotype(i);
                 }
-                if (genotypes.length !== 0){
-                    Genotype(i);
-                }
             }
         }
     }
-    
-    //jQuery('#block-menu-devel').children('ul').children().hide();
-    
 });

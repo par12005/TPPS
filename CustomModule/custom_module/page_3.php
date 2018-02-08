@@ -236,22 +236,51 @@ function page_3_create_form(&$form, $form_state){
         
         $fields['BioProject-id'] = array(
           '#type' => 'textfield',
-          '#title' => t('BioProject ID:'),
+          '#title' => t('BioProject Accession Number:'),
           '#default_value' => isset($values[$id]['genotype']['BioProject-id']) ? $values[$id]['genotype']['BioProject-id'] : NULL,
-          /*'#ajax' => array(
-            'event' => 'focusout',
-            'callback' => 'get_assembly_GI_number',
-          ),*/
+          '#ajax' => array(
+            'callback' => 'ajax_bioproject_callback',
+            'wrapper' => "$id-assembly-auto",
+          ),
+          '#states' => array(
+            'invisible' => array(
+              ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+            )
+          )
         );
         
-        $fields['assembly'] = array(
+        $fields['assembly-user'] = array(
           '#type' => 'managed_file',
           '#title' => t('Assembly Files: (WGS/TSA)'),
           '#upload_location' => 'public://',
           '#upload_validators' => array(
             'file_validate_extensions' => array('fsa_nt')
           ),
-          '#default_value' => isset($values[$id]['genotype']['assembly']) ? $values[$id]['genotype']['assembly'] : NULL,
+          '#default_value' => isset($values[$id]['genotype']['assembly-user']) ? $values[$id]['genotype']['assembly-user'] : NULL,
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+            )
+          )
+        );
+        
+        $fields['assembly-auto'] = array(
+          '#type' => 'checkboxes',
+          '#title' => t('Waiting for BioProject accession number...'),
+          '#options' => array(),
+          '#prefix' => "<div id='$id-assembly-auto'>",
+          '#suffix' => '</div>',
+          '#states' => array(
+            'invisible' => array(
+              ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+            )
+          )
+        );
+        
+        $fields['assembly-check'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('My assembly file is not in this list'),
+          '#default_value' => isset($values[$id]['genotype']['assembly-check']) ? $values[$id]['genotype']['assembly-check'] : NULL,
         );
         
         $fields['SNPs'] = array(
@@ -319,6 +348,46 @@ function page_3_create_form(&$form, $form_state){
     drupal_add_js(drupal_get_path('module', 'custom_module') . "/custom_module.js");
     
     return $form;
+}
+
+function ajax_bioproject_callback(&$form, $form_state){
+    
+    $id = $form_state['triggering_element']['#parents'][0];
+    $bio_id = substr($form_state['values']["$id"]['genotype']['BioProject-id'], 5);
+    
+    $options = array();
+    $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
+    $response_xml_data = file_get_contents($url);
+    $data = simplexml_load_string($response_xml_data)->children()->children()->LinkSetDb->children();
+
+    foreach ($data->Link as $link){
+        array_push($options, $link->Id->__tostring());
+    }
+
+    $form["$id"]['genotype']['assembly-auto'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Select all that apply:',
+      '#tree' => TRUE,
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+        )
+      ),
+      '#prefix' => "<div id='$id-assembly-auto'>",
+      '#suffix' => '</div>',
+      '#description' => 'If this list needs to be refreshed, please refresh the page and re-enter the BioProject ID.'
+    );
+
+    foreach ($options as $item){
+        $form["$id"]['genotype']['assembly-auto']["$item"] = array(
+          '#type' => 'checkbox',
+          '#title' => t("$item"),
+          '#default_value' => isset($form_state['saved_values']['thirdPage']["$id"]['genotype']['assembly-auto']["$item"]) ? $form_state['saved_values']['thirdPage']["$id"]['genotype']['assembly-auto']["$item"] : NULL,
+        );
+    }
+    
+    return $form["$id"]['genotype']['assembly-auto'];
+    
 }
 
 function page_3_validate_form(&$form, &$form_state){
@@ -610,7 +679,7 @@ function page_3_validate_form(&$form, &$form_state){
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
             $genotype = $organism['genotype'];
-            validate_genotype($genotype, "organism-$i][phenotype");
+            //validate_genotype($genotype, "organism-$i][phenotype");
         }
     }
     
