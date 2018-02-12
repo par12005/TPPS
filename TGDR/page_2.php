@@ -19,7 +19,7 @@ function page_2_create_form(&$form, $form_state){
         
         $yearArr = array();
         $yearArr[0] = '- Select -';
-        for ($i = 1950; $i <= 2017; $i++) {
+        for ($i = 1970; $i <= 2018; $i++) {
             $index = $i - 1949;
             $yearArr[$index] = $i;
         }
@@ -1112,11 +1112,12 @@ function page_2_create_form(&$form, $form_state){
         $form['commonGarden']['treatment'] = array(
           '#type' => 'fieldset',
           '#title' => t('Treatments:'),
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '4')
-            )
-          )
+        );
+        
+        $form['commonGarden']['treatment']['check'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('My Common Garden experiment used treatments/regimes/perturbations.'),
+          '#default_value' => isset($values['commonGarden']['treatment']['check']) ? $values['commonGarden']['treatment']['check'] : NULL,
         );
         
         foreach($treatment_options as $key => $option){
@@ -1124,6 +1125,11 @@ function page_2_create_form(&$form, $form_state){
               '#type' => 'checkbox',
               '#title' => t("$option"),
               '#default_value' => isset($values['commonGarden']['treatment']["$option"]) ? $values['commonGarden']['treatment']["$option"] : NULL,
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="commonGarden[treatment][check]"]' => array('checked' => TRUE),
+                )
+              )
             );
             $form['commonGarden']['treatment']["$option-description"] = array(
               '#type' => 'textfield',
@@ -1131,10 +1137,8 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['commonGarden']['treatment']["$option-description"]) ? $values['commonGarden']['treatment']["$option-description"] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="commonGarden[treatment][' . $option . ']"]' => array('checked' => TRUE)
-                ),
-                'required' => array(
-                  ':input[name="commonGarden[treatment][' . $option . ']"]' => array('checked' => TRUE)
+                  ':input[name="commonGarden[treatment][' . $option . ']"]' => array('checked' => TRUE),
+                  ':input[name="commonGarden[treatment][check]"]' => array('checked' => TRUE),
                 )
               )
             );
@@ -1150,9 +1154,6 @@ function page_2_create_form(&$form, $form_state){
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
-              ':input[name="studyType"]' => array('value' => '5')
-            ),
-            'required' => array(
               ':input[name="studyType"]' => array('value' => '5')
             ),
             'enabled' => array(
@@ -1182,6 +1183,61 @@ function page_2_create_form(&$form, $form_state){
           '#title' => t('Number of times the populations were assessed (on average):'),
           '#default_value' => isset($values['plantation']['assessions']) ? $values['plantation']['assessions'] : NULL,
         );
+        
+        $treatment_options = drupal_map_assoc(array(
+            t('Seasonal environment'),
+            t('Antibiotic regime'),
+            t('Chemical administration'),
+            t('Disease status'),
+            t('Fertilizer regime'),
+            t('Fungicide regime'),
+            t('Gaseous regime'),
+            t('Gravity Growth hormone regime'),
+            t('Herbicide regime'),
+            t('Mechanical treatment'),
+            t('Mineral nutrient regime'),
+            t('Non-mineral nutrient regime'),
+            t('Salt regime'),
+            t('Watering regime'),
+            t('Pesticide regime'),
+            t('pH regime'),
+            t('Other perturbation')
+          ));
+        
+        $form['plantation']['treatment'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Treatments:')
+        );
+        
+        $form['plantation']['treatment']['check'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('My Plantation experiment used treatments/regimes/perturbations.'),
+          '#default_value' => isset($values['plantation']['treatment']['check']) ? $values['plantation']['treatment']['check'] : NULL,
+        );
+        
+        foreach($treatment_options as $key => $option){
+            $form['plantation']['treatment']["$option"] = array(
+              '#type' => 'checkbox',
+              '#title' => t("$option"),
+              '#default_value' => isset($values['plantation']['treatment']["$option"]) ? $values['plantation']['treatment']["$option"] : NULL,
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="plantation[treatment][check]"]' => array('checked' => TRUE),
+                )
+              )
+            );
+            $form['plantation']['treatment']["$option-description"] = array(
+              '#type' => 'textfield',
+              '#description' => t("$option Description"),
+              '#default_value' => isset($values['plantation']['treatment']["$option-description"]) ? $values['plantation']['treatment']["$option-description"] : NULL,
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="plantation[treatment][' . $option . ']"]' => array('checked' => TRUE),
+                  ':input[name="plantation[treatment][check]"]' => array('checked' => TRUE),
+                )
+              )
+            );
+        }
         
         return $form;
     }
@@ -1580,25 +1636,38 @@ function page_2_validate_form(&$form, &$form_state){
                 form_set_error('commonGarden][season', 'Seasons: field is required.');
             }
             
-            $selected = false;
-            $description = false;
-
-            foreach ($treatment as $field => $value){
-                if (!$description){
-                    $description = true;
-                    $selected = $value;
-                    continue;
-                }
-                elseif ($selected == '1' and $value == ''){
-                    form_set_error("commonGarden][treatment][$field", "$field: field is required.");
-                }
+            if ($treatment['check'] == '1'){
+                $selected = false;
                 $description = false;
+                $treatment_empty = true;
+                
+                foreach ($treatment as $field => $value){
+                    if ($field != 'check'){
+                        if (!$description){
+                            $description = true;
+                            $selected = $value;
+                            if ($value == '1'){
+                                $treatment_empty = false;
+                            }
+                            continue;
+                        }
+                        elseif ($selected == '1' and $value == ''){
+                            form_set_error("commonGarden][treatment][$field", "$field: field is required.");
+                        }
+                        $description = false;
+                    }
+                }
+                
+                if ($treatment_empty){
+                    form_set_error("commonGarden][treatment", 'Treatment: field is required.');
+                }
             }
             
             break;
         case '5':
             //Plantation
             $seasons = $plantation['season'];
+            $treatment = $plantation['treatment'];
             $seasons_check = ($seasons['Spring'] . $seasons['Summer'] . $seasons['Fall'] . $seasons['Winter']);
             if ($seasons_check == '0000'){
                 form_set_error('plantation][season', 'Seasons: field is required.');
@@ -1607,6 +1676,33 @@ function page_2_validate_form(&$form, &$form_state){
             $assessions = $plantation['assessions'];
             if ($assessions == ''){
                 form_set_error('plantation][assessions', 'Number of times the populations were assessed: field is required.');
+            }
+            
+            if ($treatment['check'] == '1'){
+                $selected = false;
+                $description = false;
+                $treatment_empty = true;
+                
+                foreach ($treatment as $field => $value){
+                    if ($field != 'check'){
+                        if (!$description){
+                            $description = true;
+                            $selected = $value;
+                            if ($value == '1'){
+                                $treatment_empty = false;
+                            }
+                            continue;
+                        }
+                        elseif ($selected == '1' and $value == ''){
+                            form_set_error("plantation][treatment][$field", "$field: field is required.");
+                        }
+                        $description = false;
+                    }
+                }
+                
+                if ($treatment_empty){
+                    form_set_error("plantation][treatment][check", 'Treatment: field is required.');
+                }
             }
             
             break;
