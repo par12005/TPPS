@@ -138,6 +138,10 @@ function tpps_master($form, &$form_state){
             break;
         case 'thirdPage':
             $page_number = 3;
+            $page_desc = 'Tree Accession';
+            break;
+        case 'fourthPage':
+            $page_number = 4;
             $page_desc = 'Submit Data';
             break;
         default:
@@ -148,7 +152,7 @@ function tpps_master($form, &$form_state){
       '#type' => 'textfield',
       '#disabled' => TRUE,
       '#default_value' => $form_state['stage'],
-      '#prefix' => "<div id='progress'>Page $page_number of 3: $page_desc</div>",
+      '#prefix' => "<div id='progress'>Page $page_number of 4: $page_desc</div>",
     );
     
     switch ($form_state['stage']){
@@ -165,6 +169,11 @@ function tpps_master($form, &$form_state){
         case 'thirdPage':
             include_once('page_3.php');
             page_3_create_form($form, $form_state);
+            break;
+        
+        case 'fourthPage':
+            include_once('page_4.php');
+            page_4_create_form($form, $form_state);
             break;
         
         default:
@@ -203,6 +212,12 @@ function tpps_master_validate($form, &$form_state){
             drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
             break;
         
+        case 'fourthPage':
+            include_once('page_4.php');
+            page_4_validate_form($form, $form_state);
+            drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+            break;
+        
         default:
             break;
     }
@@ -231,6 +246,15 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'secondPage';
             }
             else{
+                $form_state['stage'] = 'fourthPage';
+            }
+            break;
+            
+        case 'fourthPage':
+            if ($form_state['triggering_element']['#value'] == 'Back'){
+                $form_state['stage'] = 'thirdPage';
+            }
+            else{
                 //submit_all($form, $form_state);
                 drupal_goto('<front>');
             }
@@ -253,6 +277,7 @@ function submit_all($form, &$form_state){
     $firstpage = $values['Hellopage'];
     $secondpage = $values['secondPage'];
     $thirdpage = $values['thirdPage'];
+    $fourthpage = $values['fourthPage'];
     
     $primary_author = $firstpage['primaryAuthor'];
     $organization = $firstpage['organization'];
@@ -1198,9 +1223,9 @@ function submit_all($form, &$form_state){
     $tree_accession_path = file_create_url(file_load($tree_accession)->uri);
     
     for ($i = 1; $i <= $organism['number']; $i++){
-        $phenotype = $thirdpage["organism-$i"]['phenotype'];
+        $phenotype = $fourthpage["organism-$i"]['phenotype'];
         $phenotype_number = $phenotype['number'];
-        $genotype = $thirdpage["organism-$i"]['genotype'];
+        $genotype = $fourthpage["organism-$i"]['genotype'];
         $bioproject = $genotype['BioProject-id'];
         $assembly_file = $genotype['assembly'];
         $snps_file = $genotype['SNPs'];
