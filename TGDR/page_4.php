@@ -72,10 +72,28 @@ function page_4_create_form(&$form, $form_state){
             );
             
             $fields["$i"]['environment']['units'] = array(
-              '#type' => 'textfield',
+              '#type' => 'select',
               '#title' => t("Phenotype $i Units:"),
-              '#autocomplete_path' => 'units/autocomplete',
+              '#options' => array(
+                0 => '- Select -',
+                1 => 'mm', 
+                2 => 'cm',
+                3 => 'm', 
+                4 => 'Degrees Celsius',
+                5 => 'Degrees Fahrenheit',
+                6 => 'Other'
+              ),
               '#default_value' => isset($values[$id]['phenotype']["$i"]['environment']['units']) ? $values[$id]['phenotype']["$i"]['environment']['units'] : NULL,
+            );
+            
+            $fields["$i"]['environment']['units-other'] = array(
+              '#type' => 'textfield',
+              '#default_value' => isset($values[$id]['phenotype']["$i"]['environment']['units-other']) ? $values[$id]['phenotype']["$i"]['environment']['units-other'] : NULL,
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="' . $id . '[phenotype][' . $i . '][environment][units]' => array('value' => '6')
+                )
+              )
             );
             
             $fields["$i"]['non-environment'] = array(
@@ -148,10 +166,28 @@ function page_4_create_form(&$form, $form_state){
             );
             
             $fields["$i"]['non-environment']['units'] = array(
-              '#type' => 'textfield',
+              '#type' => 'select',
               '#title' => t("Phenotype $i Units:"),
-              '#autocomplete_path' => 'units/autocomplete',
+              '#options' => array(
+                0 => '- Select -',
+                1 => 'mm', 
+                2 => 'cm',
+                3 => 'm', 
+                4 => 'Degrees Celsius',
+                5 => 'Degrees Fahrenheit',
+                6 => 'Other'
+              ),
               '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['units']) ? $values[$id]['phenotype']["$i"]['non-environment']['units'] : NULL,
+            );
+            
+            $fields["$i"]['non-environment']['units-other'] = array(
+              '#type' => 'textfield',
+              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['units-other']) ? $values[$id]['phenotype']["$i"]['non-environment']['units-other'] : NULL,
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][units]' => array('value' => '6')
+                )
+              )
             );
             
             $fields["$i"]['non-environment']['structure'] = array(
