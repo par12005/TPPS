@@ -299,23 +299,6 @@ function page_4_create_form(&$form, $form_state){
     $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
     $data_type = $form_state['saved_values']['secondPage']['dataType'];
     
-    $form['tree-accession'] = array(
-      '#type' => 'managed_file',
-      '#title' => t("Please provide a file with information regarding the accession of the trees used in this study:"),
-      '#upload_location' => 'public://',
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('txt csv xlsx'),
-      ),
-      '#default_value' => isset($values['tree-accession']) ? $values['tree-accession'] : NULL,
-      '#description' => 'Columns with information describing the Identifier of the tree and the location of the tree are required.'
-    );
-
-    $form['tree-accession-columns'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Please provide the order of the columns in the file above, separated by columns.'),
-      '#default_value' => isset($values['tree-accession-columns']) ? $values['tree-accession-columns'] : NULL
-    );
-    
     for ($i = 1; $i <= $organism_number; $i++){
         
         $name = $form_state['saved_values']['Hellopage']['organism']["$i"]['species'];
@@ -546,128 +529,9 @@ function page_4_validate_form(&$form, &$form_state){
         
     }
     
-    function validate_accession($accession, $provided_columns){
-        $file = file(file_load($accession)->uri);
-        $file_type = file_load($accession)->filemime;
-        //$file = explode("\r", $file[0]);
-        
-        if ($file_type == 'text/csv'){
-            $columns = explode("\r", $file[0]);
-            $columns = explode(",", $columns[0]);
-            $provided_columns = explode(",", $provided_columns);
-            $id_omitted = TRUE;
-            $location_omitted = TRUE;
-            
-            foreach($columns as $key => $col){
-                $columns[$key] = trim($col);
-                if (preg_match('/^(id|ID|Id|Identifier|identifier|IDENTIFIER)$/', $columns[$key]) == 1){
-                    $id_omitted = FALSE;
-                }
-                elseif (preg_match('/^(location|Location|LOCATION)$/', $columns[$key]) == 1){
-                    $location_omitted = FALSE;
-                }
-            }
-            
-            foreach($provided_columns as $key => $col){
-                $provided_columns[$key] = trim($col);
-            }
-            
-            if (array_diff($columns, $provided_columns) == array()){
-                if ($id_omitted){
-                    form_set_error("tree-accession", 'Tree Accession file: We were unable to find your "Identifier" column. Please resubmit your file with a column named "Identifier", with an identifier for each tree.');
-                }
-                if ($location_omitted){
-                    form_set_error("tree-accession", 'Tree Accession file: We were unable to find your "Location" column. Please resubmit your file with a column named "Location", with the location of each tree.');
-                }
-            }
-            else{
-                form_set_error("tree-accession-columns", 'Tree Accession Columns: provided columns do not match file.');
-            }
-            
-        }
-        elseif ($file_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'){
-            $location = '/var/www/Drupal/sites/default/files/' . file_load($accession)->filename;
-            
-            $content = parse_xlsx($location);
-            $columns = $content['headers'];
-            $provided_columns = explode(",", $provided_columns);
-            $id_omitted = TRUE;
-            $location_omitted = TRUE;
-            
-            foreach($columns as $key => $col){
-                $columns[$key] = trim($col);
-                if (preg_match('/^(id|ID|Id|Identifier|identifier|IDENTIFIER)$/', $columns[$key]) == 1){
-                    $id_omitted = FALSE;
-                }
-                elseif (preg_match('/^(location|Location|LOCATION)$/', $columns[$key]) == 1){
-                    $location_omitted = FALSE;
-                }
-            }
-            
-            foreach($provided_columns as $key => $col){
-                $provided_columns[$key] = trim($col);
-            }
-            
-            if (array_diff($columns, $provided_columns) == array()){
-                if ($id_omitted){
-                    form_set_error("tree-accession", 'Tree Accession file: We were unable to find your "Identifier" column. Please resubmit your file with a column named "Identifier", with an identifier for each tree.');
-                }
-                if ($location_omitted){
-                    form_set_error("tree-accession", 'Tree Accession file: We were unable to find your "Location" column. Please resubmit your file with a column named "Location", with the location of each tree.');
-                }
-            }
-            else{
-                form_set_error("tree-accession-columns", 'Tree Accession Columns: provided columns do not match file.');
-            }
-        }
-        elseif ($file_type == 'text/plain'){
-            $columns = explode("\r", $file[0]);
-            $columns = explode("\t", $columns[0]);
-            $provided_columns = explode(",", $provided_columns);
-            $id_omitted = TRUE;
-            $location_omitted = TRUE;
-            
-            foreach($columns as $key => $col){
-                $columns[$key] = trim($col);
-                if (preg_match('/^(id|ID|Id|Identifier|identifier|IDENTIFIER)$/', $columns[$key]) == 1){
-                    $id_omitted = FALSE;
-                }
-                elseif (preg_match('/^(location|Location|LOCATION)$/', $columns[$key]) == 1){
-                    $location_omitted = FALSE;
-                }
-            }
-            
-            foreach($provided_columns as $key => $col){
-                $provided_columns[$key] = trim($col);
-            }
-            
-            if (array_diff($columns, $provided_columns) == array()){
-                if ($id_omitted){
-                    form_set_error("tree-accession", 'Tree Accession file: We were unable to find your "Identifier" column. Please resubmit your file with a column named "Identifier", with an identifier for each tree.');
-                }
-                if ($location_omitted){
-                    form_set_error("tree-accession", 'Tree Accession file: We were unable to find your "Location" column. Please resubmit your file with a column named "Location", with the location of each tree.');
-                }
-            }
-            else{
-                form_set_error("tree-accession-columns", 'Tree Accession Columns: provided columns do not match file.');
-            }
-            
-        }
-    }
-    
     $form_values = $form_state['values'];
     $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
     $data_type = $form_state['saved_values']['secondPage']['dataType'];
-    $tree_accession = $form_values['tree-accession'];
-    $tree_accession_columns = $form_values['tree-accession-columns'];
-    
-    if ($tree_accession == ''){
-        form_set_error("tree-accession", 'Tree Accesison File: field is required.');
-    }
-    else{
-        validate_accession($tree_accession, $tree_accession_columns);
-    }
     
     for ($i = 1; $i <= $organism_number; $i++){
         $organism = $form_values["organism-$i"];
