@@ -1391,20 +1391,6 @@ function _development_autocomplete($string){
     drupal_json_output($matches);
 }
 
-function _units_autocomplete($string){
-    $list = array('mm', 'cm', 'm', 'Degrees Celsius', 'Degrees Fahrenheit');
-    
-    $matches = array();
-    
-    foreach($list as $term){
-        if (preg_match("/^$string/", $term) == 1){
-            $matches[$term] = check_plain($term);
-        }
-    }
-    
-    drupal_json_output($matches);
-}
-
 function parse_xlsx($location){
     
     //modified from https://gist.github.com/searbe/3284011
