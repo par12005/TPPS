@@ -218,7 +218,7 @@ jQuery(document).ready(function () {
             Secondary_Authors();
             Organism();
         }
-        else if (jQuery("#edit-step")[0].value === 'thirdPage'){
+        else if (jQuery("#edit-step")[0].value === 'fourthPage'){
             var number_of_organisms = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.$/); }).length;
             var phenotypes = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.-phenotype/);});
             var genotypes = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.-genotype/);});

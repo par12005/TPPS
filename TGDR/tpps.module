@@ -77,27 +77,6 @@ function tpps_menu() {
       'type' => MENU_CALLBACK
     );
     
-    $items['structure/autocomplete'] = array(
-      'title' => 'Autocomplete for Ontological terms',
-      'page callback' => '_structure_autocomplete',
-      'access arguments' => array('access content'),
-      'type' => MENU_CALLBACK
-    );
-    
-    $items['developmental/autocomplete'] = array(
-      'title' => 'Autocomplete for Ontological terms',
-      'page callback' => '_development_autocomplete',
-      'access arguments' => array('access content'),
-      'type' => MENU_CALLBACK
-    );
-    
-    $items['units/autocomplete'] = array(
-      'title' => 'Autocomplete for Units',
-      'page callback' => '_units_autocomplete',
-      'access arguments' => array('access content'),
-      'type' => MENU_CALLBACK
-    );
-
     return $items;
 }
 
@@ -1348,44 +1327,6 @@ function _phenotype_autocomplete($string){
     
     foreach($result as $row){
         $matches[$row->name] = check_plain($row->name);
-    }
-    
-    drupal_json_output($matches);
-}
-
-function _structure_autocomplete($string){
-    $matches = array();
-    $result = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
-        ->fields('phenotype_structure_cvterm', array('name', 'definition'))
-        ->condition('name', db_like($string) . '%', 'LIKE')
-        ->execute();
-    
-    foreach($result as $row){
-        if ($row->definition != ""){
-            $matches[$row->name] = check_plain($row->name . ":  " . $row->definition);
-        }
-        else{
-            $matches[$row->name] = check_plain($row->name . ":  No definition on record");
-        }
-    }
-    
-    drupal_json_output($matches);
-}
-
-function _development_autocomplete($string){
-    $matches = array();
-    $result = db_select('chado.phenotype_cvterm', 'phenotype_cvterm')
-        ->fields('phenotype_cvterm', array('name', 'definition'))
-        ->condition('name', db_like($string) . '%', 'LIKE')
-        ->execute();
-    
-    foreach($result as $row){
-        if ($row->definition != ""){
-            $matches[$row->name] = check_plain($row->name . ":  " . $row->definition);
-        }
-        else{
-            $matches[$row->name] = check_plain($row->name . ":  No definition on record");
-        }
     }
     
     drupal_json_output($matches);

@@ -36,7 +36,25 @@ function page_4_create_form(&$form, $form_state){
           '#default_value' => $phenotype_number,
         );
         
-        for ($i = 1; $i <= 20; $i++){
+        $structure_arr = array();
+        $results = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
+            ->fields('phenotype_structure_cvterm', array('name', 'definition'))
+            ->execute();
+        
+        foreach ($results as $row){
+            array_push($structure_arr, "$row->name : $row->definition");
+        }
+        
+        $dev_arr = array();
+        $results = db_select('chado.phenotype_cvterm', 'phenotype_cvterm')
+            ->fields('phenotype_cvterm', array('name', 'definition'))
+            ->execute();
+        
+        foreach ($results as $row){
+            array_push($dev_arr, "$row->name : $row->definition");
+        }
+        
+        for ($i = 1; $i <= 30; $i++){
             
             $fields["$i"] = array(
               '#type' => 'fieldset',
@@ -91,7 +109,7 @@ function page_4_create_form(&$form, $form_state){
               '#default_value' => isset($values[$id]['phenotype']["$i"]['environment']['units-other']) ? $values[$id]['phenotype']["$i"]['environment']['units-other'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][environment][units]' => array('value' => '6')
+                  ':input[name="' . $id . '[phenotype][' . $i . '][environment][units]"]' => array('value' => '6')
                 )
               )
             );
@@ -177,6 +195,11 @@ function page_4_create_form(&$form, $form_state){
                 5 => 'Degrees Fahrenheit',
                 6 => 'Other'
               ),
+              '#states' => array(
+                'invisible' => array(
+                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][type]"]' => array('value' => '3')
+                )
+              ),
               '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['units']) ? $values[$id]['phenotype']["$i"]['non-environment']['units'] : NULL,
             );
             
@@ -185,63 +208,29 @@ function page_4_create_form(&$form, $form_state){
               '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['units-other']) ? $values[$id]['phenotype']["$i"]['non-environment']['units-other'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][units]' => array('value' => '6')
+                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][units]"]' => array('value' => '6')
                 )
               )
             );
             
             $fields["$i"]['non-environment']['structure'] = array(
-              '#type' => 'textfield',
+              '#type' => 'select',
               '#title' => t('Plant Structure:'),
-              '#autocomplete_path' => 'structure/autocomplete',
+              '#options' => $structure_arr,
               '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['structure']) ? $values[$id]['phenotype']["$i"]['non-environment']['structure'] : NULL,
             );
             
-            $fields["$i"]['non-environment']['structure-check'] = array(
-              '#type' => 'checkbox',
-              '#title' => t('None of the autocomplete terms meet my needs'),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['structure-check']) ? $values[$id]['phenotype']["$i"]['non-environment']['structure-check'] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['structure-definition'] = array(
-              '#type' => 'textfield',
-              '#title' => t('Structure Term Definition:'),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['structure-definition']) ? $values[$id]['phenotype']["$i"]['non-environment']['structure-definition'] : NULL,
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][structure-check]"]' => array('checked' => TRUE)
-                )
-              )
-            );
-            
             $fields["$i"]['non-environment']['developmental'] = array(
-              '#type' => 'textfield',
+              '#type' => 'select',
               '#title' => t('Plant Developmental Stage:'),
-              '#autocomplete_path' => 'developmental/autocomplete',
+              '#options' => $dev_arr,
               '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['developmental']) ? $values[$id]['phenotype']["$i"]['non-environment']['developmental'] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['developmental-check'] = array(
-              '#type' => 'checkbox',
-              '#title' => t('None of the autocomplete terms meet my needs'),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['developmental-check']) ? $values[$id]['phenotype']["$i"]['non-environment']['developmental-check'] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['developmental-definition'] = array(
-              '#type' => 'textfield',
-              '#title' => t('Developmental Stage Term Definition:'),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['developmental-definition']) ? $values[$id]['phenotype']["$i"]['non-environment']['developmental-definition'] : NULL,
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][developmental-check]"]' => array('checked' => TRUE)
-                )
-              )
             );
         }
         
         $fields['check'] = array(
           '#type' => 'checkbox',
-          '#title' => t('I have >20 Phenotypes'),
+          '#title' => t('I have >30 Phenotypes'),
           '#default_value' => isset($values[$id]['phenotype']['check']) ? $values[$id]['phenotype']['check'] : NULL,
         );
         
@@ -457,11 +446,7 @@ function page_4_validate_form(&$form, &$form_state){
                     $description = $current_phenotype['non-environment']['description'];
                     $units = $current_phenotype['non-environment']['units'];
                     $structure = $current_phenotype['non-environment']['structure'];
-                    $structure_check = $current_phenotype['non-environment']['structure-check'];
-                    $structure_definition = $current_phenotype['non-environment']['structure-definition'];
                     $developmental = $current_phenotype['non-environment']['developmental'];
-                    $developmental_check = $current_phenotype['non-environment']['developmental-check'];
-                    $developmental_definition = $current_phenotype['non-environment']['developmental-definition'];
 
                     if ($type == '0'){
                         form_set_error("$id][$i][non-environment][type", "Phenotype $i Type: field is required.");
@@ -487,56 +472,16 @@ function page_4_validate_form(&$form, &$form_state){
                         form_set_error("$id][$i][non-environment][description", "Phenotype $i Description: field is required.");
                     }
 
-                    if ($units == ''){
+                    if ($units == '' and $type == '2'){
                         form_set_error("$id][$i][non-environment][units", "Phenotype $i Units: field is required.");
                     }
 
-                    if ($structure == ''){
+                    if ($structure == '0'){
                         form_set_error("$id][$i][non-environment][structure", "Phenotype $i Plant Structure: field is required.");
                     }
-                    else{
-                        $indexed_structure = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
-                            ->fields('phenotype_structure_cvterm', array('name'))
-                            ->execute();
 
-                        $custom_structure = TRUE;
-
-                        foreach($indexed_structure as $item){
-                            if ($item == $structure){
-                                $custom_structure = FALSE;
-                                break;
-                            }
-                        }
-
-                        if ($structure_check == '1' or ($custom_structure)){
-                            if ($structure_definition == ''){
-                                form_set_error("$id][$i][non-environment][structure-definition", "Phenotype $i Plant Structure Definition: field is required.");
-                            }
-                        }
-                    }
-
-                    if ($developmental == ''){
+                    if ($developmental == '0'){
                         form_set_error("$id][$i][non-environment][developmental", "Phenotype $i Developmental Stage: field is required.");
-                    }
-                    else{
-                        $indexed_developmental = db_select('chado.phenotype_cvterm', 'phenotype_cvterm')
-                            ->fields('phenotype_cvterm', array('name'))
-                            ->execute();
-
-                        $custom_developmental = TRUE;
-
-                        foreach($indexed_developmental as $item){
-                            if ($item == $developmental){
-                                $custom_developmental = FALSE;
-                                break;
-                            }
-                        }
-
-                        if ($developmental_check == '1' or ($custom_developmental)){
-                            if ($developmental_definition == ''){
-                                form_set_error("$id][$i][non-environment][developmental-definition", "Phenotype $i Developmental Stage Definition: field is required.");
-                            }
-                        }
                     }
                 }
             }
