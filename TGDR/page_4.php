@@ -259,37 +259,132 @@ function page_4_create_form(&$form, $form_state){
           '#title' => t('Genotype Information:')
         );
         
-        $fields['BioProject-id'] = array(
+        $fields['marker-type'] = array(
+          '#type' => 'checkboxes',
+          '#title' => t('Marker Type (select all that apply):'),
+          '#options' => drupal_map_assoc(array(
+            t('SNPs'),
+            t('SSRs/cpSSRs'),
+            t('Other'),
+          ))
+        );
+        
+        $fields['marker-type']['SNPs']['#default_value'] = isset($values[$id]['genotype']['marker-type']['SNPs']) ? $values[$id]['genotype']['marker-type']['SNPs'] : NULL;
+        $fields['marker-type']['SSRs/cpSSRs']['#default_value'] = isset($values[$id]['genotype']['marker-type']['SSRs/cpSSRs']) ? $values[$id]['genotype']['marker-type']['SSRs/cpSSRs'] : NULL;
+        $fields['marker-type']['Other']['#default_value'] = isset($values[$id]['genotype']['marker-type']['Other']) ? $values[$id]['genotype']['marker-type']['Other'] : NULL;
+        
+        $fields['SNPs'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('SNPs Information:'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => true)
+            )
+          )
+        );
+        
+         $fields['SNPs']['genotyping-design'] = array(
+          '#type' => 'select',
+          '#title' => t('Define Genotyping Design:'),
+          '#options' => array(
+            0 => '- Select -',
+            1 => 'GBS',
+            2 => 'Targeted Capture',
+            3 => 'Whole Genome Resequencing',
+            4 => 'RNA-Seq',
+            5 => 'Genotyping Array'
+          ),
+          '#default_value' => isset($values[$id]['genotype']['SNPs']['genotyping-design']) ? $values[$id]['genotype']['SNPs']['genotyping-design'] : 0,
+        );
+         
+        $fields['SNPs']['GBS'] = array(
+          '#type' => 'select',
+          '#title' => t('GBS Type'),
+          '#options' => array(
+            0 => '- Select -',
+            1 => 'RADSeq',
+            2 => 'ddRAD-Seq',
+            3 => 'NextRAD',
+            4 => 'RAPTURE',
+            5 => 'Other'
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '1')
+            )
+          ),
+          '#default_value' => isset($values[$id]['genotype']['SNPs']['GBS']) ? $values[$id]['genotype']['SNPs']['GBS'] : 0,
+        );
+        
+        $fields['SNPs']['GBS-other'] = array(
+          '#type' => 'textfield',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][SNPs][GBS]"]' => array('value' => '5'),
+              ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '1')
+            )
+          ),
+          '#default_value' => isset($values[$id]['genotype']['SNPs']['GBS-other']) ? $values[$id]['genotype']['SNPs']['GBS-other'] : NULL,
+        );
+        
+        $fields['SNPs']['targeted-capture'] = array(
+          '#type' => 'select',
+          '#title' => t('Targeted Capture Type'),
+          '#options' => array(
+            0 => '- Select -',
+            1 => 'Exome Capture',
+            2 => 'Other'
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '2')
+            )
+          ),
+          '#default_value' => isset($values[$id]['genotype']['SNPs']['targeted-capture']) ? $values[$id]['genotype']['SNPs']['targeted-capture'] : 0,
+        );
+        
+        $fields['SNPs']['targeted-capture-other'] = array(
+          '#type' => 'textfield',
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][SNPs][targeted-capture]"]' => array('value' => '2'),
+              ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '2')
+            )
+          ),
+          '#default_value' => isset($values[$id]['genotype']['SNPs']['targeted-capture-other']) ? $values[$id]['genotype']['SNPs']['targeted-capture-other'] : NULL,
+        );
+        
+        $fields['SNPs']['BioProject-id'] = array(
           '#type' => 'textfield',
           '#title' => t('BioProject Accession Number:'),
-          '#default_value' => isset($values[$id]['genotype']['BioProject-id']) ? $values[$id]['genotype']['BioProject-id'] : NULL,
+          '#default_value' => isset($values[$id]['genotype']['SNPs']['BioProject-id']) ? $values[$id]['genotype']['SNPs']['BioProject-id'] : NULL,
           '#ajax' => array(
             'callback' => 'ajax_bioproject_callback',
             'wrapper' => "$id-assembly-auto",
           ),
           '#states' => array(
             'invisible' => array(
-              ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+              ':input[name="' . $id . '[genotype][SNPs][assembly-check]"]' => array('checked' => TRUE)
             )
           )
         );
         
-        $fields['assembly-user'] = array(
+        $fields['SNPs']['assembly-user'] = array(
           '#type' => 'managed_file',
           '#title' => t('Assembly Files: (WGS/TSA)'),
           '#upload_location' => 'public://',
           '#upload_validators' => array(
             'file_validate_extensions' => array('fsa_nt')
           ),
-          '#default_value' => isset($values[$id]['genotype']['assembly-user']) ? $values[$id]['genotype']['assembly-user'] : NULL,
+          '#default_value' => isset($values[$id]['genotype']['SNPs']['assembly-user']) ? $values[$id]['genotype']['SNPs']['assembly-user'] : NULL,
           '#states' => array(
             'visible' => array(
-              ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+              ':input[name="' . $id . '[genotype][SNPs][assembly-check]"]' => array('checked' => TRUE)
             )
           )
         );
         
-        $fields['assembly-auto'] = array(
+        $fields['SNPs']['assembly-auto'] = array(
           '#type' => 'checkboxes',
           '#title' => t('Waiting for BioProject accession number...'),
           '#options' => array(),
@@ -297,25 +392,47 @@ function page_4_create_form(&$form, $form_state){
           '#suffix' => '</div>',
           '#states' => array(
             'invisible' => array(
-              ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+              ':input[name="' . $id . '[genotype][SNPs][assembly-check]"]' => array('checked' => TRUE)
             )
           )
         );
         
-        $fields['assembly-check'] = array(
+        $fields['SNPs']['assembly-check'] = array(
           '#type' => 'checkbox',
           '#title' => t('My assembly file is not in this list'),
-          '#default_value' => isset($values[$id]['genotype']['assembly-check']) ? $values[$id]['genotype']['assembly-check'] : NULL,
+          '#default_value' => isset($values[$id]['genotype']['SNPs']['assembly-check']) ? $values[$id]['genotype']['SNPs']['assembly-check'] : NULL,
         );
         
-        $fields['SNPs'] = array(
+        $fields['SSRs/cpSSRs'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Define Type:'),
+          '#default_value' => isset($values[$id]['genotype']['SSRs/cpSSRs']) ? $values[$id]['genotype']['SSRs/cpSSRs'] : NULL,
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][marker-type][SSRs/cpSSRs]"]' => array('checked' => true)
+            )
+          )
+        );
+        
+        $fields['other'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Define Type:'),
+          '#default_value' => isset($values[$id]['genotype']['other']) ? $values[$id]['genotype']['other'] : NULL,
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][marker-type][Other]"]' => array('checked' => true)
+            )
+          )
+        );
+        
+        $fields['file'] = array(
           '#type' => 'managed_file',
-          '#title' => t('SNP Files:'),
+          '#title' => t('Genotype File:'),
           '#upload_location' => 'public://',
           '#upload_validators' => array(
             'file_validate_extensions' => array('vcf')
           ),
-          '#default_value' => isset($values[$id]['genotype']['SNPs']) ? $values[$id]['genotype']['SNPs'] : NULL,
+          '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
         );
         
         return $fields;
@@ -504,24 +621,7 @@ function page_4_validate_form(&$form, &$form_state){
     }
     
     function validate_genotype($genotype, $id){
-        $assembly = $genotype['assembly'];
         
-        if ($assembly == ''){
-            form_set_error("$id][assembly", "Assembly File: field is required.");
-        }
-        else{
-            /*$file = file(file_load($assembly)->uri);
-            $headers_assembly = array();
-            
-            foreach($file as $line){
-                if ($line[0] == '>'){
-                    $items = explode('|', $line);
-                    array_push($headers_assembly, $items[1]);
-                }
-            }
-            
-            print_r($headers_assembly);*/
-        }
         
     }
     
@@ -539,7 +639,7 @@ function page_4_validate_form(&$form, &$form_state){
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
             $genotype = $organism['genotype'];
-            //validate_genotype($genotype, "organism-$i][phenotype");
+            validate_genotype($genotype, "organism-$i][genotype");
         }
     }
     
