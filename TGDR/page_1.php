@@ -195,52 +195,12 @@ function page_1_create_form(&$form, $form_state){
           '#type' => 'textfield',
           '#title' => t('Title of Publication:'),
           '#default_value' => isset($values['publication']['title']) ? $values['publication']['title'] : NULL,
-          '#states' => array(
-            'visible' => array(
-              array(
-                array(':input[name="publication[status]"]' => array('value' => '2')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '3')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '4')),
-              )
-            ),
-            'required' => array(
-              array(
-                array(':input[name="publication[status]"]' => array('value' => '2')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '3')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '4')),
-              )
-            )
-          )
         );
 
         $form['publication']['abstract'] = array(
           '#type' => 'textarea',
           '#title' => t('Abstract:'),
           '#default_value' => isset($values['publication']['abstract']) ? $values['publication']['abstract'] : NULL,
-          '#states' => array(
-            'visible' => array(
-              array(
-                array(':input[name="publication[status]"]' => array('value' => '2')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '3')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '4')),
-              )
-            ),
-            'required' => array(
-              array(
-                array(':input[name="publication[status]"]' => array('value' => '2')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '3')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '4')),
-              )
-            )
-          )
         );
 
         $form['publication']['journal'] = array(
@@ -248,26 +208,6 @@ function page_1_create_form(&$form, $form_state){
           '#title' => t('Journal:'),
           '#autocomplete_path' => 'journal/autocomplete',
           '#default_value' => isset($values['publication']['journal']) ? $values['publication']['journal'] : NULL,
-          '#states' => array(
-            'visible' => array(
-              array(
-                array(':input[name="publication[status]"]' => array('value' => '2')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '3')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '4')),
-              )
-            ),
-            'required' => array(
-              array(
-                array(':input[name="publication[status]"]' => array('value' => '2')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '3')),
-                'or',
-                array(':input[name="publication[status]"]' => array('value' => '4')),
-              )
-            )
-          )
         );
         
         return $form;
