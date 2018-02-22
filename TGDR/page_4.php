@@ -488,7 +488,7 @@ function page_4_create_form(&$form, $form_state){
 function ajax_bioproject_callback(&$form, $form_state){
     
     $id = $form_state['triggering_element']['#parents'][0];
-    $bio_id = substr($form_state['values']["$id"]['genotype']['BioProject-id'], 5);
+    $bio_id = substr($form_state['values']["$id"]['genotype']['SNPs']['BioProject-id'], 5);
     
     $options = array();
     $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
@@ -499,13 +499,13 @@ function ajax_bioproject_callback(&$form, $form_state){
         array_push($options, $link->Id->__tostring());
     }
 
-    $form["$id"]['genotype']['assembly-auto'] = array(
+    $form["$id"]['genotype']['SNPs']['assembly-auto'] = array(
       '#type' => 'fieldset',
       '#title' => 'Select all that apply:',
       '#tree' => TRUE,
       '#states' => array(
         'invisible' => array(
-          ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+          ':input[name="' . $id . '[genotype][SNPs][assembly-check]"]' => array('checked' => TRUE)
         )
       ),
       '#prefix' => "<div id='$id-assembly-auto'>",
@@ -514,14 +514,14 @@ function ajax_bioproject_callback(&$form, $form_state){
     );
 
     foreach ($options as $item){
-        $form["$id"]['genotype']['assembly-auto']["$item"] = array(
+        $form["$id"]['genotype']['SNPs']['assembly-auto']["$item"] = array(
           '#type' => 'checkbox',
           '#title' => t("$item"),
-          '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"] : NULL,
+          '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['SNPs']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['SNPs']['assembly-auto']["$item"] : NULL,
         );
     }
     
-    return $form["$id"]['genotype']['assembly-auto'];
+    return $form["$id"]['genotype']['SNPs']['assembly-auto'];
     
 }
 
@@ -535,7 +535,7 @@ function page_4_validate_form(&$form, &$form_state){
         
         if ($phenotype_check == '1'){
             if ($phenotype_file == ''){
-                form_set_error("$id][file", "Phenotype File: field is required");
+                form_set_error("$id][file", "Phenotype File: field is required.");
             }
             else{
                 //validate phenotype file
@@ -621,8 +621,86 @@ function page_4_validate_form(&$form, &$form_state){
     }
     
     function validate_genotype($genotype, $id){
+        $genotype_file = $genotype['file'];
+        $marker_type = $genotype['marker-type'];
+        $snps_check = $marker_type['SNPs'];
+        $ssrs = $marker_type['SSRs/cpSSRs'];
+        $other_marker = $marker_type['Other'];
+        $marker_check = $snps_check . $ssrs . $other_marker;
+        $snps = $genotype['SNPs'];
+        $genotype_design = $snps['genotyping-design'];
+        $gbs = $snps['GBS'];
+        $targeted_capture = $snps['targeted-capture'];
+        $bio_id = $snps['BioProject-id'];
+        $assembly_user = $snps['assembly-user'];
+        $assembly_auto = $snps['assembly-auto'];
+        $assembly_check = $snps['assembly-check'];
         
+        form_set_error('submit', 'error');
+        if ($marker_check === '000'){
+            form_set_error("$id][genotype][marker-type", "Genotype Marker Type: field is required.");
+        }
+        elseif($snps_check === 'SNPs'){
+            if ($genotype_design == '0'){
+                form_set_error("$id][genotype][SNPs][genotyping-design", "Genotyping Design: field is required.");
+            }
+            elseif ($genotype_design == '1'){
+                if ($gbs == '0'){
+                    form_set_error("$id][genotype][SNPs][GBS", "GBS Type: field is required.");
+                }
+                elseif ($gbs == '5' and $snps['GBS-other'] == ''){
+                    form_set_error("$id][genotype][SNPs][GBS=other", "Custom GBS Type: field is required.");
+                }
+            }
+            elseif ($genotype_design == '2'){
+                if ($targed_capture == '0'){
+                    form_set_error("$id][genotype][SNPs][targeted-capture", "Targeted Capture: field is required.");
+                }
+                elseif ($targeted_capture == '2' and $snps['targeted-capture-other'] == ''){
+                    form_set_error("$id][genotype][SNPs][targeted-capture-other", "Custom Targeted Capture: field is required.");
+                }
+            }
+            
+            if ($assembly_check != '0'){
+                if ($assembly_user == ''){
+                    form_set_error("$id][genotype][SNPs][assembly-user", 'Assembly file upload: field is required.');
+                }
+            }
+            else{
+                if ($bio_id == ''){
+                    form_set_error("$id][genotype][SNPs][Bioproject-id", 'BioProject Id: field is required.');
+                }
+                
+                $assembly_auto_check = '';
+                
+                foreach ($assembly_auto as $item){
+                    $assembly_auto_check += $item;
+                }
+                
+                if (preg_match('/^0*$/', $assembly_auto_check)){
+                    form_set_error("$id][genotype][SNPs][assembly-auto", 'Assembly files: field is required.');
+                }
+                else{
+                    $results = array();
+                    foreach ($assembly_auto_check as $key=>$value){
+                        if ($value != '0'){
+                            array_push($results, 'https://www.ncbi.nlm.nih.gov/nuccore/' . $assembly_auto[$key]);
+                        }
+                    }
+                    $form_state['values'][$id]['genotype']['SNPs']['assembly-auto'] = $results;
+                }
+            }
+        }
+        elseif ($ssrs != '0' and $genotype['SSRs/cpSSRs'] == ''){
+            form_set_error("$id][SSRs/cpSSRs", "SSRs/cpSSRs: field is required.");
+        }
+        elseif ($other_marker != '0' and $genotype['other'] == ''){
+            form_set_error("$id][other", "Other Genotype marker: field is required.");
+        }
         
+        if ($genotype_file == ''){
+            form_set_error("$id][file", "Genotypes: field is required.");
+        }
     }
     
     $form_values = $form_state['values'];
@@ -639,7 +717,7 @@ function page_4_validate_form(&$form, &$form_state){
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
             $genotype = $organism['genotype'];
-            validate_genotype($genotype, "organism-$i][genotype");
+            validate_genotype($genotype, "organism-$i");
         }
     }
     
