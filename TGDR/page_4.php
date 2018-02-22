@@ -236,7 +236,7 @@ function page_4_create_form(&$form, $form_state){
         
         $fields['file'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Please upload a file containing information about all of your phenotypes'),
+          '#title' => t('Please upload a file containing metadata about all of your phenotypes'),
           '#upload_location' => 'public://',
           '#upload_validators' => array(
             'file_validate_extensions' => array('csv tsv xlsx')
@@ -336,6 +336,16 @@ function page_4_create_form(&$form, $form_state){
         
         if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
             $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i");
+            
+            $form["organism-$i"]['phenotype']['content'] = array(
+              '#type' => 'managed_file',
+              '#title' => t('Please upload a file containing all of your phenotypic data:'),
+              '#upload_location' => 'public://',
+              '#upload_validators' => array(
+                'file_validate_extensions' => array('csv tsv xlsx')
+              ),
+              '#default_value' => isset($values["organism-$i"]['phenotype-content']) ? $values["organism-$i"]['phenotype-content'] : NULL,
+            );
         }
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
@@ -404,6 +414,7 @@ function page_4_validate_form(&$form, &$form_state){
         $phenotype_number = $phenotype['number'];
         $phenotype_check = $phenotype['check'];
         $phenotype_file = $phenotype['file'];
+        $phenotype_content = $phenotype['content'];
         
         if ($phenotype_check == '1'){
             if ($phenotype_file == ''){
@@ -485,6 +496,10 @@ function page_4_validate_form(&$form, &$form_state){
                     }
                 }
             }
+        }
+        
+        if ($phenotype_content == ''){
+            form_set_error("$id][content", "Phenotypes: field is required.");
         }
     }
     
