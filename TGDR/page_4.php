@@ -385,9 +385,8 @@ function page_4_create_form(&$form, $form_state){
         );
         
         $fields['SNPs']['assembly-auto'] = array(
-          '#type' => 'checkboxes',
+          '#type' => 'fieldset',
           '#title' => t('Waiting for BioProject accession number...'),
-          '#options' => array(),
           '#prefix' => "<div id='$id-assembly-auto'>",
           '#suffix' => '</div>',
           '#states' => array(
@@ -480,8 +479,6 @@ function page_4_create_form(&$form, $form_state){
       '#value' => t('Submit')
     );
 
-    drupal_add_js(drupal_get_path('module', 'custom_module') . "/custom_module.js");
-    
     return $form;
 }
 
@@ -498,7 +495,7 @@ function ajax_bioproject_callback(&$form, $form_state){
     foreach ($data->Link as $link){
         array_push($options, $link->Id->__tostring());
     }
-
+    
     $form["$id"]['genotype']['SNPs']['assembly-auto'] = array(
       '#type' => 'fieldset',
       '#title' => 'Select all that apply:',
@@ -677,6 +674,7 @@ function page_4_validate_form(&$form, &$form_state){
                     $assembly_auto_check += $item;
                 }
                 
+                print_r($assembly_auto . '.');
                 if (preg_match('/^0*$/', $assembly_auto_check)){
                     form_set_error("$id][genotype][SNPs][assembly-auto", 'Assembly files: field is required.');
                 }

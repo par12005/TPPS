@@ -55,7 +55,7 @@ function page_3_create_form(&$form, $form_state){
         );
 
         for ($i = 1; $i <= $species_number; $i++){
-            $name = $form_state['saved_values']['Hellopage']['organism']["$species_number"]['species'];
+            $name = $form_state['saved_values']['Hellopage']['organism']["$i"]['species'];
             
             $form['tree-accession']["species-$i"] = array(
               '#type' => 'fieldset',
