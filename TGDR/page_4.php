@@ -500,11 +500,6 @@ function ajax_bioproject_callback(&$form, $form_state){
       '#type' => 'fieldset',
       '#title' => 'Select all that apply:',
       '#tree' => TRUE,
-      '#states' => array(
-        'invisible' => array(
-          ':input[name="' . $id . '[genotype][SNPs][assembly-check]"]' => array('checked' => TRUE)
-        )
-      ),
       '#prefix' => "<div id='$id-assembly-auto'>",
       '#suffix' => '</div>',
       '#description' => 'If this list needs to be refreshed, please refresh the page and re-enter the BioProject ID.'
@@ -514,7 +509,6 @@ function ajax_bioproject_callback(&$form, $form_state){
         $form["$id"]['genotype']['SNPs']['assembly-auto']["$item"] = array(
           '#type' => 'checkbox',
           '#title' => t("$item"),
-          '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['SNPs']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['SNPs']['assembly-auto']["$item"] : NULL,
         );
     }
     
@@ -523,7 +517,9 @@ function ajax_bioproject_callback(&$form, $form_state){
 }
 
 function page_4_validate_form(&$form, &$form_state){
-    
+    if (isset($form['organism-1']['genotype']['SNPs']['assembly-auto']['1045796706'])){
+        drupal_set_message('<pre>' . print_r($form['organism-1']['genotype']['SNPs']['assembly-auto'], TRUE) . '</pre>');
+    }
     function validate_phenotype($phenotype, $id){
         $phenotype_number = $phenotype['number'];
         $phenotype_check = $phenotype['check'];
@@ -617,7 +613,7 @@ function page_4_validate_form(&$form, &$form_state){
         }
     }
     
-    function validate_genotype($genotype, $id){
+    function validate_genotype($genotype, $id, $form){
         $genotype_file = $genotype['file'];
         $marker_type = $genotype['marker-type'];
         $snps_check = $marker_type['SNPs'];
@@ -674,7 +670,6 @@ function page_4_validate_form(&$form, &$form_state){
                     $assembly_auto_check += $item;
                 }
                 
-                print_r($assembly_auto . '.');
                 if (preg_match('/^0*$/', $assembly_auto_check)){
                     form_set_error("$id][genotype][SNPs][assembly-auto", 'Assembly files: field is required.');
                 }
@@ -715,7 +710,7 @@ function page_4_validate_form(&$form, &$form_state){
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
             $genotype = $organism['genotype'];
-            validate_genotype($genotype, "organism-$i");
+            validate_genotype($genotype, "organism-$i", $form);
         }
     }
     
