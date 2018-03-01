@@ -210,6 +210,10 @@ jQuery(document).ready(function () {
     
     
     if (jQuery("#edit-step").length > 0){
+        
+        jQuery("#progress").css('font-size', '1.5rem');
+        jQuery("#progress").css('margin-bottom', '30px');
+        
         if (jQuery("#edit-step")[0].value === 'Hellopage'){
             Secondary_Authors();
             Organism();

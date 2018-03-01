@@ -37,9 +37,11 @@ function page_4_create_form(&$form, $form_state){
         );
         
         $structure_arr = array();
+		
         $results = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
             ->fields('phenotype_structure_cvterm', array('name', 'definition'))
             ->execute();
+		
         
         foreach ($results as $row){
             array_push($structure_arr, "$row->name : $row->definition");
@@ -234,7 +236,7 @@ function page_4_create_form(&$form, $form_state){
           '#default_value' => isset($values[$id]['phenotype']['check']) ? $values[$id]['phenotype']['check'] : NULL,
         );
         
-        $fields['file'] = array(
+        $fields['metadata'] = array(
           '#type' => 'managed_file',
           '#title' => t('Please upload a file containing metadata about all of your phenotypes'),
           '#upload_location' => 'public://',
@@ -248,6 +250,7 @@ function page_4_create_form(&$form, $form_state){
             )
           )
         );
+
         
         return $fields;
     }
@@ -424,22 +427,73 @@ function page_4_create_form(&$form, $form_state){
           )
         );
         
-        $fields['file'] = array(
-          '#type' => 'managed_file',
-          '#title' => t('Genotype File:'),
-          '#upload_location' => 'public://',
-          '#upload_validators' => array(
-            'file_validate_extensions' => array('vcf')
-          ),
-          '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
-        );
-        
+		$fields['file'] = array(
+			'#type' => 'managed_file',
+			'#title' => t('Genotype File:'),
+			'#upload_location' => 'public://',
+			'#upload_validators' => array('file_validate_extensions' => array('xlsx')),
+			'#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
+		);
+		
+		//This is the beginning of the process data form field which shows the columns detected from file
+		//as well as the dynamic select fields
+		$organism_index = explode('-', $id);
+		$id = $organism_index[1];
+		$form_item_prefix = 'edit-organism-' . $id . '-genotype'; //id related
+		$form_item_columns = array(
+			'treeid' => 'Tree ID',
+			'other' => 'Other',
+		);
+		
+		//Put columns into a csv format to add as an argument to the js function
+		$form_item_columns_ids = "";
+		foreach($form_item_columns as $id => $column_caption) {
+			$form_item_columns_ids .= $id . ","; 
+		}
+		$form_item_columns_ids = substr($form_item_columns_ids, 0, count($form_item_columns_ids) - 2);
+		
+		$form_item_dynamic_column_html = "
+			<div id='$form_item_prefix-sample-data'></div>
+			<div id='edit-tree-accession-select-columns'>
+				<h3>Select your excel columns to match data needed:</h3>
+				<table>
+		";
+		foreach($form_item_columns as $id => $column_caption) {
+			$form_item_dynamic_column_html .= "
+				<tr>
+					<td>$column_caption</td><td><select id='$form_item_prefix-$id' name='$form_item_prefix-$id'></select></td>
+				</tr>
+			";
+		}
+				
+		$form_item_dynamic_column_html .="		</table>
+			</div>
+		";
+		
+		//The actual form object
+		$fields['columns'] = array(
+		  '#type' => 'textarea',
+		  '#disabled' => true,
+		  '#maxlength' => 1024,
+		  '#rows' => 2,
+		  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
+		  '#field_suffix' => $form_item_dynamic_column_html,
+			//'#title' => t('Please provide the order of the columns in the file above, separated by commas.'),
+			//'#title' => t('Column data:'),
+			//'#default_value' => isset($values["organism-$i"]['phenotype']['columns']) ? $values["organism-$i"]['phenotype']['columns'] : NULL,
+			/*
+			'#states' => array(
+				'visible' => array(
+					':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
+				)
+			)*/
+		);	
         return $fields;
     }
     
     $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
     $data_type = $form_state['saved_values']['secondPage']['dataType'];
-    
+    //dpm($data_type);
     for ($i = 1; $i <= $organism_number; $i++){
         
         $name = $form_state['saved_values']['Hellopage']['organism']["$i"]['species'];
@@ -449,19 +503,72 @@ function page_4_create_form(&$form, $form_state){
           '#title' => t($name . ":"),
           '#tree' => TRUE,
         );
+
+
         
         if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
             $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i");
-            
-            $form["organism-$i"]['phenotype']['content'] = array(
-              '#type' => 'managed_file',
-              '#title' => t('Please upload a file containing all of your phenotypic data:'),
-              '#upload_location' => 'public://',
-              '#upload_validators' => array(
-                'file_validate_extensions' => array('csv tsv xlsx')
-              ),
-              '#default_value' => isset($values["organism-$i"]['phenotype-content']) ? $values["organism-$i"]['phenotype-content'] : NULL,
-            );
+			$form["organism-$i"]['phenotype']['file'] = array(
+				 '#type' => 'managed_file',
+				 '#title' => t('Please upload a file containing all of your phenotypic data:'),
+				 '#upload_location' => 'public://',
+				 '#upload_validators' => array(
+				   'file_validate_extensions' => array('csv tsv xlsx')
+				 ),
+				 '#default_value' => isset($values["organism-$i"]['phenotype-content']) ? $values["organism-$i"]['phenotype-content'] : NULL,
+			);
+			
+			//This is the beginning of the process data form field which shows the columns detected from file
+			//as well as the dynamic select fields
+			$form_item_prefix = 'edit-organism-' . $i . '-phenotype'; //id related
+			$form_item_columns = array(
+				'treeid' => 'Tree ID',
+
+			);
+			
+			//Put columns into a csv format to add as an argument to the js function
+			$form_item_columns_ids = "";
+			foreach($form_item_columns as $id => $column_caption) {
+				$form_item_columns_ids .= $id . ","; 
+			}
+			$form_item_columns_ids = substr($form_item_columns_ids, 0, count($form_item_columns_ids) - 2);
+			
+			$form_item_dynamic_column_html = "
+				<div id='$form_item_prefix-sample-data'></div>
+				<div id='edit-tree-accession-select-columns'>
+					<h3>Select your excel columns to match data needed:</h3>
+					<table>
+			";
+			foreach($form_item_columns as $id => $column_caption) {
+				$form_item_dynamic_column_html .= "
+					<tr>
+						<td>$column_caption</td><td><select id='$form_item_prefix-$id' name='$form_item_prefix-$id'></select></td>
+					</tr>
+				";
+			}
+					
+			$form_item_dynamic_column_html .="		</table>
+				</div>
+			";
+			
+			//The actual form object
+			$form["organism-$i"]['phenotype']['columns'] = array(
+			  '#type' => 'textarea',
+			  '#disabled' => true,
+			  '#maxlength' => 1024,
+			  '#rows' => 2,
+			  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
+			  '#field_suffix' => $form_item_dynamic_column_html,
+				//'#title' => t('Please provide the order of the columns in the file above, separated by commas.'),
+				//'#title' => t('Column data:'),
+				'#default_value' => isset($values["organism-$i"]['phenotype']['columns']) ? $values["organism-$i"]['phenotype']['columns'] : NULL,
+				/*
+				'#states' => array(
+					'visible' => array(
+						':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
+					)
+				)*/
+			);			
         }
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
@@ -495,7 +602,7 @@ function ajax_bioproject_callback(&$form, $form_state){
     foreach ($data->Link as $link){
         array_push($options, $link->Id->__tostring());
     }
-    
+
     $form["$id"]['genotype']['SNPs']['assembly-auto'] = array(
       '#type' => 'fieldset',
       '#title' => 'Select all that apply:',
@@ -523,8 +630,8 @@ function page_4_validate_form(&$form, &$form_state){
     function validate_phenotype($phenotype, $id){
         $phenotype_number = $phenotype['number'];
         $phenotype_check = $phenotype['check'];
-        $phenotype_file = $phenotype['file'];
-        $phenotype_content = $phenotype['content'];
+        $phenotype_file = $phenotype['metadata'];
+        $phenotype_content = $phenotype['file'];
         
         if ($phenotype_check == '1'){
             if ($phenotype_file == ''){
@@ -663,16 +770,16 @@ function page_4_validate_form(&$form, &$form_state){
                 if ($bio_id == ''){
                     form_set_error("$id][genotype][SNPs][Bioproject-id", 'BioProject Id: field is required.');
                 }
-                
+            
                 $assembly_auto_check = '';
                 
                 foreach ($assembly_auto as $item){
                     $assembly_auto_check += $item;
-                }
-                
+        }
+        
                 if (preg_match('/^0*$/', $assembly_auto_check)){
                     form_set_error("$id][genotype][SNPs][assembly-auto", 'Assembly files: field is required.');
-                }
+    }
                 else{
                     $results = array();
                     foreach ($assembly_auto_check as $key=>$value){
@@ -690,7 +797,7 @@ function page_4_validate_form(&$form, &$form_state){
         elseif ($other_marker != '0' and $genotype['other'] == ''){
             form_set_error("$id][other", "Other Genotype marker: field is required.");
         }
-        
+    
         if ($genotype_file == ''){
             form_set_error("$id][file", "Genotypes: field is required.");
         }

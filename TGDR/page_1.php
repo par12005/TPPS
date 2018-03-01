@@ -155,7 +155,7 @@ function page_1_create_form(&$form, $form_state){
               '#title' => t('Please upload csv a file containing the names of all of your authors, and title the columns "last", "first", and "mi", in any order.'),
               '#upload_location' => 'public://',
               '#upload_validators' => array(
-                'file_validate_extensions' => array('csv')
+                'file_validate_extensions' => array('txt csv xlsx')
               ),
               '#default_value' => isset($values['publication']['secondaryAuthors']['file']) ? $values['publication']['secondaryAuthors']['file'] : NULL,
               '#states' => array(
@@ -164,6 +164,60 @@ function page_1_create_form(&$form, $form_state){
                 )
               )
             );
+			
+			//This is the beginning of the process data form field which shows the columns detected from file
+			//as well as the dynamic select fields
+			$form_item_prefix = 'edit-publication-secondaryauthors'; //id related
+			$form_item_columns = array(
+				'first' => 'First',
+				'last' => 'Last',
+				'mi' => 'Mi',
+			);
+			
+			//Put columns into a csv format to add as an argument to the js function
+			$form_item_columns_ids = "";
+			foreach($form_item_columns as $id => $column_caption) {
+				$form_item_columns_ids .= $id . ","; 
+			}
+			$form_item_columns_ids = substr($form_item_columns_ids, 0, count($form_item_columns_ids) - 2);
+			
+			
+			//The actual form object
+			$form['publication']['secondaryAuthors']['columns'] = array(
+				'#type' => 'textarea',
+				'#disabled' => true,
+				'#maxlength' => 1024,
+				'#rows' => 2,
+				'#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix-selectedcolumns\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
+				//'#field_suffix' => $form_item_dynamic_column_html,
+				//'#title' => t('Please provide the order of the columns in the file above, separated by commas.'),
+				//'#title' => t('Column data:'),
+				'#default_value' => isset($values['publication']['secondaryAuthors']['columns']) ? $values['publication']['secondaryAuthors']['columns'] : NULL,
+				'#states' => array(
+					'visible' => array(
+						':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
+					)
+				)
+			);
+
+			foreach($form_item_columns as $id => $column_caption) {
+				$form['publication']['secondaryAuthors']['selectedcolumns'][$id] = array(
+					'#type' => 'select',
+					'#title' => t($column_caption),
+					
+					'#options' => array(
+						/* 0 => t('- Select -'), */
+					),
+					
+					'#default_value' => isset($values['publication']['secondaryAuthors']['selected_columns'][$id]) ? $values['publication']['secondaryAuthors']['selected_columns'][$id] : 0,
+					'#states' => array(
+						'visible' => array(
+							':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
+						)
+					)			  
+				);
+			}
+			
             
             return $form;
         }
