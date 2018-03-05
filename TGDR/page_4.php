@@ -38,6 +38,7 @@ function page_4_create_form(&$form, $form_state){
         
         $structure_arr = array();
 		
+		
         $results = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
             ->fields('phenotype_structure_cvterm', array('name', 'definition'))
             ->execute();
@@ -52,6 +53,7 @@ function page_4_create_form(&$form, $form_state){
             ->fields('phenotype_cvterm', array('name', 'definition'))
             ->execute();
         
+		
         foreach ($results as $row){
             array_push($dev_arr, "$row->name : $row->definition");
         }
@@ -390,6 +392,7 @@ function page_4_create_form(&$form, $form_state){
         $fields['SNPs']['assembly-auto'] = array(
           '#type' => 'fieldset',
           '#title' => t('Waiting for BioProject accession number...'),
+          '#tree' => TRUE,
           '#prefix' => "<div id='$id-assembly-auto'>",
           '#suffix' => '</div>',
           '#states' => array(
@@ -398,6 +401,27 @@ function page_4_create_form(&$form, $form_state){
             )
           )
         );
+        
+        if (isset($values[$id]['genotype']['SNPs']['BioProject-id'])){
+            
+            $bio_id = substr($values[$id]['genotype']['SNPs']['BioProject-id'], 5);
+            $options = array();
+            $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
+            $response_xml_data = file_get_contents($url);
+            $data = simplexml_load_string($response_xml_data)->children()->children()->LinkSetDb->children();
+            
+            foreach ($data->Link as $link){
+                array_push($options, $link->Id->__tostring());
+            }
+            
+            foreach ($options as $item){
+                $fields['SNPs']['assembly-auto']["$item"] = array(
+          '#type' => 'checkbox',
+                  '#title' => t("$item"),
+                  '#default_value' => isset($values[$id]['genotype']['SNPs']['assembly-auto']["$item"]) ? $values[$id]['genotype']['SNPs']['assembly-auto']["$item"] : NULL,
+                );
+            }
+        }
         
         $fields['SNPs']['assembly-check'] = array(
           '#type' => 'checkbox',
@@ -416,10 +440,10 @@ function page_4_create_form(&$form, $form_state){
           )
         );
         
-        $fields['other'] = array(
+        $fields['other-marker'] = array(
           '#type' => 'textfield',
           '#title' => t('Define Type:'),
-          '#default_value' => isset($values[$id]['genotype']['other']) ? $values[$id]['genotype']['other'] : NULL,
+          '#default_value' => isset($values[$id]['genotype']['other-marker']) ? $values[$id]['genotype']['other-marker'] : NULL,
           '#states' => array(
             'visible' => array(
               ':input[name="' . $id . '[genotype][marker-type][Other]"]' => array('checked' => true)
@@ -452,23 +476,7 @@ function page_4_create_form(&$form, $form_state){
 		}
 		$form_item_columns_ids = substr($form_item_columns_ids, 0, count($form_item_columns_ids) - 2);
 		
-		$form_item_dynamic_column_html = "
-			<div id='$form_item_prefix-sample-data'></div>
-			<div id='edit-tree-accession-select-columns'>
-				<h3>Select your excel columns to match data needed:</h3>
-				<table>
-		";
-		foreach($form_item_columns as $id => $column_caption) {
-			$form_item_dynamic_column_html .= "
-				<tr>
-					<td>$column_caption</td><td><select id='$form_item_prefix-$id' name='$form_item_prefix-$id'></select></td>
-				</tr>
-			";
-		}
-				
-		$form_item_dynamic_column_html .="		</table>
-			</div>
-		";
+
 		
 		//The actual form object
 		$fields['columns'] = array(
@@ -476,8 +484,8 @@ function page_4_create_form(&$form, $form_state){
 		  '#disabled' => true,
 		  '#maxlength' => 1024,
 		  '#rows' => 2,
-		  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
-		  '#field_suffix' => $form_item_dynamic_column_html,
+		  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix-selectedcolumns\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
+		  //'#field_suffix' => $form_item_dynamic_column_html,
 			//'#title' => t('Please provide the order of the columns in the file above, separated by commas.'),
 			//'#title' => t('Column data:'),
 			//'#default_value' => isset($values["organism-$i"]['phenotype']['columns']) ? $values["organism-$i"]['phenotype']['columns'] : NULL,
@@ -487,7 +495,26 @@ function page_4_create_form(&$form, $form_state){
 					':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
 				)
 			)*/
-		);	
+		);
+
+
+		foreach($form_item_columns as $id => $column_caption) {
+			$fields['selectedcolumns'][$id] = array(
+				'#type' => 'select',
+				'#title' => t($column_caption),
+				
+				'#options' => array(
+					/* 0 => t('- Select -'), */
+				),
+				
+				'#default_value' => isset($values['selected_columns'][$id]) ? $values['selected_columns'][$id] : 0,
+				'#states' => array(
+					'visible' => array(
+						//':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
+					)
+				)			  
+			);
+		}		
         return $fields;
     }
     
@@ -533,23 +560,6 @@ function page_4_create_form(&$form, $form_state){
 			}
 			$form_item_columns_ids = substr($form_item_columns_ids, 0, count($form_item_columns_ids) - 2);
 			
-			$form_item_dynamic_column_html = "
-				<div id='$form_item_prefix-sample-data'></div>
-				<div id='edit-tree-accession-select-columns'>
-					<h3>Select your excel columns to match data needed:</h3>
-					<table>
-			";
-			foreach($form_item_columns as $id => $column_caption) {
-				$form_item_dynamic_column_html .= "
-					<tr>
-						<td>$column_caption</td><td><select id='$form_item_prefix-$id' name='$form_item_prefix-$id'></select></td>
-					</tr>
-				";
-			}
-					
-			$form_item_dynamic_column_html .="		</table>
-				</div>
-			";
 			
 			//The actual form object
 			$form["organism-$i"]['phenotype']['columns'] = array(
@@ -557,7 +567,7 @@ function page_4_create_form(&$form, $form_state){
 			  '#disabled' => true,
 			  '#maxlength' => 1024,
 			  '#rows' => 2,
-			  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
+			  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix-selectedcolumns\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
 			  '#field_suffix' => $form_item_dynamic_column_html,
 				//'#title' => t('Please provide the order of the columns in the file above, separated by commas.'),
 				//'#title' => t('Column data:'),
@@ -568,7 +578,26 @@ function page_4_create_form(&$form, $form_state){
 						':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
 					)
 				)*/
-			);			
+			);
+
+			foreach($form_item_columns as $id => $column_caption) {
+				$form["organism-$i"]['phenotype']['selectedcolumns'][$id] = array(
+					'#type' => 'select',
+					'#title' => t($column_caption),
+					
+					'#options' => array(
+						/* 0 => t('- Select -'), */
+					),
+					
+					'#default_value' => isset($values["organism-$i"]['phenotype']['selectedcolumns'][$id]) ? $values["organism-$i"]['phenotype']['selectedcolumns'][$id] : 0,
+					'#states' => array(
+						'visible' => array(
+							//':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
+						)
+					)			  
+				);
+			}
+			
         }
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
@@ -607,26 +636,30 @@ function ajax_bioproject_callback(&$form, $form_state){
       '#type' => 'fieldset',
       '#title' => 'Select all that apply:',
       '#tree' => TRUE,
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+        )
+      ),
       '#prefix' => "<div id='$id-assembly-auto'>",
       '#suffix' => '</div>',
       '#description' => 'If this list needs to be refreshed, please refresh the page and re-enter the BioProject ID.'
     );
 
     foreach ($options as $item){
-        $form["$id"]['genotype']['SNPs']['assembly-auto']["$item"] = array(
+        $form["$id"]['genotype']['assembly-auto']["$item"] = array(
           '#type' => 'checkbox',
           '#title' => t("$item"),
+          '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"] : NULL,
         );
     }
     
-    return $form["$id"]['genotype']['SNPs']['assembly-auto'];
+    return $form["$id"]['genotype']['assembly-auto'];
     
 }
 
 function page_4_validate_form(&$form, &$form_state){
-    if (isset($form['organism-1']['genotype']['SNPs']['assembly-auto']['1045796706'])){
-        drupal_set_message('<pre>' . print_r($form['organism-1']['genotype']['SNPs']['assembly-auto'], TRUE) . '</pre>');
-    }
+    
     function validate_phenotype($phenotype, $id){
         $phenotype_number = $phenotype['number'];
         $phenotype_check = $phenotype['check'];

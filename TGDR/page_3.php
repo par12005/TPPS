@@ -56,39 +56,42 @@ function page_3_create_form(&$form, $form_state){
 	}
 	$form_item_columns_ids = substr($form_item_columns_ids, 0, count($form_item_columns_ids) - 2);
 	
-	$form_item_dynamic_column_html = "
-		<div id='$form_item_prefix-sample-data'></div>
-		<div id='edit-tree-accession-select-columns'>
-			<h3>Select your excel columns to match data needed:</h3>
-			<table>
-	";
-	foreach($form_item_columns as $id => $column_caption) {
-		$form_item_dynamic_column_html .= "
-			<tr>
-				<td>$column_caption</td><td><select id='$form_item_prefix-$id' name='$form_item_prefix-$id'></select></td>
-			</tr>
-		";
-	}
-	$form_item_dynamic_column_html .="		</table>
-		</div>
-	";	
 	
     $form['tree-accession']['columns'] = array(
       '#type' => 'textarea',
 	  '#disabled' => true,
 	  '#maxlength' => 1024,
 	  '#rows' => 2,
-	  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
-	  '#field_suffix' => $form_item_dynamic_column_html,
+	  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix-selectedcolumns\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
+	  //'#field_suffix' => $form_item_dynamic_column_html,
       //'#title' => t('Please provide the order of the columns in the file above, separated by commas.'),
 	  //'#title' => t('Column data:'),
       '#default_value' => isset($values['tree-accession']['columns']) ? $values['tree-accession']['columns'] : NULL,
       '#states' => ($species_number > 1) ? (array(
         'visible' => array(
-          ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
+          //':input[name="tree-accession[check]"]' => array('checked' => FALSE),
         )
       )) : NULL,
     );
+	
+	
+	foreach($form_item_columns as $id => $column_caption) {
+		$form['tree-accession']['selectedcolumns'][$id] = array(
+			'#type' => 'select',
+			'#title' => t($column_caption),
+			
+			'#options' => array(
+				/* 0 => t('- Select -'), */
+			),
+			
+			'#default_value' => isset($values['tree-accession']['selected_columns'][$id]) ? $values['tree-accession']['selected_columns'][$id] : 0,
+			'#states' => array(
+				'visible' => array(
+					//':input[name="tree-accession[check]"]' => array('checked' => FALSE),
+				)
+			)			  
+		);
+	}	
     
     if ($species_number > 1){
         $form['tree-accession']['check'] = array(
@@ -121,14 +124,7 @@ function page_3_create_form(&$form, $form_state){
               '#description' => $file_description
             );
             
-			/*
-            $form['tree-accession']["species-$i"]['columns'] = array(
-              '#type' => 'textfield',
-              '#title' => t('Please provide the order of the columns in the file above, separated by columns.'),
-              '#default_value' => isset($values['tree-accession']["species-$i"]['columns']) ? $values['tree-accession']["species-$i"]['columns'] : NULL,
-              
-            );
-			*/
+
 			
 			//This is the beginning of the process data form field which shows the columns detected from file
 			//as well as the dynamic select fields
@@ -145,34 +141,38 @@ function page_3_create_form(&$form, $form_state){
 			}
 			$form_item_columns_ids = substr($form_item_columns_ids, 0, count($form_item_columns_ids) - 2);
 			
-			$form_item_dynamic_column_html = "
-				<div id='$form_item_prefix-sample-data'></div>
-				<div id='edit-tree-accession-select-columns'>
-					<h3>Select your excel columns to match data needed:</h3>
-					<table>
-			";
-			foreach($form_item_columns as $id => $column_caption) {
-				$form_item_dynamic_column_html .= "
-					<tr>
-						<td>$column_caption</td><td><select id='$form_item_prefix-$id' name='$form_item_prefix-$id'></select></td>
-					</tr>
-				";
-			}
-			$form_item_dynamic_column_html .="		</table>
-				</div>
-			";	
+	
 			
 			$form['tree-accession']["species-$i"]['columns'] = array(
 			  '#type' => 'textarea',
 			  '#disabled' => true,
 			  '#maxlength' => 1024,
 			  '#rows' => 2,
-			  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
-			  '#field_suffix' => $form_item_dynamic_column_html,
+			  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix-selectedcolumns\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
+			  //'#field_suffix' => $form_item_dynamic_column_html,
 			  //'#title' => t('Please provide the order of the columns in the file above, separated by commas.'),
 			  //'#title' => t('Column data:'),
 			  '#default_value' => isset($values['tree-accession']["species-$i"]['columns']) ? $values['tree-accession']["species-$i"]['columns'] : NULL,
-			);			
+			);	
+
+			foreach($form_item_columns as $id => $column_caption) {
+				$form['tree-accession']["species-$i"]['selectedcolumns'][$id] = array(
+					'#type' => 'select',
+					'#title' => t($column_caption),
+					
+					'#options' => array(
+						/* 0 => t('- Select -'), */
+					),
+					
+					'#default_value' => isset($values['tree-accession']["species-$i"]['selected_columns'][$id]) ? $values['tree-accession']["species-$i"]['selected_columns'][$id] : 0,
+					'#states' => array(
+						'visible' => array(
+							//':input[name="tree-accession[check]"]' => array('checked' => FALSE),
+						)
+					)			  
+				);
+			}	
+			
         }
     }
     
