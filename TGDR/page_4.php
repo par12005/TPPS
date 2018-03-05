@@ -257,7 +257,7 @@ function page_4_create_form(&$form, $form_state){
         return $fields;
     }
     
-    function genotype(&$form, $values, $id){
+    function genotype(&$form, &$form_state, $values, $id){
         
         $fields = array(
           '#type' => 'fieldset',
@@ -389,38 +389,54 @@ function page_4_create_form(&$form, $form_state){
           )
         );
         
-        $fields['SNPs']['assembly-auto'] = array(
-          '#type' => 'fieldset',
-          '#title' => t('Waiting for BioProject accession number...'),
-          '#tree' => TRUE,
-          '#prefix' => "<div id='$id-assembly-auto'>",
-          '#suffix' => '</div>',
-          '#states' => array(
-            'invisible' => array(
-              ':input[name="' . $id . '[genotype][SNPs][assembly-check]"]' => array('checked' => TRUE)
-            )
-          )
-        );
-        
-        if (isset($values[$id]['genotype']['SNPs']['BioProject-id'])){
+        if (isset($form_state['values'][$id]['genotype']['SNPs']['BioProject-id']) and strlen($form_state['values'][$id]['genotype']['SNPs']['BioProject-id']) > 5){
             
-            $bio_id = substr($values[$id]['genotype']['SNPs']['BioProject-id'], 5);
+            $bio_id = substr($form_state['values']["$id"]['genotype']['SNPs']['BioProject-id'], 5);
+    
             $options = array();
             $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
             $response_xml_data = file_get_contents($url);
             $data = simplexml_load_string($response_xml_data)->children()->children()->LinkSetDb->children();
-            
+
             foreach ($data->Link as $link){
                 array_push($options, $link->Id->__tostring());
             }
-            
+
+            $fields['SNPs']['assembly-auto'] = array(
+              '#type' => 'fieldset',
+              '#title' => 'Select all that apply:',
+              '#tree' => TRUE,
+              '#states' => array(
+                'invisible' => array(
+                  ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
+                )
+              ),
+              '#prefix' => "<div id='$id-assembly-auto'>",
+              '#suffix' => '</div>',
+              '#description' => 'If this list needs to be refreshed, please refresh the page and re-enter the BioProject ID.'
+            );
+
             foreach ($options as $item){
                 $fields['SNPs']['assembly-auto']["$item"] = array(
-          '#type' => 'checkbox',
+                  '#type' => 'checkbox',
                   '#title' => t("$item"),
-                  '#default_value' => isset($values[$id]['genotype']['SNPs']['assembly-auto']["$item"]) ? $values[$id]['genotype']['SNPs']['assembly-auto']["$item"] : NULL,
+                  '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"] : NULL,
                 );
             }
+        }
+        else {
+            $fields['SNPs']['assembly-auto'] = array(
+              '#type' => 'fieldset',
+              '#title' => t('Waiting for BioProject accession number...'),
+              '#tree' => TRUE,
+              '#prefix' => "<div id='$id-assembly-auto'>",
+              '#suffix' => '</div>',
+              '#states' => array(
+                'invisible' => array(
+                  ':input[name="' . $id . '[genotype][SNPs][assembly-check]"]' => array('checked' => TRUE)
+                )
+              )
+            );
         }
         
         $fields['SNPs']['assembly-check'] = array(
@@ -601,7 +617,7 @@ function page_4_create_form(&$form, $form_state){
         }
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
-            $form["organism-$i"]['genotype'] = genotype($form, $values, "organism-$i");
+            $form["organism-$i"]['genotype'] = genotype($form, $form_state, $values, "organism-$i");
         }
     }
     
@@ -620,41 +636,9 @@ function page_4_create_form(&$form, $form_state){
 
 function ajax_bioproject_callback(&$form, $form_state){
     
-    $id = $form_state['triggering_element']['#parents'][0];
-    $bio_id = substr($form_state['values']["$id"]['genotype']['SNPs']['BioProject-id'], 5);
+    $ajax_id = $form_state['triggering_element']['#parents'][0];
     
-    $options = array();
-    $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
-    $response_xml_data = file_get_contents($url);
-    $data = simplexml_load_string($response_xml_data)->children()->children()->LinkSetDb->children();
-
-    foreach ($data->Link as $link){
-        array_push($options, $link->Id->__tostring());
-    }
-
-    $form["$id"]['genotype']['SNPs']['assembly-auto'] = array(
-      '#type' => 'fieldset',
-      '#title' => 'Select all that apply:',
-      '#tree' => TRUE,
-      '#states' => array(
-        'invisible' => array(
-          ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
-        )
-      ),
-      '#prefix' => "<div id='$id-assembly-auto'>",
-      '#suffix' => '</div>',
-      '#description' => 'If this list needs to be refreshed, please refresh the page and re-enter the BioProject ID.'
-    );
-
-    foreach ($options as $item){
-        $form["$id"]['genotype']['assembly-auto']["$item"] = array(
-          '#type' => 'checkbox',
-          '#title' => t("$item"),
-          '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"] : NULL,
-        );
-    }
-    
-    return $form["$id"]['genotype']['assembly-auto'];
+    return $form["$ajax_id"]['genotype']['SNPs']['assembly-auto'];
     
 }
 
@@ -753,7 +737,7 @@ function page_4_validate_form(&$form, &$form_state){
         }
     }
     
-    function validate_genotype($genotype, $id, $form){
+    function validate_genotype($genotype, $id){
         $genotype_file = $genotype['file'];
         $marker_type = $genotype['marker-type'];
         $snps_check = $marker_type['SNPs'];
@@ -808,31 +792,22 @@ function page_4_validate_form(&$form, &$form_state){
                 
                 foreach ($assembly_auto as $item){
                     $assembly_auto_check += $item;
-        }
+                }
         
                 if (preg_match('/^0*$/', $assembly_auto_check)){
                     form_set_error("$id][genotype][SNPs][assembly-auto", 'Assembly files: field is required.');
-    }
-                else{
-                    $results = array();
-                    foreach ($assembly_auto_check as $key=>$value){
-                        if ($value != '0'){
-                            array_push($results, 'https://www.ncbi.nlm.nih.gov/nuccore/' . $assembly_auto[$key]);
-                        }
-                    }
-                    $form_state['values'][$id]['genotype']['SNPs']['assembly-auto'] = $results;
                 }
             }
         }
         elseif ($ssrs != '0' and $genotype['SSRs/cpSSRs'] == ''){
             form_set_error("$id][SSRs/cpSSRs", "SSRs/cpSSRs: field is required.");
         }
-        elseif ($other_marker != '0' and $genotype['other'] == ''){
-            form_set_error("$id][other", "Other Genotype marker: field is required.");
+        elseif ($other_marker != '0' and $genotype['other-marker'] == ''){
+            form_set_error("$id][other-marker", "Other Genotype marker: field is required.");
         }
     
         if ($genotype_file == ''){
-            form_set_error("$id][file", "Genotypes: field is required.");
+            form_set_error("$id][file", "Genotype file: field is required.");
         }
     }
     
@@ -850,7 +825,7 @@ function page_4_validate_form(&$form, &$form_state){
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
             $genotype = $organism['genotype'];
-            validate_genotype($genotype, "organism-$i", $form);
+            validate_genotype($genotype, "organism-$i");
         }
     }
     
