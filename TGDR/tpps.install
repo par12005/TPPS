@@ -1,0 +1,64 @@
+<?php
+
+function tpps_schema(){
+    
+    $schema['chado.tpps_project'] = array(
+      'description' => 'Temporary version of {project} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_project_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'name' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+        ),
+        'description' => array(
+          'description' => '',
+          'type' => 'text',
+        )
+      ),
+      'primary key' => array(
+        'tpps_project_id'
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'name'
+        )
+      )
+    );
+    
+    $schema ['chado.tpps_contact'] = array(
+      'description' => 'Temporary version of {contact} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_contact_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'type_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE,
+        ),
+        'name' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+        ),
+        'description' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255,
+        )
+      ),
+    );
+    
+    return $schema;
+}
