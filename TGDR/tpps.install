@@ -42,7 +42,7 @@ function tpps_schema(){
           'not null' => TRUE,
         ),
         'type_id' => array(
-          'description' => '',
+          'description' => 'What type of contact is this?  E.g. "person", "lab".',
           'type' => 'int',
           'unsigned' => TRUE,
         ),
@@ -58,6 +58,26 @@ function tpps_schema(){
           'length' => 255,
         )
       ),
+      'unique keys' => array(
+        'c1' => array(
+          'name'
+        )
+      ),
+        //DRUPAL DOES NOT SUPPORT FOREIGN KEYS: THIS SECTION IS PURELY 
+        //FOR DOCUMENTATION PURPOSES. SEE
+        //https://api.drupal.org/api/drupal/includes!database!schema.inc/group/schemaapi/7.x
+        //FOR DETAILS
+      'foreign keys' => array(
+        'type_id' => array(
+          'table' => 'cvterm',
+          'columns' => array(
+            'cvterm_id' => 'cvterm_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_contact_id'
+      )
     );
     
     return $schema;
