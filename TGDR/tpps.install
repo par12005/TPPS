@@ -3,7 +3,7 @@
 function tpps_schema(){
     
     $schema['chado.tpps_project'] = array(
-      'description' => 'Temporary version of {project} table for pending or incomplete TPPS submissions.',
+      'description' => 'Temporary version of {chado.project} table for pending or incomplete TPPS submissions.',
       'fields' => array(
         'tpps_project_id' => array(
           'description' => '',
@@ -33,7 +33,7 @@ function tpps_schema(){
     );
     
     $schema ['chado.tpps_contact'] = array(
-      'description' => 'Temporary version of {contact} table for pending or incomplete TPPS submissions.',
+      'description' => 'Temporary version of {chado.contact} table for pending or incomplete TPPS submissions.',
       'fields' => array(
         'tpps_contact_id' => array(
           'description' => '',
@@ -69,7 +69,7 @@ function tpps_schema(){
         //FOR DETAILS
       'foreign keys' => array(
         'type_id' => array(
-          'table' => 'cvterm',
+          'table' => 'chado.cvterm',
           'columns' => array(
             'cvterm_id' => 'cvterm_id'
           )
@@ -79,6 +79,552 @@ function tpps_schema(){
         'tpps_contact_id'
       )
     );
+    
+    $schema['chado.tpps_pub'] = array(
+      'description' => 'Temporary version of {chado.pub} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_pub_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'title' => array(
+          'description' => 'Descriptive general heading.',
+          'type' => 'text',
+        ),
+        'volumetitle' => array(
+          'description' => 'Title of part if one of a series.',
+          'type' => 'text',
+        ),
+        'volume' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255,
+        ),
+        'series_name' => array(
+          'description' => 'Full name of (journal) series',
+          'type' => 'varchar',
+          'length' => 255,
+        ),
+        'issue' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255
+        ),
+        'pyear' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255
+        ),
+        'pages' => array(
+          'description' => 'Page number range[s], e.g. 457--459, viii + 664pp, lv--lvii.',
+          'type' => 'varchar',
+          'length' => 255
+        ),
+        'miniref' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255
+        ),
+        'uniquename' => array(
+          'description' => '',
+          'type' => 'text',
+          'not null' => TRUE,
+        ),
+        'type_id' => array(
+          'description' => 'The type of the publication (book, journal, poem, graffiti, etc). Uses pub cv.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'is_obsolete' => array(
+          'description' => '',
+          'pgsql_type' => 'bool',
+          'default' => 'false'
+        ),
+        'publisher' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255
+        ),
+        'pubplace' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'uniquename'
+        )
+      ),
+      'foreign keys' => array(
+        'type_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'cvterm_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_pub_id'
+      )
+    );
+    
+    $schema['chado.tpps_study'] = array(
+      'description' => 'Temporary version of {chado.study} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_study_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'contact_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE,
+        ),
+        'pub_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE
+        ),
+        'dbxref_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE
+        ),
+        'name' => array(
+          'description' => '',
+          'type' => 'text',
+          'not null' => TRUE
+        ),
+        'description' => array(
+          'description' => '',
+          'type' => 'text'
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'name'
+        )
+      ),
+      'foreign keys' => array(
+        'contact_id' => array(
+          'table' => 'chado.contact',
+          'columns' => array(
+            'contact_id' => 'contact_id'
+          )
+        ),
+        'dbxref_id' => array(
+          'table' => 'chado.dbxref',
+          'columns' => array(
+            'dbxref_id' => 'dbxref_id'
+          )
+        ),
+        'pub_id' => array(
+          'table' => 'chado.pub',
+          'columns' => array(
+            'pub_id' => 'pub_id'
+          )
+        ),
+      ),
+      'primary key' => array(
+        'tpps_study_id'
+      )
+    );
+    
+    $schema['chado.tpps_pubauthor'] = array(
+      'description' => 'Temporary version of {chado.pubauthor} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_pubauthor_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'pub_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'rank' => array(
+          'description' => 'Order of author in author list for this pub - order is important.',
+          'type' => 'int',
+          'not null' => TRUE
+        ),
+        'editor' => array(
+          'description' => 'Indicates whether the author is an editor for linked publication. Note: this is a boolean field but does not follow the normal chado convention for naming booleans.',
+          'pgsql_type' => 'bool',
+          'default' => 'false'
+        ),
+        'surname' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 100,
+          'not null' => TRUE
+        ),
+        'givennames' => array(
+          'description' => 'First name, initials',
+          'type' => 'varchar',
+          'length' => 100
+        ),
+        'suffix' => array(
+          'description' => 'Jr., Sr., etc',
+          'type' => 'varchar',
+          'length' => 100
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'pub_id',
+          'rank'
+        )
+      ),
+      'foreign keys' => array(
+        'pub_id' => array(
+          'table' => 'chado.pub',
+          'columns' => array(
+            'pub_id' => 'pub_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_pubauthor_id'
+      )
+    );
+    
+    $schema['chado.tpps_projectprop'] = array(
+      'description' => 'Temporary version of {chado.projectprop} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_projectprop_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'project_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'type_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'value' => array(
+          'description' => '',
+          'type' => 'text',
+        ),
+        'rank' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0
+        ),
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'project_id',
+          'type_id',
+          'rank'
+        )
+      ),
+      'foreign keys' => array(
+        'project_id' => array(
+          'table' => 'chado.project',
+          'columns' => array(
+            'project_id' => 'project_id'
+          )
+        ),
+        'type_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'cvterm_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_projectprop_id'
+      )
+    );
+    
+    $schema['chado.tpps_organism'] = array(
+      'description' => 'Temporary version of {chado.organism} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_organism_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'abbreviation' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255
+        ),
+        'genus' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE
+        ),
+        'species' => array(
+          'description' => 'A type of organism is always uniquely identified by genus and species. When mapping from the NCBI taxonomy names.dmp file, this column must be used where it is present, as the common_name column is not always unique (e.g. environmental samples). If a particular strain or subspecies is to be represented, this is appended onto the species name. Follows standard NCBI taxonomy pattern.',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE
+        ),
+        'common_name' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255
+        ),
+        'infraspecific_name' => array(
+          'description' => 'The scientific name for any taxon below the rank of species.  The rank should be specified using the type_id field and the name is provided here.',
+          'type' => 'varchar',
+          'length' => 1024
+        ),
+        'type_id' => array(
+          'description' => 'A controlled vocabulary term that specifies the organism rank below species. It is used when an infraspecific name is provided.  Ideally, the rank should be a valid ICN name such as subspecies, varietas, subvarietas, forma and subforma.',
+          'type' => 'int',
+          'unsigned' => TRUE
+        ),
+        'comment' => array(
+          'description' => '',
+          'type' => 'text'
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'genus',
+          'species',
+          'type_id',
+          'infraspecific_name'
+        )
+      ),
+      'foreign keys' => array(
+        'type_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'cvterm_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_organism_id'
+      )
+    );
+    
+    $schema['chado.tpps_studyprop'] = array(
+      'description' => 'Temporary version of {chado.studyprop} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_studyprop_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'study_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'type_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'value' => array(
+          'description' => '',
+          'type' => 'text'
+        ),
+        'rank' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0
+        )
+      ),
+      'unique keys' => array(
+        'study_id_type_id_rank' => array(
+          'study_id',
+          'type_id',
+          'rank'
+        )
+      ),
+      'foreign keys' => array(
+        'study_id' => array(
+          'table' => 'chado.study',
+          'columns' => array(
+            'study_id' => 'study_id'
+          )
+        ),
+        'type_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'cvterm_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_studyprop_id'
+      )
+    );
+    
+    $schema['chado.tpps_stock'] = array(
+      'description' => 'Temporary version of {chado.stock} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_stock_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'dbxref_id' => array(
+          'description' => 'The dbxref_id is an optional primary stable identifier for this stock. Secondary indentifiers and external dbxrefs go in table: stock_dbxref.',
+          'type' => 'int',
+          'unsigned' => TRUE
+        ),
+        'organism_id' => array(
+          'description' => 'The organism_id is the organism to which the stock belongs. This column should only be left blank if the organism cannot be determined.',
+          'type' => 'int',
+          'unsigned' => TRUE
+        ),
+        'name' => array(
+          'description' => 'The name is a human-readable local name for a stock.',
+          'type' => 'varchar',
+          'length' => 255
+        ),
+        'uniquename' => array(
+          'description' => '',
+          'type' => 'text',
+          'not null' => TRUE
+        ),
+        'description' => array(
+          'description' => 'The description is the genetic description provided in the stock list.',
+          'type' => 'text'
+        ),
+        'type_id' => array(
+          'description' => 'The type_id foreign key links to a controlled vocabulary of stock types. The would include living stock, genomic DNA, preserved specimen. Secondary cvterms for stocks would go in stock_cvterm.',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'is_obsolete' => array(
+          'description' => '',
+          'pgsql_type' => 'bool',
+          'not null' => TRUE,
+          'default' => 'false'
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'organism_id',
+          'uniquename',
+          'type_id'
+        )
+      ),
+      'foreign keys' => array(
+        'dbxref_id' => array(
+          'table' => 'chado.dbxref',
+          'columns' => array(
+            'dbxref_id' => 'dbxref_id'
+          )
+        ),
+        'organism_id' => array(
+          'table' => 'chado.organism',
+          'columns' => array(
+            'organism_id' => 'organism_id'
+          )
+        ),
+        'type_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'cvterm_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_stock_id'
+      )
+    );
+    
+    $schema['chado.tpps_stockprop'] = array(
+      'description' => 'Temporary version of {chado.stockprop} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_stockprop_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'stock_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'type_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'value' => array(
+          'description' => '',
+          'type' => 'text'
+        ),
+        'rank' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'stock_id',
+          'type_id',
+          'rank'
+        )
+      ),
+      'foreign keys' => array(
+        'stock_id' => array(
+          'table' => 'chado.stock',
+          'columns' => array(
+            'stock_id' => 'stock_id'
+          )
+        ),
+        'type_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'cvterm_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_stockprop_id'
+      )
+    );
+    
+    /*
+    $schema['chado.tpps_phenotypeprop'] = array();
+    
+    $schema['chado.tpps_phenotype'] = array();
+    
+    $schema['chado.tpps_dbxref'] = array();
+    
+    $schema['chado.tpps_project_dbxref'] = array();*/
     
     return $schema;
 }
