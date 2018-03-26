@@ -56,7 +56,7 @@ The first set of fields in TPPS is the publication and species interface, where 
   - Up to 5 different species are allowed per submission
 
 # Study Design
-The second set of fields in TPPS is the Species Design section, where users upload metadata about their experiment. The form fields and their properties are as follows:
+The second set of fields in TPPS is the Study Design section, where users upload metadata about their experiment. The form fields and their properties are as follows:
 
 - Study Start Date: set of form fields
   - Start Date Year: drop-down menu with options '1970' to '2018'
@@ -140,26 +140,82 @@ The second set of fields in TPPS is the Species Design section, where users uplo
 
 
 # Tree Accession
+The third set of fields in TPPS is the Tree Accession section, where users upload information about where trees are located. The form fields and their properties are as follows:
+
+- Tree Accession: set of form fields - only visible if number of species in [Publication and Species Interface](#publication-and-species-interface) is 1, or if the 'Separate Tree Accession' checkbox is unchecked.
+  - Tree Accession File: file upload for a spreadsheet of tree locations
+  - Tree Accession Columns: set of drop-down menus, allowing the user to define which of their columns contain the Tree ID, and which of their columns contain location information
+- Separate Tree Accession: checkbox
+- Separate Tree Accession Information: set of form fields - only visible if the 'Separate Tree Accession' checkbox is checked
+  - Tree Accession File **x**: file upload for a spreadsheet of tree locations of tree species **x**
+  - Tree Accession Columns **x**: set of drop-down menus, allowing the user to define which of their columns contain the Tree ID, and which of their columns contain location information
 
 # Genotype, Phenotype, and Environment
+The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section, where users upload Genotypic, Phenotypic, and Environmental data and metadata. The form fields and their properties are as follows:
+
+- Tree Species **x**: set of form fields
+  - Phenotype Information: set of form fields - only visible if the user selects 'Genotype x Phenotype', 'Genotype x Phenotype x Environment', or 'Phenotype x Environment' from 'Data Type' in [Study Design](#study-design)
+     - Phenotype **x**: set of form fields
+         - Phenotype Name: text field
+         - Environmental Data: checkbox
+         - Phenotype Description: text area
+         - (Optional) Phenotype Units: drop-down menu with options 'mm', 'cm', 'm', 'Degrees Celsius', 'Degrees Fahrenheit', 'Other'
+         - Phenotype Custom Unit: text field - only visible if the user selects 'Other' from 'Phenotype Units'
+         - Phenotype Type: drop-down menu with options 'Binary', 'Quantitative', 'Qualitative' - only visible if the 'Environmental Data' checkbox is unchecked
+         - Phenotype Binary: set of form fields - only visible if the user selects 'Binary' from 'Phenotype Type'
+              - Binary Type 1: text field
+              - Binary Type 2: text field
+         - Phenotype Quantitative: set of form fields - only visible if the user selects 'Quantitative' from 'Phenotype Type'
+              - Phenotype Minimum: text field
+              - Phenotype Maximum: text field
+         - Phenotype Structure Ontology: drop-down menu with options from the chado.phenotype_structure_cvterm table
+         - Phenotype Developmental Ontology: drop-down menu with options from the chado.phenotype_cvterm table
+     - >30 Phenotypes: checkbox
+     - Phenotype Metadata file: file upload for a spreadsheet of metadata about each phenotype - only visible if the '>30 Phenotypes' checkbox is checked
+  - Phenotype File: file upload for a spreadsheet of phenotypes
+  - Phenotype File Columns: set of drop-down menus, allowing the user to define which of their columns contain the Tree ID
+  - Genotype Information: set of form fields - only visible if the user selects 'Genotype', 'Genotype x Phenotype', 'Genotype x Environment', or 'Genotype x Phenotype x Environment' from 'Data Type' in [Study Design](#study-design)
+     - Genotype Marker Type: checkboxes with options 'SNPs', 'SSRs/cpSSRs', 'Other'
+     - Genotype SNPs: set of form fields - only visible if the user selects 'SNPs' from 'Genotype Marker Type'
+         - SNPs Genotyping Design: drop-down menu with options 'GBS', 'Targeted Capture', 'Whole Genome Resequencing', 'RNS-Seq', 'Genotyping Array'
+         - SNPs GBS: set of form fields - only visible if the user selects 'GBS' from 'SNPs Genotyping Design'
+              - GBS Type: drop-down menu with options 'RADSeq', 'ddRAD-Seq', 'NextRAD', 'RAPTURE', 'Other'
+              - GBS Custom Type: text field - only visible if the user selects 'Other' from 'GBS Type'
+         - SNPs Targeted Capture: set of form fields - only visible if the user selects 'Targeted Capture' from 'SNPs Genotyping Design'
+              - Targeted Capture Type: drop-down menu with options 'Exome Capture', 'Other'
+              - Targeted Capture Custom Type: text field - only visible if the user selects 'Other' from 'Targeted Capture Type'
+         - SNPs BioProject ID: text field - only visible if the 'Manual Assembly' checkbox is unchecked
+         - Auto Assembly Numbers: checkboxes with options from NCBI - only visible if the 'Manual Assembly' checkbox is unchecked
+         - Manual Assembly File: file upload for a WGS/TSA assembly file - only visible if the 'Manual Assembly' checkbox is checked
+         - Manual Assembly: checkbox
+     - Genotype SSRs/cpSSRs Type: text field - only visible if the user selects 'SSRs/cpSSRs' from 'Genotype Marker Type'
+     - Genotype Other Marker Type: text field - only visible if the user selects 'Other' from 'Genotype Marker Type'
+  - Genotype File: file upload for a spreadsheet or .VCF file of genotypes
+  - Genotype File Columns: set of drop-down menus, allowing the user to define which of their columns contain the Tree ID
 
 # Input Validation
+Once the 4 sets of fields have been filled out by the user, their data is validated to ensure completion and integrity. All fields except for those marked (Optional) above are required when they are visible, and are therefore checked for completeness. Tree IDs from Phenotype and Genotype files are checked against Tree IDs in Tree Accession files to ensure there is not any data without trees. Users are allowed to upload trees in Tree Accession files without Genotype/Phenotype data, but not Genotype/Phenotype data without tree locations. Input validation is broken up into steps, once after each set of fields. This is so that the user cannot continue to the next set of fields if they have incomplete or invalid data in their current set, and so that a user does not need to go back to previous sets of fields to correct data later.
 
 # Data Submission
+Once the Input validation is completed for each of the 4 sets of fields, the data is organized and submitted to the database according to the CHADO schema.
+
+Initially, the data will be submitted to temporary tables which are mirrored versions of the real CHADO tables. This is so that an administrator on the system can either approve or reject a data submission before it is written to the public tables. The temporary mirrored tables will be created and destroyed on installation and uninstallation, respectively.
+
+After the data has been submitted and approved, the user will recieve an email with an accession number, which they can use in publications or to link to later. Incomplete submissions and submissions pending approval will still have accession numbers so that a user can leave the site and continue in the same place as their form later, but these accession numbers will not be released to them until after the submission has been completed and approved.
 
 # Features in Development
 - Location preview window
-- File upload column definition
-- Progress bar
+- Status sidebar
 - View submissions through the user's Tripal account
 - Access in-progress submissions through user's Tripal account
 - Validation across Tree Accession/VCF/WGS/TSA files
 - Unique TreeGenes Accession number
+- Admin Interface for submission approval
 
 
 # Resources
 
-[TPPS in action!](https://tgwebdev.cam.uchc.edu/Drupal/master)
+[TPPS on TreeGenes!](https://tgwebdev.cam.uchc.edu/Drupal/master)
 
 [Newest TPPS Flow Concept document](https://docs.google.com/document/d/1fyRlf18j5fq8D2l5Yvx9X-VdUqlrkSvoLC9KGbDnrU8/edit?usp=sharing)
 
