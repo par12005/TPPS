@@ -71,7 +71,7 @@ function tpps_schema(){
         'type_id' => array(
           'table' => 'chado.cvterm',
           'columns' => array(
-            'cvterm_id' => 'cvterm_id'
+            'cvterm_id' => 'type_id'
           )
         )
       ),
@@ -163,7 +163,7 @@ function tpps_schema(){
         'type_id' => array(
           'table' => 'chado.cvterm',
           'columns' => array(
-            'cvterm_id' => 'cvterm_id'
+            'cvterm_id' => 'type_id'
           )
         )
       ),
@@ -347,7 +347,7 @@ function tpps_schema(){
         'type_id' => array(
           'table' => 'chado.cvterm',
           'columns' => array(
-            'cvterm_id' => 'cvterm_id'
+            'cvterm_id' => 'type_id'
           )
         )
       ),
@@ -414,7 +414,7 @@ function tpps_schema(){
         'type_id' => array(
           'table' => 'chado.cvterm',
           'columns' => array(
-            'cvterm_id' => 'cvterm_id'
+            'cvterm_id' => 'type_id'
           )
         )
       ),
@@ -472,7 +472,7 @@ function tpps_schema(){
         'type_id' => array(
           'table' => 'chado.cvterm',
           'columns' => array(
-            'cvterm_id' => 'cvterm_id'
+            'cvterm_id' => 'type_id'
           )
         )
       ),
@@ -550,7 +550,7 @@ function tpps_schema(){
         'type_id' => array(
           'table' => 'chado.cvterm',
           'columns' => array(
-            'cvterm_id' => 'cvterm_id'
+            'cvterm_id' => 'type_id'
           )
         )
       ),
@@ -608,7 +608,7 @@ function tpps_schema(){
         'type_id' => array(
           'table' => 'chado.cvterm',
           'columns' => array(
-            'cvterm_id' => 'cvterm_id'
+            'cvterm_id' => 'type_id'
           )
         )
       ),
@@ -617,14 +617,249 @@ function tpps_schema(){
       )
     );
     
-    /*
-    $schema['chado.tpps_phenotypeprop'] = array();
+    $schema['chado.tpps_phenotypeprop'] = array(
+      'description' => 'Temporary version of {chado.phenotypeprop} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_phenotypeprop_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'phenotype_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'type_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'value' => array(
+          'description' => '',
+          'type' => 'text'
+        ),
+        'rank' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => 0
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'phenotype_id',
+          'type_id',
+          'rank'
+        )
+      ),
+      'foreign keys' => array(
+        'phenotype_id' => array(
+          'table' => 'chado.phenotype',
+          'columns' => array(
+            'phenotype_id' => 'phenotype_id'
+          )
+        ),
+        'type_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'type_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_phenotypeprop_id'
+      )
+    );
     
-    $schema['chado.tpps_phenotype'] = array();
+    $schema['chado.tpps_phenotype'] = array(
+      'description' => 'Temporary version of {chado.phenotype} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_phenotype_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'uniquename' => array(
+          'description' => '',
+          'type' => 'text',
+          'not null' => TRUE
+        ),
+        'name' => array(
+          'description' => '',
+          'type' => 'text'
+        ),
+        'observable_id' => array(
+          'description' => 'The entity: e.g. anatomy_part, biological_process.',
+          'type' => 'int',
+          'unsigned' => TRUE
+        ),
+        'attr_id' => array(
+          'description' => 'Phenotypic attribute (quality, property, attribute, character) - drawn from PATO.',
+          'type' => 'int',
+          'unsigned' => TRUE
+        ),
+        'value' => array(
+          'description' => 'Value of attribute - unconstrained free text. Used only if cvalue_id is not appropriate.',
+          'type' => 'text'
+        ),
+        'cvalue_id' => array(
+          'description' => 'Phenotype attribute value (state).',
+          'type' => 'int',
+          'unsigned' => TRUE
+        ),
+        'assay_id' => array(
+          'description' => 'Evidence type.',
+          'type' => 'int',
+          'unsigned' => TRUE
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'uniquename'
+        )
+      ),
+      'foreign keys' => array(
+        'assay_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'assay_id'
+          )
+        ),
+        'attr_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'attr_id'
+          )
+        ),
+        'cvalue_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'cvalue_id'
+          )
+        ),
+        'observable_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'observable_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_phenotype_id'
+      )
+    );
     
-    $schema['chado.tpps_dbxref'] = array();
+    $schema['chado.tpps_dbxref'] = array(
+      'description' => 'Temporary version of {chado.dbxref} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_dbxref_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'db_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'accession' => array(
+          'description' => 'The local part of the identifier. Guaranteed by the db authority to be unique for that db.',
+          'type' => 'varchar',
+          'length' => 1024,
+          'not null' => TRUE
+        ),
+        'version' => array(
+          'description' => '',
+          'type' => 'varchar',
+          'length' => 255,
+          'not null' => TRUE,
+          'default' => ""
+        ),
+        'description' => array(
+          'description' => '',
+          'type' => 'text'
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'db_id',
+          'accession',
+          'version'
+        )
+      ),
+      'foreign keys' => array(
+        'db_id' => array(
+          'table' => 'chado.db',
+          'columns' => array(
+            'db_id' => 'db_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_dbxref_id'
+      )
+    );
     
-    $schema['chado.tpps_project_dbxref'] = array();*/
+    
+    $schema['chado.tpps_project_dbxref'] = array(
+      'description' => 'Temporary version of {chado.project_dbxref} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_project_dbxref_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'project_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'dbxref_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'is_current' => array(
+          'description' => 'The is_current boolean indicates whether the linked dbxref is the current -official- dbxref for the linked project.',
+          'pgsql_type' => 'bool',
+          'not null' => TRUE,
+          'default' => 'true'
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'project_id',
+          'dbxref_id'
+        )
+      ),
+      'foreign keys' => array(
+        'dbxref_id' => array(
+          'table' => 'dbxref',
+          'columns' => array(
+            'dbxref_id' => 'dbxref_id'
+          )
+        ),
+        'project_id' => array(
+          'table' => 'project',
+          'columns' => array(
+            'project_id' => 'project_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_project_dbxref_id'
+      )
+    );
     
     return $schema;
 }
