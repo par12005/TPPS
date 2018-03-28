@@ -861,5 +861,19 @@ function tpps_schema(){
       )
     );
     
+    $schema['chado.tpps_stock_phenotype'] = array(
+      'description' => 'Temporary version of {chado.stock_phenotype} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'stock_id' => array(
+          'description' => '',
+          'type' => 'int'
+        ),
+        'phenotype_id' => array(
+          'description' => '',
+          'type' => 'int'
+        )
+      )
+    );
+    
     return $schema;
 }
