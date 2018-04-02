@@ -1,5 +1,81 @@
 <?php
 
+function tpps_install(){
+    
+    $tables = array(
+      'project',
+      'contact',
+      'pub',
+      'study',
+      'pubauthor',
+      'projectprop',
+      'organism',
+      'studyprop',
+      'stock',
+      'stockprop',
+      'phenotypeprop',
+      'phenotype',
+      'dbxref',
+      'project_dbxref',
+      //'stock_phenotype',
+    );
+    
+    foreach ($tables as $table){
+        $temp_table = "chado.tpps_$table";
+        $primary_key = $table . "_id";
+        $table = "chado.$table";
+        
+        $insert_fields = array();
+        $primary_key = TRUE;
+        
+        $results = db_select($table, 't')
+            ->fields('t')
+            ->orderBy($primary_key, 'DESC')
+            ->range(0, 1)
+            ->execute()
+            ->fetchAssoc();
+        
+        //print_r($table);
+        print_r($results);
+        if ($results){
+            $default_fields = array();
+            foreach($results as $field => $value){
+
+                if ($value == ''){
+                    array_push($default_fields, $field);
+                    $value = NULL;
+                }
+                else {
+                    if ($primary_key){
+                        $insert_fields["tpps_$field"] = $value;
+                        $primary_key = FALSE;
+                    }
+                    else{
+                        $insert_fields[$field] = $value;
+                    }
+                }
+                //print_r("$field => $value");
+                //print_r("\nnext field\n");
+            }
+            
+            $insert = db_insert($temp_table)
+                ->useDefaults($default_fields)
+                ->fields($insert_fields)
+                ->execute();
+        }
+        
+        $results = db_select($temp_table, 't')
+            ->fields('t')
+            ->execute()
+            ->fetchAssoc();
+        
+        print_r("\n$table : $temp_table\n");
+        print_r($results);
+        //break;
+    }
+    
+}
+
 function tpps_schema(){
     
     $schema['chado.tpps_project'] = array(
