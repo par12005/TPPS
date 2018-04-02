@@ -210,6 +210,7 @@ After the data has been submitted and approved, the user will recieve an email w
 - Access in-progress submissions through user's Tripal account
 - Validation across Tree Accession/VCF/WGS/TSA files
 - Unique TreeGenes Accession number
+- Create temporary chado.tpps_* tables on install
 - Admin Interface for submission approval
 
 
