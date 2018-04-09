@@ -249,12 +249,12 @@ function tpps_master_add_excel_load_js() {
 function tpps_master($form, &$form_state){
     
     //Get next dbxref_id and accession # for project
-    /*
+    
     
     $results = db_select('chado.dbxref', 'dbxref')
         ->fields('dbxref', array('dbxref_id'))
         ->orderBy('dbxref_id', 'DESC')
-        ->range(0, 10)
+        ->range(0, 1)
         ->execute();
     
     foreach ($results as $row){
@@ -279,7 +279,7 @@ function tpps_master($form, &$form_state){
     $new_accession = "TGDR" . $old_accession;
     
     print_r("dbxref_id: " . $dbxref_id);
-    print_r(" | accession: " . $new_accession);*/
+    print_r(" | accession: " . $new_accession);
     
 	global $base_url;
 	tpps_master_add_excel_load_js();

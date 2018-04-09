@@ -1,49 +1,5 @@
 <?php
 
-function getFieldTypeMap() {
-    // Put :normal last so it gets preserved by array_flip. This makes
-    // it much easier for modules (such as schema.module) to map
-    // database types back into schema types.
-    // $map does not use drupal_static as its value never changes.
-    static $map = array(
-      'varchar:normal' => 'varchar',
-      'char:normal' => 'character',
-
-      'text:tiny' => 'text',
-      'text:small' => 'text',
-      'text:medium' => 'text',
-      'text:big' => 'text',
-      'text:normal' => 'text',
-
-      'int:tiny' => 'smallint',
-      'int:small' => 'smallint',
-      'int:medium' => 'int',
-      'int:big' => 'bigint',
-      'int:normal' => 'int',
-
-      'float:tiny' => 'real',
-      'float:small' => 'real',
-      'float:medium' => 'real',
-      'float:big' => 'double precision',
-      'float:normal' => 'real',
-
-      'numeric:normal' => 'numeric',
-
-      'blob:big' => 'bytea',
-      'blob:normal' => 'bytea',
-
-      'serial:tiny' => 'serial',
-      'serial:small' => 'serial',
-      'serial:medium' => 'serial',
-      'serial:big' => 'bigserial',
-      'serial:normal' => 'serial',
-
-      'json:normal' => 'json',
-      'jsonb:normal' => 'jsonb',
-      );
-    return $map;
-  }
-
 function tpps_install(){
     
     $tables = array(
@@ -62,7 +18,7 @@ function tpps_install(){
       'dbxref',
       'project_dbxref',
       'feature',
-      'featureloc',
+      //'featureloc',
       'feature_genotype',
       'feature_dbxref',
       'genotype',
@@ -86,7 +42,7 @@ function tpps_install(){
             ->fetchAssoc();
         
         //print_r($table);
-        print_r($results);
+        //print_r($results);
         if ($results){
             $default_fields = array();
             foreach($results as $field => $value){
@@ -114,14 +70,54 @@ function tpps_install(){
                 ->execute();
         }
         
-        $results = db_select($temp_table, 't')
+        /*$results = db_select($temp_table, 't')
             ->fields('t')
             ->execute()
             ->fetchAssoc();
         
         print_r("\n$table : $temp_table\n");
         print_r($results);
-        //break;
+        //break;*/
+    }
+    
+    $insert_fields = array();
+    $is_primary_key = TRUE;
+    
+    $results = db_select('chado.dbxref', 't')
+        ->fields('t')
+        ->condition('db_id', db_like('95'), 'LIKE')
+        ->orderBy('dbxref_id', 'DESC')
+        ->range(0, 1)
+        ->execute()
+        ->fetchAssoc();
+
+    //print_r($table);
+    //print_r($results);
+    if ($results){
+        $default_fields = array();
+        foreach($results as $field => $value){
+
+            if ($value == ''){
+                array_push($default_fields, $field);
+                $value = NULL;
+            }
+            else {
+                if ($is_primary_key){
+                    $insert_fields["tpps_$field"] = $value;
+                    $is_primary_key = FALSE;
+                }
+                else{
+                    $insert_fields[$field] = $value;
+                }
+            }
+            //print_r("$field => $value");
+            //print_r("\nnext field\n");
+        }
+
+        $insert = db_insert('chado.tpps_dbxref')
+            ->useDefaults($default_fields)
+            ->fields($insert_fields)
+            ->execute();
     }
     
 }
@@ -1425,7 +1421,7 @@ function tpps_schema(){
         ),
         'meta_data' => array(
           'description' => 'JSON storage of any addition meta-data for the call.',
-          'pgsql_type' => 'json'
+          'type' => 'text'
         )
       ),
       'foreign keys' => array(
