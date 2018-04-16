@@ -120,6 +120,14 @@ function tpps_install(){
             ->execute();
     }
     
+    //chado.featureloc is funky, so we need to use chado_query() instead of db_query() or db_select()
+    /*
+    $results = chado_query('SELECT * FROM {featureloc} LIMIT 1');
+    
+    foreach($results as $record){
+        print_r($record);
+    }*/
+    
 }
 
 function tpps_schema(){

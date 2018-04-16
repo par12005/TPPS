@@ -246,40 +246,141 @@ function tpps_master_add_excel_load_js() {
 	drupal_add_js($js, 'inline');
 }
 
+function tpps_compare_temp($table, $column, $is_primary = FALSE, array $condition = array()){
+    
+    /*  A function to compare the max value in a temp table to the max value in a public table
+     *  $is_primary denotes whether or not the $column being compared is the primary key, default false
+     *  $condition is optional, if provided is passed into condition() when the function is looking for the max
+     */
+    
+    if ($is_primary){
+        $temp_column = "tpps_$column";
+    }
+    else{
+        $temp_column = $column;
+    }
+    
+    $temp_max = db_select("chado.tpps_$table", "tpps_$table")
+        ->fields("tpps_$table", array("$temp_column"));
+
+    $public_max = db_select("chado.$table", "$table")
+        ->fields("$table", array("$column"));
+    
+    if ($condition != array()){
+        call_user_func_array(array($temp_max, 'condition'), $condition);
+        call_user_func_array(array($public_max, 'condition'), $condition);
+    }
+    
+    $temp_max->orderBy("$temp_column", 'DESC')
+        ->range(0, 1);
+    $public_max->orderBy("$column", 'DESC')
+        ->range(0, 1);
+    
+    $temp_max = $temp_max->execute();
+    $public_max = $public_max->execute();
+    
+    foreach($temp_max as $row){
+        $temp_val = $row->{$temp_column};
+        break;
+    }
+    
+    foreach($public_max as $row){
+        $public_val = $row->{$column};
+        break;
+    }
+    
+    $max_val = ($temp_val > $public_val) ? $temp_val : $public_val;
+    
+    return $max_val;
+}
+
 function tpps_master($form, &$form_state){
     
     //Get next dbxref_id and accession # for project
+    /*
+    $temp_max_dbxref = db_select('chado.tpps_dbxref', 'tpps_dbxref')
+        ->fields('tpps_dbxref', array('tpps_dbxref_id'))
+        ->orderBy('tpps_dbxref_id', 'DESC')
+        ->range(0, 1)
+        ->execute();
     
+    $temp_max_accession = db_select('chado.tpps_dbxref', 'tpps_dbxref')
+        ->fields('tpps_dbxref', array('accession'))
+        ->condition('accession', db_like('TGDR') . '%', 'LIKE')
+        ->orderBy('accession', 'DESC')
+        ->range(0, 10);
+        ->execute();
     
-    $results = db_select('chado.dbxref', 'dbxref')
+    $public_max_dbxref = db_select('chado.dbxref', 'dbxref')
         ->fields('dbxref', array('dbxref_id'))
         ->orderBy('dbxref_id', 'DESC')
         ->range(0, 1)
         ->execute();
     
-    foreach ($results as $row){
-        $dbxref_id = $row->dbxref_id + 1;
-        break;
-    }
-    
-    $results = db_select('chado.dbxref', 'dbxref')
+    $public_max_accession = db_select('chado.dbxref', 'dbxref')
         ->fields('dbxref', array('accession'))
-        ->condition('db_id', db_like('95'), 'LIKE')
+        ->condition('accession', db_like('TGDR') . '%', 'LIKE')
         ->orderBy('accession', 'DESC')
         ->range(0, 10)
         ->execute();
     
-    foreach ($results as $row){
-        $old_accession = substr($row->accession, 4) + 1;
+    foreach ($temp_max_dbxref as $row){
+        $temp_dbxref_id = $row->tpps_dbxref_id;
         break;
     }
-    if (strlen($old_accession) < 3){
-        $old_accession = "0" . $old_accession;
-    }
-    $new_accession = "TGDR" . $old_accession;
     
-    print_r("dbxref_id: " . $dbxref_id);
-    print_r(" | accession: " . $new_accession);
+    foreach ($temp_max_accession as $row){
+        $temp_accession = substr($row->accession, 4);
+        break;
+    }
+    
+    foreach ($public_max_dbxref as $row){
+        $public_dbxref_id = $row->dbxref_id;
+        break;
+    }
+    
+    foreach ($public_max_accession as $row){
+        $public_accession = substr($row->accession, 4);
+        break;
+    }
+    
+    //print_r($temp_max_accession);
+    
+    if ($temp_dbxref_id > $public_dbxref_id){
+        $dbxref_id = $temp_dbxref_id + 1;
+    }
+    else {
+        $dbxref_id = $public_dbxref_id + 1;
+    }
+    
+    if ($temp_accession > $public_accession){
+        $accession = $temp_accession + 1;
+    }
+    else {
+        $accession = $public_accession + 1;
+    }
+    
+    if (strlen($accession) < 3){
+        $accession = "0" . $accession;
+    }
+    $accession = "TGDR" . $accession;
+    
+    //print_r("tpps_dbxref_id: " . $dbxref_id);
+    //print_r(" | accession: " . $accession);
+    
+    /*
+    $insert = db_insert('chado.tpps_dbxref')
+        ->fields(array(
+          'tpps_dbxref_id' => $dbxref_id,
+          'db_id' => '95',
+          'accession' => $accession
+        ))
+        ->execute();
+    
+    $form_state['dbxref_id'] = $dbxref_id;
+    $form_state['accession_number'] = $accession;*/
+    
+    print_r(tpps_compare_temp('dbxref', 'accession', FALSE, array('accession', db_like('TGDR') . '%', 'LIKE')));
     
 	global $base_url;
 	tpps_master_add_excel_load_js();
