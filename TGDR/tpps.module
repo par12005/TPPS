@@ -294,93 +294,122 @@ function tpps_compare_temp($table, $column, $is_primary = FALSE, array $conditio
     return $max_val;
 }
 
-function tpps_master($form, &$form_state){
-    
+function tpps_init_project($form, &$form_state){
     //Get next dbxref_id and accession # for project
-    /*
-    $temp_max_dbxref = db_select('chado.tpps_dbxref', 'tpps_dbxref')
-        ->fields('tpps_dbxref', array('tpps_dbxref_id'))
-        ->orderBy('tpps_dbxref_id', 'DESC')
-        ->range(0, 1)
-        ->execute();
-    
-    $temp_max_accession = db_select('chado.tpps_dbxref', 'tpps_dbxref')
-        ->fields('tpps_dbxref', array('accession'))
-        ->condition('accession', db_like('TGDR') . '%', 'LIKE')
-        ->orderBy('accession', 'DESC')
-        ->range(0, 10);
-        ->execute();
-    
-    $public_max_dbxref = db_select('chado.dbxref', 'dbxref')
-        ->fields('dbxref', array('dbxref_id'))
-        ->orderBy('dbxref_id', 'DESC')
-        ->range(0, 1)
-        ->execute();
-    
-    $public_max_accession = db_select('chado.dbxref', 'dbxref')
-        ->fields('dbxref', array('accession'))
-        ->condition('accession', db_like('TGDR') . '%', 'LIKE')
-        ->orderBy('accession', 'DESC')
-        ->range(0, 10)
-        ->execute();
-    
-    foreach ($temp_max_dbxref as $row){
-        $temp_dbxref_id = $row->tpps_dbxref_id;
-        break;
-    }
-    
-    foreach ($temp_max_accession as $row){
-        $temp_accession = substr($row->accession, 4);
-        break;
-    }
-    
-    foreach ($public_max_dbxref as $row){
-        $public_dbxref_id = $row->dbxref_id;
-        break;
-    }
-    
-    foreach ($public_max_accession as $row){
-        $public_accession = substr($row->accession, 4);
-        break;
-    }
-    
-    //print_r($temp_max_accession);
-    
-    if ($temp_dbxref_id > $public_dbxref_id){
-        $dbxref_id = $temp_dbxref_id + 1;
-    }
-    else {
-        $dbxref_id = $public_dbxref_id + 1;
-    }
-    
-    if ($temp_accession > $public_accession){
-        $accession = $temp_accession + 1;
-    }
-    else {
-        $accession = $public_accession + 1;
-    }
-    
-    if (strlen($accession) < 3){
+    $dbxref_id = tpps_compare_temp('dbxref', 'dbxref_id', TRUE) + 1;
+    $accession = tpps_compare_temp('dbxref', 'accession', FALSE, array('accession', db_like('TGDR') . '%', 'LIKE'));
+    $accession = substr($accession, 4) + 1;
+
+    while (strlen($accession) < 3){
         $accession = "0" . $accession;
     }
     $accession = "TGDR" . $accession;
-    
+
+    //testing purposes only:
     //print_r("tpps_dbxref_id: " . $dbxref_id);
     //print_r(" | accession: " . $accession);
     
-    /*
+    //make new record in temp table
+    $values = array(
+      'tpps_dbxref_id' => $dbxref_id,
+      'db_id' => '95',
+      'accession' => $accession
+    );
+    
     $insert = db_insert('chado.tpps_dbxref')
-        ->fields(array(
-          'tpps_dbxref_id' => $dbxref_id,
-          'db_id' => '95',
-          'accession' => $accession
-        ))
+        ->fields($values)
         ->execute();
     
+    //tpps_create_record('tpps_dbxref', $values);
+
     $form_state['dbxref_id'] = $dbxref_id;
-    $form_state['accession_number'] = $accession;*/
+    $form_state['accession_number'] = $accession;
     
-    print_r(tpps_compare_temp('dbxref', 'accession', FALSE, array('accession', db_like('TGDR') . '%', 'LIKE')));
+    //project will be created when name is provided, after the first page is complete.
+    return $insert;
+}
+
+function tpps_create_record($table, $primary_key, array $values){
+    $default_fields = array();
+    $insert = NULL;
+    
+    if (substr($primary_key, 0, 5) == 'tpps_'){
+        $compare_primary = substr($primary_key, 5);
+    }
+    else {
+        $compare_primary = $primary_key;
+    }
+    
+    if (substr($table, 0, 5) == 'tpps_'){
+        $compare_table = substr($table, 5);
+    }
+    else {
+        $compare_table = $table;
+    }
+    
+    //check record exists
+    if (tpps_record_exists($compare_table, $values)){
+        //if it does, do not attempt to re-write it.
+        //drupal_set_message(t('Error: Record already exists.'), 'error');
+        return -1;
+    }
+    
+    //get the new primary key (increment by 1 from the old primary key)
+    $new_primary = tpps_compare_temp($compare_table, $compare_primary, TRUE) + 1;
+    $values["$primary_key"] = $new_primary;
+    
+    $fields = db_select("chado.$table", 't')
+        ->fields('t')
+        ->range(0,1)
+        ->execute()
+        ->fetchAssoc();
+    
+    //get default values
+    foreach ($fields as $key => $value){
+        if (!isset($values[$key])){
+            array_push($default_fields, $key);
+        }
+    }
+    
+    //print_r($default_fields);
+    //print_r($values);
+    
+    //Insert the record
+    /*$insert = db_insert("chado.$table")
+        ->useDefaults($default_fields)
+        ->fields($values)
+        ->execute();*/
+    
+    return $insert;
+}
+
+function tpps_record_exists($table, array $values){
+    
+    $results = db_select("chado.$table", 't')
+        ->fields('t');
+    
+    $and = db_and();
+    foreach ($values as $field=>$value){
+        $and->condition("$field", db_like("$value"), 'LIKE');
+    }
+    
+    $results->condition($and);
+    
+    $results = $results->execute()
+        ->fetchAssoc();
+    
+    if ($results){
+        return TRUE;
+    }
+    
+    return FALSE;
+}
+
+function tpps_master($form, &$form_state){
+    
+    if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])){
+        tpps_init_project($form, $form_state);
+    }
     
 	global $base_url;
 	tpps_master_add_excel_load_js();
@@ -606,17 +635,77 @@ function tpps_master_submit($form, &$form_state){
 
 function submit_all($form, &$form_state){
     
-    $project_id = $form_state['project_id'];
+    $dbxref_id = $form_state['dbxref_id'];
+    $accession = $form_state['accession_number'];
     
     $values = $form_state['saved_values'];
     $firstpage = $values['Hellopage'];
-    $secondpage = $values['secondPage'];
+    
+    $project_id = tpps_create_record('tpps_project', 'tpps_project_id', array(
+      'name' => $firstpage['publication']['title'],
+      'description' => $firstpage['publication']['abstract']
+    ));
+    
+    $project_dbxref_id = tpps_create_record('tpps_project_dbxref', 'tpps_project_dbxref_id', array(
+      'project_id' => $project_id,
+      'dbxref_id' => $dbxref_id
+    ));
+    
+    $primary_author_id = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
+      'name' => $firstpage['primaryAuthor'],
+      'type_id' => '71',
+    ));
+    
+    $secondary_author_ids = array();
+    $author_string = $firstpage['primaryAuthor'];
+    
+    for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++){
+        $secondary_author_ids[$i] = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
+          'name' => $firstpage['publication']['secondaryAuthors'][$i],
+          'type_id' => '71'
+        ));
+        $author_string .= ", {$firstpage['publication']['secondaryAuthors'][$i]}";
+    }
+    
+    switch ($firstpage['publication']['status']){
+        case ('2'):
+            $pub_year = $firstpage['publication']['yearSubmitted'];
+            break;
+        case ('3'):
+            $pub_year = $firstpage['publication']['yearInPress'];
+            break;
+        case ('4'):
+            $pub_year = $firstpage['publication']['yearPublished'];
+            break;
+        default: 
+            $pub_year = "";
+            break;
+    }
+    
+    $publication_id = tpps_create_record('tpps_pub', 'tpps_pub_id', array(
+      'title' => $firstpage['publication']['title'],
+      'series_name' => $firstpage['publication']['journal'],
+      'type_id' => '229',
+      'pyear' => $pub_year,
+      'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; $pub_year"
+    ));
+      
+    $study_id = tpps_create_record('tpps_study', 'tpps_study_id', array(
+      'contact_id' => $primary_author_id,
+      'pub_id' => $publication_id,
+      'name' => $firstpage['publication']['title'],
+      'description' => $firstpage['publication']['abstract']
+    ));
+    
+    $organization_id = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
+      'name' => $firstpage['organization'],
+      'type_id' => '72',
+    ));
+    
+    /*$secondpage = $values['secondPage'];
     $thirdpage = $values['thirdPage'];
     $fourthpage = $values['fourthPage'];
     
-    $primary_author = $firstpage['primaryAuthor'];
-    $organization = $firstpage['organization'];
-    $publication = $firstpage['publication'];
     $organism = $firstpage['organism'];
     
     $month_options = array(
@@ -674,152 +763,8 @@ function submit_all($form, &$form_state){
     
     $tree_accession = $thirdpage['tree-accession'];
     
-    function create_record_project($title, $description) {
-        
-        $first_row = TRUE;
-        
-        $indexed_projects = db_select('chado.project', 'project')
-            ->fields('project', array('project_id', 'name'))
-            ->orderBy('project_id', 'DESC')
-            ->execute();
-        
-        foreach($indexed_projects as $row){
-            if ($first_row){
-                $new_project_id = $row->project_id + 1;
-                $first_row = FALSE;
-            }
-            if ($row->name === $title){
-                $title .= "$new_project_id";
-                break;
-            }
-        }
-        
-        $insert_project = db_insert('chado.project')
-            ->fields(array(
-              'project_id' => $new_project_id,
-              'name' => $title,
-              'description' => $description
-            ))
-            ->execute();
-        
-        return $new_project_id;
-    }
-    
-    function create_record_organization($organization){
-        $will_insert = TRUE;
-        $first_row = TRUE;
-        $existing_organizations = db_select('chado.contact', 'contact')
-            ->fields('contact', array('name', 'contact_id'))
-            ->orderBy('contact_id', 'DESC')
-            ->execute();
-
-        foreach ($existing_organizations as $row){
-            if ($first_row){
-                $new_contact_id = $row->contact_id + 1;
-                $first_row = FALSE;
-            }
-            if ($row->name === $organization){
-                $will_insert = FALSE;
-                $new_contact_id = $row->contact_id;
-                break;
-            }
-        }
-
-        if ($will_insert){
-            $insert_organization = db_insert('chado.contact')
-                ->fields(array(
-                  'name' => $organization,
-                  'type_id' => '72',
-                  'contact_id' => $new_contact_id
-                ))
-                ->execute();
-        }
-        
-        return $new_contact_id;
-    }
-    
     function create_record_study($primary_author, $publication){
-        $will_insert_primary = TRUE;
-        $first_row_primary = TRUE;
         $new_study_id = '1';
-        $indexed_authors = db_select('chado.contact', 'contact')
-            ->fields('contact', array('name', 'contact_id'))
-            ->orderBy('contact_id', 'DESC')
-            ->execute();
-        
-        foreach ($indexed_authors as $row){
-            if ($first_row_primary){
-                $new_contact_id = $row->contact_id + 1;
-                $first_row_primary = FALSE;
-            }
-            if ($row->name === $primary_author){
-                $will_insert_primary = FALSE;
-                $study_contact_id = $row->contact_id;
-                break;
-            }
-        }
-        
-        if ($will_insert_primary){
-            $insert_primary_author = db_insert('chado.contact')
-                ->fields(array(
-                  'name' => $primary_author,
-                  'type_id' => '71',
-                  'contact_id' => $new_contact_id
-                ))
-                ->execute();
-            $study_contact_id = $new_contact_id;
-        }
-        
-        $will_insert_pub = TRUE;
-        $first_row_pub = TRUE;
-        $title = $publication['title'];
-        $series_name = $publication['journal'];
-        $abstract = $publication['abstract'];
-        
-        switch((string) $publication['status']){
-            case '2':
-                $publication_year = $publication['yearSubmitted'];
-                break;
-            case '3':
-                $publication_year = $publication['yearInPress'];
-                break;
-            case '4':
-                $publication_year = $publication['yearPublished'];
-                break;
-            default:
-                break;
-        }
-        
-        $indexed_publications = db_select('chado.pub', 'pub')
-            ->fields('pub', array('pub_id', 'title', 'series_name'))
-            ->orderBy('pub_id', 'DESC')
-            ->execute();
-        
-        foreach($indexed_publications as $row){
-            if ($first_row_pub){
-                $new_pub_id = $row->pub_id + 1;
-                $first_row_pub = FALSE;
-            }
-            if ($row->title === $title and $row->series_name === $series_name){
-                $will_insert_pub = FALSE;
-                $study_pub_id = $row->pub_id;
-                break;
-            }
-        }
-        
-        if ($will_insert_pub){
-            $insert_publication = db_insert('chado.pub')
-                ->fields(array(
-                  'title' => $title,
-                  'series_name' => $series_name,
-                  'pub_id' => $new_pub_id,
-                  'type_id' => '229',
-                  'pyear' => $publication_year,
-                  'uniquename' => "$primary_author $series_name $title"
-                ))
-                ->execute();
-            $study_pub_id = $new_pub_id;
-        }
         
         $indexed_studies = db_select('chado.study', 'study')
             ->fields('study', array('study_id', 'name'))
@@ -1180,59 +1125,6 @@ function submit_all($form, &$form_state){
         
         return $phenotype_id;
     }
-    
-    function create_record_project_dbxref($project_id, $accession_number){
-        $first_row = TRUE;
-        $version = '1';
-        
-        $indexed_dbxref = db_select('chado.dbxref', 'dbxref')
-            ->fields('dbxref', array('accession', 'version', 'dbxref_id'))
-            ->orderBy('dbxref_id', 'DESC')
-            ->execute();
-        
-        foreach ($indexed_dbxref as $row){
-            if ($first_row){
-                $dbxref_id = $row->dbxref_id;
-                $first_row = FALSE;
-            }
-            if ($row->accession === $accession_number){
-                $version .= $row->version;
-            }
-        }
-        
-        $insert_dbxref = db_insert('chado.dbxref')
-            ->fields(array(
-              'db_id' => '176',
-              'accession' => $accession_number, 
-              'version' => $version
-            ))
-            ->execute();
-        
-        $indexed_project_dbxref = db_select('chado.project_dbxref', 'project_dbxref')
-            ->fields('project_dbxref')
-            ->orderBy('project_dbxref_id', 'DESC')
-            ->execute();
-        
-        foreach ($indexed_project_dbxref as $row){
-            $project_dbxref_id = $row->project_dbxref_id + 1;
-            break;
-        }
-        
-        $insert_project_dbxref = db_insert('chado.project_dbxref')
-            ->fields(array(
-              'project_dbxref_id' => $project_dbxref_id,
-              'dbxref_id' => $dbxref_id,
-              'project_id' => $project_id,
-              'is_current' => 'true'
-            ))
-            ->execute();
-        
-        return $project_dbxref_id;
-    }
-    
-    //create_record_project($publication['title'], $publication['abstract']);
-    
-    $organization_id = create_record_organization($firstpage['organization']);
     
     $study_ids = create_record_study($primary_author, $publication);
     $study_contact_id = $study_ids[0];
@@ -1603,6 +1495,7 @@ function submit_all($form, &$form_state){
         $assembly_id = create_record_projectprop($project_id, file_create_url(file_load($assembly_file)->uri), '128024');
         $snps_id = create_record_projectprop($project_id, file_create_url(file_load($snps_file)->uri), '128024');
     }
+    */
 }
 
 function _author_autocomplete($string){
@@ -1749,7 +1642,6 @@ function parse_xlsx_headers_and_sample_rows($location){
     
 }
 
-
 function parse_xlsx($location){
     
     //modified from https://gist.github.com/searbe/3284011
@@ -1806,21 +1698,29 @@ function parse_xlsx($location){
 }
 
 function tpps_test_page($form, &$form_state){
-    include_once  'test_page.php';
     
-    $form = test_page_create_form($form, $form_state);
+    /*$result = db_query("SELECT * FROM pg_constraint WHERE conrelid = (SELECT oid FROM pg_class WHERE relname LIKE 'study') AND contype='u';")
+        ->fetchAll();
+    
+    foreach ($result as $item){
+        print_r($item);
+    }*/
+    //$schema = drupal_get_schema();
+    //print_r($schema);
+    
+    
+    $form['Next'] = array(
+      '#type' => 'submit',
+      '#value' => t('Next'),
+    );
     
     return $form;
 }
 
 function tpps_test_page_validate($form, &$form_state){
-    include_once 'test_page.php';
     
-    test_page_validate_form($form, $form_state);
 }
 
 function tpps_test_page_submit($form, &$form_state) {
-    include_once 'test_page.php';
     
-    test_page_submit_form($form, $form_state);
 }
