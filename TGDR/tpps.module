@@ -11,7 +11,7 @@ function tpps_menu() {
     $items = array();
 
     $items['master'] = array(
-      'title' => 'TPPS Development',
+      'title' => 'Tripal Plant PopGen Submit pipeline',
       'page callback' => 'drupal_get_form',
       'page arguments' => array('tpps_master'),
       'access callback' => 'user_access',
@@ -375,21 +375,24 @@ function tpps_create_record($table, $primary_key, array $values){
     //print_r($values);
     
     //Insert the record
-    /*$insert = db_insert("chado.$table")
+    $insert = db_insert("chado.$table")
         ->useDefaults($default_fields)
         ->fields($values)
-        ->execute();*/
+        ->execute();
     
     return $insert;
 }
 
 function tpps_record_exists($table, array $values){
     
+    $unique_columns = tpps_get_unique_columns($table);
+    
     $results = db_select("chado.$table", 't')
         ->fields('t');
     
     $and = db_and();
-    foreach ($values as $field=>$value){
+    foreach ($unique_columns as $field){
+        $value = $values[$field];
         $and->condition("$field", db_like("$value"), 'LIKE');
     }
     
@@ -403,6 +406,17 @@ function tpps_record_exists($table, array $values){
     }
     
     return FALSE;
+}
+
+function tpps_get_unique_columns($table){
+    
+    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
+        ->fetchAssoc();
+    
+    $result = preg_split('/(\(|\))/',$result['indexdef']);
+    $result = explode(', ', $result[1]);
+    
+    return $result;
 }
 
 function tpps_master($form, &$form_state){
@@ -1699,15 +1713,12 @@ function parse_xlsx($location){
 
 function tpps_test_page($form, &$form_state){
     
-    /*$result = db_query("SELECT * FROM pg_constraint WHERE conrelid = (SELECT oid FROM pg_class WHERE relname LIKE 'study') AND contype='u';")
-        ->fetchAll();
-    
-    foreach ($result as $item){
-        print_r($item);
-    }*/
-    //$schema = drupal_get_schema();
-    //print_r($schema);
-    
+    $study_id = tpps_create_record('tpps_study', 'tpps_study_id', array(
+      'contact_id' => 'cid',
+      'pub_id' => 'pid',
+      'name' => 'studyname',
+      'description' => 'studydesc'
+    ));
     
     $form['Next'] = array(
       '#type' => 'submit',
