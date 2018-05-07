@@ -136,14 +136,8 @@ function tpps_master_add_excel_load_js() {
 	Javascript process excel file data (JS)
 	Oh yeah, it get's rather messy, thanks to the lack of
 	documentation on manage_file api, I had to do this...
-	*******************************************/
-	
+	*******************************************/	
 	$js = "
-			//id_of_managed_file - this is the managed_file form element CSS id
-			//id_of_column_textfield - this is a next textarea which holds column headers and all additional dynamic elements via this js function
-			//id_prefix is utilized for the semi dynamic names of each column selection element
-			//column_names are the column names of each valid column contextual to our needs, this is NOT the excel sheet columns
-			//             but rather the columns we are trying to fill. This is also based on id.
 			function load_excel_header_columns_and_sample_rows(id_of_managed_file, id_of_column_textfield, id_prefix, column_names) {
 				//genus = jQuery('#helper_genus_genus_select_' + index).val();
 				//window.alert(genus);	
@@ -169,7 +163,7 @@ function tpps_master_add_excel_load_js() {
 					link = link.split('/').join('|');
 					//window.alert(link);
 				}
-
+				
 				jQuery.getJSON('$base_url/master/get-excel-header-columns-and-sample-rows/' +  link, function( data ) {
 					//window.alert(data);
 
@@ -179,11 +173,11 @@ function tpps_master_add_excel_load_js() {
 					textfield_element = document.getElementById(id_of_column_textfield);
 					jQuery.each(data['headers'], function( key, val ) {
 						//console.log(key); 
-						//if(key != '') {
+						if(key != '') {
 							items.push(key + ',' + val); //concat as a CSV key,val record
 							//window.alert(key + ':' + val);
 							textfield_element.value = textfield_element.value + val + ','; 							
-						//}
+						}
 					});
 				
 					//This processes the suffixes of the ids of each select item specified as CSV values
@@ -245,7 +239,7 @@ function tpps_master_add_excel_load_js() {
 	
 	drupal_add_js($js, 'inline');
 }
-
+	
 function tpps_compare_temp($table, $column, $is_primary = FALSE, array $condition = array()){
     
     /*  A function to compare the max value in a temp table to the max value in a public table
@@ -1734,4 +1728,134 @@ function tpps_test_page_validate($form, &$form_state){
 
 function tpps_test_page_submit($form, &$form_state) {
     
+}
+
+function tpps_block_info() { 
+  dpm("BLOCK INFO");   
+  $blocks['tpps_status'] = array(
+    // info: The name of the block.
+    'info' => t('TPPS Status'),
+  );
+
+  return $blocks;
+}
+
+/***********************
+This was supposed to be the function to display the block
+But as usual with Drupal, things work and things just don't
+work.
+***********************/
+function ttps_block_view($delta = '') {
+  // The $delta parameter tells us which block is being requested.
+  //dpm("TPPS Block executed");
+  //$block = array();
+  
+  /*
+  switch ($delta) {
+    case 'tpps_status':
+      // Create your block content here
+		$block['subject'] = t('My last 3 news');
+		$block['content'] = t('This is the content');
+		
+		break;
+   }
+  return $block;]
+  */
+}
+
+function tpps_block_view_alter(&$data, $block) {
+	//dpm($block);
+	//dpm($data);
+	global $base_url;
+  switch ($block->delta) {
+    case 'tpps_status':
+		//dpm($_REQUEST);
+		
+		$css = "
+		.tgdr_status_block img {
+			vertical-align: middle;
+			margin-bottom: 4px;
+			margin-right: 2px;
+		}		
+		";
+		drupal_add_css($css, 'inline');
+		
+	  	$data['subject'] = t('TPPS Status');
+		$content = "<div class='tgdr_status_block'>";
+		global $user;
+		
+		//Don't get mix upload
+		if(count($_REQUEST) <= 0) {
+			unset($_SESSION['tgdr_submit_data']);
+		}
+		
+		//This deals with page 1
+		if(isset($_REQUEST['primaryAuthor'])) {
+			unset($_SESSION['tgdr_submit_data']);
+			$_SESSION['tgdr_submit_data'][0] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
+		}
+		if(isset($_SESSION['tgdr_submit_data'][0]['primaryAuthor'])) {
+			$content .= "Step 1 - Complete<br />";
+			$content .= "Author/Species Information<hr />";
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Author: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['primaryAuthor'])) . "<br />";
+		}
+		if(isset($_SESSION['tgdr_submit_data'][0]['organization'])) {
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organization: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['organization'])) . "<br />";
+		}	
+		if(isset($_SESSION['tgdr_submit_data'][0]['publication']['title'])) {
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Title: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['publication']['title'])) . "<br />";
+		}
+		if(isset($_SESSION['tgdr_submit_data'][0]['publication']['yearInPress'])) {
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Year: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['publication']['yearInPress'])) . "<br />";
+		}	
+		if(isset($_SESSION['tgdr_submit_data'][0]['publication']['secondaryAuthors']['number'])) {
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Secondary Authors: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['publication']['secondaryAuthors']['number'])) . "<br />";
+		}
+		if(isset($_SESSION['tgdr_submit_data'][0]['organism']['number'])) {
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organisms: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['organism']['number'])) . "<br />";
+		}	
+
+		//This deals with page 2
+		if(isset($_REQUEST['StartingDate'])) {
+			if(isset($_SESSION['tgdr_submit_data'][1])) {
+				unset($_SESSION['tgdr_submit_data'][1]);
+			}
+			$_SESSION['tgdr_submit_data'][1] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
+		}
+		//dpm($_SESSION['tgdr_submit_data']);
+		if(isset($_SESSION['tgdr_submit_data'][1]['StartingDate'])) {
+			$content .= "<br />";
+			$content .= "Step 2 - Complete<br />";
+			$content .= "Experimental Conditions<br /><hr />";
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Starting Date' .  "<br />";
+		}
+		if(isset($_SESSION['tgdr_submit_data'][1]['EndingDate'])) {
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Ending Date' .  "<br />";
+		}
+		if(isset($_SESSION['tgdr_submit_data'][1]['studyLocation'])) {
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location' .  "<br />";
+		}
+
+		//This deals with page 3
+		if(isset($_REQUEST['tree-accession'])) {
+			if(isset($_SESSION['tgdr_submit_data'][2])) {
+				unset($_SESSION['tgdr_submit_data'][2]);
+			}
+			$_SESSION['tgdr_submit_data'][2] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
+		}		
+		if(isset($_SESSION['tgdr_submit_data'][2]['tree-accession'])) {
+			$content .= "<br />";
+			$content .= "Step 3 - Complete<br />";
+			$content .= "Tree Accession<br /><hr />";
+			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Tree Accession data' .  "<br />";
+		}
+		
+		//Page 4 cannot really be dealt with at this point because this it the submission page which will load whichever page
+		//it is redirected to
+		
+		$content .= "</div>";
+		$data['content'] = t($content);
+		
+       break;
+  }
 }
