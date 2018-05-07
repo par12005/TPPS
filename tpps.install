@@ -4,6 +4,7 @@ function tpps_install(){
     
     $tables = array(
       'project',
+      'project_pub',
       'contact',
       'pub',
       'study',
@@ -159,6 +160,53 @@ function tpps_schema(){
         'c1' => array(
           'name'
         )
+      )
+    );
+    
+    $schema['chado.tpps_project_pub'] = array(
+      'description' => 'Temporary version of {chado.contact} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_project_pub_id' => array(
+          'description' => '',
+          'pgsql_type' => 'bigserial',
+          'unsigned' => TRUE,
+          'not null' => TRUE
+        ),
+        'project_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE
+        ),
+        'pub_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'project_id',
+          'pub_id'
+        )
+      ),
+      'foreign keys' => array(
+        'project_id' => array(
+          'table' => 'chado.project',
+          'columns' => array(
+            'project_id' => 'project_id'
+          )
+        ),
+        'pub_id' => array(
+          'table' => 'chado.pub',
+          'columns' => array(
+            'pub_id' => 'pub_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_project_pub_id'
       )
     );
     
