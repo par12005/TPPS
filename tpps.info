@@ -1,0 +1,7 @@
+name = TPPS
+description = Tripal Plant PopGen Submit pipeline
+core = 7.x
+
+; NEW LINE
+configure = admin/config/content/tpps 
+files[] = tpps.js
