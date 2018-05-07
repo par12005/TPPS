@@ -664,15 +664,23 @@ function submit_all($form, &$form_state){
       'type_id' => '71',
     ));
     
-    $secondary_author_ids = array();
-    $author_string = $firstpage['primaryAuthor'];
-    
-    for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++){
-        $secondary_author_ids[$i] = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
-          'name' => $firstpage['publication']['secondaryAuthors'][$i],
-          'type_id' => '71'
+    if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0){
+        $secondary_author_ids = array();
+        $author_string = $firstpage['primaryAuthor'];
+
+        for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++){
+            $secondary_author_ids[$i] = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
+              'name' => $firstpage['publication']['secondaryAuthors'][$i],
+              'type_id' => '71'
+            ));
+            $author_string .= ", {$firstpage['publication']['secondaryAuthors'][$i]}";
+        }
+    } elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0) {
+        $secondary_author_file = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+          'project_id' => $project_id,
+          'type_id' => '2836',
+          'value' => file_create_url(file_load($firstpage['publication']['secondaryAuthors']['file'])->uri)
         ));
-        $author_string .= ", {$firstpage['publication']['secondaryAuthors'][$i]}";
     }
     
     switch ($firstpage['publication']['status']){
@@ -698,9 +706,15 @@ function submit_all($form, &$form_state){
       'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; $pub_year"
     ));
       
+    $project_pub_id = tpps_create_record('tpps_project_pub', 'tpps_project_pub_id', array(
+      'project_id' => $project_id,
+      'pub_id' => $publication_id
+    ));
+      
     $study_id = tpps_create_record('tpps_study', 'tpps_study_id', array(
       'contact_id' => $primary_author_id,
       'pub_id' => $publication_id,
+      'dbxref_id' => $dbxref_id,
       'name' => $firstpage['publication']['title'],
       'description' => $firstpage['publication']['abstract']
     ));
@@ -710,11 +724,31 @@ function submit_all($form, &$form_state){
       'type_id' => '72',
     ));
     
+    $names = explode(" ", $firstpage['primaryAuthor']);
+    $first_name = $names[0];
+    $last_name = implode(" ", array_slice($names, 1));
+    
+    $pubauthor_id = tpps_create_record('tpps_pubauthor', 'tpps_pubauthor_id', array(
+      'pub_id' => $publication_id,
+      'rank' => '1',
+      'surname' => $last_name,
+      'givennames' => $first_name
+    ));
+    
+    $organism_ids = array();
+    $organism_number = $firstpage['organism']['number'];
+    
+    for ($i = 1; $i <= $organism_number; $i++){
+        $parts = explode(" ", $firstpage['organism'][$i]['species']);
+        $organism_ids[$i] = tpps_create_record('tpps_organism', 'tpps_organism_id', array(
+          'genus' => $parts[0],
+          'species' => implode(" ", array_slice($parts, 1)),
+        ));
+    }
+    
     /*$secondpage = $values['secondPage'];
     $thirdpage = $values['thirdPage'];
     $fourthpage = $values['fourthPage'];
-    
-    $organism = $firstpage['organism'];
     
     $month_options = array(
       0 => '- Select -',
@@ -771,79 +805,6 @@ function submit_all($form, &$form_state){
     
     $tree_accession = $thirdpage['tree-accession'];
     
-    function create_record_study($primary_author, $publication){
-        $new_study_id = '1';
-        
-        $indexed_studies = db_select('chado.study', 'study')
-            ->fields('study', array('study_id', 'name'))
-            ->orderBy('study_id', 'DESC')
-            ->execute();
-        
-        $name = "$primary_author $title";
-        $first_row = TRUE;
-        
-        foreach($indexed_studies as $row){
-            if ($first_row){
-                $new_study_id = $row->study_id + 1;
-                $first_row = FALSE;
-            }
-            if ($row->name === $name){
-                $name .= "-$new_study_id";
-            }
-        }
-        
-        $insert_study = db_insert('chado.study')
-            ->fields(array(
-              'study_id' => $new_study_id,
-              'contact_id' => $study_contact_id,
-              'pub_id' => $study_pub_id,
-              'name' => $name,
-              'description' => $abstract
-            ))
-            ->execute();
-        
-        return array($study_contact_id, $study_pub_id, $new_study_id);
-    }
-    
-    function create_record_pubauthor($author, $pub_id, $rank){
-        $names = explode(' ', $author);
-        $first_name = $names[0];
-        $last_name = $names[array_pop(array_keys($names))];
-        
-        $will_insert = TRUE;
-        $first_row = TRUE;
-        $indexed_pubauthors = db_select('chado.pubauthor', 'pubauthor')
-            ->fields('pubauthor', array('pubauthor_id', 'surname', 'givennames'))
-            ->orderBy('pubauthor_id', 'DESC')
-            ->execute();
-        
-        foreach ($indexed_pubauthors as $row){
-            if ($first_row){
-                $pubauthor_id = $row->pubauthor_id + 1;
-                $first_row = FALSE;
-            }
-            if ($row->surname === $last_name and $row->givennames === $first_name){
-                $will_insert = FALSE;
-                $pubauthor_id = $row->pubauthor_id;
-                break;
-            }
-        }
-        
-        if ($will_insert){
-            $insert_pubauthor = db_insert('chado.pubauthor')
-                ->fields(array(
-                  'pubauthor_id' => $pubauthor_id,
-                  'pub_id' => $pub_id,
-                  'rank' => '1',
-                  'editor' => 'false',
-                  'surname' => $last_name,
-                  'givennames' => $first_name,
-                ))
-                ->execute();
-        }
-        
-        return $pubauthor_id;
-    }
     
     function create_record_projectprop($project_id, $info, $info_cvterm_id){
         $first_row = TRUE;
@@ -880,57 +841,7 @@ function submit_all($form, &$form_state){
         return $projectprop_id;
     }
     
-    function create_record_organism($organism){
-        $parts = explode(' ', $organism['species']);
-        $genus = $parts[0];
-        $species = implode(' ', array_slice($parts, 1));
-        
-        $will_insert = TRUE;
-        $first_row = TRUE;
-        
-        $indexed_organisms = db_select('chado.organism', 'organism')
-            ->fields('organism', array('organism_id', 'genus', 'species'))
-            ->orderBy('organism_id', 'DESC')
-            ->execute();
-        
-        foreach($indexed_organisms as $row){
-            if ($first_row){
-                $organism_id = $row->organism_id + 1;
-                $first_row = FALSE;
-            }
-            if ($row->genus === $genus and $row->species === $species){
-                $will_insert = FALSE;
-                $organism_id = $row->organism_id;
-                break;
-            }
-        }
-        
-        if ($will_insert){
-            $abbreviation = $genus[0] . " $species";
-            $fields = array(
-              'organism_id' => $organism_id,
-              'genus' => $genus,
-              'species' => $species,
-              'abbreviation' => $abbreviation,
-            );
-            
-            if (preg_match('/var\./', $species)){
-                $fields['type_id'] = '22';
-            }
-            elseif (preg_match('/subsp\./', $species)){
-                $fields['type_id'] = '29';
-            }
-            elseif (preg_match('/ x /', $species)){
-                $fields['type_id'] = '56';
-            }
-            
-            $insert_organism = db_insert('chado.organism')
-                ->fields($fields)
-                ->execute();
-        }
-        
-        return $organism_id;
-    }
+    
     
     function create_record_studyprop($study_id, $info, $info_cvterm_id){
         $first_row = TRUE;
@@ -1134,12 +1045,6 @@ function submit_all($form, &$form_state){
         return $phenotype_id;
     }
     
-    $study_ids = create_record_study($primary_author, $publication);
-    $study_contact_id = $study_ids[0];
-    $study_pub_id = $study_ids[1];
-    $study_id = $study_ids[2];
-    
-    $primary_pubauthor_id = create_record_pubauthor($primary_author, $study_pub_id, '1');
     
     $options = array(
       0 => t('- Select -'),
