@@ -212,6 +212,7 @@ After the data has been submitted and approved, the user will recieve an email w
 - Unique TreeGenes Accession number
 - Create temporary chado.tpps_* tables on install
 - Admin Interface for submission approval
+- Option for users to say whether they aligned reads against the genome to call the SNPs (then they give us the SRA number for the read sets and select an existing target genome) or a direct URL to reference if it is something we don't have
 
 
 # Resources

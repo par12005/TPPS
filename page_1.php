@@ -33,19 +33,19 @@ function page_1_create_form(&$form, $form_state){
             
             $yearArrSubmitted = Array();
             $yearArrSubmitted[0] = '- Select -';
-            for ($i = 2015; $i <= 2017; $i++) {
+            for ($i = 2015; $i <= 2018; $i++) {
                 $yearArrSubmitted[$i] = "$i";
             }
 
             $yearArrInPress = Array();
             $yearArrInPress[0] = '- Select -';
-            for ($i = 2015; $i <= 2017; $i++) {
+            for ($i = 2015; $i <= 2018; $i++) {
                 $yearArrInPress[$i] = "$i";
             }
 
             $yearArrPublished = Array();
             $yearArrPublished[0] = '- Select -';
-            for ($i = 1990; $i <= 2017; $i++) {
+            for ($i = 1990; $i <= 2018; $i++) {
                 $yearArrPublished[$i] = "$i";
             }
 
@@ -234,7 +234,7 @@ function page_1_create_form(&$form, $form_state){
           '#options' => array(
             0 => t('- Select -'),
             2 => t('In Preparation or Submitted'),
-            3 => t('In press'),
+            3 => t('In Press'),
             4 => t('Published'),
           ),
           '#default_value' => isset($values['publication']['status']) ? $values['publication']['status'] : 0,

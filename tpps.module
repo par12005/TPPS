@@ -289,6 +289,13 @@ function tpps_compare_temp($table, $column, $is_primary = FALSE, array $conditio
 }
 
 function tpps_init_project($form, &$form_state){
+    
+    
+    /*
+     * need to add conditions for when there are not projects already in the public OR temp tables
+     */
+    
+    
     //Get next dbxref_id and accession # for project
     $dbxref_id = tpps_compare_temp('dbxref', 'dbxref_id', TRUE) + 1;
     $accession = tpps_compare_temp('dbxref', 'accession', FALSE, array('accession', db_like('TGDR') . '%', 'LIKE'));
@@ -645,25 +652,25 @@ function submit_all($form, &$form_state){
     
     $dbxref_id = $form_state['dbxref_id'];
     $accession = $form_state['accession_number'];
-    
+
     $values = $form_state['saved_values'];
     $firstpage = $values['Hellopage'];
-    
+
     $project_id = tpps_create_record('tpps_project', 'tpps_project_id', array(
       'name' => $firstpage['publication']['title'],
       'description' => $firstpage['publication']['abstract']
     ));
-    
+
     $project_dbxref_id = tpps_create_record('tpps_project_dbxref', 'tpps_project_dbxref_id', array(
       'project_id' => $project_id,
       'dbxref_id' => $dbxref_id
     ));
-    
+
     $primary_author_id = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
       'name' => $firstpage['primaryAuthor'],
       'type_id' => '71',
     ));
-    
+
     if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0){
         $secondary_author_ids = array();
         $author_string = $firstpage['primaryAuthor'];
@@ -682,7 +689,10 @@ function submit_all($form, &$form_state){
           'value' => file_create_url(file_load($firstpage['publication']['secondaryAuthors']['file'])->uri)
         ));
     }
+
     
+    
+    //TODO: this only submits the number of the select option, not the actual year
     switch ($firstpage['publication']['status']){
         case ('2'):
             $pub_year = $firstpage['publication']['yearSubmitted'];
@@ -697,7 +707,7 @@ function submit_all($form, &$form_state){
             $pub_year = "";
             break;
     }
-    
+
     $publication_id = tpps_create_record('tpps_pub', 'tpps_pub_id', array(
       'title' => $firstpage['publication']['title'],
       'series_name' => $firstpage['publication']['journal'],
@@ -705,39 +715,31 @@ function submit_all($form, &$form_state){
       'pyear' => $pub_year,
       'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; $pub_year"
     ));
-      
+
     $project_pub_id = tpps_create_record('tpps_project_pub', 'tpps_project_pub_id', array(
       'project_id' => $project_id,
       'pub_id' => $publication_id
     ));
-      
-    $study_id = tpps_create_record('tpps_study', 'tpps_study_id', array(
-      'contact_id' => $primary_author_id,
-      'pub_id' => $publication_id,
-      'dbxref_id' => $dbxref_id,
-      'name' => $firstpage['publication']['title'],
-      'description' => $firstpage['publication']['abstract']
-    ));
-    
+
     $organization_id = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
       'name' => $firstpage['organization'],
       'type_id' => '72',
     ));
-    
+
     $names = explode(" ", $firstpage['primaryAuthor']);
     $first_name = $names[0];
     $last_name = implode(" ", array_slice($names, 1));
-    
+
     $pubauthor_id = tpps_create_record('tpps_pubauthor', 'tpps_pubauthor_id', array(
       'pub_id' => $publication_id,
       'rank' => '1',
       'surname' => $last_name,
       'givennames' => $first_name
     ));
-    
+
     $organism_ids = array();
     $organism_number = $firstpage['organism']['number'];
-    
+
     for ($i = 1; $i <= $organism_number; $i++){
         $parts = explode(" ", $firstpage['organism'][$i]['species']);
         $organism_ids[$i] = tpps_create_record('tpps_organism', 'tpps_organism_id', array(
@@ -745,11 +747,12 @@ function submit_all($form, &$form_state){
           'species' => implode(" ", array_slice($parts, 1)),
         ));
     }
-    
-    /*$secondpage = $values['secondPage'];
-    $thirdpage = $values['thirdPage'];
-    $fourthpage = $values['fourthPage'];
-    
+    /***************************
+     * Second Page submissions *
+     ***************************/
+
+    $secondpage = $values['secondpage'];
+
     $month_options = array(
       0 => '- Select -',
       1 => 'January',
@@ -765,16 +768,28 @@ function submit_all($form, &$form_state){
       11 => 'November',
       12 => 'December'
     );
-        
+
     $year_options = array();
 
-    for ($i = 1950; $i <= 2017; $i++) {
+    for ($i = 1950; $i <= 2018; $i++) {
         $index = $i - 1949;
         $year_options[$index] = $i;
     }
 
     $start = $month_options[$secondpage['StartingDate']['month']] . " " . $year_options[$secondpage['StartingDate']['year']];
     $end = $month_options[$secondpage['EndingDate']['month']] . " " . $year_options[$secondpage['EndingDate']['year']];
+
+    $start_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+      'project_id' => $project_id,
+      'type_id' => '127996',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
+      'value' => $start
+    ));
+    
+    $end_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+      'project_id' => $project_id,
+      'type_id' => '127997',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
+      'value' => $end
+    ));
     
     if ($secondpage['studyLocation']['type'] === '2'){
         $location = $secondpage['studyLocation']['latitude'] . ' Latitude, ' . $secondpage['studyLocation']['longitude'] . ' Longitude';
@@ -782,6 +797,12 @@ function submit_all($form, &$form_state){
     else{
         $location = $secondpage['studyLocation']['customLocation']['region'] . ', ' . $secondpage['studyLocation']['customLocation']['country'];
     }
+    
+    $study_location_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+      'project_id' => $project_id,
+      'type_id' => '127998',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
+      'value' => $location
+    ));
     
     $datatype_options = array(
       0 => '- Select -',
@@ -791,7 +812,14 @@ function submit_all($form, &$form_state){
       4 => 'Phenotype x Environment',
       5 => 'Genotype x Environment'
     );
+    
     $datatype = $datatype_options[$secondpage['dataType']];
+    
+    $datatype_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+      'project_id' => $project_id,
+      'type_id' => '54740',
+      'value' => $datatype
+    ));
     
     $studytype_options = array(
       0 => '- Select -',
@@ -801,234 +829,719 @@ function submit_all($form, &$form_state){
       4 => 'Experimental/Common Garden',
       5 => 'Plantation',
     );
+    
     $study_type = $studytype_options[$secondpage['studyType']];
     
-    $tree_accession = $thirdpage['tree-accession'];
+    $study_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+      'project_id' => $project_id,
+      'type_id' => '128021',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+      'value' => $study_type
+    ));
     
+    /******************************************
+     * Specific Questions based on study type *
+     ******************************************/
     
-    function create_record_projectprop($project_id, $info, $info_cvterm_id){
-        $first_row = TRUE;
-        $rank = '0';
-        
-        $indexed_projectprop = db_select('chado.projectprop', 'projectprop')
-            ->fields('projectprop', array('projectprop_id', 'project_id', 'type_id', 'rank'))
-            ->orderBy('projectprop_id', 'DESC')
-            ->execute();
-        
-        foreach($indexed_projectprop as $row){
-            if ($first_row){
-                $projectprop_id = $row->projectprop_id + 1;
-                $first_row = FALSE;
-            }
-            if ($row->project_id === $project_id and $row->type_id === $info_cvterm_id){
-                if ($row->rank >= $rank){
-                    $rank = $row->rank + 1;
+    switch($secondpage['studyType']){
+        case ('1'):
+            $natural_population = $secondpage['naturalPoplulation'];
+            $number_assessions = $natural_population['assession'];
+            $seasons = "";
+            foreach ($natural_population['season'] as $key => $item){
+                if ($item == '1'){
+                    $season .= $key . ', ';
                 }
-                break;
             }
-        }
-        
-        db_insert('chado.projectprop')
-            ->fields(array(
-              'projectprop_id' => $projectprop_id,
+            
+            $season_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
               'project_id' => $project_id,
-              'type_id' => $info_cvterm_id,
-              'value' => $info,
-              'rank' => $rank
-            ))
-            ->execute();
-        
-        return $projectprop_id;
-    }
-    
-    
-    
-    function create_record_studyprop($study_id, $info, $info_cvterm_id){
-        $first_row = TRUE;
-        $rank = '0';
-        $info_id = '1';
-        
-        $indexed_items = db_select('chado.studyprop', 'studyprop')
-            ->fields('studyprop', array('studyprop_id', 'study_id', 'type_id', 'rank'))
-            ->orderBy('studyprop_id', 'DESC')
-            ->execute();
-        
-        foreach ($indexed_items as $row){
-            if ($first_row){
-                $info_id = $row->studyprop_id + 1;
-                $first_row = FALSE;
-            }
-            if ($row->study_id === $study_id and $row->type_id === $info_cvterm_id){
-                if ($row->rank >= $rank){
-                    $rank = $row->rank + 1;
-                }
-                break;
-            }
-        }
-
-        $insert_info = db_insert('chado.studyprop')
-            ->fields(array(
-              'studyprop_id' => $info_id,
-              'study_id' => $study_id,
-              'type_id' => $info_cvterm_id,
-              'value' => $info,
-              'rank' => $rank
-            ))
-            ->execute();
-        
-        return $info_id;
-    }
-    
-    function create_record_stock($organism_id){
-        
-        $indexed_stocks = db_select('chado.stock', 'stock')
-            ->fields('stock', array('stock_id'))
-            ->orderBy('stock_id', 'DESC')
-            ->execute();
-        
-        foreach ($indexed_stocks as $row){
-            $stock_id = $row->stock_id + 1;
+              'type_id' => '128000',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $seasons
+            ));
+            
+            $assessions_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '128001',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $number_assessions
+            ));
             break;
+        case ('2'):
+            $growth_chamber = $secondpage['growthChamber'];
+            $co2 = $growth_chamber['co2Control'];
+            $humidity = $growth_chamber['humidityControl'];
+            $light = $growth_chamber['lightControl'];
+            $temp_high = $growth_chamber['temp']['high'];
+            $temp_low = $growth_chamber['temp']['low'];
+            $rooting = $growth_chamber['rooting'];
+            $rooting_type = $rooting['option'];
+            $soil = $rooting['soil'];
+            $soil_container = $soil['container'];
+            $ph = $rooting['ph'];
+            $treatments = $rooting['treatment'];
+
+            if ($co2['option'] == '1'){
+                $co2_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128002',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'True'
+                ));
+                $co2_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128003',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $co2['controlled']
+                ));
+            }
+            else{
+                $co2_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128002',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'False'
+                ));
+                $co2_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128003',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $co2['uncontrolled']
+                ));
+            }
+
+            if ($humidity['option'] == '1'){
+                $humidity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128004',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'True'
+                ));
+                $humidity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128005',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $humidity['controlled']
+                ));
+            }
+            else{
+                $humidity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128004',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'False'
+                ));
+                $humidity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128005',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $humidity['uncontrolled']
+                ));
+            }
+
+            if ($light['option'] == '1'){
+                $light_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128006',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'True'
+                ));
+                $light_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128007',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $light['controlled']
+                ));
+            }
+            else{
+                $light_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128006',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'False'
+                ));
+                $light_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128007',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $light['uncontrolled']
+                ));
+            }
+
+            $temp_high_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '128008',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $temp_high
+            ));
+            $temp_low_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '128009',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $temp_low
+            ));
+
+            switch((string) $rooting_type){
+                case '1':
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => 'Aeroponics'
+                    ));
+                    break;
+                case '2':
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => 'Hydroponics'
+                    ));
+                    break;
+                case '3':
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => 'Soil'
+                    ));
+                    $soil_options = array(
+                      0 => '- Select -',
+                      1 => 'Sand',
+                      2 => 'Peat',
+                      3 => 'Clay',
+                      4 => 'Mixed',
+                      5 => 'Other'
+                    );
+                    $soil_type = $soil_options[$soil['type']];
+                    if ($soil_type == 'Other'){
+                        $soil_type = $soil['other'];
+                    }
+                    
+                    $soil_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128011',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => $soil_type
+                    ));
+                    $soil_container_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128011',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => $soil_container
+                    ));
+                    break;
+                default:
+                    break;
+            }
+
+            if ($ph['option'] == '1'){
+                $ph_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128013',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'True'
+                ));
+                $ph_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128014',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $ph['controlled']
+                ));
+            }
+            else{
+                $ph_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128013',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'False'
+                ));
+                $ph_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128014',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $ph['uncontrolled']
+                ));
+            }
+
+            $treatment_ids = array();
+            $is_description = FALSE;
+            foreach ($treatments as $item){
+                if (!$is_description){
+                    if ($item == '1'){
+                        $record_next = TRUE;
+                    }
+                    else{
+                        $record_next = FALSE;
+                    }
+                    $is_description = TRUE;
+                }
+                else{
+                    if ($record_next){
+                        array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                          'project_id' => $project_id,
+                          'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                          'value' => $item
+                        )));
+                    }
+                    $is_description = FALSE;
+                }
+            }
+            break;
+        case ('3'):
+            $greenhouse = $secondpage['greenhouse'];
+            $humidity = $greenhouse['humidityControl'];
+            $light = $greenhouse['lightControl'];
+            $temp_high = $greenhouse['temp']['high'];
+            $temp_low = $greenhouse['temp']['low'];
+            $rooting = $greenhouse['rooting'];
+            $rooting_type = $rooting['option'];
+            $soil = $rooting['soil'];
+            $soil_container = $soil['container'];
+            $ph = $rooting['ph'];
+            $treatments = $rooting['treatment'];
+
+            if ($humidity['option'] == '1'){
+                $humidity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128004',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'True'
+                ));
+                $humidity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128005',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $humidity['controlled']
+                ));
+            }
+            else{
+                $humidity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128004',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'False'
+                ));
+            }
+
+            if ($light['option'] == '1'){
+                $light_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128006',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'True'
+                ));
+                $light_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128007',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $light['controlled']
+                ));
+            }
+            else{
+                $light_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128006',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'False'
+                ));
+            }
+
+            $temp_high_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '128008',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $temp_high
+            ));
+            $temp_low_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '128009',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $temp_low
+            ));
+
+            switch((string) $rooting_type){
+                case '1':
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => 'Aeroponics'
+                    ));
+                    break;
+                case '2':
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => 'Hydroponics'
+                    ));
+                    break;
+                case '3':
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => 'Soil'
+                    ));
+                    $soil_options = array(
+                      0 => '- Select -',
+                      1 => 'Sand',
+                      2 => 'Peat',
+                      3 => 'Clay',
+                      4 => 'Mixed',
+                      5 => 'Other'
+                    );
+                    $soil_type = $soil_options[$soil['type']];
+                    if ($soil_type == 'Other'){
+                        $soil_type = $soil['other'];
+                    }
+                    
+                    $soil_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128011',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => $soil_type
+                    ));
+                    $soil_container_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128011',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => $soil_container
+                    ));
+                    break;
+                default:
+                    break;
+            }
+
+            if ($ph['option'] == '1'){
+                $ph_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128013',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'True'
+                ));
+                $ph_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128014',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $ph['controlled']
+                ));
+            }
+            else{
+                $ph_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128013',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'False'
+                ));
+            }
+
+            $treatment_id = array();
+            $is_description = FALSE;
+            foreach ($treatments as $item){
+                if (!$is_description){
+                    if ($item == '1'){
+                        $record_next = TRUE;
+                    }
+                    else{
+                        $record_next = FALSE;
+                    }
+                    $is_description = TRUE;
+                }
+                else{
+                    if ($record_next){
+                        array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                          'project_id' => $project_id,
+                          'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                          'value' => $item
+                        )));
+                    }
+                    $is_description = FALSE;
+                }
+            }
+            break;
+        case ('4'):
+            $commonGarden = $secondpage['commonGarden'];
+            $salinity = $commonGarden['salinity'];
+            $biotic_env = $commonGarden['bioticEnv']['option'];
+            $seasons = "";
+            $treatments = $commonGarden['treatment'];
+
+            $irrigation_options = array(
+              0 => '- Select -',
+              1 => 'Irrigation from top',
+              2 => 'Irrigation from bottom',
+              3 => 'Drip Irrigation',
+              4 => 'Other',
+              5 => 'No Irrigation',
+            );
+            $irrigation_type = $irrigation_options[$commonGarden['irrigation']['option']];
+            if ($irrigation_type == 'Other'){
+                $irrigation_type = $commonGarden['irrigation']['other'];
+            }
+            
+            $irrigation_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '128016',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $irrigation_type
+            ));
+
+            if ($salinity['option'] == '1'){
+                $salinity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128017',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'True'
+                ));
+                $salinity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128018',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $salinity['controlled']
+                ));
+            }
+            else{
+                $salinity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128017',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => 'False'
+                ));
+                $salinity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '128018',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                  'value' => $salinity['uncontrolled']
+                ));
+            }
+
+            $biotic_env['Other'] = $commonGarden['bioticEnv']['other'];
+            $biotic_env_id = array();
+            foreach ($biotic_env as $key => $check){
+                if ($check == '1'){
+                    $biotic_env_id[$key] = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '128019',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                      'value' => $key
+                    ));
+                }
+            }
+
+            foreach ($commonGarden['season'] as $key => $item){
+                if ($item == '1'){
+                    $season .= $key . ', ';
+                }
+            }
+            $season_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '128000',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $seasons
+            ));
+
+            $treatment_id = array();
+            $is_description = FALSE;
+            foreach ($treatments as $item){
+                if (!$is_description){
+                    if ($item == '1'){
+                        $record_next = TRUE;
+                    }
+                    else{
+                        $record_next = FALSE;
+                    }
+                    $is_description = TRUE;
+                }
+                else{
+                    if ($record_next){
+                        array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                          'project_id' => $project_id,
+                          'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                          'value' => $item
+                        )));
+                    }
+                    $is_description = FALSE;
+                }
+            }
+            break;
+        case ('5'):
+            $plantation = $secondpage['plantation'];
+            $number_assessions = $plantation['assession'];
+            $seasons = "";
+            $treatments = $plantation['treatment'];
+            
+            foreach ($plantation['season'] as $key => $item){
+                if ($item == '1'){
+                    $season .= $key . ', ';
+                }
+            }
+            
+            $season_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '128000',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $seasons
+            ));
+            
+            $assessions_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '128001',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+              'value' => $number_assessions
+            ));
+            
+            if ($plantation['treatment']['check'] != 0){
+                $treatment_id = array();
+                $is_description = FALSE;
+                foreach ($treatments as $item){
+                    if (!$is_description){
+                        if ($item == '1'){
+                            $record_next = TRUE;
+                        }
+                        else{
+                            $record_next = FALSE;
+                        }
+                        $is_description = TRUE;
+                    }
+                    else{
+                        if ($record_next){
+                            array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                              'project_id' => $project_id,
+                              'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                              'value' => $item
+                            )));
+                        }
+                        $is_description = FALSE;
+                    }
+                }
+            }
+            break;
+        default:
+            break;
+    }
+    /**************************
+     * Third Page submissions *
+     **************************/
+    
+    $thirdpage = $values['thirdPage'];
+    $fourthpage = $values['fourthPage'];
+    
+    if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0){
+        $tree_accession_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+          'project_id' => $project_id,
+          'type_id' => '2836',
+          'value' => file_create_url(file_load($thirdpage['tree-accession']['file'])->uri)
+        ));
+    }
+    else {
+        for($i = 0; $i < $organism_number; $i++){
+            $tree_accession_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '2836',
+              'value' => file_create_url(file_load($thirdpage['tree-accession']["species-$i"]['file'])->uri)
+            ));
         }
-        
-        $unique_name = "$organism_id-$stock_id";
-        
-        $stock_insert = db_insert('chado.stock')
-            ->fields(array(
-              'stock_id' => $stock_id,
-              'type_id' => '2824',
-              'organism_id' => $organism_id,
-              'uniquename' => $unique_name
-            ))
-            ->execute();
-        
-        return $stock_id;
     }
     
-    function create_record_stockprop($stock_id, $info, $info_cvterm_id){
-        $first_row = TRUE;
-        $rank = '0';
-        
-        $indexed_items = db_select('chado.stockprop', 'stockprop')
-            ->fields('stockprop', array('stockprop_id', 'stock_id', 'type_id', 'rank'))
-            ->orderBy('stockprop_id', 'DESC')
-            ->execute();
-        
-        foreach ($indexed_items as $row){
-            if ($first_row){
-                $stockprop_id = $row->stockprop_id + 1;
-                $first_row = FALSE;
-            }
-            if ($row->stock_id === $stock_id and $row->type_id === $info_cvterm_id){
-                if ($row->rank >= $rank){
-                    $rank = $row->rank + 1;
+    /***************************
+     * Fourth Page submissions *
+     ***************************/
+    
+    for ($i = 0; $i < $organism_number; $i++){
+        if (isset($fourthpage["organism-$i"]['phenotype'])){
+            $phenotype = $fourthpage["organism-$i"]['phenotype'];
+            $phenotype_number = $phenotype['number'];
+            
+            if ($phenotype['check'] !== '1'){
+                $phenotype_ids = array();
+                for ($j = 1; $j < $phenotype_number; $j++){
+                    $current_phenotype = $phenotype[$j];
+                    
+                    $phenotype_ids[$j] = tpps_create_record('tpps_phenotype', 'tpps_phenotype_id', array(
+                      'uniquename' => $current_phenotype['name']
+                    ));
+                    
+                    $unit_options = array(
+                      0 => '- Select -',
+                      1 => 'mm', 
+                      2 => 'cm',
+                      3 => 'm', 
+                      4 => 'Degrees Celsius',
+                      5 => 'Degrees Fahrenheit',
+                      6 => 'Other'
+                    );
+                    
+                    if ($current_phenotype['environment-check'] == '1'){
+                        $environment = $current_phenotype['environment'];
+                        
+                        tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                          'phenotype_id' => $phenotype_ids[$j],
+                          'type_id' => '2834',
+                          'value' => $environment['description']
+                        ));
+                        
+                        if ($environment['units'] !== '6'){
+                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                              'phenotype_id' => $phenotype_ids[$j],
+                              'type_id' => '2842',
+                              'value' => $unit_options[$environment['units']]
+                            ));
+                        }
+                        else {
+                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                              'phenotype_id' => $phenotype_ids[$j],
+                              'type_id' => '2842',
+                              'value' => $environment['units-other']
+                            ));
+                        }
+                        
+                    }
+                    else {
+                        $non_environment = $current_phenotype['non-environment'];
+                        
+                        tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                          'phenotype_id' => $phenotype_ids[$j],
+                          'type_id' => '2834',
+                          'value' => $non_environment['description']
+                        ));
+                        
+                        if ($non_environment['units'] !== '6'){
+                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                              'phenotype_id' => $phenotype_ids[$j],
+                              'type_id' => '2842',
+                              'value' => $unit_options[$non_environment['units']]
+                            ));
+                        }
+                        else {
+                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                              'phenotype_id' => $phenotype_ids[$j],
+                              'type_id' => '2842',
+                              'value' => $non_environment['units-other']
+                            ));
+                        }
+                        
+                        $type = $non_environment['type'];
+                        $structure = $non_environment['structure'];
+                        $developmental = $non_environment['developmental'];
+                        
+                        if ($type === '1'){
+                            $binary_1 = $non_environment['binary'][1];
+                            $binary_2 = $non_environment['binary'][2];
+                            
+                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                              'phenotype_id' => $phenotype_ids[$j],
+                              'type_id' => '128023',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                              'value' => $binary_1
+                            ));
+                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                              'phenotype_id' => $phenotype_ids[$j],
+                              'type_id' => '128023',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
+                              'value' => $binary_2
+                            ));
+                        }
+                        elseif ($type === '2'){
+                            $min = $non_environment['quantitative']['min'];
+                            $max = $non_environment['quantitative']['max'];
+
+                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                              'phenotype_id' => $phenotype_ids[$j],
+                              'type_id' => '52214',
+                              'value' => $min
+                            ));
+                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                              'phenotype_id' => $phenotype_ids[$j],
+                              'type_id' => '52213',
+                              'value' => $max
+                            ));
+                        }
+                        
+                        tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                          'phenotype_id' => $phenotype_ids[$j],
+                          'type_id' => '50292',
+                          'value' => $structure
+                        ));
+                        tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                          'phenotype_id' => $phenotype_ids[$j],
+                          'type_id' => '50292',
+                          'value' => $developmental
+                        ));
+                    }
                 }
-                break;
+            }
+            else{
+                $phenotype_file_id = tpps_create_record('tpps_phenotype', 'tpps_phenotype_id', array(
+                  'uniquename' => "PHENOTYPE-FILE-PATH-organism-$i-project-$project_id",
+                  'value' => file_create_url(file_load($phenotype['file'])->uri)
+                ));
             }
         }
-
-        $insert_info = db_insert('chado.stockprop')
-            ->fields(array(
-              'stockprop_id' => $stockprop_id,
-              'stock_id' => $stock_id,
-              'type_id' => $info_cvterm_id,
-              'value' => $info,
-              'rank' => $rank
-            ))
-            ->execute();
         
-        return $stockprop_id;
+        if (isset($fourthpage["organism-$i"]['genotype'])){
+            $genotype = $fourthpage["organism-$i"]['genotype'];
+            
+            
+            
+        }
     }
     
-    function create_record_phenotypeprop($phenotype_id, $info, $info_cvterm_id){
-        $first_row = TRUE;
-        $rank = '0';
-        $phenotypeprop_id = '1';
-        
-        $indexed_items = db_select('chado.phenotypeprop', 'phenotypeprop')
-            ->fields('phenotypeprop', array('phenotypeprop_id', 'phenotype_id', 'type_id', 'rank'))
-            ->orderBy('phenotypeprop_id', 'DESC')
-            ->execute();
-        
-        foreach ($indexed_items as $row){
-            if ($first_row){
-                $phenotypeprop_id = $row->phenotypeprop_id + 1;
-                $first_row = FALSE;
-            }
-            if ($row->phenotype_id === $phenotype_id and $row->type_id === $info_cvterm_id){
-                if ($row->rank >= $rank){
-                    $rank = $row->rank + 1;
-                }
-            }
-        }
-
-        $insert_info = db_insert('chado.phenotypeprop')
-            ->fields(array(
-              'phenotypeprop_id' => $phenotypeprop_id,
-              'phenotype_id' => $phenotype_id,
-              'type_id' => $info_cvterm_id,
-              'value' => $info,
-              'rank' => $rank
-            ))
-            ->execute();
-        
-        
-        return $phenotypeprop_id;
-    }
+    /*
     
     function create_record_phenotype($phenotype){
-        $name = $phenotype['name'];
-        $phenotype_id = '1';
         
-        $indexed_phenotypes = db_select('chado.phenotype', 'phenotype')
-            ->fields('phenotype', array('phenotype_id'))
-            ->orderBy('phenotype_id', 'DESC')
-            ->execute();
-        
-        foreach ($indexed_phenotypes as $row){
-            $phenotype_id = $row->phenotype_id + 1;
-            break;
-        }
-        
-        $uniquename = "$name-$phenotype_id";
-        
-        $insert_phenotype = db_insert('chado.phenotype')
-            ->fields(array(
-              'phenotype_id' => $phenotype_id,
-              'uniquename' => $uniquename,
-              'name' => $name,
-            ))
-            ->execute();
-        
-        if ($phenotype['environment-check'] == '1'){
-            $environment = $phenotype['environment'];
             
-            $description_id = create_record_phenotypeprop($phenotype_id, $environment['description'], '2834');
-            $unit_id = create_record_phenotypeprop($phenotype_id, $environment['units'], '2842');
-        }
-        else{
-            $non_environment = $phenotype['non-environment'];
-            $type = $non_environment['type'];
-            $structure = $non_environment['structure'];
-            $developmental = $non_environment['developmental'];
             
-            if ($type === '1'){
-                $binary_1 = $non_environment['binary'][1];
-                $binary_2 = $non_environment['binary'][2];
-                
-                $binary_1_id = create_record_phenotypeprop($phenotype_id, $binary_1, '128023');
-                $binary_2_id = create_record_phenotypeprop($phenotype_id, $binary_2, '128023');
-            }
-            elseif ($type === '2'){
-                $min = $non_environment['quantitative']['min'];
-                $max = $non_environment['quantitative']['max'];
-                
-                $min_id = create_record_phenotypeprop($phenotype_id, $min, '52214');
-                $max_id = create_record_phenotypeprop($phenotype_id, $max, '52213');
-            }
-            
-            $description_id = create_record_phenotypeprop($phenotype_id, $non_environment['description'], '2834');
-            $unit_id = create_record_phenotypeprop($phenotype_id, $non_environment['units'], '2842');
             $structure_id = create_record_phenotypeprop($phenotype_id, $structure, '50292');
             $developmental_id = create_record_phenotypeprop($phenotype_id, $developmental, '50292');
             
@@ -1046,321 +1559,9 @@ function submit_all($form, &$form_state){
     }
     
     
-    $options = array(
-      0 => t('- Select -'),
-      2 => t('In Preparation or Submitted'),
-      3 => t('In press'),
-      4 => t('Published'),
-    );
-    $status = $options[$publication['status']];
-    
-    $pub_status_id = create_record_projectprop($project_id, $status, '52310');
-    
-    $secondaryAuthors_id = array();
-    if ($publication['secondaryAuthors']['check'] == '0' and $publication['secondaryAuthors']['number'] != '0'){
-        for($i = 1; $i <= $publication['secondaryAuthors']['number']; $i++){
-            $secondaryAuthors_id[$i] = create_record_pubauthor($publication['secondaryAuthors'][$i], $study_pub_id, $i + 1);
-        }
-    }
-    elseif ($publication['secondaryAuthors']['check'] == '0'){
-        create_record_projectprop($project_id, file_create_url(file_load($publication['secondaryAuthors']['file'])->uri), '128024');
-    }
-    
-    $organism_id = array();
-    for ($i = 1; $i <= $organism['number']; $i++){
-        $organism_id[$i] = create_record_organism($organism["$i"]);
-    }
-    
-    $start_date_id = create_record_studyprop($study_id, $start, '127996');
-    $end_date_id = create_record_studyprop($study_id, $end, '127997');
-    $experiment_location_id = create_record_studyprop($study_id, $location, '127998');
-    $datatype_id = create_record_studyprop($study_id, $datatype, '54740');//need jill's confirmation on cvterm_id for 'association_results_type'
-    $study_type_id = create_record_studyprop($study_id, $study_type, '128021');
-    
-    if ($secondpage['studyType'] == '1'){
-        $natural_population = $secondpage['naturalPoplulation'];
-        $number_assessions = $natural_population['assession'];
-        $seasons = "";
-        foreach ($natural_population['season'] as $key => $item){
-            if ($item == '1'){
-                $season .= $key . ', ';
-            }
-        }
-        $season_id = create_record_studyprop($study_id, $seasons, '128000');
-        $assessions_id = create_record_studyprop($study_id, $number_assessions, '128001');
-    }
-    elseif ($secondpage['studyType'] == '2'){
-        $growth_chamber = $secondpage['growthChamber'];
-        $co2 = $growth_chamber['co2Control'];
-        $humidity = $growth_chamber['humidityControl'];
-        $light = $growth_chamber['lightControl'];
-        $temp_high = $growth_chamber['temp']['high'];
-        $temp_low = $growth_chamber['temp']['low'];
-        $rooting = $growth_chamber['rooting'];
-        $rooting_type = $rooting['option'];
-        $soil = $rooting['soil'];
-        $soil_container = $soil['container'];
-        $ph = $rooting['ph'];
-        $treatments = $rooting['treatment'];
-        
-        if ($co2['option'] == '1'){
-            $co2_control_id = create_record_studyprop($study_id, 'True', '128002');
-            $co2_value_id = create_record_studyprop($study_id, $co2['controlled'], '128003');
-        }
-        else{
-            $co2_control_id = create_record_studyprop($study_id, 'False', '128002');
-            $co2_value_id = create_record_studyprop($study_id, $co2['uncontrolled'], '128003');
-        }
-        
-        if ($humidity['option'] == '1'){
-            $humidity_control_id = create_record_studyprop($study_id, 'True', '128004');
-            $humidity_value_id = create_record_studyprop($study_id, $humidity['controlled'], '128005');
-        }
-        else{
-            $humidity_control_id = create_record_studyprop($study_id, 'False', '128004');
-            $humidity_value_id = create_record_studyprop($study_id, $humidity['uncontrolled'], '128005');
-        }
-        
-        if ($light['option'] == '1'){
-            $light_control_id = create_record_studyprop($study_id, 'True', '128006');
-            $light_value_id = create_record_studyprop($study_id, $light['controlled'], '128007');
-        }
-        else{
-            $light_control_id = create_record_studyprop($study_id, 'False', '128006');
-            $light_value_id = create_record_studyprop($study_id, $light['uncontrolled'], '128007');
-        }
-        
-        $temp_high_id = create_record_studyprop($study_id, $temp_high, '128008');
-        $temp_low_id = create_record_studyprop($study_id, $temp_low, '128009');
-        
-        switch((string) $rooting_type){
-            case '1':
-                $rooting_type_id = create_record_studyprop($study_id, 'Aeroponics', '128010');
-                break;
-            case '2':
-                $rooting_type_id = create_record_studyprop($study_id, 'Hydroponics', '128010');
-                break;
-            case '3':
-                $rooting_type_id = create_record_studyprop($study_id, 'Soil', '128010');
-                $soil_options = array(
-                  0 => '- Select -',
-                  1 => 'Sand',
-                  2 => 'Peat',
-                  3 => 'Clay',
-                  4 => 'Mixed',
-                  5 => 'Other'
-                );
-                $soil_type = $soil_options[$soil['type']];
-                if ($soil_type == 'Other'){
-                    $soil_type = $soil['other'];
-                }
-
-                $soil_type_id = create_record_studyprop($study_id, $soil_type, '128011');
-                $soil_container_id = create_record_studyprop($study_id, $soil_container, '128012');
-                break;
-            default:
-                break;
-        }
-        
-        if ($ph['option'] == '1'){
-            $ph_control_id = create_record_studyprop($study_id, 'True', '128013');
-            $ph_value_id = create_record_studyprop($study_id, $ph['controlled'], '128014');
-        }
-        else{
-            $ph_control_id = create_record_studyprop($study_id, 'False', '128013');
-            $ph_value_id = create_record_studyprop($study_id, $ph['uncontrolled'], '128014');
-        }
-        
-        $treatment_id = array();
-        $is_description = FALSE;
-        foreach ($treatments as $item){
-            if (!$is_description){
-                if ($item == '1'){
-                    $record_next = TRUE;
-                }
-                else{
-                    $record_next = FALSE;
-                }
-                $is_description = TRUE;
-            }
-            else{
-                if ($record_next){
-                    array_push($treatment_id, create_record_studyprop($study_id, $item, '128015'));
-                }
-                $is_description = FALSE;
-            }
-        }
-    }
-    elseif ($secondpage['studyType'] == '3'){
-        $greenhouse = $secondpage['greenhouse'];
-        $humidity = $greenhouse['humidityControl'];
-        $light = $greenhouse['lightControl'];
-        $temp_high = $greenhouse['temp']['high'];
-        $temp_low = $greenhouse['temp']['low'];
-        $rooting = $greenhouse['rooting'];
-        $rooting_type = $rooting['option'];
-        $soil = $rooting['soil'];
-        $soil_container = $soil['container'];
-        $ph = $rooting['ph'];
-        $treatments = $rooting['treatment'];
-        
-        if ($humidity['option'] == '1'){
-            $humidity_control_id = create_record_studyprop($study_id, 'True', '128004');
-            $humidity_value_id = create_record_studyprop($study_id, $humidity['controlled'], '128005');
-        }
-        else{
-            $humidity_control_id = create_record_studyprop($study_id, 'False', '128004');
-        }
-        
-        if ($light['option'] == '1'){
-            $light_control_id = create_record_studyprop($study_id, 'True', '128006');
-            $light_value_id = create_record_studyprop($study_id, $light['controlled'], '128007');
-        }
-        else{
-            $light_control_id = create_record_studyprop($study_id, 'False', '128006');
-        }
-        
-        $temp_high_id = create_record_studyprop($study_id, $temp_high, '128008');
-        $temp_low_id = create_record_studyprop($study_id, $temp_low, '128009');
-        
-        switch((string) $rooting_type){
-            case '1':
-                $rooting_type_id = create_record_studyprop($study_id, 'Aeroponics', '128010');
-                break;
-            case '2':
-                $rooting_type_id = create_record_studyprop($study_id, 'Hydroponics', '128010');
-                break;
-            case '3':
-                $rooting_type_id = create_record_studyprop($study_id, 'Soil', '128010');
-                $soil_options = array(
-                  0 => '- Select -',
-                  1 => 'Sand',
-                  2 => 'Peat',
-                  3 => 'Clay',
-                  4 => 'Mixed',
-                  5 => 'Other'
-                );
-                $soil_type = $soil_options[$soil['type']];
-                if ($soil_type == 'Other'){
-                    $soil_type = $soil['other'];
-                }
-
-                $soil_type_id = create_record_studyprop($study_id, $soil_type, '128011');
-                $soil_container_id = create_record_studyprop($study_id, $soil_container, '128012');
-                break;
-            default:
-                break;
-        }
-        
-        if ($ph['option'] == '1'){
-            $ph_control_id = create_record_studyprop($study_id, 'True', '128013');
-            $ph_value_id = create_record_studyprop($study_id, $ph['controlled'], '128014');
-        }
-        else{
-            $ph_control_id = create_record_studyprop($study_id, 'False', '128013');
-        }
-        
-        $treatment_id = array();
-        $is_description = FALSE;
-        foreach ($treatments as $item){
-            if (!$is_description){
-                if ($item == '1'){
-                    $record_next = TRUE;
-                }
-                else{
-                    $record_next = FALSE;
-                }
-                $is_description = TRUE;
-            }
-            else{
-                if ($record_next){
-                    array_push($treatment_id, create_record_studyprop($study_id, $item, '128015'));
-                }
-                $is_description = FALSE;
-            }
-        }
-        
-    }
-    elseif ($secondpage['studyType'] == '4'){
-        $commonGarden = $secondpage['commonGarden'];
-        $salinity = $commonGarden['salinity'];
-        $biotic_env = $commonGarden['bioticEnv']['option'];
-        $seasons = "";
-        $treatments = $commonGarden['treatment'];
-        
-        $irrigation_options = array(
-          0 => '- Select -',
-          1 => 'Irrigation from top',
-          2 => 'Irrigation from bottom',
-          3 => 'Drip Irrigation',
-          4 => 'Other',
-          5 => 'No Irrigation',
-        );
-        $irrigation_type = $irrigation_options[$commonGarden['irrigation']['option']];
-        if ($irrigation_type == 'Other'){
-            $irrigation_type = $commonGarden['irrigation']['other'];
-        }
-        
-        $irrigation_type_id = create_record_studyprop($study_id, $irrigation_type, '128016');
-        
-        if ($salinity['option'] == '1'){
-            $salinity_control_id = create_record_studyprop($study_id, 'True', '128017');
-            $salinity_value_id = create_record_studyprop($study_id, $salinity['controlled'], '128018');
-        }
-        else{
-            $salinity_control_id = create_record_studyprop($study_id, 'False', '128017');
-            $salinity_value_id = create_record_studyprop($study_id, $salinity['uncontrolled'], '128018');
-        }
-        
-        $biotic_env['Other'] = $commonGarden['bioticEnv']['other'];
-        $biotic_env_id = array();
-        foreach ($biotic_env as $key => $check){
-            if ($check == '1'){
-                $biotic_env_id[$key] = create_record_studyprop($study_id, $key, '128019');
-            }
-        }
-        
-        foreach ($commonGarden['season'] as $key => $item){
-            if ($item == '1'){
-                $season .= $key . ', ';
-            }
-        }
-        $season_id = create_record_studyprop($study_id, $seasons, '128000');
-        
-        $treatment_id = array();
-        $is_description = FALSE;
-        foreach ($treatments as $item){
-            if (!$is_description){
-                if ($item == '1'){
-                    $record_next = TRUE;
-                }
-                else{
-                    $record_next = FALSE;
-                }
-                $is_description = TRUE;
-            }
-            else{
-                if ($record_next){
-                    array_push($treatment_id, create_record_studyprop($study_id, $item, '128015'));
-                }
-                $is_description = FALSE;
-            }
-        }
-    }
-    elseif ($secondpage['studyType'] == '5'){
-        $plantation = $secondpage['plantation'];
-        $number_assessions = $plantation['assession'];
-        $seasons = "";
-        foreach ($plantation['season'] as $key => $item){
-            if ($item == '1'){
-                $season .= $key . ', ';
-            }
-        }
-        $season_id = create_record_studyprop($study_id, $seasons, '128000');
-        $assessions_id = create_record_studyprop($study_id, $number_assessions, '1280001');
-    }
-    
-    $tree_accession_path = file_create_url(file_load($tree_accession)->uri);
+    ********************************************************************************************************
+    ********************************************************************************************************
+    ********************************************************************************************************
     
     for ($i = 1; $i <= $organism['number']; $i++){
         $phenotype = $fourthpage["organism-$i"]['phenotype'];
@@ -1371,7 +1572,6 @@ function submit_all($form, &$form_state){
         $snps_file = $genotype['SNPs'];
         
         $stock_id = create_record_stock($organism_id[$i]);
-        $tree_accession_id = create_record_stockprop($stock_id, $tree_accession_path, '128024');
         
         if ($phenotype['check'] === '1'){
             $file_path = file_create_url(file_load($phenotype['file'])->uri);
@@ -1612,12 +1812,7 @@ function parse_xlsx($location){
 
 function tpps_test_page($form, &$form_state){
     
-    $study_id = tpps_create_record('tpps_study', 'tpps_study_id', array(
-      'contact_id' => 'cid',
-      'pub_id' => 'pid',
-      'name' => 'studyname',
-      'description' => 'studydesc'
-    ));
+    
     
     $form['Next'] = array(
       '#type' => 'submit',
