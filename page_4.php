@@ -37,8 +37,8 @@ function page_4_create_form(&$form, $form_state){
         );
         
         $structure_arr = array();
-		
-		
+        $dev_arr = array();
+	
         $results = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
             ->fields('phenotype_structure_cvterm', array('name', 'definition'))
             ->execute();
@@ -48,7 +48,6 @@ function page_4_create_form(&$form, $form_state){
             array_push($structure_arr, "$row->name : $row->definition");
         }
         
-        $dev_arr = array();
         $results = db_select('chado.phenotype_cvterm', 'phenotype_cvterm')
             ->fields('phenotype_cvterm', array('name', 'definition'))
             ->execute();
@@ -750,10 +749,8 @@ function page_4_validate_form(&$form, &$form_state){
         $targeted_capture = $snps['targeted-capture'];
         $bio_id = $snps['BioProject-id'];
         $assembly_user = $snps['assembly-user'];
-        $assembly_auto = $snps['assembly-auto'];
         $assembly_check = $snps['assembly-check'];
         
-        form_set_error('submit', 'error');
         if ($marker_check === '000'){
             form_set_error("$id][genotype][marker-type", "Genotype Marker Type: field is required.");
         }
@@ -784,6 +781,7 @@ function page_4_validate_form(&$form, &$form_state){
                 }
             }
             else{
+                $assembly_auto = $snps['assembly-auto'];
                 if ($bio_id == ''){
                     form_set_error("$id][genotype][SNPs][Bioproject-id", 'BioProject Id: field is required.');
                 }
