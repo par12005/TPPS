@@ -324,7 +324,7 @@ function tpps_init_project($form, &$form_state){
     //tpps_create_record('tpps_dbxref', $values);
 
     $form_state['dbxref_id'] = $dbxref_id;
-    $form_state['accession_number'] = $accession;
+    $form_state['accession'] = $accession;
     
     //project will be created when name is provided, after the first page is complete.
     return $insert;
@@ -695,9 +695,6 @@ function submit_all($form, &$form_state){
         ));
     }
 
-    
-    
-    //TODO: this only submits the number of the select option, not the actual year
     switch ($firstpage['publication']['status']){
         case ('2'):
             $pub_year = $firstpage['publication']['yearSubmitted'];
@@ -796,7 +793,7 @@ function submit_all($form, &$form_state){
       'value' => $end
     ));
     
-    if ($secondpage['studyLocation']['type'] === '2'){
+    if ($secondpage['studyLocation']['type'] !== '2'){
         $location = $secondpage['studyLocation']['latitude'] . ' Latitude, ' . $secondpage['studyLocation']['longitude'] . ' Longitude';
     }
     else{
@@ -854,7 +851,7 @@ function submit_all($form, &$form_state){
             $seasons = "";
             foreach ($natural_population['season'] as $key => $item){
                 if ($item == '1'){
-                    $season .= $key . ', ';
+                    $seasons .= $key . ', ';
                 }
             }
             
@@ -1046,6 +1043,7 @@ function submit_all($form, &$form_state){
 
             $treatment_ids = array();
             $is_description = FALSE;
+            $rank = 0;
             foreach ($treatments as $item){
                 if (!$is_description){
                     if ($item == '1'){
@@ -1061,8 +1059,10 @@ function submit_all($form, &$form_state){
                         array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
                           'project_id' => $project_id,
                           'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
-                          'value' => $item
+                          'value' => $item,
+                          'rank' => $rank
                         )));
+                        $rank++;
                     }
                     $is_description = FALSE;
                 }
@@ -1203,6 +1203,7 @@ function submit_all($form, &$form_state){
 
             $treatment_id = array();
             $is_description = FALSE;
+            $rank = 0;
             foreach ($treatments as $item){
                 if (!$is_description){
                     if ($item == '1'){
@@ -1218,8 +1219,10 @@ function submit_all($form, &$form_state){
                         array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
                           'project_id' => $project_id,
                           'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
-                          'value' => $item
+                          'value' => $item,
+                          'rank' => $rank
                         )));
+                        $rank++;
                     }
                     $is_description = FALSE;
                 }
@@ -1290,7 +1293,7 @@ function submit_all($form, &$form_state){
 
             foreach ($commonGarden['season'] as $key => $item){
                 if ($item == '1'){
-                    $season .= $key . ', ';
+                    $seasons .= $key . ', ';
                 }
             }
             $season_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
@@ -1301,6 +1304,7 @@ function submit_all($form, &$form_state){
 
             $treatment_id = array();
             $is_description = FALSE;
+            $rank = 0;
             foreach ($treatments as $item){
                 if (!$is_description){
                     if ($item == '1'){
@@ -1316,8 +1320,10 @@ function submit_all($form, &$form_state){
                         array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
                           'project_id' => $project_id,
                           'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
-                          'value' => $item
+                          'value' => $item,
+                          'rank' => $rank
                         )));
+                        $rank++;
                     }
                     $is_description = FALSE;
                 }
@@ -1331,7 +1337,7 @@ function submit_all($form, &$form_state){
             
             foreach ($plantation['season'] as $key => $item){
                 if ($item == '1'){
-                    $season .= $key . ', ';
+                    $seasons .= $key . ', ';
                 }
             }
             
@@ -1350,6 +1356,7 @@ function submit_all($form, &$form_state){
             if ($plantation['treatment']['check'] != 0){
                 $treatment_id = array();
                 $is_description = FALSE;
+                $rank = 0;
                 foreach ($treatments as $item){
                     if (!$is_description){
                         if ($item == '1'){
@@ -1365,8 +1372,10 @@ function submit_all($form, &$form_state){
                             array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
                               'project_id' => $project_id,
                               'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
-                              'value' => $item
+                              'value' => $item,
+                              'rank' => $rank
                             )));
+                            $rank++;
                         }
                         $is_description = FALSE;
                     }
