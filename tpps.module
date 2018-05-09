@@ -283,7 +283,7 @@ function tpps_compare_temp($table, $column, $is_primary = FALSE, array $conditio
         break;
     }
     
-    $max_val = ($temp_val > $public_val) ? $temp_val : $public_val;
+    $max_val = (!isset($public_val) or $temp_val > $public_val) ? $temp_val : $public_val;
     
     return $max_val;
 }
@@ -373,9 +373,9 @@ function tpps_create_record($table, $primary_key, array $values){
     }
     
     //print_r($default_fields);
-    dpm($table);
-    dpm($values);
-    dpm($default_fields);
+//    dpm($table);
+//    dpm($values);
+//    dpm($default_fields);
     
     //Insert the record
     $insert = db_insert("chado.$table")
@@ -395,9 +395,11 @@ function tpps_record_exists($table, array $values){
     
     $and = db_and();
     foreach ($unique_columns as $field){
-        $value = $values[$field];
-        if ($value != ''){
-            $and->condition("$field", db_like("$value"), 'LIKE');
+        if (isset($values[$field])){
+            $value = $values[$field];
+            if ($value != ''){
+                $and->condition("$field", db_like("$value"), 'LIKE');
+            }
         }
     }
     
@@ -656,7 +658,7 @@ function tpps_master_submit($form, &$form_state){
 function submit_all($form, &$form_state){
     
     $dbxref_id = $form_state['dbxref_id'];
-    $accession = $form_state['accession_number'];
+    $accession = $form_state['accession'];
 
     $values = $form_state['saved_values'];
     $firstpage = $values['Hellopage'];
