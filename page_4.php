@@ -263,6 +263,19 @@ function page_4_create_form(&$form, $form_state){
           '#title' => t('Genotype Information:')
         );
         
+        $results = file_scan_directory("/linuxshare/projects/treegenes/tgwebprod_store/FTP/Genomes", '/.*$/');//'/([A-Z]|[a-z]){4}/');
+        dpm($results);
+        
+        $ref_genome_arr = array();
+        $ref_genome_arr[0] = '- Select -';
+        
+        $fields['ref-genome'] = array(
+          '#type' => 'select',
+          '#title' => t('Reference Genome used:'),
+          '#options' => $ref_genome_arr,
+          '#default_value' => isset($values[$id]['genotype']['ref-genome']) ? $values[$id]['genotype']['ref-genome'] : 0,
+        );
+        
         $fields['marker-type'] = array(
           '#type' => 'checkboxes',
           '#title' => t('Marker Type (select all that apply):'),
