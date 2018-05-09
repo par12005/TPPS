@@ -8,23 +8,50 @@ function page_2_create_form(&$form, $form_state){
         $values = array();
     }
     
-    function studyDate($type, &$form, $values){
+    function studyDate($type, &$form, $values, &$form_state){
         
         $form[$type . 'Date'] = array(
-          '#prefix' => '<div class="container-inline">', 
+          '#prefix' => "<div class='container-inline'>", 
           '#type' => 'fieldset',
           '#title' => t('Experiment ' . $type . ' Date'),
           '#tree' => TRUE,
+          '#suffix' => '</div>',
         );
+        
+        if ($type == "Ending"){
+            $form['EndingDate']['#states'] = array(
+              'invisible' => array(
+                array(
+                  array(':input[name="StartingDate[month]"]' => array('value' => '0')),
+                  'or',
+                  array(':input[name="StartingDate[year]"]' => array('value' => '0')),
+                )
+              )
+            );
+        }
         
         $yearArr = array();
         $yearArr[0] = '- Select -';
         for ($i = 1970; $i <= 2018; $i++) {
-            $index = $i - 1949;
-            $yearArr[$index] = $i;
+            $yearArr[$i] = $i;
         }
         
-
+        $monthArr = array(
+          0 => '- Select -',
+          1 => 'January',
+          2 => 'February',
+          3 => 'March',
+          4 => 'April',
+          5 => 'May',
+          6 => 'June',
+          7 => 'July',
+          8 => 'August',
+          9 => 'September',
+          10 => 'October',
+          11 => 'November',
+          12 => 'December'
+        );
+        
         $form[$type . 'Date']['year'] = array(
           '#type' => 'select',
           '#title' => t('Year:'),
@@ -36,30 +63,53 @@ function page_2_create_form(&$form, $form_state){
         $form[$type . 'Date']['month'] = array(
           '#type' => 'select',
           '#title' => t('Month:'),
-          '#options' => array(
-            0 => '- Select -',
-            1 => 'January',
-            2 => 'February',
-            3 => 'March',
-            4 => 'April',
-            5 => 'May',
-            6 => 'June',
-            7 => 'July',
-            8 => 'August',
-            9 => 'September',
-            10 => 'October',
-            11 => 'November',
-            12 => 'December'
-          ),
+          '#options' => $monthArr,
           '#default_value' => isset($values[$type . 'Date']['month']) ? $values[$type . 'Date']['month'] : 0,
           '#required' => true,
-          '#suffix' => '</div>',
           '#states' => array(
             'invisible' => array(
               ':input[name="' . $type . 'Date[year]"]' => array('value' => '0')
             )
-          )
+          ),
         );
+        
+        if ($type == "Starting"){
+            $form['StartingDate']['year']['#ajax'] = array(
+              'callback' => 'ajax_date_year_callback',
+              'wrapper' => 'Endingyear'
+            );
+            $form['StartingDate']['month']['#ajax'] = array(
+              'callback' => 'ajax_date_month_callback',
+              'wrapper' => 'Endingmonth'
+            );
+        }
+        else{
+            $form['EndingDate']['year']['#ajax'] = array(
+              'callback' => 'ajax_date_month_callback',
+              'wrapper' => 'Endingmonth'
+            );
+            $form['EndingDate']['year']['#prefix'] = '<div id="Endingyear">';
+            $form['EndingDate']['year']['#suffix'] = '</div>';
+            $form['EndingDate']['month']['#prefix'] = '<div id="Endingmonth">';
+            $form['EndingDate']['month']['#suffix'] = '</div>';
+            
+            if (isset($form_state['values']['StartingDate']['year']) and $form_state['values']['StartingDate']['year'] != '0'){
+                $yearArr = array();
+                $yearArr[0] = '- Select -';
+                for ($i = $form_state['values']['StartingDate']['year']; $i <= 2018; $i++) {
+                    $yearArr[$i] = $i;
+                }
+                $form['EndingDate']['year']['#options'] = $yearArr;
+            }
+            if (isset($form_state['values']['EndingDate']['year']) and $form_state['values']['EndingDate']['year'] == $form_state['values']['StartingDate']['year'] and isset($form_state['values']['StartingDate']['month']) and $form_state['values']['StartingDate']['month'] != '0'){
+                foreach ($monthArr as $key=>$item){
+                    if ($key != 0 and $key < $form_state['values']['StartingDate']['month']){
+                        unset($monthArr[$key]);
+                    }
+                }
+                $form['EndingDate']['month']['#options'] = $monthArr;
+            }
+        }
         
         return $form;
     }
@@ -1239,9 +1289,9 @@ function page_2_create_form(&$form, $form_state){
         return $form;
     }
     
-    studyDate('Starting', $form, $values);
+    studyDate('Starting', $form, $values, $form_state);
     
-    studyDate('Ending', $form, $values);
+    studyDate('Ending', $form, $values, $form_state);
     
     studyLocation($form, $values);
     
@@ -1297,6 +1347,16 @@ function page_2_create_form(&$form, $form_state){
     //drupal_add_js(drupal_get_path('module', 'custom_module') . "/custom_module.js");
 
     return $form;
+}
+
+function ajax_date_year_callback(&$form, $form_state){
+    
+    return $form['EndingDate']['year'];
+}
+
+function ajax_date_month_callback(&$form, $form_state){
+    
+    return $form['EndingDate']['month'];
 }
 
 function page_2_validate_form(&$form, &$form_state){

@@ -773,15 +773,8 @@ function submit_all($form, &$form_state){
       '12' => 'December'
     );
 
-    $year_options = array();
-
-    for ($i = 1950; $i <= 2018; $i++) {
-        $index = $i - 1949;
-        $year_options["$index"] = $i;
-    }
-
-    $start = $month_options[$secondpage['StartingDate']['month']] . " " . $year_options[$secondpage['StartingDate']['year']];
-    $end = $month_options[$secondpage['EndingDate']['month']] . " " . $year_options[$secondpage['EndingDate']['year']];
+    $start = $month_options[$secondpage['StartingDate']['month']] . " " . $secondpage['StartingDate']['year'];
+    $end = $month_options[$secondpage['EndingDate']['month']] . " " . $secondpage['EndingDate']['year'];
 
     $start_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
       'project_id' => $project_id,
