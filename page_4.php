@@ -39,7 +39,7 @@ function page_4_create_form(&$form, $form_state){
         $structure_arr = array();
         $dev_arr = array();
 	
-        $results = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
+        /*$results = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
             ->fields('phenotype_structure_cvterm', array('name', 'definition'))
             ->execute();
 		
@@ -55,7 +55,7 @@ function page_4_create_form(&$form, $form_state){
 		
         foreach ($results as $row){
             array_push($dev_arr, "$row->name : $row->definition");
-        }
+        }*/
         
         for ($i = 1; $i <= 30; $i++){
             
@@ -263,12 +263,33 @@ function page_4_create_form(&$form, $form_state){
           '#title' => t('Genotype Information:')
         );
         
-        $results = file_scan_directory("/linuxshare/projects/treegenes/tgwebprod_store/FTP/Genomes", '/.*$/');//'/([A-Z]|[a-z]){4}/');
-        dpm($results);
+	$options = array(
+	  'key' => 'name',
+	  'recurse' => FALSE
+	);
+	
+        $results = file_scan_directory("/linuxshare/projects/treegenes/tgwebprod_store/FTP/Genomes", '/^([A-Z]|[a-z]){4}$/', $options);
+        //dpm($results);
         
         $ref_genome_arr = array();
         $ref_genome_arr[0] = '- Select -';
         
+	foreach($results as $key=>$value){
+		dpm($key);
+		$query = db_select('chado.organismprop', 'organismprop')
+			->fields('organismprop', array('organism_id'))
+			->condition('value', $key)
+			->execute()
+			->fetchAssoc();
+		dpm($query['organism_id']);
+		$query = db_select('chado.organism', 'organism')
+			->fields('organism', array('genus', 'species'))
+			->condition('organism_id', $query['organism_id'])
+			->execute()
+			->fetchAssoc();
+		dpm($query['genus'] . $query['species']);
+	}
+	
         $fields['ref-genome'] = array(
           '#type' => 'select',
           '#title' => t('Reference Genome used:'),
