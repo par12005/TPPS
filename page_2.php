@@ -180,9 +180,6 @@ function page_2_create_form(&$form, $form_state){
             'visible' => array(
               ':input[name="studyType"]' => array('value' => '1')
             ),
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '1')
-            ),
             'enabled' => array(
               ':input[name="studyType"]' => array('value' => '1')
             )
