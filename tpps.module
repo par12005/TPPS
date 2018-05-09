@@ -283,6 +283,10 @@ function tpps_compare_temp($table, $column, $is_primary = FALSE, array $conditio
         break;
     }
     
+    if (!isset($public_val) and !isset($temp_val)){
+        return NULL;
+    }
+    
     $max_val = (!isset($public_val) or $temp_val > $public_val) ? $temp_val : $public_val;
     
     return $max_val;
@@ -299,8 +303,14 @@ function tpps_init_project($form, &$form_state){
     //Get next dbxref_id and accession # for project
     $dbxref_id = tpps_compare_temp('dbxref', 'dbxref_id', TRUE) + 1;
     $accession = tpps_compare_temp('dbxref', 'accession', FALSE, array('accession', db_like('TGDR') . '%', 'LIKE'));
-    $accession = substr($accession, 4) + 1;
-
+    
+    if ($accession === NULL){
+        $accession = "TGDR001";
+    }
+    else {
+        $accession = substr($accession, 4) + 1;
+    }
+    
     while (strlen($accession) < 3){
         $accession = "0" . $accession;
     }
@@ -318,8 +328,8 @@ function tpps_init_project($form, &$form_state){
     );
     
     $insert = db_insert('chado.tpps_dbxref')
-        ->fields($values)
-        ->execute();
+        ->fields($values);
+        //->execute();
     
     //tpps_create_record('tpps_dbxref', $values);
 
