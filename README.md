@@ -214,6 +214,7 @@ After the data has been submitted and approved, the user will recieve an email w
 - TPPS needs a header on the first page with instructions and likely some information on what will be required so users can prepare
 - Ending date of experiment must come after starting date (show amended dropdown)
 - File upload info bugs
+- Fix errors for no existing TPPS submissions
 - E-mails to end users, final submission screen check, profile details of what submission contains
 
 # Resources

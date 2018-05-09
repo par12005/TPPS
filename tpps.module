@@ -1399,7 +1399,11 @@ function submit_all($form, &$form_state){
      * Fourth Page submissions *
      ***************************/
     
+    //these are messy. File parsing will clean them up. currently, all file paths are being stored in the chado.projectprop table.
+    //it will be better when they can be stored in genotypeprop or phenotypeprop, but that required file parsing first.
+    
     for ($i = 0; $i < $organism_number; $i++){
+        
         if (isset($fourthpage["organism-$i"]['phenotype'])){
             $phenotype = $fourthpage["organism-$i"]['phenotype'];
             $phenotype_number = $phenotype['number'];
@@ -1521,94 +1525,60 @@ function submit_all($form, &$form_state){
                 }
             }
             else{
-                $phenotype_file_id = tpps_create_record('tpps_phenotype', 'tpps_phenotype_id', array(
-                  'uniquename' => "PHENOTYPE-FILE-PATH-organism-$i-project-$project_id",
-                  'value' => file_create_url(file_load($phenotype['file'])->uri)
+                $phenotype_file_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($phenotype['metadata'])->uri)
                 ));
             }
+            
+            
         }
         
         if (isset($fourthpage["organism-$i"]['genotype'])){
             $genotype = $fourthpage["organism-$i"]['genotype'];
             
+            if ($genotype['marker-type']['SNPs'] == 'SNPs'){
+                $snps = $genotype['SNPs'];
+                $assembly_check = $snps['assembly-check'];
+                
+                if ($assembly_check === '0'){
+                    $project_dbxref_id = tpps_create_record('tpps_project_dbxref', 'tpps_project_dbxref_id', array(
+                      'project_id' => $project_id,
+                      'dbxref_id' => $snps['BioProject-id'],
+                    ));
+                    
+                    $bioproject_assembly_file_ids = array();
+                    
+                    foreach ($genotype['SNPs']['assembly-auto'] as $item){
+                        if ($item !== '0'){
+                            array_push($bioproject_assembly_file_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                              'project_id' => $project_id,
+                              'type_id' => '2836',
+                              'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$item"
+                            )));
+                        }
+                    }
+                }
+                else {
+                    $assembly_user = $snps['assembly-user'];
+                    $assembly_user_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                      'project_id' => $project_id,
+                      'type_id' => '2836',
+                      'value' => file_create_url(file_load($assembly_user)->uri)
+                    ));
+                }
+                
+            }
             
+            $genotype_file_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+              'project_id' => $project_id,
+              'type_id' => '2836',
+              'value' => file_create_url(file_load($genotype['file']))
+            ));
             
         }
     }
-    
-    /*
-    
-    function create_record_phenotype($phenotype){
-        
-            
-            
-            $structure_id = create_record_phenotypeprop($phenotype_id, $structure, '50292');
-            $developmental_id = create_record_phenotypeprop($phenotype_id, $developmental, '50292');
-            
-            if ($non_environment['structure-check'] === '1'){
-                $structure_definition = $non_environment['structure-definition'];
-                $structure_definition_id = create_record_phenotypeprop($phenotype_id, "$structure Definition: $structure_definition", '50292');
-            }
-            if ($non_environment['developmental-check'] === '1'){
-                $developmental_definition = $non_environment['developmental-definition'];
-                $developmental_definition_id = create_record_phenotypeprop($phenotype_id, "$developmental Definition: $developmental_definition", '50292');
-            }
-        }
-        
-        return $phenotype_id;
-    }
-    
-    
-    ********************************************************************************************************
-    ********************************************************************************************************
-    ********************************************************************************************************
-    
-    for ($i = 1; $i <= $organism['number']; $i++){
-        $phenotype = $fourthpage["organism-$i"]['phenotype'];
-        $phenotype_number = $phenotype['number'];
-        $genotype = $fourthpage["organism-$i"]['genotype'];
-        $bioproject = $genotype['BioProject-id'];
-        $assembly_file = $genotype['assembly'];
-        $snps_file = $genotype['SNPs'];
-        
-        $stock_id = create_record_stock($organism_id[$i]);
-        
-        if ($phenotype['check'] === '1'){
-            $file_path = file_create_url(file_load($phenotype['file'])->uri);
-            
-            $indexed_phenotypes = db_select('chado.phenotype', 'phenotype')
-                ->fields('phenotype', array('phenotype_id'))
-                ->orderBy('phenotype_id', 'DESC')
-                ->execute();
-
-            foreach ($indexed_phenotypes as $row){
-                $phenotype_id = $row->phenotype_id + 1;
-                break;
-            }
-
-            $uniquename = "PHENOTYPE-FILE-PATH-$phenotype_id";
-
-            $insert_phenotype = db_insert('chado.phenotype')
-                ->fields(array(
-                  'phenotype_id' => $phenotype_id,
-                  'uniquename' => $uniquename,
-                  'value' => $file_path,
-                ))
-                ->execute();
-        }
-        else{
-            $phenotype_id = array();
-            for ($j = 1; $j <= $phenotype_number; $j++){
-                $current_phenotype = $phenotype["$j"];
-                $phenotype_id[$j] = create_record_phenotype($current_phenotype);
-            }
-        }
-        
-        $bioproject_id = create_record_project_dbxref($project_id, $bioproject);
-        $assembly_id = create_record_projectprop($project_id, file_create_url(file_load($assembly_file)->uri), '128024');
-        $snps_id = create_record_projectprop($project_id, file_create_url(file_load($snps_file)->uri), '128024');
-    }
-    */
 }
 
 function _author_autocomplete($string){
