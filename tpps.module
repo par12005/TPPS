@@ -348,16 +348,16 @@ function tpps_create_record($table, $primary_key, array $values){
         $compare_table = $table;
     }
     
-    //check record exists
-    if (tpps_record_exists($compare_table, $values)){
-        //if it does, do not attempt to re-write it.
-        //drupal_set_message(t('Error: Record already exists.'), 'error');
-        return -1;
-    }
-    
     //get the new primary key (increment by 1 from the old primary key)
     $new_primary = tpps_compare_temp($compare_table, $compare_primary, TRUE) + 1;
     $values["$primary_key"] = $new_primary;
+    
+    //check record exists
+    if (tpps_record_exists($compare_table, $values) or tpps_record_exists($table, $values)){
+        //if it does, do not attempt to re-write it.
+        //drupal_set_message(t('Error: Record already exists.'), 'error');
+        return $values[$primary_key];
+    }
     
     $fields = db_select("chado.$table", 't')
         ->fields('t')
@@ -373,7 +373,9 @@ function tpps_create_record($table, $primary_key, array $values){
     }
     
     //print_r($default_fields);
-    //print_r($values);
+    dpm($table);
+    dpm($values);
+    dpm($default_fields);
     
     //Insert the record
     $insert = db_insert("chado.$table")
@@ -394,7 +396,9 @@ function tpps_record_exists($table, array $values){
     $and = db_and();
     foreach ($unique_columns as $field){
         $value = $values[$field];
-        $and->condition("$field", db_like("$value"), 'LIKE');
+        if ($value != ''){
+            $and->condition("$field", db_like("$value"), 'LIKE');
+        }
     }
     
     $results->condition($and);
@@ -631,7 +635,8 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'thirdPage';
             }
             else{
-                //submit_all($form, $form_state);
+                dpm('submit');
+                submit_all($form, $form_state);
                 drupal_goto('<front>');
             }
             break;
@@ -671,9 +676,9 @@ function submit_all($form, &$form_state){
       'type_id' => '71',
     ));
 
+    $author_string = $firstpage['primaryAuthor'];
     if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0){
         $secondary_author_ids = array();
-        $author_string = $firstpage['primaryAuthor'];
 
         for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++){
             $secondary_author_ids[$i] = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
@@ -751,29 +756,29 @@ function submit_all($form, &$form_state){
      * Second Page submissions *
      ***************************/
 
-    $secondpage = $values['secondpage'];
+    $secondpage = $values['secondPage'];
 
     $month_options = array(
-      0 => '- Select -',
-      1 => 'January',
-      2 => 'February',
-      3 => 'March',
-      4 => 'April',
-      5 => 'May',
-      6 => 'June',
-      7 => 'July',
-      8 => 'August',
-      9 => 'September',
-      10 => 'October',
-      11 => 'November',
-      12 => 'December'
+      '0' => '- Select -',
+      '1' => 'January',
+      '2' => 'February',
+      '3' => 'March',
+      '4' => 'April',
+      '5' => 'May',
+      '6' => 'June',
+      '7' => 'July',
+      '8' => 'August',
+      '9' => 'September',
+      '10' => 'October',
+      '11' => 'November',
+      '12' => 'December'
     );
 
     $year_options = array();
 
     for ($i = 1950; $i <= 2018; $i++) {
         $index = $i - 1949;
-        $year_options[$index] = $i;
+        $year_options["$index"] = $i;
     }
 
     $start = $month_options[$secondpage['StartingDate']['month']] . " " . $year_options[$secondpage['StartingDate']['year']];
@@ -805,12 +810,12 @@ function submit_all($form, &$form_state){
     ));
     
     $datatype_options = array(
-      0 => '- Select -',
-      1 => 'Genotype x Phenotype',
-      2 => 'Genotype',
-      3 => 'Genotype x Phenotype x Environment',
-      4 => 'Phenotype x Environment',
-      5 => 'Genotype x Environment'
+      '0' => '- Select -',
+      '1' => 'Genotype x Phenotype',
+      '2' => 'Genotype',
+      '3' => 'Genotype x Phenotype x Environment',
+      '4' => 'Phenotype x Environment',
+      '5' => 'Genotype x Environment'
     );
     
     $datatype = $datatype_options[$secondpage['dataType']];
@@ -844,8 +849,8 @@ function submit_all($form, &$form_state){
     
     switch($secondpage['studyType']){
         case ('1'):
-            $natural_population = $secondpage['naturalPoplulation'];
-            $number_assessions = $natural_population['assession'];
+            $natural_population = $secondpage['naturalPopulation'];
+            $number_assessions = $natural_population['assessions'];
             $seasons = "";
             foreach ($natural_population['season'] as $key => $item){
                 if ($item == '1'){
@@ -1320,7 +1325,7 @@ function submit_all($form, &$form_state){
             break;
         case ('5'):
             $plantation = $secondpage['plantation'];
-            $number_assessions = $plantation['assession'];
+            $number_assessions = $plantation['assessions'];
             $seasons = "";
             $treatments = $plantation['treatment'];
             
