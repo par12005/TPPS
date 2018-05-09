@@ -205,15 +205,16 @@ After the data has been submitted and approved, the user will recieve an email w
 
 # Features in Development
 - Location preview window
-- Status sidebar
 - View submissions through the user's Tripal account
 - Access in-progress submissions through user's Tripal account
 - Validation across Tree Accession/VCF/WGS/TSA files
-- Unique TreeGenes Accession number
-- Create temporary chado.tpps_* tables on install
 - Admin Interface for submission approval
 - Option for users to say whether they aligned reads against the genome to call the SNPs (then they give us the SRA number for the read sets and select an existing target genome) or a direct URL to reference if it is something we don't have
-
+- Auto-populate the org from their profile but allow modification (if they are logged in)
+- TPPS needs a header on the first page with instructions and likely some information on what will be required so users can prepare
+- Ending date of experiment must come after starting date (show amended dropdown)
+- File upload info bugs
+- E-mails to end users, final submission screen check, profile details of what submission contains
 
 # Resources
 
