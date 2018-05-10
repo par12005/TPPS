@@ -209,7 +209,6 @@ After the data has been submitted and approved, the user will recieve an email w
 - Access in-progress submissions through user's Tripal account
 - Validation across Tree Accession/VCF/WGS/TSA files
 - Admin Interface for submission approval
-- Option for users to say whether they aligned reads against the genome to call the SNPs (then they give us the SRA number for the read sets and select an existing target genome) or a direct URL to reference if it is something we don't have
 - TPPS needs a header on the first page with instructions and likely some information on what will be required so users can prepare
 - File upload info bugs
 - E-mails to end users, final submission screen check, profile details of what submission contains
