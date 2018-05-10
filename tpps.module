@@ -524,12 +524,41 @@ function tpps_master($form, &$form_state){
 	
 	
     global $user;
+    //dpm($user);
     if (isset($user->roles[1]) and $user->roles[1] == 'anonymous user'){
         $destination = drupal_get_destination();
         drupal_goto('user/login', array('query' => $destination));
     }
     else{
-        $form_state['saved_values']['Hellopage']['primaryAuthor'] = $user->name;
+  	$and = db_and();
+	$and->condition('value', $user->mail);
+	$and->condition('type_id', '50268');
+	$contact_id = db_select('chado.contactprop', 'contactprop')
+	    ->fields('contactprop', array('contact_id'))
+	    ->condition($and)
+	    ->execute()
+	    ->fetchAssoc();
+	$contact_id = $contact_id['contact_id'];
+        $name = db_select('chado.contact', 'contact')
+	    ->fields('contact', array('name'))
+	    ->condition('contact_id', $contact_id)
+	    ->execute()
+	    ->fetchAssoc();
+	$name = $name['name'];
+	$form_state['saved_values']['Hellopage']['primaryAuthor'] = $name;
+	$and = db_and();
+	$and->condition('contact_id', $contact_id);
+	$and->condition('type_id', '72');
+	$org = db_select('chado.contactprop', 'contactprop')
+	    ->fields('contactprop', array('value'))
+	    ->condition($and)
+	    ->execute()
+	    ->fetchAssoc();
+	$org = $org['value'];
+	$form_state['saved_values']['Hellopage']['organization'] = $org;
+	//dpm($contact_id);
+	//dpm($name);
+	//dpm($org);
     }
     
     if (!isset($form_state['stage'])){
