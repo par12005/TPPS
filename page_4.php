@@ -263,9 +263,6 @@ function page_4_create_form(&$form, $form_state){
           '#title' => t('Genotype Information:')
         );
         
-	/*
-         * This will be the options for genome references. I can't do any testing at this time, because the dev site is being wonky.
-         **/ 
         $options = array(
 	  'key' => 'filename',
 	  'recurse' => FALSE
@@ -805,6 +802,14 @@ function page_4_validate_form(&$form, &$form_state){
         $bio_id = $snps['BioProject-id'];
         $assembly_user = $snps['assembly-user'];
         $assembly_check = $snps['assembly-check'];
+        $ref_genome = $genotype['ref-genome'];
+        
+        if ($ref_genome === '0'){
+            form_set_error("$id][genotype][ref-genome", "Reference Genome: field is required.");
+        }
+        elseif($ref_genome === 'Other' and $genotype['ref-genome-other'] === ''){
+            form_set_error("$id][genotype][ref-genome-other", "Custom Reference Genome: field is required.");
+        }
         
         if ($marker_check === '000'){
             form_set_error("$id][genotype][marker-type", "Genotype Marker Type: field is required.");
