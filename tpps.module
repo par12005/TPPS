@@ -565,7 +565,6 @@ function tpps_master($form, &$form_state){
         $form_state['stage'] = 'Hellopage';
     }
     
-    
     $form['step'] = array(
       '#type' => 'textfield',
       '#disabled' => TRUE,
@@ -591,6 +590,10 @@ function tpps_master($form, &$form_state){
         case 'fourthPage':
             include_once('page_4.php');
             page_4_create_form($form, $form_state);
+            break;
+        
+        case 'summarypage':
+            summary_create_form($form, $form_state);
             break;
         
         default:
@@ -676,8 +679,15 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'thirdPage';
             }
             else{
+                $form_state['stage'] = 'summarypage';
+            }
+        case 'summarypage':
+            if ($form_state['triggering_element']['#value'] == 'Back'){
+                $form_state['stage'] = 'fourthPage';
+            }
+            else{
                 dpm('submit');
-                submit_all($form, $form_state);
+                //submit_all($form, $form_state);
                 drupal_goto('<front>');
             }
             break;
@@ -1826,6 +1836,23 @@ function parse_xlsx($location){
     
     return $content;
     
+}
+
+function summary_create_form($form, $form_state){
+    
+    
+    $form['Back'] = array(
+      '#type' => 'submit',
+      '#value' => t('Back'),
+      '#prefix' => '<div id="tpps_form_summary"></div>',
+    );
+    
+    $form['Next'] = array(
+      '#type' => 'submit',
+      '#value' => t('Next'),
+    );
+    
+    return $form;
 }
 
 function tpps_test_page($form, &$form_state){
