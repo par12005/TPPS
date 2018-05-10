@@ -263,7 +263,10 @@ function page_4_create_form(&$form, $form_state){
           '#title' => t('Genotype Information:')
         );
         
-	$options = array(
+	/*
+         * This will be the options for genome references. I can't do any testing at this time, because the dev site is being wonky.
+         * 
+        $options = array(
 	  'key' => 'name',
 	  'recurse' => FALSE
 	);
@@ -295,7 +298,7 @@ function page_4_create_form(&$form, $form_state){
           '#title' => t('Reference Genome used:'),
           '#options' => $ref_genome_arr,
           '#default_value' => isset($values[$id]['genotype']['ref-genome']) ? $values[$id]['genotype']['ref-genome'] : 0,
-        );
+        );*/
         
         $fields['marker-type'] = array(
           '#type' => 'checkboxes',
