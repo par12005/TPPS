@@ -265,9 +265,9 @@ function page_4_create_form(&$form, $form_state){
         
 	/*
          * This will be the options for genome references. I can't do any testing at this time, because the dev site is being wonky.
-         * 
+         **/ 
         $options = array(
-	  'key' => 'name',
+	  'key' => 'filename',
 	  'recurse' => FALSE
 	);
 	
@@ -278,27 +278,45 @@ function page_4_create_form(&$form, $form_state){
         $ref_genome_arr[0] = '- Select -';
         
 	foreach($results as $key=>$value){
-		dpm($key);
+		//dpm($key);
 		$query = db_select('chado.organismprop', 'organismprop')
 			->fields('organismprop', array('organism_id'))
 			->condition('value', $key)
 			->execute()
 			->fetchAssoc();
-		dpm($query['organism_id']);
+		//dpm($query['organism_id']);
 		$query = db_select('chado.organism', 'organism')
 			->fields('organism', array('genus', 'species'))
 			->condition('organism_id', $query['organism_id'])
 			->execute()
 			->fetchAssoc();
-		dpm($query['genus'] . $query['species']);
+		//dpm($query['genus'] . " " . $query['species']);
+		
+		$versions = file_scan_directory("/linuxshare/projects/treegenes/tgwebprod_store/FTP/Genomes/$key", '/^v([0-9]|.)+$/', $options);
+		//dpm($versions);
+		foreach($versions as $item){
+			array_push($ref_genome_arr, $query['genus'] . " " . $query['species'] . " " . $item->filename);
+		}
 	}
+	$ref_genome_arr["Other"] = 'Other';
 	
         $fields['ref-genome'] = array(
           '#type' => 'select',
           '#title' => t('Reference Genome used:'),
           '#options' => $ref_genome_arr,
           '#default_value' => isset($values[$id]['genotype']['ref-genome']) ? $values[$id]['genotype']['ref-genome'] : 0,
-        );*/
+        );//*/
+
+	$fields['ref-genome-other'] = array(
+	  '#type' => 'textfield',
+	  '#title' => t('URL to reference Genome:'),
+	  '#default_value' => isset($values[$id]['genotype']['ref-genome-other']) ? $values[$id]['genotype']['ref-genome-other'] : NULL,
+	  '#states' => array(
+	    'visible' => array(
+	      ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'Other'),
+	    )
+	  )
+	);
         
         $fields['marker-type'] = array(
           '#type' => 'checkboxes',
