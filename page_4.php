@@ -275,25 +275,26 @@ function page_4_create_form(&$form, $form_state){
         $ref_genome_arr[0] = '- Select -';
         
 	foreach($results as $key=>$value){
-		//dpm($key);
-		$query = db_select('chado.organismprop', 'organismprop')
-			->fields('organismprop', array('organism_id'))
-			->condition('value', $key)
-			->execute()
-			->fetchAssoc();
-		//dpm($query['organism_id']);
-		$query = db_select('chado.organism', 'organism')
-			->fields('organism', array('genus', 'species'))
-			->condition('organism_id', $query['organism_id'])
-			->execute()
-			->fetchAssoc();
-		//dpm($query['genus'] . " " . $query['species']);
-		
-		$versions = file_scan_directory("/linuxshare/projects/treegenes/tgwebprod_store/FTP/Genomes/$key", '/^v([0-9]|.)+$/', $options);
-		//dpm($versions);
-		foreach($versions as $item){
-			array_push($ref_genome_arr, $query['genus'] . " " . $query['species'] . " " . $item->filename);
-		}
+            //dpm($key);
+            $query = db_select('chado.organismprop', 'organismprop')
+                ->fields('organismprop', array('organism_id'))
+                ->condition('value', $key)
+                ->execute()
+                ->fetchAssoc();
+            //dpm($query['organism_id']);
+            $query = db_select('chado.organism', 'organism')
+                ->fields('organism', array('genus', 'species'))
+                ->condition('organism_id', $query['organism_id'])
+                ->execute()
+                ->fetchAssoc();
+            //dpm($query['genus'] . " " . $query['species']);
+
+            $versions = file_scan_directory("/linuxshare/projects/treegenes/tgwebprod_store/FTP/Genomes/$key", '/^v([0-9]|.)+$/', $options);
+            //dpm($versions);
+            foreach($versions as $item){
+                $opt_string = $query['genus'] . " " . $query['species'] . " " . $item->filename;
+                $ref_genome_arr[$opt_string] = $opt_string;
+            }
 	}
 	$ref_genome_arr["Other"] = 'Other';
 	
