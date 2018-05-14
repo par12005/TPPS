@@ -294,12 +294,6 @@ function tpps_compare_temp($table, $column, $is_primary = FALSE, array $conditio
 
 function tpps_init_project($form, &$form_state){
     
-    
-    /*
-     * need to add conditions for when there are not projects already in the public OR temp tables
-     */
-    
-    
     //Get next dbxref_id and accession # for project
     $dbxref_id = tpps_compare_temp('dbxref', 'dbxref_id', TRUE) + 1;
     $accession = tpps_compare_temp('dbxref', 'accession', FALSE, array('accession', db_like('TGDR') . '%', 'LIKE'));
