@@ -331,8 +331,6 @@ function tpps_init_project($form, &$form_state){
         ->fields($values);
         //->execute();
     
-    //tpps_create_record('tpps_dbxref', $values);
-
     $form_state['dbxref_id'] = $dbxref_id;
     $form_state['accession'] = $accession;
     
@@ -440,25 +438,50 @@ function tpps_page_build(&$page){
     
     //dpm($page['content']['system_main']['step']['#default_value']);
     
-    $blockObject = block_load('views', 'tpps_status');
-    $blockObject->title = ($page['content']['system_main']['step']['#default_value'] != 'summarypage') ? 'TPPS Status' : '';
-    $blockObject->subject = '';
-    $blockObject->region = 'Content';
-    $block = _block_get_renderable_array(_block_render_blocks(array($blockObject)));
-    $tpps_status = $block['views_tpps_status']['#markup'];
-    if ($page['content']['system_main']['step']['#default_value'] != 'summarypage'){
-        $tpps_status = "<div class='block block-system contextual-links-region block-menu'>$tpps_status</div>";
-        drupal_add_region_content('sidebar_first', $tpps_status);
-    }
-    else {
-        $tpps_status = "<div id='tpps-status'></br>$tpps_status</div>";
-        drupal_add_region_content('content', $tpps_status);
+    if (isset($page['content']['system_main']['step']) and $page['content']['system_main']['step']['#default_value'] != 'frontpage'){
+        $blockObject = block_load('views', 'tpps_status');
+        $blockObject->title = ($page['content']['system_main']['step']['#default_value'] != 'summarypage') ? 'TPPS Status' : '';
+        $blockObject->subject = '';
+        $blockObject->region = 'Content';
+        $block = _block_get_renderable_array(_block_render_blocks(array($blockObject)));
+        $tpps_status = $block['views_tpps_status']['#markup'];
+        if ($page['content']['system_main']['step']['#default_value'] != 'summarypage'){
+            $tpps_status = "<div class='block block-system contextual-links-region block-menu'>$tpps_status</div>";
+            drupal_add_region_content('sidebar_first', $tpps_status);
+        }
+        else {
+            $tpps_status = "<div id='tpps-status'></br>$tpps_status</div>";
+            drupal_add_region_content('content', $tpps_status);
+        }
     }
     
     return $page;
 }
 
 function tpps_master($form, &$form_state){
+    
+    global $user;
+    
+    if (!isset($form_state['stage'])){
+        $form_state['stage'] = 'frontpage';
+    }
+    
+    $form['step'] = array(
+      '#type' => 'textfield',
+      '#disabled' => TRUE,
+      '#default_value' => $form_state['stage'],
+    );
+    
+    if ($form_state['stage'] == 'frontpage' and isset($user->roles[1]) and $user->roles[1] == 'anonymous user'){
+        front_create_form($form, $form_state);
+        
+        drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+        
+        return $form;
+    }
+    else {
+        $form_state['stage'] = 'Hellopage';
+    }
     
     if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])){
         tpps_init_project($form, $form_state);
@@ -543,10 +566,8 @@ function tpps_master($form, &$form_state){
 	/******************************************
 	END of status bar code
 	*******************************************/
-	
-	
-    global $user;
-    //dpm($user);
+    
+    dpm($user);
     if (isset($user->roles[1]) and $user->roles[1] == 'anonymous user'){
         $destination = drupal_get_destination();
         drupal_goto('user/login', array('query' => $destination));
@@ -583,16 +604,6 @@ function tpps_master($form, &$form_state){
 	//dpm($org);
     }
     
-    if (!isset($form_state['stage'])){
-        $form_state['stage'] = 'Hellopage';
-    }
-    
-    $form['step'] = array(
-      '#type' => 'textfield',
-      '#disabled' => TRUE,
-      '#default_value' => $form_state['stage'],
-    );
-    
     switch ($form_state['stage']){
         case 'Hellopage':
             include_once('page_1.php');
@@ -622,8 +633,6 @@ function tpps_master($form, &$form_state){
             print_r('Invalid form stage.');
             break;
     }
-    
-    //print_r($form_state['stage']);
     
     drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
     
@@ -674,6 +683,10 @@ function tpps_master_submit($form, &$form_state){
     $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
     
     switch ($form_state['stage']){
+        case 'frontpage':
+            $form_state['stage'] = 'Hellopage';
+            break;
+        
         case 'Hellopage':
             $form_state['stage'] = 'secondPage';
             break;
@@ -1868,6 +1881,50 @@ function parse_xlsx($location){
     
 }
 
+function front_create_form(&$form, $form_state){
+    
+    global $base_url;
+    
+    $form['Next'] = array(
+      '#type' => 'submit',
+      '#value' => t('Continue to TPPS'),
+      '#prefix' => 
+"<div>
+Welcome to TPPS!<br><br>
+TPPS is a <a href='https://www.drupal.org' target='blank'>Drupal</a> module built to extend the functionality of the <a href='tripal.info' target='blank'>Tripal</a> toolset. The purpose of the module is to present users with an easy-to-use method of uploading data from association genetics experiments to the <a href='http://gmod.org/wiki/Introduction_to_Chado' target='blank'>CHADO</a> database schema. Once the data is submitted, it can be used by tools like <a href='$base_url/cartogratree' target='blank'>CartograTree</a>.<br><br>
+To get started, you will need to have a few things handy:<br>
+<ul>
+    <li>An enabled and approved TreeGenes account - you can create one <a href='$base_url/user/register'>here</a>. There may be a waiting period to have your account approved by a TreeGenes administrator.</li>
+    <li>Information about the paper connected to your study, and the organisms being studied. This must include at least the following:
+        <ul>
+            <li>Primary author of the publication</li>
+            <li>Organization of the Primary Author</li>
+            <li>Publication year</li>
+            <li>Publication title</li>
+            <li>Publication abstract</li>
+            <li>Journal the publication can be found in</li>
+            <li>Genus and species of the organism(s) being studied</li>
+        </ul>
+    </li>
+    <li>Metadata about the study itself. This must include at least the following:
+        <ul>
+            <li>Dates when the study took place (month, year)</li>
+            <li>The location of the study (coordinates or country/region)</li>
+            <li>Type of study (natural population, growth chamber, common garden, etc.)</li>
+            <li>Type of data collected (some combination of genotype, phenotype, and environmental)</li>
+            <li>Relevant quantitative information based on the type of study, such as the seasons of a natural population study, or the soil pH of a growth chamber study</li>
+        </ul>
+    </li>
+    <li>Geographic locations of the trees (for common garden studies, this would be the location of the source tree). This should be a spreadsheet with a column for tree identifiers and column(s) for the location of each tree.</li>
+    <li>Genotypic and/or phenotypic data and metadata (depending on the type(s) of data collected).</li>
+</ul>
+If you would like to submit your data, you can click the button 'Continue to TPPS' below!<br><br>
+</div>" 
+    );
+    
+    return $form;
+}
+
 function summary_create_form(&$form, $form_state){
     
     $form['Back'] = array(
@@ -1984,7 +2041,7 @@ function tpps_block_view_alter(&$data, $block) {
 		if(isset($_SESSION['tgdr_submit_data'][0]['publication']['secondaryAuthors']['number'])) {
 			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Secondary Authors: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['publication']['secondaryAuthors']['number'])) . "<br />";
 		}
-                $organism_number = $_SESSION['tgdr_submit_data'][0]['organism']['number'];
+                $organism_number = (isset($_SESSION['tgdr_submit_data'][0]['organism']['number'])) ? $_SESSION['tgdr_submit_data'][0]['organism']['number'] : NULL;
 		if(isset($organism_number)) {
 			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organisms: '. filter_xss(check_plain($organism_number)) . "<br />";
 		}	
