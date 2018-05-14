@@ -741,33 +741,36 @@ function tpps_submit_email($form, $form_state){
     global $user;
     
     $to = $user->mail;
+    $from = "nginx@tgwebdev.cam.uchc.edu";
     $subject = "TPPS Submission Received";
     $message = 
-"Congratulations!
+"Congratulations!<br><br>
 
-Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:
-    - Primary Author: {$form_state['values']['Hellopage']['primaryAuthor']}
-    - Organization: {$form_state['values']['Hellopage']['organization']}
-    - Publication title: {$form_state['values']['Hellopage']['publication']['title']}
-    - Journal: {$form_state['values']['Hellopage']['publication']['journal']}
-    - Organisms: {$form_state['values']['Hellopage']['organism']['number']}
+Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
+    <li>Primary Author: {$form_state['values']['Hellopage']['primaryAuthor']}</li>
+    <li>Organization: {$form_state['values']['Hellopage']['organization']}</li>
+    <li>Publication title: {$form_state['values']['Hellopage']['publication']['title']}</li>
+    <li>Journal: {$form_state['values']['Hellopage']['publication']['journal']}</li>
+    <li>Organisms: {$form_state['values']['Hellopage']['organism']['number']}</li>
 ";
     for ($i = 1; $i <= $form_state['values']['Hellopage']['organism']['number']; $i++){
         $message .= 
-"    - Organism $i: {$form_state['values']['Hellopage']['organism'][$i]['species']}
+"   <li>Organism $i: {$form_state['values']['Hellopage']['organism'][$i]['species']}</li>
 ";
     }
     $message .= 
-"    - Study Type: {$form_state['values']['secondPage']['studyType']}
-    - Data Type: {$form_state['values']['secondPage']['dataType']}
+"   <li>Study Type: {$form_state['values']['secondPage']['studyType']}</li>
+    <li>Data Type: {$form_state['values']['secondPage']['dataType']}</li></ul><br>
 
-If you have any questions about your submission, please feel free to contact us at https://tgwebdev.cam.uchc.edu/Drupal/contactform
+If you have any questions about your submission, please feel free to contact us <a href='https://tgwebdev.cam.uchc.edu/Drupal/contactform'>here</a>.
 ";
-    $headers = array(
-      'From' => 'dev@tgwebdev.cam.uchc.edu',
-      'Reply-To' => 'dev@tgwebdev.cam.uchc.edu',
-      'X-Mailer' => 'PHP/' . phpversion()
-    );
+    
+    $headers[] = 'MIME-Version: 1.0';
+    $headers[] = 'Content-type: text/html; charset=iso-8859-1';
+
+    // Additional headers
+    $headers[] = "To: Mary <$to>";
+    $headers[] = "From: Nginx web server <$from>";
     
     dpm($to);
     dpm($subject);
