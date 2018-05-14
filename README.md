@@ -210,7 +210,7 @@ After the data has been submitted and approved, the user will recieve an email w
 - Validation across Tree Accession/VCF/WGS/TSA files
 - Admin Interface for submission approval
 - File upload info bugs
-- E-mails to end users, profile details of what submission contains
+- Profile details of what submission contains
 
 # Resources
 
