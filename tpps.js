@@ -229,8 +229,9 @@ jQuery(document).ready(function () {
                 }
             }
         }
-        else if (jQuery("#edit-step")[0].value === 'summarypage'){
-            jQuery("#block-views-tpps-status").prependTo("#tpps-master");
+        
+        if (jQuery("#edit-step")[0].value === 'summarypage'){
+            jQuery("#tpps-status").insertAfter(".tgdr_form_status");
         }
     }
 });

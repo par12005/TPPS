@@ -436,6 +436,28 @@ function tpps_get_unique_columns($table){
     return $result;
 }
 
+function tpps_page_build(&$page){
+    
+    //dpm($page['content']['system_main']['step']['#default_value']);
+    
+    $blockObject = block_load('views', 'tpps_status');
+    $blockObject->title = ($page['content']['system_main']['step']['#default_value'] != 'summarypage') ? 'TPPS Status' : '';
+    $blockObject->subject = '';
+    $blockObject->region = 'Content';
+    $block = _block_get_renderable_array(_block_render_blocks(array($blockObject)));
+    $tpps_status = $block['views_tpps_status']['#markup'];
+    if ($page['content']['system_main']['step']['#default_value'] != 'summarypage'){
+        $tpps_status = "<div class='block block-system contextual-links-region block-menu'>$tpps_status</div>";
+        drupal_add_region_content('sidebar_first', $tpps_status);
+    }
+    else {
+        $tpps_status = "<div id='tpps-status'></br>$tpps_status</div>";
+        drupal_add_region_content('content', $tpps_status);
+    }
+    
+    return $page;
+}
+
 function tpps_master($form, &$form_state){
     
     if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])){
@@ -1848,14 +1870,6 @@ function parse_xlsx($location){
 
 function summary_create_form(&$form, $form_state){
     
-    $blockObject = block_load('views', 'tpps_status');
-    $blockObject->title = '';
-    $blockObject->subject = '';
-    $blockObject->region = 'Content';
-    $block = _block_get_renderable_array(_block_render_blocks(array($blockObject)));
-    $output = '<div id="tpps_form_summary">' . drupal_render($block) . '</div>';
-    print $output;
-    
     $form['Back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
@@ -1863,7 +1877,7 @@ function summary_create_form(&$form, $form_state){
     
     $form['Next'] = array(
       '#type' => 'submit',
-      '#value' => t('Next'),
+      '#value' => t('Submit'),
     );
     
     return $form;
