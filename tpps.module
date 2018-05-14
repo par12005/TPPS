@@ -462,26 +462,26 @@ function tpps_master($form, &$form_state){
     
     global $user;
     
-    if (!isset($form_state['stage'])){
+    if (!isset($form_state['stage']) and isset($user->roles[1]) and $user->roles[1] == 'anonymous user'){
         $form_state['stage'] = 'frontpage';
-    }
-    
-    $form['step'] = array(
-      '#type' => 'textfield',
-      '#disabled' => TRUE,
-      '#default_value' => $form_state['stage'],
-    );
-    
-    if ($form_state['stage'] == 'frontpage' and isset($user->roles[1]) and $user->roles[1] == 'anonymous user'){
+        
         front_create_form($form, $form_state);
         
         drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
         
         return $form;
     }
-    else {
+    elseif (!isset($form_state['stage'])){
         $form_state['stage'] = 'Hellopage';
     }
+    
+    //dpm($form_state['stage']);
+    
+    $form['step'] = array(
+      '#type' => 'textfield',
+      '#disabled' => TRUE,
+      '#default_value' => $form_state['stage'],
+    );
     
     if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])){
         tpps_init_project($form, $form_state);
@@ -567,7 +567,7 @@ function tpps_master($form, &$form_state){
 	END of status bar code
 	*******************************************/
     
-    dpm($user);
+    //dpm($user);
     if (isset($user->roles[1]) and $user->roles[1] == 'anonymous user'){
         $destination = drupal_get_destination();
         drupal_goto('user/login', array('query' => $destination));
