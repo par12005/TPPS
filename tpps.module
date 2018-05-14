@@ -747,29 +747,47 @@ function tpps_submit_email($form, $form_state){
 "Congratulations!<br><br>
 
 Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
-    <li>Primary Author: {$form_state['values']['Hellopage']['primaryAuthor']}</li>
-    <li>Organization: {$form_state['values']['Hellopage']['organization']}</li>
-    <li>Publication title: {$form_state['values']['Hellopage']['publication']['title']}</li>
-    <li>Journal: {$form_state['values']['Hellopage']['publication']['journal']}</li>
-    <li>Organisms: {$form_state['values']['Hellopage']['organism']['number']}</li>
+    <li>Primary Author: {$form_state['saved_values']['Hellopage']['primaryAuthor']}</li>
+    <li>Organization: {$form_state['saved_values']['Hellopage']['organization']}</li>
+    <li>Publication title: {$form_state['saved_values']['Hellopage']['publication']['title']}</li>
+    <li>Journal: {$form_state['saved_values']['Hellopage']['publication']['journal']}</li>
+    <li>Organisms: {$form_state['saved_values']['Hellopage']['organism']['number']}</li>
 ";
-    for ($i = 1; $i <= $form_state['values']['Hellopage']['organism']['number']; $i++){
+    for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
         $message .= 
-"   <li>Organism $i: {$form_state['values']['Hellopage']['organism'][$i]['species']}</li>
+"   <li>Organism $i: {$form_state['saved_values']['Hellopage']['organism'][$i]['species']}</li>
 ";
     }
+    $study_options = array(
+      0 => '- Select -',
+      1 => 'Natural Population (Landscape)',
+      2 => 'Growth Chamber',
+      3 => 'Greenhouse',
+      4 => 'Experimental/Common Garden',
+      5 => 'Plantation',
+    );
+    $data_options = array(
+      '- Select -',
+      'Genotype x Phenotype',
+      'Genotype',
+      'Genotype x Phenotype x Environment',
+      'Phenotype x Environment',
+      'Genotype x Environment'
+    );
+    $study_type = $study_options[$form_state['saved_values']['secondPage']['studyType']];
+    $data_type = $data_options[$form_state['saved_values']['secondPage']['dataType']];
     $message .= 
-"   <li>Study Type: {$form_state['values']['secondPage']['studyType']}</li>
-    <li>Data Type: {$form_state['values']['secondPage']['dataType']}</li></ul><br>
+"   <li>Study Type: $study_type</li>
+    <li>Data Type: $data_type</li></ul>
 
-If you have any questions about your submission, please feel free to contact us <a href='https://tgwebdev.cam.uchc.edu/Drupal/contactform'>here</a>.
+If you have any questions about your submission, please feel free to contact us <a href='https://tgwebdev.cam.uchc.edu/Drupal/contactform'>here</a>.<br><br>
 ";
     
     $headers[] = 'MIME-Version: 1.0';
     $headers[] = 'Content-type: text/html; charset=iso-8859-1';
 
     // Additional headers
-    $headers[] = "To: Mary <$to>";
+    $headers[] = "To: <$to>";
     $headers[] = "From: Nginx web server <$from>";
     
     dpm($to);
