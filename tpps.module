@@ -2068,8 +2068,18 @@ function tpps_block_view_alter(&$data, $block) {
                     if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype'])) {
                             $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
                     }
+                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file'])) {
+                            $genotype_file_name = file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']['fid'])->filename;
+                            $genotype_url = check_plain(file_create_url(file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']['fid'])->uri));
+                            $content .= "<img src='$base_url/misc/message-16-ok.png'>Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                    }
                     if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype'])) {
                             $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
+                    }
+                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])) {
+                            $phenotype_file_name = file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])->filename;
+                            $phenotype_url = check_plain(file_create_url(file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])->uri));
+                            $content .= "<img src='$base_url/misc/message-16-ok.png'>Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
                     }
                     $content .= "<hr />";
                 }
