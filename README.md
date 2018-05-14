@@ -211,7 +211,7 @@ After the data has been submitted and approved, the user will recieve an email w
 - Admin Interface for submission approval
 - TPPS needs a header on the first page with instructions and likely some information on what will be required so users can prepare
 - File upload info bugs
-- E-mails to end users, final submission screen check, profile details of what submission contains
+- E-mails to end users, profile details of what submission contains
 
 # Resources
 
