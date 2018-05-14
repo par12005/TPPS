@@ -790,10 +790,10 @@ If you have any questions about your submission, please feel free to contact us 
     $headers[] = "To: <$to>";
     $headers[] = "From: Nginx web server <$from>";
     
-    dpm($to);
-    dpm($subject);
-    dpm($message);
-    dpm($headers);
+//    dpm($to);
+//    dpm($subject);
+//    dpm($message);
+//    dpm($headers);
     
     mail($to, $subject, $message, implode("\r\n", $headers));
     
