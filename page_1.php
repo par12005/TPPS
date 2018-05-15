@@ -342,10 +342,6 @@ function page_1_validate_form(&$form, &$form_state){
     }*/
     
     if ($form_state['submitted'] == '1'){
-        form_set_error('submit', 'error');
-        
-        dpm($form_state['values']['secondPage']['publication']['secondaryAuthors']['columns']);
-        dpm($form_state['values']['secondPage']['publication']['secondaryAuthors']['selectedcolumns']);
         
         $form_values = $form_state['values'];
         $primary_author = $form_values['primaryAuthor'];
