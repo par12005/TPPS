@@ -1890,6 +1890,9 @@ function parse_xlsx($location){
     //modified from https://gist.github.com/searbe/3284011
     
     $content = array();
+    //need to use this path for the vm
+    //$dir = '/var/www/html/Drupal/sites/default/files';
+    //need to use this path for the dev server
     $dir = '/var/www/Drupal/sites/default/files';
     
     $zip = new ZipArchive();
@@ -2001,7 +2004,55 @@ function summary_create_form(&$form, $form_state){
 
 function tpps_test_page($form, &$form_state){
     
-    tpps_submit_email($form, $form_state);
+    $form['text'] = array(
+      '#type' => 'textfield',
+      '#title' => t('simple')
+    );
+    
+    $form['file'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Please upload a file.'),
+      '#upload_location' => 'public://',
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('txt csv xlsx')
+      ),
+      '#tree' => TRUE
+    );
+    
+    $form['file']['columns'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Columns:'),
+      '#suffix' => '<div id="file-sample-data"></div>'
+    );
+    
+    //print_r($form_state);
+    
+    if (isset($form_state['values']) and $form_state['values']['file'] != 0){
+        $file = file_load($form_state['values']['file']);
+        $file_name = explode('//', $file->uri);
+        $file_name = $file_name[1];
+        
+        $location = "/var/www/html/Drupal/sites/default/files/$file_name";
+        $content = parse_xlsx($location);
+        
+        //dpm($content);
+        //dpm($location);
+        //dpm($form_state);
+        
+        $required_columns = array(
+          'First Name',
+          'Last Name',
+          'Middle Initial'
+        );
+        
+        foreach ($required_columns as $req){
+            $form['file']['columns'][$req] = array(
+              '#type' => 'select',
+              '#title' => t($req),
+              '#options' => $content['headers'],
+            );
+        }
+    }
     
     $form['Next'] = array(
       '#type' => 'submit',
@@ -2013,6 +2064,9 @@ function tpps_test_page($form, &$form_state){
 
 function tpps_test_page_validate($form, &$form_state){
     
+    //dpm($form_state);
+    
+    form_set_error('Next', 'error');
 }
 
 function tpps_test_page_submit($form, &$form_state) {

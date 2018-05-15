@@ -27,7 +27,7 @@ function page_1_create_form(&$form, $form_state){
         return $form;
     }
     
-    function publication(&$form, $values){
+    function publication(&$form, $values, $form_state){
         
         function year(&$form, $values){
             
@@ -97,7 +97,7 @@ function page_1_create_form(&$form, $form_state){
             return $form;
         }
         
-        function secondary_authors(&$form, $values){
+        function secondary_authors(&$form, $values, $form_state){
             
             $form['publication']['secondaryAuthors'] = array(
               '#type' => 'fieldset',
@@ -162,10 +162,82 @@ function page_1_create_form(&$form, $form_state){
                 'visible' => array(
                   ':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
                 )
-              )
+              ),
+              '#tree' => TRUE
             );
+            
+            $form['publication']['secondaryAuthors']['file']['columns'] = array(
+              '#type' => 'fieldset',
+              '#title' => t('Columns'),
+              '#states' => array(
+                'invisible' => array(
+                  ':input[name="publication[secondaryAuthors][file]"]' => array('value' => '0')
+                )
+              ),
+            );
+            
+            $file = 0;
+            if (isset($form_state['values']['publication']['secondaryAuthors']['file']) and $form_state['values']['publication']['secondaryAuthors']['file'] != 0){
+                $file = $form_state['values']['publication']['secondaryAuthors']['file'];
+            }
+            elseif (isset($form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['file']) and $form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['file'] != 0){
+                $file = $form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['file'];
+            }
+            
+            if ($file != 0){
+                $file = file_load($file);
+                $file_name = explode('//', $file->uri);
+                $file_name = $file_name[1];
+
+                //vm
+                //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
+                //dev site
+                $location = "/var/www/Drupal/sites/default/files/$file_name";
+                $content = parse_xlsx($location);
+                //dpm($content);
+                
+                $required_columns = array(
+                  'First Name',
+                  'Last Name',
+                  'Middle Initial'
+                );
+                
+                $options_arr = $content['headers'];
+                $options_arr['- Select -'] = '- Select -';
+                
+                foreach ($required_columns as $req){
+                    $form['publication']['secondaryAuthors']['file']['columns'][$req] = array(
+                      '#type' => 'select',
+                      '#title' => t($req),
+                      '#options' => $options_arr,
+                      '#default_value' => isset($values['publication']['secondaryAuthors']['file-columns'][$req]) ? $values['publication']['secondaryAuthors']['file-columns'][$req] : '- Select -',
+                    );
+                }
+                
+                // display sample data
+                $display = "";
+                $display .= "<div><table><tbody>";
+                $display .= "<tr>";
+                foreach ($content['headers'] as $item){
+                    $display .= "<th>$item</th>";
+                }
+                $display .= "</tr>";
+                for ($i = 0; $i < 3; $i++){
+                    if (isset($content[$i])){
+                        $display .= "<tr>";
+                        foreach ($content['headers'] as $item){
+                            $display .= "<th>{$content[$i][$item]}</th>";
+                        }
+                        $display .= "</tr>";
+                    }
+                }
+                $display .= "</tbody></table></div>";
+                
+                $form['publication']['secondaryAuthors']['file']['columns']['#suffix'] = $display;
+                
+            }
 			
-			//This is the beginning of the process data form field which shows the columns detected from file
+/*			//This is the beginning of the process data form field which shows the columns detected from file
 			//as well as the dynamic select fields
 			$form_item_prefix = 'edit-publication-secondaryauthors'; //id related
 			$form_item_columns = array(
@@ -206,7 +278,7 @@ function page_1_create_form(&$form, $form_state){
 					'#title' => t($column_caption),
 					
 					'#options' => array(
-						/* 0 => t('- Select -'), */
+						/* 0 => t('- Select -'), 
 					),
 					
 					'#default_value' => isset($values['publication']['secondaryAuthors']['selected_columns'][$id]) ? $values['publication']['secondaryAuthors']['selected_columns'][$id] : 0,
@@ -216,7 +288,7 @@ function page_1_create_form(&$form, $form_state){
 						)
 					)			  
 				);
-			}
+			}*/
 			
             
             return $form;
@@ -241,7 +313,7 @@ function page_1_create_form(&$form, $form_state){
           '#required' => true,
         );
         
-        secondary_authors($form, $values);
+        secondary_authors($form, $values, $form_state);
         
         year($form, $values);
 
@@ -315,7 +387,7 @@ function page_1_create_form(&$form, $form_state){
     
     user_info($form, $values);
     
-    publication($form, $values);
+    publication($form, $values, $form_state);
     
     organism($form, $values);
     
@@ -343,6 +415,9 @@ function page_1_validate_form(&$form, &$form_state){
     
     if ($form_state['submitted'] == '1'){
         
+        //dpm($form['publication']['secondaryAuthors']['file']['columns']);
+        //dpm($form_state['values']['publication']['secondaryAuthors']['file']['columns']);
+        
         $form_values = $form_state['values'];
         $primary_author = $form_values['primaryAuthor'];
         $organization = $form_values['organization'];
@@ -360,16 +435,26 @@ function page_1_validate_form(&$form, &$form_state){
         $organism = $form_values['organism'];
         $organism_number = $form_values['organism']['number'];
         
-        function validate_secondary_authors($secondary_authors_file){
+        function validate_secondary_authors($secondary_authors_file, $form, &$form_state){
             if ($secondary_authors_file != ""){
-                $file = file(file_load($secondary_authors_file)->uri);
-                $file_contents = explode("\r", $file[0]);
-                $columns = explode(",", $file_contents[0]);
-
-                if (count($columns) != 3){
-                    $column_string = str_replace(',', ', ', $file_contents[0]);
-                    form_set_error('publication][secondaryAuthors][file', "Secondary Authors file: Must provide last name, first name, and middle initial. The provided file has: $column_string.");
+                
+                $required_columns = array(
+                  'First Name',
+                  'Last Name',
+                  'Middle Initial'
+                );
+                
+                $form_state['values']['publication']['secondaryAuthors']['file-columns'] = array();
+                
+                foreach ($required_columns as $req){
+                    $form_state['values']['publication']['secondaryAuthors']['file-columns'][$req] = $form['publication']['secondaryAuthors']['file']['columns'][$req]['#value'];
+                    
+                    $col_val = $form_state['values']['publication']['secondaryAuthors']['file-columns'][$req];
+                    if ($col_val == '- Select -'){
+                        form_set_error("publication][secondaryAuthors][file][columns][$req", "$req: please select the appropriate column.");
+                    }
                 }
+                
                 //print_r($columns);
                 //print_r("files stored in " . file_create_url('public://'));
             }
@@ -399,7 +484,7 @@ function page_1_validate_form(&$form, &$form_state){
                 }
             }
             elseif ($secondary_authors_check == '1'){
-                validate_secondary_authors($secondary_authors_file);
+                validate_secondary_authors($secondary_authors_file, $form, $form_state);
             }
 
             if ($publication_status == 2 and $year_submitted == 0){
