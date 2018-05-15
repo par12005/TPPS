@@ -637,6 +637,25 @@ function tpps_master_validate($form, &$form_state){
 	tpps_master_add_excel_load_js();
 	
     if ($form_state['triggering_element']['#value'] == 'Back'){
+        
+        if ($form_state['stage'] == 'thirdPage'){
+            $required_columns = array(
+              'Tree Identifier',
+              'Country',
+              'Region',
+              'Latitude',
+              'Longitude'
+            );
+            
+            $form_state['values']['tree-accession']['file-columns'] = array();
+                
+            foreach ($required_columns as $req){
+                if (isset($form['tree-accession']['file']['columns'][$req])){
+                    $form_state['values']['tree-accession']['file-columns'][$req] = $form['tree-accession']['file']['columns'][$req]['#value'];
+                }
+            }
+        }
+        
         return;
     }
     
@@ -2240,33 +2259,35 @@ function tpps_block_view_alter(&$data, $block) {
 				unset($_SESSION['tgdr_submit_data'][3]);
 			}
 			$_SESSION['tgdr_submit_data'][3] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
+                        
+                        for ($i = 1; $i <= $organism_number; $i++){
+                            $current_name = $_SESSION['tgdr_submit_data'][0]['organism'][$i]['species'];
+                            if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"])) {
+                                    $content .= "<br />";
+                                    $content .= "Step 4 - Complete<br />";
+                                    $content .= "Submit Data<br /><hr />";
+                                    $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  "<br />";
+                            }
+                            if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype'])) {
+                                    $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
+                            }
+                            if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file'])) {
+                                    $genotype_file_name = file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']['fid'])->filename;
+                                    $genotype_url = check_plain(file_create_url(file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']['fid'])->uri));
+                                    $content .= "<img src='$base_url/misc/message-16-ok.png'>Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                            }
+                            if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype'])) {
+                                    $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
+                            }
+                            if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])) {
+                                    $phenotype_file_name = file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])->filename;
+                                    $phenotype_url = check_plain(file_create_url(file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])->uri));
+                                    $content .= "<img src='$base_url/misc/message-16-ok.png'>Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                            }
+                            $content .= "<hr />";
+                        }
 		}
-                for ($i = 1; $i <= $organism_number; $i++){
-                    $current_name = $_SESSION['tgdr_submit_data'][0]['organism'][$i]['species'];
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"])) {
-                            $content .= "<br />";
-                            $content .= "Step 4 - Complete<br />";
-                            $content .= "Submit Data<br /><hr />";
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  "<br />";
-                    }
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype'])) {
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
-                    }
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file'])) {
-                            $genotype_file_name = file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']['fid'])->filename;
-                            $genotype_url = check_plain(file_create_url(file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']['fid'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'>Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
-                    }
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype'])) {
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
-                    }
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])) {
-                            $phenotype_file_name = file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])->filename;
-                            $phenotype_url = check_plain(file_create_url(file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'>Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
-                    }
-                    $content .= "<hr />";
-                }
+                
 		
 		$content .= "</div>";
 		$data['content'] = t($content);
