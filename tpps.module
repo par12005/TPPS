@@ -1910,9 +1910,9 @@ function parse_xlsx($location){
     
     $content = array();
     //need to use this path for the vm
-    //$dir = '/var/www/html/Drupal/sites/default/files';
+    $dir = '/var/www/html/Drupal/sites/default/files';
     //need to use this path for the dev server
-    $dir = '/var/www/Drupal/sites/default/files';
+    //$dir = '/var/www/Drupal/sites/default/files';
     
     $zip = new ZipArchive();
     $zip->open($location);
