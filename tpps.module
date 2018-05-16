@@ -76,168 +76,8 @@ function tpps_menu() {
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK
     );
-	
-	
-	/******************************************
-	This creates a URL for processing Excel header columns
-	It's AJAX but our very own. It returns a json array with the columns
-	*******************************************/	    
-	$items['master/get-excel-header-columns-and-sample-rows'] = array(
-		'page callback' => 'ajax_get_excel_header_columns_and_sample_rows',
-		'access arguments' => array('access content'),
-		'type' => MENU_CALLBACK,
-	);
-	
-	
+    
     return $items;
-}
-
-function tpps_ajaxCallHandler() {
-
-    global $user;
-
-    if (empty($_GET['token']) || !drupal_valid_token($_GET['token'], 'my secret value' . $user->uid)) {
-        return MENU_ACCESS_DENIED;
-    }
-
-    echo "Hello, " . filter_xss($_GET['name']) . "!";
-}
-
-/******************************************
-This processes Excel header columns
-It's AJAX but our very own. It returns a json array
-*******************************************/	  
-function ajax_get_excel_header_columns_and_sample_rows($file_location) {
-
-	$results = array();
-	$file_location = filter_xss($file_location);
-	  
-	global $base_url;
-	//Replace $base_url with DRUPAL_ROOT
-	$file_location = str_ireplace('|', '/', $file_location);
-	$file_location = DRUPAL_ROOT . $file_location; //this should contain the file_location path
-
-	//Process FILE using the excel parser - TODO
-	//$results['file_location'] = $file_location;
-	$results_content = parse_xlsx_headers_and_sample_rows($file_location);
-	
-	//print_r($file_location);
-	//print_r($results_content);
-	//$results = $results_content['headers'];
-	
-	drupal_json_output($results_content);
-}
-
-function tpps_master_add_excel_load_js() {
-	global $base_url;
-	
-	
-	/******************************************
-	Javascript process excel file data (JS)
-	Oh yeah, it get's rather messy, thanks to the lack of
-	documentation on manage_file api, I had to do this...
-	*******************************************/	
-	$js = "
-			function load_excel_header_columns_and_sample_rows(id_of_managed_file, id_of_column_textfield, id_prefix, column_names) {
-				//genus = jQuery('#helper_genus_genus_select_' + index).val();
-				//window.alert(genus);	
-
-				managed_file_element = document.getElementById(id_of_managed_file);
-				if(managed_file_element == 'undefined') {
-					window.alert('Could not find the id of the managed file, please contact administrator');
-					return;
-				}
-				a_elements = managed_file_element.getElementsByTagName('a');
-				if(a_elements[0] == null) {
-					window.alert('You must upload a file before you can populate column data!');
-					textfield_element = document.getElementById(id_of_column_textfield);
-					textfield_element.value = '';
-					return;
-				}
-				else {
-					//window.alert(a_elements[0]);
-					//window.alert(a_elements[0].href);
-					base_url = '$base_url';
-					link = a_elements[0].href;
-					link = link.split(base_url).join('');
-					link = link.split('/').join('|');
-					//window.alert(link);
-				}
-				
-				jQuery.getJSON('$base_url/master/get-excel-header-columns-and-sample-rows/' +  link, function( data ) {
-					//window.alert(data);
-
-
-					var items = [];
-					//items.push('- Select Species -');
-					textfield_element = document.getElementById(id_of_column_textfield);
-					jQuery.each(data['headers'], function( key, val ) {
-						//console.log(key); 
-						if(key != '') {
-							items.push(key + ',' + val); //concat as a CSV key,val record
-							//window.alert(key + ':' + val);
-							textfield_element.value = textfield_element.value + val + ','; 							
-						}
-					});
-				
-					//This processes the suffixes of the ids of each select item specified as CSV values
-					var id_suffixes = column_names;
-					var suffixes = id_suffixes.split(','); //get individual values by splitting by commas
-					var suffixes_count = suffixes.length;
-					var items_count = items.length;
-					
-					//Generate the options list which contains all columns
-					item_options = '';
-					item_options = item_options +  '<option>Select column</option>';
-					for(j=0; j<items_count; j++) {
-						item_comma_parts = items[j].split(',');
-						//window.alert(item_comma_parts);
-						
-						item_options = item_options + '<option value=\'' + item_comma_parts[1] + '\'>'  + item_comma_parts[1] +  '</option>';
-
-					}
-					//window.alert(item_options);
-					
-					
-					for (i=0; i<suffixes_count; i++) {
-						//window.alert(id_prefix + '-' + suffixes[i]);
-						//console.log(id_prefix + '-' + suffixes[i]);
-						var select_element = document.getElementById(id_prefix + '-' + suffixes[i]);
-						//window.alert(select_element);
-						select_element.innerHTML = item_options;
-					}
-					
-					//Process Rows
-					var row_count = 0;
-					var sample_table = '<h3>Sample data detected</h3><table><thead>';
-					
-					jQuery.each(data['headers'], function( key, val ) {
-						//console.log(key); 
-						sample_table = sample_table + '<td>' + val + '</td>'; 
-					});					
-					
-					sample_table = sample_table + '</thead>';
-					sample_table = sample_table + '<tbody>';
-					jQuery.each(data['rows'], function( index ) {
-						//window.alert(index);
-						//window.alert(data['rows'][row_count]);
-						sample_table = sample_table + '<tr>';
-						jQuery.each(data['rows'][row_count], function (key, val) {
-							//window.alert(val);
-							sample_table = sample_table + '<td>' + val + '</td>';
-						});
-						row_count = row_count + 1;
-						sample_table = sample_table + '</tr>';
-					});					
-					sample_table = sample_table + '</tbody></table>';
-					
-					table = document.getElementById(id_prefix + '-sample-data');
-					table.innerHTML = sample_table;
-				});
-			}	
-	";
-	
-	drupal_add_js($js, 'inline');
 }
 	
 function tpps_compare_temp($table, $column, $is_primary = FALSE, array $condition = array()){
@@ -482,7 +322,6 @@ function tpps_master($form, &$form_state){
     }
     
 	global $base_url;
-	tpps_master_add_excel_load_js();
 	
 	/******************************************
 	Add status bar showing completed parts at the top
@@ -634,7 +473,6 @@ function tpps_master($form, &$form_state){
 }
 
 function tpps_master_validate($form, &$form_state){
-	tpps_master_add_excel_load_js();
 	
     if ($form_state['triggering_element']['#value'] == 'Back'){
         
@@ -752,8 +590,6 @@ function tpps_master_validate($form, &$form_state){
 
 function tpps_master_submit($form, &$form_state){
     
-	tpps_master_add_excel_load_js();
-	
     $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
     
     switch ($form_state['stage']){
@@ -1902,67 +1738,6 @@ function _phenotype_autocomplete($string){
     }
     
     drupal_json_output($matches);
-}
-
-function parse_xlsx_headers_and_sample_rows($location){
-    //modified from https://gist.github.com/searbe/3284011
-    
-    $content = array();
-    $dir = DRUPAL_ROOT . '/sites/default/files';
-    //echo $dir;
-    $zip = new ZipArchive();
-    $zip->open($location);
-    $zip->extractTo($dir);
-
-    $strings = simplexml_load_file($dir . '/xl/sharedStrings.xml');
-    $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
-
-    $xlrows = $sheet->sheetData->row;
-	//echo file_get_contents($dir . '/xl/worksheets/sheet1.xml');
-	$row_count = 0;
-    foreach ($xlrows as $xlrow) {
-        $arr = array();
-		$row_count = $row_count + 1;
-        foreach ($xlrow->c as $cell) {
-            
-            $v = (string) $cell->v;
-
-            if (isset($cell['t']) && $cell['t'] == 's') {
-                $s  = array();
-                $si = $strings->si[(int) $v];
-                $si->registerXPathNamespace('n', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
-                
-                foreach($si->xpath('.//n:t') as $t) {
-                    $s[] = (string) $t;
-                }
-                
-                $v = implode($s);
-            }
-            $arr[] = $v;
-        }
-
-        if ($row_count == 1) {
-            $headers = $arr;
-            $content['headers'] = $headers;
-			
-			
-        } 
-		
-        else{
-            $values = array_pad($arr, count($headers), '');
-            $row    = array_combine($headers, $values);
-            $content['rows'][] = $row;
-			if ($row_count == 3) {
-				break; //exit the parent foreach loop since all we need is the headers
-			}
-        }
-    }
-    
-    @unlink($dir);
-    @unlink($inputFile);
-    
-    return $content;
-    
 }
 
 function parse_xlsx($location){
