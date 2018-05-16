@@ -208,8 +208,6 @@ jQuery(document).ready(function () {
     
     jQuery("#edit-step").hide();
     
-    //TODO: add conditions for show/hide of columns selection fieldset
-    
     if (jQuery("#edit-step").length > 0){
         
         jQuery("#progress").css('font-size', '1.5rem');

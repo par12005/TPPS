@@ -533,6 +533,11 @@ function page_4_create_form(&$form, $form_state){
         $fields['file']['columns'] = array(
           '#type' => 'fieldset',
           '#title' => t('Columns'),
+          '#states' => array(
+            'invisible' => array(
+              ':input[name="' . $id . '_genotype_file_upload_button"]' => array('value' => 'Upload')
+            )
+          )
         );
         
         $file = 0;
@@ -628,6 +633,11 @@ function page_4_create_form(&$form, $form_state){
             $form["organism-$i"]['phenotype']['file']['columns'] = array(
               '#type' => 'fieldset',
               '#title' => t('Columns'),
+              '#states' => array(
+                'invisible' => array(
+                  ':input[name="organism-' . $i . '_phenotype_file_upload_button"]' => array('value' => 'Upload')
+                )
+              )
             );
 
             $file = 0;
