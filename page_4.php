@@ -519,70 +519,80 @@ function page_4_create_form(&$form, $form_state){
           )
         );
         
-		$fields['file'] = array(
-			'#type' => 'managed_file',
-			'#title' => t('Genotype File:'),
-			'#upload_location' => 'public://',
-			'#upload_validators' => array('file_validate_extensions' => array('xlsx')),
-			'#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
-		);
-		
-		//This is the beginning of the process data form field which shows the columns detected from file
-		//as well as the dynamic select fields
-		$organism_index = explode('-', $id);
-		$id = $organism_index[1];
-		$form_item_prefix = 'edit-organism-' . $id . '-genotype'; //id related
-		$form_item_columns = array(
-			'treeid' => 'Tree ID',
-			'other' => 'Other',
-		);
-		
-		//Put columns into a csv format to add as an argument to the js function
-		$form_item_columns_ids = "";
-		foreach($form_item_columns as $id => $column_caption) {
-			$form_item_columns_ids .= $id . ","; 
-		}
-		$form_item_columns_ids = substr($form_item_columns_ids, 0, count($form_item_columns_ids) - 2);
-		
+        $fields['file'] = array(
+          '#type' => 'managed_file',
+          '#title' => t('Genotype File:'),
+          '#upload_location' => 'public://',
+          '#upload_validators' => array(
+            'file_validate_extensions' => array('xlsx')
+          ),
+          '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
+          '#tree' => TRUE
+        );
+        
+        $fields['file']['columns'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Columns'),
+        );
+        
+        $file = 0;
+        if (isset($form_state['values'][$id]['genotype']['file']) and $form_state['values'][$id]['genotype']['file'] != 0){
+            $file = $form_state['values'][$id]['genotype']['file'];
+        }
+        elseif (isset($form_state['saved_values']['fourthPage'][$id]['genotype']['file']) and $form_state['saved_values']['fourthPage'][$id]['genotype']['file'] != 0){
+            $file = $form_state['saved_values']['fourthPage'][$id]['genotype']['file'];
+        }
+        
+        if ($file != 0){
+            $file = file_load($file);
+            $file_name = explode('//', $file->uri);
+            $file_name = $file_name[1];
 
-		
-		//The actual form object
-		$fields['columns'] = array(
-		  '#type' => 'textarea',
-		  '#disabled' => true,
-		  '#maxlength' => 1024,
-		  '#rows' => 2,
-		  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix-selectedcolumns\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
-		  //'#field_suffix' => $form_item_dynamic_column_html,
-			//'#title' => t('Please provide the order of the columns in the file above, separated by commas.'),
-			//'#title' => t('Column data:'),
-			//'#default_value' => isset($values["organism-$i"]['phenotype']['columns']) ? $values["organism-$i"]['phenotype']['columns'] : NULL,
-			/*
-			'#states' => array(
-				'visible' => array(
-					':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
-				)
-			)*/
-		);
+            //vm
+            //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
+            //dev site
+            $location = "/var/www/Drupal/sites/default/files/$file_name";
+            $content = parse_xlsx($location);
 
+            $required_columns = array(
+              'Tree Identifier',
+            );
 
-		foreach($form_item_columns as $id => $column_caption) {
-			$fields['selectedcolumns'][$id] = array(
-				'#type' => 'select',
-				'#title' => t($column_caption),
-				
-				'#options' => array(
-					/* 0 => t('- Select -'), */
-				),
-				
-				'#default_value' => isset($values['selected_columns'][$id]) ? $values['selected_columns'][$id] : 0,
-				'#states' => array(
-					'visible' => array(
-						//':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
-					)
-				)			  
-			);
-		}		
+            $options_arr = $content['headers'];
+            $options_arr['- Select -'] = '- Select -';
+
+            foreach ($required_columns as $req){
+                $fields['file']['columns'][$req] = array(
+                  '#type' => 'select',
+                  '#title' => t($req),
+                  '#options' => $options_arr,
+                  '#default_value' => isset($values[$id]['genotype']['file-columns'][$req]) ? $values[$id]['genotype']['file-columns'][$req] : '- Select -',
+                );
+            }
+
+            // display sample data
+            $display = "";
+            $display .= "<div><table><tbody>";
+            $display .= "<tr>";
+            foreach ($content['headers'] as $item){
+                $display .= "<th>$item</th>";
+            }
+            $display .= "</tr>";
+            for ($i = 0; $i < 3; $i++){
+                if (isset($content[$i])){
+                    $display .= "<tr>";
+                    foreach ($content['headers'] as $item){
+                        $display .= "<th>{$content[$i][$item]}</th>";
+                    }
+                    $display .= "</tr>";
+                }
+            }
+            $display .= "</tbody></table></div>";
+
+            $fields['file']['columns']['#suffix'] = $display;
+
+        }
+        
         return $fields;
     }
     
@@ -789,7 +799,7 @@ function page_4_validate_form(&$form, &$form_state){
         }
     }
     
-    function validate_genotype($genotype, $id){
+    function validate_genotype($genotype, $id, $form, &$form_state){
         $genotype_file = $genotype['file'];
         $marker_type = $genotype['marker-type'];
         $snps_check = $marker_type['SNPs'];
@@ -859,14 +869,30 @@ function page_4_validate_form(&$form, &$form_state){
             }
         }
         elseif ($ssrs != '0' and $genotype['SSRs/cpSSRs'] == ''){
-            form_set_error("$id][SSRs/cpSSRs", "SSRs/cpSSRs: field is required.");
+            form_set_error("$id][genotype][SSRs/cpSSRs", "SSRs/cpSSRs: field is required.");
         }
         elseif ($other_marker != '0' and $genotype['other-marker'] == ''){
-            form_set_error("$id][other-marker", "Other Genotype marker: field is required.");
+            form_set_error("$id][genotype][other-marker", "Other Genotype marker: field is required.");
         }
     
         if ($genotype_file == ''){
-            form_set_error("$id][file", "Genotype file: field is required.");
+            form_set_error("$id][genotype][file", "Genotype file: field is required.");
+        }
+        else {
+            $required_columns = array(
+              'Tree Identifier',
+            );
+
+            $form_state['values'][$id]['genotype']['file-columns'] = array();
+
+            foreach ($required_columns as $req){
+                $form_state['values'][$id]['genotype']['file-columns'][$req] = $form[$id]['genotype']['file']['columns'][$req]['#value'];
+
+                $col_val = $form_state['values'][$id]['genotype']['file-columns'][$req];
+                if ($col_val == '- Select -'){
+                    form_set_error("$id][genotype][file][columns][$req", "$req: please select the appropriate column.");
+                }
+            }
         }
     }
     
@@ -884,7 +910,7 @@ function page_4_validate_form(&$form, &$form_state){
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
             $genotype = $organism['genotype'];
-            validate_genotype($genotype, "organism-$i");
+            validate_genotype($genotype, "organism-$i", $form, $form_state);
         }
     }
     

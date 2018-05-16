@@ -677,6 +677,22 @@ function tpps_master_validate($form, &$form_state){
                 }
             }
         }
+        elseif ($form_state['stage'] == 'fourthPage'){
+            $required_columns = array(
+              'Tree Identifier',
+            );
+            
+            for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
+                
+                $form_state['values']["organism-$i"]['genotype']['file-columns'] = array();
+                
+                foreach ($required_columns as $req){
+                    if (isset($form["organism-$i"]['genotype']['file']['columns'][$req])){
+                        $form_state['values']["organism-$i"]['genotype']['file-columns'][$req] = $form["organism-$i"]['genotype']['file']['columns'][$req]['#value'];
+                    }
+                }
+            }
+        }
         
         return;
     }
