@@ -613,69 +613,82 @@ function page_4_create_form(&$form, $form_state){
         
         if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
             $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i");
-			$form["organism-$i"]['phenotype']['file'] = array(
-				 '#type' => 'managed_file',
-				 '#title' => t('Please upload a file containing all of your phenotypic data:'),
-				 '#upload_location' => 'public://',
-				 '#upload_validators' => array(
-				   'file_validate_extensions' => array('csv tsv xlsx')
-				 ),
-				 '#default_value' => isset($values["organism-$i"]['phenotype-content']) ? $values["organism-$i"]['phenotype-content'] : NULL,
-			);
-			
-			//This is the beginning of the process data form field which shows the columns detected from file
-			//as well as the dynamic select fields
-			$form_item_prefix = 'edit-organism-' . $i . '-phenotype'; //id related
-			$form_item_columns = array(
-				'treeid' => 'Tree ID',
+            
+            $form["organism-$i"]['phenotype']['file'] = array(
+              '#type' => 'managed_file',
+              '#title' => t('Please upload a file containing all of your phenotypic data:'),
+              '#upload_location' => 'public://',
+              '#upload_validators' => array(
+                'file_validate_extensions' => array('csv tsv xlsx')
+              ),
+              '#default_value' => isset($values["organism-$i"]['phenotype']['file']) ? $values["organism-$i"]['phenotype']['file'] : NULL,
+              '#tree' => TRUE,
+            );
+            
+            $form["organism-$i"]['phenotype']['file']['columns'] = array(
+              '#type' => 'fieldset',
+              '#title' => t('Columns'),
+            );
 
-			);
-			
-			//Put columns into a csv format to add as an argument to the js function
-			$form_item_columns_ids = "";
-			foreach($form_item_columns as $id => $column_caption) {
-				$form_item_columns_ids .= $id . ","; 
-			}
-			$form_item_columns_ids = substr($form_item_columns_ids, 0, count($form_item_columns_ids) - 2);
-			
-			
-			//The actual form object
-			$form["organism-$i"]['phenotype']['columns'] = array(
-			  '#type' => 'textarea',
-			  '#disabled' => true,
-			  '#maxlength' => 1024,
-			  '#rows' => 2,
-			  '#field_prefix' => "<a class='populate_excel_column_button' onclick='load_excel_header_columns_and_sample_rows(\"$form_item_prefix-file-upload\", \"$form_item_prefix-columns\", \"$form_item_prefix-selectedcolumns\", \"$form_item_columns_ids\")'>Populate Column Data</a>",
-			  '#field_suffix' => $form_item_dynamic_column_html,
-				//'#title' => t('Please provide the order of the columns in the file above, separated by commas.'),
-				//'#title' => t('Column data:'),
-				'#default_value' => isset($values["organism-$i"]['phenotype']['columns']) ? $values["organism-$i"]['phenotype']['columns'] : NULL,
-				/*
-				'#states' => array(
-					'visible' => array(
-						':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
-					)
-				)*/
-			);
+            $file = 0;
+            if (isset($form_state['values']["organism-$i"]['phenotype']['file']) and $form_state['values']["organism-$i"]['phenotype']['file'] != 0){
+                $file = $form_state['values']["organism-$i"]['phenotype']['file'];
+            }
+            elseif (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'] != 0){
+                $file = $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'];
+            }
+            
+            if ($file != 0){
+                $file = file_load($file);
+                $file_name = explode('//', $file->uri);
+                $file_name = $file_name[1];
 
-			foreach($form_item_columns as $id => $column_caption) {
-				$form["organism-$i"]['phenotype']['selectedcolumns'][$id] = array(
-					'#type' => 'select',
-					'#title' => t($column_caption),
-					
-					'#options' => array(
-						/* 0 => t('- Select -'), */
-					),
-					
-					'#default_value' => isset($values["organism-$i"]['phenotype']['selectedcolumns'][$id]) ? $values["organism-$i"]['phenotype']['selectedcolumns'][$id] : 0,
-					'#states' => array(
-						'visible' => array(
-							//':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
-						)
-					)			  
-				);
-			}
-			
+                //vm
+                //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
+                //dev site
+                $location = "/var/www/Drupal/sites/default/files/$file_name";
+                $content = parse_xlsx($location);
+
+                $required_columns = array(
+                  'Tree Identifier',
+                  'Phenotype Name/Identifier',
+                  'Value(s)'
+                );
+
+                $options_arr = $content['headers'];
+                $options_arr['- Select -'] = '- Select -';
+
+                foreach ($required_columns as $req){
+                    $form["organism-$i"]['phenotype']['file']['columns'][$req] = array(
+                      '#type' => 'select',
+                      '#title' => t($req),
+                      '#options' => $options_arr,
+                      '#default_value' => isset($values["organism-$i"]['phenotype']['file-columns'][$req]) ? $values["organism-$i"]['phenotype']['file-columns'][$req] : '- Select -',
+                    );
+                }
+
+                // display sample data
+                $display = "";
+                $display .= "<div><table><tbody>";
+                $display .= "<tr>";
+                foreach ($content['headers'] as $item){
+                    $display .= "<th>$item</th>";
+                }
+                $display .= "</tr>";
+                for ($j = 0; $j < 3; $j++){
+                    if (isset($content[$j])){
+                        $display .= "<tr>";
+                        foreach ($content['headers'] as $item){
+                            $display .= "<th>{$content[$j][$item]}</th>";
+                        }
+                        $display .= "</tr>";
+                    }
+                }
+                $display .= "</tbody></table></div>";
+
+                $form["organism-$i"]['phenotype']['file']['columns']['#suffix'] = $display;
+
+            }
         }
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
@@ -706,7 +719,7 @@ function ajax_bioproject_callback(&$form, $form_state){
 
 function page_4_validate_form(&$form, &$form_state){
     
-    function validate_phenotype($phenotype, $id){
+    function validate_phenotype($phenotype, $id, $form, &$form_state){
         $phenotype_number = $phenotype['number'];
         $phenotype_check = $phenotype['check'];
         $phenotype_file = $phenotype['metadata'];
@@ -714,7 +727,7 @@ function page_4_validate_form(&$form, &$form_state){
         
         if ($phenotype_check == '1'){
             if ($phenotype_file == ''){
-                form_set_error("$id][file", "Phenotype File: field is required.");
+                form_set_error("$id][phenotype][file", "Phenotype File: field is required.");
             }
             else{
                 //validate phenotype file
@@ -729,7 +742,7 @@ function page_4_validate_form(&$form, &$form_state){
                 $environment_check = $current_phenotype['environment-check'];
 
                 if ($name == ''){
-                    form_set_error("$id][$i][name", "Phenotype $i Name: field is required.");
+                    form_set_error("$id][phenotype][$i][name", "Phenotype $i Name: field is required.");
                 }
 
                 if ($environment_check == '1'){
@@ -737,11 +750,11 @@ function page_4_validate_form(&$form, &$form_state){
                     $units = $current_phenotype['environment']['units'];
 
                     if ($description == ''){
-                        form_set_error("$id][$i][environment][description", "Phenotype $i Description: field is required.");
+                        form_set_error("$id][phenotype][$i][environment][description", "Phenotype $i Description: field is required.");
                     }
 
                     if ($units == ''){
-                        form_set_error("$id][$i][environment][units", "Phenotype $i Units: field is required.");
+                        form_set_error("$id][phenotype][$i][environment][units", "Phenotype $i Units: field is required.");
                     }
                 }
                 else{
@@ -756,46 +769,64 @@ function page_4_validate_form(&$form, &$form_state){
                     $developmental = $current_phenotype['non-environment']['developmental'];
 
                     if ($type == '0'){
-                        form_set_error("$id][$i][non-environment][type", "Phenotype $i Type: field is required.");
+                        form_set_error("$id][phenotype][$i][non-environment][type", "Phenotype $i Type: field is required.");
                     }
                     elseif ($type == '1'){
                         if ($binary_1 == ''){
-                            form_set_error("$id][$i][non-environment][binary][1", "Phenotype $i Binary Type 1: field is required.");
+                            form_set_error("$id][phenotype][$i][non-environment][binary][1", "Phenotype $i Binary Type 1: field is required.");
                         }
                         if ($binary_2 == ''){
-                            form_set_error("$id][$i][non-environment][binary][2", "Phenotype $i Binary Type 2: field is required.");
+                            form_set_error("$id][phenotype][$i][non-environment][binary][2", "Phenotype $i Binary Type 2: field is required.");
                         }
                     }
                     elseif($type == '2'){
                         if ($min == ''){
-                            form_set_error("$id][$i][non-environment][quantitative][min", "Phenotype $i Minimum: field is required.");
+                            form_set_error("$id][phenotype][$i][non-environment][quantitative][min", "Phenotype $i Minimum: field is required.");
                         }
                         if ($max == ''){
-                            form_set_error("$id][$i][non-environment][quantitative][max", "Phenotype $i Maximum: field is required.");
+                            form_set_error("$id][phenotype][$i][non-environment][quantitative][max", "Phenotype $i Maximum: field is required.");
                         }
                     }
 
                     if ($description == ''){
-                        form_set_error("$id][$i][non-environment][description", "Phenotype $i Description: field is required.");
+                        form_set_error("$id][phenotype][$i][non-environment][description", "Phenotype $i Description: field is required.");
                     }
 
                     if ($units == '' and $type == '2'){
-                        form_set_error("$id][$i][non-environment][units", "Phenotype $i Units: field is required.");
+                        form_set_error("$id][phenotype][$i][non-environment][units", "Phenotype $i Units: field is required.");
                     }
 
                     if ($structure == '0'){
-                        form_set_error("$id][$i][non-environment][structure", "Phenotype $i Plant Structure: field is required.");
+                        form_set_error("$id][phenotype][$i][non-environment][structure", "Phenotype $i Plant Structure: field is required.");
                     }
 
                     if ($developmental == '0'){
-                        form_set_error("$id][$i][non-environment][developmental", "Phenotype $i Developmental Stage: field is required.");
+                        form_set_error("$id][phenotype][$i][non-environment][developmental", "Phenotype $i Developmental Stage: field is required.");
                     }
                 }
             }
         }
         
         if ($phenotype_content == ''){
-            form_set_error("$id][content", "Phenotypes: field is required.");
+            form_set_error("$id][phenotype][file", "Phenotypes: field is required.");
+        }
+        else {
+            $required_columns = array(
+              'Tree Identifier',
+              'Phenotype Name/Identifier',
+              'Value(s)'
+            );
+
+            $form_state['values'][$id]['phenotype']['file-columns'] = array();
+
+            foreach ($required_columns as $req){
+                $form_state['values'][$id]['phenotype']['file-columns'][$req] = $form[$id]['phenotype']['file']['columns'][$req]['#value'];
+
+                $col_val = $form_state['values'][$id]['phenotype']['file-columns'][$req];
+                if ($col_val == '- Select -'){
+                    form_set_error("$id][phenotype][file][columns][$req", "$req: please select the appropriate column.");
+                }
+            }
         }
     }
     
@@ -905,7 +936,7 @@ function page_4_validate_form(&$form, &$form_state){
         
         if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
             $phenotype = $organism['phenotype'];
-            validate_phenotype($phenotype, "organism-$i][phenotype");
+            validate_phenotype($phenotype, "organism-$i", $form, $form_state);
         }
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){

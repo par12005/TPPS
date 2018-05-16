@@ -678,17 +678,40 @@ function tpps_master_validate($form, &$form_state){
             }
         }
         elseif ($form_state['stage'] == 'fourthPage'){
-            $required_columns = array(
-              'Tree Identifier',
-            );
+            if (isset($form['organism-1']['genotype'])){
+                
+                $required_columns = array(
+                  'Tree Identifier',
+                );
+
+                for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
+
+                    $form_state['values']["organism-$i"]['genotype']['file-columns'] = array();
+
+                    foreach ($required_columns as $req){
+                        if (isset($form["organism-$i"]['genotype']['file']['columns'][$req])){
+                            $form_state['values']["organism-$i"]['genotype']['file-columns'][$req] = $form["organism-$i"]['genotype']['file']['columns'][$req]['#value'];
+                        }
+                    }
+                }
+            }
             
-            for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
+            if (isset($form['organism-1']['phenotype'])){
                 
-                $form_state['values']["organism-$i"]['genotype']['file-columns'] = array();
-                
-                foreach ($required_columns as $req){
-                    if (isset($form["organism-$i"]['genotype']['file']['columns'][$req])){
-                        $form_state['values']["organism-$i"]['genotype']['file-columns'][$req] = $form["organism-$i"]['genotype']['file']['columns'][$req]['#value'];
+                $required_columns = array(
+                  'Tree Identifier',
+                  'Phenotype Name/Identifier',
+                  'Value(s)'
+                );
+
+                for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
+
+                    $form_state['values']["organism-$i"]['phenotype']['file-columns'] = array();
+
+                    foreach ($required_columns as $req){
+                        if (isset($form["organism-$i"]['phenotype']['file']['columns'][$req])){
+                            $form_state['values']["organism-$i"]['phenotype']['file-columns'][$req] = $form["organism-$i"]['phenotype']['file']['columns'][$req]['#value'];
+                        }
                     }
                 }
             }
