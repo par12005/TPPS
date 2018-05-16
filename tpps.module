@@ -639,19 +639,41 @@ function tpps_master_validate($form, &$form_state){
     if ($form_state['triggering_element']['#value'] == 'Back'){
         
         if ($form_state['stage'] == 'thirdPage'){
-            $required_columns = array(
-              'Tree Identifier',
-              'Country',
-              'Region',
-              'Latitude',
-              'Longitude'
-            );
-            
-            $form_state['values']['tree-accession']['file-columns'] = array();
+            if ($form_state['saved_values']['Hellopage']['organism']['number'] == '1' or $form_state['values']['tree-accession']['check'] == '0'){
+                $required_columns = array(
+                  'Tree Identifier',
+                  'Country',
+                  'Region',
+                  'Latitude',
+                  'Longitude'
+                );
+
+                $form_state['values']['tree-accession']['file-columns'] = array();
+
+                foreach ($required_columns as $req){
+                    if (isset($form['tree-accession']['file']['columns'][$req])){
+                        $form_state['values']['tree-accession']['file-columns'][$req] = $form['tree-accession']['file']['columns'][$req]['#value'];
+                    }
+                }
+            }
+            else {
+                $required_columns = array(
+                  'Tree Identifier',
+                  'Country',
+                  'Region',
+                  'Latitude',
+                  'Longitude'
+                );
                 
-            foreach ($required_columns as $req){
-                if (isset($form['tree-accession']['file']['columns'][$req])){
-                    $form_state['values']['tree-accession']['file-columns'][$req] = $form['tree-accession']['file']['columns'][$req]['#value'];
+                for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
+                    
+                    $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
+
+                    foreach ($required_columns as $req){
+                        if (isset($form['tree-accession']["species-$i"]['file']['columns'][$req])){
+                            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req] = $form['tree-accession']["species-$i"]['file']['columns'][$req]['#value'];
+                        }
+                    }
                 }
             }
         }
@@ -1910,9 +1932,9 @@ function parse_xlsx($location){
     
     $content = array();
     //need to use this path for the vm
-    $dir = '/var/www/html/Drupal/sites/default/files';
+    //$dir = '/var/www/html/Drupal/sites/default/files';
     //need to use this path for the dev server
-    //$dir = '/var/www/Drupal/sites/default/files';
+    $dir = '/var/www/Drupal/sites/default/files';
     
     $zip = new ZipArchive();
     $zip->open($location);
