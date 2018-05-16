@@ -173,7 +173,8 @@ function page_1_create_form(&$form, $form_state){
                 'invisible' => array(
                   ':input[name="publication_secondaryAuthors_file_upload_button"]' => array('value' => 'Upload')
                 )
-              )
+              ),
+              '#description' => 'Please define which columns hold the required data:'
             );
             
             $file = 0;
@@ -195,32 +196,33 @@ function page_1_create_form(&$form, $form_state){
                 $location = "/var/www/Drupal/sites/default/files/$file_name";
                 $content = parse_xlsx($location);
                 
-                $required_columns = array(
+                $column_options = array(
+                  'N/A',
                   'First Name',
                   'Last Name',
                   'Middle Initial'
                 );
                 
-                $options_arr = $content['headers'];
-                $options_arr['- Select -'] = '- Select -';
+                $first = TRUE;
                 
-                foreach ($required_columns as $req){
-                    $form['publication']['secondaryAuthors']['file']['columns'][$req] = array(
+                foreach ($content['headers'] as $item){
+                    $form['publication']['secondaryAuthors']['file']['columns'][$item] = array(
                       '#type' => 'select',
-                      '#title' => t($req),
-                      '#options' => $options_arr,
-                      '#default_value' => isset($values['publication']['secondaryAuthors']['file-columns'][$req]) ? $values['publication']['secondaryAuthors']['file-columns'][$req] : '- Select -',
+                      '#title' => t($item),
+                      '#options' => $column_options,
+                      '#default_value' => isset($values['publication']['secondaryAuthors']['file-columns'][$item]) ? $values['publication']['secondaryAuthors']['file-columns'][$item] : 0,
+                      '#prefix' => "<td>",
+                      '#suffix' => "</td>"
                     );
+                    
+                    if ($first){
+                        $first = FALSE;
+                        $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'] = "<div><table><tbody><tr>" . $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'];
+                    }
                 }
                 
                 // display sample data
-                $display = "";
-                $display .= "<div><table><tbody>";
-                $display .= "<tr>";
-                foreach ($content['headers'] as $item){
-                    $display .= "<th>$item</th>";
-                }
-                $display .= "</tr>";
+                $display = "</tr>";
                 for ($i = 0; $i < 3; $i++){
                     if (isset($content[$i])){
                         $display .= "<tr>";
@@ -232,7 +234,7 @@ function page_1_create_form(&$form, $form_state){
                 }
                 $display .= "</tbody></table></div>";
                 
-                $form['publication']['secondaryAuthors']['file']['columns']['#suffix'] = $display;
+                $form['publication']['secondaryAuthors']['file']['columns'][$item]['#suffix'] .= $display;
                 
             }
             
@@ -381,19 +383,28 @@ function page_1_validate_form(&$form, &$form_state){
             if ($secondary_authors_file != ""){
                 
                 $required_columns = array(
-                  'First Name',
-                  'Last Name',
-                  'Middle Initial'
+                  '1' => 'First Name',
+                  '2' => 'Last Name',
+                  '3' => 'Middle Initial'
                 );
                 
                 $form_state['values']['publication']['secondaryAuthors']['file-columns'] = array();
+                //dpm($form['publication']['secondaryAuthors']['file']['columns']);
                 
-                foreach ($required_columns as $req){
-                    $form_state['values']['publication']['secondaryAuthors']['file-columns'][$req] = $form['publication']['secondaryAuthors']['file']['columns'][$req]['#value'];
-                    
-                    $col_val = $form_state['values']['publication']['secondaryAuthors']['file-columns'][$req];
-                    if ($col_val == '- Select -'){
-                        form_set_error("publication][secondaryAuthors][file][columns][$req", "$req: please select the appropriate column.");
+                foreach ($form['publication']['secondaryAuthors']['file']['columns'] as $req => $val){
+                    if ($req[0] != '#'){
+                        $form_state['values']['publication']['secondaryAuthors']['file-columns'][$req] = $form['publication']['secondaryAuthors']['file']['columns'][$req]['#value'];
+
+                        $col_val = $form_state['values']['publication']['secondaryAuthors']['file-columns'][$req];
+                        if ($col_val != '0'){
+                            $required_columns[$col_val] = NULL;
+                        }
+                    }
+                }
+                
+                foreach ($required_columns as $item){
+                    if ($item != 'NULL'){
+                        form_set_error("publication][secondarAuthors][file][columns][$item", "Secondary Authors file: Please specify a column that holds $item.");
                     }
                 }
             }
