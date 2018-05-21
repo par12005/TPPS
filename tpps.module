@@ -488,9 +488,9 @@ function tpps_master_validate($form, &$form_state){
 
                 $form_state['values']['tree-accession']['file-columns'] = array();
 
-                foreach ($required_columns as $req){
-                    if (isset($form['tree-accession']['file']['columns'][$req])){
-                        $form_state['values']['tree-accession']['file-columns'][$req] = $form['tree-accession']['file']['columns'][$req]['#value'];
+                foreach ($form['tree-accession']['file']['columns'] as $col => $val){
+                    if ($col[0] != '#'){
+                        $form_state['values']['tree-accession']['file-columns'][$col] = $form['tree-accession']['file']['columns'][$col]['#value'];
                     }
                 }
             }

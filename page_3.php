@@ -44,7 +44,8 @@ function page_3_create_form(&$form, $form_state){
         'invisible' => array(
           ':input[name="tree-accession_file_upload_button"]' => array('value' => 'Upload')
         )
-      )
+      ),
+      '#description' => 'Please define which columns hold the required data:'
     );
     
     $file = 0;
@@ -66,7 +67,8 @@ function page_3_create_form(&$form, $form_state){
         $location = "/var/www/Drupal/sites/default/files/$file_name";
         $content = parse_xlsx($location);
 
-        $required_columns = array(
+        $column_options = array(
+          'N/A',
           'Tree Identifier',
           'Country',
           'Region',
@@ -74,26 +76,26 @@ function page_3_create_form(&$form, $form_state){
           'Longitude'
         );
 
-        $options_arr = $content['headers'];
-        $options_arr['- Select -'] = '- Select -';
+        $first = TRUE;
 
-        foreach ($required_columns as $req){
-            $form['tree-accession']['file']['columns'][$req] = array(
+        foreach ($content['headers'] as $item){
+            $form['tree-accession']['file']['columns'][$item] = array(
               '#type' => 'select',
-              '#title' => t($req),
-              '#options' => $options_arr,
-              '#default_value' => isset($values['tree-accession']['file-columns'][$req]) ? $values['tree-accession']['file-columns'][$req] : '- Select -',
+              '#title' => t($item),
+              '#options' => $column_options,
+              '#default_value' => isset($values['tree-accession']['file-columns'][$item]) ? $values['tree-accession']['file-columns'][$item] : 0,
+              '#prefix' => "<td>",
+              '#suffix' => "</td>"
             );
+            
+            if ($first){
+                $first = FALSE;
+                $form['tree-accession']['file']['columns'][$item]['#prefix'] = "<div><table><tbody><tr>" . $form['tree-accession']['file']['columns'][$item]['#prefix'];
+            }
         }
 
         // display sample data
-        $display = "";
-        $display .= "<div><table><tbody>";
-        $display .= "<tr>";
-        foreach ($content['headers'] as $item){
-            $display .= "<th>$item</th>";
-        }
-        $display .= "</tr>";
+        $display = "</tr>";
         for ($i = 0; $i < 3; $i++){
             if (isset($content[$i])){
                 $display .= "<tr>";
@@ -105,7 +107,7 @@ function page_3_create_form(&$form, $form_state){
         }
         $display .= "</tbody></table></div>";
 
-        $form['tree-accession']['file']['columns']['#suffix'] = $display;
+        $form['tree-accession']['file']['columns'][$item]['#suffix'] .= $display;
 
     }
     
@@ -148,7 +150,8 @@ function page_3_create_form(&$form, $form_state){
                 'invisible' => array(
                   ':input[name="tree-accession_species-' . $i . '_file_upload_button"]' => array('value' => 'Upload')
                 )
-              )
+              ),
+              '#description' => 'Please define which columns hold the required data:'
             );
 
             $file = 0;
@@ -170,7 +173,8 @@ function page_3_create_form(&$form, $form_state){
                 $location = "/var/www/Drupal/sites/default/files/$file_name";
                 $content = parse_xlsx($location);
 
-                $required_columns = array(
+                $column_options = array(
+                  'N/A',
                   'Tree Identifier',
                   'Country',
                   'Region',
@@ -178,27 +182,27 @@ function page_3_create_form(&$form, $form_state){
                   'Longitude'
                 );
 
-                $options_arr = $content['headers'];
-                $options_arr['- Select -'] = '- Select -';
+                $first = TRUE;
 
-                foreach ($required_columns as $req){
-                    $form['tree-accession']["species-$i"]['file']['columns'][$req] = array(
+                foreach ($content['headers'] as $item){
+                    $form['tree-accession']["species-$i"]['file']['columns'][$item] = array(
                       '#type' => 'select',
-                      '#title' => t($req),
-                      '#options' => $options_arr,
-                      '#default_value' => isset($values['tree-accession']["species-$i"]['file-columns'][$req]) ? $values['tree-accession']["species-$i"]['file-columns'][$req] : '- Select -',
+                      '#title' => t($item),
+                      '#options' => $column_options,
+                      '#default_value' => isset($values['tree-accession']["species-$i"]['file-columns'][$item]) ? $values['tree-accession']["species-$i"]['file-columns'][$item] : 0,
+                      '#prefix' => "<td>",
+                      '#suffix' => "</td>"
                     );
+
+                    if ($first){
+                        $first = FALSE;
+                        $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'] = "<div><table><tbody><tr>" . $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'];
+                    }
                 }
 
                 // display sample data
-                $display = "";
-                $display .= "<div><table><tbody>";
-                $display .= "<tr>";
-                foreach ($content['headers'] as $item){
-                    $display .= "<th>$item</th>";
-                }
-                $display .= "</tr>";
-                for ($j = 0; $j < 3; $j++){
+                $display = "</tr>";
+                for ($j = 0; $j < 3; $i++){
                     if (isset($content[$j])){
                         $display .= "<tr>";
                         foreach ($content['headers'] as $item){
@@ -209,7 +213,7 @@ function page_3_create_form(&$form, $form_state){
                 }
                 $display .= "</tbody></table></div>";
 
-                $form['tree-accession']["species-$i"]['file']['columns']['#suffix'] = $display;
+                $form['tree-accession']["species-$i"]['file']['columns'][$item]['#suffix'] .= $display;
 
             }	
         }
@@ -236,21 +240,43 @@ function page_3_validate_form(&$form, &$form_state){
             if ($form_state['values']['tree-accession']['file'] != ""){
 
                 $required_columns = array(
-                  'Tree Identifier',
-                  'Country',
-                  'Region',
-                  'Latitude',
-                  'Longitude'
+                  '1' => 'Tree Identifier',
+                  '2' => 'Country',
+                  '4' => 'Latitude',
+                  '5' => 'Longitude'
                 );
-
+                
                 $form_state['values']['tree-accession']['file-columns'] = array();
 
-                foreach ($required_columns as $req){
-                    $form_state['values']['tree-accession']['file-columns'][$req] = $form['tree-accession']['file']['columns'][$req]['#value'];
+                foreach ($form['tree-accession']['file']['columns'] as $req => $val){
+                    if ($req[0] != '#'){
+                        $form_state['values']['tree-accession']['file-columns'][$req] = $form['tree-accession']['file']['columns'][$req]['#value'];
 
-                    $col_val = $form_state['values']['tree-accession']['file-columns'][$req];
-                    if ($col_val == '- Select -'){
-                        form_set_error("tree-accession][file][columns][$req", "$req: please select the appropriate column.");
+                        $col_val = $form_state['values']['tree-accession']['file-columns'][$req];
+                        if ($col_val != '0'){
+                            $required_columns[$col_val] = NULL;
+                        }
+                    }
+                }
+                
+                // if country was provided, Lat and Long are not necessary, and vice versa
+                if ($required_columns['2'] == NULL){
+                    $required_columns['4'] = NULL;
+                    $required_columns['5'] = NULL;
+                }
+                elseif ($required_columns['4'] == NULL or $required_columns['5'] == NULL){
+                    $required_columns['2'] = NULL;
+                }
+                elseif ($required_columns['2'] != NULL and $required_columns['4'] != NULL and $required_columns['5'] != NULL){
+                    $required_columns['2'] = NULL;
+                    $required_columns['4'] = NULL;
+                    $required_columns['5'] = NULL;
+                    form_set_error("tree-accession][file][columns", "Tree Accession file: Please specify a column that holds Location.");
+                }
+                
+                foreach ($required_columns as $item){
+                    if ($item != NULL){
+                        form_set_error("tree-accession][file][columns][$item", "Tree Accession file: Please specify a column that holds $item.");
                     }
                 }
             }

@@ -385,7 +385,6 @@ function page_1_validate_form(&$form, &$form_state){
                 $required_columns = array(
                   '1' => 'First Name',
                   '2' => 'Last Name',
-                  '3' => 'Middle Initial'
                 );
                 
                 $form_state['values']['publication']['secondaryAuthors']['file-columns'] = array();
@@ -403,8 +402,8 @@ function page_1_validate_form(&$form, &$form_state){
                 }
                 
                 foreach ($required_columns as $item){
-                    if ($item != 'NULL'){
-                        form_set_error("publication][secondarAuthors][file][columns][$item", "Secondary Authors file: Please specify a column that holds $item.");
+                    if ($item != NULL){
+                        form_set_error("publication][secondaryAuthors][file][columns][$item", "Secondary Authors file: Please specify a column that holds $item.");
                     }
                 }
             }
