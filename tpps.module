@@ -318,8 +318,8 @@ function tpps_page_build(&$page){
         $block = _block_get_renderable_array(_block_render_blocks(array($blockObject)));
         $tpps_status = $block['views_tpps_status']['#markup'];
         if ($page['content']['system_main']['step']['#default_value'] != 'summarypage'){
-            $tpps_status = "<div class='block block-system contextual-links-region block-menu'>$tpps_status</div>";
-            drupal_add_region_content('sidebar_first', $tpps_status);
+            $tpps_status = "<div class='block block-system contextual-links-region block-menu tpps-status-block'>$tpps_status</div>";
+            drupal_add_region_content('sidebar_second', $tpps_status);
         }
         else {
             $tpps_status = "<div id='tpps-status'></br>$tpps_status</div>";
