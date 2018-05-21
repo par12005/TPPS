@@ -61,7 +61,6 @@ function page_4_create_form(&$form, $form_state){
             
             $fields["$i"] = array(
               '#type' => 'fieldset',
-              '#title' => t("<h2>Phenotype $i:</h2>"),
             );
             
             $fields["$i"]['name'] = array(
@@ -69,6 +68,7 @@ function page_4_create_form(&$form, $form_state){
               '#title' => t("Phenotype $i Name:"),
               '#autocomplete_path' => 'phenotype/autocomplete',
               '#default_value' => isset($values[$id]['phenotype']["$i"]['name']) ? $values[$id]['phenotype']["$i"]['name'] : NULL,
+              '#prefix' => '<label><b>Phenotype $i:</b></label>'
             );
             
             $fields["$i"]['environment-check'] = array(

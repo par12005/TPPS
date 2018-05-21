@@ -101,7 +101,6 @@ function page_1_create_form(&$form, $form_state){
             
             $form['publication']['secondaryAuthors'] = array(
               '#type' => 'fieldset',
-              //'#title' => t('Secondary Authors:'),
               '#states' => array(
                 'visible' => array(
                   array(
@@ -168,6 +167,7 @@ function page_1_create_form(&$form, $form_state){
             
             $form['publication']['secondaryAuthors']['file']['columns'] = array(
               '#type' => 'fieldset',
+              '#title' => t('<h2>Columns</h2>'),
               '#states' => array(
                 'invisible' => array(
                   ':input[name="publication_secondaryAuthors_file_upload_button"]' => array('value' => 'Upload')
