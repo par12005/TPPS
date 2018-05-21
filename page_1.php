@@ -101,7 +101,7 @@ function page_1_create_form(&$form, $form_state){
             
             $form['publication']['secondaryAuthors'] = array(
               '#type' => 'fieldset',
-              '#title' => t('Secondary Authors:'),
+              //'#title' => t('Secondary Authors:'),
               '#states' => array(
                 'visible' => array(
                   array(
@@ -318,12 +318,12 @@ function page_1_create_form(&$form, $form_state){
             
             $form['organism']["$i"] = array(
               '#type' => 'fieldset',
-              '#title' => t("Tree Species $i:"),
+              //'#title' => t("Tree Species $i:"),
             );
             
             $form['organism']["$i"]['species'] = array(
               '#type' => 'textfield',
-              '#title' => t('Species:'),
+              '#title' => t("Species $i:"),
               '#autocomplete_path' => "species/autocomplete",
               '#default_value' => isset($values['organism']["$i"]['species']) ? $values['organism']["$i"]['species'] : NULL,
             );
