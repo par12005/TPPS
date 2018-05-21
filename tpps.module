@@ -310,7 +310,7 @@ function tpps_page_build(&$page){
     
     //dpm($page['content']['system_main']['step']['#default_value']);
     
-    if (isset($page['content']['system_main']['step']) and $page['content']['system_main']['step']['#default_value'] != 'frontpage'){
+    if (isset($page['content']['system_main']['step']) and $page['content']['system_main']['step']['#default_value'] != 'frontpage' and $page['content']['system_main']['step']['#default_value'] != 'Hellopage'){
         $blockObject = block_load('views', 'tpps_status');
         $blockObject->title = ($page['content']['system_main']['step']['#default_value'] != 'summarypage') ? 'TPPS Status' : '';
         $blockObject->subject = '';
@@ -1819,7 +1819,7 @@ function front_create_form(&$form, $form_state){
       '#prefix' => 
 "<div>
 Welcome to TPPS!<br><br>
-TPPS is a <a href='https://www.drupal.org' target='blank'>Drupal</a> module built to extend the functionality of the <a href='tripal.info' target='blank'>Tripal</a> toolset. The purpose of the module is to present users with an easy-to-use method of uploading data from association genetics experiments to the <a href='http://gmod.org/wiki/Introduction_to_Chado' target='blank'>CHADO</a> database schema. Once the data is submitted, it can be used by tools like <a href='$base_url/cartogratree' target='blank'>CartograTree</a>.<br><br>
+The Tripal PopGen Submit (TPPS) workflow provides researchers with a streamlined submission interface for studies resulting from any combination of genotype, phenotype, and environmental data for georeferenced forest trees.  TPPS will guide users through questions about their study design and data in order to collect information on trees, genotypes, and phenotypes if applicable.  Phenotypic, genotypic, and environmental descriptors will be mapped to ontologies were possible and the collected metadata will enable this information to be displayed in <a href='$base_url/cartogratree' target='blank'>CartograTree</a>.  An accession number will be provided to the user following successful completion that uniquely identified this study in the database.  This number should be used in the manuscript describing this work.  Specific flat-files and metadata associated with this identifier can be accessed by the public with this information.<br><br>
 To get started, you will need to have a few things handy:<br>
 <ul>
     <li>An enabled and approved TreeGenes account - you can create one <a href='$base_url/user/register'>here</a>. There may be a waiting period to have your account approved by a TreeGenes administrator.</li>

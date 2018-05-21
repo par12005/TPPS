@@ -209,6 +209,7 @@ jQuery(document).ready(function () {
     jQuery("#edit-step").hide();
     
     if (jQuery("#edit-step").length > 0){
+        jQuery(".region-sidebar-second").hide();
         
         jQuery("#progress").css('font-size', '1.5rem');
         jQuery("#progress").css('margin-bottom', '30px');
