@@ -579,7 +579,7 @@ function page_4_create_form(&$form, $form_state){
                 
                 if ($first){
                     $first = FALSE;
-                    $fields['file']['columns'][$item]['#prefix'] = "<div><table><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
+                    $fields['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
                 }
             }
 
@@ -683,7 +683,7 @@ function page_4_create_form(&$form, $form_state){
             
                     if ($first){
                         $first = FALSE;
-                        $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'] = "<div><table><tbody><tr>" . $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'];
+                        $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'];
                     }
                 }
 
