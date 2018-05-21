@@ -13,7 +13,7 @@ function page_2_create_form(&$form, $form_state){
         $form[$type . 'Date'] = array(
           '#prefix' => "<div class='container-inline'>", 
           '#type' => 'fieldset',
-          '#title' => t('Experiment ' . $type . ' Date'),
+          '#title' => t('<h2>Experiment ' . $type . ' Date</h2>'),
           '#tree' => TRUE,
           '#suffix' => '</div>',
         );
@@ -118,7 +118,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['studyLocation'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Study Location:'),
+          '#title' => t('<h2>Study Location:</h2>'),
           '#tree' => TRUE,
         );
         
@@ -224,7 +224,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['naturalPopulation'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Natural Population/Landscape Information:'),
+          '#title' => t('<h2>Natural Population/Landscape Information:</h2>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -481,7 +481,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['growthChamber'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Growth Chamber Information:'),
+          '#title' => t('<h2>Growth Chamber Information:</h2>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -501,7 +501,7 @@ function page_2_create_form(&$form, $form_state){
 
         $form['growthChamber']['temp'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Temperature Information:'),
+          '#title' => t('<h2>Temperature Information:</h2>'),
           '#description' => t('Please provide temperatures in Degrees Celsius'),
           '#tree' => true,
           '#states' => array(
@@ -525,7 +525,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['growthChamber']['rooting'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Rooting Information:'),
+          '#title' => t('<h2>Rooting Information:</h2>'),
           '#tree' => true,
         );
         
@@ -548,7 +548,6 @@ function page_2_create_form(&$form, $form_state){
         
         $form['growthChamber']['rooting']['soil'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Soil Information:'),
           '#states' => array(
             'visible' => array(
               ':input[name="growthChamber[rooting][option]"]' => array('value' => '3')
@@ -785,7 +784,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['greenhouse'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Greenhouse Information:'),
+          '#title' => t('<h2>Greenhouse Information:</h2>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -803,7 +802,7 @@ function page_2_create_form(&$form, $form_state){
 
         $form['greenhouse']['temp'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Temperature Information:'),
+          '#title' => t('<h2>Temperature Information:</h2>'),
           '#description' => t('Please provide temperatures in Degrees Celsius'),
           '#tree' => true,
           '#states' => array(
@@ -827,7 +826,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['greenhouse']['rooting'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Rooting Information:'),
+          '#title' => t('<h2>Rooting Information:</h2>'),
           '#tree' => true,
         );
         
@@ -850,7 +849,6 @@ function page_2_create_form(&$form, $form_state){
         
         $form['greenhouse']['rooting']['soil'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Soil Information:'),
           '#states' => array(
             'visible' => array(
               ':input[name="greenhouse[rooting][option]"]' => array('value' => '3')
@@ -930,7 +928,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['greenhouse']['rooting']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Treatments:'),
+          '#title' => t('<h2>Treatments:</h2>'),
           '#states' => array(
             'required' => array(
               ':input[name="studyType"]' => array('value' => '3')
@@ -1020,7 +1018,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['commonGarden'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Common Garden Information:'),
+          '#title' => t('<h2>Common Garden Information:</h2>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -1158,7 +1156,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['commonGarden']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Treatments:'),
+          '#title' => t('<h2>Treatments:</h2>'),
         );
         
         $form['commonGarden']['treatment']['check'] = array(
@@ -1197,7 +1195,7 @@ function page_2_create_form(&$form, $form_state){
     function plantation(&$form, $values){
         $form['plantation'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Plantation Information:'),
+          '#title' => t('<h2>Plantation Information:</h2>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -1253,7 +1251,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['plantation']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Treatments:')
+          '#title' => t('<h2>Treatments:</h2>')
         );
         
         $form['plantation']['treatment']['check'] = array(

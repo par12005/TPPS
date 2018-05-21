@@ -39,7 +39,7 @@ function page_3_create_form(&$form, $form_state){
 	
     $form['tree-accession']['file']['columns'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Columns'),
+      '#title' => t('<h2>Columns</h2>'),
       '#states' => array(
         'invisible' => array(
           ':input[name="tree-accession_file_upload_button"]' => array('value' => 'Upload')
@@ -123,7 +123,7 @@ function page_3_create_form(&$form, $form_state){
             
             $form['tree-accession']["species-$i"] = array(
               '#type' => 'fieldset',
-              '#title' => t("Tree Accession information for $name trees:"),
+              '#title' => t("<h2>Tree Accession information for $name trees:</h2>"),
               '#states' => array(
                 'visible' => array(
                   ':input[name="tree-accession[check]"]' => array('checked' => TRUE),
@@ -145,7 +145,7 @@ function page_3_create_form(&$form, $form_state){
             
             $form['tree-accession']["species-$i"]['file']['columns'] = array(
               '#type' => 'fieldset',
-              '#title' => t('Columns'),
+              '#title' => t('<h2>Columns</h2>'),
               '#states' => array(
                 'invisible' => array(
                   ':input[name="tree-accession_species-' . $i . '_file_upload_button"]' => array('value' => 'Upload')

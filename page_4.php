@@ -12,7 +12,7 @@ function page_4_create_form(&$form, $form_state){
         
         $fields = array(
           '#type' => 'fieldset',
-          '#title' => t('Phenotype Information:')
+          '#title' => t('<h2>Phenotype Information:</h2>')
         );
         
         $phenotype_number = isset($values[$id]['phenotype']['number']) ? $values[$id]['phenotype']['number'] : 1;
@@ -61,7 +61,7 @@ function page_4_create_form(&$form, $form_state){
             
             $fields["$i"] = array(
               '#type' => 'fieldset',
-              '#title' => t("Phenotype $i:"),
+              '#title' => t("<h2>Phenotype $i:</h2>"),
             );
             
             $fields["$i"]['name'] = array(
@@ -260,7 +260,7 @@ function page_4_create_form(&$form, $form_state){
         
         $fields = array(
           '#type' => 'fieldset',
-          '#title' => t('Genotype Information:')
+          '#title' => t('<h2>Genotype Information:</h2>')
         );
         
         $options = array(
@@ -332,7 +332,7 @@ function page_4_create_form(&$form, $form_state){
         
         $fields['SNPs'] = array(
           '#type' => 'fieldset',
-          '#title' => t('SNPs Information:'),
+          '#title' => t('<h2>SNPs Information:</h2>'),
           '#states' => array(
             'visible' => array(
               ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => true)
@@ -532,7 +532,7 @@ function page_4_create_form(&$form, $form_state){
         
         $fields['file']['columns'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Columns'),
+          '#title' => t('<h2>Columns</h2>'),
           '#states' => array(
             'invisible' => array(
               ':input[name="' . $id . '_genotype_file_upload_button"]' => array('value' => 'Upload')
@@ -612,7 +612,7 @@ function page_4_create_form(&$form, $form_state){
         
         $form["organism-$i"] = array(
           '#type' => 'fieldset',
-          '#title' => t($name . ":"),
+          '#title' => t("<h2>$name:</h2>"),
           '#tree' => TRUE,
         );
 
@@ -634,7 +634,7 @@ function page_4_create_form(&$form, $form_state){
             
             $form["organism-$i"]['phenotype']['file']['columns'] = array(
               '#type' => 'fieldset',
-              '#title' => t('Columns'),
+              '#title' => t('<h2>Columns</h2>'),
               '#states' => array(
                 'invisible' => array(
                   ':input[name="organism-' . $i . '_phenotype_file_upload_button"]' => array('value' => 'Upload')

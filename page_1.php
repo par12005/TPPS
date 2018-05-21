@@ -168,7 +168,6 @@ function page_1_create_form(&$form, $form_state){
             
             $form['publication']['secondaryAuthors']['file']['columns'] = array(
               '#type' => 'fieldset',
-              '#title' => t('Columns'),
               '#states' => array(
                 'invisible' => array(
                   ':input[name="publication_secondaryAuthors_file_upload_button"]' => array('value' => 'Upload')
@@ -243,7 +242,7 @@ function page_1_create_form(&$form, $form_state){
         
         $form['publication'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Publication Information:'),
+          '#title' => t('<h2>Publication Information:</h2>'),
           '#tree' => true
         );
 
@@ -291,7 +290,7 @@ function page_1_create_form(&$form, $form_state){
         $form['organism'] = array(
           '#type' => 'fieldset',
           '#tree' => TRUE,
-          '#title' => t('Organism information:'),
+          '#title' => t('<h2>Organism information:</h2>'),
           '#description' => t('Up to 5 organisms per submission.'),
         );
         
