@@ -507,9 +507,9 @@ function tpps_master_validate($form, &$form_state){
                     
                     $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
 
-                    foreach ($required_columns as $req){
-                        if (isset($form['tree-accession']["species-$i"]['file']['columns'][$req])){
-                            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req] = $form['tree-accession']["species-$i"]['file']['columns'][$req]['#value'];
+                    foreach ($form['tree-accession']["species-$i"]['file']['columns'] as $col => $val){
+                        if ($col[0] != '#'){
+                            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col] = $form['tree-accession']["species-$i"]['file']['columns'][$col]['#value'];
                         }
                     }
                 }
@@ -1859,55 +1859,7 @@ function summary_create_form(&$form, $form_state){
 
 function tpps_test_page($form, &$form_state){
     
-    $form['text'] = array(
-      '#type' => 'textfield',
-      '#title' => t('simple')
-    );
     
-    $form['file'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('Please upload a file.'),
-      '#upload_location' => 'public://',
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('txt csv xlsx')
-      ),
-      '#tree' => TRUE
-    );
-    
-    $form['file']['columns'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Columns:'),
-      '#suffix' => '<div id="file-sample-data"></div>'
-    );
-    
-    //print_r($form_state);
-    
-    if (isset($form_state['values']) and $form_state['values']['file'] != 0){
-        $file = file_load($form_state['values']['file']);
-        $file_name = explode('//', $file->uri);
-        $file_name = $file_name[1];
-        
-        $location = "/var/www/html/Drupal/sites/default/files/$file_name";
-        $content = parse_xlsx($location);
-        
-        //dpm($content);
-        //dpm($location);
-        //dpm($form_state);
-        
-        $required_columns = array(
-          'First Name',
-          'Last Name',
-          'Middle Initial'
-        );
-        
-        foreach ($required_columns as $req){
-            $form['file']['columns'][$req] = array(
-              '#type' => 'select',
-              '#title' => t($req),
-              '#options' => $content['headers'],
-            );
-        }
-    }
     
     $form['Next'] = array(
       '#type' => 'submit',
@@ -1919,7 +1871,18 @@ function tpps_test_page($form, &$form_state){
 
 function tpps_test_page_validate($form, &$form_state){
     
-    //dpm($form_state);
+//    for ($i = 0; $i < 500; $i++){
+//        $file = file_load($i);
+//        if ($file){
+//            //dpm($i);
+//            //dpm($file->uri);
+//            if (substr($file->filename, 0, 5) === 'ssrs_'){
+//                dpm($i);
+//                dpm($file->filename);
+//                //file_delete($file);
+//            }
+//        }
+//    }
     
     form_set_error('Next', 'error');
 }

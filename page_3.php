@@ -166,6 +166,9 @@ function page_3_create_form(&$form, $form_state){
                 $file = file_load($file);
                 $file_name = explode('//', $file->uri);
                 $file_name = $file_name[1];
+                
+                //dpm($file);
+                //dpm($file_name);
 
                 //vm
                 //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
@@ -202,7 +205,7 @@ function page_3_create_form(&$form, $form_state){
 
                 // display sample data
                 $display = "</tr>";
-                for ($j = 0; $j < 3; $i++){
+                for ($j = 0; $j < 3; $j++){
                     if (isset($content[$j])){
                         $display .= "<tr>";
                         foreach ($content['headers'] as $item){
@@ -286,25 +289,47 @@ function page_3_validate_form(&$form, &$form_state){
         }
         else {
             
-            $required_columns = array(
-              'Tree Identifier',
-              'Country',
-              'Region',
-              'Latitude',
-              'Longitude'
-            );
-
             for ($i = 1; $i <= $species_number; $i++){
                 if ($form_state['values']['tree-accession']["species-$i"]['file'] != ""){
+                    
+                    $required_columns = array(
+                      '1' => 'Tree Identifier',
+                      '2' => 'Country',
+                      '4' => 'Latitude',
+                      '5' => 'Longitude'
+                    );
 
                     $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
 
-                    foreach ($required_columns as $req){
-                        $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req] = $form['tree-accession']["species-$i"]['file']['columns'][$req]['#value'];
+                    foreach ($form['tree-accession']["species-$i"]['file']['columns'] as $req => $val){
+                        if ($req[0] != '#'){
+                            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req] = $form['tree-accession']["species-$i"]['file']['columns'][$req]['#value'];
 
-                        $col_val = $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req];
-                        if ($col_val == '- Select -'){
-                            form_set_error("tree-accession][species-$i][file][columns][$req", "$req: please select the appropriate column.");
+                            $col_val = $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req];
+                            if ($col_val != '0'){
+                                $required_columns[$col_val] = NULL;
+                            }
+                        }
+                    }
+                    
+                    // if country was provided, Lat and Long are not necessary, and vice versa
+                    if ($required_columns['2'] == NULL){
+                        $required_columns['4'] = NULL;
+                        $required_columns['5'] = NULL;
+                    }
+                    elseif ($required_columns['4'] == NULL or $required_columns['5'] == NULL){
+                        $required_columns['2'] = NULL;
+                    }
+                    elseif ($required_columns['2'] != NULL and $required_columns['4'] != NULL and $required_columns['5'] != NULL){
+                        $required_columns['2'] = NULL;
+                        $required_columns['4'] = NULL;
+                        $required_columns['5'] = NULL;
+                        form_set_error("tree-accession][species-$i][file][columns", "Species $i Tree Accession file: Please specify a column that holds Location.");
+                    }
+
+                    foreach ($required_columns as $item){
+                        if ($item != NULL){
+                            form_set_error("tree-accession][species-$i][file][columns][$item", "Species $i Tree Accession file: Please specify a column that holds $item.");
                         }
                     }
                 }
