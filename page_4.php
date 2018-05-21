@@ -954,6 +954,41 @@ function page_4_validate_form(&$form, &$form_state){
                     form_set_error("$id][genotype][file][columns][$item", "Genotype file: Please specify a column that holds $item.");
                 }
             }
+            
+            //if Tree Identifier is set
+            if ($required_columns['1'] === NULL){
+                //cycle through the columns
+                foreach ($form_state['values'][$id]['genotype']['file-columns'] as $col => $val){
+                    //find the column where Tree Identifier is selected
+                    if ($val == '1'){
+                        //that column name is the name of the Tree Id column, so keep track of that, and exit loop
+                        $id_col_genotype_name = $col;
+                        break;
+                    }
+                }
+                
+                if ($form_state['saved_values']['Hellopage']['organism']['number'] == 1 or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
+                    $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']['file'];
+                }
+                else {
+                    $num = substr($id, 9);
+                    $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file'];
+                }
+                
+                foreach ($form_state['saved_values']['thirdPage']['tree-accession']['file-columns'] as $col => $val){
+                    if ($val == '1'){
+                        $id_col_accession_name = $col;
+                        break;
+                    }
+                }
+                
+                $missing_trees = tpps_compare_files($form_state['values'][$id]['genotype']['file'], $tree_accession_file, $id_col_genotype_name, $id_col_accession_name);
+                
+                if ($missing_trees !== array()){
+                    $tree_id_str = implode(', ', $missing_trees);
+                    form_set_error("$id][genotype][file", "Genotype file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
+                }
+            }
         }
     }
     
