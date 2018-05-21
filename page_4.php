@@ -639,7 +639,8 @@ function page_4_create_form(&$form, $form_state){
                 'invisible' => array(
                   ':input[name="organism-' . $i . '_phenotype_file_upload_button"]' => array('value' => 'Upload')
                 )
-              )
+              ),
+              '#description' => 'Please define which columns hold the required data:'
             );
 
             $file = 0;
@@ -661,32 +662,33 @@ function page_4_create_form(&$form, $form_state){
                 $location = "/var/www/Drupal/sites/default/files/$file_name";
                 $content = parse_xlsx($location);
 
-                $required_columns = array(
+                $column_options = array(
+                  'N/A',
                   'Tree Identifier',
                   'Phenotype Name/Identifier',
                   'Value(s)'
                 );
 
-                $options_arr = $content['headers'];
-                $options_arr['- Select -'] = '- Select -';
+                $first = TRUE;
 
-                foreach ($required_columns as $req){
-                    $form["organism-$i"]['phenotype']['file']['columns'][$req] = array(
+                foreach ($content['headers'] as $item){
+                    $form["organism-$i"]['phenotype']['file']['columns'][$item] = array(
                       '#type' => 'select',
-                      '#title' => t($req),
-                      '#options' => $options_arr,
-                      '#default_value' => isset($values["organism-$i"]['phenotype']['file-columns'][$req]) ? $values["organism-$i"]['phenotype']['file-columns'][$req] : '- Select -',
+                      '#title' => t($item),
+                      '#options' => $column_options,
+                      '#default_value' => isset($values["organism-$i"]['phenotype']['file-columns'][$item]) ? $values["organism-$i"]['phenotype']['file-columns'][$item] : 0,
+                      '#prefix' => "<td>",
+                      '#suffix' => "</td>"
                     );
+            
+                    if ($first){
+                        $first = FALSE;
+                        $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'] = "<div><table><tbody><tr>" . $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'];
+                    }
                 }
 
                 // display sample data
-                $display = "";
-                $display .= "<div><table><tbody>";
-                $display .= "<tr>";
-                foreach ($content['headers'] as $item){
-                    $display .= "<th>$item</th>";
-                }
-                $display .= "</tr>";
+                $display = "</tr>";
                 for ($j = 0; $j < 3; $j++){
                     if (isset($content[$j])){
                         $display .= "<tr>";
@@ -698,7 +700,7 @@ function page_4_create_form(&$form, $form_state){
                 }
                 $display .= "</tbody></table></div>";
 
-                $form["organism-$i"]['phenotype']['file']['columns']['#suffix'] = $display;
+                $form["organism-$i"]['phenotype']['file']['columns'][$item]['#suffix'] .= $display;
 
             }
         }
@@ -749,7 +751,7 @@ function page_4_validate_form(&$form, &$form_state){
         }
         else{
             for($i = 1; $i <= $phenotype_number; $i++){
-                $current_phenotype = $phenotype[$i];
+                $current_phenotype = $phenotype["$i"];
                 $name = $current_phenotype['name'];
                 $environment_check = $current_phenotype['environment-check'];
 
@@ -824,19 +826,27 @@ function page_4_validate_form(&$form, &$form_state){
         }
         else {
             $required_columns = array(
-              'Tree Identifier',
-              'Phenotype Name/Identifier',
-              'Value(s)'
+              '1' => 'Tree Identifier',
+              '2' => 'Phenotype Name/Identifier',
+              '3' => 'Value(s)'
             );
 
             $form_state['values'][$id]['phenotype']['file-columns'] = array();
 
-            foreach ($required_columns as $req){
-                $form_state['values'][$id]['phenotype']['file-columns'][$req] = $form[$id]['phenotype']['file']['columns'][$req]['#value'];
+            foreach ($form[$id]['phenotype']['file']['columns'] as $req => $val){
+                if ($req[0] != '#'){
+                    $form_state['values'][$id]['phenotype']['file-columns'][$req] = $form[$id]['phenotype']['file']['columns'][$req]['#value'];
 
-                $col_val = $form_state['values'][$id]['phenotype']['file-columns'][$req];
-                if ($col_val == '- Select -'){
-                    form_set_error("$id][phenotype][file][columns][$req", "$req: please select the appropriate column.");
+                    $col_val = $form_state['values'][$id]['phenotype']['file-columns'][$req];
+                    if ($col_val != '0'){
+                        $required_columns[$col_val] = NULL;
+                    }
+                }
+            }
+            
+            foreach ($required_columns as $item){
+                if ($item != NULL){
+                    form_set_error("$id][phenotype][file][columns][$item", "Phenotype file: Please specify a column that holds $item.");
                 }
             }
         }

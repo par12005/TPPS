@@ -515,20 +515,13 @@ function tpps_master_validate($form, &$form_state){
             }
             
             if (isset($form['organism-1']['phenotype'])){
-                
-                $required_columns = array(
-                  'Tree Identifier',
-                  'Phenotype Name/Identifier',
-                  'Value(s)'
-                );
-
                 for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
 
                     $form_state['values']["organism-$i"]['phenotype']['file-columns'] = array();
-
-                    foreach ($required_columns as $req){
-                        if (isset($form["organism-$i"]['phenotype']['file']['columns'][$req])){
-                            $form_state['values']["organism-$i"]['phenotype']['file-columns'][$req] = $form["organism-$i"]['phenotype']['file']['columns'][$req]['#value'];
+                    
+                    foreach ($form["organism-$i"]['phenotype']['file']['columns'] as $col => $val){
+                        if ($col[0] != '#'){
+                            $form_state['values']["organism-$i"]['phenotype']['file-columns'][$col] = $form["organism-$i"]['phenotype']['file']['columns'][$col]['#value'];
                         }
                     }
                 }
