@@ -537,7 +537,8 @@ function page_4_create_form(&$form, $form_state){
             'invisible' => array(
               ':input[name="' . $id . '_genotype_file_upload_button"]' => array('value' => 'Upload')
             )
-          )
+          ),
+          '#description' => 'Please define which columns hold the required data:'
         );
         
         $file = 0;
@@ -559,30 +560,31 @@ function page_4_create_form(&$form, $form_state){
             $location = "/var/www/Drupal/sites/default/files/$file_name";
             $content = parse_xlsx($location);
 
-            $required_columns = array(
+            $column_options = array(
+              'N/A',
               'Tree Identifier',
             );
 
-            $options_arr = $content['headers'];
-            $options_arr['- Select -'] = '- Select -';
+            $first = TRUE;
 
-            foreach ($required_columns as $req){
-                $fields['file']['columns'][$req] = array(
+            foreach ($content['headers'] as $item){
+                $fields['file']['columns'][$item] = array(
                   '#type' => 'select',
-                  '#title' => t($req),
-                  '#options' => $options_arr,
-                  '#default_value' => isset($values[$id]['genotype']['file-columns'][$req]) ? $values[$id]['genotype']['file-columns'][$req] : '- Select -',
+                  '#title' => t($item),
+                  '#options' => $column_options,
+                  '#default_value' => isset($values[$id]['genotype']['file-columns'][$item]) ? $values[$id]['genotype']['file-columns'][$item] : 0,
+                  '#prefix' => "<td>",
+                  '#suffix' => "</td>"
                 );
+                
+                if ($first){
+                    $first = FALSE;
+                    $fields['file']['columns'][$item]['#prefix'] = "<div><table><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
+                }
             }
 
             // display sample data
-            $display = "";
-            $display .= "<div><table><tbody>";
-            $display .= "<tr>";
-            foreach ($content['headers'] as $item){
-                $display .= "<th>$item</th>";
-            }
-            $display .= "</tr>";
+            $display = "</tr>";
             for ($i = 0; $i < 3; $i++){
                 if (isset($content[$i])){
                     $display .= "<tr>";
@@ -594,7 +596,7 @@ function page_4_create_form(&$form, $form_state){
             }
             $display .= "</tbody></table></div>";
 
-            $fields['file']['columns']['#suffix'] = $display;
+            $fields['file']['columns'][$item]['#suffix'] .= $display;
 
         }
         
@@ -921,17 +923,25 @@ function page_4_validate_form(&$form, &$form_state){
         }
         else {
             $required_columns = array(
-              'Tree Identifier',
+              '1' => 'Tree Identifier',
             );
 
             $form_state['values'][$id]['genotype']['file-columns'] = array();
 
-            foreach ($required_columns as $req){
-                $form_state['values'][$id]['genotype']['file-columns'][$req] = $form[$id]['genotype']['file']['columns'][$req]['#value'];
+            foreach ($form[$id]['genotype']['file']['columns'] as $req => $val){
+                if ($req[0] != '#'){
+                    $form_state['values'][$id]['genotype']['file-columns'][$req] = $form[$id]['genotype']['file']['columns'][$req]['#value'];
 
-                $col_val = $form_state['values'][$id]['genotype']['file-columns'][$req];
-                if ($col_val == '- Select -'){
-                    form_set_error("$id][genotype][file][columns][$req", "$req: please select the appropriate column.");
+                    $col_val = $form_state['values'][$id]['genotype']['file-columns'][$req];
+                    if ($col_val != '0'){
+                        $required_columns[$col_val] = NULL;
+                    }
+                }
+            }
+            
+            foreach ($required_columns as $item){
+                if ($item != NULL){
+                    form_set_error("$id][genotype][file][columns][$item", "Genotype file: Please specify a column that holds $item.");
                 }
             }
         }
