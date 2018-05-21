@@ -209,7 +209,6 @@ After the data has been submitted and approved, the user will recieve an email w
 - Access in-progress submissions through user's Tripal account
 - Validation across Tree Accession/VCF/WGS/TSA files
 - Admin Interface for submission approval
-- File upload info bugs
 - Profile details of what submission contains
 
 # Resources
