@@ -56,7 +56,7 @@ function page_3_create_form(&$form, $form_state){
         $file = $form_state['saved_values']['thirdPage']['tree-accession']['file'];
     }
     
-    if ($file != 0){
+    if ($file != 0 and $form_state['triggering_element']['#value'] != "Remove"){
         $file = file_load($file);
         $file_name = explode('//', $file->uri);
         $file_name = $file_name[1];
