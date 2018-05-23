@@ -68,7 +68,7 @@ function page_4_create_form(&$form, $form_state){
               '#title' => t("Phenotype $i Name:"),
               '#autocomplete_path' => 'phenotype/autocomplete',
               '#default_value' => isset($values[$id]['phenotype']["$i"]['name']) ? $values[$id]['phenotype']["$i"]['name'] : NULL,
-              '#prefix' => '<label><b>Phenotype $i:</b></label>'
+              '#prefix' => "<label><b>Phenotype $i:</b></label>"
             );
             
             $fields["$i"]['environment-check'] = array(
@@ -441,6 +441,19 @@ function page_4_create_form(&$form, $form_state){
           )
         );
         
+        $fields['SNPs']['assembly-auto'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('Waiting for BioProject accession number...'),
+          '#tree' => TRUE,
+          '#prefix' => "<div id='$id-assembly-auto'>",
+          '#suffix' => '</div>',
+          '#states' => array(
+            'invisible' => array(
+              ':input[name="' . $id . '[genotype][SNPs][assembly-check]"]' => array('checked' => TRUE)
+            )
+          )
+        );
+        
         if (isset($form_state['values'][$id]['genotype']['SNPs']['BioProject-id']) and strlen($form_state['values'][$id]['genotype']['SNPs']['BioProject-id']) > 5){
             
             $bio_id = substr($form_state['values']["$id"]['genotype']['SNPs']['BioProject-id'], 5);
@@ -449,51 +462,31 @@ function page_4_create_form(&$form, $form_state){
             $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
             $response_xml_data = file_get_contents($url);
             $data = simplexml_load_string($response_xml_data)->children()->children()->LinkSetDb->children();
+            
+            if(preg_match('/<LinkSetDb>/', $response_xml_data)){
+                
+                foreach ($data->Link as $link){
+                    array_push($options, $link->Id->__tostring());
+                }
 
-            foreach ($data->Link as $link){
-                array_push($options, $link->Id->__tostring());
+                $fields['SNPs']['assembly-auto']['#title'] = 'Select all that apply:';
+
+                foreach ($options as $item){
+                    $fields['SNPs']['assembly-auto']["$item"] = array(
+                      '#type' => 'checkbox',
+                      '#title' => t("$item"),
+                      '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"] : NULL,
+                    );
+                }
             }
-
-            $fields['SNPs']['assembly-auto'] = array(
-              '#type' => 'fieldset',
-              '#title' => 'Select all that apply:',
-              '#tree' => TRUE,
-              '#states' => array(
-                'invisible' => array(
-                  ':input[name="' . $id . '[genotype][assembly-check]"]' => array('checked' => TRUE)
-                )
-              ),
-              '#prefix' => "<div id='$id-assembly-auto'>",
-              '#suffix' => '</div>',
-              '#description' => 'If this list needs to be refreshed, please refresh the page and re-enter the BioProject ID.'
-            );
-
-            foreach ($options as $item){
-                $fields['SNPs']['assembly-auto']["$item"] = array(
-                  '#type' => 'checkbox',
-                  '#title' => t("$item"),
-                  '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"] : NULL,
-                );
+            else {
+                $fields['SNPs']['assembly-auto']['#description'] = t('We could not find any assembly files related to that BioProject. Please ensure your accession number is of the format "PRJNA#"');
             }
-        }
-        else {
-            $fields['SNPs']['assembly-auto'] = array(
-              '#type' => 'fieldset',
-              '#title' => t('Waiting for BioProject accession number...'),
-              '#tree' => TRUE,
-              '#prefix' => "<div id='$id-assembly-auto'>",
-              '#suffix' => '</div>',
-              '#states' => array(
-                'invisible' => array(
-                  ':input[name="' . $id . '[genotype][SNPs][assembly-check]"]' => array('checked' => TRUE)
-                )
-              )
-            );
         }
         
         $fields['SNPs']['assembly-check'] = array(
           '#type' => 'checkbox',
-          '#title' => t('My assembly file is not in this list'),
+          '#title' => t('My assembly file(s) is not in this list'),
           '#default_value' => isset($values[$id]['genotype']['SNPs']['assembly-check']) ? $values[$id]['genotype']['SNPs']['assembly-check'] : NULL,
         );
         
@@ -733,280 +726,283 @@ function ajax_bioproject_callback(&$form, $form_state){
 
 function page_4_validate_form(&$form, &$form_state){
     
-    function validate_phenotype($phenotype, $id, $form, &$form_state){
-        $phenotype_number = $phenotype['number'];
-        $phenotype_check = $phenotype['check'];
-        $phenotype_file = $phenotype['metadata'];
-        $phenotype_content = $phenotype['file'];
+    if ($form_state['submitted'] == '1'){
         
-        if ($phenotype_check == '1'){
-            if ($phenotype_file == ''){
-                form_set_error("$id][phenotype][file", "Phenotype File: field is required.");
+        function validate_phenotype($phenotype, $id, $form, &$form_state){
+            $phenotype_number = $phenotype['number'];
+            $phenotype_check = $phenotype['check'];
+            $phenotype_file = $phenotype['metadata'];
+            $phenotype_content = $phenotype['file'];
+
+            if ($phenotype_check == '1'){
+                if ($phenotype_file == ''){
+                    form_set_error("$id][phenotype][file", "Phenotype File: field is required.");
+                }
+                else{
+                    //validate phenotype file
+                    $file = file(file_load($phenotype_file)->uri);
+                    $file_type = file_load($phenotype_file)->filemime;
+                }
             }
             else{
-                //validate phenotype file
-                $file = file(file_load($phenotype_file)->uri);
-                $file_type = file_load($phenotype_file)->filemime;
-            }
-        }
-        else{
-            for($i = 1; $i <= $phenotype_number; $i++){
-                $current_phenotype = $phenotype["$i"];
-                $name = $current_phenotype['name'];
-                $environment_check = $current_phenotype['environment-check'];
+                for($i = 1; $i <= $phenotype_number; $i++){
+                    $current_phenotype = $phenotype["$i"];
+                    $name = $current_phenotype['name'];
+                    $environment_check = $current_phenotype['environment-check'];
 
-                if ($name == ''){
-                    form_set_error("$id][phenotype][$i][name", "Phenotype $i Name: field is required.");
-                }
-
-                if ($environment_check == '1'){
-                    $description = $current_phenotype['environment']['description'];
-                    $units = $current_phenotype['environment']['units'];
-
-                    if ($description == ''){
-                        form_set_error("$id][phenotype][$i][environment][description", "Phenotype $i Description: field is required.");
+                    if ($name == ''){
+                        form_set_error("$id][phenotype][$i][name", "Phenotype $i Name: field is required.");
                     }
 
-                    if ($units == ''){
-                        form_set_error("$id][phenotype][$i][environment][units", "Phenotype $i Units: field is required.");
+                    if ($environment_check == '1'){
+                        $description = $current_phenotype['environment']['description'];
+                        $units = $current_phenotype['environment']['units'];
+
+                        if ($description == ''){
+                            form_set_error("$id][phenotype][$i][environment][description", "Phenotype $i Description: field is required.");
+                        }
+
+                        if ($units == ''){
+                            form_set_error("$id][phenotype][$i][environment][units", "Phenotype $i Units: field is required.");
+                        }
+                    }
+                    else{
+                        $type = $current_phenotype['non-environment']['type'];
+                        $binary_1 = $current_phenotype['non-environment']['binary'][1];
+                        $binary_2 = $current_phenotype['non-environment']['binary'][2];
+                        $min = $current_phenotype['non-environment']['quantitative']['min'];
+                        $max = $current_phenotype['non-environment']['quantitative']['max'];
+                        $description = $current_phenotype['non-environment']['description'];
+                        $units = $current_phenotype['non-environment']['units'];
+                        $structure = $current_phenotype['non-environment']['structure'];
+                        $developmental = $current_phenotype['non-environment']['developmental'];
+
+                        if ($type == '0'){
+                            form_set_error("$id][phenotype][$i][non-environment][type", "Phenotype $i Type: field is required.");
+                        }
+                        elseif ($type == '1'){
+                            if ($binary_1 == ''){
+                                form_set_error("$id][phenotype][$i][non-environment][binary][1", "Phenotype $i Binary Type 1: field is required.");
+                            }
+                            if ($binary_2 == ''){
+                                form_set_error("$id][phenotype][$i][non-environment][binary][2", "Phenotype $i Binary Type 2: field is required.");
+                            }
+                        }
+                        elseif($type == '2'){
+                            if ($min == ''){
+                                form_set_error("$id][phenotype][$i][non-environment][quantitative][min", "Phenotype $i Minimum: field is required.");
+                            }
+                            if ($max == ''){
+                                form_set_error("$id][phenotype][$i][non-environment][quantitative][max", "Phenotype $i Maximum: field is required.");
+                            }
+                        }
+
+                        if ($description == ''){
+                            form_set_error("$id][phenotype][$i][non-environment][description", "Phenotype $i Description: field is required.");
+                        }
+
+                        if ($units == '' and $type == '2'){
+                            form_set_error("$id][phenotype][$i][non-environment][units", "Phenotype $i Units: field is required.");
+                        }
+
+                        if ($structure == '0'){
+                            form_set_error("$id][phenotype][$i][non-environment][structure", "Phenotype $i Plant Structure: field is required.");
+                        }
+
+                        if ($developmental == '0'){
+                            form_set_error("$id][phenotype][$i][non-environment][developmental", "Phenotype $i Developmental Stage: field is required.");
+                        }
+                    }
+                }
+            }
+
+            if ($phenotype_content == ''){
+                form_set_error("$id][phenotype][file", "Phenotypes: field is required.");
+            }
+            else {
+                $required_columns = array(
+                  '1' => 'Tree Identifier',
+                  '2' => 'Phenotype Name/Identifier',
+                  '3' => 'Value(s)'
+                );
+
+                $form_state['values'][$id]['phenotype']['file-columns'] = array();
+
+                foreach ($form[$id]['phenotype']['file']['columns'] as $req => $val){
+                    if ($req[0] != '#'){
+                        $form_state['values'][$id]['phenotype']['file-columns'][$req] = $form[$id]['phenotype']['file']['columns'][$req]['#value'];
+
+                        $col_val = $form_state['values'][$id]['phenotype']['file-columns'][$req];
+                        if ($col_val != '0'){
+                            $required_columns[$col_val] = NULL;
+                        }
+                    }
+                }
+
+                foreach ($required_columns as $item){
+                    if ($item != NULL){
+                        form_set_error("$id][phenotype][file][columns][$item", "Phenotype file: Please specify a column that holds $item.");
+                    }
+                }
+            }
+        }
+
+        function validate_genotype($genotype, $id, $form, &$form_state){
+            $genotype_file = $genotype['file'];
+            $marker_type = $genotype['marker-type'];
+            $snps_check = $marker_type['SNPs'];
+            $ssrs = $marker_type['SSRs/cpSSRs'];
+            $other_marker = $marker_type['Other'];
+            $marker_check = $snps_check . $ssrs . $other_marker;
+            $snps = $genotype['SNPs'];
+            $genotype_design = $snps['genotyping-design'];
+            $gbs = $snps['GBS'];
+            $targeted_capture = $snps['targeted-capture'];
+            $bio_id = $snps['BioProject-id'];
+            $assembly_user = $snps['assembly-user'];
+            $assembly_check = $snps['assembly-check'];
+            $ref_genome = $genotype['ref-genome'];
+
+            if ($ref_genome === '0'){
+                form_set_error("$id][genotype][ref-genome", "Reference Genome: field is required.");
+            }
+            elseif($ref_genome === 'Other' and $genotype['ref-genome-other'] === ''){
+                form_set_error("$id][genotype][ref-genome-other", "Custom Reference Genome: field is required.");
+            }
+
+            if ($marker_check === '000'){
+                form_set_error("$id][genotype][marker-type", "Genotype Marker Type: field is required.");
+            }
+            elseif($snps_check === 'SNPs'){
+                if ($genotype_design == '0'){
+                    form_set_error("$id][genotype][SNPs][genotyping-design", "Genotyping Design: field is required.");
+                }
+                elseif ($genotype_design == '1'){
+                    if ($gbs == '0'){
+                        form_set_error("$id][genotype][SNPs][GBS", "GBS Type: field is required.");
+                    }
+                    elseif ($gbs == '5' and $snps['GBS-other'] == ''){
+                        form_set_error("$id][genotype][SNPs][GBS=other", "Custom GBS Type: field is required.");
+                    }
+                }
+                elseif ($genotype_design == '2'){
+                    if ($targed_capture == '0'){
+                        form_set_error("$id][genotype][SNPs][targeted-capture", "Targeted Capture: field is required.");
+                    }
+                    elseif ($targeted_capture == '2' and $snps['targeted-capture-other'] == ''){
+                        form_set_error("$id][genotype][SNPs][targeted-capture-other", "Custom Targeted Capture: field is required.");
+                    }
+                }
+
+                if ($assembly_check != '0'){
+                    if ($assembly_user == ''){
+                        form_set_error("$id][genotype][SNPs][assembly-user", 'Assembly file upload: field is required.');
                     }
                 }
                 else{
-                    $type = $current_phenotype['non-environment']['type'];
-                    $binary_1 = $current_phenotype['non-environment']['binary'][1];
-                    $binary_2 = $current_phenotype['non-environment']['binary'][2];
-                    $min = $current_phenotype['non-environment']['quantitative']['min'];
-                    $max = $current_phenotype['non-environment']['quantitative']['max'];
-                    $description = $current_phenotype['non-environment']['description'];
-                    $units = $current_phenotype['non-environment']['units'];
-                    $structure = $current_phenotype['non-environment']['structure'];
-                    $developmental = $current_phenotype['non-environment']['developmental'];
-
-                    if ($type == '0'){
-                        form_set_error("$id][phenotype][$i][non-environment][type", "Phenotype $i Type: field is required.");
+                    $assembly_auto = $snps['assembly-auto'];
+                    if ($bio_id == ''){
+                        form_set_error("$id][genotype][SNPs][Bioproject-id", 'BioProject Id: field is required.');
                     }
-                    elseif ($type == '1'){
-                        if ($binary_1 == ''){
-                            form_set_error("$id][phenotype][$i][non-environment][binary][1", "Phenotype $i Binary Type 1: field is required.");
+
+                    $assembly_auto_check = '';
+
+                    foreach ($assembly_auto as $item){
+                        $assembly_auto_check += $item;
+                    }
+
+                    if (preg_match('/^0*$/', $assembly_auto_check)){
+                        form_set_error("$id][genotype][SNPs][assembly-auto", 'Assembly files: field is required.');
+                    }
+                }
+            }
+            elseif ($ssrs != '0' and $genotype['SSRs/cpSSRs'] == ''){
+                form_set_error("$id][genotype][SSRs/cpSSRs", "SSRs/cpSSRs: field is required.");
+            }
+            elseif ($other_marker != '0' and $genotype['other-marker'] == ''){
+                form_set_error("$id][genotype][other-marker", "Other Genotype marker: field is required.");
+            }
+
+            if ($genotype_file == ''){
+                form_set_error("$id][genotype][file", "Genotype file: field is required.");
+            }
+            else {
+                $required_columns = array(
+                  '1' => 'Tree Identifier',
+                );
+
+                $form_state['values'][$id]['genotype']['file-columns'] = array();
+
+                foreach ($form[$id]['genotype']['file']['columns'] as $req => $val){
+                    if ($req[0] != '#'){
+                        $form_state['values'][$id]['genotype']['file-columns'][$req] = $form[$id]['genotype']['file']['columns'][$req]['#value'];
+
+                        $col_val = $form_state['values'][$id]['genotype']['file-columns'][$req];
+                        if ($col_val != '0'){
+                            $required_columns[$col_val] = NULL;
                         }
-                        if ($binary_2 == ''){
-                            form_set_error("$id][phenotype][$i][non-environment][binary][2", "Phenotype $i Binary Type 2: field is required.");
+                    }
+                }
+
+                foreach ($required_columns as $item){
+                    if ($item != NULL){
+                        form_set_error("$id][genotype][file][columns][$item", "Genotype file: Please specify a column that holds $item.");
+                    }
+                }
+
+                //if Tree Identifier is set
+                if ($required_columns['1'] === NULL){
+                    //cycle through the columns
+                    foreach ($form_state['values'][$id]['genotype']['file-columns'] as $col => $val){
+                        //find the column where Tree Identifier is selected
+                        if ($val == '1'){
+                            //that column name is the name of the Tree Id column, so keep track of that, and exit loop
+                            $id_col_genotype_name = $col;
+                            break;
                         }
                     }
-                    elseif($type == '2'){
-                        if ($min == ''){
-                            form_set_error("$id][phenotype][$i][non-environment][quantitative][min", "Phenotype $i Minimum: field is required.");
+
+                    if ($form_state['saved_values']['Hellopage']['organism']['number'] == 1 or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
+                        $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']['file'];
+                    }
+                    else {
+                        $num = substr($id, 9);
+                        $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file'];
+                    }
+
+                    foreach ($form_state['saved_values']['thirdPage']['tree-accession']['file-columns'] as $col => $val){
+                        if ($val == '1'){
+                            $id_col_accession_name = $col;
+                            break;
                         }
-                        if ($max == ''){
-                            form_set_error("$id][phenotype][$i][non-environment][quantitative][max", "Phenotype $i Maximum: field is required.");
-                        }
                     }
 
-                    if ($description == ''){
-                        form_set_error("$id][phenotype][$i][non-environment][description", "Phenotype $i Description: field is required.");
-                    }
+                    $missing_trees = tpps_compare_files($form_state['values'][$id]['genotype']['file'], $tree_accession_file, $id_col_genotype_name, $id_col_accession_name);
 
-                    if ($units == '' and $type == '2'){
-                        form_set_error("$id][phenotype][$i][non-environment][units", "Phenotype $i Units: field is required.");
-                    }
-
-                    if ($structure == '0'){
-                        form_set_error("$id][phenotype][$i][non-environment][structure", "Phenotype $i Plant Structure: field is required.");
-                    }
-
-                    if ($developmental == '0'){
-                        form_set_error("$id][phenotype][$i][non-environment][developmental", "Phenotype $i Developmental Stage: field is required.");
+                    if ($missing_trees !== array()){
+                        $tree_id_str = implode(', ', $missing_trees);
+                        form_set_error("$id][genotype][file", "Genotype file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
                     }
                 }
             }
         }
-        
-        if ($phenotype_content == ''){
-            form_set_error("$id][phenotype][file", "Phenotypes: field is required.");
-        }
-        else {
-            $required_columns = array(
-              '1' => 'Tree Identifier',
-              '2' => 'Phenotype Name/Identifier',
-              '3' => 'Value(s)'
-            );
 
-            $form_state['values'][$id]['phenotype']['file-columns'] = array();
+        $form_values = $form_state['values'];
+        $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
+        $data_type = $form_state['saved_values']['secondPage']['dataType'];
 
-            foreach ($form[$id]['phenotype']['file']['columns'] as $req => $val){
-                if ($req[0] != '#'){
-                    $form_state['values'][$id]['phenotype']['file-columns'][$req] = $form[$id]['phenotype']['file']['columns'][$req]['#value'];
+        for ($i = 1; $i <= $organism_number; $i++){
+            $organism = $form_values["organism-$i"];
 
-                    $col_val = $form_state['values'][$id]['phenotype']['file-columns'][$req];
-                    if ($col_val != '0'){
-                        $required_columns[$col_val] = NULL;
-                    }
-                }
+            if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
+                $phenotype = $organism['phenotype'];
+                validate_phenotype($phenotype, "organism-$i", $form, $form_state);
             }
-            
-            foreach ($required_columns as $item){
-                if ($item != NULL){
-                    form_set_error("$id][phenotype][file][columns][$item", "Phenotype file: Please specify a column that holds $item.");
-                }
-            }
-        }
-    }
-    
-    function validate_genotype($genotype, $id, $form, &$form_state){
-        $genotype_file = $genotype['file'];
-        $marker_type = $genotype['marker-type'];
-        $snps_check = $marker_type['SNPs'];
-        $ssrs = $marker_type['SSRs/cpSSRs'];
-        $other_marker = $marker_type['Other'];
-        $marker_check = $snps_check . $ssrs . $other_marker;
-        $snps = $genotype['SNPs'];
-        $genotype_design = $snps['genotyping-design'];
-        $gbs = $snps['GBS'];
-        $targeted_capture = $snps['targeted-capture'];
-        $bio_id = $snps['BioProject-id'];
-        $assembly_user = $snps['assembly-user'];
-        $assembly_check = $snps['assembly-check'];
-        $ref_genome = $genotype['ref-genome'];
-        
-        if ($ref_genome === '0'){
-            form_set_error("$id][genotype][ref-genome", "Reference Genome: field is required.");
-        }
-        elseif($ref_genome === 'Other' and $genotype['ref-genome-other'] === ''){
-            form_set_error("$id][genotype][ref-genome-other", "Custom Reference Genome: field is required.");
-        }
-        
-        if ($marker_check === '000'){
-            form_set_error("$id][genotype][marker-type", "Genotype Marker Type: field is required.");
-        }
-        elseif($snps_check === 'SNPs'){
-            if ($genotype_design == '0'){
-                form_set_error("$id][genotype][SNPs][genotyping-design", "Genotyping Design: field is required.");
-            }
-            elseif ($genotype_design == '1'){
-                if ($gbs == '0'){
-                    form_set_error("$id][genotype][SNPs][GBS", "GBS Type: field is required.");
-                }
-                elseif ($gbs == '5' and $snps['GBS-other'] == ''){
-                    form_set_error("$id][genotype][SNPs][GBS=other", "Custom GBS Type: field is required.");
-                }
-            }
-            elseif ($genotype_design == '2'){
-                if ($targed_capture == '0'){
-                    form_set_error("$id][genotype][SNPs][targeted-capture", "Targeted Capture: field is required.");
-                }
-                elseif ($targeted_capture == '2' and $snps['targeted-capture-other'] == ''){
-                    form_set_error("$id][genotype][SNPs][targeted-capture-other", "Custom Targeted Capture: field is required.");
-                }
-            }
-            
-            if ($assembly_check != '0'){
-                if ($assembly_user == ''){
-                    form_set_error("$id][genotype][SNPs][assembly-user", 'Assembly file upload: field is required.');
-                }
-            }
-            else{
-                $assembly_auto = $snps['assembly-auto'];
-                if ($bio_id == ''){
-                    form_set_error("$id][genotype][SNPs][Bioproject-id", 'BioProject Id: field is required.');
-                }
-            
-                $assembly_auto_check = '';
-                
-                foreach ($assembly_auto as $item){
-                    $assembly_auto_check += $item;
-                }
-        
-                if (preg_match('/^0*$/', $assembly_auto_check)){
-                    form_set_error("$id][genotype][SNPs][assembly-auto", 'Assembly files: field is required.');
-                }
-            }
-        }
-        elseif ($ssrs != '0' and $genotype['SSRs/cpSSRs'] == ''){
-            form_set_error("$id][genotype][SSRs/cpSSRs", "SSRs/cpSSRs: field is required.");
-        }
-        elseif ($other_marker != '0' and $genotype['other-marker'] == ''){
-            form_set_error("$id][genotype][other-marker", "Other Genotype marker: field is required.");
-        }
-    
-        if ($genotype_file == ''){
-            form_set_error("$id][genotype][file", "Genotype file: field is required.");
-        }
-        else {
-            $required_columns = array(
-              '1' => 'Tree Identifier',
-            );
 
-            $form_state['values'][$id]['genotype']['file-columns'] = array();
-
-            foreach ($form[$id]['genotype']['file']['columns'] as $req => $val){
-                if ($req[0] != '#'){
-                    $form_state['values'][$id]['genotype']['file-columns'][$req] = $form[$id]['genotype']['file']['columns'][$req]['#value'];
-
-                    $col_val = $form_state['values'][$id]['genotype']['file-columns'][$req];
-                    if ($col_val != '0'){
-                        $required_columns[$col_val] = NULL;
-                    }
-                }
+            if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
+                $genotype = $organism['genotype'];
+                validate_genotype($genotype, "organism-$i", $form, $form_state);
             }
-            
-            foreach ($required_columns as $item){
-                if ($item != NULL){
-                    form_set_error("$id][genotype][file][columns][$item", "Genotype file: Please specify a column that holds $item.");
-                }
-            }
-            
-            //if Tree Identifier is set
-            if ($required_columns['1'] === NULL){
-                //cycle through the columns
-                foreach ($form_state['values'][$id]['genotype']['file-columns'] as $col => $val){
-                    //find the column where Tree Identifier is selected
-                    if ($val == '1'){
-                        //that column name is the name of the Tree Id column, so keep track of that, and exit loop
-                        $id_col_genotype_name = $col;
-                        break;
-                    }
-                }
-                
-                if ($form_state['saved_values']['Hellopage']['organism']['number'] == 1 or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
-                    $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']['file'];
-                }
-                else {
-                    $num = substr($id, 9);
-                    $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file'];
-                }
-                
-                foreach ($form_state['saved_values']['thirdPage']['tree-accession']['file-columns'] as $col => $val){
-                    if ($val == '1'){
-                        $id_col_accession_name = $col;
-                        break;
-                    }
-                }
-                
-                $missing_trees = tpps_compare_files($form_state['values'][$id]['genotype']['file'], $tree_accession_file, $id_col_genotype_name, $id_col_accession_name);
-                
-                if ($missing_trees !== array()){
-                    $tree_id_str = implode(', ', $missing_trees);
-                    form_set_error("$id][genotype][file", "Genotype file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
-                }
-            }
-        }
-    }
-    
-    $form_values = $form_state['values'];
-    $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
-    $data_type = $form_state['saved_values']['secondPage']['dataType'];
-    
-    for ($i = 1; $i <= $organism_number; $i++){
-        $organism = $form_values["organism-$i"];
-        
-        if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
-            $phenotype = $organism['phenotype'];
-            validate_phenotype($phenotype, "organism-$i", $form, $form_state);
-        }
-        
-        if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
-            $genotype = $organism['genotype'];
-            validate_genotype($genotype, "organism-$i", $form, $form_state);
         }
     }
     
