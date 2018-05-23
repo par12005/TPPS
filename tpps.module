@@ -409,8 +409,6 @@ function tpps_master($form, &$form_state){
         $form_state['stage'] = 'Hellopage';
     }
     
-    //dpm($form_state['stage']);
-    
     $form['step'] = array(
       '#type' => 'textfield',
       '#disabled' => TRUE,
@@ -456,47 +454,44 @@ function tpps_master($form, &$form_state){
 	if(isset($form_state['saved_values']['Hellopage']) and $form_state['stage'] != 'Hellopage') {
             $image_fname = 'message-16-ok.png';
 	}
-        elseif($form_state['stage'] == 'Hellopage'){
+        else{
             $image_fname = 'message-16-warning.png';
         }
-	else {
-            $image_fname = 'message-16-error.png';
-	}
 	$form['#prefix'] .= "<div><img src='$base_url/misc/$image_fname'> Author and Species Information</div>";
 	
 	/**** Page 2 ****/
-	if(isset($form_state['saved_values']['secondPage']) and $form_state['stage'] != 'secondPage') {
+        if($form_state['stage'] != 'secondPage' and !isset($form_state['saved_values']['secondPage']['#cleared'])){
+            $image_fname = 'message-16-error.png';
+        }
+        elseif($form_state['stage'] != 'secondPage' and $form_state['saved_values']['secondPage']['#cleared'] == TRUE) {
             $image_fname = 'message-16-ok.png';
 	}
-        elseif($form_state['stage'] == 'secondPage'){
-            $image_fname = 'message-16-warning.png';
-        }
 	else {
-            $image_fname = 'message-16-error.png';
+            $image_fname = 'message-16-warning.png';
 	}
 	$form['#prefix'] .= "<div><img src='$base_url/misc/$image_fname'> Experimental Conditions</div>";	
 
 	/**** Page 3 ****/
-	if(isset($form_state['saved_values']['thirdPage']) and $form_state['stage'] != 'thirdPage') {
+	if($form_state['stage'] != 'thirdPage' and !isset($form_state['saved_values']['thirdPage']['#cleared'])){
+            $image_fname = 'message-16-error.png';
+        }
+        elseif($form_state['stage'] != 'thirdPage' and $form_state['saved_values']['thirdPage']['#cleared'] == TRUE) {
             $image_fname = 'message-16-ok.png';
 	}
-        elseif($form_state['stage'] == 'thirdPage'){
-            $image_fname = 'message-16-warning.png';
-        }
 	else {
-            $image_fname = 'message-16-error.png';
+            $image_fname = 'message-16-warning.png';
 	}
 	$form['#prefix'] .= "<div><img src='$base_url/misc/$image_fname'> Tree Accession</div>";	
 	
 	/**** Page 4 ****/
-	if(isset($form_state['saved_values']['fourthPage']) and $form_state['stage'] != 'fourthPage') {
+	if($form_state['stage'] != 'fourthPage' and !isset($form_state['saved_values']['fourthPage']['#cleared'])){
+            $image_fname = 'message-16-error.png';
+        }
+        elseif($form_state['stage'] != 'fourthPage' and $form_state['saved_values']['fourthPage']['#cleared'] == TRUE) {
             $image_fname = 'message-16-ok.png';
 	}
-        elseif($form_state['stage'] == 'fourthPage'){
-            $image_fname = 'message-16-warning.png';
-        }
 	else {
-            $image_fname = 'message-16-error.png';
+            $image_fname = 'message-16-warning.png';
 	}
 	$form['#prefix'] .= "<div><img src='$base_url/misc/$image_fname'> Submit Data</div>";	
 	
@@ -664,6 +659,16 @@ function tpps_master_validate($form, &$form_state){
         
         default:
             break;
+    }
+    
+    $errors = form_get_errors();
+    if ($errors == NULL){
+        $form_state['values']['#cleared'] = TRUE;
+        //dpm($form_state['values']['#cleared']);
+    }
+    else {
+        //dpm($errors);
+        $form_state['values']['#cleared'] = FALSE;
     }
 }
 
