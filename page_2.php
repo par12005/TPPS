@@ -13,7 +13,6 @@ function page_2_create_form(&$form, $form_state){
         $form[$type . 'Date'] = array(
           '#prefix' => "<div class='container-inline'>", 
           '#type' => 'fieldset',
-          '#title' => t('<h2>Experiment ' . $type . ' Date</h2>'),
           '#tree' => TRUE,
           '#suffix' => '</div>',
         );
@@ -28,6 +27,9 @@ function page_2_create_form(&$form, $form_state){
                 )
               )
             );
+        }
+        else {
+            $form[$type . 'Date']['#title'] = t('<h2>Experiment Dates</h2>');
         }
         
         $yearArr = array();
@@ -54,7 +56,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form[$type . 'Date']['year'] = array(
           '#type' => 'select',
-          '#title' => t('Year:'),
+          '#title' => t("$type Year:"),
           '#options' => $yearArr,
           '#default_value' => isset($values[$type . 'Date']['year']) ? $values[$type . 'Date']['year'] : 0,
           '#required' => true,
@@ -62,7 +64,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form[$type . 'Date']['month'] = array(
           '#type' => 'select',
-          '#title' => t('Month:'),
+          '#title' => t("$type Month:"),
           '#options' => $monthArr,
           '#default_value' => isset($values[$type . 'Date']['month']) ? $values[$type . 'Date']['month'] : 0,
           '#required' => true,
