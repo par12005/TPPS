@@ -391,12 +391,9 @@ function tpps_master($form, &$form_state){
     
     if ($old_form_state !== NULL){
         $form_state['saved_values'] = $old_form_state['saved_values'];
-        if (!isset($user->roles[1])){
-            $form_state['stage'] = $old_form_state['stage'];
-        }
     }
     
-    if (!isset($form_state['stage']) and isset($user->roles[1]) and $user->roles[1] == 'anonymous user'){
+    if (!isset($form_state['stage'])){
         $form_state['stage'] = 'frontpage';
         
         front_create_form($form, $form_state);
@@ -404,9 +401,6 @@ function tpps_master($form, &$form_state){
         drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
         
         return $form;
-    }
-    elseif (!isset($form_state['stage'])){
-        $form_state['stage'] = 'Hellopage';
     }
     
     $form['step'] = array(
