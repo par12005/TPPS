@@ -1945,10 +1945,90 @@ function summary_create_form(&$form, $form_state){
 
 function tpps_test_page($form, &$form_state){
     
-    $form['info'] = array(
-      '#type' => 'textfield',
-      '#title' => 'info',
+    $form['vcf'] = array(
+      '#type' => 'managed_file',
+      '#title' => 'vcf',
+      '#upload_location' => 'public://',
+      '#tree' => TRUE
     );
+    
+    $form['file'] = array(
+      '#type' => 'managed_file',
+      '#title' => 'file',
+      '#upload_location' => 'public://',
+      '#tree' => TRUE
+    );
+    
+    $form['file']['columns'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('<h2>Columns</h2>'),
+      '#description' => 'Please define which columns hold the required data:'
+    );
+    
+    $file = 0;
+    if (isset($form_state['values']['file']) and $form_state['values']['file'] != 0){
+        $file = $form_state['values']['file'];
+    }
+
+    if ($file != 0){
+        $file = file_load($file);
+        $file_name = explode('//', $file->uri);
+        $file_name = $file_name[1];
+
+        //vm
+        $location = "/var/www/html/Drupal/sites/default/files/$file_name";
+        //dev site
+        //$location = "/var/www/Drupal/sites/default/files/$file_name";
+        $content = fopen($file->uri, 'r');
+        
+        $first = TRUE;
+        
+        $column_options = array(
+          'N/A',
+          'Scaffold/Chromosome',
+        );
+        $headers = array();
+        
+        for ($i = 0; $i < 3; $i++){
+            $line = fgets($content);
+            //dpm($line);
+            $line = explode(' ', $line);
+            
+            if ($first){
+                foreach ($line as $col){
+                    $headers[$col] = $col;
+                    $form['file']['columns'][$col] = array(
+                      '#type' => 'select',
+                      '#title' => '',
+                      '#options' => $column_options,
+                      '#prefix' => "<td>",
+                      '#suffix' => "</td>"
+                    );
+                    
+                    if ($first){
+                        $first = FALSE;
+                        $form['file']['columns'][$col]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form['file']['columns'][$col]['#prefix'];
+                    }
+                }
+                $display = "<tr>";
+            }
+            if ($line[0][0] == '>'){
+                $display .= "<tr>";
+                for ($j = 0; $j < count($headers); $j++){
+                    $display .= "<th>{$line[$j]}</th>";
+                }
+                $display .= "</tr>";
+            }
+            elseif (!isset($line)){
+                break;
+            }
+            else{
+                $i--;
+            }
+            
+        }
+        $form['file']['columns'][$col]['#suffix'] .= $display;
+    }
     
     $form['Next'] = array(
       '#type' => 'submit',
@@ -1959,6 +2039,46 @@ function tpps_test_page($form, &$form_state){
 }
 
 function tpps_test_page_validate($form, &$form_state){
+    
+    $vcf = $form_state['values']['vcf'];
+    $assembly = $form_state['values']['file'];
+    $scaffold_col = 3;
+    
+    $vcf_content = fopen(file_load($vcf)->uri, 'r');
+    
+    while (($vcf_line = fgets($vcf_content)) !== FALSE){
+        if ($vcf_line[0] != '#'){
+            
+            $assembly_content = fopen(file_load($assembly)->uri, 'r');
+            $vcf_values = explode("\t", $vcf_line);
+            $scaffold_id = $vcf_values[0];
+            $match = FALSE;
+            
+            while (($assembly_line = fgets($assembly_content)) !== FALSE){
+                if ($assembly_line[0] != '>'){
+                    continue;
+                }
+                else{
+                    $assembly_values = explode(' ', $assembly_line);
+                    $assembly_scaffold = $assembly_values[$scaffold_col];
+                    if ($assembly_scaffold == $scaffold_id){
+                        $match = TRUE;
+                        break;
+                    }
+                }
+            }
+            
+            fclose($assembly_content);
+            
+            if (!$match){
+                dpm($scaffold_id);
+                form_set_error('file', "VCF File: scaffold $scaffold_id not found in assembly file(s)");
+            }
+            else {
+                dpm("matched: $scaffold_id");
+            }
+        }
+    }
     
     /*for ($i = 0; $i < 500; $i++){
         $file = file_load($i);
