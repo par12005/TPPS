@@ -254,10 +254,17 @@ function page_2_create_form(&$form, $form_state){
         $form['naturalPopulation']['season']['Fall']['#default_value'] = isset($values['naturalPopulation']['season']['Fall']) ? $values['naturalPopulation']['season']['Fall'] : NULL;
         $form['naturalPopulation']['season']['Winter']['#default_value'] = isset($values['naturalPopulation']['season']['Winter']) ? $values['naturalPopulation']['season']['Winter'] : NULL;
         
+        $num_arr = array();
+        $num_arr[0] = '- Select -';
+        for ($i = 1; $i <= 30; $i++) {
+            $num_arr[$i] = $i;
+        }
+        
         $form['naturalPopulation']['assessions'] = array(
-          '#type' => 'textfield',
+          '#type' => 'select',
           '#title' => t('Number of times the populations were assessed (on average):'),
-          '#default_value' => isset($values['naturalPopulation']['assessions']) ? $values['naturalPopulation']['assessions'] : NULL,
+          '#default_value' => isset($values['naturalPopulation']['assessions']) ? $values['naturalPopulation']['assessions'] : 0,
+          '#options' => $num_arr,
         );
         
         return $form;
@@ -1225,10 +1232,17 @@ function page_2_create_form(&$form, $form_state){
         $form['plantation']['season']['Fall']['#default_value'] = isset($values['plantation']['season']['Fall']) ? $values['plantation']['season']['Fall'] : NULL;
         $form['plantation']['season']['Winter']['#default_value'] = isset($values['plantation']['season']['Winter']) ? $values['plantation']['season']['Winter'] : NULL;
         
+        $num_arr = array();
+        $num_arr[0] = '- Select -';
+        for ($i = 1; $i <= 30; $i++) {
+            $num_arr[$i] = $i;
+        }
+        
         $form['plantation']['assessions'] = array(
-          '#type' => 'textfield',
+          '#type' => 'select',
           '#title' => t('Number of times the populations were assessed (on average):'),
-          '#default_value' => isset($values['plantation']['assessions']) ? $values['plantation']['assessions'] : NULL,
+          '#default_value' => isset($values['plantation']['assessions']) ? $values['plantation']['assessions'] : 0,
+          '#options' => $num_arr,
         );
         
         $treatment_options = drupal_map_assoc(array(
@@ -1424,7 +1438,7 @@ function page_2_validate_form(&$form, &$form_state){
             }
             
             $assessions = $natural_population['assessions'];
-            if ($assessions == ''){
+            if ($assessions == '0'){
                 form_set_error('naturalPopulation][assessions', 'Number of times the populations were assessed: field is required.');
             }
             break;
@@ -1731,7 +1745,7 @@ function page_2_validate_form(&$form, &$form_state){
             }
             
             $assessions = $plantation['assessions'];
-            if ($assessions == ''){
+            if ($assessions == '0'){
                 form_set_error('plantation][assessions', 'Number of times the populations were assessed: field is required.');
             }
             
