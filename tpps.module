@@ -1701,51 +1701,62 @@ function submit_all($form, &$form_state){
         if (isset($fourthpage["organism-$i"]['genotype'])){
             $genotype = $fourthpage["organism-$i"]['genotype'];
             
-            $reference_genome_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
-              'project_id' => $project_id,
-              'type_id' => '1912',
-              'value' => ($genotype['ref-genome'] != 'Other') ? $genotype['ref-genome'] : $genotype['ref-genome-other']
-            ));
-            
-            if ($genotype['marker-type']['SNPs'] == 'SNPs'){
-                $snps = $genotype['SNPs'];
-                $assembly_check = $snps['assembly-check'];
+            if ($genotype['ref-genome'] == 'url'){
+                $reference_genome_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '1912',
+                  'value' => $genotype['ref-genome-other']
+                ));
+            }
+            elseif ($genotype['ref-genome'] == 'bio'){
+                $project_dbxref_id = tpps_create_record('tpps_project_dbxref', 'tpps_project_dbxref_id', array(
+                  'project_id' => $project_id,
+                  'dbxref_id' => $genotype['BioProject-id'],
+                ));
                 
-                if ($assembly_check === '0'){
-                    $project_dbxref_id = tpps_create_record('tpps_project_dbxref', 'tpps_project_dbxref_id', array(
-                      'project_id' => $project_id,
-                      'dbxref_id' => $snps['BioProject-id'],
-                    ));
-                    
-                    $bioproject_assembly_file_ids = array();
-                    
-                    foreach ($genotype['SNPs']['assembly-auto'] as $item){
-                        if ($item !== '0'){
-                            array_push($bioproject_assembly_file_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
-                              'project_id' => $project_id,
-                              'type_id' => '2836',
-                              'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$item"
-                            )));
-                        }
+                $bioproject_assembly_file_ids = array();
+
+                foreach ($genotype['assembly-auto'] as $item){
+                    if ($item !== '0'){
+                        array_push($bioproject_assembly_file_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                          'project_id' => $project_id,
+                          'type_id' => '2836',
+                          'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$item"
+                        )));
                     }
                 }
-                else {
-                    $assembly_user = $snps['assembly-user'];
-                    $assembly_user_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
-                      'project_id' => $project_id,
-                      'type_id' => '2836',
-                      'value' => file_create_url(file_load($assembly_user)->uri)
-                    ));
-                }
-                
+            }
+            elseif ($genotype['ref-genome'] == 'manual'){
+                $assembly_user = $genotype['assembly-user'];
+                $assembly_user_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($assembly_user)->uri)
+                ));
+            }
+            else {
+                $reference_genome_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '1912',
+                  'value' => $genotype['ref-genome']
+                ));
             }
             
-            $genotype_file_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
-              'project_id' => $project_id,
-              'type_id' => '2836',
-              'value' => file_create_url(file_load($genotype['file']))
-            ));
-            
+            if ($genotype['marker-type']['SSRs/cpSSRs'] != '0' or $genotype['marker-type']['Other'] != '0'){
+                $genotype_file_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($genotype['file']))
+                ));
+            }
+                
+            if ($genotype['marker-type']['SNPs'] != '0'){
+                $genotype_vcf_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($genotype['vcf']))
+                ));
+            }
         }
     }
 }
