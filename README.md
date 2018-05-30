@@ -35,6 +35,8 @@ Users can only access the TPPS form while they are logged into their Tripal acco
 
 If the user is not logged in, they are redirected to the login page, where they can login as an existing user or sign up to create a new account.
 
+![alt text](/screenshots/TPPS_landing.png)
+
 # Publication and Species Interface
 The first set of fields in TPPS is the publication and species interface, where users upload data about their publication and up to 5 studied species. The form fields and their properties are as follows:
 
@@ -54,6 +56,8 @@ The first set of fields in TPPS is the publication and species interface, where 
 - Tree Species: set of form fields
   - Species **x**: textfield with autocomplete options from the chado.organism table
   - Up to 5 different species are allowed per submission
+
+![alt text](/screenshots/TPPS_author_species.png)
 
 # Study Design
 The second set of fields in TPPS is the Study Design section, where users upload metadata about their experiment. The form fields and their properties are as follows:
@@ -138,6 +142,7 @@ The second set of fields in TPPS is the Study Design section, where users upload
   - Treatments: checkboxes with options 'Seasonal environment', 'Antibiotic regime', 'Chemical administration', 'Disease status', 'Fertilizer regime', 'Fungicide regime', 'Gaseous regime', 'Gravity Growth hormone regime', 'Herbicide regime', 'Mechanical treatment', 'Mineral nutrient regime', 'Non-mineral nutrient regime', 'Salt regime', 'Watering regime', 'Pesticide regime', 'pH regime', 'Other perturbation'
   - Treatments Description: if an option from 'Treatments' is selected, users must provide a description of the treatment in a textfield
 
+![alt text](/screenshots/TPPS_exp_cond.png)
 
 # Tree Accession
 The third set of fields in TPPS is the Tree Accession section, where users upload information about where trees are located. The form fields and their properties are as follows:
@@ -149,6 +154,8 @@ The third set of fields in TPPS is the Tree Accession section, where users uploa
 - Separate Tree Accession Information: set of form fields - only visible if the 'Separate Tree Accession' checkbox is checked
   - Tree Accession File **x**: file upload for a spreadsheet of tree locations of tree species **x**
   - Tree Accession Columns **x**: set of drop-down menus, allowing the user to define which of their columns contain the Tree ID, and which of their columns contain location information
+
+![alt text](/screenshots/TPPS_accession.png)
 
 # Genotype, Phenotype, and Environment
 The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section, where users upload Genotypic, Phenotypic, and Environmental data and metadata. The form fields and their properties are as follows:
@@ -193,6 +200,8 @@ The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment sec
   - Genotype File: file upload for a spreadsheet or .VCF file of genotypes
   - Genotype File Columns: set of drop-down menus, allowing the user to define which of their columns contain the Tree ID
 
+![alt text](/screenshots/TPPS_data.png)
+
 # Input Validation
 Once the 4 sets of fields have been filled out by the user, their data is validated to ensure completion and integrity. All fields except for those marked (Optional) above are required when they are visible, and are therefore checked for completeness. Tree IDs from Phenotype and Genotype files are checked against Tree IDs in Tree Accession files to ensure there is not any data without trees. Users are allowed to upload trees in Tree Accession files without Genotype/Phenotype data, but not Genotype/Phenotype data without tree locations. Input validation is broken up into steps, once after each set of fields. This is so that the user cannot continue to the next set of fields if they have incomplete or invalid data in their current set, and so that a user does not need to go back to previous sets of fields to correct data later.
 
@@ -212,7 +221,7 @@ After the data has been submitted and approved, the user will recieve an email w
 
 # Resources
 
-[TPPS on TreeGenes!](https://tgwebdev.cam.uchc.edu/Drupal/master)
+[TPPS on TreeGenes!](https://treegenesdb.org/Drupal/master)
 
 [Newest TPPS Flow Concept document](https://docs.google.com/document/d/1fyRlf18j5fq8D2l5Yvx9X-VdUqlrkSvoLC9KGbDnrU8/edit?usp=sharing)
 
