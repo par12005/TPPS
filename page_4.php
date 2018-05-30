@@ -633,6 +633,9 @@ function page_4_ref(&$fields, $form_state, $values, $id){
       '#type' => 'managed_file',
       '#title' => t('Assembly Files: (FASTA format)'),
       '#upload_location' => 'public://',
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('fsa_nt')
+      ),
       '#default_value' => isset($values[$id]['genotype']['assembly-user']) ? $values[$id]['genotype']['assembly-user'] : NULL,
       '#states' => array(
         'visible' => array(
