@@ -138,6 +138,10 @@ function tpps_init_project($form, &$form_state){
     $dbxref_id = tpps_compare_temp('dbxref', 'dbxref_id', TRUE) + 1;
     $accession = tpps_compare_temp('dbxref', 'accession', FALSE, array('accession', db_like('TGDR') . '%', 'LIKE'));
     
+    //testing purposes only:
+    //print_r("tpps_dbxref_id: " . $dbxref_id);
+    //print_r(" | accession: " . $accession);
+    
     if ($accession === NULL){
         $accession = "TGDR001";
     }
@@ -148,11 +152,9 @@ function tpps_init_project($form, &$form_state){
     while (strlen($accession) < 3){
         $accession = "0" . $accession;
     }
-    $accession = "TGDR" . $accession;
-
-    //testing purposes only:
-    //print_r("tpps_dbxref_id: " . $dbxref_id);
-    //print_r(" | accession: " . $accession);
+    if (substr($accession, 0, 4) != 'TGDR'){
+        $accession = "TGDR" . $accession;
+    }
     
     //make new record in temp table
     $values = array(
@@ -162,8 +164,8 @@ function tpps_init_project($form, &$form_state){
     );
     
     $insert = db_insert('chado.tpps_dbxref')
-        ->fields($values);
-        //->execute();
+        ->fields($values)
+        ->execute();
     
     $form_state['dbxref_id'] = $dbxref_id;
     $form_state['accession'] = $accession;
@@ -390,7 +392,7 @@ function tpps_master($form, &$form_state){
     $old_form_state = variable_get('old_form_state', NULL);
     
     if ($old_form_state !== NULL){
-        $form_state['saved_values'] = $old_form_state['saved_values'];
+        //$form_state['saved_values'] = $old_form_state['saved_values'];
     }
     
     if (!isset($form_state['stage'])){
@@ -945,8 +947,11 @@ function submit_all($form, &$form_state){
     if ($secondpage['studyLocation']['type'] !== '2'){
         $location = $secondpage['studyLocation']['latitude'] . ' Latitude, ' . $secondpage['studyLocation']['longitude'] . ' Longitude';
     }
-    else{
+    elseif ($location = $secondpage['studyLocation']['customLocation']['region'] != ''){
         $location = $secondpage['studyLocation']['customLocation']['region'] . ', ' . $secondpage['studyLocation']['customLocation']['country'];
+    }
+    else{
+        $location = $secondpage['studyLocation']['customLocation']['country'];
     }
     
     $study_location_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
@@ -997,9 +1002,10 @@ function submit_all($form, &$form_state){
         case ('1'):
             $natural_population = $secondpage['naturalPopulation'];
             $number_assessions = $natural_population['assessions'];
+            dpm($natural_population['season']);
             $seasons = "";
             foreach ($natural_population['season'] as $key => $item){
-                if ($item == '1'){
+                if ($item != '0'){
                     $seasons .= $key . ', ';
                 }
             }
