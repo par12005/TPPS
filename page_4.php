@@ -369,7 +369,7 @@ function page_4_create_form(&$form, $form_state){
               ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => true),
             )
           ),
-          '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
+          '#default_value' => isset($values[$id]['genotype']['vcf']) ? $values[$id]['genotype']['vcf'] : NULL,
           '#tree' => TRUE
         );
         
@@ -684,7 +684,7 @@ function page_4_ref(&$fields, $form_state, $values, $id){
                       '#type' => 'select',
                       '#title' => '',
                       '#options' => $column_options,
-                      '#default_value' => isset($values[$id]['genotype']['assembly-user']['columns'][$col]) ? $values[$id]['genotype']['assembly-user']['columns'][$col] : 0,
+                      '#default_value' => isset($values[$id]['genotype']['assembly-user-columns'][$col]) ? $values[$id]['genotype']['assembly-user-columns'][$col] : 0,
                       '#prefix' => "<td>",
                       '#suffix' => "</td>"
                     );

@@ -598,12 +598,23 @@ function tpps_master_validate($form, &$form_state){
         elseif ($form_state['stage'] == 'fourthPage'){
             if (isset($form['organism-1']['genotype'])){
                 for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
-
-                    $form_state['values']["organism-$i"]['genotype']['file-columns'] = array();
                     
-                    foreach ($form["organism-$i"]['genotype']['file']['columns'] as $col => $val){
-                        if ($col[0] != '#'){
-                            $form_state['values']["organism-$i"]['genotype']['file-columns'][$col] = $form["organism-$i"]['genotype']['file']['columns'][$col]['#value'];
+                    if ($form_state['values']["organism-$i"]['genotype']['marker-type']['Other'] != '0' or $form_state['values']["organism-$i"]['genotype']['marker-type']['SSRs/cpSSRs'] != '0'){
+                        $form_state['values']["organism-$i"]['genotype']['file-columns'] = array();
+
+                        foreach ($form["organism-$i"]['genotype']['file']['columns'] as $col => $val){
+                            if ($col[0] != '#'){
+                                $form_state['values']["organism-$i"]['genotype']['file-columns'][$col] = $form["organism-$i"]['genotype']['file']['columns'][$col]['#value'];
+                            }
+                        }
+                    }
+                    if ($form_state['values']["organism-$i"]['genotype']['ref-genome'] == 'manual'){
+                        $form_state['values']["organism-$i"]['genotype']['assembly-user-columns'] = array();
+
+                        foreach ($form["organism-$i"]['genotype']['assembly-user']['columns'] as $col => $val){
+                            if ($col[0] != '#'){
+                                $form_state['values']["organism-$i"]['genotype']['assembly-user-columns'][$col] = $form["organism-$i"]['genotype']['assembly-user']['columns'][$col]['#value'];
+                            }
                         }
                     }
                 }
