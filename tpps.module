@@ -389,12 +389,6 @@ function tpps_master($form, &$form_state){
     
     global $user;
     
-    $old_form_state = variable_get('old_form_state', NULL);
-    
-    if ($old_form_state !== NULL){
-        //$form_state['saved_values'] = $old_form_state['saved_values'];
-    }
-    
     if (!isset($form_state['stage'])){
         $form_state['stage'] = 'frontpage';
         
@@ -403,6 +397,13 @@ function tpps_master($form, &$form_state){
         drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
         
         return $form;
+    }
+    else {
+        $old_form_state = variable_get('tpps_old_form_' . $user->mail, NULL);
+        
+        if ($old_form_state !== NULL){
+            $form_state['saved_values'] = $old_form_state['saved_values'];
+        }
     }
     
     $form['step'] = array(
@@ -681,10 +682,14 @@ function tpps_master_validate($form, &$form_state){
 
 function tpps_master_submit($form, &$form_state){
     
+    global $user;
+    
     $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
+    $persist = TRUE;
     
     switch ($form_state['stage']){
         case 'frontpage':
+            $persist = FALSE;
             $form_state['stage'] = 'Hellopage';
             break;
         
@@ -726,7 +731,7 @@ function tpps_master_submit($form, &$form_state){
             else{
                 dpm('submit');
                 //submit_all($form, $form_state);
-                variable_set('old_form_state', NULL);
+                variable_set('tpps_old_form_' . $user->mail, NULL);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
@@ -744,7 +749,9 @@ function tpps_master_submit($form, &$form_state){
     $form_state['saved_values']['form_build_id'] = $form_state['values']['form_build_id'];
     $form_state['rebuild'] = TRUE;
     
-    variable_set('old_form_state', $form_state);
+    if ($persist){
+        variable_set('tpps_old_form_' . $user->mail, $form_state);
+    }
 }
 
 function tpps_submit_email($form, $form_state){
