@@ -56,59 +56,59 @@ function page_3_create_form(&$form, $form_state){
         $file = $form_state['saved_values']['thirdPage']['tree-accession']['file'];
     }
     
-    if ($file != 0 and $form_state['triggering_element']['#value'] != "Remove"){
-        $file = file_load($file);
-        $file_name = explode('//', $file->uri);
-        $file_name = $file_name[1];
+    if ($file != 0){
+        if (($file = file_load($file))){
+            $file_name = explode('//', $file->uri);
+            $file_name = $file_name[1];
 
-        //vm
-        //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-        //dev site
-        $location = "/var/www/Drupal/sites/default/files/$file_name";
-        $content = parse_xlsx($location);
+            //vm
+            //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
+            //dev site
+            $location = "/var/www/Drupal/sites/default/files/$file_name";
+            $content = parse_xlsx($location);
 
-        $column_options = array(
-          'N/A',
-          'Tree Identifier',
-          'Country',
-          'Region',
-          'Latitude',
-          'Longitude'
-        );
-
-        $first = TRUE;
-
-        foreach ($content['headers'] as $item){
-            $form['tree-accession']['file']['columns'][$item] = array(
-              '#type' => 'select',
-              '#title' => t($item),
-              '#options' => $column_options,
-              '#default_value' => isset($values['tree-accession']['file-columns'][$item]) ? $values['tree-accession']['file-columns'][$item] : 0,
-              '#prefix' => "<td>",
-              '#suffix' => "</td>"
+            $column_options = array(
+              'N/A',
+              'Tree Identifier',
+              'Country',
+              'Region',
+              'Latitude',
+              'Longitude'
             );
-            
-            if ($first){
-                $first = FALSE;
-                $form['tree-accession']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form['tree-accession']['file']['columns'][$item]['#prefix'];
-            }
-        }
 
-        // display sample data
-        $display = "</tr>";
-        for ($i = 0; $i < 3; $i++){
-            if (isset($content[$i])){
-                $display .= "<tr>";
-                foreach ($content['headers'] as $item){
-                    $display .= "<th>{$content[$i][$item]}</th>";
+            $first = TRUE;
+
+            foreach ($content['headers'] as $item){
+                $form['tree-accession']['file']['columns'][$item] = array(
+                  '#type' => 'select',
+                  '#title' => t($item),
+                  '#options' => $column_options,
+                  '#default_value' => isset($values['tree-accession']['file-columns'][$item]) ? $values['tree-accession']['file-columns'][$item] : 0,
+                  '#prefix' => "<td>",
+                  '#suffix' => "</td>"
+                );
+
+                if ($first){
+                    $first = FALSE;
+                    $form['tree-accession']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form['tree-accession']['file']['columns'][$item]['#prefix'];
                 }
-                $display .= "</tr>";
             }
+
+            // display sample data
+            $display = "</tr>";
+            for ($i = 0; $i < 3; $i++){
+                if (isset($content[$i])){
+                    $display .= "<tr>";
+                    foreach ($content['headers'] as $item){
+                        $display .= "<th>{$content[$i][$item]}</th>";
+                    }
+                    $display .= "</tr>";
+                }
+            }
+            $display .= "</tbody></table></div>";
+
+            $form['tree-accession']['file']['columns'][$item]['#suffix'] .= $display;
         }
-        $display .= "</tbody></table></div>";
-
-        $form['tree-accession']['file']['columns'][$item]['#suffix'] .= $display;
-
     }
     
     if ($species_number > 1){

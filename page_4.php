@@ -251,7 +251,6 @@ function page_4_create_form(&$form, $form_state){
             )
           )
         );
-
         
         return $fields;
     }
@@ -301,60 +300,61 @@ function page_4_create_form(&$form, $form_state){
         $file = 0;
         if (isset($form_state['values'][$id]['genotype']['file']) and $form_state['values'][$id]['genotype']['file'] != 0){
             $file = $form_state['values'][$id]['genotype']['file'];
+            //dpm($file);
         }
         elseif (isset($form_state['saved_values']['fourthPage'][$id]['genotype']['file']) and $form_state['saved_values']['fourthPage'][$id]['genotype']['file'] != 0){
             $file = $form_state['saved_values']['fourthPage'][$id]['genotype']['file'];
         }
         
         if ($file != 0){
-            $file = file_load($file);
-            $file_name = explode('//', $file->uri);
-            $file_name = $file_name[1];
+            if (($file = file_load($file))){
+                $file_name = explode('//', $file->uri);
+                $file_name = $file_name[1];
 
-            //vm
-            //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-            //dev site
-            $location = "/var/www/Drupal/sites/default/files/$file_name";
-            $content = parse_xlsx($location);
+                //vm
+                //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
+                //dev site
+                $location = "/var/www/Drupal/sites/default/files/$file_name";
+                $content = parse_xlsx($location);
 
-            $column_options = array(
-              'N/A',
-              'Tree Identifier',
-            );
-
-            $first = TRUE;
-
-            foreach ($content['headers'] as $item){
-                $fields['file']['columns'][$item] = array(
-                  '#type' => 'select',
-                  '#title' => t($item),
-                  '#options' => $column_options,
-                  '#default_value' => isset($values[$id]['genotype']['file-columns'][$item]) ? $values[$id]['genotype']['file-columns'][$item] : 0,
-                  '#prefix' => "<td>",
-                  '#suffix' => "</td>"
+                $column_options = array(
+                  'N/A',
+                  'Tree Identifier',
                 );
-                
-                if ($first){
-                    $first = FALSE;
-                    $fields['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
-                }
-            }
 
-            // display sample data
-            $display = "</tr>";
-            for ($i = 0; $i < 3; $i++){
-                if (isset($content[$i])){
-                    $display .= "<tr>";
-                    foreach ($content['headers'] as $item){
-                        $display .= "<th>{$content[$i][$item]}</th>";
+                $first = TRUE;
+
+                foreach ($content['headers'] as $item){
+                    $fields['file']['columns'][$item] = array(
+                      '#type' => 'select',
+                      '#title' => t($item),
+                      '#options' => $column_options,
+                      '#default_value' => isset($values[$id]['genotype']['file-columns'][$item]) ? $values[$id]['genotype']['file-columns'][$item] : 0,
+                      '#prefix' => "<td>",
+                      '#suffix' => "</td>"
+                    );
+
+                    if ($first){
+                        $first = FALSE;
+                        $fields['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
                     }
-                    $display .= "</tr>";
                 }
+
+                // display sample data
+                $display = "</tr>";
+                for ($i = 0; $i < 3; $i++){
+                    if (isset($content[$i])){
+                        $display .= "<tr>";
+                        foreach ($content['headers'] as $item){
+                            $display .= "<th>{$content[$i][$item]}</th>";
+                        }
+                        $display .= "</tr>";
+                    }
+                }
+                $display .= "</tbody></table></div>";
+
+                $fields['file']['columns'][$item]['#suffix'] .= $display;
             }
-            $display .= "</tbody></table></div>";
-
-            $fields['file']['columns'][$item]['#suffix'] .= $display;
-
         }
         
         $fields['vcf'] = array(
@@ -425,56 +425,56 @@ function page_4_create_form(&$form, $form_state){
             }
             
             if ($file != 0){
-                $file = file_load($file);
-                $file_name = explode('//', $file->uri);
-                $file_name = $file_name[1];
+                if (($file = file_load($file))){
+                    $file_name = explode('//', $file->uri);
+                    $file_name = $file_name[1];
 
-                //vm
-                //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-                //dev site
-                $location = "/var/www/Drupal/sites/default/files/$file_name";
-                $content = parse_xlsx($location);
+                    //vm
+                    //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
+                    //dev site
+                    $location = "/var/www/Drupal/sites/default/files/$file_name";
+                    $content = parse_xlsx($location);
 
-                $column_options = array(
-                  'N/A',
-                  'Tree Identifier',
-                  'Phenotype Name/Identifier',
-                  'Value(s)'
-                );
-
-                $first = TRUE;
-
-                foreach ($content['headers'] as $item){
-                    $form["organism-$i"]['phenotype']['file']['columns'][$item] = array(
-                      '#type' => 'select',
-                      '#title' => t($item),
-                      '#options' => $column_options,
-                      '#default_value' => isset($values["organism-$i"]['phenotype']['file-columns'][$item]) ? $values["organism-$i"]['phenotype']['file-columns'][$item] : 0,
-                      '#prefix' => "<td>",
-                      '#suffix' => "</td>"
+                    $column_options = array(
+                      'N/A',
+                      'Tree Identifier',
+                      'Phenotype Name/Identifier',
+                      'Value(s)'
                     );
-            
-                    if ($first){
-                        $first = FALSE;
-                        $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'];
-                    }
-                }
 
-                // display sample data
-                $display = "</tr>";
-                for ($j = 0; $j < 3; $j++){
-                    if (isset($content[$j])){
-                        $display .= "<tr>";
-                        foreach ($content['headers'] as $item){
-                            $display .= "<th>{$content[$j][$item]}</th>";
+                    $first = TRUE;
+
+                    foreach ($content['headers'] as $item){
+                        $form["organism-$i"]['phenotype']['file']['columns'][$item] = array(
+                          '#type' => 'select',
+                          '#title' => t($item),
+                          '#options' => $column_options,
+                          '#default_value' => isset($values["organism-$i"]['phenotype']['file-columns'][$item]) ? $values["organism-$i"]['phenotype']['file-columns'][$item] : 0,
+                          '#prefix' => "<td>",
+                          '#suffix' => "</td>"
+                        );
+
+                        if ($first){
+                            $first = FALSE;
+                            $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'];
                         }
-                        $display .= "</tr>";
                     }
+
+                    // display sample data
+                    $display = "</tr>";
+                    for ($j = 0; $j < 3; $j++){
+                        if (isset($content[$j])){
+                            $display .= "<tr>";
+                            foreach ($content['headers'] as $item){
+                                $display .= "<th>{$content[$j][$item]}</th>";
+                            }
+                            $display .= "</tr>";
+                        }
+                    }
+                    $display .= "</tbody></table></div>";
+
+                    $form["organism-$i"]['phenotype']['file']['columns'][$item]['#suffix'] .= $display;
                 }
-                $display .= "</tbody></table></div>";
-
-                $form["organism-$i"]['phenotype']['file']['columns'][$item]['#suffix'] .= $display;
-
             }
         }
         
@@ -641,9 +641,10 @@ function page_4_ref(&$fields, $form_state, $values, $id){
         'visible' => array(
           ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')
         )
-      )
+      ),
+      '#tree' => TRUE
     );
-
+    
     $fields['assembly-user']['columns'] = array(
       '#type' => 'fieldset',
       '#title' => t('<h2>Columns</h2>'),
@@ -658,65 +659,66 @@ function page_4_ref(&$fields, $form_state, $values, $id){
     $file = 0;
     if (isset($form_state['values'][$id]['genotype']['assembly-user']) and $form_state['values'][$id]['genotype']['assembly-user'] != 0){
         $file = $form_state['values'][$id]['genotype']['assembly-user'];
+        $form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-user'] = $form_state['values'][$id]['genotype']['assembly-user'];
     }
     elseif (isset($form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-user']) and $form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-user'] != 0){
         $file = $form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-user'];
     }
     
-    if ($file != 0){
-        $file = file_load($file);
-        $content = fopen($file->uri, 'r');
-        
-        $first = TRUE;
-        
-        $column_options = array(
-          'N/A',
-          'Scaffold/Chromosome',
-        );
-        $headers = array();
-        
-        for ($i = 0; $i < 3; $i++){
-            $line = fgets($content);
-            //dpm($line);
-            $line = explode(' ', $line);
-            
-            if ($first){
-                foreach ($line as $col){
-                    $headers[$col] = $col;
-                    $fields['assembly-user']['columns'][$col] = array(
-                      '#type' => 'select',
-                      '#title' => '',
-                      '#options' => $column_options,
-                      '#default_value' => isset($values[$id]['genotype']['assembly-user-columns'][$col]) ? $values[$id]['genotype']['assembly-user-columns'][$col] : 0,
-                      '#prefix' => "<td>",
-                      '#suffix' => "</td>"
-                    );
-                    
-                    if ($first){
-                        $first = FALSE;
-                        $fields['assembly-user']['columns'][$col]['#prefix'] = "<div><table border='1'><tbody><tr>" . $fields['assembly-user']['columns'][$col]['#prefix'];
+    if ($file != 0 and $form_state['triggering_element']['#value'] != 'Remove'){
+        if (($file = file_load($file))){
+            $content = fopen($file->uri, 'r');
+
+            $first = TRUE;
+
+            $column_options = array(
+              'N/A',
+              'Scaffold/Chromosome',
+            );
+            $headers = array();
+
+            for ($i = 0; $i < 3; $i++){
+                $line = fgets($content);
+                $line = explode(' ', $line);
+
+                if ($first){
+                    foreach ($line as $col){
+                        $headers[$col] = $col;
+                        $fields['assembly-user']['columns'][$col] = array(
+                          '#type' => 'select',
+                          '#title' => '',
+                          '#options' => $column_options,
+                          '#default_value' => isset($values[$id]['genotype']['assembly-user-columns'][$col]) ? $values[$id]['genotype']['assembly-user-columns'][$col] : 0,
+                          '#prefix' => "<td>",
+                          '#suffix' => "</td>"
+                        );
+
+                        if ($first){
+                            $first = FALSE;
+                            $fields['assembly-user']['columns'][$col]['#prefix'] = "<div><table border='1'><tbody><tr>" . $fields['assembly-user']['columns'][$col]['#prefix'];
+                        }
                     }
+                    $display = "<tr>";
                 }
-                $display = "<tr>";
-            }
-            if ($line[0][0] == '>'){
-                $display .= "<tr>";
-                for ($j = 0; $j < count($headers); $j++){
-                    $display .= "<th>{$line[$j]}</th>";
+                if ($line[0][0] == '>'){
+                    $display .= "<tr>";
+                    for ($j = 0; $j < count($headers); $j++){
+                        $display .= "<th>{$line[$j]}</th>";
+                    }
+                    $display .= "</tr>";
                 }
-                $display .= "</tr>";
+                elseif (!isset($line)){
+                    break;
+                }
+                else{
+                    $i--;
+                }
+
             }
-            elseif (!isset($line)){
-                break;
-            }
-            else{
-                $i--;
-            }
-            
+            $display .= "</tbody></table></div>";
+
+            $fields['assembly-user']['columns'][$col]['#suffix'] .= $display;
         }
-        $display .= "</tbody></table></div>";
-        
-        $fields['assembly-user']['columns'][$col]['#suffix'] .= $display;
     }
     
     return $fields;
@@ -1018,9 +1020,9 @@ function page_4_validate_form(&$form, &$form_state){
                     
                     $form_state['values'][$id]['genotype']['assembly-user-columns'] = array();
 
-                    foreach ($form[$id]['genotype']['assembly-user']['columns'] as $req => $val){
+                    foreach ($form[$id]['genotype']['assembly-user']['#value']['columns'] as $req => $val){
                         if ($req[0] != '#'){
-                            $form_state['values'][$id]['genotype']['assembly-user-columns'][$req] = $form[$id]['genotype']['assembly-user']['columns'][$req]['#value'];
+                            $form_state['values'][$id]['genotype']['assembly-user-columns'][$req] = $form[$id]['genotype']['assembly-user']['#value']['columns'][$req];
 
                             $col_val = $form_state['values'][$id]['genotype']['assembly-user-columns'][$req];
                             if ($col_val != '0'){

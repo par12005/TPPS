@@ -308,59 +308,6 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name){
     return $missing_ids;
 }
 
-function tpps_parse_vcf($file){
-    
-    $content = fopen($file->uri, "r");
-
-    if ($content !== FALSE){
-        
-        $file_format = array();
-        $first_content = TRUE;
-        
-        for ($i = 0; $i < 1000000; $i++){
-            $line = fgets($content);
-            if ($line === FALSE){
-                break;
-            }
-            if ($line[0] == '#'){
-                //formatting/file info
-                //dpm($line);
-                if (preg_match('/^##fileformat/', $line) == 1){
-                    $file_format['version'] = substr($line, 13);
-                }
-            }
-            else{
-                //actual content
-                $line = explode("\t", $line);
-
-                $chrom = $line[0];
-                $position = $line[1];
-                $id = $line[2];
-                $ref = $line[3];
-                $alt = explode(",", $line[4]);
-                $quality = $line[5];
-                $filter = $line[6];
-                $info = explode(";", $line[7]);
-                $format = $line[8];
-                $unknown = array_slice($line, 9);
-                
-                if (count($alt[0]) == 1){
-                    $type = 'SNP';
-                }
-                else {
-                    $type = 'Indel';
-                }
-                
-                //dpm($line);
-            }
-
-        }
-        dpm($file_format);
-    }
-    
-    return;
-}
-
 function tpps_page_build(&$page){
     
     //dpm($page['content']['system_main']['step']['#default_value']);
@@ -402,7 +349,7 @@ function tpps_master($form, &$form_state){
         $old_form_state = variable_get('tpps_old_form_' . $user->mail, NULL);
         
         if ($old_form_state !== NULL){
-            $form_state['saved_values'] = $old_form_state['saved_values'];
+            //$form_state['saved_values'] = $old_form_state['saved_values'];
         }
     }
     
@@ -729,7 +676,7 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'fourthPage';
             }
             else{
-                dpm('submit');
+                //dpm('submit');
                 //submit_all($form, $form_state);
                 variable_set('tpps_old_form_' . $user->mail, NULL);
                 tpps_submit_email($form, $form_state);

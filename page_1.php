@@ -185,56 +185,56 @@ function page_1_create_form(&$form, $form_state){
             }
             
             if ($file != 0){
-                $file = file_load($file);
-                $file_name = explode('//', $file->uri);
-                $file_name = $file_name[1];
+                if (($file = file_load($file))){
+                    $file_name = explode('//', $file->uri);
+                    $file_name = $file_name[1];
 
-                //vm
-                //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-                //dev site
-                $location = "/var/www/Drupal/sites/default/files/$file_name";
-                $content = parse_xlsx($location);
-                
-                $column_options = array(
-                  'N/A',
-                  'First Name',
-                  'Last Name',
-                  'Middle Initial'
-                );
-                
-                $first = TRUE;
-                
-                foreach ($content['headers'] as $item){
-                    $form['publication']['secondaryAuthors']['file']['columns'][$item] = array(
-                      '#type' => 'select',
-                      '#title' => t($item),
-                      '#options' => $column_options,
-                      '#default_value' => isset($values['publication']['secondaryAuthors']['file-columns'][$item]) ? $values['publication']['secondaryAuthors']['file-columns'][$item] : 0,
-                      '#prefix' => "<td>",
-                      '#suffix' => "</td>"
+                    //vm
+                    //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
+                    //dev site
+                    $location = "/var/www/Drupal/sites/default/files/$file_name";
+                    $content = parse_xlsx($location);
+
+                    $column_options = array(
+                      'N/A',
+                      'First Name',
+                      'Last Name',
+                      'Middle Initial'
                     );
-                    
-                    if ($first){
-                        $first = FALSE;
-                        $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'];
-                    }
-                }
-                
-                // display sample data
-                $display = "</tr>";
-                for ($i = 0; $i < 3; $i++){
-                    if (isset($content[$i])){
-                        $display .= "<tr>";
-                        foreach ($content['headers'] as $item){
-                            $display .= "<th>{$content[$i][$item]}</th>";
+
+                    $first = TRUE;
+
+                    foreach ($content['headers'] as $item){
+                        $form['publication']['secondaryAuthors']['file']['columns'][$item] = array(
+                          '#type' => 'select',
+                          '#title' => t($item),
+                          '#options' => $column_options,
+                          '#default_value' => isset($values['publication']['secondaryAuthors']['file-columns'][$item]) ? $values['publication']['secondaryAuthors']['file-columns'][$item] : 0,
+                          '#prefix' => "<td>",
+                          '#suffix' => "</td>"
+                        );
+
+                        if ($first){
+                            $first = FALSE;
+                            $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'];
                         }
-                        $display .= "</tr>";
                     }
+
+                    // display sample data
+                    $display = "</tr>";
+                    for ($i = 0; $i < 3; $i++){
+                        if (isset($content[$i])){
+                            $display .= "<tr>";
+                            foreach ($content['headers'] as $item){
+                                $display .= "<th>{$content[$i][$item]}</th>";
+                            }
+                            $display .= "</tr>";
+                        }
+                    }
+                    $display .= "</tbody></table></div>";
+
+                    $form['publication']['secondaryAuthors']['file']['columns'][$item]['#suffix'] .= $display;
                 }
-                $display .= "</tbody></table></div>";
-                
-                $form['publication']['secondaryAuthors']['file']['columns'][$item]['#suffix'] .= $display;
-                
             }
             
             return $form;
