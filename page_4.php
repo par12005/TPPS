@@ -858,7 +858,7 @@ function page_4_validate_form(&$form, &$form_state){
 
             if ($phenotype_check == '1'){
                 if ($phenotype_file == ''){
-                    form_set_error("$id][phenotype][file", "Phenotype File: field is required.");
+                    form_set_error("$id][phenotype][metadata", "Phenotype Metadata File: field is required.");
                 }
                 else{
                     //validate phenotype file

@@ -349,7 +349,7 @@ function tpps_master($form, &$form_state){
         $old_form_state = variable_get('tpps_old_form_' . $user->mail, NULL);
         
         if ($old_form_state !== NULL){
-            //$form_state['saved_values'] = $old_form_state['saved_values'];
+            $form_state['saved_values'] = $old_form_state['saved_values'];
         }
     }
     
