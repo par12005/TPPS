@@ -19,6 +19,15 @@ function tpps_menu() {
       'type' => MENU_NORMAL_ITEM,
     );
     
+    $items['user/%user/TPPS'] = array(
+      'title' => 'TPPS Submissions',
+      'page callback' => 'tpps_tab_create',
+      'page arguments' => array('user', 1),
+      'access callback' => 'user_access',
+      'access arguments' => array('access content'),
+      'type' => MENU_LOCAL_TASK
+    );
+    
     $items['testpage'] = array(
       'title' => 'TPPS test page',
       'page callback' => 'drupal_get_form',
@@ -78,6 +87,77 @@ function tpps_menu() {
     );
     
     return $items;
+}
+
+function tpps_tab_create($type, $user, $name = NULL){
+    
+    $email = $user->mail;
+    $state_name = 'tpps_old_form_' . $email;
+    
+    $results = db_select("public.variable", "variable")
+        ->fields('variable')
+        ->condition('name', db_like($state_name) . '%', 'LIKE')
+        ->execute();
+    
+    $display = "<div><table><thead>";
+    $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th></tr>";
+    $display .= "</thead><tbody>";
+    
+    foreach ($results as $item){
+        $name = $item->name;
+        $state = variable_get($name, NULL);
+        
+        $display .= "<tr>";
+        
+        if (isset($state['saved_values']['Hellopage']['publication']['title'])){
+            $title = check_plain($state['saved_values']['Hellopage']['publication']['title']);
+            $display .= "<td><a href='/Drupal/master?accession={$state['accession']}'>$title</a></td>";
+        }
+        else {
+            $display .= "<td></td>";
+        }
+        
+        if (isset($state['saved_values']['Hellopage']['primaryAuthor'])){
+            $author = check_plain($state['saved_values']['Hellopage']['primaryAuthor']);
+            $display .= "<td>$author</td>";
+        }
+        else {
+            $display .= "<td></td>";
+        }
+        
+        if (isset($state['saved_values']['Hellopage']['organism']['number'])){
+            $species_number = check_plain($state['saved_values']['Hellopage']['organism']['number']);
+            $display .= "<td>$species_number</td>";
+        }
+        else {
+            $display .= "<td></td>";
+        }
+        
+        if (isset($state['saved_values']['Hellopage']['publication']['abstract'])){
+            $abstract = check_plain($state['saved_values']['Hellopage']['publication']['abstract']);
+            if (strlen($abstract) > 103){
+                $abstract = check_plain(substr($abstract, 0, 100) . "...");
+            }
+            $display .= "<td>$abstract</td>";
+        }
+        else {
+            $display .= "<td></td>";
+        }
+        
+        if (isset($state['saved_values']['Hellopage']['publication']['journal'])){
+            $journal = check_plain($state['saved_values']['Hellopage']['publication']['journal']);
+            $display .= "<td>$journal</td>";
+        }
+        else {
+            $display .= "<td></td>";
+        }
+        
+        $display .= "</tr>";
+    }
+    
+    $display .= "</tbody></table></div>";
+    
+    return $display;
 }
 	
 function tpps_compare_temp($table, $column, $is_primary = FALSE, array $condition = array()){
@@ -169,6 +249,7 @@ function tpps_init_project($form, &$form_state){
     
     $form_state['dbxref_id'] = $dbxref_id;
     $form_state['accession'] = $accession;
+    $form_state['saved_values']['frontpage']['accession'] = $accession;
     
     //project will be created when name is provided, after the first page is complete.
     return $insert;
@@ -335,21 +416,47 @@ function tpps_page_build(&$page){
 function tpps_master($form, &$form_state){
     
     global $user;
+    $params = drupal_get_query_parameters();
     
-    if (!isset($form_state['stage'])){
+    if (!isset($user->mail) and !isset($form_state['stage'])){
+        //first access, not logged in
         $form_state['stage'] = 'frontpage';
-        
+    
         front_create_form($form, $form_state);
-        
+    
         drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
         
         return $form;
     }
+    elseif (!isset($user->mail)){
+        //not first access, but not logged in
+        $destination = drupal_get_destination();
+        drupal_goto('user/login', array('query' => $destination));
+    }
+    elseif (isset($params['accession'])) {
+        //logged in, and with accession in link
+        $form_state = variable_get('tpps_old_form_' . $user->mail . $params['accession']);
+    }
     else {
-        $old_form_state = variable_get('tpps_old_form_' . $user->mail, NULL);
-        
-        if ($old_form_state !== NULL){
-            $form_state['saved_values'] = $old_form_state['saved_values'];
+        //logged in, with plain link
+        if (!isset($form_state['stage'])){
+            //first access
+            $form_state['stage'] = 'frontpage';
+    
+            front_create_form($form, $form_state);
+
+            drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+
+            return $form;
+        }
+        else {
+            //not first access
+            if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')){
+                //no submissions, or selected to create new submission
+                tpps_init_project($form, $form_state);
+                variable_set('tpps_old_form_' . $user->mail . $form_state['saved_values']['frontpage']['accession'], $form_state);
+            }
+            $form_state = variable_get('tpps_old_form_' . $user->mail . $form_state['saved_values']['frontpage']['accession']);
         }
     }
     
@@ -445,12 +552,7 @@ function tpps_master($form, &$form_state){
 	END of status bar code
 	*******************************************/
     
-    //dpm($user);
-    if (isset($user->roles[1]) and $user->roles[1] == 'anonymous user'){
-        $destination = drupal_get_destination();
-        drupal_goto('user/login', array('query' => $destination));
-    }
-    elseif (!isset($form_state['saved_values']['Hellopage']['primaryAuthor']) or !isset($form_state['saved_values']['Hellopage']['organization'])){
+    if (!isset($form_state['saved_values']['Hellopage']['primaryAuthor']) or !isset($form_state['saved_values']['Hellopage']['organization'])){
   	$and = db_and();
 	$and->condition('value', $user->mail);
 	$and->condition('type_id', '50268');
@@ -508,7 +610,7 @@ function tpps_master($form, &$form_state){
             break;
         
         default:
-            print_r('Invalid form stage.');
+            dpm('Invalid form stage.', 'error');
             break;
     }
     
@@ -527,7 +629,7 @@ function tpps_master_validate($form, &$form_state){
                 $form_state['values']['tree-accession']['file-columns'] = array();
 
                 foreach ($form['tree-accession']['file']['columns'] as $col => $val){
-                    if ($col[0] != '#'){
+                    if (isset($form['tree-accession']['file']['columns'][$col]['#value']) and $col[0] != '#'){
                         $form_state['values']['tree-accession']['file-columns'][$col] = $form['tree-accession']['file']['columns'][$col]['#value'];
                     }
                 }
@@ -678,7 +780,7 @@ function tpps_master_submit($form, &$form_state){
             else{
                 //dpm('submit');
                 //submit_all($form, $form_state);
-                variable_set('tpps_old_form_' . $user->mail, NULL);
+                variable_set('tpps_old_form_' . $user->mail . $form_state['accession'], NULL);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
@@ -697,7 +799,7 @@ function tpps_master_submit($form, &$form_state){
     $form_state['rebuild'] = TRUE;
     
     if ($persist){
-        variable_set('tpps_old_form_' . $user->mail, $form_state);
+        variable_set('tpps_old_form_' . $user->mail . $form_state['accession'], $form_state);
     }
 }
 
@@ -1865,11 +1967,46 @@ function parse_xlsx($location){
 function front_create_form(&$form, $form_state){
     
     global $base_url;
+    global $user;
+    
+    if (isset($user->mail)){
+        //logged in
+        $options_arr = array();
+        $options_arr['new'] = 'Create new TPPS Submission';
+        
+        $results = db_select("public.variable", "variable")
+            ->fields('variable', array('name'))
+            ->condition('name', db_like('tpps_old_form_' . $user->mail) . '%', 'LIKE')
+            ->execute();
+        
+        foreach ($results as $item){
+            $name = $item->name;
+            $state = variable_get($name, NULL);
+            
+            if ($state != NULL and isset($state['saved_values']['Hellopage']['publication']['title']) and $state['saved_values']['Hellopage']['publication']['title'] != NULL){
+                $title = $state['saved_values']['Hellopage']['publication']['title'];
+                $tgdr_id = $state['accession'];
+                $options_arr["$tgdr_id"] = "$title";
+            }
+        }
+        
+        if (count($options_arr) > 1){
+            //has submissions
+            $form['accession'] = array(
+              '#type' => 'select',
+              '#title' => t('Would you like to load an old TPPS submission, or create a new one?'),
+              '#options' => $options_arr,
+              '#default_value' => isset($form_state['saved_values']['frontpage']['accession']) ? $form_state['saved_values']['frontpage']['accession'] : 'new',
+            );
+        }
+    }
     
     $form['Next'] = array(
       '#type' => 'submit',
       '#value' => t('Continue to TPPS'),
-      '#prefix' => 
+    );
+    
+    $prefix_text = 
 "<div>
 Welcome to TPPS!<br><br>
 The Tripal PopGen Submit (TPPS) workflow provides researchers with a streamlined submission interface for studies resulting from any combination of genotype, phenotype, and environmental data for georeferenced forest trees.  TPPS will guide users through questions about their study design and data in order to collect information on trees, genotypes, and phenotypes if applicable.  Phenotypic, genotypic, and environmental descriptors will be mapped to ontologies were possible and the collected metadata will enable this information to be displayed in <a href='$base_url/cartogratree' target='blank'>CartograTree</a>.  An accession number will be provided to the user following successful completion that uniquely identified this study in the database.  This number should be used in the manuscript describing this work.  Specific flat-files and metadata associated with this identifier can be accessed by the public with this information.<br><br>
@@ -1900,8 +2037,14 @@ To get started, you will need to have a few things handy:<br>
     <li>Genotypic and/or phenotypic data and metadata (depending on the type(s) of data collected).</li>
 </ul>
 If you would like to submit your data, you can click the button 'Continue to TPPS' below!<br><br>
-</div>" 
-    );
+</div>";
+    
+    if (isset($form['accession'])){
+        $form['accession']['#prefix'] = $prefix_text;
+    }
+    else {
+        $form['Next']['#prefix'] = $prefix_text;
+    }
     
     return $form;
 }
