@@ -436,6 +436,7 @@ function tpps_master($form, &$form_state){
     elseif (isset($params['accession'])) {
         //logged in, and with accession in link
         $form_state = variable_get('tpps_old_form_' . $user->mail . $params['accession']);
+        $form_state['rebuild'] = FALSE;
     }
     else {
         //logged in, with plain link
@@ -2372,7 +2373,7 @@ function tpps_block_view_alter(&$data, $block) {
 			}
 			$_SESSION['tgdr_submit_data'][2] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
 		}		
-		if(isset($_SESSION['tgdr_submit_data'][2]['tree-accession']) and ($_SESSION['tgdr_submit_data'][2]['tree-accession']['file']['fid'] != 0 or $_SESSION['tgdr_submit_data'][2]['tree-accession']['species-1']['file']['fid'] != 0)) {
+		if(isset($_SESSION['tgdr_submit_data'][2]['tree-accession']) and ($_SESSION['tgdr_submit_data'][2]['tree-accession']['file']['fid'] != 0 or (isset($_SESSION['tgdr_submit_data'][2]['tree-accession']['species-1']['file']['fid']) and $_SESSION['tgdr_submit_data'][2]['tree-accession']['species-1']['file']['fid'] != 0))) {
 			$content .= "<br />";
 			$content .= "Step 3 - Complete<br />";
 			$content .= "Tree Accession<br /><hr />";
