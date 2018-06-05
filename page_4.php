@@ -516,7 +516,7 @@ function page_4_ref(&$fields, $form_state, $values, $id){
       'recurse' => FALSE
     );
 
-    $results = file_scan_directory("/linuxshare/projects/treegenes/tgwebprod_store/FTP/Genomes", '/^([A-Z]|[a-z]){4}$/', $options);
+    $results = file_scan_directory("/isg/treegenes/treegenes_store/FTP/Genomes", '/^([A-Z]|[a-z]){4}$/', $options);
     //dpm($results);
 
     $ref_genome_arr = array();
