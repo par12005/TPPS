@@ -57,9 +57,6 @@ function page_1_create_form(&$form, $form_state){
               '#states' => array(
                 'visible' => array(
                   ':input[name="publication[status]"]' => array('value' => '2')
-                ),
-                'required' => array(
-                  ':input[name="publication[status]"]' => array('value' => '2')
                 )
               )
             );
@@ -72,9 +69,6 @@ function page_1_create_form(&$form, $form_state){
               '#states' => array(
                 'visible' => array(
                   ':input[name="publication[status]"]' => array('value' => '3')
-                ),
-                'required' => array(
-                  ':input[name="publication[status]"]' => array('value' => '3')
                 )
               )
             );
@@ -86,9 +80,6 @@ function page_1_create_form(&$form, $form_state){
               '#default_value' => isset($values['publication']['yearPublished']) ? $values['publication']['yearPublished'] : 0,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="publication[status]"]' => array('value' => '4')
-                ),
-                'required' => array(
                   ':input[name="publication[status]"]' => array('value' => '4')
                 )
               )
@@ -256,7 +247,6 @@ function page_1_create_form(&$form, $form_state){
             4 => t('Published'),
           ),
           '#default_value' => isset($values['publication']['status']) ? $values['publication']['status'] : 0,
-          '#required' => true,
         );
         
         secondary_authors($form, $values, $form_state);

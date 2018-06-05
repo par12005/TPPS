@@ -59,7 +59,6 @@ function page_2_create_form(&$form, $form_state){
           '#title' => t("$type Year:"),
           '#options' => $yearArr,
           '#default_value' => isset($values[$type . 'Date']['year']) ? $values[$type . 'Date']['year'] : 0,
-          '#required' => true,
         );
         
         $form[$type . 'Date']['month'] = array(
@@ -67,7 +66,6 @@ function page_2_create_form(&$form, $form_state){
           '#title' => t("$type Month:"),
           '#options' => $monthArr,
           '#default_value' => isset($values[$type . 'Date']['month']) ? $values[$type . 'Date']['month'] : 0,
-          '#required' => true,
           '#states' => array(
             'invisible' => array(
               ':input[name="' . $type . 'Date[year]"]' => array('value' => '0')
@@ -135,7 +133,6 @@ function page_2_create_form(&$form, $form_state){
             2 => 'Custom Location'
           ),
           '#default_value' => isset($values['studyLocation']['type']) ? $values['studyLocation']['type'] : 0,
-          '#required' => TRUE
         );
 
         $form['studyLocation']['latitude'] = array(
@@ -144,15 +141,6 @@ function page_2_create_form(&$form, $form_state){
           '#default_value' => isset($values['studyLocation']['latitude']) ? $values['studyLocation']['latitude'] : NULL,
           '#states' => array(
             'visible' => array(
-              array(
-                array(':input[name="studyLocation[type]"]' => array('value' => '1')),
-                'or',
-                array(':input[name="studyLocation[type]"]' => array('value' => '3')),
-                'or',
-                array(':input[name="studyLocation[type]"]' => array('value' => '4')),
-              )
-            ),
-            'required' => array(
               array(
                 array(':input[name="studyLocation[type]"]' => array('value' => '1')),
                 'or',
@@ -178,15 +166,6 @@ function page_2_create_form(&$form, $form_state){
                 array(':input[name="studyLocation[type]"]' => array('value' => '4')),
               )
             ),
-            'required' => array(
-              array(
-                array(':input[name="studyLocation[type]"]' => array('value' => '1')),
-                'or',
-                array(':input[name="studyLocation[type]"]' => array('value' => '3')),
-                'or',
-                array(':input[name="studyLocation[type]"]' => array('value' => '4')),
-              )
-            ),
           ),
         );
         
@@ -199,9 +178,6 @@ function page_2_create_form(&$form, $form_state){
           '#title' => t('Country:'),
           '#default_value' => isset($values['studyLocation']['customLocation']['country']) ? $values['studyLocation']['customLocation']['country'] : NULL,
           '#states' => array(
-            'required' => array(
-              ':input[name="studyLocation[type]"]' => array('value' => '2')
-            ),
             'visible' => array(
               ':input[name="studyLocation[type]"]' => array('value' => '2')
             ),
@@ -210,7 +186,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['studyLocation']['customLocation']['region'] = array(
           '#type' => 'textfield',
-          '#title' => t('State/Province/Region:'),
+          '#title' => t('State/Province/Region: (Optional)'),
           '#default_value' => isset($values['studyLocation']['customLocation']['region']) ? $values['studyLocation']['customLocation']['region'] : NULL,
           '#states' => array(
             'invisible' => array(
@@ -288,11 +264,6 @@ function page_2_create_form(&$form, $form_state){
                 2 => 'Uncontrolled'
               ),
               '#default_value' => isset($values['growthChamber']['co2Control']['option']) ? $values['growthChamber']['co2Control']['option'] : 0,
-              '#states' => array(
-                'required' => array(
-                  ':input[name="studyType"]' => array('value' => '2')
-                )
-              )
             );
 
             $form['growthChamber']['co2Control']['controlled'] = array(
@@ -301,9 +272,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['growthChamber']['co2Control']['controlled']) ? $values['growthChamber']['co2Control']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="growthChamber[co2Control][option]"]' => array('value' => '1')
-                ),
-                'required' => array(
                   ':input[name="growthChamber[co2Control][option]"]' => array('value' => '1')
                 )
               )
@@ -315,9 +283,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['growthChamber']['co2Control']['uncontrolled']) ? $values['growthChamber']['co2Control']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="growthChamber[co2Control][option]"]' => array('value' => '2')
-                ),
-                'required' => array(
                   ':input[name="growthChamber[co2Control][option]"]' => array('value' => '2')
                 )
               )
@@ -342,11 +307,6 @@ function page_2_create_form(&$form, $form_state){
                 2 => 'Uncontrolled'
               ),
               '#default_value' => isset($values['growthChamber']['humidityControl']['option']) ? $values['growthChamber']['humidityControl']['option'] : 0,
-              '#states' => array(
-                'required' => array(
-                  ':input[name="studyType"]' => array('value' => '2')
-                )
-              )
             );
 
             $form['growthChamber']['humidityControl']['controlled'] = array(
@@ -355,9 +315,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['growthChamber']['humidityControl']['controlled']) ? $values['growthChamber']['humidityControl']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="growthChamber[humidityControl][option]"]' => array('value' => '1')
-                ),
-                'required' => array(
                   ':input[name="growthChamber[humidityControl][option]"]' => array('value' => '1')
                 )
               )
@@ -369,9 +326,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['growthChamber']['humidityControl']['uncontrolled']) ? $values['growthChamber']['humidityControl']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="growthChamber[humidityControl][option]"]' => array('value' => '2')
-                ),
-                'required' => array(
                   ':input[name="growthChamber[humidityControl][option]"]' => array('value' => '2')
                 )
               )
@@ -396,11 +350,6 @@ function page_2_create_form(&$form, $form_state){
                 2 => 'Uncontrolled'
               ),
               '#default_value' => isset($values['growthChamber']['lightControl']['option']) ? $values['growthChamber']['lightControl']['option'] : 0,
-              '#states' => array(
-                'required' => array(
-                  ':input[name="studyType"]' => array('value' => '2')
-                )
-              )
             );
 
             $form['growthChamber']['lightControl']['controlled'] = array(
@@ -409,9 +358,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['growthChamber']['lightControl']['controlled']) ? $values['growthChamber']['lightControl']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="growthChamber[lightControl][option]"]' => array('value' => '1')
-                ),
-                'required' => array(
                   ':input[name="growthChamber[lightControl][option]"]' => array('value' => '1')
                 )
               )
@@ -423,9 +369,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['growthChamber']['lightControl']['uncontrolled']) ? $values['growthChamber']['lightControl']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="growthChamber[lightControl][option]"]' => array('value' => '2')
-                ),
-                'required' => array(
                   ':input[name="growthChamber[lightControl][option]"]' => array('value' => '2')
                 )
               )
@@ -450,11 +393,6 @@ function page_2_create_form(&$form, $form_state){
                 2 => 'Uncontrolled'
               ),
               '#default_value' => isset($values['growthChamber']['rooting']['ph']['option']) ? $values['growthChamber']['rooting']['ph']['option'] : 0,
-              '#states' => array(
-                'required' => array(
-                  ':input[name="studyType"]' => array('value' => '2')
-                )
-              )
             );
 
             $form['growthChamber']['rooting']['ph']['controlled'] = array(
@@ -463,9 +401,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['growthChamber']['rooting']['ph']['controlled']) ? $values['growthChamber']['rooting']['ph']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="growthChamber[rooting][ph][option]"]' => array('value' => '1')
-                ),
-                'required' => array(
                   ':input[name="growthChamber[rooting][ph][option]"]' => array('value' => '1')
                 )
               )
@@ -477,9 +412,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['growthChamber']['rooting']['ph']['uncontrolled']) ? $values['growthChamber']['rooting']['ph']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="growthChamber[rooting][ph][option]"]' => array('value' => '2')
-                ),
-                'required' => array(
                   ':input[name="growthChamber[rooting][ph][option]"]' => array('value' => '2')
                 )
               )
@@ -513,11 +445,6 @@ function page_2_create_form(&$form, $form_state){
           '#title' => t('<h2>Temperature Information:</h2>'),
           '#description' => t('Please provide temperatures in Degrees Celsius'),
           '#tree' => true,
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '2')
-            )
-          )
         );
 
         $form['growthChamber']['temp']['high'] = array(
@@ -548,11 +475,6 @@ function page_2_create_form(&$form, $form_state){
             3 => 'Soil',
           ),
           '#default_value' => isset($values['growthChamber']['rooting']['option']) ? $values['growthChamber']['rooting']['option'] : 0,
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '2')
-            )
-          )
         );
         
         $form['growthChamber']['rooting']['soil'] = array(
@@ -576,11 +498,6 @@ function page_2_create_form(&$form, $form_state){
             5 => 'Other'
           ),
           '#default_value' => isset($values['growthChamber']['rooting']['soil']['type']) ? $values['growthChamber']['rooting']['soil']['type'] : 0,
-          '#states' => array(
-            'required' => array(
-              ':input[name="growthChamber[rooting][option]"]' => array('value' => '3')
-            )
-          )
         );
         
         $form['growthChamber']['rooting']['soil']['other'] = array(
@@ -588,9 +505,6 @@ function page_2_create_form(&$form, $form_state){
           '#default_value' => isset($values['growthChamber']['rooting']['soil']['other']) ? $values['growthChamber']['rooting']['soil']['other'] : NULL,
           '#states' => array(
             'visible' => array(
-              ':input[name="growthChamber[rooting][soil][type]"]' => array('value' => '5')
-            ),
-            'required' => array(
               ':input[name="growthChamber[rooting][soil][type]"]' => array('value' => '5')
             )
           )
@@ -600,11 +514,6 @@ function page_2_create_form(&$form, $form_state){
           '#type' => 'textfield',
           '#title' => t('Soil Container Type:'),
           '#default_value' => isset($values['growthChamber']['rooting']['soil']['container']) ? $values['growthChamber']['rooting']['soil']['container'] : NULL,
-          '#states' => array (
-            'required' => array(
-              ':input[name="growthChamber[rooting][option]"]' => array('value' => '3')
-            )
-          )
         );
         
         ph($form, $values);
@@ -637,11 +546,6 @@ function page_2_create_form(&$form, $form_state){
         $form['growthChamber']['rooting']['treatment'] = array(
           '#type' => 'fieldset',
           '#title' => t('Treatments:'),
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '2')
-            )
-          )
         );
         
         foreach($treatment_options as $key => $option){
@@ -657,9 +561,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['growthChamber']['rooting']['treatment']["$option-description"]) ? $values['growthChamber']['rooting']['treatment']["$option-description"] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="growthChamber[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE)
-                ),
-                'required' => array(
                   ':input[name="growthChamber[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE)
                 )
               )
@@ -687,11 +588,6 @@ function page_2_create_form(&$form, $form_state){
                 2 => 'Uncontrolled'
               ),
               '#default_value' => isset($values['greenhouse']['humidityControl']['option']) ? $values['greenhouse']['humidityControl']['option'] : 0,
-              '#states' => array(
-                'required' => array(
-                  ':input[name="studyType"]' => array('value' => '3')
-                )
-              )
             );
 
             $form['greenhouse']['humidityControl']['controlled'] = array(
@@ -702,9 +598,6 @@ function page_2_create_form(&$form, $form_state){
                 'visible' => array(
                   ':input[name="greenhouse[humidityControl][option]"]' => array('value' => '1')
                 ),
-                'required' => array(
-                  ':input[name="greenhouse[humidityControl][option]"]' => array('value' => '1')
-                )
               )
             );
             
@@ -727,11 +620,6 @@ function page_2_create_form(&$form, $form_state){
                 2 => 'Uncontrolled'
               ),
               '#default_value' => isset($values['greenhouse']['lightControl']['option']) ? $values['greenhouse']['lightControl']['option'] : 0,
-              '#states' => array(
-                'required' => array(
-                  ':input[name="studyType"]' => array('value' => '3')
-                )
-              )
             );
 
             $form['greenhouse']['lightControl']['controlled'] = array(
@@ -740,9 +628,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['greenhouse']['lightControl']['controlled']) ? $values['greenhouse']['lightControl']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="greenhouse[lightControl][option]"]' => array('value' => '1')
-                ),
-                'required' => array(
                   ':input[name="greenhouse[lightControl][option]"]' => array('value' => '1')
                 )
               )
@@ -767,11 +652,6 @@ function page_2_create_form(&$form, $form_state){
                 2 => 'Uncontrolled'
               ),
               '#default_value' => isset($values['greenhouse']['rooting']['ph']['option']) ? $values['greenhouse']['rooting']['ph']['option'] : 0,
-              '#states' => array(
-                'required' => array(
-                  ':input[name="studyType"]' => array('value' => '3')
-                )
-              )
             );
 
             $form['greenhouse']['rooting']['ph']['controlled'] = array(
@@ -780,9 +660,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['greenhouse']['rooting']['ph']['controlled']) ? $values['greenhouse']['rooting']['ph']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="greenhouse[rooting][ph][option]"]' => array('value' => '1')
-                ),
-                'required' => array(
                   ':input[name="greenhouse[rooting][ph][option]"]' => array('value' => '1')
                 )
               )
@@ -814,11 +691,6 @@ function page_2_create_form(&$form, $form_state){
           '#title' => t('<h2>Temperature Information:</h2>'),
           '#description' => t('Please provide temperatures in Degrees Celsius'),
           '#tree' => true,
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '3')
-            )
-          )
         );
 
         $form['greenhouse']['temp']['high'] = array(
@@ -849,11 +721,6 @@ function page_2_create_form(&$form, $form_state){
             3 => 'Soil',
           ),
           '#default_value' => isset($values['greenhouse']['rooting']['option']) ? $values['greenhouse']['rooting']['option'] : 0,
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '3')
-            )
-          )
         );
         
         $form['greenhouse']['rooting']['soil'] = array(
@@ -877,11 +744,6 @@ function page_2_create_form(&$form, $form_state){
             5 => 'Other'
           ),
           '#default_value' => isset($values['greenhouse']['rooting']['soil']['type']) ? $values['greenhouse']['rooting']['soil']['type'] : 0,
-          '#states' => array(
-            'required' => array(
-              ':input[name="greenhouse[rooting][option]"]' => array('value' => '3')
-            )
-          )
         );
         
         $form['greenhouse']['rooting']['soil']['other'] = array(
@@ -891,9 +753,6 @@ function page_2_create_form(&$form, $form_state){
             'visible' => array(
               ':input[name="greenhouse[rooting][soil][type]"]' => array('value' => '5')
             ),
-            'required' => array(
-              ':input[name="greenhouse[rooting][soil][type]"]' => array('value' => '5')
-            )
           )
         );
         
@@ -901,11 +760,6 @@ function page_2_create_form(&$form, $form_state){
           '#type' => 'textfield',
           '#title' => t('Soil Container Type:'),
           '#default_value' => isset($values['greenhouse']['rooting']['soil']['container']) ? $values['greenhouse']['rooting']['soil']['container'] : NULL,
-          '#states' => array (
-            'required' => array(
-              ':input[name="greenhouse[rooting][option]"]' => array('value' => '3')
-            )
-          )
         );
         
         greenph($form, $values);
@@ -938,11 +792,6 @@ function page_2_create_form(&$form, $form_state){
         $form['greenhouse']['rooting']['treatment'] = array(
           '#type' => 'fieldset',
           '#title' => t('<h2>Treatments:</h2>'),
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '3')
-            )
-          )
         );
         
         foreach($treatment_options as $key => $option){
@@ -957,9 +806,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['greenhouse']['rooting']['treatment']["$option-description"]) ? $values['greenhouse']['rooting']['treatment']["$option-description"] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="greenhouse[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE)
-                ),
-                'required' => array(
                   ':input[name="greenhouse[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE)
                 )
               )
@@ -987,11 +833,6 @@ function page_2_create_form(&$form, $form_state){
                 2 => 'Uncontrolled'
               ),
               '#default_value' => isset($values['commonGarden']['salinity']['option']) ? $values['commonGarden']['salinity']['option'] : 0,
-              '#states' => array(
-                'required' => array(
-                  ':input[name="studyType"]' => array('value' => '4')
-                )
-              )
             );
 
             $form['commonGarden']['salinity']['controlled'] = array(
@@ -1000,9 +841,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['commonGarden']['salinity']['controlled']) ? $values['commonGarden']['salinity']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="commonGarden[salinity][option]"]' => array('value' => '1')
-                ),
-                'required' => array(
                   ':input[name="commonGarden[salinity][option]"]' => array('value' => '1')
                 )
               )
@@ -1014,9 +852,6 @@ function page_2_create_form(&$form, $form_state){
               '#default_value' => isset($values['commonGarden']['salinity']['uncontrolled']) ? $values['commonGarden']['salinity']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
-                  ':input[name="commonGarden[salinity][option]"]' => array('value' => '2')
-                ),
-                'required' => array(
                   ':input[name="commonGarden[salinity][option]"]' => array('value' => '2')
                 )
               )
@@ -1056,11 +891,6 @@ function page_2_create_form(&$form, $form_state){
             5 => 'No Irrigation',
           ),
           '#default_value' => isset($values['commonGarden']['irrigation']['option']) ? $values['commonGarden']['irrigation']['option'] : 0,
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '4')
-            )
-          )
         );
         
         $form['commonGarden']['irrigation']['other'] = array(
@@ -1068,9 +898,6 @@ function page_2_create_form(&$form, $form_state){
           '#default_value' => isset($values['commonGarden']['irrigation']['other']) ? $values['commonGarden']['irrigation']['other'] : NULL,
           '#states' => array(
             'visible' => array(
-              ':input[name="commonGarden[irrigation][option]"]' => array('value' => '4')
-            ),
-            'required' => array(
               ':input[name="commonGarden[irrigation][option]"]' => array('value' => '4')
             )
           )
@@ -1081,11 +908,6 @@ function page_2_create_form(&$form, $form_state){
         $form['commonGarden']['bioticEnv'] = array(
           '#type' => 'fieldset',
           '#tree' => true,
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '4')
-            )
-          )
         );
         
         $form['commonGarden']['bioticEnv']['option'] = array(
@@ -1115,9 +937,6 @@ function page_2_create_form(&$form, $form_state){
           '#states' => array(
             'visible' => array(
               ':input[name="commonGarden[bioticEnv][option][Other]"]' => array('checked' => TRUE)
-            ),
-            'required' => array(
-              ':input[name="commonGarden[bioticEnv][option][Other]"]' => array('checked' => TRUE)
             )
           )
         );
@@ -1131,11 +950,6 @@ function page_2_create_form(&$form, $form_state){
             t('Fall'),
             t('Winter'),
           )),
-          '#states' => array(
-            'required' => array(
-              ':input[name="studyType"]' => array('value' => '4')
-            )
-          )
         );
         
         $form['commonGarden']['season']['Spring']['#default_value'] = isset($values['commonGarden']['season']['Spring']) ? $values['commonGarden']['season']['Spring'] : NULL;
@@ -1335,7 +1149,6 @@ function page_2_create_form(&$form, $form_state){
         5 => 'Plantation',
       ),
       '#default_value' => isset($values['studyType']) ? $values['studyType'] : 0,
-      '#required' => true,
     );
     
     naturalPopulation($form, $values);
