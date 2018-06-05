@@ -108,7 +108,7 @@ function tpps_tab_create($type, $user, $name = NULL){
             padding: 0px 10px;
         }
     </style>';
-    $display .= "<div class='tpps_profile_tab'><table border='1'><thead>";
+    $display .= "<div class='tpps_profile_tab'><table style='width:-webkit-fill-available' border='1'><thead>";
     $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th></tr>";
     $display .= "</thead><tbody>";
     
@@ -120,7 +120,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         
         if (isset($state['saved_values']['Hellopage']['publication']['title'])){
             $title = check_plain($state['saved_values']['Hellopage']['publication']['title']);
-            $display .= "<td><a href='/Drupal/master?accession={$state['accession']}'>$title</a></td>";
+            $display .= "<td><a href='/Drupal/master?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
         }
         else {
             $display .= "<td></td>";
