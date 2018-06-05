@@ -537,7 +537,7 @@ function page_4_ref(&$fields, $form_state, $values, $id){
             ->fetchAssoc();
         //dpm($query['genus'] . " " . $query['species']);
 
-        $versions = file_scan_directory("/linuxshare/projects/treegenes/tgwebprod_store/FTP/Genomes/$key", '/^v([0-9]|.)+$/', $options);
+        $versions = file_scan_directory("/isg/treegenes/treegenes_store/FTP/Genomes/$key", '/^v([0-9]|.)+$/', $options);
         //dpm($versions);
         foreach($versions as $item){
             $opt_string = $query['genus'] . " " . $query['species'] . " " . $item->filename;
