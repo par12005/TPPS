@@ -216,8 +216,6 @@ After the data has been submitted and approved, the user will recieve an email w
 - Location preview window
 - View submissions through the user's Tripal account
 - Admin Interface for submission approval
-- Informative messages and help icons
-- File upload instructions
 - Latitude/Longitude formats for file uploads
 - Latitude/Longitude format examples
 - Format table in TPPS profile tab
