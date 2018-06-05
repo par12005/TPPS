@@ -120,7 +120,6 @@ function page_2_create_form(&$form, $form_state){
           '#type' => 'fieldset',
           '#title' => t('<h2>Study Location:</h2>'),
           '#tree' => TRUE,
-          '#collapsible' => TRUE
         );
         
         $form['studyLocation']['type'] = array(
@@ -214,7 +213,6 @@ function page_2_create_form(&$form, $form_state){
               ':input[name="studyType"]' => array('value' => '1')
             )
           ),
-          '#collapsible' => TRUE
         );
         
         $form['naturalPopulation']['season'] = array(
@@ -435,7 +433,6 @@ function page_2_create_form(&$form, $form_state){
               ':input[name="studyType"]' => array('value' => '2')
             )
           ),
-          '#collapsible' => TRUE
         );
         
         co2($form, $values);
@@ -684,7 +681,6 @@ function page_2_create_form(&$form, $form_state){
               ':input[name="studyType"]' => array('value' => '3')
             )
           ),
-          '#collapsible' => TRUE
         );
         
         greenhumidity($form, $values);
@@ -877,7 +873,6 @@ function page_2_create_form(&$form, $form_state){
               ':input[name="studyType"]' => array('value' => '4')
             )
           ),
-          '#collapsible' => TRUE
         );
         
         $form['commonGarden']['irrigation'] = array(
@@ -1034,7 +1029,6 @@ function page_2_create_form(&$form, $form_state){
               ':input[name="studyType"]' => array('value' => '5')
             )
           ),
-          '#collapsible' => TRUE
         );
         
         $form['plantation']['season'] = array(

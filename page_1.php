@@ -255,7 +255,6 @@ function page_1_create_form(&$form, $form_state){
           '#type' => 'fieldset',
           '#title' => t('<h2>Publication Information:</h2>'),
           '#tree' => true,
-          '#collapsible' => TRUE
         );
 
         $form['publication']['status'] = array(
@@ -303,7 +302,6 @@ function page_1_create_form(&$form, $form_state){
           '#tree' => TRUE,
           '#title' => t('<h2>Organism information:</h2>'),
           '#description' => t('Up to 5 organisms per submission.'),
-          '#collapsible' => TRUE
         );
         
         $form['organism']['add'] = array(

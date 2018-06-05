@@ -13,7 +13,6 @@ function page_4_create_form(&$form, $form_state){
         $fields = array(
           '#type' => 'fieldset',
           '#title' => t('<h2>Phenotype Information:</h2>'),
-          '#collapsible' => TRUE
         );
         
         $phenotype_number = isset($values[$id]['phenotype']['number']) ? $values[$id]['phenotype']['number'] : 1;
@@ -271,7 +270,6 @@ function page_4_create_form(&$form, $form_state){
         $fields = array(
           '#type' => 'fieldset',
           '#title' => t('<h2>Genotype Information:</h2>'),
-          '#collapsible' => TRUE
         );
         
         page_4_marker_info($fields, $values, $id);
