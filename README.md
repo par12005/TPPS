@@ -215,9 +215,18 @@ After the data has been submitted and approved, the user will recieve an email w
 # Features in Development
 - Location preview window
 - View submissions through the user's Tripal account
-- Access in-progress submissions through user's Tripal account
 - Admin Interface for submission approval
-- Profile details of what submission contains
+- Save button
+- Informative messages and help icons
+- File upload instructions
+- Latitude/Longitude formats for file uploads
+- Latitude/Longitude format examples
+- Re-order phenotype section
+- File upload tables need formatting
+- Status bar conditions/detection needs to be revised
+- Required/optional indicator needs to be revised
+- Tree ID in phenotype file compared to tree accession
+- Phenotype name in phenotype file compared to phenotype metadata file OR phenotype fields
 
 # Resources
 
