@@ -22,6 +22,11 @@ function page_4_create_form(&$form, $form_state){
           '#type' => 'checkbox',
           '#title' => t('I have >30 Phenotypes'),
           '#default_value' => isset($values[$id]['phenotype']['check']) ? $values[$id]['phenotype']['check'] : NULL,
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('left'),
+            'title' => array('Upload a file instead')
+          )
         );
         
         $fields['add'] = array(
@@ -75,7 +80,12 @@ function page_4_create_form(&$form, $form_state){
               '#title' => t("Phenotype $i Name:"),
               '#autocomplete_path' => 'phenotype/autocomplete',
               '#default_value' => isset($values[$id]['phenotype']["$i"]['name']) ? $values[$id]['phenotype']["$i"]['name'] : NULL,
-              '#prefix' => "<label><b>Phenotype $i:</b></label>"
+              '#prefix' => "<label><b>Phenotype $i:</b></label>",
+              '#attributes' => array(
+                'data-toggle' => array('tooltip'),
+                'data-placement' => array('left'),
+                'title' => array('If your phenotype is not in the autocomplete list, don\'t worry about it! We will create a new phenotype entry in the database for you.')
+              )
             );
             
             $fields["$i"]['environment-check'] = array(
@@ -240,7 +250,7 @@ function page_4_create_form(&$form, $form_state){
         
         $fields['metadata'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Please upload a file containing metadata about all of your phenotypes'),
+          '#title' => t('Please upload a file containing columns with the name and description of each of your phenotypes'),
           '#upload_location' => 'public://',
           '#upload_validators' => array(
             'file_validate_extensions' => array('csv tsv xlsx')
@@ -270,7 +280,7 @@ function page_4_create_form(&$form, $form_state){
         
         $fields['file'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Genotype File:'),
+          '#title' => t('Genotype File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study:'),
           '#upload_location' => 'public://',
           '#upload_validators' => array(
             'file_validate_extensions' => array('xlsx')
@@ -290,13 +300,13 @@ function page_4_create_form(&$form, $form_state){
         
         $fields['file']['columns'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Columns</h2>'),
+          '#title' => t('<h2>Define Data</h2>'),
           '#states' => array(
             'invisible' => array(
               ':input[name="' . $id . '_genotype_file_upload_button"]' => array('value' => 'Upload')
             )
           ),
-          '#description' => 'Please define which columns hold the required data:'
+          '#description' => 'Please define which columns hold the required data: Tree Identifier'
         );
         
         $file = 0;
@@ -333,7 +343,12 @@ function page_4_create_form(&$form, $form_state){
                       '#options' => $column_options,
                       '#default_value' => isset($values[$id]['genotype']['file-columns'][$item]) ? $values[$id]['genotype']['file-columns'][$item] : 0,
                       '#prefix' => "<td>",
-                      '#suffix' => "</td>"
+                      '#suffix' => "</td>",
+                      '#attributes' => array(
+                        'data-toggle' => array('tooltip'),
+                        'data-placement' => array('left'),
+                        'title' => array("Select the type of data the '$item' column holds")
+                      )
                     );
 
                     if ($first){
@@ -391,14 +406,12 @@ function page_4_create_form(&$form, $form_state){
           '#tree' => TRUE,
         );
 
-
-        
         if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
             $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i");
             
             $form["organism-$i"]['phenotype']['file'] = array(
               '#type' => 'managed_file',
-              '#title' => t('Please upload a file containing all of your phenotypic data:'),
+              '#title' => t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Name, and value for all of your phenotypic data:'),
               '#upload_location' => 'public://',
               '#upload_validators' => array(
                 'file_validate_extensions' => array('csv tsv xlsx')
@@ -409,13 +422,13 @@ function page_4_create_form(&$form, $form_state){
             
             $form["organism-$i"]['phenotype']['file']['columns'] = array(
               '#type' => 'fieldset',
-              '#title' => t('<h2>Columns</h2>'),
+              '#title' => t('<h2>Define Data</h2>'),
               '#states' => array(
                 'invisible' => array(
                   ':input[name="organism-' . $i . '_phenotype_file_upload_button"]' => array('value' => 'Upload')
                 )
               ),
-              '#description' => 'Please define which columns hold the required data:'
+              '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)'
             );
 
             $file = 0;
@@ -453,7 +466,12 @@ function page_4_create_form(&$form, $form_state){
                           '#options' => $column_options,
                           '#default_value' => isset($values["organism-$i"]['phenotype']['file-columns'][$item]) ? $values["organism-$i"]['phenotype']['file-columns'][$item] : 0,
                           '#prefix' => "<td>",
-                          '#suffix' => "</td>"
+                          '#suffix' => "</td>",
+                          '#attributes' => array(
+                            'data-toggle' => array('tooltip'),
+                            'data-placement' => array('left'),
+                            'title' => array("Select the type of data the '$item' column holds")
+                          )
                         );
 
                         if ($first){
@@ -566,6 +584,11 @@ function page_4_ref(&$fields, $form_state, $values, $id){
         'visible' => array(
           ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url'),
         )
+      ),
+      '#attributes' => array(
+        'data-toggle' => array('tooltip'),
+        'data-placement' => array('left'),
+        'title' => array('This should be a link to a reference genome on NCBI')
       )
     );
     
@@ -638,7 +661,7 @@ function page_4_ref(&$fields, $form_state, $values, $id){
 
     $fields['assembly-user'] = array(
       '#type' => 'managed_file',
-      '#title' => t('Assembly Files: (FASTA format)'),
+      '#title' => t('Assembly File: please provide an assembly file in FASTA or Multi-FASTA format'),
       '#upload_location' => 'public://',
       '#upload_validators' => array(
         'file_validate_extensions' => array('fsa_nt')
@@ -654,7 +677,7 @@ function page_4_ref(&$fields, $form_state, $values, $id){
     
     $fields['assembly-user']['columns'] = array(
       '#type' => 'fieldset',
-      '#title' => t('<h2>Columns</h2>'),
+      '#title' => t('<h2>Define Data</h2>'),
       '#description' => 'Please define which column holds the scaffold/chromosome identifier:',
       '#states' => array(
         'invisible' => array(
@@ -697,7 +720,12 @@ function page_4_ref(&$fields, $form_state, $values, $id){
                           '#options' => $column_options,
                           '#default_value' => isset($values[$id]['genotype']['assembly-user-columns'][$col]) ? $values[$id]['genotype']['assembly-user-columns'][$col] : 0,
                           '#prefix' => "<td>",
-                          '#suffix' => "</td>"
+                          '#suffix' => "</td>",
+                          '#attributes' => array(
+                            'data-toggle' => array('tooltip'),
+                            'data-placement' => array('left'),
+                            'title' => array("Select if this column holds the scaffold/chromosome identifier")
+                          )
                         );
 
                         if ($first){

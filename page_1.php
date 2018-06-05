@@ -15,6 +15,11 @@ function page_1_create_form(&$form, $form_state){
           '#title' => t('Primary Author:'),
           '#autocomplete_path' => 'author/autocomplete',
           '#default_value' => isset($values['primaryAuthor']) ? $values['primaryAuthor'] : NULL,
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('left'),
+            'title' => array('First Author of the publication')
+          )
         );
         
         $form['organization'] = array(
@@ -22,6 +27,11 @@ function page_1_create_form(&$form, $form_state){
           '#title' => t('Organization:'),
           '#autocomplete_path' => 'organization/autocomplete',
           '#default_value' => isset($values['organization']) ? $values['organization'] : NULL,
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('left'),
+            'title' => array('Organization of the Primary Author')
+          )
         );
         
         return $form;
@@ -138,11 +148,16 @@ function page_1_create_form(&$form, $form_state){
               '#type' => 'checkbox',
               '#title' => t('I have >30 Secondary Authors'),
               '#default_value' => isset($values['publication']['secondaryAuthors']['check']) ? $values['publication']['secondaryAuthors']['check'] : NULL,
+              '#attributes' => array(
+                'data-toggle' => array('tooltip'),
+                'data-placement' => array('left'),
+                'title' => array('Upload a file instead')
+              )
             );
             
             $form['publication']['secondaryAuthors']['file'] = array(
               '#type' => 'managed_file',
-              '#title' => t('Please upload csv a file containing the names of all of your authors, and title the columns "last", "first", and "mi", in any order.'),
+              '#title' => t('Secondary Authors file: please upload a spreadsheet with columns for last name, first name, and middle initial of each author, in any order'),
               '#upload_location' => 'public://',
               '#upload_validators' => array(
                 'file_validate_extensions' => array('txt csv xlsx')
@@ -153,18 +168,18 @@ function page_1_create_form(&$form, $form_state){
                   ':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
                 )
               ),
-              '#tree' => TRUE
+              '#tree' => TRUE,
             );
             
             $form['publication']['secondaryAuthors']['file']['columns'] = array(
               '#type' => 'fieldset',
-              '#title' => t('<h2>Columns</h2>'),
+              '#title' => t('<h2>Define Data</h2>'),
               '#states' => array(
                 'invisible' => array(
                   ':input[name="publication_secondaryAuthors_file_upload_button"]' => array('value' => 'Upload')
                 )
               ),
-              '#description' => 'Please define which columns hold the required data:'
+              '#description' => 'Please define which columns hold the required data: Last Name, First Name, and Middle Initial'
             );
             
             $file = 0;
@@ -202,7 +217,12 @@ function page_1_create_form(&$form, $form_state){
                           '#options' => $column_options,
                           '#default_value' => isset($values['publication']['secondaryAuthors']['file-columns'][$item]) ? $values['publication']['secondaryAuthors']['file-columns'][$item] : 0,
                           '#prefix' => "<td>",
-                          '#suffix' => "</td>"
+                          '#suffix' => "</td>",
+                          '#attributes' => array(
+                            'data-toggle' => array('tooltip'),
+                            'data-placement' => array('left'),
+                            'title' => array("Select the type of data the '$item' column holds")
+                          )
                         );
 
                         if ($first){
@@ -317,6 +337,11 @@ function page_1_create_form(&$form, $form_state){
               '#title' => t("Species $i:"),
               '#autocomplete_path' => "species/autocomplete",
               '#default_value' => isset($values['organism']["$i"]['species']) ? $values['organism']["$i"]['species'] : NULL,
+              '#attributes' => array(
+                'data-toggle' => array('tooltip'),
+                'data-placement' => array('left'),
+                'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.')
+              )
             );
         }
         

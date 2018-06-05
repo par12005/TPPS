@@ -622,6 +622,20 @@ function tpps_master($form, &$form_state){
             break;
     }
     
+    $suffix = '
+        <script>
+        jQuery(document).ready(function(){
+            jQuery(\'[data-toggle="tooltip"]\').tooltip();   
+        });
+        </script>';
+    
+    if (isset($form['#suffix'])){
+        $form['#suffix'] .= $suffix;
+    }
+    else {
+        $form['#suffix'] = $suffix;
+    }
+    
     drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
     
     return $form;

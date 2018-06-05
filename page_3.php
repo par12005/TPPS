@@ -22,7 +22,7 @@ function page_3_create_form(&$form, $form_state){
     
     $form['tree-accession']['file'] = array(
       '#type' => 'managed_file',
-      '#title' => t("Please provide a file with information regarding the accession of the trees used in this study:"),
+      '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of trees used in this study:"),
       '#upload_location' => 'public://',
       '#upload_validators' => array(
         'file_validate_extensions' => array('txt csv xlsx'),
@@ -39,13 +39,13 @@ function page_3_create_form(&$form, $form_state){
 	
     $form['tree-accession']['file']['columns'] = array(
       '#type' => 'fieldset',
-      '#title' => t('<h2>Columns</h2>'),
+      '#title' => t('<h2>Define Data</h2>'),
       '#states' => array(
         'invisible' => array(
           ':input[name="tree-accession_file_upload_button"]' => array('value' => 'Upload')
         )
       ),
-      '#description' => 'Please define which columns hold the required data:'
+      '#description' => 'Please define which columns hold the required data: Tree Identifier and Location'
     );
     
     $file = 0;
@@ -85,7 +85,12 @@ function page_3_create_form(&$form, $form_state){
                   '#options' => $column_options,
                   '#default_value' => isset($values['tree-accession']['file-columns'][$item]) ? $values['tree-accession']['file-columns'][$item] : 0,
                   '#prefix' => "<td>",
-                  '#suffix' => "</td>"
+                  '#suffix' => "</td>",
+                  '#attributes' => array(
+                    'data-toggle' => array('tooltip'),
+                    'data-placement' => array('left'),
+                    'title' => array("Select the type of data the '$item' column holds")
+                  )
                 );
 
                 if ($first){
@@ -133,7 +138,7 @@ function page_3_create_form(&$form, $form_state){
             
             $form['tree-accession']["species-$i"]['file'] = array(
               '#type' => 'managed_file',
-              '#title' => t("Please provide a file with information regarding the accession of the $name trees used in this study:"),
+              '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of the $name trees used in this study:"),
               '#upload_location' => 'public://',
               '#upload_validators' => array(
                 'file_validate_extensions' => array('txt csv xlsx'),
@@ -145,13 +150,13 @@ function page_3_create_form(&$form, $form_state){
             
             $form['tree-accession']["species-$i"]['file']['columns'] = array(
               '#type' => 'fieldset',
-              '#title' => t('<h2>Columns</h2>'),
+              '#title' => t('<h2>Define Data</h2>'),
               '#states' => array(
                 'invisible' => array(
                   ':input[name="tree-accession_species-' . $i . '_file_upload_button"]' => array('value' => 'Upload')
                 )
               ),
-              '#description' => 'Please define which columns hold the required data:'
+              '#description' => 'Please define which columns hold the required data: Tree Identifier and Location'
             );
 
             $file = 0;
@@ -194,7 +199,12 @@ function page_3_create_form(&$form, $form_state){
                       '#options' => $column_options,
                       '#default_value' => isset($values['tree-accession']["species-$i"]['file-columns'][$item]) ? $values['tree-accession']["species-$i"]['file-columns'][$item] : 0,
                       '#prefix' => "<td>",
-                      '#suffix' => "</td>"
+                      '#suffix' => "</td>",
+                      '#attributes' => array(
+                        'data-toggle' => array('tooltip'),
+                        'data-placement' => array('left'),
+                        'title' => array("Select the type of data the '$item' column holds")
+                      )
                     );
 
                     if ($first){

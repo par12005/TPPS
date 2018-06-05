@@ -190,8 +190,9 @@ function page_2_create_form(&$form, $form_state){
           '#title' => t('State/Province/Region: (Optional)'),
           '#default_value' => isset($values['studyLocation']['customLocation']['region']) ? $values['studyLocation']['customLocation']['region'] : NULL,
           '#states' => array(
-            'invisible' => array(
-              ':input[name="studyLocation[customLocation][country]"]' => array('empty' => true)
+            'visible' => array(
+              ':input[name="studyLocation[customLocation][country]"]' => array('empty' => FALSE),
+              ':input[name="studyLocation[type]"]' => array('value' => '2')
             )
           )
         );
