@@ -433,10 +433,13 @@ function tpps_master($form, &$form_state){
         $destination = drupal_get_destination();
         drupal_goto('user/login', array('query' => $destination));
     }
-    elseif (isset($params['accession'])) {
+    elseif (isset($params['accession']) and !isset($form_state['stage'])) {
         //logged in, and with accession in link
-        $form_state = variable_get('tpps_old_form_' . $user->mail . $params['accession']);
-        $form_state['rebuild'] = FALSE;
+        $old_form_state = variable_get('tpps_old_form_' . $user->mail . $params['accession']);
+        $form_state['saved_values'] = $old_form_state['saved_values'];
+        $form_state['stage'] = $old_form_state['stage'];
+        $form_state['accession'] = $old_form_state['accession'];
+        $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
     }
     else {
         //logged in, with plain link
@@ -457,7 +460,11 @@ function tpps_master($form, &$form_state){
                 tpps_init_project($form, $form_state);
                 variable_set('tpps_old_form_' . $user->mail . $form_state['saved_values']['frontpage']['accession'], $form_state);
             }
-            $form_state = variable_get('tpps_old_form_' . $user->mail . $form_state['saved_values']['frontpage']['accession']);
+            $old_form_state = variable_get('tpps_old_form_' . $user->mail . $form_state['saved_values']['frontpage']['accession']);
+            $form_state['saved_values'] = $old_form_state['saved_values'];
+            $form_state['stage'] = $old_form_state['stage'];
+            $form_state['accession'] = $old_form_state['accession'];
+            $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
         }
     }
     
