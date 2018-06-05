@@ -1353,6 +1353,11 @@ function page_2_create_form(&$form, $form_state){
       '#value' => t('Back'),
     );
     
+    $form['Save'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save'),
+    );
+    
     $form['Next'] = array(
       '#type' => 'submit',
       '#value' => t('Next'),

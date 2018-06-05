@@ -345,6 +345,11 @@ function page_1_create_form(&$form, $form_state){
     );
      */
     
+    $form['Save'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save'),
+    );
+    
     $form['Next'] = array(
       '#type' => 'submit',
       '#value' => t('Next'),

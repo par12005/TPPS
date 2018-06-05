@@ -628,8 +628,8 @@ function tpps_master($form, &$form_state){
 }
 
 function tpps_master_validate($form, &$form_state){
-	
-    if ($form_state['triggering_element']['#value'] == 'Back'){
+    
+    if ($form_state['triggering_element']['#value'] == 'Back' or $form_state['triggering_element']['#value'] == 'Save'){
         
         if ($form_state['stage'] == 'thirdPage'){
             if ($form_state['saved_values']['Hellopage']['organism']['number'] == '1' or $form_state['values']['tree-accession']['check'] == '0'){
@@ -743,6 +743,19 @@ function tpps_master_submit($form, &$form_state){
     
     $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
     $persist = TRUE;
+    
+    if ($form_state['triggering_element']['#value'] == 'Save'){
+        dpm('Your information has been saved!');
+        
+        if (isset($form_state['saved_values']['form_build_id'])){
+            $form_state['values']['form_build_id'] = $form_state['saved_values']['form_build_id'];
+        }
+        $form_state['saved_values']['form_build_id'] = $form_state['values']['form_build_id'];
+        $form_state['rebuild'] = TRUE;
+        
+        variable_set('tpps_incomplete_' . $user->mail . $form_state['accession'], $form_state);
+        return;
+    }
     
     switch ($form_state['stage']){
         case 'frontpage':
