@@ -92,7 +92,7 @@ function tpps_menu() {
 function tpps_tab_create($type, $user, $name = NULL){
     
     $email = $user->mail;
-    $state_name = 'tpps_old_form_' . $email;
+    $state_name = 'tpps_incomplete_' . $email;
     
     $results = db_select("public.variable", "variable")
         ->fields('variable')
@@ -435,7 +435,7 @@ function tpps_master($form, &$form_state){
     }
     elseif (isset($params['accession']) and !isset($form_state['stage'])) {
         //logged in, and with accession in link
-        $old_form_state = variable_get('tpps_old_form_' . $user->mail . $params['accession']);
+        $old_form_state = variable_get('tpps_incomplete_' . $user->mail . $params['accession']);
         $form_state['saved_values'] = $old_form_state['saved_values'];
         $form_state['stage'] = $old_form_state['stage'];
         $form_state['accession'] = $old_form_state['accession'];
@@ -458,9 +458,9 @@ function tpps_master($form, &$form_state){
             if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')){
                 //no submissions, or selected to create new submission
                 tpps_init_project($form, $form_state);
-                variable_set('tpps_old_form_' . $user->mail . $form_state['saved_values']['frontpage']['accession'], $form_state);
+                variable_set('tpps_incomplete_' . $user->mail . $form_state['saved_values']['frontpage']['accession'], $form_state);
             }
-            $old_form_state = variable_get('tpps_old_form_' . $user->mail . $form_state['saved_values']['frontpage']['accession']);
+            $old_form_state = variable_get('tpps_incomplete_' . $user->mail . $form_state['saved_values']['frontpage']['accession']);
             $form_state['saved_values'] = $old_form_state['saved_values'];
             $form_state['stage'] = $old_form_state['stage'];
             $form_state['accession'] = $old_form_state['accession'];
@@ -788,7 +788,7 @@ function tpps_master_submit($form, &$form_state){
             else{
                 //dpm('submit');
                 //submit_all($form, $form_state);
-                variable_set('tpps_old_form_' . $user->mail . $form_state['accession'], NULL);
+                variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
@@ -807,7 +807,7 @@ function tpps_master_submit($form, &$form_state){
     $form_state['rebuild'] = TRUE;
     
     if ($persist){
-        variable_set('tpps_old_form_' . $user->mail . $form_state['accession'], $form_state);
+        variable_set('tpps_incomplete_' . $user->mail . $form_state['accession'], $form_state);
     }
 }
 
@@ -1984,7 +1984,7 @@ function front_create_form(&$form, $form_state){
         
         $results = db_select("public.variable", "variable")
             ->fields('variable', array('name'))
-            ->condition('name', db_like('tpps_old_form_' . $user->mail) . '%', 'LIKE')
+            ->condition('name', db_like('tpps_incomplete_' . $user->mail) . '%', 'LIKE')
             ->execute();
         
         foreach ($results as $item){
