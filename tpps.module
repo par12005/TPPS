@@ -99,7 +99,16 @@ function tpps_tab_create($type, $user, $name = NULL){
         ->condition('name', db_like($state_name) . '%', 'LIKE')
         ->execute();
     
-    $display = "<div><table><thead>";
+    $display = 
+    '<style>
+        .tpps_profile_tab {
+            background: #ffffff;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            padding: 0px 10px;
+        }
+    </style>';
+    $display .= "<div class='tpps_profile_tab'><table border='1'><thead>";
     $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th></tr>";
     $display .= "</thead><tbody>";
     
@@ -505,7 +514,7 @@ function tpps_master($form, &$form_state){
 			border-radius: 4px;
                         margin-bottom: 10px;
 		}
-	
+                
 	</style>';
 	$form['#prefix'] .= '<div class="tgdr_form_status">';
 	
