@@ -220,7 +220,7 @@ After the data has been submitted and approved, the user will recieve an email w
 - File upload instructions
 - Latitude/Longitude formats for file uploads
 - Latitude/Longitude format examples
-- Re-order phenotype section
+- Format table in TPPS profile tab
 - File upload tables need formatting
 - Status bar conditions/detection needs to be revised
 - Required/optional indicator needs to be revised
