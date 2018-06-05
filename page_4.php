@@ -351,7 +351,7 @@ function page_4_create_form(&$form, $form_state){
 
                     if ($first){
                         $first = FALSE;
-                        $fields['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
+                        $fields['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
                     }
                 }
 
@@ -474,7 +474,7 @@ function page_4_create_form(&$form, $form_state){
 
                         if ($first){
                             $first = FALSE;
-                            $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'];
+                            $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'];
                         }
                     }
 
@@ -728,7 +728,7 @@ function page_4_ref(&$fields, $form_state, $values, $id){
 
                         if ($first){
                             $first = FALSE;
-                            $fields['assembly-user']['columns'][$col]['#prefix'] = "<div><table border='1'><tbody><tr>" . $fields['assembly-user']['columns'][$col]['#prefix'];
+                            $fields['assembly-user']['columns'][$col]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $fields['assembly-user']['columns'][$col]['#prefix'];
                         }
                     }
                     $display = "<tr>";

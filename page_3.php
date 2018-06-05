@@ -95,7 +95,7 @@ function page_3_create_form(&$form, $form_state){
 
                 if ($first){
                     $first = FALSE;
-                    $form['tree-accession']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form['tree-accession']['file']['columns'][$item]['#prefix'];
+                    $form['tree-accession']['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $form['tree-accession']['file']['columns'][$item]['#prefix'];
                 }
             }
 
@@ -209,7 +209,7 @@ function page_3_create_form(&$form, $form_state){
 
                     if ($first){
                         $first = FALSE;
-                        $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'];
+                        $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'];
                     }
                 }
 

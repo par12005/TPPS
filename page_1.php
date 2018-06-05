@@ -227,7 +227,7 @@ function page_1_create_form(&$form, $form_state){
 
                         if ($first){
                             $first = FALSE;
-                            $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'];
+                            $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'];
                         }
                     }
 
