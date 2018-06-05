@@ -17,6 +17,12 @@ function page_4_create_form(&$form, $form_state){
         
         $phenotype_number = isset($values[$id]['phenotype']['number']) ? $values[$id]['phenotype']['number'] : 1;
         
+        $fields['check'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('I have >30 Phenotypes'),
+          '#default_value' => isset($values[$id]['phenotype']['check']) ? $values[$id]['phenotype']['check'] : NULL,
+        );
+        
         $fields['add'] = array(
           '#type' => 'button',
           '#title' => t('Add Phenotype'),
@@ -230,12 +236,6 @@ function page_4_create_form(&$form, $form_state){
               '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['developmental']) ? $values[$id]['phenotype']["$i"]['non-environment']['developmental'] : NULL,
             );
         }
-        
-        $fields['check'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('I have >30 Phenotypes'),
-          '#default_value' => isset($values[$id]['phenotype']['check']) ? $values[$id]['phenotype']['check'] : NULL,
-        );
         
         $fields['metadata'] = array(
           '#type' => 'managed_file',
