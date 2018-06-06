@@ -168,7 +168,7 @@ function tpps_tab_create($type, $user, $name = NULL){
     
     return $display;
 }
-	
+
 function tpps_compare_temp($table, $column, $is_primary = FALSE, array $condition = array()){
     
     /*  A function to compare the max value in a temp table to the max value in a public table
@@ -396,6 +396,55 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name){
     }
     
     return $missing_ids;
+}
+
+function tpps_standard_coord($raw_coordinate){
+    
+    $matches = array();
+    $valid = TRUE;
+
+    if (preg_match('/(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([N|S])),? ?(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([E|W]))/', $raw_coordinate, $matches)){
+        $lat = $matches[2] + ($matches[3] / 60) + ($matches[4] / 3600);
+        $long = $matches[7] + ($matches[8] / 60) + ($matches[9] / 3600);
+    }
+    elseif (preg_match('/(([0-9]+)° ?([0-9|\.]+)\' ?([N|S])),? ?(([0-9]+)° ?([0-9|\.]+)\' ?([E|W]))/', $raw_coordinate, $matches)){
+        $lat = $matches[2] + ($matches[3] / 60);
+        $long = $matches[6] + ($matches[7] / 60);
+    }
+    elseif (preg_match('/([0-9|\.]+), ?[\+|-]?([0-9|\.]+)/', $raw_coordinate, $matches)){
+        $lat = $matches[1];
+        $long = $matches[2];
+    }
+    elseif (preg_match('/([0-9|\.]+)°? ?([N|S]),? ?([0-9|\.]+)°? ?([E|W])/', $raw_coordinate, $matches)){
+        $lat = $matches[1];
+        $long = $matches[3];
+    }
+    else {
+        $valid = FALSE;
+    }
+
+    if (preg_match('/(-).+,/', $raw_coordinate, $matches) and $valid){
+        $lat = $lat * -1;
+    }
+    if (preg_match('/,.*(-)/', $raw_coordinate, $matches) and $valid){
+        $long = $long * -1;
+    }
+
+    if (preg_match('/([N|S]).+([E|W])/', $raw_coordinate, $matches) and $valid){
+        if ($matches[1] == 'S'){
+            $lat = $lat * -1;
+        }
+        if ($matches[2] == 'W'){
+            $long = $long * -1;
+        }
+    }
+    
+    if ($valid){
+        return "$lat,$long";
+    }
+    else {
+        return 0;
+    }
 }
 
 function tpps_page_build(&$page){
@@ -1045,20 +1094,32 @@ function submit_all($form, &$form_state){
     ));
     
     if ($secondpage['studyLocation']['type'] !== '2'){
-        $location = $secondpage['studyLocation']['latitude'] . ' Latitude, ' . $secondpage['studyLocation']['longitude'] . ' Longitude';
-    }
-    elseif ($location = $secondpage['studyLocation']['customLocation']['region'] != ''){
-        $location = $secondpage['studyLocation']['customLocation']['region'] . ', ' . $secondpage['studyLocation']['customLocation']['country'];
+        $standard_coordinate = tpps_standard_coord($secondpage['studyLocation']['coordinates']);
+        $standard_coordinate = explode(',', $standard_coordinate);
+        $latitude = $standard_coordinate[0];
+        $longitude = $standard_coordinate[1];
+        
+        $study_location_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+          'project_id' => $project_id,
+          'type_id' => '54718',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
+          'value' => $latitude
+        ));
+        
+        $study_location_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+          'project_id' => $project_id,
+          'type_id' => '54717',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
+          'value' => $longitude
+        ));
     }
     else{
-        $location = $secondpage['studyLocation']['customLocation']['country'];
+        $location = $secondpage['studyLocation']['custom'];
+        
+        $study_location_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+          'project_id' => $project_id,
+          'type_id' => '127998',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
+          'value' => $location
+        ));
     }
-    
-    $study_location_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
-      'project_id' => $project_id,
-      'type_id' => '127998',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
-      'value' => $location
-    ));
     
     $datatype_options = array(
       '0' => '- Select -',
@@ -2110,91 +2171,8 @@ function summary_create_form(&$form, $form_state){
 
 function tpps_test_page($form, &$form_state){
     
-    $form['vcf'] = array(
-      '#type' => 'managed_file',
-      '#title' => 'vcf',
-      '#upload_location' => 'public://',
-      '#tree' => TRUE
-    );
     
-    $form['file'] = array(
-      '#type' => 'managed_file',
-      '#title' => 'file',
-      '#upload_location' => 'public://',
-      '#tree' => TRUE
-    );
-    
-    $form['file']['columns'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('<h2>Columns</h2>'),
-      '#description' => 'Please define which columns hold the required data:'
-    );
-    
-    $file = 0;
-    if (isset($form_state['values']['file']) and $form_state['values']['file'] != 0){
-        $file = $form_state['values']['file'];
-    }
-
-    if ($file != 0){
-        $file = file_load($file);
-        $file_name = explode('//', $file->uri);
-        $file_name = $file_name[1];
-
-        //vm
-        $location = "/var/www/html/Drupal/sites/default/files/$file_name";
-        //dev site
-        //$location = "/var/www/Drupal/sites/default/files/$file_name";
-        $content = fopen($file->uri, 'r');
         
-        $first = TRUE;
-        
-        $column_options = array(
-          'N/A',
-          'Scaffold/Chromosome',
-        );
-        $headers = array();
-        
-        for ($i = 0; $i < 3; $i++){
-            $line = fgets($content);
-            //dpm($line);
-            $line = explode(' ', $line);
-            
-            if ($first){
-                foreach ($line as $col){
-                    $headers[$col] = $col;
-                    $form['file']['columns'][$col] = array(
-                      '#type' => 'select',
-                      '#title' => '',
-                      '#options' => $column_options,
-                      '#prefix' => "<td>",
-                      '#suffix' => "</td>"
-                    );
-                    
-                    if ($first){
-                        $first = FALSE;
-                        $form['file']['columns'][$col]['#prefix'] = "<div><table border='1'><tbody><tr>" . $form['file']['columns'][$col]['#prefix'];
-                    }
-                }
-                $display = "<tr>";
-            }
-            if ($line[0][0] == '>'){
-                $display .= "<tr>";
-                for ($j = 0; $j < count($headers); $j++){
-                    $display .= "<th>{$line[$j]}</th>";
-                }
-                $display .= "</tr>";
-            }
-            elseif (!isset($line)){
-                break;
-            }
-            else{
-                $i--;
-            }
-            
-        }
-        $form['file']['columns'][$col]['#suffix'] .= $display;
-    }
-    
     $form['Next'] = array(
       '#type' => 'submit',
       '#value' => t('Next'),
@@ -2380,7 +2358,7 @@ function tpps_block_view_alter(&$data, $block) {
                             $location .= $country;
                         }
                         else {
-                            $location = $location['latitude'] . " lat, " . $location['longitude'] . " long";
+                            $location = $location['coordinates'];
                         }
 			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location: ' . filter_xss(check_plain($location)) .  "<br />";
 		}
