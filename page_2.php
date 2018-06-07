@@ -218,7 +218,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
                   width=\"600\"
                   height=\"450\"
                   frameborder=\"0\" style=\"border:0\"
-                  src=\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDivo3OhspiKHRhwjdlZBmaudiMy_fjxhw&z=5\" allowfullscreen>
+                  src=\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyCQkh2ayPa0-wvf-r34oKBB17GEl6Fo5gg&z=5\" allowfullscreen>
                 </iframe></div>";
             }
         }
