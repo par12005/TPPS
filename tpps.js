@@ -237,14 +237,15 @@ jQuery(document).ready(function ($) {
     
     var first = true;
     
-    jQuery("#edit-button").attr('type', 'button');
     jQuery("#map_wrapper").hide();
+    jQuery("#edit-tree-accession-map-button").trigger('mousedown');
     
     $.fn.updateMap = function(locations) {
         jQuery("#map_wrapper").show();
         var map = initMap();
         var total_lat = 0;
         var total_long = 0;
+        global_locations = locations;
 
         for (i = 0; i < locations.length; i++) {
             total_lat += parseInt(locations[i][1]);

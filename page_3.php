@@ -1,5 +1,5 @@
 <?php
-function page_3_create_form(&$form, $form_state){
+function page_3_create_form(&$form, &$form_state){
     
     if (isset($form_state['saved_values']['thirdPage'])){
         $values = $form_state['saved_values']['thirdPage'];
@@ -277,7 +277,7 @@ function page_3_create_form(&$form, $form_state){
 
 function page_3_multi_map($form, $form_state){
     
-    if (isset($form_state['values']['tree-accession']['file']) and $form_state['values']['tree-accession']['file'] != '0'){
+    if (isset($form['tree-accession']['file']['#value']['fid']) and $form['tree-accession']['file']['#value']['fid'] != '0'){
         $file = $form_state['values']['tree-accession']['file']['fid'];
         $columns = $form_state['values']['tree-accession']['file']['columns'];
         
@@ -316,7 +316,12 @@ function page_3_multi_map($form, $form_state){
         
         $commands[] = ajax_command_replace('#multi_map', render($form['tree-accession']['map-button']));
         $commands[] = ajax_command_invoke('#map_wrapper', 'updateMap', array($standards));
-
+        
+        return array('#type' => 'ajax', '#commands' => $commands);
+    }
+    else {
+        $commands[] = ajax_command_replace('#multi_map', render($form['tree-accession']['map-button']));
+        $commands[] = ajax_command_invoke('#map_wrapper', 'hide');
         return array('#type' => 'ajax', '#commands' => $commands);
     }
 }
