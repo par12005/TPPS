@@ -291,7 +291,8 @@ function page_3_multi_map($form, $form_state){
         }
         
         if (!isset($lat_col) or !isset($long_col)){
-            $commands[] = ajax_command_alert('Tree Accession file: please define column data before updating the map');
+            $commands[] = ajax_command_replace('#multi_map', render($form['tree-accession']['map-button']));
+            $commands[] = ajax_command_invoke('#map_wrapper', 'hide');
             return array('#type' => 'ajax', '#commands' => $commands);
         }
         
