@@ -1,4 +1,4 @@
-jQuery(document).ready(function () {
+jQuery(document).ready(function ($) {
     
     function Secondary_Authors(){
         var secondary_authors_button_add = jQuery('#edit-publication-secondaryauthors-add');
@@ -234,4 +234,37 @@ jQuery(document).ready(function () {
             jQuery("#tpps-status").insertAfter(".tgdr_form_status");
         }
     }
+    
+    var first = true;
+    
+    jQuery("#edit-button").attr('type', 'button');
+    jQuery("#map_wrapper").hide();
+    
+    $.fn.updateMap = function(locations) {
+        jQuery("#map_wrapper").show();
+        var map = initMap();
+        var total_lat = 0;
+        var total_long = 0;
+
+        for (i = 0; i < locations.length; i++) {
+            total_lat += parseInt(locations[i][1]);
+            total_long += parseInt(locations[i][2]);
+            marker = new google.maps.Marker({
+                position: new google.maps.LatLng(locations[i][1], locations[i][2]),
+                map: map
+            });
+        }
+        
+        var center = new google.maps.LatLng(total_lat/locations.length, total_long/locations.length);
+        map.panTo(center);
+    };
 });
+
+function initMap() {
+  var map = new google.maps.Map(document.getElementById('map_wrapper'), {
+    center: {lat: 0, lng: 0},
+    zoom: 5
+  });
+  
+  return map;
+}

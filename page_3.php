@@ -116,6 +116,31 @@ function page_3_create_form(&$form, $form_state){
         }
     }
     
+    $form['tree-accession']['map-button'] = array(
+      '#type' => 'button',
+      '#title' => 'Click here to update map',
+      '#value' => 'Click here to update map',
+      '#button_type' => 'button',
+      '#executes_submit_callback' => FALSE,
+      '#ajax' => array(
+        'callback' => 'page_3_multi_map',
+        'wrapper' => 'multi_map',
+      ),
+      '#prefix' => '<div id="multi_map">',
+      '#suffix' => '<div id="map_wrapper"></div></div>',
+    );
+    
+    if (isset($form_state['triggering_element']) and $form_state['triggering_element']['#value'] != 'Click here to update map'){
+        $form['tree-accession']['map-button']['#suffix'] .= '
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3Sf1HjYbjoT1f8LIZNDc2aIMteKf0yM4"
+    async defer></script>
+    <style>
+      #map_wrapper {
+        height: 400px;
+      }
+    </style>';
+    }
+    
     if ($species_number > 1){
         $form['tree-accession']['check'] = array(
           '#type' => 'checkbox',
@@ -248,6 +273,52 @@ function page_3_create_form(&$form, $form_state){
     );
     
     return $form;
+}
+
+function page_3_multi_map($form, $form_state){
+    
+    if (isset($form_state['values']['tree-accession']['file']) and $form_state['values']['tree-accession']['file'] != '0'){
+        $file = $form_state['values']['tree-accession']['file']['fid'];
+        $columns = $form_state['values']['tree-accession']['file']['columns'];
+        
+        foreach ($columns as $key => $val){
+            if ($val == '4'){
+                $lat_col = $key;
+            }
+            if ($val == '5'){
+                $long_col = $key;
+            }
+        }
+        
+        if (!isset($lat_col) or !isset($long_col)){
+            $commands[] = ajax_command_alert('Tree Accession file: please define column data before updating the map');
+            return array('#type' => 'ajax', '#commands' => $commands);
+        }
+        
+        $standards = array();
+        
+        if (($file = file_load($file))){
+            $file_name = explode('//', $file->uri);
+            $file_name = $file_name[1];
+
+            //vm
+            //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
+            //dev site
+            $location = "/var/www/Drupal/sites/default/files/$file_name";
+            $content = parse_xlsx($location);
+            
+            for ($i = 0; $i < count($content) - 1; $i++){
+                $pair = explode(',', tpps_standard_coord("{$content[$i][$lat_col]},{$content[$i][$long_col]}"));
+                array_push($standards, array("location $i", $pair[0], $pair[1]));
+            }
+
+        }
+        
+        $commands[] = ajax_command_replace('#multi_map', render($form['tree-accession']['map-button']));
+        $commands[] = ajax_command_invoke('#map_wrapper', 'updateMap', array($standards));
+
+        return array('#type' => 'ajax', '#commands' => $commands);
+    }
 }
 
 function page_3_validate_form(&$form, &$form_state){
