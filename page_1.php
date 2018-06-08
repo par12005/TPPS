@@ -39,60 +39,43 @@ function page_1_create_form(&$form, $form_state){
     
     function publication(&$form, $values, $form_state){
         
-        function year(&$form, $values){
+        function year(&$form, $values, $form_state){
             
-            $yearArrSubmitted = Array();
-            $yearArrSubmitted[0] = '- Select -';
-            for ($i = 2015; $i <= 2018; $i++) {
-                $yearArrSubmitted[$i] = "$i";
+            if (isset($form_state['values']['publication']['status']) and $form_state['values']['publication']['status'] != '0'){
+                $pub_status = $form_state['values']['publication']['status'];
             }
-
-            $yearArrInPress = Array();
-            $yearArrInPress[0] = '- Select -';
-            for ($i = 2015; $i <= 2018; $i++) {
-                $yearArrInPress[$i] = "$i";
+            elseif (isset($form_state['saved_values']['Hellopage']['publication']['status']) and $form_state['saved_values']['Hellopage']['publication']['status'] != '0'){
+                $pub_status = $form_state['saved_values']['Hellopage']['publication']['status'];
             }
-
-            $yearArrPublished = Array();
-            $yearArrPublished[0] = '- Select -';
-            for ($i = 1990; $i <= 2018; $i++) {
-                $yearArrPublished[$i] = "$i";
+            
+            if (isset($pub_status) and $pub_status != 'Published'){
+                $yearArr = array(0 => '- Select -');
+                for ($i = 2015; $i <= 2018; $i++) {
+                    $yearArr[$i] = "$i";
+                }
             }
-
-            $form['publication']['yearSubmitted'] = array(
+            elseif (isset($pub_status)){
+                $yearArr = array(0 => '- Select -');
+                for ($i = 1990; $i <= 2018; $i++) {
+                    $yearArr[$i] = "$i";
+                }
+            }
+            else {
+                $yearArr = array(0 => '- Select -');
+            }
+            
+            $form['publication']['year'] = array(
               '#type' => 'select',
               '#title' => t('Year of Publication'),
-              '#options' => $yearArrSubmitted,
-              '#default_value' => isset($values['publication']['yearSubmitted']) ? $values['publication']['yearSubmitted'] : 0,
+              '#options' => $yearArr,
+              '#default_value' => isset($values['publication']['year']) ? $values['publication']['year'] : 0,
               '#states' => array(
-                'visible' => array(
-                  ':input[name="publication[status]"]' => array('value' => '2')
+                'invisible' => array(
+                  ':input[name="publication[status]"]' => array('value' => '0')
                 )
-              )
-            );
-
-            $form['publication']['yearInPress'] = array(
-              '#type' => 'select',
-              '#title' => t('Year of Publication'),
-              '#options' => $yearArrInPress,
-              '#default_value' => isset($values['publication']['yearInPress']) ? $values['publication']['yearInPress'] : 0,
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="publication[status]"]' => array('value' => '3')
-                )
-              )
-            );
-
-            $form['publication']['yearPublished'] = array(
-              '#type' => 'select',
-              '#title' => t('Year of Publication'),
-              '#options' => $yearArrPublished,
-              '#default_value' => isset($values['publication']['yearPublished']) ? $values['publication']['yearPublished'] : 0,
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="publication[status]"]' => array('value' => '4')
-                )
-              )
+              ),
+              '#prefix' => '<div id="pubyear">',
+              '#suffix' => '</div>'
             );
             
             return $form;
@@ -262,16 +245,20 @@ function page_1_create_form(&$form, $form_state){
           '#title' => t('Publication Status:'),
           '#options' => array(
             0 => t('- Select -'),
-            2 => t('In Preparation or Submitted'),
-            3 => t('In Press'),
-            4 => t('Published'),
+            'In Preparation or Submitted' => t('In Preparation or Submitted'),
+            'In Press' => t('In Press'),
+            'Published' => t('Published'),
+          ),
+          '#ajax' => array(
+            'callback' => 'page_1_pub_status',
+            'wrapper' => 'pubyear'
           ),
           '#default_value' => isset($values['publication']['status']) ? $values['publication']['status'] : 0,
         );
         
         secondary_authors($form, $values, $form_state);
         
-        year($form, $values);
+        year($form, $values, $form_state);
 
         $form['publication']['title'] = array(
           '#type' => 'textfield',
@@ -373,6 +360,10 @@ function page_1_create_form(&$form, $form_state){
     return $form;
 }
 
+function page_1_pub_status($form, $form_state){
+    return $form['publication']['year'];
+}
+
 function page_1_validate_form(&$form, &$form_state){
     //for testing only.
     /*foreach($form_state['values'] as $key => $value){
@@ -389,9 +380,7 @@ function page_1_validate_form(&$form, &$form_state){
         $secondary_authors_array = array_slice($form_values['publication']['secondaryAuthors'], 3, 30, true);
         $secondary_authors_file = $form_values['publication']['secondaryAuthors']['file'];
         $secondary_authors_check = $form_values['publication']['secondaryAuthors']['check'];
-        $year_submitted = $form_values['publication']['yearSubmitted'];
-        $year_in_press = $form_values['publication']['yearInPress'];
-        $year_published = $form_values['publication']['yearPublished'];
+        $year = $form_values['publication']['year'];
         $publication_title = $form_values['publication']['title'];
         $publication_abstract = $form_values['publication']['abstract'];
         $publication_journal = $form_values['publication']['journal'];
@@ -439,10 +428,10 @@ function page_1_validate_form(&$form, &$form_state){
             form_set_error('organization', 'Organization: field is required.');
         }
         
-        if ($publication_status == 0){
+        if ($publication_status == '0'){
             form_set_error('publication][status', 'Publication Status: field is required.');
         }
-        elseif($publication_status == 2 or $publication_status == 3 or $publication_status == 4){
+        else{
             
             if ($secondary_authors_number > 0 and $secondary_authors_check == '0'){
                 for($i = 1; $i <= $secondary_authors_number; $i++){
@@ -455,14 +444,8 @@ function page_1_validate_form(&$form, &$form_state){
                 validate_secondary_authors($secondary_authors_file, $form, $form_state);
             }
 
-            if ($publication_status == 2 and $year_submitted == 0){
-                form_set_error('publication][yearSubmitted', 'Year of Publication: field is required.');
-            }
-            elseif ($publication_status == 3 and $year_in_press == 0){
-                form_set_error('publication][yearInPress', 'Year of Publication: field is required.');
-            }
-            elseif ($publication_status == 4 and $year_published == 0){
-                form_set_error('publication][yearPublished', 'Year of Publication: field is required.');
+            if ($year == '0'){
+                form_set_error('publication][year', 'Year of Publication: field is required.');
             }
 
             if ($publication_title == ''){
