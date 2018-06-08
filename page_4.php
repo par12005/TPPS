@@ -58,8 +58,8 @@ function page_4_create_form(&$form, $form_state){
             $structure_arr[$row->name] = "$row->name : $row->definition";
         }
         
-        $results = db_select('chado.phenotype_cvterm', 'phenotype_cvterm')
-            ->fields('phenotype_cvterm', array('name', 'definition'))
+        $results = db_select('chado.phenotype_defs', 'phenotype_defs')
+            ->fields('phenotype_defs', array('name', 'definition'))
             ->execute();
         
 		
