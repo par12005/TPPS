@@ -519,12 +519,23 @@ function page_4_create_form(&$form, $form_state){
     return $form;
 }
 
-function ajax_bioproject_callback(&$form, $form_state){
+function ajax_bioproject_callback(&$form, &$form_state){
     
-    $ajax_id = $form_state['triggering_element']['#parents'][0];
+    $species_num = $form_state['saved_values']['Hellopage']['organism']['number'];
     
-    return $form["$ajax_id"]['genotype']['assembly-auto'];
+    for ($i = 1; $i <= $species_num; $i++){
+        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['assembly-auto']['!NEEDS_UPDATE!']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['assembly-auto']['!NEEDS_UPDATE!'] == TRUE){
+            unset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['assembly-auto']['!NEEDS_UPDATE!']);
+            $commands[] = ajax_command_replace("#organism-$i-assembly-auto", render($form["organism-$i"]['genotype']['assembly-auto']));
+        }
+    }
     
+    if (isset($commands)){
+        return array('#type' => 'ajax', '#commands' => $commands);
+    }
+    else {
+        return;
+    }
 }
 
 function page_4_ref(&$fields, $form_state, $values, $id){
@@ -620,6 +631,7 @@ function page_4_ref(&$fields, $form_state, $values, $id){
     
     if (isset($form_state['values'][$id]['genotype']['BioProject-id'])){
         $bio_id = $form_state['values']["$id"]['genotype']['BioProject-id'];
+        $form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'] = $form_state['values'][$id]['genotype']['BioProject-id'];
     }
     elseif(isset($form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'])){
         $bio_id = $form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'];
@@ -630,6 +642,8 @@ function page_4_ref(&$fields, $form_state, $values, $id){
         if (strlen($bio_id) > 5){
             $bio_id = substr($bio_id, 5);
         }
+        
+        $form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-auto']['!NEEDS_UPDATE!'] = TRUE;
         
         $options = array();
         $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
@@ -1100,7 +1114,7 @@ function page_4_validate_form(&$form, &$form_state){
                     }
                 }
                 elseif ($genotype_design == '2'){
-                    if ($targed_capture == '0'){
+                    if ($targeted_capture == '0'){
                         form_set_error("$id][genotype][SNPs][targeted-capture", "Targeted Capture: field is required.");
                     }
                     elseif ($targeted_capture == '2' and $snps['targeted-capture-other'] == ''){
