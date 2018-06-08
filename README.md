@@ -213,7 +213,6 @@ Initially, the data will be submitted to temporary tables which are mirrored ver
 After the data has been submitted and approved, the user will recieve an email with an accession number, which they can use in publications or to link to later. Incomplete submissions and submissions pending approval will still have accession numbers so that a user can leave the site and continue in the same place as their form later, but these accession numbers will not be released to them until after the submission has been completed and approved.
 
 # Features in Development
-- View submissions through the user's Tripal account
 - Admin Interface for submission approval
 - Latitude/Longitude formats for file uploads
 - Status bar conditions/detection needs to be revised
