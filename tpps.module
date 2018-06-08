@@ -182,7 +182,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         ->condition('name', db_like($state_name) . '%', 'LIKE')
         ->execute();
     
-    $display .= "<label for='tpps_complete_table'>Complete Submissions</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
+    $display .= "<label for='tpps_complete_table'>Complete Submissions Pending Approval</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
     $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th></tr>";
     $display .= "</thead><tbody>";
     
@@ -250,11 +250,37 @@ function tpps_completed_display($form, $form_state){
     $accession = $params['id'];
     
     $old_form_state = variable_get('tpps_complete_' . $user->mail . $accession);
-    dpm($old_form_state);
+    $values = $old_form_state['saved_values'];
+    dpm($values);
     
-    $display = "<div class='tgdr_status_block'> test";
+    $css = "
+    .tgdr_complete_submission {
+        background: #ffffff;
+        border: 1px solid #cccccc;
+        border-radius: 4px;
+        padding: 0px 10px;
+    }		
+    ";
+    drupal_add_css($css, 'inline');
     
-    $display .= "</div>";
+    $display = "<label for='tpps_$accession'>{$values['Hellopage']['publication']['title']}</label>";
+    $display .= "<div class='tpps_complete_submission'><table id='tpps_$accession' style='width:-webkit-fill-available' border='1'><thead>";
+    //$display .= "<tr><th>Field</th><th>Value</th>";
+    $display .= "</thead><tbody>";
+    
+    $data = array(
+      'Title' => $values['Hellopage']['publication']['title'],
+      'Primary Author' => $values['Hellopage']['primaryAuthor'],
+      'Organization' => $values['Hellopage']['organization'],
+      'Publication Status' => $values['Hellopage']['publication']['status'],
+      'Publication Year' => $values['Hellopage']['publication']['year']
+    );
+    
+    foreach ($data as $key => $val){
+        $display .= "<tr><td>$key</td><td>$val</td></tr>";
+    }
+    
+    $display .= "</tbody></table></div><br>";
     
     $form['a'] = array(
       '#type' => 'hidden',
@@ -1097,27 +1123,12 @@ function submit_all($form, &$form_state){
           'value' => file_create_url(file_load($firstpage['publication']['secondaryAuthors']['file'])->uri)
         ));
     }
-
-    switch ($firstpage['publication']['status']){
-        case ('2'):
-            $pub_year = $firstpage['publication']['yearSubmitted'];
-            break;
-        case ('3'):
-            $pub_year = $firstpage['publication']['yearInPress'];
-            break;
-        case ('4'):
-            $pub_year = $firstpage['publication']['yearPublished'];
-            break;
-        default: 
-            $pub_year = "";
-            break;
-    }
-
+    
     $publication_id = tpps_create_record('tpps_pub', 'tpps_pub_id', array(
       'title' => $firstpage['publication']['title'],
       'series_name' => $firstpage['publication']['journal'],
       'type_id' => '229',
-      'pyear' => $pub_year,
+      'pyear' => $firstpage['publication']['year'],
       'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; $pub_year"
     ));
 
