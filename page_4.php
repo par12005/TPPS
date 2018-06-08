@@ -1,6 +1,5 @@
 <?php
 function page_4_create_form(&$form, $form_state){
-    
     if (isset($form_state['saved_values']['fourthPage'])){
         $values = $form_state['saved_values']['fourthPage'];
     }
@@ -50,13 +49,13 @@ function page_4_create_form(&$form, $form_state){
         $structure_arr = array();
         $dev_arr = array();
 	
-        /*$results = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
+        $results = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
             ->fields('phenotype_structure_cvterm', array('name', 'definition'))
             ->execute();
 		
         
         foreach ($results as $row){
-            array_push($structure_arr, "$row->name : $row->definition");
+            $structure_arr[$row->name] = "$row->name : $row->definition";
         }
         
         $results = db_select('chado.phenotype_cvterm', 'phenotype_cvterm')
@@ -65,8 +64,8 @@ function page_4_create_form(&$form, $form_state){
         
 		
         foreach ($results as $row){
-            array_push($dev_arr, "$row->name : $row->definition");
-        }*/
+            $dev_arr[$row->name] = "$row->name : $row->definition";
+        }
         
         for ($i = 1; $i <= 30; $i++){
             

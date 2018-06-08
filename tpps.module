@@ -251,7 +251,6 @@ function tpps_completed_display($form, $form_state){
     
     $old_form_state = variable_get('tpps_complete_' . $user->mail . $accession);
     $values = $old_form_state['saved_values'];
-    dpm($values);
     
     $css = "
     .tgdr_complete_submission {
@@ -293,11 +292,464 @@ function tpps_completed_display($form, $form_state){
     $data['Journal'] = $values['Hellopage']['publication']['journal'];
     
     for ($i = 1; $i <= $values['Hellopage']['organism']['number']; $i++){
-        $data["Species $i"] = $values['Hellopage']['organism'][$i];
+        $data["Species $i"] = $values['Hellopage']['organism'][$i]['species'];
     }
     
     $data['Experiment Starting Date'] = $values['secondPage']['StartingDate']['month'] . ' ' . $values['secondPage']['StartingDate']['year'];
     $data['Experiment Ending Date'] = $values['secondPage']['EndingDate']['month'] . ' ' . $values['secondPage']['EndingDate']['year'];
+    
+    if ($values['secondPage']['studyLocation']['type'] != '2'){
+        $data['Study Location'] = $values['secondPage']['studyLocation']['coordinates'];
+    }
+    else {
+        $data['Study Location'] = $values['secondPage']['studyLocation']['custom'];
+    }
+    
+    $study_type_options = array(
+      1 => 'Natural Population (Landscape)',
+      2 => 'Growth Chamber',
+      3 => 'Greenhouse',
+      4 => 'Experimental/Common Garden',
+      5 => 'Plantation',
+    );
+    
+    $data['Study Type'] = $study_type_options[$values['secondPage']['studyType']];
+    
+    switch ($values['secondPage']['studyType']){
+        case '1':
+            $data['Seasons assessed'] = '';
+            foreach ($values['secondPage']['naturalPopulation']['season'] as $key => $item){
+                if ($item != '0'){
+                    $data['Seasons assessed'] .= $item . ' ';
+                }
+            }
+            $data['Average number of assessions'] = $values['secondPage']['naturalPopulation']['assessions'];
+            
+            break;
+        case '2':
+            $growth = $values['secondPage']['growthChamber'];
+            if ($growth['co2Control']['option'] == '1'){
+                $data['CO2 Control'] = 'Controlled';
+                $data['CO2 Value'] = $growth['co2Control']['controlled'];
+            }
+            else {
+                $data['CO2 Control'] = 'Uncontrolled';
+                $data['CO2 Value'] = $growth['co2Control']['uncontrolled'];
+            }
+            
+            if ($growth['humidityControl']['option'] == '1'){
+                $data['Humidity Control'] = 'Controlled';
+                $data['Humidity Value'] = $growth['humidityControl']['controlled'];
+            }
+            else {
+                $data['Humidity Control'] = 'Uncontrolled';
+                $data['Humidity Value'] = $growth['humidityControl']['uncontrolled'];
+            }
+            
+            if ($growth['lightControl']['option'] == '1'){
+                $data['Light Intensity Control'] = 'Controlled';
+                $data['Light Intensity Value'] = $growth['lightControl']['controlled'];
+            }
+            else {
+                $data['Light Intensity Control'] = 'Uncontrolled';
+                $data['Light Intensity Value'] = $growth['lightControl']['uncontrolled'];
+            }
+            
+            $data['Average High Temperature'] = $growth['temp']['high'];
+            $data['Average Low Temperature'] = $growth['temp']['low'];
+            
+            $rooting_options = array(
+              1 => 'Aeroponics',
+              2 => 'Hydroponics',
+              3 => 'Soil',
+            );
+            
+            $data['Rooting Type'] = $rooting_options[$growth['rooting']['option']];
+            
+            if ($growth['rooting']['option'] == '3'){
+                $soil_options = array(
+                  1 => 'Sand',
+                  2 => 'Peat',
+                  3 => 'Clay',
+                  4 => 'Mixed',
+                  5 => 'Other'
+                );
+                $data['Soil Type'] = $soil_options[$growth['rooting']['soil']['type']];
+                if ($growth['rooting']['soil']['type'] == '5'){
+                    $data['Custom Soil Type'] = $growth['rooting']['soil']['other'];
+                }
+                $data['Soil Container Type'] = $growth['rooting']['soil']['container'];
+            }
+            
+            if ($growth['rooting']['ph']['option'] == '1'){
+                $data['pH Control'] = 'Controlled';
+                $data['pH Value'] = $growth['rooting']['ph']['controlled'];
+            }
+            else {
+                $data['pH Control'] = 'Uncontrolled';
+                $data['pH Value'] = $growth['rooting']['ph']['uncontrolled'];
+            }
+            
+            $treatment = $growth['rooting']['treatment'];
+            $selected = false;
+            $description = false;
+
+            foreach ($treatment as $field => $value){
+                if (!$description){
+                    $description = true;
+                    $selected = $value;
+                    continue;
+                }
+                elseif ($selected == '1'){
+                    $treatment_name = substr($field, 0, -12);
+                    $data["Treatment: $treatment_name description"] = $value;
+                }
+                $description = false;
+            }
+            
+            break;
+        case '3':
+            $green = $values['secondPage']['greenhouse'];
+            if ($green['humidityControl']['option'] == '1'){
+                $data['Humidity Control'] = 'Controlled';
+                $data['Humidity Value'] = $green['humidityControl']['controlled'];
+            }
+            else {
+                $data['Humidity Control'] = 'Uncontrolled';
+            }
+            
+            if ($green['lightControl']['option'] == '1'){
+                $data['Light Intensity Control'] = 'Controlled';
+                $data['Light Intensity Value'] = $green['lightControl']['controlled'];
+            }
+            else {
+                $data['Light Intensity Control'] = 'Uncontrolled';
+            }
+            
+            $data['Average High Temperature'] = $green['temp']['high'];
+            $data['Average Low Temperature'] = $green['temp']['low'];
+            
+            $rooting_options = array(
+              1 => 'Aeroponics',
+              2 => 'Hydroponics',
+              3 => 'Soil',
+            );
+            
+            $data['Rooting Type'] = $rooting_options[$green['rooting']['option']];
+            
+            if ($green['rooting']['option'] == '3'){
+                $soil_options = array(
+                  1 => 'Sand',
+                  2 => 'Peat',
+                  3 => 'Clay',
+                  4 => 'Mixed',
+                  5 => 'Other'
+                );
+                $data['Soil Type'] = $soil_options[$green['rooting']['soil']['type']];
+                if ($green['rooting']['soil']['type'] == '5'){
+                    $data['Custom Soil Type'] = $green['rooting']['soil']['other'];
+                }
+                $data['Soil Container Type'] = $green['rooting']['soil']['container'];
+            }
+            
+            if ($green['rooting']['ph']['option'] == '1'){
+                $data['pH Control'] = 'Controlled';
+                $data['pH Value'] = $green['rooting']['ph']['controlled'];
+            }
+            else {
+                $data['pH Control'] = 'Uncontrolled';
+            }
+            
+            $treatment = $green['rooting']['treatment'];
+            $selected = false;
+            $description = false;
+
+            foreach ($treatment as $field => $value){
+                if (!$description){
+                    $description = true;
+                    $selected = $value;
+                    continue;
+                }
+                elseif ($selected == '1'){
+                    $treatment_name = substr($field, 0, -12);
+                    $data["Treatment: $treatment_name description"] = $value;
+                }
+                $description = false;
+            }
+            
+            break;
+        case '4':
+            $garden = $values['secondPage']['commonGarden'];
+            
+            $irrigation_options = array(
+              1 => 'Irrigation from top',
+              2 => 'Irrigation from bottom',
+              3 => 'Drip Irrigation',
+              4 => 'Other',
+              5 => 'No Irrigation',
+            );
+            
+            $data['Irrigation Type'] = $irrigation_options[$garden['irrigation']['option']];
+            
+            if ($garden['irrigation']['option'] == '4'){
+                $data['Custom Irrigation Type'] = $garden['irrigation']['other'];
+            }
+            
+            if ($garden['salinity']['option'] == '1'){
+                $data['Salinity Control'] = 'Controlled';
+                $data['Salinity Value'] = $garden['salinity']['controlled'];
+            }
+            else {
+                $data['Salinity Control'] = 'Uncontrolled';
+                $data['Salinity Value'] = $garden['salinity']['uncontrolled'];
+            }
+            
+            $data['Biotic Environment'] = '';
+            foreach ($garden['bioticEnv']['option'] as $key => $val){
+                if ($val !== 0){
+                    $data['Biotic Environment'] .= $key . ', ';
+                }
+            }
+            
+            if ($garden['bioticEnv']['option']['Other'] !== 0){
+                $data['Custom Biotic Environment'] = $garden['bioticEnv']['other'];
+            }
+            
+            $data['Seasons assessed'] = '';
+            foreach ($garden['season'] as $key => $item){
+                if ($item != '0'){
+                    $data['Seasons assessed'] .= $item . ' ';
+                }
+            }
+            
+            if ($garden['treatment']['check'] !== 0){
+                $treatment = $garden['treatment'];
+                $selected = false;
+                $description = false;
+
+                foreach ($treatment as $field => $value){
+                    if ($field != 'check'){
+                        if (!$description){
+                            $description = true;
+                            $selected = $value;
+                            continue;
+                        }
+                        elseif ($selected == '1'){
+                            $treatment_name = substr($field, 0, -12);
+                            $data["Treatment: $treatment_name description"] = $value;
+                        }
+                        $description = false;
+                    }
+                }
+            }
+            
+            break;
+        case '5':
+            $data['Seasons assessed'] = '';
+            foreach ($values['secondPage']['plantation']['season'] as $key => $item){
+                if ($item != '0'){
+                    $data['Seasons assessed'] .= $item . ' ';
+                }
+            }
+            $data['Average number of assessions'] = $values['secondPage']['plantation']['assessions'];
+            
+            if ($values['secondpage']['plantation']['treatment']['check'] !== 0){
+                $treatment = $values['secondpage']['plantation']['treatment'];
+                $selected = false;
+                $description = false;
+
+                foreach ($treatment as $field => $value){
+                    if ($field != 'check'){
+                        if (!$description){
+                            $description = true;
+                            $selected = $value;
+                            continue;
+                        }
+                        elseif ($selected == '1'){
+                            $treatment_name = substr($field, 0, -12);
+                            $data["Treatment: $treatment_name description"] = $value;
+                        }
+                        $description = false;
+                    }
+                }
+            }
+            
+            break;
+        default:
+            break;
+    }
+    
+    $data_type_options = array(
+      1 => 'Genotype x Phenotype',
+      2 => 'Genotype',
+      3 => 'Genotype x Phenotype x Environment',
+      4 => 'Phenotype x Environment',
+      5 => 'Genotype x Environment'
+    );
+    
+    $data['Data Type'] = $data_type_options[$values['secondPage']['dataType']];
+    
+    if (isset($values['thirdPage']['tree-accession']['check']) and $values['thirdPage']['tree-accession']['check'] != '0'){
+        for ($i = 1; $i <= $values['Hellopage']['organism']['number']; $i++){
+            $file = $values['thirdPage']['tree-accession']["species-$i"]['file'];
+            $filename = file_load($file)->filename;
+            $file_url = check_plain(file_create_url(file_load($file)->uri));
+            $organism_name = $values['Hellopage']['organism'][$i]['species'];
+            $data["$organism_name Accession File"] = "<a href='$file_url' target='blank'>$filename</a>";
+        }
+    }
+    else {
+        $file = $values['thirdPage']['tree-accession']['file'];
+        $filename = file_load($file)->filename;
+        $file_url = check_plain(file_create_url(file_load($file)->uri));
+        $data['Tree Accession File'] = "<a href='$file_url' target='blank'>$filename</a>";
+    }
+    
+    $units_options = array(
+      0 => '- Select -',
+      1 => 'mm', 
+      2 => 'cm',
+      3 => 'm',
+      4 => 'Degrees Celsius',
+      5 => 'Degrees Fahrenheit',
+      6 => 'Other'
+    );
+    
+    $type_options = array(
+      1 => 'Binary',
+      2 => 'Quantitative',
+      3 => 'Qualitative'
+    );
+    
+    for ($i = 1; $i <= $values['Hellopage']['organism']['number']; $i++){
+        if ($values['secondPage']['dataType'] == '1' or $values['secondPage']['dataType'] == '3' or $values['secondPage']['dataType'] == '4'){
+            $phenotype = $values['fourthPage']["organism-$i"]['phenotype'];
+            if ($phenotype['check'] === 0){
+                for ($j = 1; $j <= $phenotype['number']; $j++){
+                    $data["Phenotype $j"] = $phenotype[$j]['name'];
+                    if ($phenotype[$j]['environment-check'] !== 0){
+                        $data["Phenotype $j Environmental?"] = 'Yes';
+                        $data["Phenotype $j Description"] = $phenotype[$j]['environment']['description'];
+                        $data["Phenotype $j Units"] = $units_options[$phenotype[$j]['environment']['units']];
+                        if ($phenotype[$j]['environment']['units'] == '6'){
+                            $data["Phenotype $j Custom Units"] = $phenotype[$j]['environment']['units-other'];
+                        }
+                    }
+                    else {
+                        $data["Phenotype $j Environmental?"] = 'No';
+                        $data["Phenotype $j Type"] = $type_options[$phenotype[$j]['non-environment']['type']];
+                        if ($phenotype[$j]['non-environment']['type'] == '1'){
+                            $data["Phenotype $j Binary Type 1"] = $phenotype[$j]['non-environment']['binary'][1];
+                            $data["Phenotype $j Binary Type 2"] = $phenotype[$j]['non-environment']['binary'][2];
+                        }
+                        elseif ($phenotype[$j]['non-environment']['type'] == '2'){
+                            $data["Phenotype $j Minimum"] = $phenotype[$j]['non-environment']['quantitative']['min'];
+                            $data["Phenotype $j Maximum"] = $phenotype[$j]['non-environment']['quantitative']['max'];
+                        }
+                        $data["Phenotype $j Description"] = $phenotype[$j]['non-environment']['description'];
+                        $data["Phenotype $j Units"] = $units_options[$phenotype[$j]['non-environment']['units']];
+                        if ($phenotype[$j]['non-environment']['units'] == '6'){
+                            $data["Phenotype $j Custom Units"] = $phenotype[$j]['non-environment']['units-other'];
+                        }
+                        $data["Phenotype $j Plant Structure"] = $phenotype[$j]['non-environment']['structure'];
+                        $data["Phenotype $j Developmental Stage"] = $phenotype[$j]['non-environment']['developmental'];
+                    }
+                }
+            }
+            else {
+                $file = $phenotype['metadata'];
+                $filename = file_load($file)->filename;
+                $file_url = check_plain(file_create_url(file_load($file)->uri));
+                $data['Phenotype Metadata File'] = "<a href='$file_url' target='blank'>$filename</a>";
+            }
+            $file = $phenotype['file'];
+            $filename = file_load($file)->filename;
+            $file_url = check_plain(file_create_url(file_load($file)->uri));
+            $data['Phenotype File'] = "<a href='$file_url' target='blank'>$filename</a>";
+        }
+        
+        if ($values['secondPage']['dataType'] != '4'){
+            $genotype = $values['fourthPage']["organism-$i"]['genotype'];
+            $data['Marker Types'] = '';
+            foreach ($genotype['marker-type'] as $key => $val){
+                if ($val !== 0){
+                    $data['Marker Types'] .= $key . ', ';
+                }
+            }
+            
+            if ($genotype['marker-type']['SNPs'] !== 0){
+                $design_options = array(
+                  1 => 'GBS',
+                  2 => 'Targeted Capture',
+                  3 => 'Whole Genome Resequencing',
+                  4 => 'RNA-Seq',
+                  5 => 'Genotyping Array'
+                );
+                $data['Genotyping Design'] = $design_options[$genotype['SNPs']['genotyping-design']];
+                if ($genotype['SNPs']['genotyping-design'] == '1'){
+                    $gbs_options = array(
+                      1 => 'RADSeq',
+                      2 => 'ddRAD-Seq',
+                      3 => 'NextRAD',
+                      4 => 'RAPTURE',
+                      5 => 'Other'
+                    );
+                    $data['GBS Type'] = $gbs_options[$genotype['SNPs']['GBS']];
+                    if ($genotype['SNPs']['GBS'] == '5'){
+                        $data['Custom GBS Type'] = $genotype['SNPs']['GBS-other'];
+                    }
+                }
+                elseif ($genotype['SNPs']['genotyping-design'] == '2'){
+                    if ($genotype['SNPs']['targeted-capture'] == '1'){
+                        $data['Targeted Capture Type'] = 'Exome Capture';
+                    }
+                    else {
+                        $data['Targeted Capture Type'] = $genotype['SNPs']['targeted-capture-other'];
+                    }
+                }
+            }
+            if ($genotype['marker-type']['SSRs/cpSSRs'] !== 0){
+                $data['SSRs/cpSSRs Type'] = $genotype['SSRs/cpSSRs'];
+            }
+            if ($genotype['marker-type']['Other'] !== 0){
+                $data['Other Marker Type'] = $genotype['other-marker'];
+            }
+            
+            $ref_genome = $genotype['ref-genome'];
+            if ($ref_genome != 'url' and $ref_genome != 'bio' and $ref_genome != 'manual'){
+                $data['Reference Genome Version'] = $ref_genome;
+            }
+            elseif ($ref_genome == 'url') {
+                $data['Reference Genome Link'] = "<a href='{$genotype['ref-genome-other']}' target='blank'>{$genotype['ref-genome-other']}</a>";
+            }
+            elseif ($ref_genome == 'bio') {
+                $bio_id = $genotype['BioProject-id'];
+                if (strlen($bio_id) > 5){
+                    $bio_id = substr($bio_id, 5);
+                }
+                $data['Reference Genome BioProject ID'] = "<a href='https://www.ncbi.nlm.nih.gov/bioproject/$bio_id' target='blank'>$bio_id</a>";
+            }
+            else {
+                $file = $genotype['assembly-user'];
+                $filename = file_load($file)->filename;
+                $file_url = check_plain(file_create_url(file_load($file)->uri));
+                $data['Genotype Assembly File'] = "<a href='$file_url' target='blank'>$filename</a>";
+            }
+            
+            if ($genotype['marker-type']['SNPs'] !== 0){
+                $file = $genotype['vcf'];
+                $filename = file_load($file)->filename;
+                $file_url = check_plain(file_create_url(file_load($file)->uri));
+                $data['Genotype VCF File'] = "<a href='$file_url' target='blank'>$filename</a>";
+            }
+            if ($genotype['marker-type']['Other'] !== 0 or $genotype['marker-type']['SSRs/cpSSRs'] !== 0){
+                $file = $genotype['file'];
+                $filename = file_load($file)->filename;
+                $file_url = check_plain(file_create_url(file_load($file)->uri));
+                $data['Genotype File'] = "<a href='$file_url' target='blank'>$filename</a>";
+            }
+        }
+    }
     
     foreach ($data as $key => $val){
         $display .= "<tr><td>$key</td><td>$val</td></tr>";
