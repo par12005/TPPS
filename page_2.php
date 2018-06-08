@@ -40,18 +40,18 @@ function page_2_create_form(&$form, $form_state){
         
         $monthArr = array(
           0 => '- Select -',
-          1 => 'January',
-          2 => 'February',
-          3 => 'March',
-          4 => 'April',
-          5 => 'May',
-          6 => 'June',
-          7 => 'July',
-          8 => 'August',
-          9 => 'September',
-          10 => 'October',
-          11 => 'November',
-          12 => 'December'
+          'January' => 'January',
+          'February' => 'February',
+          'March' => 'March',
+          'April' => 'April',
+          'May' => 'May',
+          'June' => 'June',
+          'July' => 'July',
+          'August' => 'August',
+          'September' => 'September',
+          'October' => 'October',
+          'November' => 'November',
+          'December' => 'December'
         );
         
         $form[$type . 'Date']['year'] = array(
@@ -102,9 +102,12 @@ function page_2_create_form(&$form, $form_state){
                 $form['EndingDate']['year']['#options'] = $yearArr;
             }
             if (isset($form_state['values']['EndingDate']['year']) and $form_state['values']['EndingDate']['year'] == $form_state['values']['StartingDate']['year'] and isset($form_state['values']['StartingDate']['month']) and $form_state['values']['StartingDate']['month'] != '0'){
-                foreach ($monthArr as $key=>$item){
-                    if ($key != 0 and $key < $form_state['values']['StartingDate']['month']){
+                foreach ($monthArr as $key){
+                    if ($key != '0' and $key != $form_state['values']['StartingDate']['month']){
                         unset($monthArr[$key]);
+                    }
+                    elseif ($key == $form_state['values']['StartingDate']['month']){
+                        break;
                     }
                 }
                 $form['EndingDate']['month']['#options'] = $monthArr;

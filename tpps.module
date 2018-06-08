@@ -272,9 +272,32 @@ function tpps_completed_display($form, $form_state){
       'Title' => $values['Hellopage']['publication']['title'],
       'Primary Author' => $values['Hellopage']['primaryAuthor'],
       'Organization' => $values['Hellopage']['organization'],
-      'Publication Status' => $values['Hellopage']['publication']['status'],
-      'Publication Year' => $values['Hellopage']['publication']['year']
     );
+    
+    if ((int)($values['Hellopage']['publication']['secondaryAuthors']['number']) > 0 and $values['Hellopage']['publication']['secondaryAuthors']['check'] === 0){
+        $data['Secondary Authors'] = $values['Hellopage']['publication']['secondaryAuthors'][1];
+        for ($i = 2; $i <= $values['Hellopage']['publication']['secondaryAuthors']['number']; $i++){
+            $data['Secondary Authors'] .= ", " . $values['Hellopage']['publication']['secondaryAuthors'][$i];
+        }
+    }
+    elseif ($values['Hellopage']['publication']['secondaryAuthors']['check'] !== 0){
+        $file = $values['Hellopage']['publication']['secondaryAuthors']['file'];
+        $filename = file_load($file)->filename;
+        $file_url = check_plain(file_create_url(file_load($file)->uri));
+        $data['Secondary Authors File'] = "<a href='$file_url' target='blank'>$filename</a>";
+    }
+    
+    $data['Publication Status'] = $values['Hellopage']['publication']['status'];
+    $data['Publication Year'] = $values['Hellopage']['publication']['year'];
+    $data['Abstract'] = $values['Hellopage']['publication']['abstract'];
+    $data['Journal'] = $values['Hellopage']['publication']['journal'];
+    
+    for ($i = 1; $i <= $values['Hellopage']['organism']['number']; $i++){
+        $data["Species $i"] = $values['Hellopage']['organism'][$i];
+    }
+    
+    $data['Experiment Starting Date'] = $values['secondPage']['StartingDate']['month'] . ' ' . $values['secondPage']['StartingDate']['year'];
+    $data['Experiment Ending Date'] = $values['secondPage']['EndingDate']['month'] . ' ' . $values['secondPage']['EndingDate']['year'];
     
     foreach ($data as $key => $val){
         $display .= "<tr><td>$key</td><td>$val</td></tr>";
@@ -1169,24 +1192,8 @@ function submit_all($form, &$form_state){
 
     $secondpage = $values['secondPage'];
 
-    $month_options = array(
-      '0' => '- Select -',
-      '1' => 'January',
-      '2' => 'February',
-      '3' => 'March',
-      '4' => 'April',
-      '5' => 'May',
-      '6' => 'June',
-      '7' => 'July',
-      '8' => 'August',
-      '9' => 'September',
-      '10' => 'October',
-      '11' => 'November',
-      '12' => 'December'
-    );
-
-    $start = $month_options[$secondpage['StartingDate']['month']] . " " . $secondpage['StartingDate']['year'];
-    $end = $month_options[$secondpage['EndingDate']['month']] . " " . $secondpage['EndingDate']['year'];
+    $start = $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'];
+    $end = $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'];
 
     $start_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
       'project_id' => $project_id,
@@ -2124,9 +2131,9 @@ function parse_xlsx($location){
     
     $content = array();
     //need to use this path for the vm
-    //$dir = '/var/www/html/Drupal/sites/default/files';
+    $dir = '/var/www/html/Drupal/sites/default/files';
     //need to use this path for the dev server
-    $dir = '/var/www/Drupal/sites/default/files';
+    //$dir = '/var/www/Drupal/sites/default/files';
     
     $zip = new ZipArchive();
     $zip->open($location);
@@ -2405,15 +2412,15 @@ function tpps_block_view_alter(&$data, $block) {
 			$_SESSION['tgdr_submit_data'][1] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
 		}
 		//dpm($_SESSION['tgdr_submit_data']);
-		if(isset($_SESSION['tgdr_submit_data'][1]['StartingDate']) and $_SESSION['tgdr_submit_data'][1]['StartingDate']['month'] != 0 and $_SESSION['tgdr_submit_data'][1]['StartingDate']['year'] != 0) {
+		if(isset($_SESSION['tgdr_submit_data'][1]['StartingDate']) and $_SESSION['tgdr_submit_data'][1]['StartingDate']['month'] != '0' and $_SESSION['tgdr_submit_data'][1]['StartingDate']['year'] != '0') {
 			$content .= "<br />";
 			$content .= "Step 2 - Complete<br />";
 			$content .= "Experimental Conditions<br /><hr />";
-                        $start = $_SESSION['tgdr_submit_data'][1]['StartingDate']['month'] . "/" . $_SESSION['tgdr_submit_data'][1]['StartingDate']['year'];
+                        $start = $_SESSION['tgdr_submit_data'][1]['StartingDate']['month'] . " " . $_SESSION['tgdr_submit_data'][1]['StartingDate']['year'];
 			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Starting Date: ' . filter_xss(check_plain($start)) . "<br />";
 		}
-		if(isset($_SESSION['tgdr_submit_data'][1]['EndingDate']) and $_SESSION['tgdr_submit_data'][1]['EndingDate']['month'] != 0 and $_SESSION['tgdr_submit_data'][1]['EndingDate']['year'] != 0) {
-                        $end = $_SESSION['tgdr_submit_data'][1]['EndingDate']['month'] . "/" . $_SESSION['tgdr_submit_data'][1]['EndingDate']['year'];
+		if(isset($_SESSION['tgdr_submit_data'][1]['EndingDate']) and $_SESSION['tgdr_submit_data'][1]['EndingDate']['month'] != '0' and $_SESSION['tgdr_submit_data'][1]['EndingDate']['year'] != '0') {
+                        $end = $_SESSION['tgdr_submit_data'][1]['EndingDate']['month'] . " " . $_SESSION['tgdr_submit_data'][1]['EndingDate']['year'];
 			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
 		}
 		if(isset($_SESSION['tgdr_submit_data'][1]['studyLocation']) and $_SESSION['tgdr_submit_data'][1]['studyLocation']['type'] != 0) {

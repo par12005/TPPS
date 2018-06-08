@@ -86,14 +86,8 @@ function page_1_create_form(&$form, $form_state){
             $form['publication']['secondaryAuthors'] = array(
               '#type' => 'fieldset',
               '#states' => array(
-                'visible' => array(
-                  array(
-                    array(':input[name="publication[status]"]' => array('value' => '2')),
-                    'or',
-                    array(':input[name="publication[status]"]' => array('value' => '3')),
-                    'or',
-                    array(':input[name="publication[status]"]' => array('value' => '4')),
-                  )
+                'invisible' => array(
+                  ':input[name="publication[status]"]' => array('value' => '0')
                 ),
               )
             );
