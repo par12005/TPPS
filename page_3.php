@@ -61,10 +61,7 @@ function page_3_create_form(&$form, &$form_state){
             $file_name = explode('//', $file->uri);
             $file_name = $file_name[1];
 
-            //vm
-            //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-            //dev site
-            $location = "/var/www/Drupal/sites/default/files/$file_name";
+            $location = drupal_realpath("public://$file_name");
             $content = parse_xlsx($location);
 
             $column_options = array(
@@ -200,10 +197,7 @@ function page_3_create_form(&$form, &$form_state){
                 //dpm($file);
                 //dpm($file_name);
 
-                //vm
-                //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-                //dev site
-                $location = "/var/www/Drupal/sites/default/files/$file_name";
+                $location = drupal_realpath("public://$file_name");
                 $content = parse_xlsx($location);
 
                 $column_options = array(
@@ -302,10 +296,7 @@ function page_3_multi_map($form, $form_state){
             $file_name = explode('//', $file->uri);
             $file_name = $file_name[1];
 
-            //vm
-            //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-            //dev site
-            $location = "/var/www/Drupal/sites/default/files/$file_name";
+            $location = drupal_realpath("public://$file_name");
             $content = parse_xlsx($location);
             
             for ($i = 0; $i < count($content) - 1; $i++){

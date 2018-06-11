@@ -7,7 +7,9 @@ function page_4_create_form(&$form, $form_state){
         $values = array();
     }
     
-    function phenotype(&$form, $values, $id){
+    //dpm($form_state['saved_values']['fourthPage']);
+    
+    function phenotype(&$form, $values, $id, &$form_state){
         
         $fields = array(
           '#type' => 'fieldset',
@@ -253,13 +255,87 @@ function page_4_create_form(&$form, $form_state){
           '#upload_validators' => array(
             'file_validate_extensions' => array('csv tsv xlsx')
           ),
-          '#default_value' => isset($values[$id]['phenotype']['file']) ? $values[$id]['phenotype']['file'] : NULL,
+          '#default_value' => isset($values[$id]['phenotype']['metadata']) ? $values[$id]['phenotype']['metadata'] : NULL,
           '#states' => array(
             'visible' => array(
               ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE)
             )
-          )
+          ),
+          '#tree' => TRUE
         );
+        
+        $fields['metadata']['columns'] = array(
+          '#type' => 'fieldset',
+          '#title' => t('<h2>Define Data</h2>'),
+          '#states' => array(
+            'invisible' => array(
+              ':input[name="' . $id . '_phenotype_metadata_upload_button"]' => array('value' => 'Upload')
+            )
+          ),
+          '#description' => 'Please define which columns hold the required data: Phenotype name'
+        );
+
+        $file = 0;
+        if (isset($form_state['values']["$id"]['phenotype']['metadata']) and $form_state['values']["$id"]['phenotype']['metadata'] != 0){
+            $file = $form_state['values']["$id"]['phenotype']['metadata'];
+            $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'] = $form_state['values']["$id"]['phenotype']['metadata'];
+        }
+        elseif (isset($form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata']) and $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'] != 0){
+            $file = $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'];
+        }
+
+        if ($file != 0 and $form_state['triggering_element']['#value'] != 'Remove'){
+            if (($file = file_load($file))){
+                $file_name = explode('//', $file->uri);
+                $file_name = $file_name[1];
+
+                $location = drupal_realpath("public://$file_name");
+                $content = parse_xlsx($location);
+
+                $column_options = array(
+                  'N/A',
+                  'Phenotype Name/Identifier',
+                );
+
+                $first = TRUE;
+
+                foreach ($content['headers'] as $item){
+                    $fields['metadata']['columns'][$item] = array(
+                      '#type' => 'select',
+                      '#title' => t($item),
+                      '#options' => $column_options,
+                      '#default_value' => isset($values["$id"]['phenotype']['metadata-columns'][$item]) ? $values["$id"]['phenotype']['metadata-columns'][$item] : 0,
+                      '#prefix' => "<td>",
+                      '#suffix' => "</td>",
+                      '#attributes' => array(
+                        'data-toggle' => array('tooltip'),
+                        'data-placement' => array('left'),
+                        'title' => array("Select the type of data the '$item' column holds")
+                      )
+                    );
+
+                    if ($first){
+                        $first = FALSE;
+                        $fields['metadata']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $fields['metadata']['columns'][$item]['#prefix'];
+                    }
+                }
+
+                // display sample data
+                $display = "</tr>";
+                for ($j = 0; $j < 3; $j++){
+                    if (isset($content[$j])){
+                        $display .= "<tr>";
+                        foreach ($content['headers'] as $item){
+                            $display .= "<th>{$content[$j][$item]}</th>";
+                        }
+                        $display .= "</tr>";
+                    }
+                }
+                $display .= "</tbody></table></div>";
+
+                $fields['metadata']['columns'][$item]['#suffix'] .= $display;
+            }
+        }
         
         return $fields;
     }
@@ -320,10 +396,7 @@ function page_4_create_form(&$form, $form_state){
                 $file_name = explode('//', $file->uri);
                 $file_name = $file_name[1];
 
-                //vm
-                //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-                //dev site
-                $location = "/var/www/Drupal/sites/default/files/$file_name";
+                $location = drupal_realpath("public://$file_name");
                 $content = parse_xlsx($location);
 
                 $column_options = array(
@@ -404,7 +477,7 @@ function page_4_create_form(&$form, $form_state){
         );
 
         if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
-            $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i");
+            $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i", $form_state);
             
             $form["organism-$i"]['phenotype']['file'] = array(
               '#type' => 'managed_file',
@@ -431,20 +504,18 @@ function page_4_create_form(&$form, $form_state){
             $file = 0;
             if (isset($form_state['values']["organism-$i"]['phenotype']['file']) and $form_state['values']["organism-$i"]['phenotype']['file'] != 0){
                 $file = $form_state['values']["organism-$i"]['phenotype']['file'];
+                $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'] = $form_state['values']["organism-$i"]['phenotype']['file'];
             }
             elseif (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'] != 0){
                 $file = $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'];
             }
             
-            if ($file != 0){
+            if ($file != 0 and $form_state['triggering_element']['#value'] != 'Remove'){
                 if (($file = file_load($file))){
                     $file_name = explode('//', $file->uri);
                     $file_name = $file_name[1];
 
-                    //vm
-                    //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-                    //dev site
-                    $location = "/var/www/Drupal/sites/default/files/$file_name";
+                    $location = drupal_realpath("public://$file_name");
                     $content = parse_xlsx($location);
 
                     $column_options = array(
@@ -899,17 +970,48 @@ function page_4_validate_form(&$form, &$form_state){
         function validate_phenotype($phenotype, $id, $form, &$form_state){
             $phenotype_number = $phenotype['number'];
             $phenotype_check = $phenotype['check'];
-            $phenotype_file = $phenotype['metadata'];
-            $phenotype_content = $phenotype['file'];
+            $phenotype_meta = $phenotype['metadata'];
+            $phenotype_file = $phenotype['file'];
 
             if ($phenotype_check == '1'){
-                if ($phenotype_file == ''){
+                if ($phenotype_meta == ''){
                     form_set_error("$id][phenotype][metadata", "Phenotype Metadata File: field is required.");
                 }
                 else{
-                    //validate phenotype file
-                    $file = file(file_load($phenotype_file)->uri);
-                    $file_type = file_load($phenotype_file)->filemime;
+                    $required_columns = array(
+                      '1' => 'Phenotype Name/Identifier',
+                    );
+
+                    $form_state['values'][$id]['phenotype']['metadata-columns'] = array();
+
+                    foreach ($form[$id]['phenotype']['metadata']['#value']['columns'] as $req => $val){
+                        if ($req[0] != '#'){
+                            $form_state['values'][$id]['phenotype']['metadata-columns'][$req] = $form[$id]['phenotype']['metadata']['#value']['columns'][$req];
+
+                            $col_val = $form_state['values'][$id]['phenotype']['metadata-columns'][$req];
+                            if ($col_val != '0'){
+                                $required_columns[$col_val] = NULL;
+                            }
+                        }
+                    }
+
+                    foreach ($required_columns as $item){
+                        if ($item != NULL){
+                            form_set_error("$id][phenotype][metadata][columns][$item", "Phenotype Metadata file: Please specify a column that holds $item.");
+                        }
+                    }
+                    
+                    if ($required_columns['1'] === NULL){
+                        //Phenotype Name set
+                        foreach ($form_state['values'][$id]['phenotype']['metadata-columns'] as $key => $val){
+                            //cycle through columns
+                            if ($val == '1'){
+                                //find the column that was assigned phenotype name, keep track of that column, exit loop
+                                $phenotype_name_col = $key;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             else{
@@ -984,7 +1086,7 @@ function page_4_validate_form(&$form, &$form_state){
                 }
             }
 
-            if ($phenotype_content == ''){
+            if ($phenotype_file == ''){
                 form_set_error("$id][phenotype][file", "Phenotypes: field is required.");
             }
             else {
@@ -996,9 +1098,9 @@ function page_4_validate_form(&$form, &$form_state){
 
                 $form_state['values'][$id]['phenotype']['file-columns'] = array();
 
-                foreach ($form[$id]['phenotype']['file']['columns'] as $req => $val){
+                foreach ($form[$id]['phenotype']['file']['#value']['columns'] as $req => $val){
                     if ($req[0] != '#'){
-                        $form_state['values'][$id]['phenotype']['file-columns'][$req] = $form[$id]['phenotype']['file']['columns'][$req]['#value'];
+                        $form_state['values'][$id]['phenotype']['file-columns'][$req] = $form[$id]['phenotype']['file']['#value']['columns'][$req];
 
                         $col_val = $form_state['values'][$id]['phenotype']['file-columns'][$req];
                         if ($col_val != '0'){
@@ -1011,6 +1113,94 @@ function page_4_validate_form(&$form, &$form_state){
                     if ($item != NULL){
                         form_set_error("$id][phenotype][file][columns][$item", "Phenotype file: Please specify a column that holds $item.");
                     }
+                }
+                
+                if ($required_columns['2'] === NULL){
+                    //Phenotype name column was detected
+                    foreach ($form_state['values'][$id]['phenotype']['file-columns'] as $key => $val){
+                        //find the column that holds it
+                        if ($val == '2'){
+                            //save that column name
+                            $phenotype_file_name_col = $key;
+                            break;
+                        }
+                    }
+                }
+                
+                if ($required_columns['1'] === NULL){
+                    //tree id column was detected
+                    foreach ($form_state['values'][$id]['phenotype']['file-columns'] as $key => $val){
+                        //find the column that holds it
+                        if ($val == '1'){
+                            //save that column name
+                            $phenotype_file_tree_col = $key;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (empty(form_get_errors()) and isset($phenotype_file_name_col) and isset($phenotype_name_col)){
+                $missing_phenotypes = tpps_compare_files($phenotype_file, $phenotype_meta, $phenotype_file_name_col, $phenotype_name_col);
+                
+                if ($missing_phenotypes !== array()){
+                    $phenotype_id_str = implode(', ', $missing_phenotypes);
+                    form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype Metadata file. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype Metadata file. The phenotypes we detected with missing definitions were: $phenotype_id_str");
+                }
+            }
+            elseif (empty(form_get_errors()) and isset($phenotype_file_name_col)){
+                $phenotype_file = file_load($phenotype_file);
+                $phenotype_file_name = explode('//', $phenotype_file->uri);
+                $phenotype_file_name = $phenotype_file_name[1];
+                $location = drupal_realpath("public://$phenotype_file_name");
+                $content = parse_xlsx($location);
+                
+                $missing_phenotypes = array();
+                for ($i = 0; $i < count($content) - 1; $i++){
+                    $used_phenotype = $content[$i][$phenotype_file_name_col];
+                    $defined = FALSE;
+                    for ($j = 1; $j <= $phenotype_number; $j++){
+                        if ($phenotype[$j]['name'] == $used_phenotype){
+                            $defined = TRUE;
+                            break;
+                        }
+                    }
+                    if (!$defined){
+                        array_push($missing_phenotypes, $used_phenotype);
+                    }
+                }
+                
+                if ($missing_phenotypes !== array()){
+                    /*TEST THIS PART*/
+                    $phenotype_id_str = implode(', ', $missing_phenotypes);
+                    form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype definitions. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype definitions. The phenotypes we detected with missing definitions were: $phenotype_id_str");
+                }
+            }
+            
+            if (empty(form_get_errors()) and isset($phenotype_file_tree_col)){
+                
+                if ($form_state['saved_values']['Hellopage']['organism']['number'] == 1 or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
+                    $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']['file'];
+                    $column_vals = $form_state['saved_values']['thirdPage']['tree-accession']['file-columns'];
+                }
+                else {
+                    $num = substr($id, 9);
+                    $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file'];
+                    $column_vals = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file-columns'];
+                }
+
+                foreach ($column_vals as $col => $val){
+                    if ($val == '1'){
+                        $id_col_accession_name = $col;
+                        break;
+                    }
+                }
+
+                $missing_trees = tpps_compare_files($form_state['values'][$id]['phenotype']['file'], $tree_accession_file, $phenotype_file_tree_col, $id_col_accession_name);
+
+                if ($missing_trees !== array()){
+                    $tree_id_str = implode(', ', $missing_trees);
+                    form_set_error("$id][phenotype][file", "Phenotype file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Phenotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
                 }
             }
         }
@@ -1200,7 +1390,7 @@ function page_4_validate_form(&$form, &$form_state){
                 }
 
                 //if Tree Identifier is set
-                if ($required_columns['1'] === NULL){
+                if ($required_columns['1'] === NULL and empty(form_get_errors())){
                     //cycle through the columns
                     foreach ($form_state['values'][$id]['genotype']['file-columns'] as $col => $val){
                         //find the column where Tree Identifier is selected
@@ -1213,13 +1403,15 @@ function page_4_validate_form(&$form, &$form_state){
 
                     if ($form_state['saved_values']['Hellopage']['organism']['number'] == 1 or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
                         $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']['file'];
+                        $column_vals = $form_state['saved_values']['thirdPage']['tree-accession']['file-columns'];
                     }
                     else {
                         $num = substr($id, 9);
                         $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file'];
+                        $column_vals = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file-columns'];
                     }
 
-                    foreach ($form_state['saved_values']['thirdPage']['tree-accession']['file-columns'] as $col => $val){
+                    foreach ($column_vals as $col => $val){
                         if ($val == '1'){
                             $id_col_accession_name = $col;
                             break;

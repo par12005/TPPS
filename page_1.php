@@ -171,11 +171,7 @@ function page_1_create_form(&$form, $form_state){
                 if (($file = file_load($file))){
                     $file_name = explode('//', $file->uri);
                     $file_name = $file_name[1];
-
-                    //vm
-                    //$location = "/var/www/html/Drupal/sites/default/files/$file_name";
-                    //dev site
-                    $location = "/var/www/Drupal/sites/default/files/$file_name";
+                    $location = drupal_realpath("public://$file_name");
                     $content = parse_xlsx($location);
 
                     $column_options = array(

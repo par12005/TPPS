@@ -966,8 +966,8 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name){
     $file_2_name = explode('//', $file_2->uri);
     $file_2_name = $file_2_name[1];
     
-    $file_1_location = "/var/www/html/Drupal/sites/default/files/$file_1_name";
-    $file_2_location = "/var/www/html/Drupal/sites/default/files/$file_2_name";
+    $file_1_location = drupal_realpath("public://$file_1_name");
+    $file_2_location = drupal_realpath("public://$file_2_name");
     $file_1_content = parse_xlsx($file_1_location);
     $file_2_content = parse_xlsx($file_2_location);
     
@@ -1314,10 +1314,12 @@ function tpps_master_validate($form, &$form_state){
                 for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
                     
                     $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
-
-                    foreach ($form['tree-accession']["species-$i"]['file']['columns'] as $col => $val){
-                        if ($col[0] != '#'){
-                            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col] = $form['tree-accession']["species-$i"]['file']['columns'][$col]['#value'];
+                    
+                    if (isset($form['tree-accession']["species-$i"]['file']['#value']['columns'])){
+                        foreach ($form['tree-accession']["species-$i"]['file']['#value']['columns'] as $col => $val){
+                            if ($col[0] != '#'){
+                                $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col] = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$col];
+                            }
                         }
                     }
                 }
@@ -1329,19 +1331,23 @@ function tpps_master_validate($form, &$form_state){
                     
                     if ($form_state['values']["organism-$i"]['genotype']['marker-type']['Other'] != '0' or $form_state['values']["organism-$i"]['genotype']['marker-type']['SSRs/cpSSRs'] != '0'){
                         $form_state['values']["organism-$i"]['genotype']['file-columns'] = array();
-
-                        foreach ($form["organism-$i"]['genotype']['file']['columns'] as $col => $val){
-                            if ($col[0] != '#'){
-                                $form_state['values']["organism-$i"]['genotype']['file-columns'][$col] = $form["organism-$i"]['genotype']['file']['columns'][$col]['#value'];
+                        
+                        if (isset($form["organism-$i"]['genotype']['file']['#value']['columns'])){
+                            foreach ($form["organism-$i"]['genotype']['file']['#value']['columns'] as $col => $val){
+                                if ($col[0] != '#'){
+                                    $form_state['values']["organism-$i"]['genotype']['file-columns'][$col] = $form["organism-$i"]['genotype']['file']['#value']['columns'][$col];
+                                }
                             }
                         }
                     }
                     if ($form_state['values']["organism-$i"]['genotype']['ref-genome'] == 'manual'){
                         $form_state['values']["organism-$i"]['genotype']['assembly-user-columns'] = array();
-
-                        foreach ($form["organism-$i"]['genotype']['assembly-user']['columns'] as $col => $val){
-                            if ($col[0] != '#'){
-                                $form_state['values']["organism-$i"]['genotype']['assembly-user-columns'][$col] = $form["organism-$i"]['genotype']['assembly-user']['columns'][$col]['#value'];
+                        
+                        if (isset($form["organism-$i"]['genotype']['assembly-user']['#value']['columns'])){
+                            foreach ($form["organism-$i"]['genotype']['assembly-user']['#value']['columns'] as $col => $val){
+                                if ($col[0] != '#'){
+                                    $form_state['values']["organism-$i"]['genotype']['assembly-user-columns'][$col] = $form["organism-$i"]['genotype']['assembly-user']['#value']['columns'][$col];
+                                }
                             }
                         }
                     }
@@ -1353,9 +1359,23 @@ function tpps_master_validate($form, &$form_state){
 
                     $form_state['values']["organism-$i"]['phenotype']['file-columns'] = array();
                     
-                    foreach ($form["organism-$i"]['phenotype']['file']['columns'] as $col => $val){
-                        if ($col[0] != '#'){
-                            $form_state['values']["organism-$i"]['phenotype']['file-columns'][$col] = $form["organism-$i"]['phenotype']['file']['columns'][$col]['#value'];
+                    if (isset($form["organism-$i"]['phenotype']['file']['#value']['columns'])){
+                        foreach ($form["organism-$i"]['phenotype']['file']['#value']['columns'] as $col => $val){
+                            if ($col[0] != '#'){
+                                $form_state['values']["organism-$i"]['phenotype']['file-columns'][$col] = $form["organism-$i"]['phenotype']['file']['#value']['columns'][$col];
+                            }
+                        }
+                    }
+                    
+                    if ($form_state['values']["organism-$i"]['phenotype']['check'] != '0'){
+                        $form_state['values']["organism-$i"]['phenotype']['metadata-columns'] = array();
+                        
+                        if (isset($form["organism-$i"]['phenotype']['metadata']['#value']['columns'])){
+                            foreach ($form["organism-$i"]['phenotype']['metadata']['#value']['columns'] as $col => $val){
+                                if ($col[0] != '#'){
+                                    $form_state['values']["organism-$i"]['phenotype']['metadata-columns'][$col] = $form["organism-$i"]['phenotype']['metadata']['#value']['columns'][$col];
+                                }
+                            }
                         }
                     }
                 }
@@ -2582,10 +2602,7 @@ function parse_xlsx($location){
     //modified from https://gist.github.com/searbe/3284011
     
     $content = array();
-    //need to use this path for the vm
-    //$dir = '/var/www/html/Drupal/sites/default/files';
-    //need to use this path for the dev server
-    $dir = '/var/www/Drupal/sites/default/files';
+    $dir = drupal_realpath("public://");
     
     $zip = new ZipArchive();
     $zip->open($location);
