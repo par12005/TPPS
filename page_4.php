@@ -1,5 +1,5 @@
 <?php
-function page_4_create_form(&$form, $form_state){
+function page_4_create_form(&$form, &$form_state){
     if (isset($form_state['saved_values']['fourthPage'])){
         $values = $form_state['saved_values']['fourthPage'];
     }
@@ -589,26 +589,14 @@ function page_4_create_form(&$form, $form_state){
     return $form;
 }
 
-function ajax_bioproject_callback(&$form, &$form_state){
+function ajax_bioproject_callback(&$form, $form_state){
     
-    $species_num = $form_state['saved_values']['Hellopage']['organism']['number'];
+    $ajax_id = $form_state['triggering_element']['#parents'][0];
     
-    for ($i = 1; $i <= $species_num; $i++){
-        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['assembly-auto']['!NEEDS_UPDATE!']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['assembly-auto']['!NEEDS_UPDATE!'] == TRUE){
-            unset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['assembly-auto']['!NEEDS_UPDATE!']);
-            $commands[] = ajax_command_replace("#organism-$i-assembly-auto", render($form["organism-$i"]['genotype']['assembly-auto']));
-        }
-    }
-    
-    if (isset($commands)){
-        return array('#type' => 'ajax', '#commands' => $commands);
-    }
-    else {
-        return;
-    }
+    return $form[$ajax_id]['genotype']['assembly-auto'];
 }
 
-function page_4_ref(&$fields, $form_state, $values, $id){
+function page_4_ref(&$fields, &$form_state, $values, $id){
 
     $options = array(
       'key' => 'filename',
@@ -699,12 +687,15 @@ function page_4_ref(&$fields, $form_state, $values, $id){
       )
     );
     
-    if (isset($form_state['values'][$id]['genotype']['BioProject-id'])){
+    if (isset($form_state['values'][$id]['genotype']['BioProject-id']) and $form_state['values'][$id]['genotype']['BioProject-id'] != ''){
         $bio_id = $form_state['values']["$id"]['genotype']['BioProject-id'];
         $form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'] = $form_state['values'][$id]['genotype']['BioProject-id'];
     }
-    elseif(isset($form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'])){
+    elseif (isset($form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id']) and $form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'] != ''){
         $bio_id = $form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'];
+    }
+    elseif (isset($form_state['complete form']['organism-1']['genotype']['BioProject-id']['#value']) and $form_state['complete form']['organism-1']['genotype']['BioProject-id']['#value'] != '') {
+        $bio_id = $form_state['complete form']['organism-1']['genotype']['BioProject-id']['#value'];
     }
     
     if (isset($bio_id) and $bio_id != ''){
@@ -712,8 +703,6 @@ function page_4_ref(&$fields, $form_state, $values, $id){
         if (strlen($bio_id) > 5){
             $bio_id = substr($bio_id, 5);
         }
-        
-        $form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-auto']['!NEEDS_UPDATE!'] = TRUE;
         
         $options = array();
         $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
@@ -740,7 +729,7 @@ function page_4_ref(&$fields, $form_state, $values, $id){
             $fields['assembly-auto']['#description'] = t('We could not find any assembly files related to that BioProject. Please ensure your accession number is of the format "PRJNA#"');
         }
     }
-
+    
     $fields['assembly-user'] = array(
       '#type' => 'managed_file',
       '#title' => t('Assembly File: please provide an assembly file in FASTA or Multi-FASTA format'),

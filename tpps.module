@@ -1128,6 +1128,11 @@ function tpps_master($form, &$form_state){
       '#default_value' => $form_state['stage'],
     );
     
+    $form['accession'] = array(
+      '#type' => 'hidden',
+      '#value' => $form_state['accession'],
+    );
+    
     if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])){
         tpps_init_project($form, $form_state);
     }
@@ -2820,169 +2825,148 @@ function ttps_block_view($delta = '') {
 }
 
 function tpps_block_view_alter(&$data, $block) {
-	//dpm($block);
-	//dpm($data);
-	global $base_url;
-  switch ($block->delta) {
-    case 'tpps_status':
-		//dpm($_REQUEST);
-		
-		$css = "
-		.tgdr_status_block img {
-			vertical-align: middle;
-			margin-bottom: 4px;
-			margin-right: 2px;
-		}		
-		";
-		drupal_add_css($css, 'inline');
-		
-	  	$data['subject'] = t('TPPS Status');
-		$content = "<div class='tgdr_status_block'>";
-		global $user;
-		
-                //dpm($_SESSION);
-		//Don't get mix upload
-		if(count($_REQUEST) <= 0) {
-			unset($_SESSION['tgdr_submit_data']);
-		}
-		
-		//This deals with page 1
-		if(isset($_REQUEST['primaryAuthor'])) {
-			unset($_SESSION['tgdr_submit_data']);
-			$_SESSION['tgdr_submit_data'][0] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
-		}
-		if(isset($_SESSION['tgdr_submit_data'][0]['primaryAuthor'])) {
-			$content .= "Step 1 - Complete<br />";
-			$content .= "Author/Species Information<hr />";
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Author: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['primaryAuthor'])) . "<br />";
-		}
-		if(isset($_SESSION['tgdr_submit_data'][0]['organization'])) {
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organization: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['organization'])) . "<br />";
-		}	
-		if(isset($_SESSION['tgdr_submit_data'][0]['publication']['title'])) {
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Title: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['publication']['title'])) . "<br />";
-		}
-		if(isset($_SESSION['tgdr_submit_data'][0]['publication']['yearInPress'])) {
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Year: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['publication']['yearInPress'])) . "<br />";
-		}	
-		if(isset($_SESSION['tgdr_submit_data'][0]['publication']['secondaryAuthors']['number'])) {
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Secondary Authors: '. filter_xss(check_plain($_SESSION['tgdr_submit_data'][0]['publication']['secondaryAuthors']['number'])) . "<br />";
-		}
-                $organism_number = (isset($_SESSION['tgdr_submit_data'][0]['organism']['number'])) ? $_SESSION['tgdr_submit_data'][0]['organism']['number'] : NULL;
-		if(isset($organism_number)) {
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organisms: '. filter_xss(check_plain($organism_number)) . "<br />";
-		}	
+    //dpm($block);
+    //dpm($data);
+    global $base_url;
+    switch ($block->delta) {
+        case 'tpps_status':
+            //dpm($_REQUEST);
 
-		//This deals with page 2
-		if(isset($_REQUEST['StartingDate'])) {
-			if(isset($_SESSION['tgdr_submit_data'][1])) {
-				unset($_SESSION['tgdr_submit_data'][1]);
-			}
-			$_SESSION['tgdr_submit_data'][1] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
-		}
-		//dpm($_SESSION['tgdr_submit_data']);
-		if(isset($_SESSION['tgdr_submit_data'][1]['StartingDate']) and $_SESSION['tgdr_submit_data'][1]['StartingDate']['month'] != '0' and $_SESSION['tgdr_submit_data'][1]['StartingDate']['year'] != '0') {
-			$content .= "<br />";
-			$content .= "Step 2 - Complete<br />";
-			$content .= "Experimental Conditions<br /><hr />";
-                        $start = $_SESSION['tgdr_submit_data'][1]['StartingDate']['month'] . " " . $_SESSION['tgdr_submit_data'][1]['StartingDate']['year'];
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Starting Date: ' . filter_xss(check_plain($start)) . "<br />";
-		}
-		if(isset($_SESSION['tgdr_submit_data'][1]['EndingDate']) and $_SESSION['tgdr_submit_data'][1]['EndingDate']['month'] != '0' and $_SESSION['tgdr_submit_data'][1]['EndingDate']['year'] != '0') {
-                        $end = $_SESSION['tgdr_submit_data'][1]['EndingDate']['month'] . " " . $_SESSION['tgdr_submit_data'][1]['EndingDate']['year'];
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
-		}
-		if(isset($_SESSION['tgdr_submit_data'][1]['studyLocation']) and $_SESSION['tgdr_submit_data'][1]['studyLocation']['type'] != 0) {
-                        $location = $_SESSION['tgdr_submit_data'][1]['studyLocation'];
-                        if ($location['type'] == '2'){
-                            $region = $location['customLocation']['region'];
-                            $country = $location['customLocation']['country'];
-                            $location = ($region != '') ? "$region, " : "";
-                            $location .= $country;
-                        }
-                        else {
-                            $location = $location['coordinates'];
-                        }
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location: ' . filter_xss(check_plain($location)) .  "<br />";
-		}
-                if(isset($_SESSION['tgdr_submit_data'][1]['studyType']) and $_SESSION['tgdr_submit_data'][1]['studyType'] != 0) {
-                        $type = $_SESSION['tgdr_submit_data'][1]['studyType'];
-                        $type_arr = array(
-                          0 => '- Select -',
-                          1 => 'Natural Population (Landscape)',
-                          2 => 'Growth Chamber',
-                          3 => 'Greenhouse',
-                          4 => 'Experimental/Common Garden',
-                          5 => 'Plantation',
-                        );
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
-		}
-                if(isset($_SESSION['tgdr_submit_data'][1]['dataType']) and $_SESSION['tgdr_submit_data'][1]['dataType'] != 0) {
-                        $type = $_SESSION['tgdr_submit_data'][1]['dataType'];
-                        $type_arr = array(
-                          '- Select -',
-                          'Genotype x Phenotype',
-                          'Genotype',
-                          'Genotype x Phenotype x Environment',
-                          'Phenotype x Environment',
-                          'Genotype x Environment'
-                        );
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Data Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
-		}
+            $css = "
+            .tgdr_status_block img {
+                    vertical-align: middle;
+                    margin-bottom: 4px;
+                    margin-right: 2px;
+            }		
+            ";
+            drupal_add_css($css, 'inline');
 
-		//This deals with page 3
-		if(isset($_REQUEST['tree-accession'])) {
-			if(isset($_SESSION['tgdr_submit_data'][2])) {
-				unset($_SESSION['tgdr_submit_data'][2]);
-			}
-			$_SESSION['tgdr_submit_data'][2] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
-		}		
-		if(isset($_SESSION['tgdr_submit_data'][2]['tree-accession']) and ($_SESSION['tgdr_submit_data'][2]['tree-accession']['file']['fid'] != 0 or (isset($_SESSION['tgdr_submit_data'][2]['tree-accession']['species-1']['file']['fid']) and $_SESSION['tgdr_submit_data'][2]['tree-accession']['species-1']['file']['fid'] != 0))) {
-			$content .= "<br />";
-			$content .= "Step 3 - Complete<br />";
-			$content .= "Tree Accession<br /><hr />";
-			$content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Tree Accession data' .  "<br />";
-		}
-		
-                //This deals with page 4
-                if(isset($_REQUEST['organism-1']['genotype']) or isset($_REQUEST['organism-1']['phenotype'])) {
-			if(isset($_SESSION['tgdr_submit_data'][3])) {
-				unset($_SESSION['tgdr_submit_data'][3]);
-			}
-			$_SESSION['tgdr_submit_data'][3] = $_REQUEST; //wondering if this is actually safe... not sure... I guess it's in a variable so yes?...
+            $data['subject'] = t('TPPS Status');
+            $content = "<div class='tgdr_status_block'>";
+            global $user;
+            $accession = $_REQUEST['accession'];
+            $form_state = variable_get('tpps_incomplete_' . $user->mail . $accession);
+            dpm($form_state['saved_values']);
+            
+            //This deals with page 1
+            if (isset($form_state['saved_values']['Hellopage']['#cleared']) and $form_state['saved_values']['Hellopage']['#cleared']){
+                $content .= "Step 1 - Complete<br />";
+                $content .= "Author/Species Information<hr />";
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Author: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['primaryAuthor'])) . "<br />";
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organization: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organization'])) . "<br />";
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Title: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['title'])) . "<br />";
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Year: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['year'])) . "<br />";
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Secondary Authors: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['number'])) . "<br />";
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organisms: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organism']['number'])) . "<br />";
+            }
+
+            //This deals with page 2
+            if (isset($form_state['saved_values']['secondPage']['#cleared']) and $form_state['saved_values']['secondPage']['#cleared']){
+                $content .= "<br />";
+                $content .= "Step 2 - Complete<br />";
+                $content .= "Experimental Conditions<br /><hr />";
+                $start = $form_state['saved_values']['secondPage']['StartingDate']['month'] . " " . $form_state['saved_values']['secondPage']['StartingDate']['year'];
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Starting Date: ' . filter_xss(check_plain($start)) . "<br />";
+                $end = $form_state['saved_values']['secondPage']['EndingDate']['month'] . " " . $form_state['saved_values']['secondPage']['EndingDate']['year'];
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
+                if ($form_state['saved_values']['secondPage']['studyLocation']['type'] == '2'){
+                    $location = $form_state['saved_values']['secondPage']['studyLocation']['custom'];
                 }
+                else {
+                    $location = $form_state['saved_values']['secondPage']['studyLocation']['coordinates'];
+                }
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location: ' . filter_xss(check_plain($location)) .  "<br />";
+                $type = $form_state['saved_values']['secondPage']['studyType'];
+                $type_arr = array(
+                  0 => '- Select -',
+                  1 => 'Natural Population (Landscape)',
+                  2 => 'Growth Chamber',
+                  3 => 'Greenhouse',
+                  4 => 'Experimental/Common Garden',
+                  5 => 'Plantation',
+                );
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
+                $type = $form_state['saved_values']['secondPage']['dataType'];
+                $type_arr = array(
+                  '- Select -',
+                  'Genotype x Phenotype',
+                  'Genotype',
+                  'Genotype x Phenotype x Environment',
+                  'Phenotype x Environment',
+                  'Genotype x Environment'
+                );
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Data Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
+            }
+
+            //This deals with page 3
+            if (isset($form_state['saved_values']['thirdPage']['#cleared']) and $form_state['saved_values']['thirdPage']['#cleared']){
+                $content .= "<br />";
+                $content .= "Step 3 - Complete<br />";
+                $content .= "Tree Accession<br /><hr />";
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Tree Accession data' .  "<br />";
+                if ($form_state['saved_values']['Hellopage']['organism']['number'] == '1' or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
+                    $file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->filename;
+                    $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->uri));
+                    $content .= "<img src='$base_url/misc/message-16-ok.png'> Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                }
+                else {
+                    for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
+                        $species_name = $form_state['saved_values']['Hellopage']['organism'][$i]['species'];
+                        $file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->filename;
+                        $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->uri));
+                        $content .= "<img src='$base_url/misc/message-16-ok.png'> $species_name Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                    }
+                }
+            }
+            
+            //This deals with page 4
+            if (isset($form_state['saved_values']['fourthPage']['#cleared']) and $form_state['saved_values']['fourthPage']['#cleared']){
+                $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
                 for ($i = 1; $i <= $organism_number; $i++){
-                    $current_name = $_SESSION['tgdr_submit_data'][0]['organism'][$i]['species'];
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"])) {
-                            $content .= "<br />";
-                            $content .= "Step 4 - Complete<br />";
-                            $content .= "Submit Data<br /><hr />";
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  "<br />";
+                    $current_name = $form_state['saved_values']['Hellopage']['organism'][$i]['species'];
+                    $content .= "<br />";
+                    $content .= "Step 4 - Complete<br />";
+                    $content .= "Submit Data<br /><hr />";
+                    $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  "<br />";
+                    
+                    if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype'])){
+                        $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
+                        
+                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'] != 0){
+                            $genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->filename;
+                            $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->uri));
+                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                        }
+                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'] != 0){
+                            $genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->filename;
+                            $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->uri));
+                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Genotype VCF File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                        }
                     }
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']) and isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['marker-type'])) {
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
+                    if (isset($form_state['saved_values']['fourthPage']['phenotype'])){
+                        $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
+                        
+                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'] != 0){
+                            $phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->filename;
+                            $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->uri));
+                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Phenotype Metadata File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                        }
+                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'] != 0){
+                            $phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->filename;
+                            $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->uri));
+                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                        }
                     }
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']) and $_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']['fid'] != 0) {
-                            $genotype_file_name = file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']['fid'])->filename;
-                            $genotype_url = check_plain(file_create_url(file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['genotype']['file']['fid'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'>Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
-                    }
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']) and ($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype'][1]['name'] != '' or $_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['metadata']['fid'] != 0)) {
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
-                    }
-                    if(isset($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']) and $_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'] != 0) {
-                            $phenotype_file_name = file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])->filename;
-                            $phenotype_url = check_plain(file_create_url(file_load($_SESSION['tgdr_submit_data'][3]["organism-$i"]['phenotype']['file']['fid'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'>Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
-                    }
+                    
                     $content .= "<hr />";
                 }
-		
-                
-		
-		$content .= "</div>";
-		$data['content'] = t($content);
-		
-       break;
-  }
+            }
+            
+            $content .= "</div>";
+            $data['content'] = t($content);
+
+            break;
+        default:
+            break;
+    }
 }
