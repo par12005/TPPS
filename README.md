@@ -216,6 +216,7 @@ After the data has been submitted and approved, the user will recieve an email w
 - Admin Interface for submission approval
 - Latitude/Longitude formats for file uploads
 - Status bar conditions/detection needs to be revised
+- Parse files to submit content to CHADO
 
 # Resources
 
