@@ -2846,7 +2846,7 @@ function tpps_block_view_alter(&$data, $block) {
             global $user;
             $accession = $_REQUEST['accession'];
             $form_state = variable_get('tpps_incomplete_' . $user->mail . $accession);
-            dpm($form_state['saved_values']);
+            //dpm($form_state['saved_values']);
             
             //This deals with page 1
             if (isset($form_state['saved_values']['Hellopage']['#cleared']) and $form_state['saved_values']['Hellopage']['#cleared']){
