@@ -216,8 +216,6 @@ After the data has been submitted and approved, the user will recieve an email w
 - Admin Interface for submission approval
 - Latitude/Longitude formats for file uploads
 - Status bar conditions/detection needs to be revised
-- Tree ID in phenotype file compared to tree accession
-- Phenotype name in phenotype file compared to phenotype metadata file OR phenotype fields
 
 # Resources
 
