@@ -284,7 +284,7 @@ function page_4_create_form(&$form, $form_state){
             $file = $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'];
         }
 
-        if ($file != 0 and $form_state['triggering_element']['#value'] != 'Remove'){
+        if ($file != 0){
             if (($file = file_load($file))){
                 $file_name = explode('//', $file->uri);
                 $file_name = $file_name[1];
@@ -510,7 +510,7 @@ function page_4_create_form(&$form, $form_state){
                 $file = $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'];
             }
             
-            if ($file != 0 and $form_state['triggering_element']['#value'] != 'Remove'){
+            if ($file != 0){
                 if (($file = file_load($file))){
                     $file_name = explode('//', $file->uri);
                     $file_name = $file_name[1];
@@ -777,7 +777,7 @@ function page_4_ref(&$fields, $form_state, $values, $id){
         $file = $form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-user'];
     }
     
-    if ($file != 0 and $form_state['triggering_element']['#value'] != 'Remove'){
+    if ($file != 0){
         if (($file = file_load($file))){
             $content = fopen($file->uri, 'r');
 
@@ -1171,7 +1171,6 @@ function page_4_validate_form(&$form, &$form_state){
                 }
                 
                 if ($missing_phenotypes !== array()){
-                    /*TEST THIS PART*/
                     $phenotype_id_str = implode(', ', $missing_phenotypes);
                     form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype definitions. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype definitions. The phenotypes we detected with missing definitions were: $phenotype_id_str");
                 }
