@@ -110,6 +110,37 @@ function page_3_create_form(&$form, &$form_state){
             $display .= "</tbody></table></div>";
 
             $form['tree-accession']['file']['columns'][$item]['#suffix'] .= $display;
+            
+            $first = TRUE;
+            $states_arr = array();
+            
+            foreach ($content['headers'] as $item){
+                if (!$first){
+                    $states_arr[] = 'or';
+                }
+                else {
+                    $first = FALSE;
+                }
+                $states_arr[] = array(':input[name="tree-accession[file][columns][' . $item . ']"]' => array('value' => '4'));
+                $states_arr[] = 'or';
+                $states_arr[] = array(':input[name="tree-accession[file][columns][' . $item . ']"]' => array('value' => '5'));
+            }
+            
+            $form['tree-accession']['file']['coord-format'] = array(
+              '#type' => 'select',
+              '#title' => t('Coordinate Projection'),
+              '#options' => array(
+                'WGS 84',
+                'NAD 83',
+                'ETRS 89',
+              ),
+              '#default_value' => isset($values['tree-accession']['file']['coord-format']) ? $values['tree-accession']['file']['coord-format'] : 0,
+              '#states' => array(
+                'visible' => array(
+                  $states_arr
+                )
+              ),
+            );
         }
     }
     
