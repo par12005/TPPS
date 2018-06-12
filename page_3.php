@@ -70,7 +70,9 @@ function page_3_create_form(&$form, &$form_state){
               'Country',
               'Region',
               'Latitude',
-              'Longitude'
+              'Longitude',
+              'Genus',
+              'Species'
             );
 
             $first = TRUE;
@@ -389,6 +391,11 @@ function page_3_validate_form(&$form, &$form_state){
                     $required_columns['4'] = NULL;
                     $required_columns['5'] = NULL;
                     form_set_error("tree-accession][file][columns", "Tree Accession file: Please specify a column that holds Location.");
+                }
+                
+                if ($species_number == 1){
+                    $required_columns['6'] = NULL;
+                    $required_columns['7'] = NULL;
                 }
                 
                 foreach ($required_columns as $item){

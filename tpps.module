@@ -860,9 +860,10 @@ function tpps_init_project($form, &$form_state){
     return $insert;
 }
 
-function tpps_create_record($table, $primary_key, array $values){
+function tpps_create_record($table, array $values){
     $default_fields = array();
     $insert = NULL;
+    $primary_key = tpps_get_primary_key($table);
     
     if (substr($primary_key, 0, 5) == 'tpps_'){
         $compare_primary = substr($primary_key, 5);
@@ -883,20 +884,17 @@ function tpps_create_record($table, $primary_key, array $values){
     $values["$primary_key"] = $new_primary;
     
     //check record exists
-    if (tpps_record_exists($compare_table, $values) or tpps_record_exists($table, $values)){
+    if (($existing_key = tpps_record_exists($compare_table, $values)) or ($existing_key = tpps_record_exists($table, $values))){
         //if it does, do not attempt to re-write it.
         //drupal_set_message(t('Error: Record already exists.'), 'error');
-        return $values[$primary_key];
+        return $existing_key;
     }
     
-    $fields = db_select("chado.$table", 't')
-        ->fields('t')
-        ->range(0,1)
-        ->execute()
-        ->fetchAssoc();
+    $fields = db_query("select column_name from INFORMATION_SCHEMA.columns where table_name='$table'");
     
     //get default values
-    foreach ($fields as $key => $value){
+    while (($field = $fields->fetchAssoc())){
+        $key = $field['column_name'];
         if (!isset($values[$key])){
             array_push($default_fields, $key);
         }
@@ -939,7 +937,8 @@ function tpps_record_exists($table, array $values){
         ->fetchAssoc();
     
     if ($results){
-        return TRUE;
+        $primary = tpps_get_primary_key($table);
+        return $results[$primary];
     }
     
     return FALSE;
@@ -947,11 +946,22 @@ function tpps_record_exists($table, array $values){
 
 function tpps_get_unique_columns($table){
     
-    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
+        $result = db_query("select indexdef from pg_indexes where tablename = '$table' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
         ->fetchAssoc();
     
     $result = preg_split('/(\(|\))/',$result['indexdef']);
     $result = explode(', ', $result[1]);
+    
+    return $result;
+}
+
+function tpps_get_primary_key($table){
+    
+    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and indexdef LIKE '%UNIQUE%' and indexname LIKE '%_pkey';")
+    ->fetchAssoc();
+    
+    $result = preg_split('/(\(|\))/',$result['indexdef']);
+    $result = $result[1];
     
     return $result;
 }
@@ -1590,17 +1600,17 @@ function submit_all($form, &$form_state){
     $values = $form_state['saved_values'];
     $firstpage = $values['Hellopage'];
 
-    $project_id = tpps_create_record('tpps_project', 'tpps_project_id', array(
+    $project_id = tpps_create_record('tpps_project', array(
       'name' => $firstpage['publication']['title'],
       'description' => $firstpage['publication']['abstract']
     ));
 
-    $project_dbxref_id = tpps_create_record('tpps_project_dbxref', 'tpps_project_dbxref_id', array(
+    $project_dbxref_id = tpps_create_record('tpps_project_dbxref', array(
       'project_id' => $project_id,
       'dbxref_id' => $dbxref_id
     ));
 
-    $primary_author_id = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
+    $primary_author_id = tpps_create_record('tpps_contact', array(
       'name' => $firstpage['primaryAuthor'],
       'type_id' => '71',
     ));
@@ -1610,21 +1620,21 @@ function submit_all($form, &$form_state){
         $secondary_author_ids = array();
 
         for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++){
-            $secondary_author_ids[$i] = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
+            $secondary_author_ids[$i] = tpps_create_record('tpps_contact', array(
               'name' => $firstpage['publication']['secondaryAuthors'][$i],
               'type_id' => '71'
             ));
             $author_string .= ", {$firstpage['publication']['secondaryAuthors'][$i]}";
         }
     } elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0) {
-        $secondary_author_file = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+        $secondary_author_file = tpps_create_record('tpps_projectprop', array(
           'project_id' => $project_id,
           'type_id' => '2836',
           'value' => file_create_url(file_load($firstpage['publication']['secondaryAuthors']['file'])->uri)
         ));
     }
     
-    $publication_id = tpps_create_record('tpps_pub', 'tpps_pub_id', array(
+    $publication_id = tpps_create_record('tpps_pub', array(
       'title' => $firstpage['publication']['title'],
       'series_name' => $firstpage['publication']['journal'],
       'type_id' => '229',
@@ -1632,12 +1642,12 @@ function submit_all($form, &$form_state){
       'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; $pub_year"
     ));
 
-    $project_pub_id = tpps_create_record('tpps_project_pub', 'tpps_project_pub_id', array(
+    $project_pub_id = tpps_create_record('tpps_project_pub', array(
       'project_id' => $project_id,
       'pub_id' => $publication_id
     ));
 
-    $organization_id = tpps_create_record('tpps_contact', 'tpps_contact_id', array(
+    $organization_id = tpps_create_record('tpps_contact', array(
       'name' => $firstpage['organization'],
       'type_id' => '72',
     ));
@@ -1646,7 +1656,7 @@ function submit_all($form, &$form_state){
     $first_name = $names[0];
     $last_name = implode(" ", array_slice($names, 1));
 
-    $pubauthor_id = tpps_create_record('tpps_pubauthor', 'tpps_pubauthor_id', array(
+    $pubauthor_id = tpps_create_record('tpps_pubauthor', array(
       'pub_id' => $publication_id,
       'rank' => '1',
       'surname' => $last_name,
@@ -1658,9 +1668,18 @@ function submit_all($form, &$form_state){
 
     for ($i = 1; $i <= $organism_number; $i++){
         $parts = explode(" ", $firstpage['organism'][$i]['species']);
-        $organism_ids[$i] = tpps_create_record('tpps_organism', 'tpps_organism_id', array(
-          'genus' => $parts[0],
-          'species' => implode(" ", array_slice($parts, 1)),
+        $genus = $parts[0];
+        $species = implode(" ", array_slice($parts, 1));
+        if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')){
+            $infra = implode(" ", array_slice($parts, 2));
+        }
+        else {
+            $infra = NULL;
+        }
+        $organism_ids[$i] = tpps_create_record('tpps_organism', array(
+          'genus' => $genus,
+          'species' => $species,
+          'infraspecific_name' => $infra
         ));
     }
     /***************************
@@ -1672,13 +1691,13 @@ function submit_all($form, &$form_state){
     $start = $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'];
     $end = $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'];
 
-    $start_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+    $start_id = tpps_create_record('tpps_projectprop', array(
       'project_id' => $project_id,
       'type_id' => '127996',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
       'value' => $start
     ));
     
-    $end_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+    $end_id = tpps_create_record('tpps_projectprop', array(
       'project_id' => $project_id,
       'type_id' => '127997',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
       'value' => $end
@@ -1690,13 +1709,13 @@ function submit_all($form, &$form_state){
         $latitude = $standard_coordinate[0];
         $longitude = $standard_coordinate[1];
         
-        $study_location_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+        $study_location_id = tpps_create_record('tpps_projectprop', array(
           'project_id' => $project_id,
           'type_id' => '54718',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
           'value' => $latitude
         ));
         
-        $study_location_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+        $study_location_id = tpps_create_record('tpps_projectprop', array(
           'project_id' => $project_id,
           'type_id' => '54717',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
           'value' => $longitude
@@ -1705,7 +1724,7 @@ function submit_all($form, &$form_state){
     else{
         $location = $secondpage['studyLocation']['custom'];
         
-        $study_location_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+        $study_location_id = tpps_create_record('tpps_projectprop', array(
           'project_id' => $project_id,
           'type_id' => '127998',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it. 
           'value' => $location
@@ -1723,7 +1742,7 @@ function submit_all($form, &$form_state){
     
     $datatype = $datatype_options[$secondpage['dataType']];
     
-    $datatype_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+    $datatype_id = tpps_create_record('tpps_projectprop', array(
       'project_id' => $project_id,
       'type_id' => '54740',
       'value' => $datatype
@@ -1740,7 +1759,7 @@ function submit_all($form, &$form_state){
     
     $study_type = $studytype_options[$secondpage['studyType']];
     
-    $study_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+    $study_type_id = tpps_create_record('tpps_projectprop', array(
       'project_id' => $project_id,
       'type_id' => '128021',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
       'value' => $study_type
@@ -1762,13 +1781,13 @@ function submit_all($form, &$form_state){
                 }
             }
             
-            $season_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $season_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128000',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $seasons
             ));
             
-            $assessions_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $assessions_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128001',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $number_assessions
@@ -1789,24 +1808,24 @@ function submit_all($form, &$form_state){
             $treatments = $rooting['treatment'];
 
             if ($co2['option'] == '1'){
-                $co2_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $co2_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128002',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'True'
                 ));
-                $co2_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $co2_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128003',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $co2['controlled']
                 ));
             }
             else{
-                $co2_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $co2_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128002',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'False'
                 ));
-                $co2_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $co2_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128003',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $co2['uncontrolled']
@@ -1814,24 +1833,24 @@ function submit_all($form, &$form_state){
             }
 
             if ($humidity['option'] == '1'){
-                $humidity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $humidity_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128004',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'True'
                 ));
-                $humidity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $humidity_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128005',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $humidity['controlled']
                 ));
             }
             else{
-                $humidity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $humidity_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128004',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'False'
                 ));
-                $humidity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $humidity_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128005',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $humidity['uncontrolled']
@@ -1839,36 +1858,36 @@ function submit_all($form, &$form_state){
             }
 
             if ($light['option'] == '1'){
-                $light_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $light_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128006',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'True'
                 ));
-                $light_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $light_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128007',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $light['controlled']
                 ));
             }
             else{
-                $light_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $light_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128006',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'False'
                 ));
-                $light_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $light_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128007',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $light['uncontrolled']
                 ));
             }
 
-            $temp_high_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $temp_high_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128008',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $temp_high
             ));
-            $temp_low_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $temp_low_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128009',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $temp_low
@@ -1876,21 +1895,21 @@ function submit_all($form, &$form_state){
 
             switch((string) $rooting_type){
                 case '1':
-                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => 'Aeroponics'
                     ));
                     break;
                 case '2':
-                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => 'Hydroponics'
                     ));
                     break;
                 case '3':
-                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => 'Soil'
@@ -1908,12 +1927,12 @@ function submit_all($form, &$form_state){
                         $soil_type = $soil['other'];
                     }
                     
-                    $soil_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $soil_type_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128011',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => $soil_type
                     ));
-                    $soil_container_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $soil_container_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128011',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => $soil_container
@@ -1924,24 +1943,24 @@ function submit_all($form, &$form_state){
             }
 
             if ($ph['option'] == '1'){
-                $ph_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $ph_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128013',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'True'
                 ));
-                $ph_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $ph_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128014',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $ph['controlled']
                 ));
             }
             else{
-                $ph_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $ph_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128013',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'False'
                 ));
-                $ph_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $ph_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128014',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $ph['uncontrolled']
@@ -1963,7 +1982,7 @@ function submit_all($form, &$form_state){
                 }
                 else{
                     if ($record_next){
-                        array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                        array_push($treatment_ids, tpps_create_record('tpps_projectprop', array(
                           'project_id' => $project_id,
                           'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                           'value' => $item,
@@ -1989,19 +2008,19 @@ function submit_all($form, &$form_state){
             $treatments = $rooting['treatment'];
 
             if ($humidity['option'] == '1'){
-                $humidity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $humidity_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128004',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'True'
                 ));
-                $humidity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $humidity_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128005',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $humidity['controlled']
                 ));
             }
             else{
-                $humidity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $humidity_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128004',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'False'
@@ -2009,31 +2028,31 @@ function submit_all($form, &$form_state){
             }
 
             if ($light['option'] == '1'){
-                $light_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $light_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128006',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'True'
                 ));
-                $light_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $light_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128007',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $light['controlled']
                 ));
             }
             else{
-                $light_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $light_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128006',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'False'
                 ));
             }
 
-            $temp_high_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $temp_high_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128008',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $temp_high
             ));
-            $temp_low_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $temp_low_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128009',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $temp_low
@@ -2041,21 +2060,21 @@ function submit_all($form, &$form_state){
 
             switch((string) $rooting_type){
                 case '1':
-                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => 'Aeroponics'
                     ));
                     break;
                 case '2':
-                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => 'Hydroponics'
                     ));
                     break;
                 case '3':
-                    $rooting_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $rooting_type_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128010',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => 'Soil'
@@ -2073,12 +2092,12 @@ function submit_all($form, &$form_state){
                         $soil_type = $soil['other'];
                     }
                     
-                    $soil_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $soil_type_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128011',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => $soil_type
                     ));
-                    $soil_container_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $soil_container_id = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128011',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => $soil_container
@@ -2089,19 +2108,19 @@ function submit_all($form, &$form_state){
             }
 
             if ($ph['option'] == '1'){
-                $ph_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $ph_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128013',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'True'
                 ));
-                $ph_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $ph_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128014',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $ph['controlled']
                 ));
             }
             else{
-                $ph_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $ph_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128013',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'False'
@@ -2123,7 +2142,7 @@ function submit_all($form, &$form_state){
                 }
                 else{
                     if ($record_next){
-                        array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                        array_push($treatment_ids, tpps_create_record('tpps_projectprop', array(
                           'project_id' => $project_id,
                           'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                           'value' => $item,
@@ -2155,31 +2174,31 @@ function submit_all($form, &$form_state){
                 $irrigation_type = $commonGarden['irrigation']['other'];
             }
             
-            $irrigation_type_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $irrigation_type_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128016',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $irrigation_type
             ));
 
             if ($salinity['option'] == '1'){
-                $salinity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $salinity_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128017',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'True'
                 ));
-                $salinity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $salinity_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128018',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $salinity['controlled']
                 ));
             }
             else{
-                $salinity_control_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $salinity_control_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128017',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => 'False'
                 ));
-                $salinity_value_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $salinity_value_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '128018',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                   'value' => $salinity['uncontrolled']
@@ -2190,7 +2209,7 @@ function submit_all($form, &$form_state){
             $biotic_env_id = array();
             foreach ($biotic_env as $key => $check){
                 if ($check == '1'){
-                    $biotic_env_id[$key] = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                    $biotic_env_id[$key] = tpps_create_record('tpps_projectprop', array(
                       'project_id' => $project_id,
                       'type_id' => '128019',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                       'value' => $key
@@ -2203,7 +2222,7 @@ function submit_all($form, &$form_state){
                     $seasons .= $key . ', ';
                 }
             }
-            $season_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $season_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128000',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $seasons
@@ -2224,7 +2243,7 @@ function submit_all($form, &$form_state){
                 }
                 else{
                     if ($record_next){
-                        array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                        array_push($treatment_ids, tpps_create_record('tpps_projectprop', array(
                           'project_id' => $project_id,
                           'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                           'value' => $item,
@@ -2248,13 +2267,13 @@ function submit_all($form, &$form_state){
                 }
             }
             
-            $season_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $season_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128000',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $seasons
             ));
             
-            $assessions_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $assessions_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '128001',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
               'value' => $number_assessions
@@ -2276,7 +2295,7 @@ function submit_all($form, &$form_state){
                     }
                     else{
                         if ($record_next){
-                            array_push($treatment_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                            array_push($treatment_ids, tpps_create_record('tpps_projectprop', array(
                               'project_id' => $project_id,
                               'type_id' => '128015',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                               'value' => $item,
@@ -2298,21 +2317,108 @@ function submit_all($form, &$form_state){
     
     $thirdpage = $values['thirdPage'];
     $fourthpage = $values['fourthPage'];
+    $stock_ids = array();
     
     if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0){
-        $tree_accession_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+        //single file
+        $tree_accession_id = tpps_create_record('tpps_projectprop', array(
           'project_id' => $project_id,
           'type_id' => '2836',
           'value' => file_create_url(file_load($thirdpage['tree-accession']['file'])->uri)
         ));
+        
+        $file = file_load($thirdpage['tree-accession']['file']);
+        $location = drupal_realpath($file->uri);
+        $content = parse_xlsx($location);
+        $column_vals = $thirdpage['tree-accession']['file-columns'];
+        
+        foreach ($column_vals as $col => $val){
+            if ($val == '1'){
+                $id_col_accession_name = $col;
+                break;
+            }
+        }
+        
+        if ($organism_number == '1'){
+            //only one species
+            for ($i = 0; $i < count($content) - 1; $i++){
+                $tree_id = $content[$i][$id_col_accession_name];
+                $stock_ids[$tree_id] = tpps_create_record('tpps_stock', array(
+                  'uniquename' => t($tree_id),
+                  'type_id' => '2824',
+                  'organism_id' => $organism_ids[1],
+                ));
+            }
+        }
+        else {
+            //multiple species in one tree accession file -> users must define species and genus columns
+            
+            //get genus column
+            foreach ($column_vals as $col => $val){
+                if ($val == '6'){
+                    $genus_col_name = $col;
+                    break;
+                }
+            }
+            
+            //get species column
+            foreach ($column_vals as $col => $val){
+                if ($val == '7'){
+                    $species_col_name = $col;
+                    break;
+                }
+            }
+            
+            //parse file
+            for ($i = 0; $i < count($content) - 1; $i++){
+                $tree_id = $content[$i][$id_col_accession_name];
+                for ($j = 1; $j <= $organism_number; $j++){
+                    //match genus and species to genus and species given on page 1
+                    if ($firstpage['organism'][$j]['species'] == "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}"){
+                        //obtain organism id from matching species
+                        $id = $organism_ids[$j];
+                        break;
+                    }
+                }
+                
+                //create record with the new id
+                $stock_ids[$tree_id] = tpps_create_record('tpps_stock', array(
+                  'uniquename' => t($tree_id),
+                  'type_id' => '2824',
+                  'organism_id' => $id,
+                ));
+            }
+        }
     }
     else {
+        //multiple files, sorted by species
         for($i = 0; $i < $organism_number; $i++){
-            $tree_accession_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+            $tree_accession_id = tpps_create_record('tpps_projectprop', array(
               'project_id' => $project_id,
               'type_id' => '2836',
               'value' => file_create_url(file_load($thirdpage['tree-accession']["species-$i"]['file'])->uri)
             ));
+            
+            $file = file_load($thirdpage['tree-accession']["species-$i"]['file']);
+            $location = drupal_realpath($file->uri);
+            $content = parse_xlsx($location);
+            $column_vals = $thirdpage['tree-accession']["species-$i"]['file-columns'];
+
+            foreach ($column_vals as $col => $val){
+                if ($val == '1'){
+                    $id_col_accession_name = $col;
+                    break;
+                }
+            }
+
+            for ($j = 0; $j < count($content) - 1; $j++){
+                $tree_id = $content[$j][$id_col_accession_name];
+                $stock_ids[$tree_id] = tpps_create_record('tpps_stock', array(
+                  'uniquename' => t($tree_id),
+                  'type_id' => '2824',
+                  'organism_id' => $organism_ids[$i],
+                ));
+            }
         }
     }
     
@@ -2334,7 +2440,7 @@ function submit_all($form, &$form_state){
                 for ($j = 1; $j < $phenotype_number; $j++){
                     $current_phenotype = $phenotype[$j];
                     
-                    $phenotype_ids[$j] = tpps_create_record('tpps_phenotype', 'tpps_phenotype_id', array(
+                    $phenotype_ids[$j] = tpps_create_record('tpps_phenotype', array(
                       'uniquename' => $current_phenotype['name']
                     ));
                     
@@ -2351,21 +2457,21 @@ function submit_all($form, &$form_state){
                     if ($current_phenotype['environment-check'] == '1'){
                         $environment = $current_phenotype['environment'];
                         
-                        tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                        tpps_create_record('tpps_phenotypeprop', array(
                           'phenotype_id' => $phenotype_ids[$j],
                           'type_id' => '2834',
                           'value' => $environment['description']
                         ));
                         
                         if ($environment['units'] !== '6'){
-                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                            tpps_create_record('tpps_phenotypeprop', array(
                               'phenotype_id' => $phenotype_ids[$j],
                               'type_id' => '2842',
                               'value' => $unit_options[$environment['units']]
                             ));
                         }
                         else {
-                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                            tpps_create_record('tpps_phenotypeprop', array(
                               'phenotype_id' => $phenotype_ids[$j],
                               'type_id' => '2842',
                               'value' => $environment['units-other']
@@ -2376,21 +2482,21 @@ function submit_all($form, &$form_state){
                     else {
                         $non_environment = $current_phenotype['non-environment'];
                         
-                        tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                        tpps_create_record('tpps_phenotypeprop', array(
                           'phenotype_id' => $phenotype_ids[$j],
                           'type_id' => '2834',
                           'value' => $non_environment['description']
                         ));
                         
                         if ($non_environment['units'] !== '6'){
-                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                            tpps_create_record('tpps_phenotypeprop', array(
                               'phenotype_id' => $phenotype_ids[$j],
                               'type_id' => '2842',
                               'value' => $unit_options[$non_environment['units']]
                             ));
                         }
                         else {
-                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                            tpps_create_record('tpps_phenotypeprop', array(
                               'phenotype_id' => $phenotype_ids[$j],
                               'type_id' => '2842',
                               'value' => $non_environment['units-other']
@@ -2405,12 +2511,12 @@ function submit_all($form, &$form_state){
                             $binary_1 = $non_environment['binary'][1];
                             $binary_2 = $non_environment['binary'][2];
                             
-                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                            tpps_create_record('tpps_phenotypeprop', array(
                               'phenotype_id' => $phenotype_ids[$j],
                               'type_id' => '128023',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                               'value' => $binary_1
                             ));
-                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                            tpps_create_record('tpps_phenotypeprop', array(
                               'phenotype_id' => $phenotype_ids[$j],
                               'type_id' => '128023',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
                               'value' => $binary_2
@@ -2420,24 +2526,24 @@ function submit_all($form, &$form_state){
                             $min = $non_environment['quantitative']['min'];
                             $max = $non_environment['quantitative']['max'];
 
-                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                            tpps_create_record('tpps_phenotypeprop', array(
                               'phenotype_id' => $phenotype_ids[$j],
                               'type_id' => '52214',
                               'value' => $min
                             ));
-                            tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                            tpps_create_record('tpps_phenotypeprop', array(
                               'phenotype_id' => $phenotype_ids[$j],
                               'type_id' => '52213',
                               'value' => $max
                             ));
                         }
                         
-                        tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                        tpps_create_record('tpps_phenotypeprop', array(
                           'phenotype_id' => $phenotype_ids[$j],
                           'type_id' => '50292',
                           'value' => $structure
                         ));
-                        tpps_create_record('tpps_phenotypeprop', 'tpps_phenotypeprop_id', array(
+                        tpps_create_record('tpps_phenotypeprop', array(
                           'phenotype_id' => $phenotype_ids[$j],
                           'type_id' => '50292',
                           'value' => $developmental
@@ -2446,7 +2552,7 @@ function submit_all($form, &$form_state){
                 }
             }
             else{
-                $phenotype_file_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $phenotype_file_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
                   'value' => file_create_url(file_load($phenotype['metadata'])->uri)
@@ -2460,14 +2566,14 @@ function submit_all($form, &$form_state){
             $genotype = $fourthpage["organism-$i"]['genotype'];
             
             if ($genotype['ref-genome'] == 'url'){
-                $reference_genome_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $reference_genome_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '1912',
                   'value' => $genotype['ref-genome-other']
                 ));
             }
             elseif ($genotype['ref-genome'] == 'bio'){
-                $project_dbxref_id = tpps_create_record('tpps_project_dbxref', 'tpps_project_dbxref_id', array(
+                $project_dbxref_id = tpps_create_record('tpps_project_dbxref', array(
                   'project_id' => $project_id,
                   'dbxref_id' => $genotype['BioProject-id'],
                 ));
@@ -2476,7 +2582,7 @@ function submit_all($form, &$form_state){
 
                 foreach ($genotype['assembly-auto'] as $item){
                     if ($item !== '0'){
-                        array_push($bioproject_assembly_file_ids, tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                        array_push($bioproject_assembly_file_ids, tpps_create_record('tpps_projectprop', array(
                           'project_id' => $project_id,
                           'type_id' => '2836',
                           'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$item"
@@ -2486,14 +2592,14 @@ function submit_all($form, &$form_state){
             }
             elseif ($genotype['ref-genome'] == 'manual'){
                 $assembly_user = $genotype['assembly-user'];
-                $assembly_user_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $assembly_user_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
                   'value' => file_create_url(file_load($assembly_user)->uri)
                 ));
             }
             else {
-                $reference_genome_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $reference_genome_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '1912',
                   'value' => $genotype['ref-genome']
@@ -2501,7 +2607,7 @@ function submit_all($form, &$form_state){
             }
             
             if ($genotype['marker-type']['SSRs/cpSSRs'] != '0' or $genotype['marker-type']['Other'] != '0'){
-                $genotype_file_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $genotype_file_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
                   'value' => file_create_url(file_load($genotype['file']))
@@ -2509,7 +2615,7 @@ function submit_all($form, &$form_state){
             }
                 
             if ($genotype['marker-type']['SNPs'] != '0'){
-                $genotype_vcf_id = tpps_create_record('tpps_projectprop', 'tpps_projectprop_id', array(
+                $genotype_vcf_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
                   'value' => file_create_url(file_load($genotype['vcf']))
@@ -2743,6 +2849,8 @@ If you would like to submit your data, you can click the button 'Continue to TPP
 }
 
 function summary_create_form(&$form, $form_state){
+    
+    dpm($form_state);
     
     $form['Back'] = array(
       '#type' => 'submit',
