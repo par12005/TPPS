@@ -2422,6 +2422,14 @@ function submit_all($form, &$form_state){
         }
     }
     
+    $project_stock_ids = array();
+    foreach ($stock_ids as $tree_id => $stock_id){
+        $project_stock_ids[] = tpps_create_record('tpps_project_stock', array(
+          'stock_id' => $stock_id,
+          'project_id' => $project_id
+        ));
+    }
+    
     /***************************
      * Fourth Page submissions *
      ***************************/
