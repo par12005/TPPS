@@ -2343,6 +2343,18 @@ function submit_all($form, &$form_state){
             if ($val == '5'){
                 $long_name = $col;
             }
+            if ($val == '2'){
+                $country_col_name = $col;
+            }
+            if ($val == '3'){
+                $state_col_name = $col;
+            }
+            if ($val == '8'){
+                $county_col_name = $col;
+            }
+            if ($val == '9'){
+                $district_col_name = $col;
+            }
         }
         
         if ($organism_number == '1'){
@@ -2414,6 +2426,40 @@ function submit_all($form, &$form_state){
                 ));
             }
         }
+        else {
+            for ($i = 0; $i < count($content) - 1; $i++){
+                $tree_id = $content[$i][$id_col_accession_name];
+                $stock_id = $stock_ids[$tree_id];
+                
+                $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                  'stock_id' => $stock_id,
+                  'type_id' => '128162',
+                  'value' => $content[$i][$country_col_name]
+                ));
+                
+                $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                  'stock_id' => $stock_id,
+                  'type_id' => '128947',
+                  'value' => $content[$i][$state_col_name]
+                ));
+                
+                if (isset($county_col_name)){
+                    $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                      'stock_id' => $stock_id,
+                      'type_id' => '128946',
+                      'value' => $content[$i][$county_col_name]
+                    ));
+                }
+                
+                if (isset($district_col_name)){
+                    $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                      'stock_id' => $stock_id,
+                      'type_id' => '128945',
+                      'value' => $content[$i][$district_col_name]
+                    ));
+                }
+            }
+        }
     }
     else {
         //multiple files, sorted by species
@@ -2439,6 +2485,18 @@ function submit_all($form, &$form_state){
                 if ($val == '5'){
                     $long_name = $col;
                 }
+                if ($val == '2'){
+                    $country_col_name = $col;
+                }
+                if ($val == '3'){
+                    $state_col_name = $col;
+                }
+                if ($val == '8'){
+                    $county_col_name = $col;
+                }
+                if ($val == '9'){
+                    $district_col_name = $col;
+                }
             }
 
             for ($j = 0; $j < count($content) - 1; $j++){
@@ -2461,6 +2519,36 @@ function submit_all($form, &$form_state){
                       'type_id' => '54717',
                       'value' => $content[$j][$long_name]
                     ));
+                }
+                else {
+                    
+                    $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                      'stock_id' => $stock_id,
+                      'type_id' => '128162',
+                      'value' => $content[$j][$country_col_name]
+                    ));
+
+                    $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                      'stock_id' => $stock_id,
+                      'type_id' => '128947',
+                      'value' => $content[$j][$state_col_name]
+                    ));
+
+                    if (isset($county_col_name)){
+                        $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                          'stock_id' => $stock_id,
+                          'type_id' => '128946',
+                          'value' => $content[$j][$county_col_name]
+                        ));
+                    }
+
+                    if (isset($district_col_name)){
+                        $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                          'stock_id' => $stock_id,
+                          'type_id' => '128945',
+                          'value' => $content[$j][$district_col_name]
+                        ));
+                    }
                 }
             }
         }
@@ -2930,6 +3018,7 @@ function tpps_test_page($form, &$form_state){
 
 function tpps_test_page_validate($form, &$form_state){
     if ($form_state['submitted'] == '1'){
+        
         form_set_error('Next', 'error');
     }
     /*for ($i = 0; $i < 500; $i++){

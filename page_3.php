@@ -65,14 +65,16 @@ function page_3_create_form(&$form, &$form_state){
             $content = parse_xlsx($location);
 
             $column_options = array(
-              'N/A',
-              'Tree Identifier',
-              'Country',
-              'Region',
-              'Latitude',
-              'Longitude',
-              'Genus',
-              'Species'
+              '0' => 'N/A',
+              '1' => 'Tree Identifier',
+              '2' => 'Country',
+              '3' => 'State',
+              '8' => 'County',
+              '9' => 'District',
+              '4' => 'Latitude',
+              '5' => 'Longitude',
+              '6' => 'Genus',
+              '7' => 'Species'
             );
 
             $first = TRUE;
@@ -234,12 +236,14 @@ function page_3_create_form(&$form, &$form_state){
                 $content = parse_xlsx($location);
 
                 $column_options = array(
-                  'N/A',
-                  'Tree Identifier',
-                  'Country',
-                  'Region',
-                  'Latitude',
-                  'Longitude'
+                  '0' => 'N/A',
+                  '1' => 'Tree Identifier',
+                  '2' => 'Country',
+                  '3' => 'State',
+                  '8' => 'County',
+                  '9' => 'District',
+                  '4' => 'Latitude',
+                  '5' => 'Longitude',
                 );
 
                 $first = TRUE;
@@ -357,12 +361,15 @@ function page_3_validate_form(&$form, &$form_state){
         $species_number = $form_state['saved_values']['Hellopage']['organism']['number'];
         if ($species_number == 1 or $form_state['values']['tree-accession']['check'] == '0'){
             if ($form_state['values']['tree-accession']['file'] != ""){
-
+                
                 $required_columns = array(
                   '1' => 'Tree Identifier',
                   '2' => 'Country',
+                  '3' => 'State',
                   '4' => 'Latitude',
-                  '5' => 'Longitude'
+                  '5' => 'Longitude',
+                  '6' => 'Genus',
+                  '7' => 'Species'
                 );
                 
                 $form_state['values']['tree-accession']['file-columns'] = array();
@@ -378,18 +385,14 @@ function page_3_validate_form(&$form, &$form_state){
                     }
                 }
                 
-                // if country was provided, Lat and Long are not necessary, and vice versa
-                if ($required_columns['2'] == NULL){
-                    $required_columns['4'] = NULL;
-                    $required_columns['5'] = NULL;
+                if (!isset($required_columns['4']) or !isset($required_columns['5'])){
+                    $required_columns['2'] = $required_columns['3'] = NULL;
                 }
-                elseif ($required_columns['4'] == NULL or $required_columns['5'] == NULL){
-                    $required_columns['2'] = NULL;
+                elseif (!isset($required_columns['2']) or !isset($required_columns['3'])){
+                    $required_columns['4'] = $required_columns['5'] = NULL;
                 }
-                elseif ($required_columns['2'] != NULL and $required_columns['4'] != NULL and $required_columns['5'] != NULL){
-                    $required_columns['2'] = NULL;
-                    $required_columns['4'] = NULL;
-                    $required_columns['5'] = NULL;
+                elseif (isset($required_columns['2']) and isset($required_columns['3']) and isset($required_columns['4']) and isset($required_columns['5'])){
+                    $required_columns['2'] = $required_columns['3'] = $required_columns['4'] = $required_columns['5'] = NULL;
                     form_set_error("tree-accession][file][columns", "Tree Accession file: Please specify a column that holds Location.");
                 }
                 
@@ -416,8 +419,9 @@ function page_3_validate_form(&$form, &$form_state){
                     $required_columns = array(
                       '1' => 'Tree Identifier',
                       '2' => 'Country',
+                      '3' => 'State',
                       '4' => 'Latitude',
-                      '5' => 'Longitude'
+                      '5' => 'Longitude',
                     );
 
                     $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
@@ -434,17 +438,14 @@ function page_3_validate_form(&$form, &$form_state){
                     }
                     
                     // if country was provided, Lat and Long are not necessary, and vice versa
-                    if ($required_columns['2'] == NULL){
-                        $required_columns['4'] = NULL;
-                        $required_columns['5'] = NULL;
+                    if (!isset($required_columns['4']) or !isset($required_columns['5'])){
+                        $required_columns['2'] = $required_columns['3'] = NULL;
                     }
-                    elseif ($required_columns['4'] == NULL or $required_columns['5'] == NULL){
-                        $required_columns['2'] = NULL;
+                    elseif (!isset($required_columns['2']) or !isset($required_columns['3'])){
+                        $required_columns['4'] = $required_columns['5'] = NULL;
                     }
-                    elseif ($required_columns['2'] != NULL and $required_columns['4'] != NULL and $required_columns['5'] != NULL){
-                        $required_columns['2'] = NULL;
-                        $required_columns['4'] = NULL;
-                        $required_columns['5'] = NULL;
+                    elseif (isset($required_columns['2']) and isset($required_columns['3']) and isset($required_columns['4']) and isset($required_columns['5'])){
+                        $required_columns['2'] = $required_columns['3'] = $required_columns['4'] = $required_columns['5'] = NULL;
                         form_set_error("tree-accession][species-$i][file][columns", "Species $i Tree Accession file: Please specify a column that holds Location.");
                     }
 
