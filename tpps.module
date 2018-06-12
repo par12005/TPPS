@@ -2318,6 +2318,7 @@ function submit_all($form, &$form_state){
     $thirdpage = $values['thirdPage'];
     $fourthpage = $values['fourthPage'];
     $stock_ids = array();
+    $stockprop_ids = array();
     
     if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0){
         //single file
@@ -2333,9 +2334,14 @@ function submit_all($form, &$form_state){
         $column_vals = $thirdpage['tree-accession']['file-columns'];
         
         foreach ($column_vals as $col => $val){
+            if ($val == '4'){
+                $lat_name = $col;
+            }
             if ($val == '1'){
                 $id_col_accession_name = $col;
-                break;
+            }
+            if ($val == '5'){
+                $long_name = $col;
             }
         }
         
@@ -2389,6 +2395,25 @@ function submit_all($form, &$form_state){
                 ));
             }
         }
+        
+        if (isset($lat_name) and isset($long_name)){
+            for ($i = 0; $i < count($content) - 1; $i++){
+                $tree_id = $content[$i][$id_col_accession_name];
+                $stock_id = $stock_ids[$tree_id];
+                
+                $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                  'stock_id' => $stock_id,
+                  'type_id' => '54718',
+                  'value' => $content[$i][$lat_name]
+                ));
+                
+                $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                  'stock_id' => $stock_id,
+                  'type_id' => '54717',
+                  'value' => $content[$i][$long_name]
+                ));
+            }
+        }
     }
     else {
         //multiple files, sorted by species
@@ -2405,9 +2430,14 @@ function submit_all($form, &$form_state){
             $column_vals = $thirdpage['tree-accession']["species-$i"]['file-columns'];
 
             foreach ($column_vals as $col => $val){
+                if ($val == '4'){
+                    $lat_name = $col;
+                }
                 if ($val == '1'){
                     $id_col_accession_name = $col;
-                    break;
+                }
+                if ($val == '5'){
+                    $long_name = $col;
                 }
             }
 
@@ -2418,6 +2448,20 @@ function submit_all($form, &$form_state){
                   'type_id' => '2824',
                   'organism_id' => $organism_ids[$i],
                 ));
+                
+                if (isset($lat_name) and isset($long_name)){
+                    $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                      'stock_id' => $stock_ids[$tree_id],
+                      'type_id' => '54718',
+                      'value' => $content[$j][$lat_name]
+                    ));
+
+                    $stockprop_ids[] = tpps_create_record('tpps_stockprop', array(
+                      'stock_id' => $stock_ids[$tree_id],
+                      'type_id' => '54717',
+                      'value' => $content[$j][$long_name]
+                    ));
+                }
             }
         }
     }
