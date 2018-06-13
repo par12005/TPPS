@@ -854,10 +854,12 @@ function tpps_compare_temp($table, $column, $is_primary = FALSE, array $conditio
     if (!isset($public_val) and !isset($temp_val)){
         return NULL;
     }
-    
-    $max_val = (!isset($public_val) or $temp_val > $public_val) ? $temp_val : $public_val;
-    
-    return $max_val;
+    elseif (!isset($temp_val)){
+        return $public_val;
+    }
+    else {
+        return (!isset($public_val) or $temp_val > $public_val) ? $temp_val : $public_val;
+    }
 }
 
 function tpps_init_project($form, &$form_state){
