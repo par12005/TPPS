@@ -1666,15 +1666,15 @@ function submit_all($form, &$form_state){
     ));
 
     $author_string = $firstpage['primaryAuthor'];
+    $secondary_author_ids = array();
     if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0){
-        $secondary_author_ids = array();
 
         for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++){
-            $secondary_author_ids[$i] = tpps_create_record('tpps_contact', array(
+            $secondary_author_ids[] = tpps_create_record('tpps_contact', array(
               'name' => $firstpage['publication']['secondaryAuthors'][$i],
               'type_id' => '71'
             ));
-            $author_string .= ", {$firstpage['publication']['secondaryAuthors'][$i]}";
+            $author_string .= "; {$firstpage['publication']['secondaryAuthors'][$i]}";
         }
     }
     elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0){
@@ -1683,6 +1683,31 @@ function submit_all($form, &$form_state){
           'type_id' => '2836',
           'value' => file_create_url(file_load($firstpage['publication']['secondaryAuthors']['file'])->uri)
         ));
+        
+        $file = file_load($firstpage['publication']['secondaryAuthors']['file']);
+        $location = drupal_realpath($file->uri);
+        $content = parse_xlsx($location);
+        $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
+        
+        foreach ($column_vals as $col => $val){
+            if ($val == '1'){
+                $first_name = $col;
+            }
+            if ($val == '2'){
+                $last_name = $col;
+            }
+            if ($val == '3'){
+                $middle_initial = $col;
+            }
+        }
+        
+        for ($i = 0; $i < count($content) - 1; $i++){
+            $secondary_author_ids[] = tpps_create_record('tpps_contact', array(
+              'name' => "{$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}",
+              'type_id' => '71'
+            ));
+            $author_string .= "; {$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
+        }
     }
     
     $publication_id = tpps_create_record('tpps_pub', array(
