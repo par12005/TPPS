@@ -214,7 +214,6 @@ After the data has been submitted and approved, the user will recieve an email w
 
 # Features in Development
 - Admin Interface for submission approval
-- Revise Formatting, specifically buttons
 - Option to upload file with no header
 - Mini-map view on sidebar
 - Parse and load content from secondary author file to CHADO
