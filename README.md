@@ -221,6 +221,7 @@ After the data has been submitted and approved, the user will recieve an email w
 - Parse and load content from genotype files to CHADO
 - Parse and load content from phenotype files to CHADO
 - Link from 'TPPS Completed Submission' page to TGDR landing page
+- Update Google Maps API and Google Maps JavaScript API keys
 
 # Resources
 
