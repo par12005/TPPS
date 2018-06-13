@@ -102,6 +102,26 @@ function tpps_tab_create($type, $user, $name = NULL){
     
     $email = $user->mail;
     $state_name = 'tpps_incomplete_' . $email;
+    $params = drupal_get_query_parameters();
+    
+    if (isset($params['accession']) and isset($params['action']) and $params['action'] === 'DELETE'){
+        $delete_name = $state_name . $params['accession'];
+        $results = db_select("public.variable", "variable")
+            ->fields('variable')
+            ->condition('name', db_like($delete_name), 'LIKE')
+            ->execute()
+            ->fetchAssoc();
+        
+        variable_del($results['name']);
+        $and = db_and()
+            ->condition('accession', $params['accession'])
+            ->condition('db_id', 95);
+        $results = db_delete('chado.tpps_dbxref')
+            ->condition($and)
+            ->execute();
+        
+        dpm($results);
+    }
     
     $results = db_select("public.variable", "variable")
         ->fields('variable')
@@ -118,7 +138,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         }
     </style>';
     $display .= "<label for='tpps_incomplete_table'>Incomplete Submissions</label><div class='tpps_profile_tab'><table id='tpps_incomplete_table' style='width:-webkit-fill-available' border='1'><thead>";
-    $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th></tr>";
+    $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th></th></tr>";
     $display .= "</thead><tbody>";
     
     foreach ($results as $item){
@@ -168,6 +188,16 @@ function tpps_tab_create($type, $user, $name = NULL){
         }
         else {
             $display .= "<td></td>";
+        }
+        
+        if (isset($state['accession'])){
+            $display .= "<td style='text-align:center'><input type='submit' id='delete-{$state['accession']}' onclick='";
+            $title = (isset($state['saved_values']['Hellopage']['publication']['title'])) ? ' titled ' . $state['saved_values']['Hellopage']['publication']['title'] : '';
+            $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"/Drupal/user/{$user->uid}/TPPS?accession={$state['accession']}&action=DELETE\"}";
+            $display .= "' name='op' class='form-button' value='Delete'></td>";
+        }
+        else {
+            $display .= '<td></td>';
         }
         
         $display .= "</tr>";
