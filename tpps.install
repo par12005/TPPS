@@ -2,134 +2,23 @@
 
 function tpps_install(){
     
-    $tables = array(
-      'project',
-      'project_pub',
-      'project_stock',
-      'contact',
-      'pub',
-      'study',
-      'pubauthor',
-      'projectprop',
-      'organism',
-      'studyprop',
-      'stock',
-      'stockprop',
-      'phenotypeprop',
-      'phenotype',
-      'dbxref',
-      'project_dbxref',
-      'feature',
-      //'featureloc',
-      'feature_genotype',
-      'feature_dbxref',
-      'genotype',
-      'genotype_call',
-      //'stock_phenotype',
-    );
-    
-    foreach ($tables as $table){
-        $temp_table = "chado.tpps_$table";
-        $primary_key = $table . "_id";
-        $table = "chado.$table";
-        
-        $insert_fields = array();
-        $is_primary_key = TRUE;
-        
-        $results = db_select($table, 't')
-            ->fields('t')
-            ->orderBy($primary_key, 'DESC')
-            ->range(0, 1)
-            ->execute()
-            ->fetchAssoc();
-        
-        //print_r($table);
-        //print_r($results);
-        if ($results){
-            $default_fields = array();
-            foreach($results as $field => $value){
+}
 
-                if ($value == ''){
-                    array_push($default_fields, $field);
-                    $value = NULL;
-                }
-                else {
-                    if ($is_primary_key){
-                        $insert_fields["tpps_$field"] = $value;
-                        $is_primary_key = FALSE;
-                    }
-                    else{
-                        $insert_fields[$field] = $value;
-                    }
-                }
-                //print_r("$field => $value");
-                //print_r("\nnext field\n");
-            }
-            
-            $insert = db_insert($temp_table)
-                ->useDefaults($default_fields)
-                ->fields($insert_fields)
-                ->execute();
-        }
-        
-        /*$results = db_select($temp_table, 't')
-            ->fields('t')
-            ->execute()
-            ->fetchAssoc();
-        
-        print_r("\n$table : $temp_table\n");
-        print_r($results);
-        //break;*/
-    }
+function tpps_uninstall(){
     
-    $insert_fields = array();
-    $is_primary_key = TRUE;
+    //remove all incomplete submissions connected to user profiles
+    $results = db_delete('public.variable')
+        ->condition('name', db_like('tpps_incomplete_') . '%', 'LIKE')
+        ->execute();
     
-    $results = db_select('chado.dbxref', 't')
-        ->fields('t')
-        ->condition('db_id', db_like('95'), 'LIKE')
-        ->orderBy('dbxref_id', 'DESC')
-        ->range(0, 1)
-        ->execute()
-        ->fetchAssoc();
-
-    //print_r($table);
-    //print_r($results);
-    if ($results){
-        $default_fields = array();
-        foreach($results as $field => $value){
-
-            if ($value == ''){
-                array_push($default_fields, $field);
-                $value = NULL;
-            }
-            else {
-                if ($is_primary_key){
-                    $insert_fields["tpps_$field"] = $value;
-                    $is_primary_key = FALSE;
-                }
-                else{
-                    $insert_fields[$field] = $value;
-                }
-            }
-            //print_r("$field => $value");
-            //print_r("\nnext field\n");
-        }
-
-        $insert = db_insert('chado.tpps_dbxref')
-            ->useDefaults($default_fields)
-            ->fields($insert_fields)
-            ->execute();
-    }
+    //remove all complete submissions connected to user profiles
+    $results = db_delete('public.variable')
+        ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
+        ->execute();
     
-    //chado.featureloc is funky, so we need to use chado_query() instead of db_query() or db_select()
-    /*
-    $results = chado_query('SELECT * FROM {featureloc} LIMIT 1');
-    
-    foreach($results as $record){
-        print_r($record);
-    }*/
-    
+    // only need to remove data from the public.variable table - incomplete submissions 
+    // or submissions pending approval will be removed with the chado.tpps_* tables, and
+    // approved submissions can stay on the website if people want them to.
 }
 
 function tpps_schema(){
