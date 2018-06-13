@@ -214,7 +214,13 @@ After the data has been submitted and approved, the user will recieve an email w
 
 # Features in Development
 - Admin Interface for submission approval
-- Parse files to submit content to CHADO
+- Revise Formatting, specifically buttons
+- Option to upload file with no header
+- Mini-map view on sidebar
+- Parse and load content from secondary author file to CHADO
+- Parse and load content from genotype files to CHADO
+- Parse and load content from phenotype files to CHADO
+- Link from 'TPPS Completed Submission' page to TGDR landing page
 
 # Resources
 
