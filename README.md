@@ -216,7 +216,6 @@ After the data has been submitted and approved, the user will recieve an email w
 - Admin Interface for submission approval
 - Option to upload file with no header
 - Mini-map view on sidebar
-- Parse and load content from secondary author file to CHADO
 - Parse and load content from genotype files to CHADO
 - Parse and load content from phenotype files to CHADO
 - Update Google Maps API and Google Maps JavaScript API keys
