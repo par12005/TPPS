@@ -291,6 +291,7 @@ function tpps_completed_display($form, $form_state){
     global $user;
     $params = drupal_get_query_parameters();
     $accession = $params['id'];
+    $link = "/Drupal/tpps_details/main";
     
     $old_form_state = variable_get('tpps_complete_' . $user->mail . $accession);
     $values = $old_form_state['saved_values'];
@@ -305,7 +306,7 @@ function tpps_completed_display($form, $form_state){
     ";
     drupal_add_css($css, 'inline');
     
-    $display = "<label for='tpps_$accession'>{$values['Hellopage']['publication']['title']}</label>";
+    $display = "<label for='tpps_$accession'>{$values['Hellopage']['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
     $display .= "<div class='tpps_complete_submission'><table id='tpps_$accession' style='width:-webkit-fill-available' border='1'><thead>";
     //$display .= "<tr><th>Field</th><th>Value</th>";
     $display .= "</thead><tbody>";
@@ -3045,8 +3046,6 @@ If you would like to submit your data, you can click the button 'Continue to TPP
 }
 
 function summary_create_form(&$form, $form_state){
-    
-    dpm($form_state);
     
     $form['Back'] = array(
       '#type' => 'submit',
