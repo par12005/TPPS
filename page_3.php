@@ -164,7 +164,7 @@ function page_3_create_form(&$form, &$form_state){
     
     if (isset($form_state['triggering_element']) and $form_state['triggering_element']['#value'] != 'Click here to update map'){
         $form['tree-accession']['map-button']['#suffix'] .= '
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD3Sf1HjYbjoT1f8LIZNDc2aIMteKf0yM4"
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY"
     async defer></script>
     <style>
       #map_wrapper {
