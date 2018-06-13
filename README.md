@@ -218,7 +218,6 @@ After the data has been submitted and approved, the user will recieve an email w
 - Mini-map view on sidebar
 - Parse and load content from genotype files to CHADO
 - Parse and load content from phenotype files to CHADO
-- Update Google Maps API and Google Maps JavaScript API keys
 
 # Resources
 
