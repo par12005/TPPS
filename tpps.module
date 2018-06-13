@@ -120,7 +120,7 @@ function tpps_tab_create($type, $user, $name = NULL){
             ->condition($and)
             ->execute();
         
-        dpm($results);
+        //dpm($results);
     }
     
     $results = db_select("public.variable", "variable")
@@ -128,7 +128,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         ->condition('name', db_like($state_name) . '%', 'LIKE')
         ->execute();
     
-    $display = 
+    $style = 
     '<style>
         .tpps_profile_tab {
             background: #ffffff;
@@ -137,7 +137,7 @@ function tpps_tab_create($type, $user, $name = NULL){
             padding: 0px 10px;
         }
     </style>';
-    $display .= "<label for='tpps_incomplete_table'>Incomplete Submissions</label><div class='tpps_profile_tab'><table id='tpps_incomplete_table' style='width:-webkit-fill-available' border='1'><thead>";
+    $display = "<label for='tpps_incomplete_table'>Incomplete Submissions</label><div class='tpps_profile_tab'><table id='tpps_incomplete_table' style='width:-webkit-fill-available' border='1'><thead>";
     $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th></th></tr>";
     $display .= "</thead><tbody>";
     
@@ -203,9 +203,15 @@ function tpps_tab_create($type, $user, $name = NULL){
         $display .= "</tr>";
     }
     
-    $display .= "</tbody></table></div><br>";
+    if (!isset($name)){
+        $display = $style;
+    }
+    else {
+        $display .= "</tbody></table></div><br>";
+    }
     
     $state_name = 'tpps_complete_' . $email;
+    $name = NULL;
     
     $results = db_select("public.variable", "variable")
         ->fields('variable')
@@ -268,7 +274,14 @@ function tpps_tab_create($type, $user, $name = NULL){
         $display .= "</tr>";
     }
     
-    $display .= "</tbody></table></div><br>";
+    if (!isset($name)){
+        $display = $style;
+        $display .= "<h2>Could not find any Submissions</h2>";
+        $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=/Drupal/master>here.</a></p>";
+    }
+    else {
+        $display .= "</tbody></table></div><br>";
+    }
     
     return $display;
 }
@@ -2952,10 +2965,21 @@ function front_create_form(&$form, $form_state){
             $name = $item->name;
             $state = variable_get($name, NULL);
             
-            if ($state != NULL and isset($state['saved_values']['Hellopage']['publication']['title']) and $state['saved_values']['Hellopage']['publication']['title'] != NULL){
-                $title = $state['saved_values']['Hellopage']['publication']['title'];
+            if ($state != NULL and isset($state['saved_values']['Hellopage']['publication']['title'])){
+                $title = ($state['saved_values']['Hellopage']['publication']['title'] != NULL) ? $state['saved_values']['Hellopage']['publication']['title'] : "No Title";
                 $tgdr_id = $state['accession'];
                 $options_arr["$tgdr_id"] = "$title";
+            }
+            else {
+                if (isset($state) and !isset($state['saved_values']['Hellopage'])){
+                    variable_del($name);
+                    $and = db_and()
+                        ->condition('accession', $state['accession'])
+                        ->condition('db_id', 95);
+                    $results = db_delete('chado.tpps_dbxref')
+                        ->condition($and)
+                        ->execute();
+                }
             }
         }
         
