@@ -1221,7 +1221,7 @@ function tpps_master($form, &$form_state){
                         margin-bottom: 10px;
 		}
                 
-                .btn-primary[name-op]{
+                .btn-primary[name=op]{
                         margin: 10px 10px 10px 0px;
                 }
                 
