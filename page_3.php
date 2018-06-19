@@ -43,8 +43,13 @@ function page_3_create_form(&$form, &$form_state){
       '#default_value' => isset($values['tree-accession']['no-header']) ? $values['tree-accession']['no-header'] : NULL,
       '#ajax' => array(
         'wrapper' => 'header-wrapper',
-        'callback' => 'tpps_header_callback',
+        'callback' => 'accession_header_callback',
       ),
+      '#states' => ($species_number > 1) ? (array(
+        'visible' => array(
+          ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
+        )
+      )) : NULL,
     );
 	
     $form['tree-accession']['file']['columns'] = array(
@@ -233,6 +238,16 @@ function page_3_create_form(&$form, &$form_state){
               '#tree' => TRUE
             );
             
+            $form['tree-accession']["species-$i"]['no-header'] = array(
+              '#type' => 'checkbox',
+              '#title' => t('My file has no header row'),
+              '#default_value' => isset($values['tree-accession']["species-$i"]['no-header']) ? $values['tree-accession']["species-$i"]['no-header'] : NULL,
+              '#ajax' => array(
+                'wrapper' => "header-$i-wrapper",
+                'callback' => 'accession_header_callback',
+              ),
+            );
+            
             $form['tree-accession']["species-$i"]['file']['columns'] = array(
               '#type' => 'fieldset',
               '#title' => t('<h2>Define Data</h2>'),
@@ -241,76 +256,91 @@ function page_3_create_form(&$form, &$form_state){
                   ':input[name="tree-accession_species-' . $i . '_file_upload_button"]' => array('value' => 'Upload')
                 )
               ),
-              '#description' => 'Please define which columns hold the required data: Tree Identifier and Location'
+              '#description' => 'Please define which columns hold the required data: Tree Identifier and Location',
+              '#prefix' => "<div id=\"header-$i-wrapper\">",
+              '#suffix' => '</div>',
             );
 
             $file = 0;
             if (isset($form_state['values']['tree-accession']["species-$i"]['file']) and $form_state['values']['tree-accession']["species-$i"]['file'] != 0){
                 $file = $form_state['values']['tree-accession']["species-$i"]['file'];
+                $form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'] = $file;
             }
             elseif (isset($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file']) and $form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'] != 0){
                 $file = $form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'];
             }
             
             if ($file != 0){
-                $file = file_load($file);
-                $file_name = $file->uri;
-                
-                //dpm($file);
-                //dpm($file_name);
+                if (($file = file_load($file))){
+                    $file_name = $file->uri;
 
-                $location = drupal_realpath("$file_name");
-                $content = parse_xlsx($location);
+                    $location = drupal_realpath("$file_name");
+                    $content = parse_xlsx($location);
+                    $no_header = FALSE;
 
-                $column_options = array(
-                  '0' => 'N/A',
-                  '1' => 'Tree Identifier',
-                  '2' => 'Country',
-                  '3' => 'State',
-                  '8' => 'County',
-                  '9' => 'District',
-                  '4' => 'Latitude',
-                  '5' => 'Longitude',
-                );
+                    if (isset($form_state['complete form']['tree-accession']["species-$i"]['no-header']['#value']) and $form_state['complete form']['tree-accession']["species-$i"]['no-header']['#value'] == 1){
+                        tpps_content_no_header($content);
+                        $no_header = TRUE;
+                    }
+                    elseif (!isset($form_state['complete form']['tree-accession']["species-$i"]['no-header']['#value']) and isset($values['tree-accession']["species-$i"]['no-header']) and $values['tree-accession']["species-$i"]['no-header'] == 1){
+                        tpps_content_no_header($content);
+                        $no_header = TRUE;
+                    }
 
-                $first = TRUE;
-
-                foreach ($content['headers'] as $item){
-                    $form['tree-accession']["species-$i"]['file']['columns'][$item] = array(
-                      '#type' => 'select',
-                      '#title' => t($item),
-                      '#options' => $column_options,
-                      '#default_value' => isset($values['tree-accession']["species-$i"]['file-columns'][$item]) ? $values['tree-accession']["species-$i"]['file-columns'][$item] : 0,
-                      '#prefix' => "<td>",
-                      '#suffix' => "</td>",
-                      '#attributes' => array(
-                        'data-toggle' => array('tooltip'),
-                        'data-placement' => array('left'),
-                        'title' => array("Select the type of data the '$item' column holds")
-                      )
+                    $column_options = array(
+                      '0' => 'N/A',
+                      '1' => 'Tree Identifier',
+                      '2' => 'Country',
+                      '3' => 'State',
+                      '8' => 'County',
+                      '9' => 'District',
+                      '4' => 'Latitude',
+                      '5' => 'Longitude',
                     );
 
-                    if ($first){
-                        $first = FALSE;
-                        $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'];
-                    }
-                }
+                    $first = TRUE;
 
-                // display sample data
-                $display = "</tr>";
-                for ($j = 0; $j < 3; $j++){
-                    if (isset($content[$j])){
-                        $display .= "<tr>";
-                        foreach ($content['headers'] as $item){
-                            $display .= "<th>{$content[$j][$item]}</th>";
+                    foreach ($content['headers'] as $item){
+                        $form['tree-accession']["species-$i"]['file']['columns'][$item] = array(
+                          '#type' => 'select',
+                          '#title' => t($item),
+                          '#options' => $column_options,
+                          '#default_value' => isset($values['tree-accession']["species-$i"]['file-columns'][$item]) ? $values['tree-accession']["species-$i"]['file-columns'][$item] : 0,
+                          '#prefix' => "<td>",
+                          '#suffix' => "</td>",
+                          '#attributes' => array(
+                            'data-toggle' => array('tooltip'),
+                            'data-placement' => array('left'),
+                            'title' => array("Select the type of data the '$item' column holds")
+                          )
+                        );
+
+                        if ($first){
+                            $first = FALSE;
+                            $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $form['tree-accession']["species-$i"]['file']['columns'][$item]['#prefix'];
                         }
-                        $display .= "</tr>";
+
+                        if ($no_header){
+                            $form['tree-accession']["species-$i"]['file']['columns'][$item]['#title'] = '';
+                            $form['tree-accession']["species-$i"]['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
+                        }
                     }
+
+                    // display sample data
+                    $display = "</tr>";
+                    for ($j = 0; $j < 3; $j++){
+                        if (isset($content[$j])){
+                            $display .= "<tr>";
+                            foreach ($content['headers'] as $item){
+                                $display .= "<th>{$content[$j][$item]}</th>";
+                            }
+                            $display .= "</tr>";
+                        }
+                    }
+                    $display .= "</tbody></table></div>";
+
+                    $form['tree-accession']["species-$i"]['file']['columns'][$item]['#suffix'] .= $display;
                 }
-                $display .= "</tbody></table></div>";
-
-                $form['tree-accession']["species-$i"]['file']['columns'][$item]['#suffix'] .= $display;
-
             }	
         }
     }
@@ -333,8 +363,13 @@ function page_3_create_form(&$form, &$form_state){
     return $form;
 }
 
-function tpps_header_callback($form, $form_state){
-    return $form['tree-accession']['file']['columns'];
+function accession_header_callback($form, $form_state){
+    if (isset($form_state['values']['tree-accession']['check']) and $form_state['values']['tree-accession']['check']){
+        return $form['tree-accession'][$form_state['triggering_element']['#parents'][1]]['file']['columns'];
+    }
+    else {
+        return $form['tree-accession']['file']['columns'];
+    }
 }
 
 function page_3_multi_map($form, $form_state){
@@ -463,9 +498,9 @@ function page_3_validate_form(&$form, &$form_state){
 
                     $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
 
-                    foreach ($form['tree-accession']["species-$i"]['file']['columns'] as $req => $val){
+                    foreach ($form['tree-accession']["species-$i"]['file']['#value']['columns'] as $req => $val){
                         if ($req[0] != '#'){
-                            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req] = $form['tree-accession']["species-$i"]['file']['columns'][$req]['#value'];
+                            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req] = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$req];
 
                             $col_val = $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req];
                             if ($col_val != '0'){
