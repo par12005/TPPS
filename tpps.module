@@ -1102,7 +1102,6 @@ function tpps_standard_coord($raw_coordinate){
 function tpps_page_build(&$page){
     
     //dpm($page['content']['system_main']['step']['#default_value']);
-    dpm($page['content']['system_main']['form_id']['#value']);
     
     if (!isset($page['content']['system_main']['form_id']['#value']) or $page['content']['system_main']['form_id']['#value'] != 'tpps_master'){
         return $page;
