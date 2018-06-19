@@ -462,52 +462,5 @@ function page_1_validate_form(&$form, &$form_state){
 }
 
 function page_1_submit_form(&$form, &$form_state){
-    /*//    Values in the fields need to be submitted to a junk table in chado schema
-//    $form_state['values'] for secondary author textfield is blank?
-    $primaryAuthor = $form_state['values']['primaryAuthor'];
-    $orginization = $form_state['values']['organization'];
-    $publicationStatus = $form_state['values']['publicationStatus'];
-    $journal = $form_state['values']['journal'];
-    $title = $form_state['values']['title'];
-    $year = $form_state['values']['year'];
-    $abstract = $form_state['values']['abstract'];
-    
-    $submitArr = array($primaryAuthor, $orginization, $publicationStatus, $journal, $title, $year, $abstract);
-    for ($i = 0; $i <= 10; $i++){
-        if ($form_state['values']['secondaryAuthorForm' . $i] == 'Other'){
-//            send $form_state['values']['secondaryAuthorCustomForm' . $i] to temporary table
-        }
-        
-        else{
-//            send $form_state['values']['secondaryAuthorForm' . $i] to temporary table
-        }
-        
-        if ($form_state['values']['species' . $i] == 'Other'){
-//            send $form_state['values']['customSpecies' . $i] to temporary table            
-        }
-        
-        else{
-//            send $form_state['values']['species' . $i] to temporary table
-        }
-    }
-
-//     foreach($submitArr as $r) {
-//        db_query('INSERT INTO chado.custom_table_version 2 (custom_field) '
-//            . 'VALUES (' . $r 
-//            . ' )');
-//    }
-//    
-//     $authorResults = db_query('SELECT contact.contact_id, contact.name FROM chado.contact WHERE contact.type_id = 71 ORDER BY contact.name LIMIT 200');
-//    
-//    
-//    
-//    $rawKeywords = $form_state['values']['keywords']; 
-//    $keyWords = explode(',', $rawKeywords);      
-    
-//    $secondaryAuthorArr = array();
-//    
-//    }*/
-    
-
     $form_state['redirect'] = 'secondPage';
 }

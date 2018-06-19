@@ -36,6 +36,16 @@ function page_3_create_form(&$form, &$form_state){
       )) : NULL,
       '#tree' => TRUE
     );
+    
+    $form['tree-accession']['no-header'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('My file has no header row'),
+      '#default_value' => isset($values['tree-accession']['no-header']) ? $values['tree-accession']['no-header'] : NULL,
+      '#ajax' => array(
+        'wrapper' => 'header-wrapper',
+        'callback' => 'tpps_header_callback',
+      ),
+    );
 	
     $form['tree-accession']['file']['columns'] = array(
       '#type' => 'fieldset',
@@ -45,7 +55,9 @@ function page_3_create_form(&$form, &$form_state){
           ':input[name="tree-accession_file_upload_button"]' => array('value' => 'Upload')
         )
       ),
-      '#description' => 'Please define which columns hold the required data: Tree Identifier and Location'
+      '#description' => 'Please define which columns hold the required data: Tree Identifier and Location',
+      '#prefix' => '<div id="header-wrapper">',
+      '#suffix' => '</div>',
     );
     
     $file = 0;
@@ -56,12 +68,24 @@ function page_3_create_form(&$form, &$form_state){
         $file = $form_state['saved_values']['thirdPage']['tree-accession']['file'];
     }
     
+    //dpm($form_state);
+    
     if ($file != 0){
         if (($file = file_load($file))){
             $file_name = $file->uri;
 
             $location = drupal_realpath("$file_name");
             $content = parse_xlsx($location);
+            $no_header = FALSE;
+            
+            if (isset($form_state['complete form']['tree-accession']['no-header']['#value']) and $form_state['complete form']['tree-accession']['no-header']['#value'] == 1){
+                tpps_content_no_header($content);
+                $no_header = TRUE;
+            }
+            elseif (!isset($form_state['complete form']['tree-accession']['no-header']['#value']) and isset($values['tree-accession']['no-header']) and $values['tree-accession']['no-header'] == 1){
+                tpps_content_no_header($content);
+                $no_header = TRUE;
+            }
 
             $column_options = array(
               '0' => 'N/A',
@@ -96,6 +120,11 @@ function page_3_create_form(&$form, &$form_state){
                 if ($first){
                     $first = FALSE;
                     $form['tree-accession']['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $form['tree-accession']['file']['columns'][$item]['#prefix'];
+                }
+                
+                if ($no_header){
+                    $form['tree-accession']['file']['columns'][$item]['#title'] = '';
+                    $form['tree-accession']['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
                 }
             }
 
@@ -304,9 +333,14 @@ function page_3_create_form(&$form, &$form_state){
     return $form;
 }
 
+function tpps_header_callback($form, $form_state){
+    return $form['tree-accession']['file']['columns'];
+}
+
 function page_3_multi_map($form, $form_state){
     
     if (isset($form['tree-accession']['file']['#value']['fid']) and $form['tree-accession']['file']['#value']['fid'] != '0'){
+        //dpm($form_state['values']['tree-accession']['no-header']);
         $file = $form_state['values']['tree-accession']['file']['fid'];
         $columns = $form_state['values']['tree-accession']['file']['columns'];
         
@@ -332,10 +366,16 @@ function page_3_multi_map($form, $form_state){
 
             $location = drupal_realpath("$file_name");
             $content = parse_xlsx($location);
-            
+
+            if (isset($form_state['values']['tree-accession']['no-header']) and $form_state['values']['tree-accession']['no-header'] == 1){
+                tpps_content_no_header($content);
+            }
+
             for ($i = 0; $i < count($content) - 1; $i++){
-                $pair = explode(',', tpps_standard_coord("{$content[$i][$lat_col]},{$content[$i][$long_col]}"));
-                array_push($standards, array("location $i", $pair[0], $pair[1]));
+                if (($coord = tpps_standard_coord("{$content[$i][$lat_col]},{$content[$i][$long_col]}"))){
+                    $pair = explode(',', $coord);
+                    array_push($standards, array("location $i", $pair[0], $pair[1]));
+                }
             }
 
         }
