@@ -1102,6 +1102,11 @@ function tpps_standard_coord($raw_coordinate){
 function tpps_page_build(&$page){
     
     //dpm($page['content']['system_main']['step']['#default_value']);
+    dpm($page['content']['system_main']['form_id']['#value']);
+    
+    if (!isset($page['content']['system_main']['form_id']['#value']) or $page['content']['system_main']['form_id']['#value'] != 'tpps_master'){
+        return $page;
+    }
     
     if (isset($page['content']['system_main']['step']) and $page['content']['system_main']['step']['#default_value'] != 'frontpage' and $page['content']['system_main']['step']['#default_value'] != 'Hellopage'){
         $blockObject = block_load('views', 'tpps_status');
@@ -3230,8 +3235,15 @@ function tpps_block_view_alter(&$data, $block) {
             $data['subject'] = t('TPPS Status');
             $content = "<div class='tgdr_status_block'>";
             global $user;
-            $accession = $_REQUEST['accession'];
-            $form_state = variable_get('tpps_incomplete_' . $user->mail . $accession);
+            if (isset($_REQUEST['accession'])){
+                $accession = $_REQUEST['accession'];
+                $form_state = variable_get('tpps_incomplete_' . $user->mail . $accession);
+            }
+            else {
+                $content .= '</div>';
+                $data['content'] = t($content);
+                break;
+            }
             //dpm($form_state['saved_values']);
             
             //This deals with page 1
