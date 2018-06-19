@@ -7,8 +7,6 @@ function page_4_create_form(&$form, &$form_state){
         $values = array();
     }
     
-    //dpm($form_state['saved_values']['fourthPage']);
-    
     function phenotype(&$form, $values, $id, &$form_state){
         
         $fields = array(
@@ -263,7 +261,22 @@ function page_4_create_form(&$form, &$form_state){
           ),
           '#tree' => TRUE
         );
-        
+
+        $fields['no-header'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('My file has no header row'),
+          '#default_value' => isset($values[$id]['phenotype']['no-header']) ? $values[$id]['phenotype']['no-header'] : NULL,
+          '#ajax' => array(
+            'wrapper' => "header-$id-wrapper",
+            'callback' => 'metadata_header_callback',
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE)
+            )
+          ),
+        );
+
         $fields['metadata']['columns'] = array(
           '#type' => 'fieldset',
           '#title' => t('<h2>Define Data</h2>'),
@@ -272,7 +285,9 @@ function page_4_create_form(&$form, &$form_state){
               ':input[name="' . $id . '_phenotype_metadata_upload_button"]' => array('value' => 'Upload')
             )
           ),
-          '#description' => 'Please define which columns hold the required data: Phenotype name'
+          '#description' => 'Please define which columns hold the required data: Phenotype name',
+          '#prefix' => "<div id=\"header-$id-wrapper\">",
+          '#suffix' => '</div>',
         );
 
         $file = 0;
@@ -291,7 +306,17 @@ function page_4_create_form(&$form, &$form_state){
 
                 $location = drupal_realpath("public://$file_name");
                 $content = parse_xlsx($location);
+                $no_header = FALSE;
 
+                if (isset($form_state['complete form']["$id"]['phenotype']['no-header']['#value']) and $form_state['complete form']["$id"]['phenotype']['no-header']['#value'] == 1){
+                    tpps_content_no_header($content);
+                    $no_header = TRUE;
+                }
+                elseif (!isset($form_state['complete form']["$id"]['phenotype']['no-header']['#value']) and isset($values["$id"]['phenotype']['no-header']) and $values["$id"]['phenotype']['no-header'] == 1){
+                    tpps_content_no_header($content);
+                    $no_header = TRUE;
+                }
+                
                 $column_options = array(
                   'N/A',
                   'Phenotype Name/Identifier',
@@ -317,6 +342,11 @@ function page_4_create_form(&$form, &$form_state){
                     if ($first){
                         $first = FALSE;
                         $fields['metadata']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $fields['metadata']['columns'][$item]['#prefix'];
+                    }
+
+                    if ($no_header){
+                        $fields['metadata']['columns'][$item]['#title'] = '';
+                        $fields['metadata']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
                     }
                 }
 
@@ -371,6 +401,21 @@ function page_4_create_form(&$form, &$form_state){
           '#tree' => TRUE
         );
         
+        $fields['no-header'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('My file has no header row'),
+          '#default_value' => isset($values[$id]['phenotype']['no-header']) ? $values[$id]['phenotype']['no-header'] : NULL,
+          '#ajax' => array(
+            'wrapper' => "genotype-header-$id-wrapper",
+            'callback' => 'genotype_header_callback',
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE)
+            )
+          ),
+        );
+
         $fields['file']['columns'] = array(
           '#type' => 'fieldset',
           '#title' => t('<h2>Define Data</h2>'),
@@ -379,7 +424,9 @@ function page_4_create_form(&$form, &$form_state){
               ':input[name="' . $id . '_genotype_file_upload_button"]' => array('value' => 'Upload')
             )
           ),
-          '#description' => 'Please define which columns hold the required data: Tree Identifier'
+          '#description' => 'Please define which columns hold the required data: Tree Identifier',
+          '#prefix' => "<div id=\"genotype-header-$id-wrapper\">",
+          '#suffix' => '</div>',
         );
         
         $file = 0;
@@ -393,11 +440,20 @@ function page_4_create_form(&$form, &$form_state){
         
         if ($file != 0){
             if (($file = file_load($file))){
-                $file_name = explode('//', $file->uri);
-                $file_name = $file_name[1];
+                $file_name = $file->uri;
 
-                $location = drupal_realpath("public://$file_name");
+                $location = drupal_realpath("$file_name");
                 $content = parse_xlsx($location);
+                $no_header = FALSE;
+
+                if (isset($form_state['complete form'][$id]['genotype']['no-header']['#value']) and $form_state['complete form'][$id]['genotype']['no-header']['#value'] == 1){
+                    tpps_content_no_header($content);
+                    $no_header = TRUE;
+                }
+                elseif (!isset($form_state['complete form'][$id]['genotype']['no-header']['#value']) and isset($values[$id]['genotype']['no-header']) and $values[$id]['genotype']['no-header'] == 1){
+                    tpps_content_no_header($content);
+                    $no_header = TRUE;
+                }
 
                 $column_options = array(
                   'N/A',
@@ -424,6 +480,11 @@ function page_4_create_form(&$form, &$form_state){
                     if ($first){
                         $first = FALSE;
                         $fields['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
+                    }
+
+                    if ($no_header){
+                        $fields['file']['columns'][$item]['#title'] = '';
+                        $fields['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
                     }
                 }
 
@@ -489,7 +550,17 @@ function page_4_create_form(&$form, &$form_state){
               '#default_value' => isset($values["organism-$i"]['phenotype']['file']) ? $values["organism-$i"]['phenotype']['file'] : NULL,
               '#tree' => TRUE,
             );
-            
+
+            $form["organism-$i"]['phenotype']['file-no-header'] = array(
+              '#type' => 'checkbox',
+              '#title' => t('My file has no header row'),
+              '#default_value' => isset($values["organism-$i"]['phenotype']['file-no-header']) ? $values["organism-$i"]['phenotype']['file-no-header'] : NULL,
+              '#ajax' => array(
+                'wrapper' => "phenotype-header-$i-wrapper",
+                'callback' => 'phenotype_header_callback',
+              ),
+            );
+
             $form["organism-$i"]['phenotype']['file']['columns'] = array(
               '#type' => 'fieldset',
               '#title' => t('<h2>Define Data</h2>'),
@@ -498,7 +569,9 @@ function page_4_create_form(&$form, &$form_state){
                   ':input[name="organism-' . $i . '_phenotype_file_upload_button"]' => array('value' => 'Upload')
                 )
               ),
-              '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)'
+              '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)',
+              '#prefix' => "<div id=\"phenotype-header$i-wrapper\">",
+              '#suffix' => '</div>',
             );
 
             $file = 0;
@@ -512,11 +585,20 @@ function page_4_create_form(&$form, &$form_state){
             
             if ($file != 0){
                 if (($file = file_load($file))){
-                    $file_name = explode('//', $file->uri);
-                    $file_name = $file_name[1];
+                    $file_name = $file->uri;
 
-                    $location = drupal_realpath("public://$file_name");
+                    $location = drupal_realpath("$file_name");
                     $content = parse_xlsx($location);
+                    $no_header = FALSE;
+
+                    if (isset($form_state['complete form']["organism-$i"]['phenotype']['file-no-header']['#value']) and $form_state['complete form']["organism-$i"]['phenotype']['file-no-header']['#value'] == 1){
+                        tpps_content_no_header($content);
+                        $no_header = TRUE;
+                    }
+                    elseif (!isset($form_state['complete form']["organism-$i"]['phenotype']['file-no-header']['#value']) and isset($values["organism-$i"]['phenotype']['file-no-header']) and $values["organism-$i"]['phenotype']['file-no-header'] == 1){
+                        tpps_content_no_header($content);
+                        $no_header = TRUE;
+                    }
 
                     $column_options = array(
                       'N/A',
@@ -545,6 +627,11 @@ function page_4_create_form(&$form, &$form_state){
                         if ($first){
                             $first = FALSE;
                             $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $form["organism-$i"]['phenotype']['file']['columns'][$item]['#prefix'];
+                        }
+
+                        if ($no_header){
+                            $form["organism-$i"]['phenotype']['file']['columns'][$item]['#title'] = '';
+                            $form["organism-$i"]['phenotype']['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
                         }
                     }
 
@@ -594,6 +681,18 @@ function ajax_bioproject_callback(&$form, $form_state){
     $ajax_id = $form_state['triggering_element']['#parents'][0];
     
     return $form[$ajax_id]['genotype']['assembly-auto'];
+}
+
+function metadata_header_callback($form, $form_state){
+    return $form[$form_state['triggering_element']['#parents'][0]]['phenotype']['no-header'];
+}
+
+function genotype_header_callback($form, $form_state){
+    return $form[$form_state['triggering_element']['#parents'][0]]['genotype']['no-header'];
+}
+
+function phenotype_header_callback($form, $form_state){
+    return $form[$form_state['triggering_element']['#parents'][0]]['phenotype']['file-no-header'];
 }
 
 function page_4_ref(&$fields, &$form_state, $values, $id){
