@@ -201,7 +201,7 @@ function page_3_create_form(&$form, &$form_state){
     async defer></script>
     <style>
       #map_wrapper {
-        height: 400px;
+        height: 450px;
       }
     </style>';
     }
