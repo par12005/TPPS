@@ -148,6 +148,21 @@ function page_1_create_form(&$form, $form_state){
               '#tree' => TRUE,
             );
             
+            $form['publication']['secondaryAuthors']['no-header'] = array(
+              '#type' => 'checkbox',
+              '#title' => t('My file has no header row'),
+              '#default_value' => isset($values['publication']['secondaryAuthors']['no-header']) ? $values['publication']['secondaryAuthors']['no-header'] : NULL,
+              '#ajax' => array(
+                'wrapper' => 'header-wrapper',
+                'callback' => 'authors_header_callback',
+              ),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
+                )
+              ),
+            );
+            
             $form['publication']['secondaryAuthors']['file']['columns'] = array(
               '#type' => 'fieldset',
               '#title' => t('<h2>Define Data</h2>'),
@@ -156,7 +171,9 @@ function page_1_create_form(&$form, $form_state){
                   ':input[name="publication_secondaryAuthors_file_upload_button"]' => array('value' => 'Upload')
                 )
               ),
-              '#description' => 'Please define which columns hold the required data: Last Name, First Name, and Middle Initial'
+              '#description' => 'Please define which columns hold the required data: Last Name, First Name, and Middle Initial',
+              '#prefix' => '<div id="header-wrapper">',
+              '#suffix' => '</div>'
             );
             
             $file = 0;
@@ -169,10 +186,20 @@ function page_1_create_form(&$form, $form_state){
             
             if ($file != 0){
                 if (($file = file_load($file))){
-                    $file_name = explode('//', $file->uri);
-                    $file_name = $file_name[1];
-                    $location = drupal_realpath("public://$file_name");
+                    $file_name = $file->uri;
+                    
+                    $location = drupal_realpath("$file_name");
                     $content = parse_xlsx($location);
+                    $no_header = FALSE;
+
+                    if (isset($form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value']) and $form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value'] == 1){
+                        tpps_content_no_header($content);
+                        $no_header = TRUE;
+                    }
+                    elseif (!isset($form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value']) and isset($values['publication']['secondaryAuthors']['no-header']) and $values['publication']['secondaryAuthors']['no-header'] == 1){
+                        tpps_content_no_header($content);
+                        $no_header = TRUE;
+                    }
 
                     $column_options = array(
                       'N/A',
@@ -201,6 +228,11 @@ function page_1_create_form(&$form, $form_state){
                         if ($first){
                             $first = FALSE;
                             $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:scroll'><table border='1'><tbody><tr>" . $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'];
+                        }
+
+                        if ($no_header){
+                            $form['publication']['secondaryAuthors']['file']['columns'][$item]['#title'] = '';
+                            $form['publication']['secondaryAuthors']['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
                         }
                     }
 
@@ -352,6 +384,10 @@ function page_1_create_form(&$form, $form_state){
 
 function page_1_pub_status($form, $form_state){
     return $form['publication']['year'];
+}
+
+function authors_header_callback($form, $form_state){
+    return $form['publication']['secondaryAuthors']['file']['columns'];
 }
 
 function page_1_validate_form(&$form, &$form_state){

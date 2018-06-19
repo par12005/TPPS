@@ -51,7 +51,7 @@ function page_3_create_form(&$form, &$form_state){
         )
       )) : NULL,
     );
-	
+    
     $form['tree-accession']['file']['columns'] = array(
       '#type' => 'fieldset',
       '#title' => t('<h2>Define Data</h2>'),
