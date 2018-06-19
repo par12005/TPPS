@@ -3289,11 +3289,26 @@ function tpps_block_view_alter(&$data, $block) {
                 $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
                 if ($form_state['saved_values']['secondPage']['studyLocation']['type'] == '2'){
                     $location = $form_state['saved_values']['secondPage']['studyLocation']['custom'];
+                    $query = $location;
                 }
                 else {
                     $location = $form_state['saved_values']['secondPage']['studyLocation']['coordinates'];
+                    $standard_coordinate = tpps_standard_coord($location);
+                    if ($standard_coordinate){
+                        $query = $standard_coordinate;
+                    }
                 }
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location: ' . filter_xss(check_plain($location)) .  "<br />";
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location: <a id="sidebar_map">' . filter_xss(check_plain($location)) .  "</a><br>";
+                if (isset($query)){
+                    $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
+                    $js = "jQuery(document).ready(function ($) {
+                        jQuery(\"#sidebar_map\").click(function() {
+                            jQuery(\"#sidebar_map_wrapper\").remove();
+                            jQuery(\"#sidebar_map\").after( \"<div id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
+                        });
+                    });";
+                    drupal_add_js($js, 'inline');
+                }
                 $type = $form_state['saved_values']['secondPage']['studyType'];
                 $type_arr = array(
                   0 => '- Select -',
