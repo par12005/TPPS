@@ -413,7 +413,11 @@ function page_4_create_form(&$form, &$form_state){
           ),
           '#states' => array(
             'visible' => array(
-              ':input[name="' . $id . '[genotype][check]"]' => array('checked' => TRUE)
+              array(
+                array(':input[name="' . $id . '[genotype][marker-type][SSRs/cpSSRs]"]' => array('checked' => true)),
+                'or',
+                array(':input[name="' . $id . '[genotype][marker-type][Other]"]' => array('checked' => true))
+              )
             )
           ),
         );
