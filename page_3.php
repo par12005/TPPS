@@ -15,6 +15,7 @@ function page_3_create_form(&$form, &$form_state){
     
     $file_description = 'Columns with information describing the Identifier of the tree and the location of the tree are required.';
     $species_number = $form_state['saved_values']['Hellopage']['organism']['number'];
+    $file_upload_location = 'public://tpps_accession';
     
     if ($form_state['saved_values']['secondPage']['studyType'] == '4'){
         $file_description .= ' Location columns should describe the location of the source tree for the Common Garden.';
@@ -23,7 +24,7 @@ function page_3_create_form(&$form, &$form_state){
     $form['tree-accession']['file'] = array(
       '#type' => 'managed_file',
       '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of trees used in this study:"),
-      '#upload_location' => 'public://',
+      '#upload_location' => "$file_upload_location",
       '#upload_validators' => array(
         'file_validate_extensions' => array('txt csv xlsx'),
       ),
@@ -229,7 +230,7 @@ function page_3_create_form(&$form, &$form_state){
             $form['tree-accession']["species-$i"]['file'] = array(
               '#type' => 'managed_file',
               '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of the $name trees used in this study:"),
-              '#upload_location' => 'public://',
+              '#upload_location' => "$file_upload_location",
               '#upload_validators' => array(
                 'file_validate_extensions' => array('txt csv xlsx'),
               ),
@@ -530,6 +531,25 @@ function page_3_validate_form(&$form, &$form_state){
                 else{
                     form_set_error("tree-accession][species-$i][file", "Species $i Tree Accession file: field is required.");
                 }
+            }
+        }
+        
+        if (form_get_errors() and ($species_number == 1 or $form_state['values']['tree-accession']['check'] == '0')){
+            $form_state['rebuild'] = TRUE;
+            $new_form = drupal_rebuild_form('tpps_master', $form_state, $form);
+            $form['tree-accession']['file']['upload'] = $new_form['tree-accession']['file']['upload'];
+            $form['tree-accession']['file']['columns'] = $new_form['tree-accession']['file']['columns'];
+            $form['tree-accession']['file']['upload']['#id'] = "edit-tree-accession-file-upload";
+            $form['tree-accession']['file']['columns']['#id'] = "edit-tree-accession-file-columns";
+        }
+        elseif (form_get_errors()){
+            $form_state['rebuild'] = TRUE;
+            $new_form = drupal_rebuild_form('tpps_master', $form_state, $form);
+            for ($i = 1; $i <= $species_number; $i++){
+                $form['tree-accession']["species-$i"]['file']['upload'] = $new_form['tree-accession']["species-$i"]['file']['upload'];
+                $form['tree-accession']["species-$i"]['file']['columns'] = $new_form['tree-accession']["species-$i"]['file']['columns'];
+                $form['tree-accession']["species-$i"]['file']['upload']['#id'] = "edit-tree-accession-species-$i-file-upload";
+                $form['tree-accession']["species-$i"]['file']['columns']['#id'] = "edit-tree-accession-species-$i-file-columns";
             }
         }
     }

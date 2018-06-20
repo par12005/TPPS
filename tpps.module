@@ -644,9 +644,11 @@ function tpps_completed_display($form, $form_state){
     }
     else {
         $file = $values['thirdPage']['tree-accession']['file'];
-        $filename = file_load($file)->filename;
-        $file_url = check_plain(file_create_url(file_load($file)->uri));
-        $data['Tree Accession File'] = "<a href='$file_url' target='blank'>$filename</a>";
+        if (($file = file_load($file))){
+            $filename = $file->filename;
+            $file_url = check_plain(file_create_url($file->uri));
+            $data['Tree Accession File'] = "<a href='$file_url' target='blank'>$filename</a>";
+        }
     }
     
     $units_options = array(
@@ -1017,15 +1019,30 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name){
     $file_1 = file_load($fid_1);
     $file_2 = file_load($fid_2);
     
-    $file_1_name = explode('//', $file_1->uri);
-    $file_1_name = $file_1_name[1];
-    $file_2_name = explode('//', $file_2->uri);
-    $file_2_name = $file_2_name[1];
+    $file_1_name = $file_1->uri;
+    $file_2_name = $file_2->uri;
     
-    $file_1_location = drupal_realpath("public://$file_1_name");
-    $file_2_location = drupal_realpath("public://$file_2_name");
+    $file_1_location = drupal_realpath("$file_1_name");
+    $file_2_location = drupal_realpath("$file_2_name");
     $file_1_content = parse_xlsx($file_1_location);
     $file_2_content = parse_xlsx($file_2_location);
+    
+    if (gettype($file_1_id_name) == 'integer'){
+        $file_1_id_name = $file_1_content['headers'][$file_1_id_name];
+        $last_row = array();
+        foreach($file_1_content['headers'] as $num => $val){
+            $last_row[$val] = $val;
+        }
+        $file_1_content[] = $last_row;
+    }
+    if (gettype($file_2_id_name) == 'integer'){
+        $file_2_id_name = $file_2_content['headers'][$file_2_id_name];
+        $last_row = array();
+        foreach($file_2_content['headers'] as $num => $val){
+            $last_row[$val] = $val;
+        }
+        $file_2_content[] = $last_row;
+    }
     
     $missing_ids = array();
     
@@ -1102,7 +1119,6 @@ function tpps_standard_coord($raw_coordinate){
 function tpps_page_build(&$page){
     
     //dpm($page['content']['system_main']['step']['#default_value']);
-    
     if (!isset($page['content']['system_main']['form_id']['#value']) or $page['content']['system_main']['form_id']['#value'] != 'tpps_master'){
         return $page;
     }
@@ -1364,7 +1380,7 @@ function tpps_master($form, &$form_state){
     return $form;
 }
 
-function tpps_master_validate($form, &$form_state){
+function tpps_master_validate(&$form, &$form_state){
     
     if ($form_state['triggering_element']['#value'] == 'Back' or $form_state['triggering_element']['#value'] == 'Save'){
         
@@ -1483,13 +1499,11 @@ function tpps_master_validate($form, &$form_state){
             break;
     }
     
-    $errors = form_get_errors();
-    if ($errors == NULL){
+    if (!form_get_errors()){
         $form_state['values']['#cleared'] = TRUE;
         //dpm($form_state['values']['#cleared']);
     }
     else {
-        //dpm($errors);
         $form_state['values']['#cleared'] = FALSE;
     }
 }
@@ -3183,7 +3197,7 @@ function tpps_test_page_validate($form, &$form_state){
         
         form_set_error('Next', 'error');
     }
-    /*for ($i = 0; $i < 500; $i++){
+    /*for ($i = 0; $i < 1000; $i++){
         $file = file_load($i);
         if ($file){
             //dpm($i);
@@ -3298,7 +3312,7 @@ function tpps_block_view_alter(&$data, $block) {
                         $query = $standard_coordinate;
                     }
                 }
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location: <a id="sidebar_map">' . filter_xss(check_plain($location)) .  "</a><br>";
+                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location: <a id="sidebar_map" style="cursor:pointer">' . filter_xss(check_plain($location)) .  "</a><br>";
                 if (isset($query)){
                     $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
                     $js = "jQuery(document).ready(function ($) {

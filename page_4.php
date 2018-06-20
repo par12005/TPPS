@@ -7,7 +7,10 @@ function page_4_create_form(&$form, &$form_state){
         $values = array();
     }
     
-    function phenotype(&$form, $values, $id, &$form_state){
+    $genotype_upload_location = 'public://tpps_genotype';
+    $phenotype_upload_location = 'public://tpps_phenotype';
+    
+    function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_location){
         
         $fields = array(
           '#type' => 'fieldset',
@@ -249,7 +252,7 @@ function page_4_create_form(&$form, &$form_state){
         $fields['metadata'] = array(
           '#type' => 'managed_file',
           '#title' => t('Please upload a file containing columns with the name and description of each of your phenotypes'),
-          '#upload_location' => 'public://',
+          '#upload_location' => "$phenotype_upload_location",
           '#upload_validators' => array(
             'file_validate_extensions' => array('csv tsv xlsx')
           ),
@@ -301,10 +304,9 @@ function page_4_create_form(&$form, &$form_state){
 
         if ($file != 0){
             if (($file = file_load($file))){
-                $file_name = explode('//', $file->uri);
-                $file_name = $file_name[1];
+                $file_name = $file->uri;
 
-                $location = drupal_realpath("public://$file_name");
+                $location = drupal_realpath("$file_name");
                 $content = parse_xlsx($location);
                 $no_header = FALSE;
 
@@ -370,7 +372,7 @@ function page_4_create_form(&$form, &$form_state){
         return $fields;
     }
     
-    function genotype(&$form, &$form_state, $values, $id){
+    function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location){
         
         $fields = array(
           '#type' => 'fieldset',
@@ -379,12 +381,12 @@ function page_4_create_form(&$form, &$form_state){
         
         page_4_marker_info($fields, $values, $id);
         
-        page_4_ref($fields, $form_state, $values, $id);
+        page_4_ref($fields, $form_state, $values, $id, $genotype_upload_location);
         
         $fields['file'] = array(
           '#type' => 'managed_file',
           '#title' => t('Genotype File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study:'),
-          '#upload_location' => 'public://',
+          '#upload_location' => "$genotype_upload_location",
           '#upload_validators' => array(
             'file_validate_extensions' => array('xlsx')
           ),
@@ -404,14 +406,14 @@ function page_4_create_form(&$form, &$form_state){
         $fields['no-header'] = array(
           '#type' => 'checkbox',
           '#title' => t('My file has no header row'),
-          '#default_value' => isset($values[$id]['phenotype']['no-header']) ? $values[$id]['phenotype']['no-header'] : NULL,
+          '#default_value' => isset($values[$id]['genotype']['no-header']) ? $values[$id]['genotype']['no-header'] : NULL,
           '#ajax' => array(
             'wrapper' => "genotype-header-$id-wrapper",
             'callback' => 'genotype_header_callback',
           ),
           '#states' => array(
             'visible' => array(
-              ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE)
+              ':input[name="' . $id . '[genotype][check]"]' => array('checked' => TRUE)
             )
           ),
         );
@@ -508,7 +510,7 @@ function page_4_create_form(&$form, &$form_state){
         $fields['vcf'] = array(
           '#type' => 'managed_file',
           '#title' => t('Genotype VCF File:'),
-          '#upload_location' => 'public://',
+          '#upload_location' => "$genotype_upload_location",
           '#upload_validators' => array(
             'file_validate_extensions' => array('vcf')
           ),
@@ -538,12 +540,12 @@ function page_4_create_form(&$form, &$form_state){
         );
 
         if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
-            $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i", $form_state);
+            $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i", $form_state, $phenotype_upload_location);
             
             $form["organism-$i"]['phenotype']['file'] = array(
               '#type' => 'managed_file',
               '#title' => t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Name, and value for all of your phenotypic data:'),
-              '#upload_location' => 'public://',
+              '#upload_location' => "$phenotype_upload_location",
               '#upload_validators' => array(
                 'file_validate_extensions' => array('csv tsv xlsx')
               ),
@@ -570,7 +572,7 @@ function page_4_create_form(&$form, &$form_state){
                 )
               ),
               '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)',
-              '#prefix' => "<div id=\"phenotype-header$i-wrapper\">",
+              '#prefix' => "<div id=\"phenotype-header-$i-wrapper\">",
               '#suffix' => '</div>',
             );
 
@@ -654,7 +656,7 @@ function page_4_create_form(&$form, &$form_state){
         }
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
-            $form["organism-$i"]['genotype'] = genotype($form, $form_state, $values, "organism-$i");
+            $form["organism-$i"]['genotype'] = genotype($form, $form_state, $values, "organism-$i", $genotype_upload_location);
         }
     }
     
@@ -684,18 +686,18 @@ function ajax_bioproject_callback(&$form, $form_state){
 }
 
 function metadata_header_callback($form, $form_state){
-    return $form[$form_state['triggering_element']['#parents'][0]]['phenotype']['no-header'];
+    return $form[$form_state['triggering_element']['#parents'][0]]['phenotype']['metadata']['columns'];
 }
 
 function genotype_header_callback($form, $form_state){
-    return $form[$form_state['triggering_element']['#parents'][0]]['genotype']['no-header'];
+    return $form[$form_state['triggering_element']['#parents'][0]]['genotype']['file']['columns'];
 }
 
 function phenotype_header_callback($form, $form_state){
-    return $form[$form_state['triggering_element']['#parents'][0]]['phenotype']['file-no-header'];
+    return $form[$form_state['triggering_element']['#parents'][0]]['phenotype']['file']['columns'];
 }
 
-function page_4_ref(&$fields, &$form_state, $values, $id){
+function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_location){
 
     $options = array(
       'key' => 'filename',
@@ -832,7 +834,7 @@ function page_4_ref(&$fields, &$form_state, $values, $id){
     $fields['assembly-user'] = array(
       '#type' => 'managed_file',
       '#title' => t('Assembly File: please provide an assembly file in FASTA or Multi-FASTA format'),
-      '#upload_location' => 'public://',
+      '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
         'file_validate_extensions' => array('fsa_nt')
       ),
@@ -1238,9 +1240,8 @@ function page_4_validate_form(&$form, &$form_state){
             }
             elseif (empty(form_get_errors()) and isset($phenotype_file_name_col)){
                 $phenotype_file = file_load($phenotype_file);
-                $phenotype_file_name = explode('//', $phenotype_file->uri);
-                $phenotype_file_name = $phenotype_file_name[1];
-                $location = drupal_realpath("public://$phenotype_file_name");
+                $phenotype_file_name = $phenotype_file->uri;
+                $location = drupal_realpath("$phenotype_file_name");
                 $content = parse_xlsx($location);
                 
                 $missing_phenotypes = array();
@@ -1459,9 +1460,9 @@ function page_4_validate_form(&$form, &$form_state){
 
                 $form_state['values'][$id]['genotype']['file-columns'] = array();
 
-                foreach ($form[$id]['genotype']['file']['columns'] as $req => $val){
+                foreach ($form[$id]['genotype']['file']['#value']['columns'] as $req => $val){
                     if ($req[0] != '#'){
-                        $form_state['values'][$id]['genotype']['file-columns'][$req] = $form[$id]['genotype']['file']['columns'][$req]['#value'];
+                        $form_state['values'][$id]['genotype']['file-columns'][$req] = $form[$id]['genotype']['file']['#value']['columns'][$req];
 
                         $col_val = $form_state['values'][$id]['genotype']['file-columns'][$req];
                         if ($col_val != '0'){
@@ -1530,6 +1531,46 @@ function page_4_validate_form(&$form, &$form_state){
             if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
                 $genotype = $organism['genotype'];
                 validate_genotype($genotype, "organism-$i", $form, $form_state);
+            }
+        }
+        
+        if (form_get_errors() and !$form_state['rebuild']){
+            $form_state['rebuild'] = TRUE;
+            $new_form = drupal_rebuild_form('tpps_master', $form_state, $form);
+            
+            for ($i = 1; $i <= $organism_number; $i++){
+                
+                if (isset($new_form["organism-$i"]['phenotype']['metadata']['upload'])){
+                    $form["organism-$i"]['phenotype']['metadata']['upload'] = $new_form["organism-$i"]['phenotype']['metadata']['upload'];
+                    $form["organism-$i"]['phenotype']['metadata']['upload']['#id'] = "edit-organism-$i-phenotype-metadata-upload";
+                }
+                if (isset($new_form["organism-$i"]['phenotype']['metadata']['columns'])){
+                    $form["organism-$i"]['phenotype']['metadata']['columns'] = $new_form["organism-$i"]['phenotype']['metadata']['columns'];
+                    $form["organism-$i"]['phenotype']['metadata']['columns']['#id'] = "edit-organism-$i-phenotype-metadata-columns";
+                }
+                
+                $form["organism-$i"]['phenotype']['file']['upload'] = $new_form["organism-$i"]['phenotype']['file']['upload'];
+                $form["organism-$i"]['phenotype']['file']['columns'] = $new_form["organism-$i"]['phenotype']['file']['columns'];
+                $form["organism-$i"]['phenotype']['file']['upload']['#id'] = "edit-organism-$i-phenotype-file-upload";
+                $form["organism-$i"]['phenotype']['file']['columns']['#id'] = "edit-organism-$i-phenotype-file-columns";
+                
+                if (isset($form["organism-$i"]['genotype']['file']['upload'])){
+                    $form["organism-$i"]['genotype']['file']['upload'] = $new_form["organism-$i"]['genotype']['file']['upload'];
+                    $form["organism-$i"]['genotype']['file']['upload']['#id'] = "edit-organism-$i-genotype-file-upload";
+                }
+                if (isset($form["organism-$i"]['genotype']['file']['columns'])){
+                    $form["organism-$i"]['genotype']['file']['columns'] = $new_form["organism-$i"]['genotype']['file']['columns'];
+                    $form["organism-$i"]['genotype']['file']['columns']['#id'] = "edit-organism-$i-genotype-file-columns";
+                }
+                
+                if (isset($form["organism-$i"]['genotype']['assembly-user']['upload'])){
+                    $form["organism-$i"]['genotype']['assembly-user']['upload'] = $new_form["organism-$i"]['genotype']['assembly-user']['upload'];
+                    $form["organism-$i"]['genotype']['assembly-user']['upload']['#id'] = "edit-organism-$i-genotype-assembly-user-upload";
+                }
+                if (isset($form["organism-$i"]['genotype']['assembly-user']['columns'])){
+                    $form["organism-$i"]['genotype']['assembly-user']['columns'] = $new_form["organism-$i"]['genotype']['assembly-user']['columns'];
+                    $form["organism-$i"]['genotype']['assembly-user']['columns']['#id'] = "edit-organism-$i-genotype-assembly-user-columns";
+                }
             }
         }
     }

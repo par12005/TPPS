@@ -83,6 +83,8 @@ function page_1_create_form(&$form, $form_state){
         
         function secondary_authors(&$form, $values, $form_state){
             
+            $file_upload_location = 'public://tpps_authors';
+            
             $form['publication']['secondaryAuthors'] = array(
               '#type' => 'fieldset',
               '#states' => array(
@@ -135,7 +137,7 @@ function page_1_create_form(&$form, $form_state){
             $form['publication']['secondaryAuthors']['file'] = array(
               '#type' => 'managed_file',
               '#title' => t('Secondary Authors file: please upload a spreadsheet with columns for last name, first name, and middle initial of each author, in any order'),
-              '#upload_location' => 'public://',
+              '#upload_location' => "$file_upload_location",
               '#upload_validators' => array(
                 'file_validate_extensions' => array('txt csv xlsx')
               ),
