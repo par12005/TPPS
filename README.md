@@ -214,7 +214,6 @@ After the data has been submitted and approved, the user will recieve an email w
 
 # Features in Development
 - Admin Interface for submission approval
-- Mini-map view on sidebar
 - Parse and load content from genotype files to CHADO
 - Parse and load content from phenotype files to CHADO
 
