@@ -291,7 +291,7 @@ function tpps_completed_display($form, $form_state){
     global $user;
     $params = drupal_get_query_parameters();
     $accession = $params['id'];
-    $link = "/Drupal/tpps_details/main";
+    $link = "/Drupal/tpps_details/accession/$accession";
     
     $old_form_state = variable_get('tpps_complete_' . $user->mail . $accession);
     $values = $old_form_state['saved_values'];
