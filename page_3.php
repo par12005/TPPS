@@ -196,16 +196,15 @@ function page_3_create_form(&$form, &$form_state){
       '#suffix' => '<div id="map_wrapper"></div></div>',
     );
     
-    if (isset($form_state['triggering_element']) and $form_state['triggering_element']['#value'] != 'Click here to update map'){
-        $form['tree-accession']['map-button']['#suffix'] .= '
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY"
+    $form['tree-accession']['map-button']['#suffix'] .= '
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&callback=initMap"
     async defer></script>
     <style>
       #map_wrapper {
         height: 450px;
       }
     </style>';
-    }
+    
     
     if ($species_number > 1){
         $form['tree-accession']['check'] = array(
@@ -376,11 +375,13 @@ function accession_header_callback($form, $form_state){
 function page_3_multi_map($form, $form_state){
     
     if (isset($form['tree-accession']['file']['#value']['fid']) and $form['tree-accession']['file']['#value']['fid'] != '0'){
-        //dpm($form_state['values']['tree-accession']['no-header']);
         $file = $form_state['values']['tree-accession']['file']['fid'];
         $columns = $form_state['values']['tree-accession']['file']['columns'];
         
         foreach ($columns as $key => $val){
+            if ($val == '1'){
+                $id_col = $key;
+            }
             if ($val == '4'){
                 $lat_col = $key;
             }
@@ -389,8 +390,7 @@ function page_3_multi_map($form, $form_state){
             }
         }
         
-        if (!isset($lat_col) or !isset($long_col)){
-            $commands[] = ajax_command_replace('#multi_map', render($form['tree-accession']['map-button']));
+        if (!isset($lat_col) or !isset($long_col) or !isset($id_col)){
             $commands[] = ajax_command_invoke('#map_wrapper', 'hide');
             return array('#type' => 'ajax', '#commands' => $commands);
         }
@@ -410,19 +410,17 @@ function page_3_multi_map($form, $form_state){
             for ($i = 0; $i < count($content) - 1; $i++){
                 if (($coord = tpps_standard_coord("{$content[$i][$lat_col]},{$content[$i][$long_col]}"))){
                     $pair = explode(',', $coord);
-                    array_push($standards, array("location $i", $pair[0], $pair[1]));
+                    array_push($standards, array("{$content[$i][$id_col]}", $pair[0], $pair[1]));
                 }
             }
 
         }
         
-        $commands[] = ajax_command_replace('#multi_map', render($form['tree-accession']['map-button']));
         $commands[] = ajax_command_invoke('#map_wrapper', 'updateMap', array($standards));
         
         return array('#type' => 'ajax', '#commands' => $commands);
     }
     else {
-        $commands[] = ajax_command_replace('#multi_map', render($form['tree-accession']['map-button']));
         $commands[] = ajax_command_invoke('#map_wrapper', 'hide');
         return array('#type' => 'ajax', '#commands' => $commands);
     }
