@@ -1726,6 +1726,8 @@ function submit_all($form, &$form_state){
             ));
             $author_string .= "; {$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
         }
+        $file->status = FILE_STATUS_PERMANENT;
+        $file = file_save($file);
     }
     
     $publication_id = tpps_create_record('tpps_pub', array(
@@ -2598,6 +2600,9 @@ function submit_all($form, &$form_state){
                 }
             }
         }
+        
+        $file->status = FILE_STATUS_PERMANENT;
+        $file = file_save($file);
     }
     else {
         //multiple files, sorted by species
@@ -2689,6 +2694,9 @@ function submit_all($form, &$form_state){
                     }
                 }
             }
+
+            $file->status = FILE_STATUS_PERMANENT;
+            $file = file_save($file);
         }
     }
     
@@ -2835,9 +2843,12 @@ function submit_all($form, &$form_state){
                   'type_id' => '2836',
                   'value' => file_create_url(file_load($phenotype['metadata'])->uri)
                 ));
+                $file = file_load($phenotype['metadata']);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
             }
             
-            
+            //TODO: actual phenotype file
         }
         
         if (isset($fourthpage["organism-$i"]['genotype'])){
@@ -2875,6 +2886,9 @@ function submit_all($form, &$form_state){
                   'type_id' => '2836',
                   'value' => file_create_url(file_load($assembly_user)->uri)
                 ));
+                $file = file_load($assembly_user);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
             }
             else {
                 $reference_genome_id = tpps_create_record('tpps_projectprop', array(
@@ -2888,16 +2902,22 @@ function submit_all($form, &$form_state){
                 $genotype_file_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
-                  'value' => file_create_url(file_load($genotype['file']))
+                  'value' => file_create_url(file_load($genotype['file'])->uri)
                 ));
+                $file = file_load($genotype['file']);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
             }
                 
             if ($genotype['marker-type']['SNPs'] != '0'){
                 $genotype_vcf_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
-                  'value' => file_create_url(file_load($genotype['vcf']))
+                  'value' => file_create_url(file_load($genotype['vcf'])->uri)
                 ));
+                $file = file_load($genotype['vcf']);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
             }
         }
     }
