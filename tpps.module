@@ -2838,7 +2838,7 @@ function submit_all($form, &$form_state){
                 }
             }
             else{
-                $phenotype_file_id = tpps_create_record('tpps_projectprop', array(
+                $phenotype_meta_file_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
                   'value' => file_create_url(file_load($phenotype['metadata'])->uri)
@@ -2848,7 +2848,14 @@ function submit_all($form, &$form_state){
                 $file = file_save($file);
             }
             
-            //TODO: actual phenotype file
+            $phenotype_file_id = tpps_create_record('tpps_projectprop', array(
+              'project_id' => $project_id,
+              'type_id' => '2836',
+              'value' => file_create_url(file_load($phenotype['file'])->uri)
+            ));
+            $file = file_load($phenotype['file']);
+            $file->status = FILE_STATUS_PERMANENT;
+            $file = file_save($file);
         }
         
         if (isset($fourthpage["organism-$i"]['genotype'])){
