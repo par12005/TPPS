@@ -129,83 +129,6 @@ jQuery(document).ready(function ($) {
         
     }
     
-    function Phenotype(organism_number){
-        
-        var phenotype_button_add = jQuery("#edit-organism-" + organism_number + "-phenotype-add");
-        var phenotype_button_remove = jQuery("#edit-organism-" + organism_number + "-phenotype-remove");
-        var phenotype_number = jQuery("#edit-organism-" + organism_number + "-phenotype-number")[0].value;
-        var phenotype_check = jQuery("#edit-organism-" + organism_number + "-phenotype-check");
-        var phenotypes = jQuery("fieldset").filter(function(){ return this.id.match(organism_number + "-phenotype-[0-9]*$"); });
-        
-        phenotype_button_add.attr('type', 'button');
-        phenotype_button_remove.attr('type', 'button');
-        
-        phenotypes.hide();
-        jQuery("#edit-organism-" + organism_number + "-phenotype-number").hide(); //hide phenotype number field
-        
-        if (phenotype_number >= 1 && !phenotype_check[0].checked){
-            for(var i = 0; i < phenotype_number; i++){
-                jQuery(phenotypes[i]).show();
-            }
-            for(var i = phenotype_number; i <= 20; i++){
-                jQuery(phenotypes[i]).hide();
-            }
-        }
-        
-        phenotype_button_add.on('click', function(){
-            if (phenotype_number < 20){
-                phenotype_number++;
-                jQuery("#edit-organism-" + organism_number + "-phenotype-number")[0].value = phenotype_number;
-                
-                for(var i = 0; i < phenotype_number; i++){
-                    jQuery(phenotypes[i]).show();
-                }
-                for(var i = phenotype_number; i <= 20; i++){
-                    jQuery(phenotypes[i]).hide();
-                }
-            }
-        });
-        
-        phenotype_button_remove.on('click', function(){
-            if (phenotype_number > 1){
-                phenotype_number--;
-                jQuery("#edit-organism-" + organism_number + "-phenotype-number")[0].value = phenotype_number;
-                
-                for(var i = 0; i < phenotype_number; i++){
-                    jQuery(phenotypes[i]).show();
-                }
-                for(var i = phenotype_number; i <= 20; i++){
-                    jQuery(phenotypes[i]).hide();
-                }
-            }
-        });
-        
-        phenotype_check.on('click', function(){
-            console.log('test');
-            if (phenotype_check[0].checked){
-                phenotype_button_add.hide();
-                phenotype_button_remove.hide();
-                phenotypes.hide();
-            }
-            else{
-                phenotype_button_add.show();
-                phenotype_button_remove.show();
-                for(var i = 0; i < phenotype_number; i++){
-                    jQuery(phenotypes[i]).show();
-                }
-                for(var i = phenotype_number; i <= 20; i++){
-                    jQuery(phenotypes[i]).hide();
-                }
-            }
-        });
-        
-        /*console.log(phenotype_button_add);
-        console.log(phenotype_button_remove);
-        console.log(phenotypes);
-        console.log(phenotype_number);*/
-        
-    }
-    
     jQuery("#edit-step").hide();
     
     if (jQuery("#edit-step").length > 0){
@@ -217,17 +140,6 @@ jQuery(document).ready(function ($) {
         if (jQuery("#edit-step")[0].value === 'Hellopage'){
             Secondary_Authors();
             Organism();
-        }
-        else if (jQuery("#edit-step")[0].value === 'fourthPage'){
-            var number_of_organisms = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.$/); }).length;
-            var phenotypes = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.-phenotype/);});
-            var genotypes = jQuery("fieldset").filter(function(){ return this.id.match(/edit-organism-.-genotype/);});
-
-            for(var i = 1; i <= number_of_organisms; i++){
-                if (phenotypes.length !== 0){
-                    Phenotype(i);
-                }
-            }
         }
         
         if (jQuery("#edit-step")[0].value === 'summarypage'){

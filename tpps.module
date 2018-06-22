@@ -74,13 +74,6 @@ function tpps_menu() {
       'type' => MENU_CALLBACK
     );
     
-    $items['genus/autocomplete'] = array(
-      'title' => 'Autocomplete for genus',
-      'page callback' => '_genus_autocomplete',
-      'access arguments' => array('access content'),
-      'type' => MENU_CALLBACK
-    );
-    
     $items['species/autocomplete'] = array(
       'title' => 'Autocomplete for species',
       'page callback' => '_species_autocomplete',

@@ -15,18 +15,29 @@ function page_4_create_form(&$form, &$form_state){
         $fields = array(
           '#type' => 'fieldset',
           '#title' => t('<h2>Phenotype Information:</h2>'),
+          '#tree' => TRUE,
         );
         
-        $phenotype_number = isset($values[$id]['phenotype']['number']) ? $values[$id]['phenotype']['number'] : 1;
+        if (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#value'] == 'Add Phenotype'){
+            $form_state['values'][$id]['phenotype']['number']++;
+        }
+        elseif (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#value'] == 'Remove Phenotype' and $form_state['values'][$id]['phenotype']['number'] > 0){
+            $form_state['values'][$id]['phenotype']['number']--;
+        }
+        $phenotype_number = isset($form_state['values'][$id]['phenotype']['number']) ? $form_state['values'][$id]['phenotype']['number'] : NULL;
+        
+        if (!isset($phenotype_number) and isset($form_state['saved_values']['fourthPage'][$id]['phenotype']['number'])){
+            $phenotype_number = $form_state['saved_values']['fourthPage'][$id]['phenotype']['number'];
+        }
         
         $fields['check'] = array(
           '#type' => 'checkbox',
-          '#title' => t('I have >30 Phenotypes'),
+          '#title' => t('I would like to upload a phenotype metadata file'),
           '#default_value' => isset($values[$id]['phenotype']['check']) ? $values[$id]['phenotype']['check'] : NULL,
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('left'),
-            'title' => array('Upload a file instead')
+            'title' => array('Upload a file')
           )
         );
         
@@ -35,6 +46,10 @@ function page_4_create_form(&$form, &$form_state){
           '#title' => t('Add Phenotype'),
           '#button_type' => 'button',
           '#value' => t('Add Phenotype'),
+          '#ajax' => array(
+            'callback' => 'update_phenotype',
+            'wrapper' => "phenotypes-$id"
+          ),
         );
         
         $fields['remove'] = array(
@@ -42,210 +57,45 @@ function page_4_create_form(&$form, &$form_state){
           '#title' => t('Remove Phenotype'),
           '#button_type' => 'button',
           '#value' => t('Remove Phenotype'),
+          '#ajax' => array(
+            'callback' => 'update_phenotype',
+            'wrapper' => "phenotypes-$id"
+          ),
         );
         
         $fields['number'] = array(
-          '#type' => 'textfield',
-          '#default_value' => $phenotype_number,
+          '#type' => 'hidden',
+          '#value' => "$phenotype_number"
         );
         
-        $structure_arr = array();
-        $dev_arr = array();
-	
-        $results = db_select('chado.phenotype_structure_cvterm', 'phenotype_structure_cvterm')
-            ->fields('phenotype_structure_cvterm', array('name', 'definition'))
-            ->execute();
-		
+        $fields['phenotypes-meta'] = array(
+          '#type' => 'fieldset',
+          '#prefix' => "<div id=\"phenotypes-$id\">",
+          '#suffix' => '</div>',
+          '#tree' => TRUE,
+        );
         
-        foreach ($results as $row){
-            $structure_arr[$row->name] = "$row->name : $row->definition";
-        }
+        //dpm($form_state['saved_values']['fourthPage']['organism-1']['phenotype']);
+        //dpm($phenotype_number);
         
-        $results = db_select('chado.phenotype_defs', 'phenotype_defs')
-            ->fields('phenotype_defs', array('name', 'definition'))
-            ->execute();
-        
-		
-        foreach ($results as $row){
-            $dev_arr[$row->name] = "$row->name : $row->definition";
-        }
-        
-        for ($i = 1; $i <= 30; $i++){
+        for ($i = 1; $i <= $phenotype_number; $i++){
             
-            $fields["$i"] = array(
+            $fields['phenotypes-meta']["$i"] = array(
               '#type' => 'fieldset',
+              '#tree' => TRUE,
             );
             
-            $fields["$i"]['name'] = array(
+            $fields['phenotypes-meta']["$i"]['name'] = array(
               '#type' => 'textfield',
               '#title' => t("Phenotype $i Name:"),
               '#autocomplete_path' => 'phenotype/autocomplete',
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['name']) ? $values[$id]['phenotype']["$i"]['name'] : NULL,
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['name']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['name'] : NULL,
               '#prefix' => "<label><b>Phenotype $i:</b></label>",
               '#attributes' => array(
                 'data-toggle' => array('tooltip'),
                 'data-placement' => array('left'),
-                'title' => array('If your phenotype is not in the autocomplete list, don\'t worry about it! We will create a new phenotype entry in the database for you.')
+                'title' => array('If your phenotype is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
               )
-            );
-            
-            $fields["$i"]['environment-check'] = array(
-              '#type' => 'checkbox',
-              '#title' => t('This is environmental data about the study'),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['environment-check']) ? $values[$id]['phenotype']["$i"]['environment-check'] : NULL,
-            );
-            
-            $fields["$i"]['environment'] = array(
-              '#type' => 'fieldset',
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][environment-check]"]' => array('checked' => TRUE)
-                )
-              )
-            );
-            
-            $fields["$i"]['environment']['description'] = array(
-              '#type' => 'textarea',
-              '#title' => t("Phenotype $i Description:"),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['environment']['description']) ? $values[$id]['phenotype']["$i"]['environment']['description'] : NULL,
-            );
-            
-            $fields["$i"]['environment']['units'] = array(
-              '#type' => 'select',
-              '#title' => t("Phenotype $i Units:"),
-              '#options' => array(
-                0 => '- Select -',
-                1 => 'mm', 
-                2 => 'cm',
-                3 => 'm', 
-                4 => 'Degrees Celsius',
-                5 => 'Degrees Fahrenheit',
-                6 => 'Other'
-              ),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['environment']['units']) ? $values[$id]['phenotype']["$i"]['environment']['units'] : NULL,
-            );
-            
-            $fields["$i"]['environment']['units-other'] = array(
-              '#type' => 'textfield',
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['environment']['units-other']) ? $values[$id]['phenotype']["$i"]['environment']['units-other'] : NULL,
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][environment][units]"]' => array('value' => '6')
-                )
-              )
-            );
-            
-            $fields["$i"]['non-environment'] = array(
-              '#type' => 'fieldset',
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][environment-check]"]' => array('checked' => FALSE)
-                )
-              )
-            );
-            
-            $fields["$i"]['non-environment']['type'] = array(
-              '#type' => 'select',
-              '#title' => t("Phenotype $i Type:"),
-              '#options' => array(
-                0 => '- Select -',
-                1 => 'Binary',
-                2 => 'Quantitative',
-                3 => 'Qualitative'
-              ),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['type']) ? $values[$id]['phenotype']["$i"]['non-environment']['type'] : 0,
-            );
-            
-            $fields["$i"]['non-environment']['binary'] = array(
-              '#type' => 'fieldset',
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][type]"]' => array('value' => '1')
-                )
-              )
-            );
-            
-            $fields["$i"]['non-environment']['binary'][1] = array(
-              '#type' => 'textfield',
-              '#title' => t('Type 1:'),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['binary'][1]) ? $values[$id]['phenotype']["$i"]['non-environment']['binary'][1] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['binary'][2] = array(
-              '#type' => 'textfield',
-              '#title' => t('Type 2:'),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['binary'][2]) ? $values[$id]['phenotype']["$i"]['non-environment']['binary'][2] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['quantitative'] = array(
-              '#type' => 'fieldset',
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][type]"]' => array('value' => '2')
-                )
-              )
-            );
-            
-            $fields["$i"]['non-environment']['quantitative']['min'] = array(
-              '#type' => 'textfield',
-              '#title' => t('Minimum'),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['quantitative']['min']) ? $values[$id]['phenotype']["$i"]['non-environment']['quantitative']['min'] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['quantitative']['max'] = array(
-              '#type' => 'textfield',
-              '#title' => t('Maximum'),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['quantitative']['max']) ? $values[$id]['phenotype']["$i"]['non-environment']['quantitative']['max'] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['description'] = array(
-              '#type' => 'textarea',
-              '#title' => t("Phenotype $i Description:"),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['description']) ? $values[$id]['phenotype']["$i"]['non-environment']['description'] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['units'] = array(
-              '#type' => 'select',
-              '#title' => t("Phenotype $i Units:"),
-              '#options' => array(
-                0 => '- Select -',
-                1 => 'mm', 
-                2 => 'cm',
-                3 => 'm', 
-                4 => 'Degrees Celsius',
-                5 => 'Degrees Fahrenheit',
-                6 => 'Other'
-              ),
-              '#states' => array(
-                'invisible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][type]"]' => array('value' => '3')
-                )
-              ),
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['units']) ? $values[$id]['phenotype']["$i"]['non-environment']['units'] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['units-other'] = array(
-              '#type' => 'textfield',
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['units-other']) ? $values[$id]['phenotype']["$i"]['non-environment']['units-other'] : NULL,
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][' . $i . '][non-environment][units]"]' => array('value' => '6')
-                )
-              )
-            );
-            
-            $fields["$i"]['non-environment']['structure'] = array(
-              '#type' => 'select',
-              '#title' => t('Plant Structure:'),
-              '#options' => $structure_arr,
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['structure']) ? $values[$id]['phenotype']["$i"]['non-environment']['structure'] : NULL,
-            );
-            
-            $fields["$i"]['non-environment']['developmental'] = array(
-              '#type' => 'select',
-              '#title' => t('Plant Developmental Stage:'),
-              '#options' => $dev_arr,
-              '#default_value' => isset($values[$id]['phenotype']["$i"]['non-environment']['developmental']) ? $values[$id]['phenotype']["$i"]['non-environment']['developmental'] : NULL,
             );
         }
         
@@ -678,7 +528,7 @@ function page_4_create_form(&$form, &$form_state){
       '#type' => 'submit',
       '#value' => t('Review Information and Submit')
     );
-
+    
     return $form;
 }
 
@@ -691,6 +541,12 @@ function ajax_bioproject_callback(&$form, $form_state){
 
 function metadata_header_callback($form, $form_state){
     return $form[$form_state['triggering_element']['#parents'][0]]['phenotype']['metadata']['columns'];
+}
+
+function update_phenotype($form, &$form_state){
+    $id = $form_state['triggering_element']['#parents'][0];
+    
+    return $form[$id]['phenotype']['phenotypes-meta'];
 }
 
 function genotype_header_callback($form, $form_state){
@@ -1529,7 +1385,7 @@ function page_4_validate_form(&$form, &$form_state){
 
             if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
                 $phenotype = $organism['phenotype'];
-                validate_phenotype($phenotype, "organism-$i", $form, $form_state);
+                //validate_phenotype($phenotype, "organism-$i", $form, $form_state);
             }
 
             if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
