@@ -88,6 +88,13 @@ function tpps_menu() {
       'type' => MENU_CALLBACK
     );
     
+    $item['attribute/autocomplete'] = array(
+      'title' => 'Autocomplete for Phenotype Attribute',
+      'page callback' => '_attribute_autocomplete',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
+    
     return $items;
 }
 
@@ -2997,6 +3004,29 @@ function _phenotype_autocomplete($string){
     $result = db_select('chado.phenotype', 'phenotype')
         ->fields('phenotype', array('name'))
         ->condition('name', db_like($string) . '%', 'LIKE')
+        ->execute();
+    
+    foreach($result as $row){
+        $matches[$row->name] = check_plain($row->name);
+    }
+    
+    drupal_json_output($matches);
+}
+
+function _attribute_autocomplete($string){
+    $matches = array();
+    
+    $attributes = db_select('chado.phenotype', 'p')
+        ->distinct()
+        ->fields('p', array('attr_id'));
+    
+    $and = db_and()
+        ->condition('c.cvterm_id', $attributes, 'IN')
+        ->condition('c.name', db_like($string) . '%', 'LIKE');
+    
+    $result = db_select('chado.cvterm', 'c')
+        ->fields('c', array('name'))
+        ->condition($and)
         ->execute();
     
     foreach($result as $row){

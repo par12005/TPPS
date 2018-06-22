@@ -97,6 +97,19 @@ function page_4_create_form(&$form, &$form_state){
                 'title' => array('If your phenotype is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
               )
             );
+            
+            $fields['phenotypes-meta']["$i"]['attribute'] = array(
+              '#type' => 'textfield',
+              '#title' => t("Phenotype $i Attribute:"),
+              '#autocomplete_path' => 'attribute/autocomplete',
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute'] : NULL,
+              '#attributes' => array(
+                'data-toggle' => array('tooltip'),
+                'data-placement' => array('left'),
+                'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
+              ),
+              '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
+            );
         }
         
         $fields['metadata'] = array(
