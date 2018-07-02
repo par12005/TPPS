@@ -254,6 +254,12 @@ function page_4_create_form(&$form, &$form_state){
                 $column_options = array(
                   'N/A',
                   'Phenotype Name/Identifier',
+                  'Attribute',
+                  'Description',
+                  'Units',
+                  'Structure',
+                  'Minimum Value',
+                  'Maximum Value'
                 );
 
                 $first = TRUE;
@@ -1012,6 +1018,9 @@ function page_4_validate_form(&$form, &$form_state){
                 else{
                     $required_columns = array(
                       '1' => 'Phenotype Name/Identifier',
+                      '2' => 'Attribute',
+                      '3' => 'Description',
+                      '4' => 'Units',
                     );
 
                     $form_state['values'][$id]['phenotype']['metadata-columns'] = array();
