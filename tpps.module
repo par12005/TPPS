@@ -95,6 +95,13 @@ function tpps_menu() {
       'type' => MENU_CALLBACK
     );
     
+    $items['units/autocomplete'] = array(
+      'title' => 'Autocomplete for Phenotype Units',
+      'page callback' => '_units_autocomplete',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
+    
     return $items;
 }
 
@@ -3031,6 +3038,26 @@ function _attribute_autocomplete($string){
     
     foreach($result as $row){
         $matches[$row->name] = check_plain($row->name);
+    }
+    
+    drupal_json_output($matches);
+}
+
+function _units_autocomplete($string){
+    $matches = array();
+    
+    $and = db_and()
+        ->condition('type_id', '2842')
+        ->condition('value', db_like($string) . '%', 'LIKE');
+    
+    $result = db_select('chado.phenotypeprop', 'p')
+        ->distinct()
+        ->fields('p', array('value'))
+        ->condition($and)
+        ->execute();
+    
+    foreach($result as $row){
+        $matches[$row->value] = check_plain($row->value);
     }
     
     drupal_json_output($matches);

@@ -110,6 +110,26 @@ function page_4_create_form(&$form, &$form_state){
               ),
               '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
             );
+            
+            $fields['phenotypes-meta']["$i"]['description'] = array(
+              '#type' => 'textfield',
+              '#title' => t("Phenotype $i Description:"),
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['description']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute'] : NULL,
+              '#description' => t("Please provide a short description of Phenotype $i"),
+            );
+            
+            $fields['phenotypes-meta']["$i"]['units'] = array(
+              '#type' => 'textfield',
+              '#title' => t("Phenotype $i Units:"),
+              '#autocomplete_path' => 'units/autocomplete',
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['units']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['units'] : NULL,
+              '#attributes' => array(
+                'data-toggle' => array('tooltip'),
+                'data-placement' => array('left'),
+                'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
+              ),
+              '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
+            );
         }
         
         $fields['metadata'] = array(
