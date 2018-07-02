@@ -1644,8 +1644,8 @@ function tpps_master_submit($form, &$form_state){
             else{
                 submit_all($form, $form_state);
                 dpm('submit');
-                //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
-                //variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
+                variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
