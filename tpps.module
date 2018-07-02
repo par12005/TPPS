@@ -117,6 +117,8 @@ function tpps_tab_create($type, $user, $name = NULL){
     $email = $user->mail;
     $state_name = 'tpps_incomplete_' . $email;
     $params = drupal_get_query_parameters();
+    $final = "";
+    $t1 = $t2 = FALSE;
     
     if (isset($params['accession']) and isset($params['action']) and $params['action'] === 'DELETE'){
         $delete_name = $state_name . $params['accession'];
@@ -222,8 +224,10 @@ function tpps_tab_create($type, $user, $name = NULL){
     }
     else {
         $display .= "</tbody></table></div><br>";
+        $t1 = TRUE;
     }
     
+    $final .= $display;
     $state_name = 'tpps_complete_' . $email;
     $name = NULL;
     
@@ -232,7 +236,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         ->condition('name', db_like($state_name) . '%', 'LIKE')
         ->execute();
     
-    $display .= "<label for='tpps_complete_table'>Complete Submissions Pending Approval</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
+    $display = "<label for='tpps_complete_table'>Complete Submissions Pending Approval</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
     $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th></tr>";
     $display .= "</thead><tbody>";
     
@@ -289,15 +293,22 @@ function tpps_tab_create($type, $user, $name = NULL){
     }
     
     if (!isset($name)){
+        $display = "";
+    }
+    else {
+        $display .= "</tbody></table></div><br>";
+        $t2 = TRUE;
+    }
+    
+    if (!$t1 and !$t2){
         $display = $style;
         $display .= "<h2>Could not find any Submissions</h2>";
         $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=/Drupal/master>here.</a></p>";
     }
-    else {
-        $display .= "</tbody></table></div><br>";
-    }
     
-    return $display;
+    $final .= $display;
+    
+    return $final;
 }
 
 function tpps_completed_display($form, $form_state){
@@ -885,10 +896,6 @@ function tpps_init_project($form, &$form_state){
     $dbxref_id = tpps_compare_temp('dbxref', 'dbxref_id', TRUE) + 1;
     $accession = tpps_compare_temp('dbxref', 'accession', FALSE, array('accession', db_like('TGDR') . '%', 'LIKE'));
     
-    //testing purposes only:
-    //print_r("tpps_dbxref_id: " . $dbxref_id);
-    //print_r(" | accession: " . $accession);
-    
     if ($accession === NULL){
         $accession = "TGDR001";
     }
@@ -1027,6 +1034,56 @@ function tpps_get_primary_key($table){
     $result = $result[1];
     
     return $result;
+}
+
+function tpps_custom_cvterm($term, $definition){
+    
+    $dbxref = db_query('select d.accession from chado.dbxref d where d.db_id=95 and d.accession ~ \'^\\d+$\' order by cast(d.accession as bigint) desc');
+    $tpps_dbxref = db_query('select d.accession from chado.tpps_dbxref d where d.db_id=95 and d.accession ~ \'^\\d+$\' order by cast(d.accession as bigint) desc');
+    
+    foreach ($dbxref as $row){
+        $accession = $row->accession + 1;
+        break;
+    }
+    foreach ($tpps_dbxref as $row){
+        $tpps_accession = $row->accession + 1;
+        break;
+    }
+    
+    if (!isset($accession) or (isset($tpps_accession) and $tpps_accession > $accession)){
+        $accession = isset($tpps_accession) ? $tpps_accession : NULL;
+    }
+    if (!isset($accession)){
+        $accession = 1;
+    }
+    
+    $dbxref = db_insert('chado.dbxref')
+        ->useDefaults(array(
+          'version',
+          'description',
+          'dbxref_id'
+        ))
+        ->fields(array(
+          'db_id' => '95',
+          'accession' => "$accession"
+        ))
+        ->execute();
+    
+    $cvterm = db_insert('chado.tpps_cvterm')
+        ->useDefaults(array(
+          'tpps_cvterm_id',
+          'is_obsolete',
+          'is_relationshiptype'
+        ))
+        ->fields(array(
+          'cv_id' => '61',
+          'name' => $term,
+          'definition' => $definition,
+          'dbxref_id' => $dbxref
+        ))
+        ->execute();
+    
+    return $cvterm;
 }
 
 function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name){
@@ -1585,10 +1642,10 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'fourthPage';
             }
             else{
-                //submit_all($form, $form_state);
-                //dpm('submit');
-                variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
-                variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
+                submit_all($form, $form_state);
+                dpm('submit');
+                //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                //variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
@@ -2759,124 +2816,7 @@ function submit_all($form, &$form_state){
                     $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
                 }
             }
-            /*
-            if ($phenotype['check'] !== '1'){
-                $phenotype_ids = array();
-                for ($j = 1; $j < $phenotype_number; $j++){
-                    $current_phenotype = $phenotype[$j];
-                    
-                    $phenotype_ids[$j] = tpps_create_record('tpps_phenotype', array(
-                      'uniquename' => $current_phenotype['name']
-                    ));
-                    
-                    $unit_options = array(
-                      0 => '- Select -',
-                      1 => 'mm', 
-                      2 => 'cm',
-                      3 => 'm', 
-                      4 => 'Degrees Celsius',
-                      5 => 'Degrees Fahrenheit',
-                      6 => 'Other'
-                    );
-                    
-                    if ($current_phenotype['environment-check'] == '1'){
-                        $environment = $current_phenotype['environment'];
-                        
-                        tpps_create_record('tpps_phenotypeprop', array(
-                          'phenotype_id' => $phenotype_ids[$j],
-                          'type_id' => '2834',
-                          'value' => $environment['description']
-                        ));
-                        
-                        if ($environment['units'] !== '6'){
-                            tpps_create_record('tpps_phenotypeprop', array(
-                              'phenotype_id' => $phenotype_ids[$j],
-                              'type_id' => '2842',
-                              'value' => $unit_options[$environment['units']]
-                            ));
-                        }
-                        else {
-                            tpps_create_record('tpps_phenotypeprop', array(
-                              'phenotype_id' => $phenotype_ids[$j],
-                              'type_id' => '2842',
-                              'value' => $environment['units-other']
-                            ));
-                        }
-                        
-                    }
-                    else {
-                        $non_environment = $current_phenotype['non-environment'];
-                        
-                        tpps_create_record('tpps_phenotypeprop', array(
-                          'phenotype_id' => $phenotype_ids[$j],
-                          'type_id' => '2834',
-                          'value' => $non_environment['description']
-                        ));
-                        
-                        if ($non_environment['units'] !== '6'){
-                            tpps_create_record('tpps_phenotypeprop', array(
-                              'phenotype_id' => $phenotype_ids[$j],
-                              'type_id' => '2842',
-                              'value' => $unit_options[$non_environment['units']]
-                            ));
-                        }
-                        else {
-                            tpps_create_record('tpps_phenotypeprop', array(
-                              'phenotype_id' => $phenotype_ids[$j],
-                              'type_id' => '2842',
-                              'value' => $non_environment['units-other']
-                            ));
-                        }
-                        
-                        $type = $non_environment['type'];
-                        $structure = $non_environment['structure'];
-                        $developmental = $non_environment['developmental'];
-                        
-                        if ($type === '1'){
-                            $binary_1 = $non_environment['binary'][1];
-                            $binary_2 = $non_environment['binary'][2];
-                            
-                            tpps_create_record('tpps_phenotypeprop', array(
-                              'phenotype_id' => $phenotype_ids[$j],
-                              'type_id' => '128023',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
-                              'value' => $binary_1
-                            ));
-                            tpps_create_record('tpps_phenotypeprop', array(
-                              'phenotype_id' => $phenotype_ids[$j],
-                              'type_id' => '128023',    //this cvterm id was created custom for TG. Chado may have one, but I was unable to find it.
-                              'value' => $binary_2
-                            ));
-                        }
-                        elseif ($type === '2'){
-                            $min = $non_environment['quantitative']['min'];
-                            $max = $non_environment['quantitative']['max'];
-
-                            tpps_create_record('tpps_phenotypeprop', array(
-                              'phenotype_id' => $phenotype_ids[$j],
-                              'type_id' => '52214',
-                              'value' => $min
-                            ));
-                            tpps_create_record('tpps_phenotypeprop', array(
-                              'phenotype_id' => $phenotype_ids[$j],
-                              'type_id' => '52213',
-                              'value' => $max
-                            ));
-                        }
-                        
-                        tpps_create_record('tpps_phenotypeprop', array(
-                          'phenotype_id' => $phenotype_ids[$j],
-                          'type_id' => '50292',
-                          'value' => $structure
-                        ));
-                        tpps_create_record('tpps_phenotypeprop', array(
-                          'phenotype_id' => $phenotype_ids[$j],
-                          'type_id' => '50292',
-                          'value' => $developmental
-                        ));
-                    }
-                }
-            }
-            */
+            
             if ($phenotype['check'] == '1'){
                 $phenotype_meta_file_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
@@ -2960,6 +2900,14 @@ function submit_all($form, &$form_state){
                     ->execute()
                     ->fetchAssoc();
                 $attr_id = $attr['cvterm_id'];
+                if (!isset($attr_id) or $attr_id == ''){
+                    $attr = db_select('chado.tpps_cvterm', 'c')
+                        ->fields('c', array('tpps_cvterm_id'))
+                        ->condition('c.name', db_like($phenotypes_meta[$name]['attr']), 'LIKE')
+                        ->execute()
+                        ->fetchAssoc();
+                    $attr_id = isset($attr['tpps_cvterm_id']) ? $attr['tpps_cvterm_id'] : tpps_custom_cvterm($phenotypes_meta[$name]['attr'], '');
+                }
                 
                 if (isset($phenotypes_meta[$name]['struct'])){
                     $obs = db_select('chado.cvterm', 'c')
@@ -2968,6 +2916,16 @@ function submit_all($form, &$form_state){
                         ->execute()
                         ->fetchAssoc();
                     $observable_id = $obs['cvterm_id'];
+
+                    if (!isset($observable_id) or $observable_id == ''){
+                        $obs = db_select('chado.tpps_cvterm', 'c')
+                            ->fields('c', array('tpps_cvterm_id'))
+                            ->condition('c.name', db_like($phenotypes_meta[$name]['struct']), 'LIKE')
+                            ->execute()
+                            ->fetchAssoc();
+                        $observable_id = isset($obs['tpps_cvterm_id']) ? $obs['tpps_cvterm_id'] : tpps_custom_cvterm($phenotypes_meta[$name]['struct'], '');
+                    }
+
                 }
                 else {
                     $observable_id = NULL;
