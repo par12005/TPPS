@@ -88,7 +88,7 @@ function tpps_menu() {
       'type' => MENU_CALLBACK
     );
     
-    $item['attribute/autocomplete'] = array(
+    $items['attribute/autocomplete'] = array(
       'title' => 'Autocomplete for Phenotype Attribute',
       'page callback' => '_attribute_autocomplete',
       'access arguments' => array('access content'),
