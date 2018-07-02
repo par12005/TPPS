@@ -74,13 +74,6 @@ function tpps_menu() {
       'type' => MENU_CALLBACK
     );
     
-    $items['genus/autocomplete'] = array(
-      'title' => 'Autocomplete for genus',
-      'page callback' => '_genus_autocomplete',
-      'access arguments' => array('access content'),
-      'type' => MENU_CALLBACK
-    );
-    
     $items['species/autocomplete'] = array(
       'title' => 'Autocomplete for species',
       'page callback' => '_species_autocomplete',
@@ -91,6 +84,27 @@ function tpps_menu() {
     $items['phenotype/autocomplete'] = array(
       'title' => 'Autocomplete for Phenotype Name',
       'page callback' => '_phenotype_autocomplete',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
+    
+    $items['attribute/autocomplete'] = array(
+      'title' => 'Autocomplete for Phenotype Attribute',
+      'page callback' => '_attribute_autocomplete',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
+    
+    $items['units/autocomplete'] = array(
+      'title' => 'Autocomplete for Phenotype Units',
+      'page callback' => '_units_autocomplete',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
+    
+    $items['structure/autocomplete'] = array(
+      'title' => 'Autocomplete for Phenotype Structure',
+      'page callback' => '_structure_autocomplete',
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK
     );
@@ -945,6 +959,7 @@ function tpps_create_record($table, array $values){
         $key = $field['column_name'];
         if (!isset($values[$key])){
             array_push($default_fields, $key);
+            unset($values[$key]);
         }
     }
     
@@ -1570,8 +1585,8 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'fourthPage';
             }
             else{
-                //dpm('submit');
                 //submit_all($form, $form_state);
+                //dpm('submit');
                 variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
                 variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
@@ -1735,7 +1750,7 @@ function submit_all($form, &$form_state){
       'series_name' => $firstpage['publication']['journal'],
       'type_id' => '229',
       'pyear' => $firstpage['publication']['year'],
-      'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; $pub_year"
+      'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}"
     ));
 
     $project_pub_id = tpps_create_record('tpps_project_pub', array(
@@ -1913,7 +1928,6 @@ function submit_all($form, &$form_state){
         case ('1'):
             $natural_population = $secondpage['naturalPopulation'];
             $number_assessions = $natural_population['assessions'];
-            dpm($natural_population['season']);
             $seasons = "";
             foreach ($natural_population['season'] as $key => $item){
                 if ($item != '0'){
@@ -2715,12 +2729,37 @@ function submit_all($form, &$form_state){
     //these are messy. File parsing will clean them up. currently, all file paths are being stored in the chado.projectprop table.
     //it will be better when they can be stored in genotypeprop or phenotypeprop, but that required file parsing first.
     
-    for ($i = 0; $i < $organism_number; $i++){
+    for ($i = 1; $i <= $organism_number; $i++){
         
         if (isset($fourthpage["organism-$i"]['phenotype'])){
             $phenotype = $fourthpage["organism-$i"]['phenotype'];
             $phenotype_number = $phenotype['number'];
+            $phenotype_ids = array();
+            $phenotypeprop_ids = array();
+            $phenotypes_meta = array();
             
+            $phenotype_file_id = tpps_create_record('tpps_projectprop', array(
+              'project_id' => $project_id,
+              'type_id' => '2836',
+              'value' => file_create_url(file_load($phenotype['file'])->uri)
+            ));
+            $phenotype_file = file_load($phenotype['file']);
+            
+            for ($j = 1; $j <= $phenotype_number; $j++){
+                $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
+                $phenotypes_meta[$name] = array();
+                $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
+                $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
+                $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
+                if ($phenotype['phenotypes-meta'][$j]['struct-check'] == '1'){
+                    $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
+                }
+                if ($phenotype['phenotypes-meta'][$j]['val-check'] == '1'){
+                    $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
+                    $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
+                }
+            }
+            /*
             if ($phenotype['check'] !== '1'){
                 $phenotype_ids = array();
                 for ($j = 1; $j < $phenotype_number; $j++){
@@ -2837,25 +2876,142 @@ function submit_all($form, &$form_state){
                     }
                 }
             }
-            else{
+            */
+            if ($phenotype['check'] == '1'){
                 $phenotype_meta_file_id = tpps_create_record('tpps_projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
                   'value' => file_create_url(file_load($phenotype['metadata'])->uri)
                 ));
                 $file = file_load($phenotype['metadata']);
+                $location = drupal_realpath($file->uri);
+                $content = parse_xlsx($location);
+                $column_vals = $phenotype['metadata-columns'];
+                
+                foreach ($column_vals as $col => $val){
+                    if ($val == '1'){
+                        $phenotype_name = $col;
+                    }
+                    if ($val == '2'){
+                        $phenotype_attr = $col;
+                    }
+                    if ($val == '3'){
+                        $phenotype_desc = $col;
+                    }
+                    if ($val == '4'){
+                        $phenotype_unit = $col;
+                    }
+                    if ($val == '5'){
+                        $phenotype_struct = $col;
+                    }
+                    if ($val == '6'){
+                        $phenotype_min = $col;
+                    }
+                    if ($val == '7'){
+                        $phenotype_max = $col;
+                    }
+                }
+                
+                for ($j = 0; $j < count($content) - 1; $j++){
+                    $name = strtolower($content[$j][$phenotype_name]);
+                    $phenotypes_meta[$name] = array();
+                    $phentoypes_meta[$name]['attr'] = $content[$j][$phenotype_attr];
+                    $phentoypes_meta[$name]['desc'] = $content[$j][$phenotype_desc];
+                    $phentoypes_meta[$name]['unit'] = $content[$j][$phenotype_unit];
+                    if (isset($phenotype_struct) and isset($content[$j][$phenotype_struct]) and $content[$j][$phenotype_struct] != ''){
+                        $phenotypes_meta[$name]['struct'] = $content[$j][$phenotype_struct];
+                    }
+                    if (isset($phenotype_min) and isset($content[$j][$phenotype_min]) and $content[$j][$phenotype_min] != ''){
+                        $phenotypes_meta[$name]['min'] = $content[$j][$phenotype_min];
+                    }
+                    if (isset($phenotype_max) and isset($content[$j][$phenotype_max]) and $content[$j][$phenotype_max] != ''){
+                        $phenotypes_meta[$name]['max'] = $content[$j][$phenotype_max];
+                    }
+                }
+                
                 $file->status = FILE_STATUS_PERMANENT;
                 $file = file_save($file);
             }
             
-            $phenotype_file_id = tpps_create_record('tpps_projectprop', array(
-              'project_id' => $project_id,
-              'type_id' => '2836',
-              'value' => file_create_url(file_load($phenotype['file'])->uri)
-            ));
-            $file = file_load($phenotype['file']);
-            $file->status = FILE_STATUS_PERMANENT;
-            $file = file_save($file);
+            $location = drupal_realpath($phenotype_file->uri);
+            $content = parse_xlsx($location);
+            $column_vals = $phenotype['file-columns'];
+
+            foreach ($column_vals as $col => $val){
+                if ($val == '1'){
+                    $tree_id_col = $col;
+                }
+                if ($val == '2'){
+                    $phenotype_name = $col;
+                }
+                if ($val == '3'){
+                    $phenotype_val = $col;
+                }
+            }
+
+            for ($j = 0; $j < count($content) - 1; $j++){
+                $name = strtolower($content[$j][$phenotype_name]);
+                $value = $content[$j][$phenotype_val];
+                $stock_unique = $content[$j][$tree_id_col];
+                
+                $attr = db_select('chado.cvterm', 'c')
+                    ->fields('c', array('cvterm_id'))
+                    ->condition('c.name', db_like($phenotypes_meta[$name]['attr']), 'LIKE')
+                    ->execute()
+                    ->fetchAssoc();
+                $attr_id = $attr['cvterm_id'];
+                
+                if (isset($phenotypes_meta[$name]['struct'])){
+                    $obs = db_select('chado.cvterm', 'c')
+                        ->fields('c', array('cvterm_id'))
+                        ->condition('c.name', db_like($phenotypes_meta[$name]['struct']), 'LIKE')
+                        ->execute()
+                        ->fetchAssoc();
+                    $observable_id = $obs['cvterm_id'];
+                }
+                else {
+                    $observable_id = NULL;
+                }
+                
+                $phenotype_ids[] = tpps_create_record('tpps_phenotype', array(
+                  'uniquename' => "$stock_unique-$name-$j",
+                  'name' => $name,
+                  'attr_id' => $attr_id,
+                  'observable_id' => $observable_id,
+                  'value' => $value
+                ));
+                
+                $phenotypeprop_ids[] = tpps_create_record('tpps_phenotypeprop', array(
+                  'phenotype_id' => end($phenotype_ids),
+                  'type_id' => '2871',
+                  'value' => $phenotypes_meta[$name]['desc']
+                ));
+                
+                $phenotypeprop_ids[] = tpps_create_record('tpps_phenotypeprop', array(
+                  'phenotype_id' => end($phenotype_ids),
+                  'type_id' => '2883',
+                  'value' => $phenotypes_meta[$name]['unit']
+                ));
+                
+                if (isset($phenotypes_meta[$name]['min'])){
+                    $phenotypeprop_ids[] = tpps_create_record('tpps_phenotypeprop', array(
+                      'phenotype_id' => end($phenotype_ids),
+                      'type_id' => '52214',
+                      'value' => $phenotypes_meta[$name]['min']
+                    ));
+                }
+                
+                if (isset($phenotypes_meta[$name]['max'])){
+                    $phenotypeprop_ids[] = tpps_create_record('tpps_phenotypeprop', array(
+                      'phenotype_id' => end($phenotype_ids),
+                      'type_id' => '52213',
+                      'value' => $phenotypes_meta[$name]['max']
+                    ));
+                }
+            }
+            
+            $phenotype_file->status = FILE_STATUS_PERMANENT;
+            $phenotype_file = file_save($phenotype_file);
         }
         
         if (isset($fourthpage["organism-$i"]['genotype'])){
@@ -3008,6 +3164,72 @@ function _phenotype_autocomplete($string){
     
     foreach($result as $row){
         $matches[$row->name] = check_plain($row->name);
+    }
+    
+    drupal_json_output($matches);
+}
+
+function _attribute_autocomplete($string){
+    $matches = array();
+    
+    $attributes = db_select('chado.phenotype', 'p')
+        ->distinct()
+        ->fields('p', array('attr_id'));
+    
+    $and = db_and()
+        ->condition('c.cvterm_id', $attributes, 'IN')
+        ->condition('c.name', db_like($string) . '%', 'LIKE');
+    
+    $result = db_select('chado.cvterm', 'c')
+        ->fields('c', array('name'))
+        ->condition($and)
+        ->execute();
+    
+    foreach($result as $row){
+        $matches[$row->name] = check_plain($row->name);
+    }
+    
+    drupal_json_output($matches);
+}
+
+function _units_autocomplete($string){
+    $matches = array();
+    
+    $and = db_and()
+        ->condition('type_id', '2842')
+        ->condition('value', db_like($string) . '%', 'LIKE');
+    
+    $result = db_select('chado.phenotypeprop', 'p')
+        ->distinct()
+        ->fields('p', array('value'))
+        ->condition($and)
+        ->execute();
+    
+    foreach($result as $row){
+        $matches[$row->value] = check_plain($row->value);
+    }
+    
+    drupal_json_output($matches);
+}
+
+function _structure_autocomplete($string){
+    $matches = array();
+    
+    $structures = db_select('chado.phenotype', 'p')
+        ->distinct()
+        ->fields('p', array('observable_id'));
+    
+    $and = db_and()
+        ->condition('c.cvterm_id', $structures, 'IN')
+        ->condition('c.name', db_like($string) . '%', 'LIKE');
+    
+    $result = db_select('chado.cvterm', 'c')
+        ->fields('c', array('name', 'definition'))
+        ->condition($and)
+        ->execute();
+    
+    foreach($result as $row){
+        $matches[$row->name] = check_plain($row->name . ': ' . $row->definition);
     }
     
     drupal_json_output($matches);
