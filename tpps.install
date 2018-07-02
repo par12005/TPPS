@@ -23,6 +23,79 @@ function tpps_uninstall(){
 
 function tpps_schema(){
     
+    $schema['chado.tpps_cvterm'] = array(
+      'description' => 'Temporary version of {chado.cvterm} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_cvterm_id' => array(
+          'description' => '',
+          'pgsql_type' => 'bigserial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'cv_id' => array(
+          'description' => 'The cv or ontology or namespace to which this cvterm belongs.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'name' => array(
+          'description' => 'A concise human-readable name or label for the cvterm. Uniquely identifies a cvterm within a cv.',
+          'type' => 'varchar',
+          'length' => 1024,
+          'not null' => TRUE,
+        ),
+        'definition' => array(
+          'description' => 'A human-readable text definition.',
+          'type' => 'text',
+        ),
+        'dbxref_id' => array(
+          'description' => 'Primary identifier dbxref - The unique global OBO identifier for this cvterm.  Note that a cvterm may have multiple secondary dbxrefs - see also table: cvterm_dbxref.',
+          'type' => 'int',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'is_obsolete' => array(
+          'description' => 'Boolean 0=false,1=true; see GO documentation for details of obsoletion. Note that two terms with different primary dbxrefs may exist if one is obsolete.',
+          'type' => 'int',
+          'default' => 0,
+          'not null' => TRUE,
+        ),
+        'is_relationshiptype' => array(
+          'description' => 'Boolean 0=false,1=true relations or relationship types (also known as Typedefs in OBO format, or as properties or slots) form a cv/ontology in themselves. We use this flag to indicate whether this cvterm is an actual term/class/universal or a relation. Relations may be drawn from the OBO Relations ontology, but are not exclusively drawn from there.',
+          'type' => 'int',
+          'default' => 0,
+          'not null' => TRUE,
+        ),
+      ),
+      'primary key' => array(
+        'tpps_cvterm_id'
+      ),
+      'foreign keys' => array(
+        'dbxref_id' => array(
+          'table' => 'chado.dbxref',
+          'columns' => array(
+            'dbxref_id' => 'dbxref_id'
+          )
+        ),
+        'cv_id' => array(
+          'table' => 'chado.cv',
+          'columns' => array(
+            'cv_id' => 'cv_id'
+          )
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'name',
+          'cv_id',
+          'is_obsolete'
+        ),
+        'c2' => array(
+          'dbxref_id'
+        )
+      )
+    );
+    
     $schema['chado.tpps_project'] = array(
       'description' => 'Temporary version of {chado.project} table for pending or incomplete TPPS submissions.',
       'fields' => array(
