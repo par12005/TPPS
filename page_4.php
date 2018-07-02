@@ -1082,7 +1082,6 @@ function page_4_validate_form(&$form, &$form_state){
                     form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
                 }
             }
-            
 
             if ($phenotype_file == ''){
                 form_set_error("$id][phenotype][file", "Phenotypes: field is required.");
@@ -1141,6 +1140,16 @@ function page_4_validate_form(&$form, &$form_state){
             if (empty(form_get_errors()) and isset($phenotype_file_name_col) and isset($phenotype_name_col)){
                 $missing_phenotypes = tpps_compare_files($phenotype_file, $phenotype_meta, $phenotype_file_name_col, $phenotype_name_col);
                 
+                for ($i = 0; $i < count($missing_phenotypes); $i++){
+                    $missing_phenotypes[$i];
+                    for ($j = 1; $j <= $phenotype_number; $j++){
+                        if (strtolower($phenotype['phenotypes-meta'][$j]['name']) == strtolower($missing_phenotypes[$i])){
+                            unset($missing_phenotypes[$i]);
+                            break;
+                        }
+                    }
+                }
+                
                 if ($missing_phenotypes !== array()){
                     $phenotype_id_str = implode(', ', $missing_phenotypes);
                     form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype Metadata file. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype Metadata file. The phenotypes we detected with missing definitions were: $phenotype_id_str");
@@ -1157,7 +1166,7 @@ function page_4_validate_form(&$form, &$form_state){
                     $used_phenotype = $content[$i][$phenotype_file_name_col];
                     $defined = FALSE;
                     for ($j = 1; $j <= $phenotype_number; $j++){
-                        if ($phenotype[$j]['name'] == $used_phenotype){
+                        if (strtolower($phenotype['phenotypes-meta'][$j]['name']) == strtolower($used_phenotype)){
                             $defined = TRUE;
                             break;
                         }
