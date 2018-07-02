@@ -1046,43 +1046,43 @@ function page_4_validate_form(&$form, &$form_state){
                     }
                 }
             }
-            else{
-                for($i = 1; $i <= $phenotype_number; $i++){
-                    $current_phenotype = $phenotype['phenotypes-meta']["$i"];
-                    $name = $current_phenotype['name'];
-                    $attribute = $current_phenotype['attribute'];
-                    $description = $current_phenotype['description'];
-                    $units = $current_phenotype['units'];
-                    
-                    if ($name == ''){
-                        form_set_error("$id][phenotype][phenotypes-meta][$i][name", "Phenotype $i Name: field is required.");
-                    }
-                    
-                    if ($attribute == ''){
-                        form_set_error("$id][phenotype][phenotypes-meta][$i][attribute", "Phenotype $i Attribute: field is required.");
-                    }
-                    
-                    if ($description == ''){
-                        form_set_error("$id][phenotype][phenotypes-meta][$i][description", "Phenotype $i Description: field is required.");
-                    }
+            
+            for($i = 1; $i <= $phenotype_number; $i++){
+                $current_phenotype = $phenotype['phenotypes-meta']["$i"];
+                $name = $current_phenotype['name'];
+                $attribute = $current_phenotype['attribute'];
+                $description = $current_phenotype['description'];
+                $units = $current_phenotype['units'];
 
-                    if ($units == ''){
-                        form_set_error("$id][phenotype][phenotypes-meta][$i][units", "Phenotype $i Units: field is required.");
-                    }
-                    
-                    if ($current_phenotype['struct-check'] == '1' and $current_phenotype['structure'] == ''){
-                        form_set_error("$id][phenotype][phenotypes-meta][$i][structure", "Phenotype $i Structure: field is required.");
-                    }
-                    
-                    if ($current_phenotype['val-check'] == '1' and $current_phenotype['min'] == ''){
-                        form_set_error("$id][phenotype][phenotypes-meta][$i][min", "Phenotype $i Minimum Value: field is required.");
-                    }
-                    
-                    if ($current_phenotype['val-check'] == '1' and $current_phenotype['max'] == ''){
-                        form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
-                    }
+                if ($name == ''){
+                    form_set_error("$id][phenotype][phenotypes-meta][$i][name", "Phenotype $i Name: field is required.");
+                }
+
+                if ($attribute == ''){
+                    form_set_error("$id][phenotype][phenotypes-meta][$i][attribute", "Phenotype $i Attribute: field is required.");
+                }
+
+                if ($description == ''){
+                    form_set_error("$id][phenotype][phenotypes-meta][$i][description", "Phenotype $i Description: field is required.");
+                }
+
+                if ($units == ''){
+                    form_set_error("$id][phenotype][phenotypes-meta][$i][units", "Phenotype $i Units: field is required.");
+                }
+
+                if ($current_phenotype['struct-check'] == '1' and $current_phenotype['structure'] == ''){
+                    form_set_error("$id][phenotype][phenotypes-meta][$i][structure", "Phenotype $i Structure: field is required.");
+                }
+
+                if ($current_phenotype['val-check'] == '1' and $current_phenotype['min'] == ''){
+                    form_set_error("$id][phenotype][phenotypes-meta][$i][min", "Phenotype $i Minimum Value: field is required.");
+                }
+
+                if ($current_phenotype['val-check'] == '1' and $current_phenotype['max'] == ''){
+                    form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
                 }
             }
+            
 
             if ($phenotype_file == ''){
                 form_set_error("$id][phenotype][file", "Phenotypes: field is required.");
