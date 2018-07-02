@@ -102,6 +102,13 @@ function tpps_menu() {
       'type' => MENU_CALLBACK
     );
     
+    $items['structure/autocomplete'] = array(
+      'title' => 'Autocomplete for Phenotype Structure',
+      'page callback' => '_structure_autocomplete',
+      'access arguments' => array('access content'),
+      'type' => MENU_CALLBACK
+    );
+    
     return $items;
 }
 
@@ -3058,6 +3065,29 @@ function _units_autocomplete($string){
     
     foreach($result as $row){
         $matches[$row->value] = check_plain($row->value);
+    }
+    
+    drupal_json_output($matches);
+}
+
+function _structure_autocomplete($string){
+    $matches = array();
+    
+    $structures = db_select('chado.phenotype', 'p')
+        ->distinct()
+        ->fields('p', array('observable_id'));
+    
+    $and = db_and()
+        ->condition('c.cvterm_id', $structures, 'IN')
+        ->condition('c.name', db_like($string) . '%', 'LIKE');
+    
+    $result = db_select('chado.cvterm', 'c')
+        ->fields('c', array('name', 'definition'))
+        ->condition($and)
+        ->execute();
+    
+    foreach($result as $row){
+        $matches[$row->name] = check_plain($row->name . ': ' . $row->definition);
     }
     
     drupal_json_output($matches);

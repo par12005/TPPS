@@ -75,9 +75,6 @@ function page_4_create_form(&$form, &$form_state){
           '#tree' => TRUE,
         );
         
-        //dpm($form_state['saved_values']['fourthPage']['organism-1']['phenotype']);
-        //dpm($phenotype_number);
-        
         for ($i = 1; $i <= $phenotype_number; $i++){
             
             $fields['phenotypes-meta']["$i"] = array(
@@ -129,6 +126,58 @@ function page_4_create_form(&$form, &$form_state){
                 'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
               ),
               '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
+            );
+            
+            $fields['phenotypes-meta']["$i"]['struct-check'] = array(
+              '#type' => 'checkbox',
+              '#title' => t("Phenotype $i has a structure descriptor"),
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['struct-check']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['struct-check'] : NULL,
+            );
+            
+            $fields['phenotypes-meta']["$i"]['structure'] = array(
+              '#type' => 'textfield',
+              '#title' => t("Phenotype $i Structure:"),
+              '#autocomplete_path' => 'structure/autocomplete',
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['structure']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['structure'] : NULL,
+              '#attributes' => array(
+                'data-toggle' => array('tooltip'),
+                'data-placement' => array('left'),
+                'title' => array('If your structure is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
+              ),
+              '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][struct-check]"]' => array('checked' => TRUE)
+                )
+              ),
+            );
+            
+            $fields['phenotypes-meta']["$i"]['val-check'] = array(
+              '#type' => 'checkbox',
+              '#title' => t("Phenotype $i has a value range"),
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['val-check']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['val-check'] : NULL,
+            );
+            
+            $fields['phenotypes-meta']["$i"]['min'] = array(
+              '#type' => 'textfield',
+              '#title' => t("Phenotype $i Minimum Value (type 1 for binary):"),
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['min']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['min'] : NULL,
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE)
+                )
+              ),
+            );
+            
+            $fields['phenotypes-meta']["$i"]['max'] = array(
+              '#type' => 'textfield',
+              '#title' => t("Phenotype $i Maximum Value (type 2 for binary):"),
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['max']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['max'] : NULL,
+              '#states' => array(
+                'visible' => array(
+                  ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE)
+                )
+              ),
             );
         }
         
@@ -999,72 +1048,38 @@ function page_4_validate_form(&$form, &$form_state){
             }
             else{
                 for($i = 1; $i <= $phenotype_number; $i++){
-                    $current_phenotype = $phenotype["$i"];
+                    $current_phenotype = $phenotype['phenotypes-meta']["$i"];
                     $name = $current_phenotype['name'];
-                    $environment_check = $current_phenotype['environment-check'];
-
+                    $attribute = $current_phenotype['attribute'];
+                    $description = $current_phenotype['description'];
+                    $units = $current_phenotype['units'];
+                    
                     if ($name == ''){
-                        form_set_error("$id][phenotype][$i][name", "Phenotype $i Name: field is required.");
+                        form_set_error("$id][phenotype][phenotypes-meta][$i][name", "Phenotype $i Name: field is required.");
+                    }
+                    
+                    if ($attribute == ''){
+                        form_set_error("$id][phenotype][phenotypes-meta][$i][attribute", "Phenotype $i Attribute: field is required.");
+                    }
+                    
+                    if ($description == ''){
+                        form_set_error("$id][phenotype][phenotypes-meta][$i][description", "Phenotype $i Description: field is required.");
                     }
 
-                    if ($environment_check == '1'){
-                        $description = $current_phenotype['environment']['description'];
-                        $units = $current_phenotype['environment']['units'];
-
-                        if ($description == ''){
-                            form_set_error("$id][phenotype][$i][environment][description", "Phenotype $i Description: field is required.");
-                        }
-
-                        if ($units == ''){
-                            form_set_error("$id][phenotype][$i][environment][units", "Phenotype $i Units: field is required.");
-                        }
+                    if ($units == ''){
+                        form_set_error("$id][phenotype][phenotypes-meta][$i][units", "Phenotype $i Units: field is required.");
                     }
-                    else{
-                        $type = $current_phenotype['non-environment']['type'];
-                        $binary_1 = $current_phenotype['non-environment']['binary'][1];
-                        $binary_2 = $current_phenotype['non-environment']['binary'][2];
-                        $min = $current_phenotype['non-environment']['quantitative']['min'];
-                        $max = $current_phenotype['non-environment']['quantitative']['max'];
-                        $description = $current_phenotype['non-environment']['description'];
-                        $units = $current_phenotype['non-environment']['units'];
-                        $structure = $current_phenotype['non-environment']['structure'];
-                        $developmental = $current_phenotype['non-environment']['developmental'];
-
-                        if ($type == '0'){
-                            form_set_error("$id][phenotype][$i][non-environment][type", "Phenotype $i Type: field is required.");
-                        }
-                        elseif ($type == '1'){
-                            if ($binary_1 == ''){
-                                form_set_error("$id][phenotype][$i][non-environment][binary][1", "Phenotype $i Binary Type 1: field is required.");
-                            }
-                            if ($binary_2 == ''){
-                                form_set_error("$id][phenotype][$i][non-environment][binary][2", "Phenotype $i Binary Type 2: field is required.");
-                            }
-                        }
-                        elseif($type == '2'){
-                            if ($min == ''){
-                                form_set_error("$id][phenotype][$i][non-environment][quantitative][min", "Phenotype $i Minimum: field is required.");
-                            }
-                            if ($max == ''){
-                                form_set_error("$id][phenotype][$i][non-environment][quantitative][max", "Phenotype $i Maximum: field is required.");
-                            }
-                        }
-
-                        if ($description == ''){
-                            form_set_error("$id][phenotype][$i][non-environment][description", "Phenotype $i Description: field is required.");
-                        }
-
-                        if ($units == '' and $type == '2'){
-                            form_set_error("$id][phenotype][$i][non-environment][units", "Phenotype $i Units: field is required.");
-                        }
-
-                        if ($structure == '0'){
-                            form_set_error("$id][phenotype][$i][non-environment][structure", "Phenotype $i Plant Structure: field is required.");
-                        }
-
-                        if ($developmental == '0'){
-                            form_set_error("$id][phenotype][$i][non-environment][developmental", "Phenotype $i Developmental Stage: field is required.");
-                        }
+                    
+                    if ($current_phenotype['struct-check'] == '1' and $current_phenotype['structure'] == ''){
+                        form_set_error("$id][phenotype][phenotypes-meta][$i][structure", "Phenotype $i Structure: field is required.");
+                    }
+                    
+                    if ($current_phenotype['val-check'] == '1' and $current_phenotype['min'] == ''){
+                        form_set_error("$id][phenotype][phenotypes-meta][$i][min", "Phenotype $i Minimum Value: field is required.");
+                    }
+                    
+                    if ($current_phenotype['val-check'] == '1' and $current_phenotype['max'] == ''){
+                        form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
                     }
                 }
             }
@@ -1418,7 +1433,7 @@ function page_4_validate_form(&$form, &$form_state){
 
             if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
                 $phenotype = $organism['phenotype'];
-                //validate_phenotype($phenotype, "organism-$i", $form, $form_state);
+                validate_phenotype($phenotype, "organism-$i", $form, $form_state);
             }
 
             if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
