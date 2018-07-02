@@ -111,7 +111,7 @@ function page_4_create_form(&$form, &$form_state){
             $fields['phenotypes-meta']["$i"]['description'] = array(
               '#type' => 'textfield',
               '#title' => t("Phenotype $i Description:"),
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['description']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute'] : NULL,
+              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['description']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['description'] : NULL,
               '#description' => t("Please provide a short description of Phenotype $i"),
             );
             
