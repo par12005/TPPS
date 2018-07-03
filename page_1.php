@@ -490,10 +490,23 @@ function page_1_validate_form(&$form, &$form_state){
         }
         
         for ($i = 1; $i <= $organism_number; $i++){
-            $species = $organism[$i]['species'];
+            $name = $organism[$i]['species'];
             
-            if ($species == ''){
+            if ($name == ''){
                 form_set_error("organism[$i][species", "Tree Species $i: field is required.");
+            }
+            else{
+                $name = explode(" ", $name);
+                $genus = $name[0];
+                $species = implode(" ", array_slice($name, 1));
+                $name = implode(" ", $name);
+                $empty_pattern = '/^ *$/';
+                $correct_pattern = '/^[A-Z|a-z|.| ]+$/';
+                if (!isset($genus) or !isset($species) or preg_match($empty_pattern, $genus) or preg_match($empty_pattern, $species) or !preg_match($correct_pattern, $genus) or !preg_match($correct_pattern, $species)){
+                    form_set_error("organism[$i][species", check_plain("Tree Species $i: please provide both genus and species in the form \"<genus> <species>\""));
+                    dpm("'$genus'");
+                    dpm("'$species'");
+                }
             }
         }
     }
