@@ -930,6 +930,13 @@ function tpps_init_project($form, &$form_state){
 }
 
 function tpps_create_record($table, array $values){
+    if (isset($values[0]) and gettype($values[0]) === "array"){
+        $is_multi = TRUE;
+    }
+    else {
+        $is_multi = FALSE;
+    }
+    
     $default_fields = array();
     $insert = NULL;
     $primary_key = tpps_get_primary_key($table);
@@ -950,23 +957,59 @@ function tpps_create_record($table, array $values){
     
     //get the new primary key (increment by 1 from the old primary key)
     $new_primary = tpps_compare_temp($compare_table, $compare_primary, TRUE) + 1;
-    $values["$primary_key"] = $new_primary;
-    
-    //check record exists
-    if (($existing_key = tpps_record_exists($compare_table, $values)) or ($existing_key = tpps_record_exists($table, $values))){
-        //if it does, do not attempt to re-write it.
-        //drupal_set_message(t('Error: Record already exists.'), 'error');
-        return $existing_key;
+    if ($is_multi){
+        $unique = tpps_get_unique_columns($table);
+        $compare_unique = tpps_get_unique_columns($compare_table);
+        foreach ($values as $key => $record){
+            $record["$primary_key"] = &$new_primary;
+            if (tpps_record_exists($compare_table, $record, $compare_unique) or tpps_record_exists($table, $record, $unique)){
+                unset($values[$key]);
+            }
+        }
+        if ($values == array()){
+            return;
+        }
+    }
+    else {
+        $values["$primary_key"] = $new_primary;
+
+        //check record exists
+        if (($existing_key = tpps_record_exists($compare_table, $values)) or ($existing_key = tpps_record_exists($table, $values))){
+            //if it does, do not attempt to re-write it.
+            //drupal_set_message(t('Error: Record already exists.'), 'error');
+            return $existing_key;
+        }
     }
     
     $fields = db_query("select column_name from INFORMATION_SCHEMA.columns where table_name='$table'");
+    $set_fields = array();
     
-    //get default values
-    while (($field = $fields->fetchAssoc())){
-        $key = $field['column_name'];
-        if (!isset($values[$key])){
-            array_push($default_fields, $key);
-            unset($values[$key]);
+    if ($is_multi){
+        while (($field = $fields->fetchAssoc())){
+            $key = $field['column_name'];
+            $top = reset($values);
+            if (!isset($top[$key])){
+                $default_fields[] = $key;
+                foreach ($values as $index => $record){
+                    unset($values[$index][$key]);
+                }
+            }
+            else {
+                $set_fields[] = $key;
+            }
+        }
+    }
+    else {
+        //get default values
+        while (($field = $fields->fetchAssoc())){
+            $key = $field['column_name'];
+            if (!isset($values[$key])){
+                $default_fields[] = $key;
+                unset($values[$key]);
+            }
+            else {
+                $set_fields[] = $key;
+            }
         }
     }
     
@@ -974,36 +1017,46 @@ function tpps_create_record($table, array $values){
 //    dpm($table);
 //    dpm($values);
 //    dpm($default_fields);
-    
-    //Insert the record
-    $insert = db_insert("chado.$table")
-        ->useDefaults($default_fields)
-        ->fields($values)
-        ->execute();
-    
-    return $insert;
+    if ($is_multi){
+        $insert = db_insert("chado.$table")
+            ->useDefaults($default_fields)
+            ->fields($set_fields);
+        foreach ($values as $record){
+            $insert->values($record);
+        }
+        $insert->execute();
+        return;
+    }
+    else {
+        //Insert the record
+        $insert = db_insert("chado.$table")
+            ->useDefaults($default_fields)
+            ->fields($set_fields)
+            ->values($values)
+            ->execute();
+
+        return $insert;
+    }
 }
 
-function tpps_record_exists($table, array $values){
+function tpps_record_exists($table, array $values, $unique_columns = NULL){
     
-    $unique_columns = tpps_get_unique_columns($table);
+    if (!isset($unique_columns)){
+        $unique_columns = tpps_get_unique_columns($table);
+    }
     
     $results = db_select("chado.$table", 't')
         ->fields('t');
     
     $and = db_and();
     foreach ($unique_columns as $field){
-        if (isset($values[$field])){
-            $value = $values[$field];
-            if ($value != ''){
-                $and->condition("$field", db_like("$value"), 'LIKE');
-            }
+        if (isset($values[$field]) and $values[$field] != ''){
+            $and->condition($field, "$values[$field]");
         }
     }
     
-    $results->condition($and);
-    
-    $results = $results->execute()
+    $results = $results->condition($and)
+        ->execute()
         ->fetchAssoc();
     
     if ($results){
@@ -1016,7 +1069,7 @@ function tpps_record_exists($table, array $values){
 
 function tpps_get_unique_columns($table){
     
-        $result = db_query("select indexdef from pg_indexes where tablename = '$table' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
+    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
         ->fetchAssoc();
     
     $result = preg_split('/(\(|\))/',$result['indexdef']);
@@ -1647,7 +1700,7 @@ function tpps_master_submit($form, &$form_state){
                 //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
                 //variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
-                drupal_goto('<front>');
+                //drupal_goto('<front>');
                 return;
             }
             break;
@@ -1733,6 +1786,17 @@ If you have any questions about your submission, please feel free to contact us 
 }
 
 function submit_all($form, &$form_state){
+    
+    $memory_limit = ini_get('memory_limit');
+    if (preg_match('/^(\d+)(.)$/', $memory_limit, $matches)) {
+        if ($matches[2] == 'G') {
+            $memory_limit = $matches[1] * 1024 * 1024 * 1024;
+        } else if ($matches[2] == 'M') {
+            $memory_limit = $matches[1] * 1024 * 1024;
+        } else if ($matches[2] == 'K') {
+            $memory_limit = $matches[1] * 1024; 
+        }
+    }
     
     $dbxref_id = $form_state['dbxref_id'];
     $accession = $form_state['accession'];
@@ -2672,8 +2736,8 @@ function submit_all($form, &$form_state){
             }
         }
         
-        $file->status = FILE_STATUS_PERMANENT;
-        $file = file_save($file);
+//        $file->status = FILE_STATUS_PERMANENT;
+//        $file = file_save($file);
     }
     else {
         //multiple files, sorted by species
@@ -3053,17 +3117,51 @@ function submit_all($form, &$form_state){
                     ->condition($and)
                     ->execute()
                     ->fetchAssoc();
-                
-                dpm($species_code);
+                $species_code = $species_code['value'];
+                $marker = 'SNP';
+                $genotype_num = 0;
                 
                 $vcf_file = file_load($genotype['vcf']);
                 $location = drupal_realpath($vcf_file->uri);
-                $vcf_content = parse_xlsx($location);
+                $vcf_content = fopen($vcf_file->uri, 'r');
                 
+                //inserts are WAY faster when done as a group, but require a lot of memory
+                $genotype_vals = array();
+                dpm('start: ' . date('r'));
+                while (($vcf_line = fgets($vcf_content)) !== FALSE){
+                    if ($vcf_line[0] != '#'){
+                        $vcf_line = explode("\t", $vcf_line);
+                        $scaffold_id = &$vcf_line[0];
+                        $position = &$vcf_line[1];
+                        $ref = &$vcf_line[3];
+                        $alt = &$vcf_line[4];
+                        
+                        $description = "$ref:$alt";
+                        
+                        $part = memory_get_usage() / $memory_limit;
+                        //check memory usage, compare to memory limit - if more than 15% is being used, insert what we have so far, then make a new query
+                        if ($part >= .15){
+                            tpps_create_record('tpps_genotype', $genotype_vals);
+                            $genotype_vals = array();
+                        }
+                        $genotype_vals[] = array(
+                          'name' => "SNP-$accession-$scaffold_id-$position",
+                          'uniquename' => "SNP-$accession-$scaffold_id-$position-$description",
+                          'description' => $description,
+                          'type_id' => '1205'
+                        );
+                    }
+                    else {
+                        
+                    }
+                }
+                //insert the last set of values
+                tpps_create_record('tpps_genotype', $genotype_vals);
                 
-                
-                $vcf_file->status = FILE_STATUS_PERMANENT;
-                $vcf_file = file_save($vcf_file);
+                dpm('done: ' . date('r'));
+                dpm('eof');
+//                $vcf_file->status = FILE_STATUS_PERMANENT;
+//                $vcf_file = file_save($vcf_file);
             }
         }
     }
