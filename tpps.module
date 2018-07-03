@@ -1644,8 +1644,8 @@ function tpps_master_submit($form, &$form_state){
             else{
                 submit_all($form, $form_state);
                 dpm('submit');
-                variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
-                variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
+                //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                //variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
@@ -2983,9 +2983,16 @@ function submit_all($form, &$form_state){
                 ));
             }
             elseif ($genotype['ref-genome'] == 'bio'){
+                
+                $bioproject_id = tpps_create_record('tpps_dbxref', array(
+                  'db_id' => '176',
+                  'accession' => $genotype['BioProject-id']
+                ));
+                dpm($bioproject_id);
+                
                 $project_dbxref_id = tpps_create_record('tpps_project_dbxref', array(
                   'project_id' => $project_id,
-                  'dbxref_id' => $genotype['BioProject-id'],
+                  'dbxref_id' => $bioproject_id,
                 ));
                 
                 $bioproject_assembly_file_ids = array();
@@ -3036,9 +3043,27 @@ function submit_all($form, &$form_state){
                   'type_id' => '2836',
                   'value' => file_create_url(file_load($genotype['vcf'])->uri)
                 ));
-                $file = file_load($genotype['vcf']);
-                $file->status = FILE_STATUS_PERMANENT;
-                $file = file_save($file);
+                
+                $current_id = $organism_ids[$i];
+                $and = db_and()
+                    ->condition('type_id', '52307')
+                    ->condition('organism_id', "$current_id");
+                $species_code = db_select('chado.organismprop', 'o')
+                    ->fields('o', array('value'))
+                    ->condition($and)
+                    ->execute()
+                    ->fetchAssoc();
+                
+                dpm($species_code);
+                
+                $vcf_file = file_load($genotype['vcf']);
+                $location = drupal_realpath($vcf_file->uri);
+                $vcf_content = parse_xlsx($location);
+                
+                
+                
+                $vcf_file->status = FILE_STATUS_PERMANENT;
+                $vcf_file = file_save($vcf_file);
             }
         }
     }
