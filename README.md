@@ -216,7 +216,6 @@ After the data has been submitted and approved, the user will recieve an email w
 - Admin Interface for submission approval
 - Parse and load content from genotype files to CHADO
 - Parse and load content from phenotype files to CHADO
-- organism name validation: must collect genus and species
 
 # Resources
 
