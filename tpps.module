@@ -1927,6 +1927,7 @@ function submit_all($form, &$form_state){
     }
 
     $organism_ids = array();
+    $project_organism_ids = array();
     $organism_number = $firstpage['organism']['number'];
 
     for ($i = 1; $i <= $organism_number; $i++){
@@ -1943,6 +1944,10 @@ function submit_all($form, &$form_state){
           'genus' => $genus,
           'species' => $species,
           'infraspecific_name' => $infra
+        ));
+        $project_organism_ids[$i] = tpps_create_record('tpps_project_organism', array(
+          'organism_id' => $organism_ids[$i],
+          'project_id' => $project_id,
         ));
     }
     /***************************
@@ -3025,6 +3030,7 @@ function submit_all($form, &$form_state){
         
         if (isset($fourthpage["organism-$i"]['genotype'])){
             $genotype = $fourthpage["organism-$i"]['genotype'];
+            $genotype_count = 0;
             
             if ($genotype['ref-genome'] == 'url'){
                 $reference_genome_id = tpps_create_record('tpps_projectprop', array(
@@ -3120,6 +3126,7 @@ function submit_all($form, &$form_state){
                 dpm('start: ' . date('r'));
                 while (($vcf_line = fgets($vcf_content)) !== FALSE){
                     if ($vcf_line[0] != '#'){
+                        $genotype_count++;
                         $vcf_line = explode("\t", $vcf_line);
                         $scaffold_id = &$vcf_line[0];
                         $position = &$vcf_line[1];
@@ -3225,6 +3232,11 @@ function submit_all($form, &$form_state){
 //                $vcf_file->status = FILE_STATUS_PERMANENT;
 //                $vcf_file = file_save($vcf_file);
             }
+            
+            tpps_create_record('tpps_project_genotype_count', array(
+              'project_id' => $project_id,
+              'count' => $genotype_count
+            ));
         }
     }
 }
