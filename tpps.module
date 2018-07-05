@@ -957,20 +957,7 @@ function tpps_create_record($table, array $values){
     
     //get the new primary key (increment by 1 from the old primary key)
     $new_primary = tpps_compare_temp($compare_table, $compare_primary, TRUE) + 1;
-    if ($is_multi){
-        $unique = tpps_get_unique_columns($table);
-        $compare_unique = tpps_get_unique_columns($compare_table);
-        foreach ($values as $key => $record){
-            $record["$primary_key"] = &$new_primary;
-            if (tpps_record_exists($compare_table, $record, $compare_unique) or tpps_record_exists($table, $record, $unique)){
-                unset($values[$key]);
-            }
-        }
-        if ($values == array()){
-            return;
-        }
-    }
-    else {
+    if (!$is_multi){
         $values["$primary_key"] = $new_primary;
 
         //check record exists
@@ -1248,7 +1235,7 @@ function tpps_page_build(&$page){
         return $page;
     }
     
-    if (isset($page['content']['system_main']['step']) and $page['content']['system_main']['step']['#default_value'] != 'frontpage' and $page['content']['system_main']['step']['#default_value'] != 'Hellopage' and $page['content']['system_main']['step']['#default_value'] != '__SUBMIT__'){
+    if (isset($page['content']['system_main']['step']) and $page['content']['system_main']['step']['#default_value'] != 'frontpage' and $page['content']['system_main']['step']['#default_value'] != 'Hellopage'){
         $blockObject = block_load('views', 'tpps_status');
         $blockObject->title = ($page['content']['system_main']['step']['#default_value'] != 'summarypage') ? 'TPPS Status' : '';
         $blockObject->subject = '';
@@ -1786,6 +1773,17 @@ If you have any questions about your submission, please feel free to contact us 
 }
 
 function submit_all($form, &$form_state){
+    
+    $memory_limit = ini_get('memory_limit');
+    if (preg_match('/^(\d+)(.)$/', $memory_limit, $matches)) {
+        if ($matches[2] == 'G') {
+            $memory_limit = $matches[1] * 1024 * 1024 * 1024;
+        } else if ($matches[2] == 'M') {
+            $memory_limit = $matches[1] * 1024 * 1024;
+        } else if ($matches[2] == 'K') {
+            $memory_limit = $matches[1] * 1024; 
+        }
+    }
     
     $dbxref_id = $form_state['dbxref_id'];
     $accession = $form_state['accession'];
@@ -3107,12 +3105,18 @@ function submit_all($form, &$form_state){
                     ->fetchAssoc();
                 $species_code = $species_code['value'];
                 $marker = 'SNP';
+                //$genotype_id = tpps_compare_temp('genotype', 'genotype_id', TRUE) + 1;
                 
                 $vcf_file = file_load($genotype['vcf']);
                 $location = drupal_realpath($vcf_file->uri);
                 $vcf_content = fopen($vcf_file->uri, 'r');
                 
+                //inserts are WAY faster when done as a group, but require a lot of memory
+                $genotype_vals = array();
+                $genotypeprop_vals = array();
                 $format = "";
+                $first = TRUE;
+                
                 dpm('start: ' . date('r'));
                 while (($vcf_line = fgets($vcf_content)) !== FALSE){
                     if ($vcf_line[0] != '#'){
@@ -3127,14 +3131,27 @@ function submit_all($form, &$form_state){
                         
                         $description = "$ref:$alt";
                         
-                        $genotype_id = tpps_create_record('tpps_genotype', array(
+                        $part = memory_get_usage() / $memory_limit;
+                        //check memory usage, compare to memory limit - if more than 15% is being used, insert what we have so far, then make a new query
+                        if ($part >= .15){
+                            tpps_create_record('tpps_genotype', $genotype_vals);
+                            $genotype_vals = array();
+                            tpps_create_record('tpps_genotypeprop', $genotypeprop_vals);
+                            $genotypeprop_vals = array();
+                        }
+                        
+                        $genotype_vals[] = array(
                           'name' => "$marker-$species_code-$scaffold_id-$position",
                           'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
                           'description' => $description,
                           'type_id' => '1205'
-                        ));
+                        );
                         
-                        $genotypeprop_vals = array();
+                        if ($first){
+                            $first = FALSE;
+                            $genotype_id = tpps_create_record('tpps_genotype', $genotype_vals[0]);
+                            $genotype_vals = array();
+                        }
                         
                         if ($format != ""){
                             $genotypeprop_vals[] = array(
@@ -3163,7 +3180,7 @@ function submit_all($form, &$form_state){
                         foreach($info_vals as $key => $val){
                             $parts = explode("=", $val);
                             unset($info_vals[$key]);
-                            $info_vals[$parts[0]] = $parts[1];
+                            $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
                         }
                         
                         //allele frequency, assuming that the info code for allele frequency is 'AF'
@@ -3175,12 +3192,15 @@ function submit_all($form, &$form_state){
                             );
                         }
                         
-                        tpps_create_record('tpps_genotypeprop', $genotypeprop_vals);
+                        $genotype_id++;
                     }
                     elseif (preg_match('/##FORMAT=/', $vcf_line)) {
                         $format .= substr($vcf_line, 9, -1);
                     }
                 }
+                //insert the last set of values
+                tpps_create_record('tpps_genotype', $genotype_vals);
+                tpps_create_record('tpps_genotypeprop', $genotypeprop_vals);
                 dpm('done: ' . date('r'));
 //                $vcf_file->status = FILE_STATUS_PERMANENT;
 //                $vcf_file = file_save($vcf_file);
