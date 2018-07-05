@@ -144,6 +144,9 @@ jQuery(document).ready(function ($) {
         
         if (jQuery("#edit-step")[0].value === 'summarypage'){
             jQuery("#tpps-status").insertAfter(".tgdr_form_status");
+            jQuery("#edit-next").on('click', function(){
+                jQuery("#tpps-status").html("<label>Loading... </label><br>This step may take several minutes.");
+            });
         }
     }
     
