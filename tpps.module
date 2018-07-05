@@ -3192,6 +3192,24 @@ function submit_all($form, &$form_state){
                             );
                         }
                         
+                        //depth coverage, assuming that the info code for depth coverage is 'DP'
+                        if (isset($info_vals['DP']) and $info_vals['DP'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '52046',
+                              'value' => $info_vals['DP']
+                            );
+                        }
+                        
+                        //number of samples, assuming that the info code for number of samples is 'NS'
+                        if (isset($info_vals['NS']) and $info_vals['NS'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '128971',
+                              'value' => $info_vals['NS']
+                            );
+                        }
+                        
                         $genotype_id++;
                     }
                     elseif (preg_match('/##FORMAT=/', $vcf_line)) {
@@ -3201,6 +3219,8 @@ function submit_all($form, &$form_state){
                 //insert the last set of values
                 tpps_create_record('tpps_genotype', $genotype_vals);
                 tpps_create_record('tpps_genotypeprop', $genotypeprop_vals);
+                unset($genotype_vals);
+                unset($genotypeprop_vals);
                 dpm('done: ' . date('r'));
 //                $vcf_file->status = FILE_STATUS_PERMANENT;
 //                $vcf_file = file_save($vcf_file);
