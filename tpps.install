@@ -1435,7 +1435,7 @@ function tpps_schema(){
       ),
       'foreign keys' => array(
         'type_id' => array(
-          'table' => 'chaod.cvterm',
+          'table' => 'chado.cvterm',
           'columns' => array(
             'cvterm_id' => 'type_id'
           )
@@ -1443,6 +1443,64 @@ function tpps_schema(){
       ),
       'primary key' => array(
         'tpps_genotype_id'
+      )
+    );
+    
+    $schema['chado.tpps_genotypeprop'] = array(
+      'description' => 'Temporary version of {chado.genotype} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_genotypeprop_id' => array(
+          'description' => '',
+          'pgsql_type' => 'bigserial',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'genotype_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'type_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'unsigned' => TRUE
+        ),
+        'value' => array(
+          'description' => '',
+          'type' => 'text'
+        ),
+        'rank' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+          'default' => '0'
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'genotype_id',
+          'type_id',
+          'rank'
+        )
+      ),
+      'foreign keys' => array(
+        'type_id' => array(
+          'table' => 'chado.cvterm',
+          'columns' => array(
+            'cvterm_id' => 'type_id'
+          )
+        ),
+        'genotype_id' => array(
+          'table' => 'chado.genotype',
+          'columns' => array(
+            'genotype_id' => 'genotype_id'
+          )
+        )
+      ),
+      'primary key' => array(
+        'tpps_genotypeprop_id'
       )
     );
     
