@@ -126,6 +126,22 @@ function tpps_schema(){
       )
     );
     
+    $schema['chado.tpps_project_genotype_count'] = array(
+      'description' => 'Temporary version of {chado.project_genotype_count} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'project_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE,
+        ),
+        'count' => array(
+          'description' => '',
+          'type' => 'int',
+          'unsigned' => TRUE,
+        ),
+      ),
+    );
+    
     $schema['chado.tpps_project_pub'] = array(
       'description' => 'Temporary version of {chado.project_pub} table for pending or incomplete TPPS submissions.',
       'fields' => array(
@@ -1447,7 +1463,7 @@ function tpps_schema(){
     );
     
     $schema['chado.tpps_genotypeprop'] = array(
-      'description' => 'Temporary version of {chado.genotype} table for pending or incomplete TPPS submissions.',
+      'description' => 'Temporary version of {chado.genotypeprop} table for pending or incomplete TPPS submissions.',
       'fields' => array(
         'tpps_genotypeprop_id' => array(
           'description' => '',
