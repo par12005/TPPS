@@ -126,6 +126,51 @@ function tpps_schema(){
       )
     );
     
+    $schema['chado.tpps_project_organism'] = array(
+      'description' => 'Temporary version of {chado.project_organism} table for pending or incomplete TPPS submissions.',
+      'fields' => array(
+        'tpps_project_organism_id' => array(
+          'description' => '',
+          'pgsql_type' => 'serial',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'project_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE,
+        ),
+        'organism_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'not null' => TRUE
+        )
+      ),
+      'primary key' => array(
+        'tpps_project_organism_id'
+      ),
+      'foreign keys' => array(
+        'project_id' => array(
+          'table' => 'chado.project',
+          'columns' => array(
+            'project_id' => 'project_id'
+          )
+        ),
+        'organism_id' => array(
+          'table' => 'chado.organism',
+          'columns' => array(
+            'organism_id' => 'organism_id'
+          )
+        )
+      ),
+      'unique keys' => array(
+        'c1' => array(
+          'project_id',
+          'organism_id'
+        )
+      )
+    );
+    
     $schema['chado.tpps_project_genotype_count'] = array(
       'description' => 'Temporary version of {chado.project_genotype_count} table for pending or incomplete TPPS submissions.',
       'fields' => array(
