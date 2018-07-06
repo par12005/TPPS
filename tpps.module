@@ -1056,7 +1056,7 @@ function tpps_record_exists($table, array $values, $unique_columns = NULL){
 
 function tpps_get_unique_columns($table){
     
-    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
+    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and schemaname = 'chado' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
         ->fetchAssoc();
     
     $result = preg_split('/(\(|\))/',$result['indexdef']);
