@@ -3123,7 +3123,7 @@ function submit_all($form, &$form_state){
                 $format = "";
                 $first = TRUE;
                 
-                dpm('start: ' . date('r'));
+                //dpm('start: ' . date('r'));
                 while (($vcf_line = fgets($vcf_content)) !== FALSE){
                     if ($vcf_line[0] != '#'){
                         $genotype_count++;
@@ -3228,7 +3228,7 @@ function submit_all($form, &$form_state){
                 tpps_create_record('tpps_genotypeprop', $genotypeprop_vals);
                 unset($genotype_vals);
                 unset($genotypeprop_vals);
-                dpm('done: ' . date('r'));
+                //dpm('done: ' . date('r'));
                 $vcf_file->status = FILE_STATUS_PERMANENT;
                 $vcf_file = file_save($vcf_file);
             }
