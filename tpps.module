@@ -1056,7 +1056,7 @@ function tpps_record_exists($table, array $values, $unique_columns = NULL){
 
 function tpps_get_unique_columns($table){
     
-    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
+    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and schemaname = 'chado' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
         ->fetchAssoc();
     
     $result = preg_split('/(\(|\))/',$result['indexdef']);
@@ -1684,10 +1684,10 @@ function tpps_master_submit($form, &$form_state){
             else{
                 submit_all($form, $form_state);
                 dpm('submit');
-                //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
-                //variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
+                variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
-                //drupal_goto('<front>');
+                drupal_goto('<front>');
                 return;
             }
             break;
@@ -2728,8 +2728,8 @@ function submit_all($form, &$form_state){
             }
         }
         
-//        $file->status = FILE_STATUS_PERMANENT;
-//        $file = file_save($file);
+        $file->status = FILE_STATUS_PERMANENT;
+        $file = file_save($file);
     }
     else {
         //multiple files, sorted by species
@@ -3123,7 +3123,7 @@ function submit_all($form, &$form_state){
                 $format = "";
                 $first = TRUE;
                 
-                dpm('start: ' . date('r'));
+                //dpm('start: ' . date('r'));
                 while (($vcf_line = fgets($vcf_content)) !== FALSE){
                     if ($vcf_line[0] != '#'){
                         $genotype_count++;
@@ -3228,15 +3228,17 @@ function submit_all($form, &$form_state){
                 tpps_create_record('tpps_genotypeprop', $genotypeprop_vals);
                 unset($genotype_vals);
                 unset($genotypeprop_vals);
-                dpm('done: ' . date('r'));
-//                $vcf_file->status = FILE_STATUS_PERMANENT;
-//                $vcf_file = file_save($vcf_file);
+                //dpm('done: ' . date('r'));
+                $vcf_file->status = FILE_STATUS_PERMANENT;
+                $vcf_file = file_save($vcf_file);
             }
             
-            tpps_create_record('tpps_project_genotype_count', array(
-              'project_id' => $project_id,
-              'count' => $genotype_count
-            ));
+            db_insert('chado.tpps_project_genotype_count')
+                ->fields(array(
+                  'project_id' => $project_id,
+                  'count' => $genotype_count
+                ))
+                ->execute();
         }
     }
 }
