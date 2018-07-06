@@ -504,8 +504,6 @@ function page_1_validate_form(&$form, &$form_state){
                 $correct_pattern = '/^[A-Z|a-z|.| ]+$/';
                 if (!isset($genus) or !isset($species) or preg_match($empty_pattern, $genus) or preg_match($empty_pattern, $species) or !preg_match($correct_pattern, $genus) or !preg_match($correct_pattern, $species)){
                     form_set_error("organism[$i][species", check_plain("Tree Species $i: please provide both genus and species in the form \"<genus> <species>\""));
-                    dpm("'$genus'");
-                    dpm("'$species'");
                 }
             }
         }
