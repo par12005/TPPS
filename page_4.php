@@ -1338,11 +1338,11 @@ function page_4_validate_form(&$form, &$form_state){
                 }
                 elseif ($ref_genome === 'manual' and $assembly != '' and isset($scaffold_col) and empty(form_get_errors())){
                     $vcf_content = fopen(file_load($vcf)->uri, 'r');
+                    $assembly_content = fopen(file_load($assembly)->uri, 'r');
                     
                     while (($vcf_line = fgets($vcf_content)) !== FALSE){
                         if ($vcf_line[0] != '#'){
-
-                            $assembly_content = fopen(file_load($assembly)->uri, 'r');
+                            
                             $vcf_values = explode("\t", $vcf_line);
                             $scaffold_id = $vcf_values[0];
                             $match = FALSE;
@@ -1353,15 +1353,36 @@ function page_4_validate_form(&$form, &$form_state){
                                 }
                                 else{
                                     $assembly_values = explode(' ', $assembly_line);
-                                    $assembly_scaffold = $assembly_values[$scaffold_col];
+                                    $assembly_scaffold = trim($assembly_values[$scaffold_col]);
+                                    if ($assembly_scaffold[0] == '>'){
+                                        $assembly_scaffold = substr($assembly_scaffold, 1);
+                                    }
                                     if ($assembly_scaffold == $scaffold_id){
                                         $match = TRUE;
                                         break;
                                     }
                                 }
                             }
-
-                            fclose($assembly_content);
+                            if (!$match){
+                                fclose($assembly_content);
+                                $assembly_content = fopen(file_load($assembly)->uri, 'r');
+                                while (($assembly_line = fgets($assembly_content)) !== FALSE){
+                                    if ($assembly_line[0] != '>'){
+                                        continue;
+                                    }
+                                    else{
+                                        $assembly_values = explode(' ', $assembly_line);
+                                        $assembly_scaffold = trim($assembly_values[$scaffold_col]);
+                                        if ($assembly_scaffold[0] == '>'){
+                                            $assembly_scaffold = substr($assembly_scaffold, 1);
+                                        }
+                                        if ($assembly_scaffold == $scaffold_id){
+                                            $match = TRUE;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
 
                             if (!$match){
                                 //dpm($scaffold_id);
