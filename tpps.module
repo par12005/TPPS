@@ -1682,10 +1682,10 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'fourthPage';
             }
             else{
-                submit_all($form, $form_state);
+                //submit_all($form, $form_state);
                 dpm('submit');
-                variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
-                variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
+                //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                //variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
@@ -1711,7 +1711,9 @@ function tpps_master_submit($form, &$form_state){
 function tpps_submit_email($form, $form_state){
     
     global $user;
-    
+    global $base_url;
+    //$admin = "dev@tgwebdev.cam.uchc.edu";
+    $admin = "peter.richter@uconn.edu";
     $to = $user->mail;
     $from = "nginx@tgwebdev.cam.uchc.edu";
     $subject = "TPPS Submission Received";
@@ -1751,8 +1753,8 @@ Your TPPS submission has been received and is pending approval from a TreeGenes 
     $message .= 
 "   <li>Study Type: $study_type</li>
     <li>Data Type: $data_type</li></ul>
-
-If you have any questions about your submission, please feel free to contact us <a href='https://tgwebdev.cam.uchc.edu/Drupal/contactform'>here</a>.<br><br>
+You can view your submission <a href='$base_url/completed-submission?id={$form_state['accession']}' style='text-decoration: underline;'>here.</a><br>
+If you have any questions about your submission, please feel free to contact us <a href='$base_url/contactform'>here</a>.<br><br>
 ";
     
     $headers[] = 'MIME-Version: 1.0';
@@ -1768,6 +1770,21 @@ If you have any questions about your submission, please feel free to contact us 
 //    dpm($headers);
     
     mail($to, $subject, $message, implode("\r\n", $headers));
+    
+    
+    $message = "
+Attention:<br><br>
+
+User {$user->mail} has completed a TPPS Submission, titled {$form_state['saved_values']['Hellopage']['publication']['title']}.";
+    
+    $headers = array();
+    $headers[] = 'MIME-Version: 1.0';
+    $headers[] = 'Content-type: text/html; charset=iso-8859-1';
+
+    // Additional headers
+    $headers[] = "To: <$admin>";
+    $headers[] = "From: Nginx web server <$from>";
+    mail($admin, $subject, $message, implode("\r\n", $headers));
     
     return;
 }
