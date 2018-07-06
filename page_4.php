@@ -834,6 +834,7 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
                 if ($first){
                     foreach ($line as $col){
                         $headers[$col] = $col;
+                        $col = preg_replace('/[^a-zA-Z0-9-_\.]/', '', $col);
                         $fields['assembly-user']['columns'][$col] = array(
                           '#type' => 'select',
                           '#title' => '',
