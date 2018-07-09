@@ -37,6 +37,15 @@ function tpps_menu() {
       'type' => MENU_NORMAL_ITEM
     );
     
+    $items['tpps-admin-panel'] = array(
+      'title' => 'TPPS Admin Panel',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('tpps_admin_panel'),
+      'access callback' => 'user_access',
+      'access arguments' => array('access content'),
+      'type' => MENU_NORMAL_ITEM
+    );
+    
     $items['testpage'] = array(
       'title' => 'TPPS test page',
       'page callback' => 'drupal_get_form',
@@ -332,7 +341,21 @@ function tpps_completed_display($form, $form_state){
     drupal_add_css($css, 'inline');
     
     $display = "<label for='tpps_$accession'>{$values['Hellopage']['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
-    $display .= "<div class='tpps_complete_submission'><table id='tpps_$accession' style='width:-webkit-fill-available' border='1'><thead>";
+    
+    $display .= tpps_table_display($values);
+    
+    $form['a'] = array(
+      '#type' => 'hidden',
+      '#suffix' => $display
+    );
+    
+    return $form;
+}
+
+function tpps_table_display($values){
+    
+    $accession = $values['fourthPage']['accession'];
+    $display = "<div class='tpps_complete_submission'><table id='tpps_$accession' style='width:-webkit-fill-available' border='1'><thead>";
     //$display .= "<tr><th>Field</th><th>Value</th>";
     $display .= "</thead><tbody>";
     
@@ -828,12 +851,7 @@ function tpps_completed_display($form, $form_state){
     
     $display .= "</tbody></table></div><br>";
     
-    $form['a'] = array(
-      '#type' => 'hidden',
-      '#suffix' => $display
-    );
-    
-    return $form;
+    return $display;
 }
 
 function tpps_compare_temp($table, $column, $is_primary = FALSE, array $condition = array()){
@@ -1685,7 +1703,7 @@ function tpps_master_submit($form, &$form_state){
                 //submit_all($form, $form_state);
                 dpm('submit');
                 //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
-                //variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
+                variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
@@ -1712,11 +1730,11 @@ function tpps_submit_email($form, $form_state){
     
     global $user;
     global $base_url;
-    //$admin = "dev@tgwebdev.cam.uchc.edu";
+    //$admin = "treegenesdb@gmail.com";
     $admin = "peter.richter@uconn.edu";
     $to = $user->mail;
     $from = "nginx@tgwebdev.cam.uchc.edu";
-    $subject = "TPPS Submission Received";
+    $subject = "TPPS Submission Received: {$form_state['saved_values']['Hellopage']['publication']['title']}";
     $message = 
 "Congratulations!<br><br>
 
@@ -1775,7 +1793,8 @@ If you have any questions about your submission, please feel free to contact us 
     $message = "
 Attention:<br><br>
 
-User {$user->mail} has completed a TPPS Submission, titled {$form_state['saved_values']['Hellopage']['publication']['title']}.";
+User {$user->mail} has completed a TPPS Submission, titled {$form_state['saved_values']['Hellopage']['publication']['title']}.<br>
+Click <a href='$base_url/tpps-admin-panel?accession={$form_state['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
     
     $headers = array();
     $headers[] = 'MIME-Version: 1.0';
@@ -3594,6 +3613,119 @@ function summary_create_form(&$form, $form_state){
     );
     
     return $form;
+}
+
+function tpps_admin_panel($form, &$form_state){
+    
+    global $user;
+    $params = drupal_get_query_parameters();
+    $accession = $params['accession'];
+    
+    if (!isset($user->roles[3]) or $user->roles[3] !== 'administrator'){
+        drupal_access_denied();
+        dpm('test');
+        return $form;
+    }
+    else {
+        $results = db_select('variable', 'v')
+            ->fields('v', array('name'))
+            ->condition('name', db_like("tpps_complete_") . '%' . db_like("$accession"), 'LIKE')
+            ->execute()
+            ->fetchAssoc();
+        $var_name = $results['name'];
+        $submission_state = variable_get($var_name);
+        $submission_values = $submission_state['saved_values'];
+        $display = tpps_table_display($submission_values);
+        
+        $form['form_table'] = array(
+          '#type' => 'hidden',
+          '#value' => $var_name,
+          '#suffix' => $display
+        );
+        
+        $form['approve-check'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('This submission has been reviewed and approved.')
+        );
+        
+        $form['reject-reason'] = array(
+          '#type' => 'textarea',
+          '#title' => t('Reason for rejection:'),
+          '#states' => array(
+            'invisible' => array(
+              ':input[name="approve-check"]' => array('checked' => TRUE)
+            )
+          )
+        );
+        
+        $form['REJECT'] = array(
+          '#type' => 'submit',
+          '#value' => t('Reject'),
+          '#states' => array(
+            'invisible' => array(
+              ':input[name="approve-check"]' => array('checked' => TRUE)
+            )
+          )
+        );
+        
+        $form['APPROVE'] = array(
+          '#type' => 'submit',
+          '#value' => t('Approve'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="approve-check"]' => array('checked' => TRUE)
+            )
+          )
+        );
+        
+        return $form;
+    }
+}
+
+function tpps_admin_panel_validate($form, &$form_state){
+    if ($form_state['submitted'] == '1'){
+        if ($form_state['values']['reject-reason'] == '' and $form_state['triggering_element']['#value'] == 'Reject'){
+            form_set_error('reject-reason', 'Please explain why the submission was rejected.');
+        }
+    }
+}
+
+function tpps_admin_panel_submit($form, &$form_state){
+    if ($form_state['triggering_element']['#value'] == 'Reject'){
+        global $base_url;
+        
+        $var_name = $form_state['values']['form_table'];
+        $suffix = substr($var_name, 14);
+        $email = substr($var_name, 14, -7);
+        $state = variable_get($var_name);
+        
+        $submission_user = user_load_by_name($email);
+        $uid = $submission_user->uid;
+        
+        $to = $email;
+        $from = "nginx@tgwebdev.cam.uchc.edu";
+        $subject = "TPPS Submission Rejected: {$state['saved_values']['Hellopage']['publication']['title']}";
+        $message = 
+"To whom it may concern:<br><br>
+
+Unfortunately, your submission to TPPS has been rejected. If you would like, you can log into the TreeGenes website and edit your submission <a href='$base_url/user/$uid/TPPS'>here</a><br><br>
+
+The administrator who rejected your submission provided the following reason:<br>
+<blockquote>
+{$form_state['values']['reject-reason']}
+</blockquote>";
+        
+        $headers[] = 'MIME-Version: 1.0';
+        $headers[] = 'Content-type: text/html; charset=iso-8859-1';
+        
+        $headers[] = "To: <$to>";
+        $headers[] = "From: Nginx web server <$from>";
+        
+        mail($to, $subject, $message, implode("\r\n", $headers));
+        //variable_del($var_name);
+        //variable_set('tpps_incomplete_' . $suffix, $state);
+        //drupal_goto('<front>');
+    }
 }
 
 function tpps_test_page($form, &$form_state){
