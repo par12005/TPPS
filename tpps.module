@@ -925,7 +925,7 @@ function tpps_create_record($table, array $values){
         }
     }
     
-    $fields = db_query("select column_name from INFORMATION_SCHEMA.columns where table_name='$table'");
+    $fields = db_query("select column_name from INFORMATION_SCHEMA.columns where table_name='$table' and table_schema='chado'");
     $set_fields = array();
     
     if ($is_multi){
