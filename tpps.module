@@ -857,11 +857,20 @@ function tpps_table_display($values){
 function tpps_init_project($form, &$form_state){
     
     //Get next dbxref_id and accession # for project
-    $dbxref = db_query('select d.accession from chado.dbxref d where d.db_id=95 and d.accession ~ \'^\\d+$\' order by cast(d.accession as bigint) desc');
+    $and = db_and()
+        ->condition('d.accession', db_like('TGDR') . '%', 'LIKE')
+        ->condition('d.db_id', '95');
     
-    foreach ($dbxref as $row){
-        $accession = $row->accession + 1;
-        break;
+    $accession_results = db_select('chado.dbxref', 'd')
+        ->fields('d', array('accession'))
+        ->condition($and)
+        ->orderBy('d.accession', 'DESC')
+        ->range(0,1)
+        ->execute()
+        ->fetchAssoc();
+    
+    if ($accession_results){
+        $accession = $accession_results['accession'];
     }
     
     if ($accession === NULL){
