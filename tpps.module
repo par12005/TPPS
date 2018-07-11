@@ -925,7 +925,7 @@ function tpps_create_record($table, array $values){
         }
     }
     
-    $fields = db_query("select column_name from INFORMATION_SCHEMA.columns where table_name='$table'");
+    $fields = db_query("select column_name from INFORMATION_SCHEMA.columns where table_name='$table' and table_schema='chado'");
     $set_fields = array();
     
     if ($is_multi){
@@ -3218,25 +3218,27 @@ function submit_all(&$form_state){
                 $file_rank++;
             }
             
-            db_insert('chado.project_genotype_count')
-                ->fields(array(
-                  'project_id' => $project_id,
-                  'count' => $genotype_count
-                ))
-                ->execute();
+            //TPPS currently doesn't have permissions for this table
+//            db_insert('chado.project_genotype_count')
+//                ->fields(array(
+//                  'project_id' => $project_id,
+//                  'count' => $genotype_count
+//                ))
+//                ->execute();
         }
     }
     
-    tpps_create_record('plusgeno_view', array(
-      'project_id' => $project_id,
-      'accession' => $accession,
-      'title' => $firstpage['publication']['title'],
-      'species' => $landing_page_species,
-      'tree_count' => count($stock_ids),
-      'phen_count' => isset($phenotype_ids) ? count($phenotype_ids) : '0',
-      'phenotypes_assessed' => isset($phenotype_ids) ? "$phenotype_assessed" : '0',
-      'gen_count' => "$genotype_count"
-    ));
+    //This is a view - adding to it is different from adding to a normal table, waiting on Emily for more information
+//    tpps_create_record('plusgeno_view', array(
+//      'project_id' => $project_id,
+//      'accession' => $accession,
+//      'title' => $firstpage['publication']['title'],
+//      'species' => $landing_page_species,
+//      'tree_count' => count($stock_ids),
+//      'phen_count' => isset($phenotype_ids) ? count($phenotype_ids) : '0',
+//      'phenotypes_assessed' => isset($phenotype_ids) ? "$phenotype_assessed" : '0',
+//      'gen_count' => "$genotype_count"
+//    ));
 }
 
 function _author_autocomplete($string){
