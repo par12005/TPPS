@@ -1641,7 +1641,7 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'fourthPage';
             }
             else{
-                //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
                 variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
@@ -1669,10 +1669,9 @@ function tpps_submit_email($form, $form_state){
     
     global $user;
     global $base_url;
-    //$admin = "treegenesdb@gmail.com";
-    $admin = "peter.richter@uconn.edu";
+    $admin = "treegenesdb@gmail.com";
     $to = $user->mail;
-    $from = "nginx@tgwebdev.cam.uchc.edu";
+    $from = "nginx@treegenesdb.org";
     $subject = "TPPS Submission Received: {$form_state['saved_values']['Hellopage']['publication']['title']}";
     $message = 
 "Congratulations!<br><br>
