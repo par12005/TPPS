@@ -138,6 +138,18 @@ function tpps_cronapi(){
     return $items;
 }
 
+function tpps_mail($key, &$message, $params){
+    if (isset($params['subject'])) {
+        $message['subject'] = $params['subject'];
+    } 
+    if (isset($params['body'])) {
+        $message['body'][] = $params['body']; 
+    }
+    if (isset($params['headers']) && is_array($params['headers'])) {   
+        $message['headers'] += $params['headers'];
+    }
+}
+
 function tpps_tab_create($type, $user, $name = NULL){
     
     $email = $user->mail;
@@ -1686,11 +1698,14 @@ function tpps_submit_email($form, $form_state){
     
     global $user;
     global $base_url;
-    $admin = "treegenesdb@gmail.com";
+    //$admin = "treegenesdb@gmail.com";
+    $admin = "peter.richter@uconn.edu";
+    $params = array();
+    
     $to = $user->mail;
     $from = "nginx@treegenesdb.org";
-    $subject = "TPPS Submission Received: {$form_state['saved_values']['Hellopage']['publication']['title']}";
-    $message = 
+    $params['subject'] = "TPPS Submission Received: {$form_state['saved_values']['Hellopage']['publication']['title']}";
+    $params['body'] = 
 "Congratulations!<br><br>
 
 Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
@@ -1701,7 +1716,7 @@ Your TPPS submission has been received and is pending approval from a TreeGenes 
     <li>Organisms: {$form_state['saved_values']['Hellopage']['organism']['number']}</li>
 ";
     for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
-        $message .= 
+        $params['body'] .= 
 "   <li>Organism $i: {$form_state['saved_values']['Hellopage']['organism'][$i]['species']}</li>
 ";
     }
@@ -1723,44 +1738,40 @@ Your TPPS submission has been received and is pending approval from a TreeGenes 
     );
     $study_type = $study_options[$form_state['saved_values']['secondPage']['studyType']];
     $data_type = $data_options[$form_state['saved_values']['secondPage']['dataType']];
-    $message .= 
+    $params['body'] .= 
 "   <li>Study Type: $study_type</li>
     <li>Data Type: $data_type</li></ul>
 You can view your submission <a href='$base_url/completed-submission?id={$form_state['accession']}' style='text-decoration: underline;'>here.</a><br>
 If you have any questions about your submission, please feel free to contact us <a href='$base_url/contactform'>here</a>.<br><br>
 ";
     
-    $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-type: text/html; charset=iso-8859-1';
-
-    // Additional headers
-    $headers[] = "To: <$to>";
-    $headers[] = "From: Nginx web server <$from>";
+    $params['headers'][] = 'MIME-Version: 1.0';
+    $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
     
 //    dpm($to);
 //    dpm($subject);
 //    dpm($message);
 //    dpm($headers);
+    drupal_mail('tpps', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
+    //mail($to, $subject, $message, implode("\r\n", $headers));
     
-    mail($to, $subject, $message, implode("\r\n", $headers));
     
-    
-    $message = "
-Attention:<br><br>
-
-User {$user->mail} has completed a TPPS Submission, titled {$form_state['saved_values']['Hellopage']['publication']['title']}.<br>
-Click <a href='$base_url/tpps-admin-panel?accession={$form_state['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
-    
-    $headers = array();
-    $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-type: text/html; charset=iso-8859-1';
-
-    // Additional headers
-    $headers[] = "To: <$admin>";
-    $headers[] = "From: Nginx web server <$from>";
-    mail($admin, $subject, $message, implode("\r\n", $headers));
-    
-    return;
+//    $message = "
+//Attention:<br><br>
+//
+//User {$user->mail} has completed a TPPS Submission, titled {$form_state['saved_values']['Hellopage']['publication']['title']}.<br>
+//Click <a href='$base_url/tpps-admin-panel?accession={$form_state['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
+//    
+//    $headers = array();
+//    $headers[] = 'MIME-Version: 1.0';
+//    $headers[] = 'Content-type: text/html; charset=iso-8859-1';
+//
+//    // Additional headers
+//    $headers[] = "To: <$admin>";
+//    $headers[] = "From: Nginx web server <$from>";
+//    mail($admin, $subject, $message, implode("\r\n", $headers));
+//    
+//    return;
 }
 
 function submit_all(&$form_state){
@@ -3706,6 +3717,9 @@ The administrator who rejected your submission provided the following reason:<br
 }
 
 function tpps_test_page($form, &$form_state){
+    
+    global $user;
+    dpm(user_preferred_language($user));
     
     $form['file'] = array(
       '#type' => 'managed_file',
