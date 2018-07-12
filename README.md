@@ -220,6 +220,7 @@ Persistent variables that TPPS creates will be removed from the database upon in
 # Features in Development
 - TPPS configuration form
 - Remove lingering hard-coded addresses/locations
+- Switch calls to mail() to drupal_mail()
 
 # Resources
 
