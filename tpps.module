@@ -121,6 +121,23 @@ function tpps_menu() {
     return $items;
 }
 
+function tpps_cronapi(){
+    $items = array();
+    
+    $items['tpps_refresh_landing_page'] = array(
+      'title' => t('Refresh TPPS landing page view'),
+      'callback' => 'tpps_refresh_landing_page',
+      'scheduler' => array(
+        'name' => 'crontab',
+        'crontab' => array(
+          'rules' => array('0 0 * * *'),
+        ),
+      )
+    );
+    
+    return $items;
+}
+
 function tpps_tab_create($type, $user, $name = NULL){
     
     $email = $user->mail;
@@ -3238,6 +3255,10 @@ function submit_all(&$form_state){
 //      'phenotypes_assessed' => isset($phenotype_ids) ? "$phenotype_assessed" : '0',
 //      'gen_count' => "$genotype_count"
 //    ));
+}
+
+function tpps_refresh_landing_page(){
+    db_query('refresh materialized view chado.plusgeno_view');
 }
 
 function _author_autocomplete($string){
