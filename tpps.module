@@ -3244,17 +3244,6 @@ function submit_all(&$form_state){
         }
     }
     
-    //This is a view - adding to it is different from adding to a normal table, waiting on Emily for more information
-//    tpps_create_record('plusgeno_view', array(
-//      'project_id' => $project_id,
-//      'accession' => $accession,
-//      'title' => $firstpage['publication']['title'],
-//      'species' => $landing_page_species,
-//      'tree_count' => count($stock_ids),
-//      'phen_count' => isset($phenotype_ids) ? count($phenotype_ids) : '0',
-//      'phenotypes_assessed' => isset($phenotype_ids) ? "$phenotype_assessed" : '0',
-//      'gen_count' => "$genotype_count"
-//    ));
 }
 
 function tpps_refresh_landing_page(){
