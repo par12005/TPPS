@@ -333,8 +333,8 @@ function tpps_tab_create($type, $user, $name = NULL){
         ->condition('name', db_like($state_name) . '%', 'LIKE')
         ->execute();
     
-    $display = "<label for='tpps_complete_table'>Complete Submissions Pending Approval</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
-    $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th></tr>";
+    $display = "<label for='tpps_complete_table'>Complete Submissions</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
+    $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th>Status</th></tr>";
     $display .= "</thead><tbody>";
     
     foreach ($results as $item){
@@ -386,7 +386,7 @@ function tpps_tab_create($type, $user, $name = NULL){
             $display .= "<td></td>";
         }
         
-        $display .= "</tr>";
+        $display .= "<td>{$state['status']}</td></tr>";
     }
     
     if (!isset($name)){
