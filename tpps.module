@@ -148,6 +148,42 @@ function tpps_mail($key, &$message, $params){
     if (isset($params['headers']) && is_array($params['headers'])) {   
         $message['headers'] += $params['headers'];
     }
+    
+    switch ($key){
+        case 'user_recieved':
+            $message['body'][] = "Congratulations!<br><br>
+
+Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
+    <li>Primary Author: {$params['author']}</li>
+    <li>Organization: {$params['org']}</li>
+    <li>Publication title: {$params['title']}</li>
+    <li>Journal: {$params['journal']}</li>
+    <li>Organisms: {$params['organisms']['number']}</li>
+";
+        for ($i = 1; $i <= $params['organisms']['number']; $i++){
+            $message['body'][] = "   <li>Organism $i: {$params['organisms'][$i]['species']}</li>";
+        }
+
+        $message['body'][] = 
+"   <li>Study Type: {$params['study_type']}</li>
+    <li>Data Type: {$params['data_type']}</li></ul>
+You can view your submission <a href='{$params['base_url']}/completed-submission?id={$params['accession']}' style='text-decoration: underline;'>here.</a><br>
+If you have any questions about your submission, please feel free to contact us <a href='{$params['base_url']}/contactform'>here</a>.<br><br>";
+            
+            break;
+        
+        case 'admin_recieved':
+            $message['body'][] = "
+Attention:<br><br>
+
+User {$params['user_mail']} has completed a TPPS Submission, titled {$params['title']}.<br>
+Click <a href='{$params['base_url']}/tpps-admin-panel?accession={$params['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
+            
+            break;
+            
+        default:
+            break;
+    }
 }
 
 function tpps_tab_create($type, $user, $name = NULL){
@@ -1703,23 +1739,9 @@ function tpps_submit_email($form, $form_state){
     $params = array();
     
     $to = $user->mail;
-    $from = "nginx@treegenesdb.org";
+    $from = variable_get('site_mail', '');
     $params['subject'] = "TPPS Submission Received: {$form_state['saved_values']['Hellopage']['publication']['title']}";
-    $params['body'] = 
-"Congratulations!<br><br>
-
-Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
-    <li>Primary Author: {$form_state['saved_values']['Hellopage']['primaryAuthor']}</li>
-    <li>Organization: {$form_state['saved_values']['Hellopage']['organization']}</li>
-    <li>Publication title: {$form_state['saved_values']['Hellopage']['publication']['title']}</li>
-    <li>Journal: {$form_state['saved_values']['Hellopage']['publication']['journal']}</li>
-    <li>Organisms: {$form_state['saved_values']['Hellopage']['organism']['number']}</li>
-";
-    for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
-        $params['body'] .= 
-"   <li>Organism $i: {$form_state['saved_values']['Hellopage']['organism'][$i]['species']}</li>
-";
-    }
+    
     $study_options = array(
       0 => '- Select -',
       1 => 'Natural Population (Landscape)',
@@ -1736,25 +1758,24 @@ Your TPPS submission has been received and is pending approval from a TreeGenes 
       'Phenotype x Environment',
       'Genotype x Environment'
     );
-    $study_type = $study_options[$form_state['saved_values']['secondPage']['studyType']];
-    $data_type = $data_options[$form_state['saved_values']['secondPage']['dataType']];
-    $params['body'] .= 
-"   <li>Study Type: $study_type</li>
-    <li>Data Type: $data_type</li></ul>
-You can view your submission <a href='$base_url/completed-submission?id={$form_state['accession']}' style='text-decoration: underline;'>here.</a><br>
-If you have any questions about your submission, please feel free to contact us <a href='$base_url/contactform'>here</a>.<br><br>
-";
+    
+    $params['author'] = $form_state['saved_values']['Hellopage']['primaryAuthor'];
+    $params['org'] = $form_state['saved_values']['Hellopage']['organization'];
+    $params['title'] = $form_state['saved_values']['Hellopage']['publication']['title'];
+    $params['journal'] = $form_state['saved_values']['Hellopage']['publication']['journal'];
+    $params['organisms'] = $form_state['saved_values']['Hellopage']['organism'];
+    $params['study_type'] = $study_options[$form_state['saved_values']['secondPage']['studyType']];
+    $params['data_type'] = $data_options[$form_state['saved_values']['secondPage']['dataType']];
+    $params['accession'] = $form_state['accession'];
+    $params['base_url'] = $base_url;
+    $params['body'] = '';
     
     $params['headers'][] = 'MIME-Version: 1.0';
     $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
     
     drupal_mail('tpps', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
     
-    $params['body'] = "
-Attention:<br><br>
-
-User {$user->mail} has completed a TPPS Submission, titled {$form_state['saved_values']['Hellopage']['publication']['title']}.<br>
-Click <a href='$base_url/tpps-admin-panel?accession={$form_state['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
+    $params['user_mail'] = $user->mail;
     
     drupal_mail('tpps', 'admin_recieved', $admin, user_preferred_language($user), $params, $from, TRUE);
     
@@ -3705,8 +3726,7 @@ The administrator who rejected your submission provided the following reason:<br
 
 function tpps_test_page($form, &$form_state){
     
-    global $user;
-    dpm(user_preferred_language($user));
+    dpm(variable_get('site_mail', ''));
     
     $form['file'] = array(
       '#type' => 'managed_file',
