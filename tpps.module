@@ -3732,13 +3732,11 @@ function tpps_admin_panel_submit($form, &$form_state){
         drupal_goto('<front>');
     }
     else{
-        $var_name = $form_state['values']['form_table'];
-        $state = variable_get($var_name);
         $params['accession'] = $state['accession'];
         
         //submit_all($state);
         dpm('Submission Approved! Message has been sent to user.');
-        drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $form, TRUE);
+        drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
     }
 }
 
