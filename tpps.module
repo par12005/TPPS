@@ -333,8 +333,8 @@ function tpps_tab_create($type, $user, $name = NULL){
         ->condition('name', db_like($state_name) . '%', 'LIKE')
         ->execute();
     
-    $display = "<label for='tpps_complete_table'>Complete Submissions Pending Approval</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
-    $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th></tr>";
+    $display = "<label for='tpps_complete_table'>Complete Submissions</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
+    $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th>Status</th></tr>";
     $display .= "</thead><tbody>";
     
     foreach ($results as $item){
@@ -386,7 +386,7 @@ function tpps_tab_create($type, $user, $name = NULL){
             $display .= "<td></td>";
         }
         
-        $display .= "</tr>";
+        $display .= "<td>{$state['status']}</td></tr>";
     }
     
     if (!isset($name)){
@@ -1730,6 +1730,7 @@ function tpps_master_submit($form, &$form_state){
             }
             else{
                 variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                $form_state['status'] = 'Pending Approval';
                 variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
@@ -3727,6 +3728,7 @@ function tpps_admin_panel_submit($form, &$form_state){
         
         drupal_mail('tpps', 'user_rejected', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
         variable_del($var_name);
+        unset($state['status']);
         variable_set('tpps_incomplete_' . $suffix, $state);
         dpm('Submission Rejected. Message has been sent to user.');
         drupal_goto('<front>');
@@ -3735,6 +3737,8 @@ function tpps_admin_panel_submit($form, &$form_state){
         $params['subject'] = "TPPS Submission Approved: {$state['saved_values']['Hellopage']['publication']['title']}";
         $params['accession'] = $state['accession'];
         
+        $state['status'] = 'Approved';
+        variable_set($var_name, $state);
         submit_all($state);
         dpm('Submission Approved! Message has been sent to user.');
         drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
@@ -3785,7 +3789,7 @@ function tpps_test_page_submit($form, &$form_state) {
 }
 
 function tpps_block_info() { 
-  dpm("BLOCK INFO");   
+  //dpm("BLOCK INFO");   
   $blocks['tpps_status'] = array(
     // info: The name of the block.
     'info' => t('TPPS Status'),
