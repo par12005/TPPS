@@ -1729,7 +1729,7 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'fourthPage';
             }
             else{
-                //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
                 variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
@@ -1757,8 +1757,8 @@ function tpps_submit_email($form, $form_state){
     
     global $user;
     global $base_url;
-    //$admin = "treegenesdb@gmail.com";
-    $admin = "peter.richter@uconn.edu";
+    $admin = "treegenesdb@gmail.com";
+    
     $params = array();
     
     $to = $user->mail;
@@ -3726,8 +3726,8 @@ function tpps_admin_panel_submit($form, &$form_state){
     if ($form_state['triggering_element']['#value'] == 'Reject'){
         
         drupal_mail('tpps', 'user_rejected', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
-        //variable_del($var_name);
-        //variable_set('tpps_incomplete_' . $suffix, $state);
+        variable_del($var_name);
+        variable_set('tpps_incomplete_' . $suffix, $state);
         dpm('Submission Rejected. Message has been sent to user.');
         drupal_goto('<front>');
     }
@@ -3735,7 +3735,7 @@ function tpps_admin_panel_submit($form, &$form_state){
         $params['subject'] = "TPPS Submission Approved: {$state['saved_values']['Hellopage']['publication']['title']}";
         $params['accession'] = $state['accession'];
         
-        //submit_all($state);
+        submit_all($state);
         dpm('Submission Approved! Message has been sent to user.');
         drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
     }
