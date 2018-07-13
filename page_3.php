@@ -79,6 +79,7 @@ function page_3_create_form(&$form, &$form_state){
         if (($file = file_load($file))){
             $file_name = $file->uri;
             
+            //stop using the file so it can be deleted if the user clicks 'remove'
             file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
             
             $location = drupal_realpath("$file_name");
@@ -274,6 +275,9 @@ function page_3_create_form(&$form, &$form_state){
             if ($file != 0){
                 if (($file = file_load($file))){
                     $file_name = $file->uri;
+                    
+                    //stop using the file so it can be deleted if the user clicks 'remove'
+                    file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
                     $location = drupal_realpath("$file_name");
                     $content = parse_xlsx($location);
@@ -531,6 +535,12 @@ function page_3_validate_form(&$form, &$form_state){
                         if ($item != NULL){
                             form_set_error("tree-accession][species-$i][file][columns][$item", "Species $i Tree Accession file: Please specify a column that holds $item.");
                         }
+                    }
+                    
+                    if (!form_get_errors()){
+                        //preserve file if it is valid
+                        $file = file_load($form_state['values']['tree-accession']["species-$i"]['file']);
+                        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
                     }
                 }
                 else{
