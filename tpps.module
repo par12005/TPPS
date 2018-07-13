@@ -3732,6 +3732,7 @@ function tpps_admin_panel_submit($form, &$form_state){
         drupal_goto('<front>');
     }
     else{
+        $params['subject'] = "TPPS Submission Approved: {$state['saved_values']['Hellopage']['publication']['title']}";
         $params['accession'] = $state['accession'];
         
         //submit_all($state);
