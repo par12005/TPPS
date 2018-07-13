@@ -75,11 +75,12 @@ function page_3_create_form(&$form, &$form_state){
     }
     
     //dpm($form_state);
-    
     if ($file != 0){
         if (($file = file_load($file))){
             $file_name = $file->uri;
-
+            
+            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+            
             $location = drupal_realpath("$file_name");
             $content = parse_xlsx($location);
             $no_header = FALSE;
@@ -413,7 +414,7 @@ function page_3_multi_map($form, $form_state){
                     array_push($standards, array("{$content[$i][$id_col]}", $pair[0], $pair[1]));
                 }
             }
-
+            
         }
         
         $commands[] = ajax_command_invoke('#map_wrapper', 'updateMap', array($standards));
@@ -481,8 +482,7 @@ function page_3_validate_form(&$form, &$form_state){
                 if (!form_get_errors()){
                     //preserve file if it is valid
                     $file = file_load($form_state['values']['tree-accession']['file']);
-                    $file->status = FILE_STATUS_PERMANENT;
-                    $file = file_save($file);
+                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
                 }
             }
             else{
