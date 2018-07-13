@@ -1670,8 +1670,8 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['stage'] = 'fourthPage';
             }
             else{
-                variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
-                variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
+                //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                //variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
@@ -1748,30 +1748,17 @@ If you have any questions about your submission, please feel free to contact us 
     $params['headers'][] = 'MIME-Version: 1.0';
     $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
     
-//    dpm($to);
-//    dpm($subject);
-//    dpm($message);
-//    dpm($headers);
     drupal_mail('tpps', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
-    //mail($to, $subject, $message, implode("\r\n", $headers));
     
+    $params['body'] = "
+Attention:<br><br>
+
+User {$user->mail} has completed a TPPS Submission, titled {$form_state['saved_values']['Hellopage']['publication']['title']}.<br>
+Click <a href='$base_url/tpps-admin-panel?accession={$form_state['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
     
-//    $message = "
-//Attention:<br><br>
-//
-//User {$user->mail} has completed a TPPS Submission, titled {$form_state['saved_values']['Hellopage']['publication']['title']}.<br>
-//Click <a href='$base_url/tpps-admin-panel?accession={$form_state['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
-//    
-//    $headers = array();
-//    $headers[] = 'MIME-Version: 1.0';
-//    $headers[] = 'Content-type: text/html; charset=iso-8859-1';
-//
-//    // Additional headers
-//    $headers[] = "To: <$admin>";
-//    $headers[] = "From: Nginx web server <$from>";
-//    mail($admin, $subject, $message, implode("\r\n", $headers));
-//    
-//    return;
+    drupal_mail('tpps', 'admin_recieved', $admin, user_preferred_language($user), $params, $from, TRUE);
+    
+    return;
 }
 
 function submit_all(&$form_state){
