@@ -3789,7 +3789,7 @@ function tpps_test_page_submit($form, &$form_state) {
 }
 
 function tpps_block_info() { 
-  dpm("BLOCK INFO");   
+  //dpm("BLOCK INFO");   
   $blocks['tpps_status'] = array(
     // info: The name of the block.
     'info' => t('TPPS Status'),
