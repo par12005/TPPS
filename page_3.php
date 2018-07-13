@@ -477,6 +477,13 @@ function page_3_validate_form(&$form, &$form_state){
                         form_set_error("tree-accession][file][columns][$item", "Tree Accession file: Please specify a column that holds $item.");
                     }
                 }
+                
+                if (!form_get_errors()){
+                    //preserve file if it is valid
+                    $file = file_load($form_state['values']['tree-accession']['file']);
+                    $file->status = FILE_STATUS_PERMANENT;
+                    $file = file_save($file);
+                }
             }
             else{
                 form_set_error('tree-accession][file', 'Tree Accession file: field is required.');
