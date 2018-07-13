@@ -191,7 +191,19 @@ The administrator who rejected your submission provided the following reason:<br
 <blockquote>
 {$params['reject-reason']}
 </blockquote>";
+            break;
         
+        case 'user_approved':
+            $message['body'][] = 
+"Congratulations! Your submission to TPPS has been approved!<br><br>
+
+You may now refer to your submitted data with accession number {$params['accession']}.<br><br>
+
+You can still view your submission from your <a href=\"{$params['base_url']}/completed-submission?id={$params['accession']}\">TPPS Completed Submissions</a> tab.<br>
+Your submission should be public on the <a href=\"{$params['base_url']}/tpps_details/main\">TPPS/TGDR Landing Page</a> within the next 24 hours.";
+            
+            break;
+
         default:
             break;
     }
@@ -3691,24 +3703,27 @@ function tpps_admin_panel_validate($form, &$form_state){
 }
 
 function tpps_admin_panel_submit($form, &$form_state){
+    
+    global $base_url;
+
+    $var_name = $form_state['values']['form_table'];
+    $suffix = substr($var_name, 14);
+    $to = substr($var_name, 14, -7);
+    $state = variable_get($var_name);
+    $params = array();
+
+    $from = variable_get('site_mail', '');
+    $params['subject'] = "TPPS Submission Rejected: {$state['saved_values']['Hellopage']['publication']['title']}";
+    $params['uid'] = user_load_by_name($to)->uid;
+    $params['reject-reason'] = $form_state['values']['reject-reason'];
+    $params['base_url'] = $base_url;
+    $params['title'] = $state['saved_values']['Hellopage']['publication']['title'];
+    $params['body'] = '';
+
+    $params['headers'][] = 'MIME-Version: 1.0';
+    $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
+
     if ($form_state['triggering_element']['#value'] == 'Reject'){
-        global $base_url;
-        
-        $var_name = $form_state['values']['form_table'];
-        $suffix = substr($var_name, 14);
-        $to = substr($var_name, 14, -7);
-        $state = variable_get($var_name);
-        $params = array();
-        
-        $from = variable_get('site_mail', '');
-        $params['subject'] = "TPPS Submission Rejected: {$state['saved_values']['Hellopage']['publication']['title']}";
-        $params['uid'] = user_load_by_name($to)->uid;
-        $params['reject-reason'] = $form_state['values']['reject-reason'];
-        $params['base_url'] = $base_url;
-        $params['body'] = '';
-        
-        $params['headers'][] = 'MIME-Version: 1.0';
-        $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
         
         drupal_mail('tpps', 'user_rejected', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
         //variable_del($var_name);
@@ -3719,8 +3734,11 @@ function tpps_admin_panel_submit($form, &$form_state){
     else{
         $var_name = $form_state['values']['form_table'];
         $state = variable_get($var_name);
+        $params['accession'] = $state['accession'];
         
-        submit_all($state);
+        //submit_all($state);
+        dpm('Submission Approved! Message has been sent to user.');
+        drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $form, TRUE);
     }
 }
 
