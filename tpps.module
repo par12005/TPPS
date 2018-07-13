@@ -181,6 +181,17 @@ Click <a href='{$params['base_url']}/tpps-admin-panel?accession={$params['access
             
             break;
             
+        case 'user_rejected':
+            $message['body'][] = 
+"To whom it may concern:<br><br>
+
+Unfortunately, your submission to TPPS has been rejected. If you would like, you can log into the TreeGenes website and edit your submission <a href='{$params['base_url']}/user/{$params['uid']}/TPPS'>here</a><br><br>
+
+The administrator who rejected your submission provided the following reason:<br>
+<blockquote>
+{$params['reject-reason']}
+</blockquote>";
+        
         default:
             break;
     }
@@ -1707,7 +1718,7 @@ function tpps_master_submit($form, &$form_state){
             }
             else{
                 //variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
-                //variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
+                variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 drupal_goto('<front>');
                 return;
@@ -3685,34 +3696,23 @@ function tpps_admin_panel_submit($form, &$form_state){
         
         $var_name = $form_state['values']['form_table'];
         $suffix = substr($var_name, 14);
-        $email = substr($var_name, 14, -7);
+        $to = substr($var_name, 14, -7);
         $state = variable_get($var_name);
+        $params = array();
         
-        $submission_user = user_load_by_name($email);
-        $uid = $submission_user->uid;
+        $from = variable_get('site_mail', '');
+        $params['subject'] = "TPPS Submission Rejected: {$state['saved_values']['Hellopage']['publication']['title']}";
+        $params['uid'] = user_load_by_name($to)->uid;
+        $params['reject-reason'] = $form_state['values']['reject-reason'];
+        $params['base_url'] = $base_url;
+        $params['body'] = '';
         
-        $to = $email;
-        $from = "nginx@tgwebdev.cam.uchc.edu";
-        $subject = "TPPS Submission Rejected: {$state['saved_values']['Hellopage']['publication']['title']}";
-        $message = 
-"To whom it may concern:<br><br>
-
-Unfortunately, your submission to TPPS has been rejected. If you would like, you can log into the TreeGenes website and edit your submission <a href='$base_url/user/$uid/TPPS'>here</a><br><br>
-
-The administrator who rejected your submission provided the following reason:<br>
-<blockquote>
-{$form_state['values']['reject-reason']}
-</blockquote>";
+        $params['headers'][] = 'MIME-Version: 1.0';
+        $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
         
-        $headers[] = 'MIME-Version: 1.0';
-        $headers[] = 'Content-type: text/html; charset=iso-8859-1';
-        
-        $headers[] = "To: <$to>";
-        $headers[] = "From: Nginx web server <$from>";
-        
-        mail($to, $subject, $message, implode("\r\n", $headers));
-        variable_del($var_name);
-        variable_set('tpps_incomplete_' . $suffix, $state);
+        drupal_mail('tpps', 'user_rejected', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
+        //variable_del($var_name);
+        //variable_set('tpps_incomplete_' . $suffix, $state);
         dpm('Submission Rejected. Message has been sent to user.');
         drupal_goto('<front>');
     }
@@ -3725,8 +3725,6 @@ The administrator who rejected your submission provided the following reason:<br
 }
 
 function tpps_test_page($form, &$form_state){
-    
-    dpm(variable_get('site_mail', ''));
     
     $form['file'] = array(
       '#type' => 'managed_file',
