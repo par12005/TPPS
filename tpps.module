@@ -3678,9 +3678,44 @@ function summary_create_form(&$form, $form_state){
 
 function tpps_admin_settings($form, &$form_state){
     
-    $form['item'] = array(
+    $form['upload_locations'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('File Upload locations'),
+      '#description' => t('All file locations are relative to the "public://" file stream. Your current "public://" file stream points to "' . drupal_realpath('public://') . '".'),
+      '#tree' => TRUE,
+    );
+    
+    $authors = variable_get('tpps_author_files_dir', 'tpps_authors');
+    $accession = variable_get('tpps_accession_files_dir', 'tpps_accession');
+    $genotype = variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+    $phenotype = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
+    
+    $form['upload_locations']['authors'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Author files:'),
+      '#default_value' => $authors,
+      '#description' => t("Currently points to " . drupal_realpath("public://$authors") . '.')
+    );
+    
+    $form['upload_locations']['accession'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Tree Accession files:'),
+      '#default_value' => $accession,
+      '#description' => t("Currently points to " . drupal_realpath("public://$accession") . '.')
+    );
+    
+    $form['upload_locations']['genotype'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Genotype files:'),
+      '#default_value' => $genotype,
+      '#description' => t("Currently points to " . drupal_realpath("public://$genotype") . '.')
+    );
+    
+    $form['upload_locations']['phenotype'] = array(
       '#type' => 'textfield',
-      '#title' => t('text'),
+      '#title' => t('Phenotype files:'),
+      '#default_value' => $phenotype,
+      '#description' => t("Currently points to " . drupal_realpath("public://$phenotype") . '.')
     );
     
     return system_settings_form($form);

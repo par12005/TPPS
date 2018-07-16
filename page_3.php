@@ -15,7 +15,7 @@ function page_3_create_form(&$form, &$form_state){
     
     $file_description = 'Columns with information describing the Identifier of the tree and the location of the tree are required.';
     $species_number = $form_state['saved_values']['Hellopage']['organism']['number'];
-    $file_upload_location = 'public://tpps_accession';
+    $file_upload_location = 'public://' . variable_get('tpps_accession_files_dir', 'tpps_accession');
     
     if ($form_state['saved_values']['secondPage']['studyType'] == '4'){
         $file_description .= ' Location columns should describe the location of the source tree for the Common Garden.';

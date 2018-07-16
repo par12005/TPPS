@@ -7,8 +7,8 @@ function page_4_create_form(&$form, &$form_state){
         $values = array();
     }
     
-    $genotype_upload_location = 'public://tpps_genotype';
-    $phenotype_upload_location = 'public://tpps_phenotype';
+    $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+    $phenotype_upload_location = 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
     
     function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_location){
         
