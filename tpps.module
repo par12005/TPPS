@@ -220,6 +220,7 @@ Your submission should be public on the <a href=\"{$params['base_url']}/tpps_det
 
 function tpps_tab_create($type, $user, $name = NULL){
     
+    global $base_url;
     $email = $user->mail;
     $state_name = 'tpps_incomplete_' . $email;
     $params = drupal_get_query_parameters();
@@ -271,7 +272,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         
         if (isset($state['saved_values']['Hellopage']['publication']['title'])){
             $title = check_plain($state['saved_values']['Hellopage']['publication']['title']);
-            $display .= "<td><a href='/Drupal/master?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
+            $display .= "<td><a href='$base_url/master?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
         }
         else {
             $display .= "<td></td>";
@@ -315,7 +316,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         if (isset($state['accession'])){
             $display .= "<td style='text-align:center'><input type='submit' id='delete-{$state['accession']}' onclick='";
             $title = (isset($state['saved_values']['Hellopage']['publication']['title'])) ? ' titled ' . $state['saved_values']['Hellopage']['publication']['title'] : '';
-            $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"/Drupal/user/{$user->uid}/TPPS?accession={$state['accession']}&action=DELETE\"}";
+            $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/user/{$user->uid}/TPPS?accession={$state['accession']}&action=DELETE\"}";
             $display .= "' name='op' class='form-button' value='Delete'></td>";
         }
         else {
@@ -354,7 +355,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         
         if (isset($state['saved_values']['Hellopage']['publication']['title'])){
             $title = check_plain($state['saved_values']['Hellopage']['publication']['title']);
-            $display .= "<td><a href='/Drupal/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
+            $display .= "<td><a href='$base_url/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
         }
         else {
             $display .= "<td></td>";
@@ -409,7 +410,7 @@ function tpps_tab_create($type, $user, $name = NULL){
     if (!$t1 and !$t2){
         $display = $style;
         $display .= "<h2>Could not find any Submissions</h2>";
-        $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=/Drupal/master>here.</a></p>";
+        $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/master>here.</a></p>";
     }
     
     $final .= $display;
@@ -420,9 +421,10 @@ function tpps_tab_create($type, $user, $name = NULL){
 function tpps_completed_display($form, $form_state){
     
     global $user;
+    global $base_url;
     $params = drupal_get_query_parameters();
     $accession = $params['id'];
-    $link = "/Drupal/tpps_details/accession/$accession";
+    $link = "$base_url/tpps_details/accession/$accession";
     
     $old_form_state = variable_get('tpps_complete_' . $user->mail . $accession);
     $values = $old_form_state['saved_values'];
@@ -3958,18 +3960,19 @@ function tpps_block_view_alter(&$data, $block) {
                 $data['content'] = t($content);
                 break;
             }
+            $ok = "<img src='$base_url/misc/message-16-ok.png'>";
             //dpm($form_state['saved_values']);
             
             //This deals with page 1
             if (isset($form_state['saved_values']['Hellopage']['#cleared']) and $form_state['saved_values']['Hellopage']['#cleared']){
                 $content .= "Step 1 - Complete<br />";
                 $content .= "Author/Species Information<hr />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Author: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['primaryAuthor'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organization: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organization'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Title: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['title'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Year: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['year'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Secondary Authors: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['number'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organisms: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organism']['number'])) . "<br />";
+                $content .= "$ok" . ' Author: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['primaryAuthor'])) . "<br />";
+                $content .= "$ok" . ' Organization: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organization'])) . "<br />";
+                $content .= "$ok" . ' Pub Title: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['title'])) . "<br />";
+                $content .= "$ok" . ' Pub Year: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['year'])) . "<br />";
+                $content .= "$ok" . ' Secondary Authors: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['number'])) . "<br />";
+                $content .= "$ok" . ' Organisms: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organism']['number'])) . "<br />";
             }
 
             //This deals with page 2
@@ -3978,9 +3981,9 @@ function tpps_block_view_alter(&$data, $block) {
                 $content .= "Step 2 - Complete<br />";
                 $content .= "Experimental Conditions<br /><hr />";
                 $start = $form_state['saved_values']['secondPage']['StartingDate']['month'] . " " . $form_state['saved_values']['secondPage']['StartingDate']['year'];
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Starting Date: ' . filter_xss(check_plain($start)) . "<br />";
+                $content .= "$ok" . ' Starting Date: ' . filter_xss(check_plain($start)) . "<br />";
                 $end = $form_state['saved_values']['secondPage']['EndingDate']['month'] . " " . $form_state['saved_values']['secondPage']['EndingDate']['year'];
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
+                $content .= "$ok" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
                 if ($form_state['saved_values']['secondPage']['studyLocation']['type'] == '2'){
                     $location = $form_state['saved_values']['secondPage']['studyLocation']['custom'];
                     $query = $location;
@@ -3992,7 +3995,7 @@ function tpps_block_view_alter(&$data, $block) {
                         $query = $standard_coordinate;
                     }
                 }
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location: <a id="sidebar_map" style="cursor:pointer">' . filter_xss(check_plain($location)) .  "</a><br>";
+                $content .= "$ok" . ' Study Location: <a id="sidebar_map" style="cursor:pointer">' . filter_xss(check_plain($location)) .  "</a><br>";
                 if (isset($query)){
                     $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
                     $js = "jQuery(document).ready(function ($) {
@@ -4012,7 +4015,7 @@ function tpps_block_view_alter(&$data, $block) {
                   4 => 'Experimental/Common Garden',
                   5 => 'Plantation',
                 );
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
+                $content .= "$ok" . ' Study Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
                 $type = $form_state['saved_values']['secondPage']['dataType'];
                 $type_arr = array(
                   '- Select -',
@@ -4022,7 +4025,7 @@ function tpps_block_view_alter(&$data, $block) {
                   'Phenotype x Environment',
                   'Genotype x Environment'
                 );
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Data Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
+                $content .= "$ok" . ' Data Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
             }
 
             //This deals with page 3
@@ -4030,18 +4033,20 @@ function tpps_block_view_alter(&$data, $block) {
                 $content .= "<br />";
                 $content .= "Step 3 - Complete<br />";
                 $content .= "Tree Accession<br /><hr />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Tree Accession data' .  "<br />";
+                $content .= "$ok" . ' Tree Accession data' .  "<br />";
                 if ($form_state['saved_values']['Hellopage']['organism']['number'] == '1' or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
-                    $file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->filename;
-                    $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->uri));
-                    $content .= "<img src='$base_url/misc/message-16-ok.png'> Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                    if (($file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->filename)){
+                        $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->uri));
+                        $content .= "$ok Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                    }
                 }
                 else {
                     for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
                         $species_name = $form_state['saved_values']['Hellopage']['organism'][$i]['species'];
-                        $file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->filename;
-                        $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->uri));
-                        $content .= "<img src='$base_url/misc/message-16-ok.png'> $species_name Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                        if (($file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->filename)){
+                            $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->uri));
+                            $content .= "$ok $species_name Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                        }
                     }
                 }
             }
@@ -4054,34 +4059,38 @@ function tpps_block_view_alter(&$data, $block) {
                     $content .= "<br />";
                     $content .= "Step 4 - Complete<br />";
                     $content .= "Submit Data<br /><hr />";
-                    $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  "<br />";
+                    $content .= "$ok " . filter_xss(check_plain($current_name)) .  "<br />";
                     
                     if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype'])){
-                        $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
+                        $content .= "$ok " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
                         
                         if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'] != 0){
-                            $genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->filename;
-                            $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                            if (($genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->filename)){
+                                $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->uri));
+                                $content .= "$ok Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                            }
                         }
                         if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'] != 0){
-                            $genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->filename;
-                            $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Genotype VCF File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                            if (($genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->filename)){
+                                $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->uri));
+                                $content .= "$ok Genotype VCF File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                            }
                         }
                     }
                     if (isset($form_state['saved_values']['fourthPage']['phenotype'])){
-                        $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
+                        $content .= "$ok " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
                         
                         if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'] != 0){
-                            $phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->filename;
-                            $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Phenotype Metadata File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                            if (($phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->filename)){
+                                $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->uri));
+                                $content .= "$ok Phenotype Metadata File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                            }
                         }
                         if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'] != 0){
-                            $phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->filename;
-                            $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                            if (($phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->filename)){
+                                $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->uri));
+                                $content .= "$ok Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                            }
                         }
                     }
                     
