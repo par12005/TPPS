@@ -37,6 +37,7 @@ TPPS is a [Drupal](https://www.drupal.org/) module built to extend the functiona
 - Save user progress on incomplete submissions
 - Display both complete and incomplete submissions on 'TPPS Submissions' user profile tab
 - Administrator panel to manually approve completed submissions
+- Configuration page to specify file upload locations, TPPS Admin email, etc.
 
 # Login and Profile
 Users can only access the TPPS form while they are logged into their Tripal account. This is so that a user can pick up where they left off, should they need to make their submission over multiple sessions. For example, if a user is submitting data through TPPS, then realizes that they need to collect some additional information before completing their submission, they can leave the TreeGenes site to collect their additional information, and when they return, all of the data that user entered previously will be stored on TreeGenes, and the user will not need to fill out all of the form fields again.
@@ -218,9 +219,9 @@ Upon approval, the data from the persistent variable is parsed, organized, and s
 Persistent variables that TPPS creates will be removed from the database upon installation.
 
 # Features in Development
-- TPPS configuration form
-- Remove lingering hard-coded addresses/locations
-- Switch calls to mail() to drupal_mail()
+- Dedicated documentation for users/admins
+- Backend genotype data processing
+- More configurable?
 
 # Resources
 
