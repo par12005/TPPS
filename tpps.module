@@ -42,8 +42,17 @@ function tpps_menu() {
       'page callback' => 'drupal_get_form',
       'page arguments' => array('tpps_admin_panel'),
       'access callback' => 'user_access',
-      'access arguments' => array('access content'),
+      'access arguments' => array('access administration pages'),
       'type' => MENU_NORMAL_ITEM
+    );
+    
+    $items['admin/config/content/tpps'] = array(
+      'title' => 'TPPS',
+      'description' => 'Configuration for TPPS module',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('tpps_admin_settings'),
+      'access arguments' => array('access administration pages'),
+      'type' => MENU_NORMAL_ITEM,
     );
     
     $items['testpage'] = array(
@@ -3665,6 +3674,16 @@ function summary_create_form(&$form, $form_state){
     );
     
     return $form;
+}
+
+function tpps_admin_settings($form, &$form_state){
+    
+    $form['item'] = array(
+      '#type' => 'textfield',
+      '#title' => t('text'),
+    );
+    
+    return system_settings_form($form);
 }
 
 function tpps_admin_panel($form, &$form_state){
