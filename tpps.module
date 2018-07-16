@@ -3311,7 +3311,7 @@ function submit_all(&$form_state){
 }
 
 function tpps_refresh_landing_page(){
-    db_query('refresh materialized view chado.plusgeno_view');
+    db_query('refresh materialized view concurrently chado.plusgeno_view');
 }
 
 function _author_autocomplete($string){
