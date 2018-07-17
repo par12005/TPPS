@@ -3182,7 +3182,7 @@ function submit_all(&$form_state){
                   'rank' => $file_rank
                 ));
                 
-                $current_id = $organism_ids[$i];
+/*                $current_id = $organism_ids[$i];
                 $and = db_and()
                     ->condition('type_id', '52307')
                     ->condition('organism_id', "$current_id");
@@ -3311,7 +3311,7 @@ function submit_all(&$form_state){
                 unset($genotypeprop_vals);
                 //dpm('done: ' . date('r'));
                 $vcf_file->status = FILE_STATUS_PERMANENT;
-                $vcf_file = file_save($vcf_file);
+                $vcf_file = file_save($vcf_file);*/
                 $file_rank++;
             }
             
@@ -3850,15 +3850,31 @@ function tpps_admin_panel_submit($form, &$form_state){
         drupal_goto('<front>');
     }
     else{
+        global $user;
+        $args = array($state);
+        $uid = $user->uid;
+        $includes = array();
+        $includes[] = module_load_include('module', 'tpps');
+        
+        $jid = tripal_add_job('TPPS File Parsing', 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes);
+        $state['job_id'] = $jid;
+        
         $params['subject'] = "TPPS Submission Approved: {$state['saved_values']['Hellopage']['publication']['title']}";
         $params['accession'] = $state['accession'];
         
         $state['status'] = 'Approved';
         variable_set($var_name, $state);
-        submit_all($state);
+//        submit_all($state);
         dpm('Submission Approved! Message has been sent to user.');
         drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
     }
+}
+
+function tpps_file_parsing($form_state){
+    sleep(10);
+    
+    dpm('file parsed');
+    return;
 }
 
 function tpps_test_page($form, &$form_state){
