@@ -291,6 +291,7 @@ function page_1_create_form(&$form, $form_state){
           '#type' => 'textfield',
           '#title' => t('Title of Publication:'),
           '#default_value' => isset($values['publication']['title']) ? $values['publication']['title'] : NULL,
+          '#maxlength' => 512,
         );
 
         $form['publication']['abstract'] = array(
