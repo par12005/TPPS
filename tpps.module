@@ -218,6 +218,12 @@ Your submission should be public on the <a href=\"{$params['base_url']}/tpps_det
     }
 }
 
+function tpps_element_info_alter(&$type){
+    if (isset($type['textfield']['#maxlength'])){
+        $type['textfield']['#maxlength'] = 512;
+    }
+}
+
 function tpps_tab_create($type, $user, $name = NULL){
     
     global $base_url;
