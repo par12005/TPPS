@@ -1021,7 +1021,18 @@ function tpps_create_record($table, array $values){
     $default_fields = array();
     $insert = NULL;
     
-    if (!$is_multi){
+    if ($is_multi){
+        $unique_columns = tpps_get_unique_columns($table);
+        foreach ($values as $key => $record){
+            if (($existing_key = tpps_record_exists($table, $record, $unique_columns))){
+                unset($values[$key]);
+            }
+        }
+        if ($values == array()){
+            return;
+        }
+    }
+    else{
         //check record exists
         if (($existing_key = tpps_record_exists($table, $values))){
             //if it does, do not attempt to re-write it.
@@ -1074,6 +1085,7 @@ function tpps_create_record($table, array $values){
             $insert->values($record);
         }
         $insert->execute();
+        dpm(count($values));
         return;
     }
     else {
@@ -3106,7 +3118,6 @@ function submit_all(&$form_state){
         
         if (isset($fourthpage["organism-$i"]['genotype'])){
             $genotype = $fourthpage["organism-$i"]['genotype'];
-            $genotype_count = 0;
             
             if ($genotype['ref-genome'] == 'url'){
                 $reference_genome_id = tpps_create_record('projectprop', array(
@@ -3182,146 +3193,8 @@ function submit_all(&$form_state){
                   'rank' => $file_rank
                 ));
                 
-/*                $current_id = $organism_ids[$i];
-                $and = db_and()
-                    ->condition('type_id', '52307')
-                    ->condition('organism_id', "$current_id");
-                $species_code = db_select('chado.organismprop', 'o')
-                    ->fields('o', array('value'))
-                    ->condition($and)
-                    ->execute()
-                    ->fetchAssoc();
-                $species_code = $species_code['value'];
-                $marker = 'SNP';
-                
-                $vcf_file = file_load($genotype['vcf']);
-                $location = drupal_realpath($vcf_file->uri);
-                $vcf_content = fopen($vcf_file->uri, 'r');
-                
-                //inserts are WAY faster when done as a group, but require a lot of memory
-                $genotype_vals = array();
-                $genotypeprop_vals = array();
-                $format = "";
-                $first = TRUE;
-                
-                //dpm('start: ' . date('r'));
-                while (($vcf_line = fgets($vcf_content)) !== FALSE){
-                    if ($vcf_line[0] != '#'){
-                        $genotype_count++;
-                        $vcf_line = explode("\t", $vcf_line);
-                        $scaffold_id = &$vcf_line[0];
-                        $position = &$vcf_line[1];
-                        $ref = &$vcf_line[3];
-                        $alt = &$vcf_line[4];
-                        $qual = &$vcf_line[5];
-                        $filter = &$vcf_line[6];
-                        $info = &$vcf_line[7];
-                        
-                        $description = "$ref:$alt";
-                        
-                        $part = memory_get_usage() / $memory_limit;
-                        //check memory usage, compare to memory limit - if more than 15% is being used, insert what we have so far, then make a new query
-                        if ($part >= .15){
-                            tpps_create_record('genotype', $genotype_vals);
-                            $genotype_vals = array();
-                            tpps_create_record('genotypeprop', $genotypeprop_vals);
-                            $genotypeprop_vals = array();
-                        }
-                        
-                        $genotype_vals[] = array(
-                          'name' => "$marker-$species_code-$scaffold_id-$position",
-                          'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
-                          'description' => $description,
-                          'type_id' => '1205'
-                        );
-                        
-                        if ($first){
-                            $first = FALSE;
-                            $genotype_id = tpps_create_record('genotype', $genotype_vals[0]);
-                            $genotype_vals = array();
-                        }
-                        
-                        if ($format != ""){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '52197',
-                              'value' => $format,
-                            );
-                        }
-                        
-                        //quality score
-                        $genotypeprop_vals[] = array(
-                          'genotype_id' => $genotype_id,
-                          'type_id' => '2079',
-                          'value' => $qual
-                        );
-                        
-                        //filter: pass/fail
-                        $genotypeprop_vals[] = array(
-                          'genotype_id' => $genotype_id,
-                          'type_id' => '52008',
-                          'value' => ($filter == '.') ? "P" : "NP"
-                        );
-                        
-                        //break up info column
-                        $info_vals = explode(";", $info);
-                        foreach($info_vals as $key => $val){
-                            $parts = explode("=", $val);
-                            unset($info_vals[$key]);
-                            $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
-                        }
-                        
-                        //allele frequency, assuming that the info code for allele frequency is 'AF'
-                        if (isset($info_vals['AF']) and $info_vals['AF'] != ''){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '2496',
-                              'value' => $info_vals['AF']
-                            );
-                        }
-                        
-                        //depth coverage, assuming that the info code for depth coverage is 'DP'
-                        if (isset($info_vals['DP']) and $info_vals['DP'] != ''){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '52046',
-                              'value' => $info_vals['DP']
-                            );
-                        }
-                        
-                        //number of samples, assuming that the info code for number of samples is 'NS'
-                        if (isset($info_vals['NS']) and $info_vals['NS'] != ''){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '128971',
-                              'value' => $info_vals['NS']
-                            );
-                        }
-                        
-                        $genotype_id++;
-                    }
-                    elseif (preg_match('/##FORMAT=/', $vcf_line)) {
-                        $format .= substr($vcf_line, 9, -1);
-                    }
-                }
-                //insert the last set of values
-                tpps_create_record('genotype', $genotype_vals);
-                tpps_create_record('genotypeprop', $genotypeprop_vals);
-                unset($genotype_vals);
-                unset($genotypeprop_vals);
-                //dpm('done: ' . date('r'));
-                $vcf_file->status = FILE_STATUS_PERMANENT;
-                $vcf_file = file_save($vcf_file);*/
                 $file_rank++;
             }
-            
-            //TPPS currently doesn't have permissions for this table
-//            db_insert('chado.project_genotype_count')
-//                ->fields(array(
-//                  'project_id' => $project_id,
-//                  'count' => $genotype_count
-//                ))
-//                ->execute();
         }
     }
     
@@ -3856,22 +3729,184 @@ function tpps_admin_panel_submit($form, &$form_state){
         $includes = array();
         $includes[] = module_load_include('module', 'tpps');
         
-        $jid = tripal_add_job('TPPS File Parsing', 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes);
-        $state['job_id'] = $jid;
-        
         $params['subject'] = "TPPS Submission Approved: {$state['saved_values']['Hellopage']['publication']['title']}";
         $params['accession'] = $state['accession'];
         
         $state['status'] = 'Approved';
         variable_set($var_name, $state);
-//        submit_all($state);
+        submit_all($state);
+        $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
+        $state['job_id'] = $jid;
+        
         dpm('Submission Approved! Message has been sent to user.');
         drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
     }
 }
 
 function tpps_file_parsing($form_state){
-    sleep(10);
+    
+    $fourthpage = $form_state['saved_values']['fourthPage'];
+    $firstpage = $form_state['saved_values']['Hellopage'];
+    $organism_number = $firstpage['organism']['number'];
+    $organism_ids = array();
+    for ($i = 1; $i <= $organism_number; $i++){
+        $parts = explode(" ", $firstpage['organism'][$i]['species']);
+        $genus = $parts[0];
+        $species = implode(" ", array_slice($parts, 1));
+
+        if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')){
+            $infra = implode(" ", array_slice($parts, 2));
+        }
+        else {
+            $infra = NULL;
+        }
+
+        $organism_ids[$i] = tpps_create_record('organism', array(
+          'genus' => $genus,
+          'species' => $species,
+          'infraspecific_name' => $infra
+        ));
+
+        if (isset($fourthpage["organism-$i"]['genotype'])){
+            $genotype = $fourthpage["organism-$i"]['genotype'];
+            $genotype_count = 0;
+
+            if ($genotype['marker-type']['SNPs'] != '0'){
+
+                $current_id = $organism_ids[$i];
+                $and = db_and()
+                    ->condition('type_id', '52307')
+                    ->condition('organism_id', "$current_id");
+                $species_code = db_select('chado.organismprop', 'o')
+                    ->fields('o', array('value'))
+                    ->condition($and)
+                    ->execute()
+                    ->fetchAssoc();
+                $species_code = $species_code['value'];
+                $marker = 'SNP';
+
+                $vcf_file = file_load($genotype['vcf']);
+                $location = drupal_realpath($vcf_file->uri);
+                $vcf_content = fopen($location, 'r');
+
+                //inserts are WAY faster when done as a group, but require a lot of memory
+                $genotype_vals = array();
+                $genotypeprop_vals = array();
+                $format = "";
+                $first = TRUE;
+
+                //dpm('start: ' . date('r'));
+                while (($vcf_line = fgets($vcf_content)) !== FALSE){
+                    if ($vcf_line[0] != '#'){
+                        $genotype_count++;
+                        $vcf_line = explode("\t", $vcf_line);
+                        $scaffold_id = &$vcf_line[0];
+                        $position = &$vcf_line[1];
+                        $ref = &$vcf_line[3];
+                        $alt = &$vcf_line[4];
+                        $qual = &$vcf_line[5];
+                        $filter = &$vcf_line[6];
+                        $info = &$vcf_line[7];
+
+                        $description = "$ref:$alt";
+                        
+                        //Tripal Job has issues when all submissions are made at the same time, so break them up into groups of 10,000 genotypes along with their relevant genotypeprops
+                        if ($genotype_count > 10000){
+                            $genotype_count = 0;
+                            tpps_create_record('genotype', $genotype_vals);
+                            $genotype_vals = array();
+                            tpps_create_record('genotypeprop', $genotypeprop_vals);
+                            $genotypeprop_vals = array();
+                        }
+
+                        $genotype_vals[] = array(
+                          'name' => "$marker-$species_code-$scaffold_id-$position",
+                          'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
+                          'description' => $description,
+                          'type_id' => '1205'
+                        );
+
+                        if ($first){
+                            $first = FALSE;
+                            $genotype_id = tpps_create_record('genotype', $genotype_vals[0]);
+                            $genotype_vals = array();
+                        }
+
+                        if ($format != ""){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '52197',
+                              'value' => $format,
+                            );
+                        }
+
+                        //quality score
+                        $genotypeprop_vals[] = array(
+                          'genotype_id' => $genotype_id,
+                          'type_id' => '2079',
+                          'value' => $qual
+                        );
+
+                        //filter: pass/fail
+                        $genotypeprop_vals[] = array(
+                          'genotype_id' => $genotype_id,
+                          'type_id' => '52008',
+                          'value' => ($filter == '.') ? "P" : "NP"
+                        );
+
+                        //break up info column
+                        $info_vals = explode(";", $info);
+                        foreach($info_vals as $key => $val){
+                            $parts = explode("=", $val);
+                            unset($info_vals[$key]);
+                            $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
+                        }
+
+                        //allele frequency, assuming that the info code for allele frequency is 'AF'
+                        if (isset($info_vals['AF']) and $info_vals['AF'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '2496',
+                              'value' => $info_vals['AF']
+                            );
+                        }
+
+                        //depth coverage, assuming that the info code for depth coverage is 'DP'
+                        if (isset($info_vals['DP']) and $info_vals['DP'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '52046',
+                              'value' => $info_vals['DP']
+                            );
+                        }
+
+                        //number of samples, assuming that the info code for number of samples is 'NS'
+                        if (isset($info_vals['NS']) and $info_vals['NS'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '128971',
+                              'value' => $info_vals['NS']
+                            );
+                        }
+                        $genotype_id++;
+                    }
+                    elseif (preg_match('/##FORMAT=/', $vcf_line)) {
+                        $format .= substr($vcf_line, 9, -1);
+                    }
+                }
+                //insert the last set of values
+                tpps_create_record('genotype', $genotype_vals);
+                tpps_create_record('genotypeprop', $genotypeprop_vals);
+                unset($genotype_vals);
+                unset($genotypeprop_vals);
+                //dpm('done: ' . date('r'));
+                $vcf_file->status = FILE_STATUS_PERMANENT;
+                $vcf_file = file_save($vcf_file);
+            }
+
+            dpm($genotype_count);
+        }
+    }
     
     dpm('file parsed');
     return;
