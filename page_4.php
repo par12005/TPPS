@@ -7,8 +7,8 @@ function page_4_create_form(&$form, &$form_state){
         $values = array();
     }
     
-    $genotype_upload_location = 'public://tpps_genotype';
-    $phenotype_upload_location = 'public://tpps_phenotype';
+    $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+    $phenotype_upload_location = 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
     
     function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_location){
         
@@ -237,6 +237,9 @@ function page_4_create_form(&$form, &$form_state){
         if ($file != 0){
             if (($file = file_load($file))){
                 $file_name = $file->uri;
+                
+                //stop using the file so it can be deleted if the user clicks 'remove'
+                file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
                 $location = drupal_realpath("$file_name");
                 $content = parse_xlsx($location);
@@ -385,6 +388,9 @@ function page_4_create_form(&$form, &$form_state){
         if ($file != 0){
             if (($file = file_load($file))){
                 $file_name = $file->uri;
+                
+                //stop using the file so it can be deleted if the user clicks 'remove'
+                file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
                 $location = drupal_realpath("$file_name");
                 $content = parse_xlsx($location);
@@ -465,6 +471,15 @@ function page_4_create_form(&$form, &$form_state){
           '#tree' => TRUE
         );
         
+        if (isset($fields['vcf']['#value'])){
+            $fields['vcf']['#default_value'] = $fields['vcf']['#value'];
+        }
+        if (isset($fields['vcf']['#default_value']) and $fields['vcf']['#default_value'] != 0 and ($file = file_load($fields['vcf']['#default_value']))){
+            dpm($file);
+            //stop using the file so it can be deleted if the user clicks 'remove'
+            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        }
+        
         return $fields;
     }
     
@@ -530,6 +545,9 @@ function page_4_create_form(&$form, &$form_state){
             if ($file != 0){
                 if (($file = file_load($file))){
                     $file_name = $file->uri;
+                    
+                    //stop using the file so it can be deleted if the user clicks 'remove'
+                    file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
                     $location = drupal_realpath("$file_name");
                     $content = parse_xlsx($location);
@@ -818,6 +836,9 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
     if ($file != 0){
         if (($file = file_load($file))){
             $content = fopen($file->uri, 'r');
+            
+            //stop using the file so it can be deleted if the user clicks 'remove'
+            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
             $first = TRUE;
 
@@ -1054,6 +1075,12 @@ function page_4_validate_form(&$form, &$form_state){
                             }
                         }
                     }
+                    
+                    if (!form_get_errors()){
+                        //preserve file if it is valid
+                        $file = file_load($form_state['values'][$id]['phenotype']['metadata']);
+                        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                    }
                 }
             }
             
@@ -1144,6 +1171,12 @@ function page_4_validate_form(&$form, &$form_state){
                             break;
                         }
                     }
+                }
+                
+                if (!form_get_errors()){
+                    //preserve file if it is valid
+                    $file = file_load($form_state['values'][$id]['phenotype']['file']);
+                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
                 }
             }
             
@@ -1299,6 +1332,12 @@ function page_4_validate_form(&$form, &$form_state){
                             $i++;
                         }
                     }
+                    
+                    if (!form_get_errors()){
+                        //preserve file if it is valid
+                        $file = file_load($form_state['values'][$id]['genotype']['assembly-user']);
+                        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                    }
                 }
             }
             
@@ -1334,6 +1373,12 @@ function page_4_validate_form(&$form, &$form_state){
             }
 
             if ($snps_check === 'SNPs'){
+                if (!form_get_errors() and $vcf != ''){
+                    //preserve file if it is valid
+                    $file = file_load($vcf);
+                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                }
+                
                 if ($vcf == ''){
                     form_set_error("$id][genotype][vcf", "Genotype VCF File: field is required.");
                 }
@@ -1425,6 +1470,12 @@ function page_4_validate_form(&$form, &$form_state){
                     }
                 }
 
+                if (!form_get_errors()){
+                    //preserve file if it is valid
+                    $file = file_load($form_state['values'][$id]['genotype']['file']);
+                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                }
+                
                 //if Tree Identifier is set
                 if ($required_columns['1'] === NULL and empty(form_get_errors())){
                     //cycle through the columns

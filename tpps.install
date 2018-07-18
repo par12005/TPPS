@@ -2,6 +2,59 @@
 
 function tpps_install(){
     
+    if (!module_exists('ultimate_cron')){
+        $result = exec('drush pm-download ultimate_cron');
+        $result .= exec('drush pm-enable --resolve-dependencies ultimate_cron -y');
+        print_r($result);
+    }
+    
+    $query = db_select('chado.plusgeno_view', 'p')
+        ->fields('p');
+    
+    try{
+        $query = $query->execute();
+    } catch (Exception $ex) {
+        $create_view = db_query('create materialized view chado.plusgeno_view as SELECT DISTINCT p.project_id,
+     d.accession,
+     ppub.title,
+     o.species,
+     count(o.stock_id) OVER (PARTITION BY p.project_id) AS tree_count,
+     sum(phen.count) OVER (PARTITION BY p.project_id) AS phen_count,
+     unique_phen.phenotypes_assessed,
+     g.gen_count
+    FROM chado.project_dbxref p
+      JOIN chado.dbxref d ON p.dbxref_id = d.dbxref_id
+      JOIN ( SELECT pp.project_id,
+             pub.title
+            FROM chado.project_pub pp
+              JOIN chado.pub ON pp.pub_id = pub.pub_id) ppub ON p.project_id = ppub.project_id
+      JOIN ( SELECT DISTINCT ps.project_id,
+             (org.genus::text || \' \'::text) || org.species::text AS species,
+             stock.stock_id
+            FROM chado.project_stock ps
+              JOIN chado.stock ON ps.stock_id = stock.stock_id
+              JOIN chado.organism org ON stock.organism_id = org.organism_id) o ON p.project_id = o.project_id
+      LEFT JOIN ( SELECT stock_phenotype.stock_id,
+             count(stock_phenotype.phenotype_id) OVER (PARTITION BY stock_phenotype.stock_id) AS count
+            FROM chado.stock_phenotype) phen ON o.stock_id = phen.stock_id
+      LEFT JOIN ( SELECT DISTINCT pc.project_id,
+             count(pc.name) OVER (PARTITION BY pc.project_id) AS phenotypes_assessed
+            FROM ( SELECT DISTINCT ps.project_id,
+                     ph.name
+                   FROM chado.phenotype ph
+                      JOIN chado.stock_phenotype sp ON ph.phenotype_id = sp.phenotype_id
+                      JOIN chado.stock s ON sp.stock_id = s.stock_id
+                      JOIN chado.project_stock ps ON s.stock_id = ps.stock_id) pc) unique_phen ON p.project_id = unique_phen.project_id
+      LEFT JOIN ( SELECT DISTINCT genotype_call.project_id,
+             count(genotype_call.genotype_call_id) OVER (PARTITION BY genotype_call.project_id) AS gen_count
+            FROM chado.genotype_call) g ON p.project_id = g.project_id
+   WHERE d.db_id = 95;');
+        
+        $query = db_select('chado.plusgeno_view', 'p')
+            ->fields('p')
+            ->execute();
+    }
+    
 }
 
 function tpps_uninstall(){
@@ -16,7 +69,18 @@ function tpps_uninstall(){
         ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
         ->execute();
     
+    $tpps_usage = db_select('public.file_usage', 'f')
+        ->fields('f')
+        ->condition('module', 'tpps')
+        ->execute();
+    
+    foreach ($tpps_usage as $row){
+        dpm($row);
+        file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
+    }
     // only need to remove data from the public.variable table - incomplete submissions 
     // or submissions pending approval will be removed with the chado.tpps_* tables, and
     // approved submissions can stay on the website if people want them to.
+    
+    $delete_view = db_query('drop materialized view chado.plusgeno_view');
 }

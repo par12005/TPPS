@@ -83,7 +83,7 @@ function page_1_create_form(&$form, $form_state){
         
         function secondary_authors(&$form, $values, $form_state){
             
-            $file_upload_location = 'public://tpps_authors';
+            $file_upload_location = 'public://' . variable_get('tpps_author_files_dir', 'tpps_authors');
             
             $form['publication']['secondaryAuthors'] = array(
               '#type' => 'fieldset',
@@ -189,6 +189,9 @@ function page_1_create_form(&$form, $form_state){
             if ($file != 0){
                 if (($file = file_load($file))){
                     $file_name = $file->uri;
+                    
+                    //stop using the file so it can be deleted if the user clicks 'remove'
+                    file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
                     
                     $location = drupal_realpath("$file_name");
                     $content = parse_xlsx($location);
@@ -441,6 +444,12 @@ function page_1_validate_form(&$form, &$form_state){
                     if ($item != NULL){
                         form_set_error("publication][secondaryAuthors][file][columns][$item", "Secondary Authors file: Please specify a column that holds $item.");
                     }
+                }
+                
+                if (!form_get_errors()){
+                    //preserve file if it is valid
+                    $file = file_load($form_state['values']['publication']['secondaryAuthors']['file']);
+                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
                 }
             }
             else{

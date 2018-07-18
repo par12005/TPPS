@@ -42,8 +42,17 @@ function tpps_menu() {
       'page callback' => 'drupal_get_form',
       'page arguments' => array('tpps_admin_panel'),
       'access callback' => 'user_access',
-      'access arguments' => array('access content'),
+      'access arguments' => array('access administration pages'),
       'type' => MENU_NORMAL_ITEM
+    );
+    
+    $items['admin/config/content/tpps'] = array(
+      'title' => 'TPPS Settings',
+      'description' => 'Configuration for TPPS module',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('tpps_admin_settings'),
+      'access arguments' => array('access administration pages'),
+      'type' => MENU_NORMAL_ITEM,
     );
     
     $items['testpage'] = array(
@@ -121,8 +130,103 @@ function tpps_menu() {
     return $items;
 }
 
+function tpps_cronapi(){
+    $items = array();
+    
+    $items['tpps_refresh_landing_page'] = array(
+      'title' => t('Refresh TPPS landing page view'),
+      'callback' => 'tpps_refresh_landing_page',
+      'scheduler' => array(
+        'name' => 'crontab',
+        'crontab' => array(
+          'rules' => array('0 0 * * *'),
+        ),
+      )
+    );
+    
+    return $items;
+}
+
+function tpps_mail($key, &$message, $params){
+    if (isset($params['subject'])) {
+        $message['subject'] = $params['subject'];
+    } 
+    if (isset($params['body'])) {
+        $message['body'][] = $params['body']; 
+    }
+    if (isset($params['headers']) && is_array($params['headers'])) {   
+        $message['headers'] += $params['headers'];
+    }
+    
+    switch ($key){
+        case 'user_recieved':
+            $message['body'][] = "Congratulations!<br><br>
+
+Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
+    <li>Primary Author: {$params['author']}</li>
+    <li>Organization: {$params['org']}</li>
+    <li>Publication title: {$params['title']}</li>
+    <li>Journal: {$params['journal']}</li>
+    <li>Organisms: {$params['organisms']['number']}</li>
+";
+        for ($i = 1; $i <= $params['organisms']['number']; $i++){
+            $message['body'][] = "   <li>Organism $i: {$params['organisms'][$i]['species']}</li>";
+        }
+
+        $message['body'][] = 
+"   <li>Study Type: {$params['study_type']}</li>
+    <li>Data Type: {$params['data_type']}</li></ul>
+You can view your submission <a href='{$params['base_url']}/completed-submission?id={$params['accession']}' style='text-decoration: underline;'>here.</a><br>
+If you have any questions about your submission, please feel free to contact us <a href='{$params['base_url']}/contactform'>here</a>.<br><br>";
+            
+            break;
+        
+        case 'admin_recieved':
+            $message['body'][] = "
+Attention:<br><br>
+
+User {$params['user_mail']} has completed a TPPS Submission, titled {$params['title']}.<br>
+Click <a href='{$params['base_url']}/tpps-admin-panel?accession={$params['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
+            
+            break;
+            
+        case 'user_rejected':
+            $message['body'][] = 
+"To whom it may concern:<br><br>
+
+Unfortunately, your submission to TPPS has been rejected. If you would like, you can log into the TreeGenes website and edit your submission <a href='{$params['base_url']}/user/{$params['uid']}/TPPS'>here</a><br><br>
+
+The administrator who rejected your submission provided the following reason:<br>
+<blockquote>
+{$params['reject-reason']}
+</blockquote>";
+            break;
+        
+        case 'user_approved':
+            $message['body'][] = 
+"Congratulations! Your submission to TPPS has been approved!<br><br>
+
+You may now refer to your submitted data with accession number {$params['accession']}.<br><br>
+
+You can still view your submission from your <a href=\"{$params['base_url']}/completed-submission?id={$params['accession']}\">TPPS Completed Submissions</a> tab.<br>
+Your submission should be public on the <a href=\"{$params['base_url']}/tpps_details/main\">TPPS/TGDR Landing Page</a> within the next 24 hours.";
+            
+            break;
+
+        default:
+            break;
+    }
+}
+
+function tpps_element_info_alter(&$type){
+    if (isset($type['textfield']['#maxlength'])){
+        $type['textfield']['#maxlength'] = 512;
+    }
+}
+
 function tpps_tab_create($type, $user, $name = NULL){
     
+    global $base_url;
     $email = $user->mail;
     $state_name = 'tpps_incomplete_' . $email;
     $params = drupal_get_query_parameters();
@@ -174,7 +278,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         
         if (isset($state['saved_values']['Hellopage']['publication']['title'])){
             $title = check_plain($state['saved_values']['Hellopage']['publication']['title']);
-            $display .= "<td><a href='/Drupal/master?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
+            $display .= "<td><a href='$base_url/master?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
         }
         else {
             $display .= "<td></td>";
@@ -218,7 +322,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         if (isset($state['accession'])){
             $display .= "<td style='text-align:center'><input type='submit' id='delete-{$state['accession']}' onclick='";
             $title = (isset($state['saved_values']['Hellopage']['publication']['title'])) ? ' titled ' . $state['saved_values']['Hellopage']['publication']['title'] : '';
-            $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"/Drupal/user/{$user->uid}/TPPS?accession={$state['accession']}&action=DELETE\"}";
+            $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/user/{$user->uid}/TPPS?accession={$state['accession']}&action=DELETE\"}";
             $display .= "' name='op' class='form-button' value='Delete'></td>";
         }
         else {
@@ -245,8 +349,8 @@ function tpps_tab_create($type, $user, $name = NULL){
         ->condition('name', db_like($state_name) . '%', 'LIKE')
         ->execute();
     
-    $display = "<label for='tpps_complete_table'>Complete Submissions Pending Approval</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
-    $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th></tr>";
+    $display = "<label for='tpps_complete_table'>Complete Submissions</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
+    $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th>Status</th></tr>";
     $display .= "</thead><tbody>";
     
     foreach ($results as $item){
@@ -257,7 +361,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         
         if (isset($state['saved_values']['Hellopage']['publication']['title'])){
             $title = check_plain($state['saved_values']['Hellopage']['publication']['title']);
-            $display .= "<td><a href='/Drupal/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
+            $display .= "<td><a href='$base_url/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
         }
         else {
             $display .= "<td></td>";
@@ -298,7 +402,7 @@ function tpps_tab_create($type, $user, $name = NULL){
             $display .= "<td></td>";
         }
         
-        $display .= "</tr>";
+        $display .= "<td>{$state['status']}</td></tr>";
     }
     
     if (!isset($name)){
@@ -312,7 +416,7 @@ function tpps_tab_create($type, $user, $name = NULL){
     if (!$t1 and !$t2){
         $display = $style;
         $display .= "<h2>Could not find any Submissions</h2>";
-        $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=/Drupal/master>here.</a></p>";
+        $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/master>here.</a></p>";
     }
     
     $final .= $display;
@@ -323,9 +427,10 @@ function tpps_tab_create($type, $user, $name = NULL){
 function tpps_completed_display($form, $form_state){
     
     global $user;
+    global $base_url;
     $params = drupal_get_query_parameters();
     $accession = $params['id'];
-    $link = "/Drupal/tpps_details/accession/$accession";
+    $link = "$base_url/tpps_details/accession/$accession";
     
     $old_form_state = variable_get('tpps_complete_' . $user->mail . $accession);
     $values = $old_form_state['saved_values'];
@@ -916,7 +1021,18 @@ function tpps_create_record($table, array $values){
     $default_fields = array();
     $insert = NULL;
     
-    if (!$is_multi){
+    if ($is_multi){
+        $unique_columns = tpps_get_unique_columns($table);
+        foreach ($values as $key => $record){
+            if (($existing_key = tpps_record_exists($table, $record, $unique_columns))){
+                unset($values[$key]);
+            }
+        }
+        if ($values == array()){
+            return;
+        }
+    }
+    else{
         //check record exists
         if (($existing_key = tpps_record_exists($table, $values))){
             //if it does, do not attempt to re-write it.
@@ -1457,9 +1573,12 @@ function tpps_master_validate(&$form, &$form_state){
         
         if ($form_state['stage'] == 'thirdPage'){
             if ($form_state['saved_values']['Hellopage']['organism']['number'] == '1' or $form_state['values']['tree-accession']['check'] == '0'){
+                if (($file = file_load($form_state['values']['tree-accession']['file'])) and $form_state['values']['tree-accession']['file'] != 0){
+                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                }
                 
                 $form_state['values']['tree-accession']['file-columns'] = array();
-
+                
                 foreach ($form['tree-accession']['file']['columns'] as $col => $val){
                     if (isset($form['tree-accession']['file']['columns'][$col]['#value']) and $col[0] != '#'){
                         $form_state['values']['tree-accession']['file-columns'][$col] = $form['tree-accession']['file']['columns'][$col]['#value'];
@@ -1468,6 +1587,9 @@ function tpps_master_validate(&$form, &$form_state){
             }
             else {
                 for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
+                    if (($file = file_load($form_state['values']['tree-accession']["species-$i"]['file'])) and $form_state['values']['tree-accession']["species-$i"]['file'] != 0){
+                        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                    }
                     
                     $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
                     
@@ -1486,6 +1608,10 @@ function tpps_master_validate(&$form, &$form_state){
                 for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
                     
                     if ($form_state['values']["organism-$i"]['genotype']['marker-type']['Other'] != '0' or $form_state['values']["organism-$i"]['genotype']['marker-type']['SSRs/cpSSRs'] != '0'){
+                        if (($file = file_load($form_state['values']["organism-$i"]['genotype']['file'])) and $form_state['values']["organism-$i"]['genotype']['file'] != 0){
+                            file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                        }
+                        
                         $form_state['values']["organism-$i"]['genotype']['file-columns'] = array();
                         
                         if (isset($form["organism-$i"]['genotype']['file']['#value']['columns'])){
@@ -1497,6 +1623,10 @@ function tpps_master_validate(&$form, &$form_state){
                         }
                     }
                     if ($form_state['values']["organism-$i"]['genotype']['ref-genome'] == 'manual'){
+                        if (($file = file_load($form_state['values']["organism-$i"]['genotype']['assembly-user'])) and $form_state['values']["organism-$i"]['genotype']['assembly-user'] != 0){
+                            file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                        }
+                        
                         $form_state['values']["organism-$i"]['genotype']['assembly-user-columns'] = array();
                         
                         if (isset($form["organism-$i"]['genotype']['assembly-user']['#value']['columns'])){
@@ -1512,7 +1642,10 @@ function tpps_master_validate(&$form, &$form_state){
             
             if (isset($form['organism-1']['phenotype'])){
                 for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
-
+                    if (($file = file_load($form_state['values']["organism-$i"]['phenotype']['file'])) and $form_state['values']["organism-$i"]['phenotype']['file'] != 0){
+                        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                    }
+                    
                     $form_state['values']["organism-$i"]['phenotype']['file-columns'] = array();
                     
                     if (isset($form["organism-$i"]['phenotype']['file']['#value']['columns'])){
@@ -1524,6 +1657,10 @@ function tpps_master_validate(&$form, &$form_state){
                     }
                     
                     if ($form_state['values']["organism-$i"]['phenotype']['check'] != '0'){
+                        if (($file = file_load($form_state['values']["organism-$i"]['phenotype']['metadata'])) and $form_state['values']["organism-$i"]['phenotype']['metadata'] != 0){
+                            file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                        }
+                        
                         $form_state['values']["organism-$i"]['phenotype']['metadata-columns'] = array();
                         
                         if (isset($form["organism-$i"]['phenotype']['metadata']['#value']['columns'])){
@@ -1642,6 +1779,7 @@ function tpps_master_submit($form, &$form_state){
             }
             else{
                 variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
+                $form_state['status'] = 'Pending Approval';
                 variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
                 //drupal_goto('<front>');
@@ -1669,25 +1807,14 @@ function tpps_submit_email($form, $form_state){
     
     global $user;
     global $base_url;
-    $admin = "treegenesdb@gmail.com";
+    $admin = variable_get('tpps_admin_email', "treegenesdb@gmail.com");
+    
+    $params = array();
+    
     $to = $user->mail;
-    $from = "nginx@treegenesdb.org";
-    $subject = "TPPS Submission Received: {$form_state['saved_values']['Hellopage']['publication']['title']}";
-    $message = 
-"Congratulations!<br><br>
-
-Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
-    <li>Primary Author: {$form_state['saved_values']['Hellopage']['primaryAuthor']}</li>
-    <li>Organization: {$form_state['saved_values']['Hellopage']['organization']}</li>
-    <li>Publication title: {$form_state['saved_values']['Hellopage']['publication']['title']}</li>
-    <li>Journal: {$form_state['saved_values']['Hellopage']['publication']['journal']}</li>
-    <li>Organisms: {$form_state['saved_values']['Hellopage']['organism']['number']}</li>
-";
-    for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
-        $message .= 
-"   <li>Organism $i: {$form_state['saved_values']['Hellopage']['organism'][$i]['species']}</li>
-";
-    }
+    $from = variable_get('site_mail', '');
+    $params['subject'] = "TPPS Submission Received: {$form_state['saved_values']['Hellopage']['publication']['title']}";
+    
     $study_options = array(
       0 => '- Select -',
       1 => 'Natural Population (Landscape)',
@@ -1704,44 +1831,26 @@ Your TPPS submission has been received and is pending approval from a TreeGenes 
       'Phenotype x Environment',
       'Genotype x Environment'
     );
-    $study_type = $study_options[$form_state['saved_values']['secondPage']['studyType']];
-    $data_type = $data_options[$form_state['saved_values']['secondPage']['dataType']];
-    $message .= 
-"   <li>Study Type: $study_type</li>
-    <li>Data Type: $data_type</li></ul>
-You can view your submission <a href='$base_url/completed-submission?id={$form_state['accession']}' style='text-decoration: underline;'>here.</a><br>
-If you have any questions about your submission, please feel free to contact us <a href='$base_url/contactform'>here</a>.<br><br>
-";
     
-    $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-type: text/html; charset=iso-8859-1';
-
-    // Additional headers
-    $headers[] = "To: <$to>";
-    $headers[] = "From: Nginx web server <$from>";
+    $params['author'] = $form_state['saved_values']['Hellopage']['primaryAuthor'];
+    $params['org'] = $form_state['saved_values']['Hellopage']['organization'];
+    $params['title'] = $form_state['saved_values']['Hellopage']['publication']['title'];
+    $params['journal'] = $form_state['saved_values']['Hellopage']['publication']['journal'];
+    $params['organisms'] = $form_state['saved_values']['Hellopage']['organism'];
+    $params['study_type'] = $study_options[$form_state['saved_values']['secondPage']['studyType']];
+    $params['data_type'] = $data_options[$form_state['saved_values']['secondPage']['dataType']];
+    $params['accession'] = $form_state['accession'];
+    $params['base_url'] = $base_url;
+    $params['body'] = '';
     
-//    dpm($to);
-//    dpm($subject);
-//    dpm($message);
-//    dpm($headers);
+    $params['headers'][] = 'MIME-Version: 1.0';
+    $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
     
-    mail($to, $subject, $message, implode("\r\n", $headers));
+    drupal_mail('tpps', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
     
+    $params['user_mail'] = $user->mail;
     
-    $message = "
-Attention:<br><br>
-
-User {$user->mail} has completed a TPPS Submission, titled {$form_state['saved_values']['Hellopage']['publication']['title']}.<br>
-Click <a href='$base_url/tpps-admin-panel?accession={$form_state['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
-    
-    $headers = array();
-    $headers[] = 'MIME-Version: 1.0';
-    $headers[] = 'Content-type: text/html; charset=iso-8859-1';
-
-    // Additional headers
-    $headers[] = "To: <$admin>";
-    $headers[] = "From: Nginx web server <$from>";
-    mail($admin, $subject, $message, implode("\r\n", $headers));
+    drupal_mail('tpps', 'admin_recieved', $admin, user_preferred_language($user), $params, $from, TRUE);
     
     return;
 }
@@ -3008,7 +3117,6 @@ function submit_all(&$form_state){
         
         if (isset($fourthpage["organism-$i"]['genotype'])){
             $genotype = $fourthpage["organism-$i"]['genotype'];
-            $genotype_count = 0;
             
             if ($genotype['ref-genome'] == 'url'){
                 $reference_genome_id = tpps_create_record('projectprop', array(
@@ -3084,160 +3192,32 @@ function submit_all(&$form_state){
                   'rank' => $file_rank
                 ));
                 
-                $current_id = $organism_ids[$i];
-                $and = db_and()
-                    ->condition('type_id', '52307')
-                    ->condition('organism_id', "$current_id");
-                $species_code = db_select('chado.organismprop', 'o')
-                    ->fields('o', array('value'))
-                    ->condition($and)
-                    ->execute()
-                    ->fetchAssoc();
-                $species_code = $species_code['value'];
-                $marker = 'SNP';
-                
-                $vcf_file = file_load($genotype['vcf']);
-                $location = drupal_realpath($vcf_file->uri);
-                $vcf_content = fopen($vcf_file->uri, 'r');
-                
-                //inserts are WAY faster when done as a group, but require a lot of memory
-                $genotype_vals = array();
-                $genotypeprop_vals = array();
-                $format = "";
-                $first = TRUE;
-                
-                //dpm('start: ' . date('r'));
-                while (($vcf_line = fgets($vcf_content)) !== FALSE){
-                    if ($vcf_line[0] != '#'){
-                        $genotype_count++;
-                        $vcf_line = explode("\t", $vcf_line);
-                        $scaffold_id = &$vcf_line[0];
-                        $position = &$vcf_line[1];
-                        $ref = &$vcf_line[3];
-                        $alt = &$vcf_line[4];
-                        $qual = &$vcf_line[5];
-                        $filter = &$vcf_line[6];
-                        $info = &$vcf_line[7];
-                        
-                        $description = "$ref:$alt";
-                        
-                        $part = memory_get_usage() / $memory_limit;
-                        //check memory usage, compare to memory limit - if more than 15% is being used, insert what we have so far, then make a new query
-                        if ($part >= .15){
-                            tpps_create_record('genotype', $genotype_vals);
-                            $genotype_vals = array();
-                            tpps_create_record('genotypeprop', $genotypeprop_vals);
-                            $genotypeprop_vals = array();
-                        }
-                        
-                        $genotype_vals[] = array(
-                          'name' => "$marker-$species_code-$scaffold_id-$position",
-                          'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
-                          'description' => $description,
-                          'type_id' => '1205'
-                        );
-                        
-                        if ($first){
-                            $first = FALSE;
-                            $genotype_id = tpps_create_record('genotype', $genotype_vals[0]);
-                            $genotype_vals = array();
-                        }
-                        
-                        if ($format != ""){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '52197',
-                              'value' => $format,
-                            );
-                        }
-                        
-                        //quality score
-                        $genotypeprop_vals[] = array(
-                          'genotype_id' => $genotype_id,
-                          'type_id' => '2079',
-                          'value' => $qual
-                        );
-                        
-                        //filter: pass/fail
-                        $genotypeprop_vals[] = array(
-                          'genotype_id' => $genotype_id,
-                          'type_id' => '52008',
-                          'value' => ($filter == '.') ? "P" : "NP"
-                        );
-                        
-                        //break up info column
-                        $info_vals = explode(";", $info);
-                        foreach($info_vals as $key => $val){
-                            $parts = explode("=", $val);
-                            unset($info_vals[$key]);
-                            $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
-                        }
-                        
-                        //allele frequency, assuming that the info code for allele frequency is 'AF'
-                        if (isset($info_vals['AF']) and $info_vals['AF'] != ''){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '2496',
-                              'value' => $info_vals['AF']
-                            );
-                        }
-                        
-                        //depth coverage, assuming that the info code for depth coverage is 'DP'
-                        if (isset($info_vals['DP']) and $info_vals['DP'] != ''){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '52046',
-                              'value' => $info_vals['DP']
-                            );
-                        }
-                        
-                        //number of samples, assuming that the info code for number of samples is 'NS'
-                        if (isset($info_vals['NS']) and $info_vals['NS'] != ''){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '128971',
-                              'value' => $info_vals['NS']
-                            );
-                        }
-                        
-                        $genotype_id++;
-                    }
-                    elseif (preg_match('/##FORMAT=/', $vcf_line)) {
-                        $format .= substr($vcf_line, 9, -1);
-                    }
-                }
-                //insert the last set of values
-                tpps_create_record('genotype', $genotype_vals);
-                tpps_create_record('genotypeprop', $genotypeprop_vals);
-                unset($genotype_vals);
-                unset($genotypeprop_vals);
-                //dpm('done: ' . date('r'));
-                $vcf_file->status = FILE_STATUS_PERMANENT;
-                $vcf_file = file_save($vcf_file);
                 $file_rank++;
             }
-            
-            //TPPS currently doesn't have permissions for this table
-//            db_insert('chado.project_genotype_count')
-//                ->fields(array(
-//                  'project_id' => $project_id,
-//                  'count' => $genotype_count
-//                ))
-//                ->execute();
         }
     }
     
-    //This is a view - adding to it is different from adding to a normal table, waiting on Emily for more information
-//    tpps_create_record('plusgeno_view', array(
-//      'project_id' => $project_id,
-//      'accession' => $accession,
-//      'title' => $firstpage['publication']['title'],
-//      'species' => $landing_page_species,
-//      'tree_count' => count($stock_ids),
-//      'phen_count' => isset($phenotype_ids) ? count($phenotype_ids) : '0',
-//      'phenotypes_assessed' => isset($phenotype_ids) ? "$phenotype_assessed" : '0',
-//      'gen_count' => "$genotype_count"
-//    ));
+}
+
+function tpps_refresh_landing_page(){
+    
+    $and = db_and()
+        ->condition('schemaname', 'chado')
+        ->condition('tablename', 'plusgeno_view')
+        ->condition('indexname', 'tpps_cron');
+    
+    $query = db_select('pg_indexes', 'i')
+        ->fields('i')
+        ->condition($and)
+        ->execute();
+    
+    $result = $query->fetchAssoc();
+    
+    if (!$result){
+        db_query('create unique index tpps_cron on chado.plusgeno_view (project_id)');
+    }
+    
+    db_query('refresh materialized view concurrently chado.plusgeno_view');
 }
 
 function _author_autocomplete($string){
@@ -3576,6 +3556,67 @@ function summary_create_form(&$form, $form_state){
     return $form;
 }
 
+function tpps_admin_settings($form, &$form_state){
+    
+    $authors = variable_get('tpps_author_files_dir', 'tpps_authors');
+    $accession = variable_get('tpps_accession_files_dir', 'tpps_accession');
+    $genotype = variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+    $phenotype = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
+    
+    $form['tpps_admin_email'] = array(
+      '#type' => 'textfield',
+      '#title' => t('TPPS Admin Email Address'),
+      '#default_value' => variable_get('tpps_admin_email', 'treegenesdb@gmail.com'),
+    );
+    
+    $form['tpps_author_files_dir'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Author files:'),
+      '#default_value' => $authors,
+      '#description' => t("Currently points to " . drupal_realpath("public://$authors") . '.'),
+      '#prefix' => t('<h1>File Upload locations</h1>' . 'All file locations are relative to the "public://" file stream. Your current "public://" file stream points to "' . drupal_realpath('public://') . '".<br><br>')
+    );
+    
+    $form['tpps_accession_files_dir'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Tree Accession files:'),
+      '#default_value' => $accession,
+      '#description' => t("Currently points to " . drupal_realpath("public://$accession") . '.')
+    );
+    
+    $form['tpps_genotype_files_dir'] = array(
+      '#type' => 'textfield', 
+      '#title' => t('Genotype files:'),
+      '#default_value' => $genotype,
+      '#description' => t("Currently points to " . drupal_realpath("public://$genotype") . '.')
+    );
+    
+    $form['tpps_phenotype_files_dir'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Phenotype files:'),
+      '#default_value' => $phenotype,
+      '#description' => t("Currently points to " . drupal_realpath("public://$phenotype") . '.')
+    );
+    
+    return system_settings_form($form);
+}
+
+function tpps_admin_settings_validate($form, &$form_state){
+    foreach ($form_state['values'] as $key => $value){
+        if (substr($key, -10) == '_files_dir'){
+            $location = "public://$value";
+            if (!file_prepare_directory($location, FILE_CREATE_DIRECTORY)){
+                form_set_error("$key", "Error: path must be valid and current user must have permissions to access that path.");
+            }
+        }
+        elseif ($key == 'tpps_admin_email'){
+            if (!valid_email_address($value)){
+                form_set_error("$key", "Error: please enter a valid email address.");
+            }
+        }
+    }
+}
+
 function tpps_admin_panel($form, &$form_state){
     
     global $user;
@@ -3651,48 +3692,222 @@ function tpps_admin_panel_validate($form, &$form_state){
 }
 
 function tpps_admin_panel_submit($form, &$form_state){
+    
+    global $base_url;
+
+    $var_name = $form_state['values']['form_table'];
+    $suffix = substr($var_name, 14);
+    $to = substr($var_name, 14, -7);
+    $state = variable_get($var_name);
+    $params = array();
+
+    $from = variable_get('site_mail', '');
+    $params['subject'] = "TPPS Submission Rejected: {$state['saved_values']['Hellopage']['publication']['title']}";
+    $params['uid'] = user_load_by_name($to)->uid;
+    $params['reject-reason'] = $form_state['values']['reject-reason'];
+    $params['base_url'] = $base_url;
+    $params['title'] = $state['saved_values']['Hellopage']['publication']['title'];
+    $params['body'] = '';
+
+    $params['headers'][] = 'MIME-Version: 1.0';
+    $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
+
     if ($form_state['triggering_element']['#value'] == 'Reject'){
-        global $base_url;
         
-        $var_name = $form_state['values']['form_table'];
-        $suffix = substr($var_name, 14);
-        $email = substr($var_name, 14, -7);
-        $state = variable_get($var_name);
-        
-        $submission_user = user_load_by_name($email);
-        $uid = $submission_user->uid;
-        
-        $to = $email;
-        $from = "nginx@tgwebdev.cam.uchc.edu";
-        $subject = "TPPS Submission Rejected: {$state['saved_values']['Hellopage']['publication']['title']}";
-        $message = 
-"To whom it may concern:<br><br>
-
-Unfortunately, your submission to TPPS has been rejected. If you would like, you can log into the TreeGenes website and edit your submission <a href='$base_url/user/$uid/TPPS'>here</a><br><br>
-
-The administrator who rejected your submission provided the following reason:<br>
-<blockquote>
-{$form_state['values']['reject-reason']}
-</blockquote>";
-        
-        $headers[] = 'MIME-Version: 1.0';
-        $headers[] = 'Content-type: text/html; charset=iso-8859-1';
-        
-        $headers[] = "To: <$to>";
-        $headers[] = "From: Nginx web server <$from>";
-        
-        mail($to, $subject, $message, implode("\r\n", $headers));
+        drupal_mail('tpps', 'user_rejected', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
         variable_del($var_name);
+        unset($state['status']);
         variable_set('tpps_incomplete_' . $suffix, $state);
         dpm('Submission Rejected. Message has been sent to user.');
         drupal_goto('<front>');
     }
     else{
-        $var_name = $form_state['values']['form_table'];
-        $state = variable_get($var_name);
+        global $user;
+        $args = array($state);
+        $uid = $user->uid;
+        $includes = array();
+        $includes[] = module_load_include('module', 'tpps');
         
+        $params['subject'] = "TPPS Submission Approved: {$state['saved_values']['Hellopage']['publication']['title']}";
+        $params['accession'] = $state['accession'];
+        
+        $state['status'] = 'Approved';
+        variable_set($var_name, $state);
         submit_all($state);
+        $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
+        $state['job_id'] = $jid;
+        
+        dpm('Submission Approved! Message has been sent to user.');
+        drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
     }
+}
+
+function tpps_file_parsing($form_state){
+    
+    $fourthpage = $form_state['saved_values']['fourthPage'];
+    $firstpage = $form_state['saved_values']['Hellopage'];
+    $organism_number = $firstpage['organism']['number'];
+    $organism_ids = array();
+    for ($i = 1; $i <= $organism_number; $i++){
+        $parts = explode(" ", $firstpage['organism'][$i]['species']);
+        $genus = $parts[0];
+        $species = implode(" ", array_slice($parts, 1));
+
+        if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')){
+            $infra = implode(" ", array_slice($parts, 2));
+        }
+        else {
+            $infra = NULL;
+        }
+
+        $organism_ids[$i] = tpps_create_record('organism', array(
+          'genus' => $genus,
+          'species' => $species,
+          'infraspecific_name' => $infra
+        ));
+
+        if (isset($fourthpage["organism-$i"]['genotype'])){
+            $genotype = $fourthpage["organism-$i"]['genotype'];
+            $genotype_count = 0;
+
+            if ($genotype['marker-type']['SNPs'] != '0'){
+
+                $current_id = $organism_ids[$i];
+                $and = db_and()
+                    ->condition('type_id', '52307')
+                    ->condition('organism_id', "$current_id");
+                $species_code = db_select('chado.organismprop', 'o')
+                    ->fields('o', array('value'))
+                    ->condition($and)
+                    ->execute()
+                    ->fetchAssoc();
+                $species_code = $species_code['value'];
+                $marker = 'SNP';
+
+                $vcf_file = file_load($genotype['vcf']);
+                $location = drupal_realpath($vcf_file->uri);
+                $vcf_content = fopen($location, 'r');
+
+                //inserts are WAY faster when done as a group, but require a lot of memory
+                $genotype_vals = array();
+                $genotypeprop_vals = array();
+                $format = "";
+                $first = TRUE;
+
+                //dpm('start: ' . date('r'));
+                while (($vcf_line = fgets($vcf_content)) !== FALSE){
+                    if ($vcf_line[0] != '#'){
+                        $genotype_count++;
+                        $vcf_line = explode("\t", $vcf_line);
+                        $scaffold_id = &$vcf_line[0];
+                        $position = &$vcf_line[1];
+                        $ref = &$vcf_line[3];
+                        $alt = &$vcf_line[4];
+                        $qual = &$vcf_line[5];
+                        $filter = &$vcf_line[6];
+                        $info = &$vcf_line[7];
+
+                        $description = "$ref:$alt";
+                        
+                        //Tripal Job has issues when all submissions are made at the same time, so break them up into groups of 10,000 genotypes along with their relevant genotypeprops
+                        if ($genotype_count > 10000){
+                            $genotype_count = 0;
+                            tpps_create_record('genotype', $genotype_vals);
+                            $genotype_vals = array();
+                            tpps_create_record('genotypeprop', $genotypeprop_vals);
+                            $genotypeprop_vals = array();
+                        }
+
+                        $genotype_vals[] = array(
+                          'name' => "$marker-$species_code-$scaffold_id-$position",
+                          'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
+                          'description' => $description,
+                          'type_id' => '1205'
+                        );
+
+                        if ($first){
+                            $first = FALSE;
+                            $genotype_id = tpps_create_record('genotype', $genotype_vals[0]);
+                            $genotype_vals = array();
+                        }
+
+                        if ($format != ""){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '52197',
+                              'value' => $format,
+                            );
+                        }
+
+                        //quality score
+                        $genotypeprop_vals[] = array(
+                          'genotype_id' => $genotype_id,
+                          'type_id' => '2079',
+                          'value' => $qual
+                        );
+
+                        //filter: pass/fail
+                        $genotypeprop_vals[] = array(
+                          'genotype_id' => $genotype_id,
+                          'type_id' => '52008',
+                          'value' => ($filter == '.') ? "P" : "NP"
+                        );
+
+                        //break up info column
+                        $info_vals = explode(";", $info);
+                        foreach($info_vals as $key => $val){
+                            $parts = explode("=", $val);
+                            unset($info_vals[$key]);
+                            $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
+                        }
+
+                        //allele frequency, assuming that the info code for allele frequency is 'AF'
+                        if (isset($info_vals['AF']) and $info_vals['AF'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '2496',
+                              'value' => $info_vals['AF']
+                            );
+                        }
+
+                        //depth coverage, assuming that the info code for depth coverage is 'DP'
+                        if (isset($info_vals['DP']) and $info_vals['DP'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '52046',
+                              'value' => $info_vals['DP']
+                            );
+                        }
+
+                        //number of samples, assuming that the info code for number of samples is 'NS'
+                        if (isset($info_vals['NS']) and $info_vals['NS'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '128971',
+                              'value' => $info_vals['NS']
+                            );
+                        }
+                        $genotype_id++;
+                    }
+                    elseif (preg_match('/##FORMAT=/', $vcf_line)) {
+                        $format .= substr($vcf_line, 9, -1);
+                    }
+                }
+                //insert the last set of values
+                tpps_create_record('genotype', $genotype_vals);
+                tpps_create_record('genotypeprop', $genotypeprop_vals);
+                unset($genotype_vals);
+                unset($genotypeprop_vals);
+                //dpm('done: ' . date('r'));
+                $vcf_file->status = FILE_STATUS_PERMANENT;
+                $vcf_file = file_save($vcf_file);
+            }
+
+            dpm($genotype_count);
+        }
+    }
+    
+    return;
 }
 
 function tpps_test_page($form, &$form_state){
@@ -3719,18 +3934,18 @@ function tpps_test_page_validate($form, &$form_state){
         
         form_set_error('Next', 'error');
     }
-    /*for ($i = 0; $i < 2000; $i++){
-        $file = file_load($i);
-        if ($file){
-            //dpm($i);
-            //dpm($file->uri);
-            if (preg_match('/tpps/', $file->uri)){
-                dpm($i);
-                dpm($file->filename);
-                //file_delete($file);
-            }
-        }
-    }*/
+//    for ($i = 0; $i < 2000; $i++){
+//        $file = file_load($i);
+//        if ($file){
+//            //dpm($i);
+//            //dpm($file->uri);
+//            if (preg_match('/tpps/', $file->filename)){
+//                dpm($i);
+//                dpm($file->filename);
+//                //file_delete($file);
+//            }
+//        }
+//    }
     
 }
 
@@ -3739,7 +3954,7 @@ function tpps_test_page_submit($form, &$form_state) {
 }
 
 function tpps_block_info() { 
-  dpm("BLOCK INFO");   
+  //dpm("BLOCK INFO");   
   $blocks['tpps_status'] = array(
     // info: The name of the block.
     'info' => t('TPPS Status'),
@@ -3800,18 +4015,19 @@ function tpps_block_view_alter(&$data, $block) {
                 $data['content'] = t($content);
                 break;
             }
+            $ok = "<img src='$base_url/misc/message-16-ok.png'>";
             //dpm($form_state['saved_values']);
             
             //This deals with page 1
             if (isset($form_state['saved_values']['Hellopage']['#cleared']) and $form_state['saved_values']['Hellopage']['#cleared']){
                 $content .= "Step 1 - Complete<br />";
                 $content .= "Author/Species Information<hr />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Author: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['primaryAuthor'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organization: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organization'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Title: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['title'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Pub Year: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['year'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Secondary Authors: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['number'])) . "<br />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Organisms: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organism']['number'])) . "<br />";
+                $content .= "$ok" . ' Author: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['primaryAuthor'])) . "<br />";
+                $content .= "$ok" . ' Organization: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organization'])) . "<br />";
+                $content .= "$ok" . ' Pub Title: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['title'])) . "<br />";
+                $content .= "$ok" . ' Pub Year: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['year'])) . "<br />";
+                $content .= "$ok" . ' Secondary Authors: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['number'])) . "<br />";
+                $content .= "$ok" . ' Organisms: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organism']['number'])) . "<br />";
             }
 
             //This deals with page 2
@@ -3820,9 +4036,9 @@ function tpps_block_view_alter(&$data, $block) {
                 $content .= "Step 2 - Complete<br />";
                 $content .= "Experimental Conditions<br /><hr />";
                 $start = $form_state['saved_values']['secondPage']['StartingDate']['month'] . " " . $form_state['saved_values']['secondPage']['StartingDate']['year'];
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Starting Date: ' . filter_xss(check_plain($start)) . "<br />";
+                $content .= "$ok" . ' Starting Date: ' . filter_xss(check_plain($start)) . "<br />";
                 $end = $form_state['saved_values']['secondPage']['EndingDate']['month'] . " " . $form_state['saved_values']['secondPage']['EndingDate']['year'];
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
+                $content .= "$ok" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
                 if ($form_state['saved_values']['secondPage']['studyLocation']['type'] == '2'){
                     $location = $form_state['saved_values']['secondPage']['studyLocation']['custom'];
                     $query = $location;
@@ -3834,7 +4050,7 @@ function tpps_block_view_alter(&$data, $block) {
                         $query = $standard_coordinate;
                     }
                 }
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Location: <a id="sidebar_map" style="cursor:pointer">' . filter_xss(check_plain($location)) .  "</a><br>";
+                $content .= "$ok" . ' Study Location: <a id="sidebar_map" style="cursor:pointer">' . filter_xss(check_plain($location)) .  "</a><br>";
                 if (isset($query)){
                     $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
                     $js = "jQuery(document).ready(function ($) {
@@ -3854,7 +4070,7 @@ function tpps_block_view_alter(&$data, $block) {
                   4 => 'Experimental/Common Garden',
                   5 => 'Plantation',
                 );
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Study Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
+                $content .= "$ok" . ' Study Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
                 $type = $form_state['saved_values']['secondPage']['dataType'];
                 $type_arr = array(
                   '- Select -',
@@ -3864,7 +4080,7 @@ function tpps_block_view_alter(&$data, $block) {
                   'Phenotype x Environment',
                   'Genotype x Environment'
                 );
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Data Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
+                $content .= "$ok" . ' Data Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
             }
 
             //This deals with page 3
@@ -3872,18 +4088,20 @@ function tpps_block_view_alter(&$data, $block) {
                 $content .= "<br />";
                 $content .= "Step 3 - Complete<br />";
                 $content .= "Tree Accession<br /><hr />";
-                $content .= "<img src='$base_url/misc/message-16-ok.png'>" . ' Tree Accession data' .  "<br />";
+                $content .= "$ok" . ' Tree Accession data' .  "<br />";
                 if ($form_state['saved_values']['Hellopage']['organism']['number'] == '1' or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
-                    $file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->filename;
-                    $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->uri));
-                    $content .= "<img src='$base_url/misc/message-16-ok.png'> Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                    if (($file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->filename)){
+                        $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->uri));
+                        $content .= "$ok Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                    }
                 }
                 else {
                     for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
                         $species_name = $form_state['saved_values']['Hellopage']['organism'][$i]['species'];
-                        $file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->filename;
-                        $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->uri));
-                        $content .= "<img src='$base_url/misc/message-16-ok.png'> $species_name Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                        if (($file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->filename)){
+                            $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->uri));
+                            $content .= "$ok $species_name Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                        }
                     }
                 }
             }
@@ -3896,34 +4114,38 @@ function tpps_block_view_alter(&$data, $block) {
                     $content .= "<br />";
                     $content .= "Step 4 - Complete<br />";
                     $content .= "Submit Data<br /><hr />";
-                    $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  "<br />";
+                    $content .= "$ok " . filter_xss(check_plain($current_name)) .  "<br />";
                     
                     if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype'])){
-                        $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
+                        $content .= "$ok " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
                         
                         if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'] != 0){
-                            $genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->filename;
-                            $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                            if (($genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->filename)){
+                                $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->uri));
+                                $content .= "$ok Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                            }
                         }
                         if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'] != 0){
-                            $genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->filename;
-                            $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Genotype VCF File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                            if (($genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->filename)){
+                                $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->uri));
+                                $content .= "$ok Genotype VCF File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
+                            }
                         }
                     }
                     if (isset($form_state['saved_values']['fourthPage']['phenotype'])){
-                        $content .= "<img src='$base_url/misc/message-16-ok.png'> " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
+                        $content .= "$ok " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
                         
                         if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'] != 0){
-                            $phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->filename;
-                            $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Phenotype Metadata File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                            if (($phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->filename)){
+                                $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->uri));
+                                $content .= "$ok Phenotype Metadata File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                            }
                         }
                         if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'] != 0){
-                            $phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->filename;
-                            $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->uri));
-                            $content .= "<img src='$base_url/misc/message-16-ok.png'> Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                            if (($phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->filename)){
+                                $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->uri));
+                                $content .= "$ok Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
+                            }
                         }
                     }
                     
