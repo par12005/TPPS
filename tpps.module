@@ -1085,7 +1085,6 @@ function tpps_create_record($table, array $values){
             $insert->values($record);
         }
         $insert->execute();
-        dpm(count($values));
         return;
     }
     else {
@@ -3908,7 +3907,6 @@ function tpps_file_parsing($form_state){
         }
     }
     
-    dpm('file parsed');
     return;
 }
 
