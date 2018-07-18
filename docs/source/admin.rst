@@ -7,4 +7,4 @@ Administrators
    :glob:
 
    install
-   admin_pages/page_*
+   admin_pages/*

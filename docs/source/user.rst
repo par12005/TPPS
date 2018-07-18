@@ -6,4 +6,4 @@ Users
    :caption: Table of Contents
    :glob:
 
-   user_pages/page_*
+   user_pages/*
