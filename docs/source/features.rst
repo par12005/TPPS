@@ -1,6 +1,8 @@
 Features
 ========
 
+TPPS has many features that make data collection easier for administrators. Here are a few notable ones:
+
 * Support for genotype, phenotype, and environmental data and metadata
 * Support for population, association, and landscape genetics studies
 * Support for ontology standards, including the Minimum Information About a Plant Phenotyping Experiment (`MIAPPE`_)

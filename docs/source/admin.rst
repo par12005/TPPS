@@ -7,4 +7,7 @@ Administrators
    :glob:
 
    install
+   config
    admin_pages/*
+   valid
+   submit
