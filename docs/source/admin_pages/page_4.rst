@@ -1,12 +1,13 @@
+************************************
 Genotype, Phenotype, and Environment
-====================================
+************************************
 
 The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section, where users upload Genotypic, Phenotypic, and Environmental data and metadata. The form fields and their properties are as follows:
 
 * Tree Species **x**: ``fieldset``
 
 Phenotype
----------
+=========
 
   * Phenotype Information: ``fieldset`` - only visible if the user selects 'Genotype x Phenotype', 'Genotype x Phenotype x Environment', or 'Phenotype x Environment' from 'Data Type' in `Study Design`_
 
@@ -25,7 +26,7 @@ Phenotype
      * Phenotype File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Tree ID, Phenotype Name/Identifier, and Phenotype value
 
 Genotype
---------
+========
 
   * Genotype Information: ``fieldset`` - only visible if the user selects 'Genotype', 'Genotype x Phenotype', 'Genotype x Environment', or 'Genotype x Phenotype x Environment' from 'Data Type' in `Study Design`_
 

@@ -1,5 +1,6 @@
+*********************************
 Publication and Species Interface
-=================================
+*********************************
 
 The first set of fields in TPPS is the publication and species interface, where users upload data about their publication and up to 5 studied species. The form fields and their properties are as follows:
 

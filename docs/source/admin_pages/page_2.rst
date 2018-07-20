@@ -1,5 +1,6 @@
+************
 Study Design
-============
+************
 
 The second set of fields in TPPS is the Study Design section, where users upload metadata about their experiment. The form fields and their properties are as follows:
 
@@ -24,7 +25,7 @@ The second set of fields in TPPS is the Study Design section, where users upload
 * Study Type: ``select`` - options 'Natural Population (Landscape)', 'Growth Chamber', 'Greenhouse', 'Experimental/Common Garden', 'Plantation'
 
 Natural Population
-------------------
+==================
 
 * Natural Population: ``fieldset`` - only visible if the user selects 'Natural Population' from 'Study Type'
 
@@ -32,7 +33,7 @@ Natural Population
   * Assessions: ``select`` - options '1' to '30'
 
 Growth Chamber
---------------
+==============
 
 * Growth Chamber: ``fieldset`` - only visible if the user selects 'Growth Chamber' from 'Study Type'
 
@@ -74,7 +75,7 @@ Growth Chamber
      * Treatments Description: ``textfield`` - if an option from 'Treatments' is selected, users must provide a description of the treatment
 
 Greenhouse
-----------
+==========
 
 * Greenhouse: ``fieldset`` - only visible if the user selects 'Greenhouse' from 'Study Type'
 
@@ -110,7 +111,7 @@ Greenhouse
      * Treatments Description: ``textfield`` - if an option from 'Treatments' is selected, users must provide a description of the treatment
 
 Common Garden
--------------
+=============
 
 * Common Garden: ``fieldset`` - only visible if the user selects 'Experimental/Common Garden' from 'Study Type'
 
@@ -134,7 +135,7 @@ Common Garden
   * Treatments Description: ``textfield`` - if an option from 'Treatments' is selected, users must provide a description of the treatment
 
 Plantation
-----------
+==========
 
 * Plantation: ``fieldset`` - only visible if the user selects 'Plantation' from 'Study Type'
 
