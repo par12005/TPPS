@@ -475,7 +475,6 @@ function page_4_create_form(&$form, &$form_state){
             $fields['vcf']['#default_value'] = $fields['vcf']['#value'];
         }
         if (isset($fields['vcf']['#default_value']) and $fields['vcf']['#default_value'] != 0 and ($file = file_load($fields['vcf']['#default_value']))){
-            dpm($file);
             //stop using the file so it can be deleted if the user clicks 'remove'
             file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         }
@@ -664,6 +663,8 @@ function phenotype_header_callback($form, $form_state){
 }
 
 function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_location){
+    global $user;
+    $uid = $user->uid;
 
     $options = array(
       'key' => 'filename',
@@ -699,9 +700,9 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
         }
     }
     
-    $ref_genome_arr["url"] = 'I can provide a URL to my Reference Genome or assembly file(s)';
+    $ref_genome_arr["url"] = 'I can upload my own assembly file, or provide a URL to my Reference Genome or assembly file(s)';
     $ref_genome_arr["bio"] = 'I can provide a BioProject accession number and select assembly file(s) from a list';
-    $ref_genome_arr["manual"] = 'I can upload my own assembly file';
+    //$ref_genome_arr["manual"] = 'I can upload my own assembly file';
 
     $fields['ref-genome'] = array(
       '#type' => 'select',
@@ -710,22 +711,6 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
       '#default_value' => isset($values[$id]['genotype']['ref-genome']) ? $values[$id]['genotype']['ref-genome'] : 0,
     );
 
-    $fields['ref-genome-other'] = array(
-      '#type' => 'textfield',
-      '#title' => t('URL to Reference Genome:'),
-      '#default_value' => isset($values[$id]['genotype']['ref-genome-other']) ? $values[$id]['genotype']['ref-genome-other'] : NULL,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url'),
-        )
-      ),
-      '#attributes' => array(
-        'data-toggle' => array('tooltip'),
-        'data-placement' => array('left'),
-        'title' => array('This should be a link to a reference genome on NCBI')
-      )
-    );
-    
     $fields['BioProject-id'] = array(
       '#type' => 'textfield',
       '#title' => t('BioProject Accession Number:'),
@@ -796,6 +781,65 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
             $fields['assembly-auto']['#description'] = t('We could not find any assembly files related to that BioProject. Please ensure your accession number is of the format "PRJNA#"');
         }
     }
+    
+    require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
+    $class = 'FASTAImporter';
+    tripal_load_include_importer_class($class);
+    $tripal_upload_location = "public://tripal/users/$uid";
+    
+    $fasta = tripal_get_importer_form(array(), $form_state, $class);
+    //dpm($fasta);
+    
+    $fasta['#type'] = 'fieldset';
+    $fasta['#title'] = 'Tripal FASTA Loader';
+    $fasta['#states'] = array(
+      'visible' => array(
+        ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url')
+      )
+    );
+    
+    unset($fasta['file']['file_local']);
+    unset($fasta['organism_id']);
+    unset($fasta['method']);
+    unset($fasta['match_type']);
+    unset($fasta['additional']['re_uname']);
+    unset($fasta['additional']['re_help']);
+    unset($fasta['additional']['relationship']);
+    unset($fasta['button']);
+    
+    $fasta['file']['file_remote']['#default_value'] = isset($values[$id]['genotype']['tripal_fasta']['file']['file_remote']) ? $values[$id]['genotype']['tripal_fasta']['file']['file_remote'] : NULL;
+    $fasta['file']['file_upload_existing']['#default_value'] = isset($values[$id]['genotype']['tripal_fasta']['file']['file_upload_existing']) ? $values[$id]['genotype']['tripal_fasta']['file']['file_upload_existing'] : NULL;
+    
+    $upload = array(
+      '#type' => 'managed_file',
+      '#title' => '',
+      '#description' => 'Remember to click the "Upload" button below to send your file to the server.  This interface is capable of uploading very large files.  If you are disconnected you can return, reload the file and it will resume where it left off.  Once the file is uploaded the "Upload Progress" will indicate "Complete".  If the file is already present on the server then the status will quickly update to "Complete".',
+      '#upload_validators' => array(
+        'file_validate_extensions' => array(implode(' ', $class::$file_types))
+      ),
+      '#default_value' => isset($values[$id]['genotype']['tripal_fasta']['file']['file_upload']) ? $values[$id]['genotype']['tripal_fasta']['file']['file_upload'] : 0,
+      '#upload_location' => $tripal_upload_location,
+    );
+    
+    $fasta['file']['file_upload'] = $upload;
+    $fasta['analysis_id']['#required'] = $fasta['seqtype']['#required'] = FALSE;
+    /*
+//    $fields['ref-genome-other'] = array(
+//      '#type' => 'textfield',
+//      '#title' => t('URL to Reference Genome:'),
+//      '#default_value' => isset($values[$id]['genotype']['ref-genome-other']) ? $values[$id]['genotype']['ref-genome-other'] : NULL,
+//      '#states' => array(
+//        'visible' => array(
+//          ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url'),
+//        )
+//      ),
+//      '#attributes' => array(
+//        'data-toggle' => array('tooltip'),
+//        'data-placement' => array('left'),
+//        'title' => array('This should be a link to a reference genome on NCBI')
+//      )
+//    );
+    
     
     $fields['assembly-user'] = array(
       '#type' => 'managed_file',
@@ -896,7 +940,10 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
 
             $fields['assembly-user']['columns'][$col]['#suffix'] .= $display;
         }
-    }
+    }*/
+    
+    $fields['tripal_fasta'] = $fasta;
+    dpm($fasta);
     
     return $fields;
 }
@@ -1271,9 +1318,9 @@ function page_4_validate_form(&$form, &$form_state){
             if ($ref_genome === '0'){
                 form_set_error("$id][genotype][ref-genome", "Reference Genome: field is required.");
             }
-            elseif ($ref_genome === 'url' and $genotype['ref-genome-other'] === ''){
+/*            elseif ($ref_genome === 'url' and $genotype['ref-genome-other'] === ''){
                 form_set_error("$id][genotype][ref-genome-other", "Custom Reference Genome: field is required.");
-            }
+            }*/
             elseif ($ref_genome === 'bio'){
                 if ($bio_id == ''){
                     form_set_error("$id][genotype][Bioproject-id", 'BioProject Id: field is required.');
@@ -1291,8 +1338,48 @@ function page_4_validate_form(&$form, &$form_state){
                     }
                 }
             }
-            elseif ($ref_genome === 'manual'){
-                $assembly = $genotype['assembly-user'];
+            elseif ($ref_genome === 'url'){
+                
+                $class = 'FASTAImporter';
+                tripal_load_include_importer_class($class);
+                $fasta_vals = $genotype['tripal_fasta'];
+                
+                $file_upload = isset($fasta_vals['file']['file_upload']) ? trim($fasta_vals['file']['file_upload']) : 0;
+                $file_existing = isset($fasta_vals['file']['file_upload_existing']) ? trim($fasta_vals['file']['file_upload_existing']) : 0;
+                $file_remote = isset($fasta_vals['file']['file_remote']) ? trim($fasta_vals['file']['file_remote']) : 0;
+                $re_name = trim($fasta_vals['additional']['re_name']);
+                $db_id = trim($fasta_vals['additional']['db_id']);
+                $re_accession = trim($fasta_vals['additional']['re_accession']);
+                $analysis_id = trim($fasta_vals['additional']['analysis_id']);
+                $seqtype = trim($fasta_vals['additional']['seqtype']);
+                
+                if (!$file_upload and !$file_existing and !$file_remote){
+                    form_set_error("$id][genotype][tripal_fasta][file", "Assembly file: field is required.");
+                }
+                
+                if (!$re_name){
+                    $re_name = '^(.*?)\s.*$';
+                }
+                
+                if ($db_id and !$re_accession){
+                    form_set_error("$id][genotype][tripal_fasta][additional][re_accession", 'Accession regular expression: field is required.');
+                }
+                if ($re_accession and !$db_id){
+                    form_set_error("$id][genotype][tripal_fasta][additional][db_id", 'External Database: field is required.');
+                }
+                
+                if (!$analysis_id){
+                    form_set_error("$id][genotyep][tripal_fasta][analysis_id", 'Analysis: field is required.');
+                }
+                if (!$seqtype){
+                    
+                }
+                
+                //dpm($class::$file_required);
+                //dpm($fasta_vals);
+                //form_set_error("Submit", 'error');
+                
+                /*$assembly = $genotype['assembly-user'];
                 
                 if ($assembly == ''){
                     form_set_error("$id][genotype][assembly-user", 'Assembly file: field is required.');
@@ -1338,7 +1425,7 @@ function page_4_validate_form(&$form, &$form_state){
                         $file = file_load($form_state['values'][$id]['genotype']['assembly-user']);
                         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
                     }
-                }
+                }*/
             }
             
             if ($marker_check === '000'){
@@ -1382,65 +1469,65 @@ function page_4_validate_form(&$form, &$form_state){
                 if ($vcf == ''){
                     form_set_error("$id][genotype][vcf", "Genotype VCF File: field is required.");
                 }
-                elseif ($ref_genome === 'manual' and $assembly != '' and isset($scaffold_col) and empty(form_get_errors())){
-                    $vcf_content = fopen(file_load($vcf)->uri, 'r');
-                    $assembly_content = fopen(file_load($assembly)->uri, 'r');
-                    
-                    while (($vcf_line = fgets($vcf_content)) !== FALSE){
-                        if ($vcf_line[0] != '#'){
-                            
-                            $vcf_values = explode("\t", $vcf_line);
-                            $scaffold_id = $vcf_values[0];
-                            $match = FALSE;
-
-                            while (($assembly_line = fgets($assembly_content)) !== FALSE){
-                                if ($assembly_line[0] != '>'){
-                                    continue;
-                                }
-                                else{
-                                    $assembly_values = explode(' ', $assembly_line);
-                                    $assembly_scaffold = trim($assembly_values[$scaffold_col]);
-                                    if ($assembly_scaffold[0] == '>'){
-                                        $assembly_scaffold = substr($assembly_scaffold, 1);
-                                    }
-                                    if ($assembly_scaffold == $scaffold_id){
-                                        $match = TRUE;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (!$match){
-                                fclose($assembly_content);
-                                $assembly_content = fopen(file_load($assembly)->uri, 'r');
-                                while (($assembly_line = fgets($assembly_content)) !== FALSE){
-                                    if ($assembly_line[0] != '>'){
-                                        continue;
-                                    }
-                                    else{
-                                        $assembly_values = explode(' ', $assembly_line);
-                                        $assembly_scaffold = trim($assembly_values[$scaffold_col]);
-                                        if ($assembly_scaffold[0] == '>'){
-                                            $assembly_scaffold = substr($assembly_scaffold, 1);
-                                        }
-                                        if ($assembly_scaffold == $scaffold_id){
-                                            $match = TRUE;
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (!$match){
-                                //dpm($scaffold_id);
-                                form_set_error('file', "VCF File: scaffold $scaffold_id not found in assembly file(s)");
-                            }
-                            else {
-                                //dpm("matched: $scaffold_id");
-                            }
-                        }
-                    }
-                    
-                }
+//                elseif ($ref_genome === 'manual' and $assembly != '' and isset($scaffold_col) and empty(form_get_errors())){
+//                    $vcf_content = fopen(file_load($vcf)->uri, 'r');
+//                    $assembly_content = fopen(file_load($assembly)->uri, 'r');
+//                    
+//                    while (($vcf_line = fgets($vcf_content)) !== FALSE){
+//                        if ($vcf_line[0] != '#'){
+//                            
+//                            $vcf_values = explode("\t", $vcf_line);
+//                            $scaffold_id = $vcf_values[0];
+//                            $match = FALSE;
+//
+//                            while (($assembly_line = fgets($assembly_content)) !== FALSE){
+//                                if ($assembly_line[0] != '>'){
+//                                    continue;
+//                                }
+//                                else{
+//                                    $assembly_values = explode(' ', $assembly_line);
+//                                    $assembly_scaffold = trim($assembly_values[$scaffold_col]);
+//                                    if ($assembly_scaffold[0] == '>'){
+//                                        $assembly_scaffold = substr($assembly_scaffold, 1);
+//                                    }
+//                                    if ($assembly_scaffold == $scaffold_id){
+//                                        $match = TRUE;
+//                                        break;
+//                                    }
+//                                }
+//                            }
+//                            if (!$match){
+//                                fclose($assembly_content);
+//                                $assembly_content = fopen(file_load($assembly)->uri, 'r');
+//                                while (($assembly_line = fgets($assembly_content)) !== FALSE){
+//                                    if ($assembly_line[0] != '>'){
+//                                        continue;
+//                                    }
+//                                    else{
+//                                        $assembly_values = explode(' ', $assembly_line);
+//                                        $assembly_scaffold = trim($assembly_values[$scaffold_col]);
+//                                        if ($assembly_scaffold[0] == '>'){
+//                                            $assembly_scaffold = substr($assembly_scaffold, 1);
+//                                        }
+//                                        if ($assembly_scaffold == $scaffold_id){
+//                                            $match = TRUE;
+//                                            break;
+//                                        }
+//                                    }
+//                                }
+//                            }
+//
+//                            if (!$match){
+//                                //dpm($scaffold_id);
+//                                form_set_error('file', "VCF File: scaffold $scaffold_id not found in assembly file(s)");
+//                            }
+//                            else {
+//                                //dpm("matched: $scaffold_id");
+//                            }
+//                        }
+//                    }
+//                    
+//                }
             }
             
             if (($ssrs != '0' or $other_marker != '0') and $genotype_file == ''){
@@ -1563,15 +1650,15 @@ function page_4_validate_form(&$form, &$form_state){
                     $form["organism-$i"]['genotype']['file']['columns'] = $new_form["organism-$i"]['genotype']['file']['columns'];
                     $form["organism-$i"]['genotype']['file']['columns']['#id'] = "edit-organism-$i-genotype-file-columns";
                 }
-                
-                if (isset($form["organism-$i"]['genotype']['assembly-user']['upload'])){
-                    $form["organism-$i"]['genotype']['assembly-user']['upload'] = $new_form["organism-$i"]['genotype']['assembly-user']['upload'];
-                    $form["organism-$i"]['genotype']['assembly-user']['upload']['#id'] = "edit-organism-$i-genotype-assembly-user-upload";
-                }
-                if (isset($form["organism-$i"]['genotype']['assembly-user']['columns'])){
-                    $form["organism-$i"]['genotype']['assembly-user']['columns'] = $new_form["organism-$i"]['genotype']['assembly-user']['columns'];
-                    $form["organism-$i"]['genotype']['assembly-user']['columns']['#id'] = "edit-organism-$i-genotype-assembly-user-columns";
-                }
+//                
+//                if (isset($form["organism-$i"]['genotype']['assembly-user']['upload'])){
+//                    $form["organism-$i"]['genotype']['assembly-user']['upload'] = $new_form["organism-$i"]['genotype']['assembly-user']['upload'];
+//                    $form["organism-$i"]['genotype']['assembly-user']['upload']['#id'] = "edit-organism-$i-genotype-assembly-user-upload";
+//                }
+//                if (isset($form["organism-$i"]['genotype']['assembly-user']['columns'])){
+//                    $form["organism-$i"]['genotype']['assembly-user']['columns'] = $new_form["organism-$i"]['genotype']['assembly-user']['columns'];
+//                    $form["organism-$i"]['genotype']['assembly-user']['columns']['#id'] = "edit-organism-$i-genotype-assembly-user-columns";
+//                }
             }
         }
     }
