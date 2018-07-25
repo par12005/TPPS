@@ -1432,6 +1432,10 @@ function tpps_master($form, &$form_state){
                         margin: 10px 10px 10px 0px;
                 }
                 
+                h2.tpps-header{
+                        border: none;
+                }
+                
 	</style>';
 	$form['#prefix'] .= '<div class="tgdr_form_status">';
 	
