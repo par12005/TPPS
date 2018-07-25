@@ -106,7 +106,8 @@ function page_3_create_form(&$form, &$form_state){
               '4' => 'Latitude',
               '5' => 'Longitude',
               '6' => 'Genus',
-              '7' => 'Species'
+              '7' => 'Species',
+              '10' => 'Genus + Species'
             );
 
             $first = TRUE;
@@ -448,7 +449,8 @@ function page_3_validate_form(&$form, &$form_state){
                   '4' => 'Latitude',
                   '5' => 'Longitude',
                   '6' => 'Genus',
-                  '7' => 'Species'
+                  '7' => 'Species',
+                  '10' => 'Genus + Species'
                 );
                 
                 $form_state['values']['tree-accession']['file-columns'] = array();
@@ -476,8 +478,15 @@ function page_3_validate_form(&$form, &$form_state){
                 }
                 
                 if ($species_number == 1){
-                    $required_columns['6'] = NULL;
-                    $required_columns['7'] = NULL;
+                    $required_columns['6'] = $required_columns['7'] = $required_columns['10'] = NULL;
+                }
+                else {
+                    if (!isset($required_columns['10'])){
+                        $required_columns['6'] = $required_columns['7'] = NULL;
+                    }
+                    elseif (!isset($required_columns['6']) or !isset($required_columns['7'])){
+                        $required_columns['10'] = NULL;
+                    }
                 }
                 
                 foreach ($required_columns as $item){
