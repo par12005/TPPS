@@ -170,7 +170,7 @@ Your TPPS submission has been received and is pending approval from a TreeGenes 
     <li>Organisms: {$params['organisms']['number']}</li>
 ";
         for ($i = 1; $i <= $params['organisms']['number']; $i++){
-            $message['body'][] = "   <li>Organism $i: {$params['organisms'][$i]['species']}</li>";
+            $message['body'][] = "   <li>Organism $i: {$params['organisms'][$i]}</li>";
         }
 
         $message['body'][] = 
@@ -489,7 +489,7 @@ function tpps_table_display($values){
     $data['Journal'] = $values['Hellopage']['publication']['journal'];
     
     for ($i = 1; $i <= $values['Hellopage']['organism']['number']; $i++){
-        $data["Species $i"] = $values['Hellopage']['organism'][$i]['species'];
+        $data["Species $i"] = $values['Hellopage']['organism'][$i];
     }
     
     $data['Experiment Starting Date'] = $values['secondPage']['StartingDate']['month'] . ' ' . $values['secondPage']['StartingDate']['year'];
@@ -791,7 +791,7 @@ function tpps_table_display($values){
             $file = $values['thirdPage']['tree-accession']["species-$i"]['file'];
             $filename = file_load($file)->filename;
             $file_url = check_plain(file_create_url(file_load($file)->uri));
-            $organism_name = $values['Hellopage']['organism'][$i]['species'];
+            $organism_name = $values['Hellopage']['organism'][$i];
             $data["$organism_name Accession File"] = "<a href='$file_url' target='blank'>$filename</a>";
         }
     }
@@ -2018,8 +2018,8 @@ function submit_all(&$form_state){
     
     $landing_page_species = "";
     for ($i = 1; $i <= $organism_number; $i++){
-        $landing_page_species .= $firstpage['organism'][$i]['species'] . ", ";
-        $parts = explode(" ", $firstpage['organism'][$i]['species']);
+        $landing_page_species .= $firstpage['organism'][$i] . ", ";
+        $parts = explode(" ", $firstpage['organism'][$i]);
         $genus = $parts[0];
         $species = implode(" ", array_slice($parts, 1));
         if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')){
@@ -2749,7 +2749,7 @@ function submit_all(&$form_state){
                 $tree_id = $content[$i][$id_col_accession_name];
                 for ($j = 1; $j <= $organism_number; $j++){
                     //match genus and species to genus and species given on page 1
-                    if ($firstpage['organism'][$j]['species'] == "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}"){
+                    if ($firstpage['organism'][$j] == "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}"){
                         //obtain organism id from matching species
                         $id = $organism_ids[$j];
                         break;
@@ -3749,7 +3749,7 @@ function tpps_file_parsing($form_state){
     $organism_number = $firstpage['organism']['number'];
     $organism_ids = array();
     for ($i = 1; $i <= $organism_number; $i++){
-        $parts = explode(" ", $firstpage['organism'][$i]['species']);
+        $parts = explode(" ", $firstpage['organism'][$i]);
         $genus = $parts[0];
         $species = implode(" ", array_slice($parts, 1));
 
@@ -4097,7 +4097,7 @@ function tpps_block_view_alter(&$data, $block) {
                 }
                 else {
                     for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
-                        $species_name = $form_state['saved_values']['Hellopage']['organism'][$i]['species'];
+                        $species_name = $form_state['saved_values']['Hellopage']['organism'][$i];
                         if (($file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->filename)){
                             $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->uri));
                             $content .= "$ok $species_name Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
@@ -4110,7 +4110,7 @@ function tpps_block_view_alter(&$data, $block) {
             if (isset($form_state['saved_values']['fourthPage']['#cleared']) and $form_state['saved_values']['fourthPage']['#cleared']){
                 $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
                 for ($i = 1; $i <= $organism_number; $i++){
-                    $current_name = $form_state['saved_values']['Hellopage']['organism'][$i]['species'];
+                    $current_name = $form_state['saved_values']['Hellopage']['organism'][$i];
                     $content .= "<br />";
                     $content .= "Step 4 - Complete<br />";
                     $content .= "Submit Data<br /><hr />";

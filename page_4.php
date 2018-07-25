@@ -495,7 +495,7 @@ function page_4_create_form(&$form, &$form_state){
     //dpm($data_type);
     for ($i = 1; $i <= $organism_number; $i++){
         
-        $name = $form_state['saved_values']['Hellopage']['organism']["$i"]['species'];
+        $name = $form_state['saved_values']['Hellopage']['organism']["$i"];
         
         $form["organism-$i"] = array(
           '#type' => 'fieldset',
