@@ -1432,8 +1432,8 @@ function tpps_master($form, &$form_state){
                         margin: 10px 10px 10px 0px;
                 }
                 
-                h2.tpps-header{
-                        border: none;
+                .fieldset-title {
+                        padding: 0px;
                 }
                 
 	</style>';
