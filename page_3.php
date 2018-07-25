@@ -481,7 +481,11 @@ function page_3_validate_form(&$form, &$form_state){
                     $required_columns['6'] = $required_columns['7'] = $required_columns['10'] = NULL;
                 }
                 else {
-                    if (!isset($required_columns['10'])){
+                    if (isset($required_columns['6']) and isset($required_columns['7']) and isset($required_columns['10'])){
+                        $required_columns['6'] = $required_columns['7'] = $required_columns['10'] = NULL;
+                        form_set_error("tree-accession][file][columns", "Tree Accession file: Please specify a column or columns that hold Genus and Species.");
+                    }
+                    elseif (!isset($required_columns['10'])){
                         $required_columns['6'] = $required_columns['7'] = NULL;
                     }
                     elseif (!isset($required_columns['6']) or !isset($required_columns['7'])){
