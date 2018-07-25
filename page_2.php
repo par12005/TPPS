@@ -130,10 +130,10 @@ function page_2_create_form(&$form, $form_state){
           '#title' => t('Coordinate Projection:'),
           '#options' => array(
             0 => '- Select -',
-            1 => 'Latitude/Longitude (WGS 84)',
-            3 => 'Latitude/Longitude (NAD 83)',
-            4 => 'Latitude/Longitude (ETRS 89)',
-            2 => 'Custom Location'
+            1 => 'WGS 84',
+            3 => 'NAD 83',
+            4 => 'ETRS 89',
+            2 => 'Custom Location (street address)'
           ),
           '#default_value' => isset($values['studyLocation']['type']) ? $values['studyLocation']['type'] : 0,
           '#attributes' => array(
