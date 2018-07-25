@@ -221,7 +221,6 @@ Persistent variables that TPPS creates will be removed from the database upon in
 # Features in Development
 - Add required indicator to required fields
 - Add genus+species option to tree accession file
-- Section distinction on GPE page
 - Add use data from previous section option on GPE page
 - Automatically use single phenotype section for all organisms
 - Genotype flow
