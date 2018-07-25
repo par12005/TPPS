@@ -2735,15 +2735,12 @@ function submit_all(&$form_state){
             foreach ($column_vals as $col => $val){
                 if ($val == '6'){
                     $genus_col_name = $col;
-                    break;
                 }
-            }
-            
-            //get species column
-            foreach ($column_vals as $col => $val){
                 if ($val == '7'){
                     $species_col_name = $col;
-                    break;
+                }
+                if ($val == '10'){
+                    $org_col_name = $col;
                 }
             }
             
@@ -2752,7 +2749,7 @@ function submit_all(&$form_state){
                 $tree_id = $content[$i][$id_col_accession_name];
                 for ($j = 1; $j <= $organism_number; $j++){
                     //match genus and species to genus and species given on page 1
-                    if ($firstpage['organism'][$j] == "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}"){
+                    if ($firstpage['organism'][$j] == "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}" or $firstpage['organism'][$j] == "{$content[$i][$org_col_name]}"){
                         //obtain organism id from matching species
                         $id = $organism_ids[$j];
                         break;
