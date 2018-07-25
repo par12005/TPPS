@@ -20,6 +20,7 @@ function page_4_create_form(&$form, &$form_state){
           '#tree' => TRUE,
           '#prefix' => "<div id=\"phenotypes-$id\">",
           '#suffix' => '</div>',
+          '#description' => t('Upload a file and/or fill in form fields below to provide us with metadata about your phenotypes.'),
         );
         
         if (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Add Phenotype-$id"){
@@ -96,8 +97,9 @@ function page_4_create_form(&$form, &$form_state){
               '#attributes' => array(
                 'data-toggle' => array('tooltip'),
                 'data-placement' => array('left'),
-                'title' => array('If your phenotype is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
-              )
+                'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
+              ),
+              '#description' => t("Phenotype \"name\" is the human-readable name of the phenotype, where \"attribute\" is the thing that the phenotype is describing. Phenotype \"name\" should match the data in the \"Phenotype Name/Identifier\" column that you select in your <a href=\"#edit-$id-phenotype-file-ajax-wrapper\">Phenotype file</a> below.")
             );
             
             $fields['phenotypes-meta']["$i"]['attribute'] = array(

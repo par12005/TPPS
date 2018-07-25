@@ -223,8 +223,6 @@ Persistent variables that TPPS creates will be removed from the database upon in
 - Add genus+species option to tree accession file
 - Section distinction on GPE page
 - Add use data from previous section option on GPE page
-- Clarify manual/file metadata in phenotype
-- Clarify name vs attribute
 - Automatically use single phenotype section for all organisms
 - Genotype flow
 - Dedicated documentation for users/admins
