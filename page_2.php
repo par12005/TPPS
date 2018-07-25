@@ -56,14 +56,14 @@ function page_2_create_form(&$form, $form_state){
         
         $form[$type . 'Date']['year'] = array(
           '#type' => 'select',
-          '#title' => t("$type Year:"),
+          '#title' => t("$type Year: *"),
           '#options' => $yearArr,
           '#default_value' => isset($values[$type . 'Date']['year']) ? $values[$type . 'Date']['year'] : 0,
         );
         
         $form[$type . 'Date']['month'] = array(
           '#type' => 'select',
-          '#title' => t("$type Month:"),
+          '#title' => t("$type Month: *"),
           '#options' => $monthArr,
           '#default_value' => isset($values[$type . 'Date']['month']) ? $values[$type . 'Date']['month'] : 0,
           '#states' => array(
@@ -128,7 +128,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['studyLocation']['type'] = array(
           '#type' => 'select',
-          '#title' => t('Coordinate Projection:'),
+          '#title' => t('Coordinate Projection: *'),
           '#options' => array(
             0 => '- Select -',
             1 => 'WGS 84',
@@ -146,7 +146,7 @@ function page_2_create_form(&$form, $form_state){
         
         $form['studyLocation']['coordinates'] = array(
           '#type' => 'textfield',
-          '#title' => t('Coordinates:'),
+          '#title' => t('Coordinates: *'),
           '#default_value' => isset($values['studyLocation']['coordinates']) ? $values['studyLocation']['coordinates'] : NULL,
           '#states' => array(
             'visible' => array(
@@ -168,7 +168,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['studyLocation']['custom'] = array(
           '#type' => 'textfield',
-          '#title' => t('Custom Location:'),
+          '#title' => t('Custom Location: *'),
           '#default_value' => isset($values['studyLocation']['custom']) ? $values['studyLocation']['custom'] : NULL,
           '#states' => array(
             'visible' => array(
@@ -249,7 +249,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['naturalPopulation']['season'] = array(
           '#type' => 'checkboxes',
-          '#title' => t('Seasons (select all that apply):'),
+          '#title' => t('Seasons (select all that apply): *'),
           '#options' => drupal_map_assoc(array(
             t('Spring'),
             t('Summer'),
@@ -271,7 +271,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['naturalPopulation']['assessions'] = array(
           '#type' => 'select',
-          '#title' => t('Number of times the populations were assessed (on average):'),
+          '#title' => t('Number of times the populations were assessed (on average): *'),
           '#default_value' => isset($values['naturalPopulation']['assessions']) ? $values['naturalPopulation']['assessions'] : 0,
           '#options' => $num_arr,
         );
@@ -290,7 +290,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['co2Control']['option'] = array(
               '#type' => 'select',
-              '#title' => t('CO2 controlled or uncontrolled'),
+              '#title' => t('CO2 controlled or uncontrolled: *'),
               '#options' => array(
                 0 => '- Select -',
                 1 => 'Controlled',
@@ -301,7 +301,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['co2Control']['controlled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Controlled CO2 Value:'),
+              '#title' => t('Controlled CO2 Value: *'),
               '#default_value' => isset($values['growthChamber']['co2Control']['controlled']) ? $values['growthChamber']['co2Control']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -312,7 +312,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['co2Control']['uncontrolled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Average CO2 Value:'),
+              '#title' => t('Average CO2 Value: *'),
               '#default_value' => isset($values['growthChamber']['co2Control']['uncontrolled']) ? $values['growthChamber']['co2Control']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -333,7 +333,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['humidityControl']['option'] = array(
               '#type' => 'select',
-              '#title' => t('Air Humidity controlled or uncontrolled'),
+              '#title' => t('Air Humidity controlled or uncontrolled: *'),
               '#options' => array(
                 0 => '- Select -',
                 1 => 'Controlled',
@@ -344,7 +344,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['humidityControl']['controlled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Controlled Air Humidity Value:'),
+              '#title' => t('Controlled Air Humidity Value: *'),
               '#default_value' => isset($values['growthChamber']['humidityControl']['controlled']) ? $values['growthChamber']['humidityControl']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -355,7 +355,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['humidityControl']['uncontrolled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Average Air Humidity Value:'),
+              '#title' => t('Average Air Humidity Value: *'),
               '#default_value' => isset($values['growthChamber']['humidityControl']['uncontrolled']) ? $values['growthChamber']['humidityControl']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -376,7 +376,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['lightControl']['option'] = array(
               '#type' => 'select',
-              '#title' => t('Light Intensity controlled or uncontrolled'),
+              '#title' => t('Light Intensity controlled or uncontrolled: *'),
               '#options' => array(
                 0 => '- Select -',
                 1 => 'Controlled',
@@ -387,7 +387,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['lightControl']['controlled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Controlled Light Intensity Value:'),
+              '#title' => t('Controlled Light Intensity Value: *'),
               '#default_value' => isset($values['growthChamber']['lightControl']['controlled']) ? $values['growthChamber']['lightControl']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -398,7 +398,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['lightControl']['uncontrolled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Average Light Intensity Value:'),
+              '#title' => t('Average Light Intensity Value: *'),
               '#default_value' => isset($values['growthChamber']['lightControl']['uncontrolled']) ? $values['growthChamber']['lightControl']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -419,7 +419,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['rooting']['ph']['option'] = array(
               '#type' => 'select',
-              '#title' => t('pH controlled or uncontrolled'),
+              '#title' => t('pH controlled or uncontrolled: *'),
               '#options' => array(
                 0 => '- Select -',
                 1 => 'Controlled',
@@ -430,7 +430,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['rooting']['ph']['controlled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Controlled pH Value:'),
+              '#title' => t('Controlled pH Value: *'),
               '#default_value' => isset($values['growthChamber']['rooting']['ph']['controlled']) ? $values['growthChamber']['rooting']['ph']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -441,7 +441,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['growthChamber']['rooting']['ph']['uncontrolled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Average pH Value:'),
+              '#title' => t('Average pH Value: *'),
               '#default_value' => isset($values['growthChamber']['rooting']['ph']['uncontrolled']) ? $values['growthChamber']['rooting']['ph']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -483,13 +483,13 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
         $form['growthChamber']['temp']['high'] = array(
           '#type' => 'textfield',
-          '#title' => t('Average High Temperature'),
+          '#title' => t('Average High Temperature: *'),
           '#default_value' => isset($values['growthChamber']['temp']['high']) ? $values['growthChamber']['temp']['high'] : NULL,
         );
 
         $form['growthChamber']['temp']['low'] = array(
           '#type' => 'textfield',
-          '#title' => t('Average Low Temperature'),
+          '#title' => t('Average Low Temperature: *'),
           '#default_value' => isset($values['growthChamber']['temp']['low']) ? $values['growthChamber']['temp']['low'] : NULL,
         );
         
@@ -501,7 +501,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['growthChamber']['rooting']['option'] = array(
           '#type' => 'select',
-          '#title' => t('Rooting Type:'),
+          '#title' => t('Rooting Type: *'),
           '#options' => array(
             0 => '- Select -',
             1 => 'Aeroponics',
@@ -522,7 +522,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['growthChamber']['rooting']['soil']['type'] = array(
           '#type' => 'select',
-          '#title' => t('Soil Type:'),
+          '#title' => t('Soil Type: *'),
           '#options' => array(
             0 => '- Select -',
             1 => 'Sand',
@@ -546,7 +546,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['growthChamber']['rooting']['soil']['container'] = array(
           '#type' => 'textfield',
-          '#title' => t('Soil Container Type:'),
+          '#title' => t('Soil Container Type: *'),
           '#default_value' => isset($values['growthChamber']['rooting']['soil']['container']) ? $values['growthChamber']['rooting']['soil']['container'] : NULL,
         );
         
@@ -579,7 +579,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['growthChamber']['rooting']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<div class="fieldset-title">Treatments:</div>'),
+          '#title' => t('<div class="fieldset-title">Treatments: *</div>'),
         );
         
         foreach($treatment_options as $key => $option){
@@ -591,7 +591,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
             
             $form['growthChamber']['rooting']['treatment']["$option-description"] = array(
               '#type' => 'textfield',
-              '#description' => t("$option Description"),
+              '#description' => t("$option Description *"),
               '#default_value' => isset($values['growthChamber']['rooting']['treatment']["$option-description"]) ? $values['growthChamber']['rooting']['treatment']["$option-description"] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -615,7 +615,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['greenhouse']['humidityControl']['option'] = array(
               '#type' => 'select',
-              '#title' => t('Air Humidity controlled or uncontrolled'),
+              '#title' => t('Air Humidity controlled or uncontrolled: *'),
               '#options' => array(
                 0 => '- Select -',
                 1 => 'Controlled',
@@ -626,7 +626,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['greenhouse']['humidityControl']['controlled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Controlled Air Humidity Value:'),
+              '#title' => t('Controlled Air Humidity Value: *'),
               '#default_value' => isset($values['greenhouse']['humidityControl']['controlled']) ? $values['greenhouse']['humidityControl']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -647,7 +647,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['greenhouse']['lightControl']['option'] = array(
               '#type' => 'select',
-              '#title' => t('Light Intensity controlled or uncontrolled'),
+              '#title' => t('Light Intensity controlled or uncontrolled: *'),
               '#options' => array(
                 0 => '- Select -',
                 1 => 'Controlled',
@@ -658,7 +658,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['greenhouse']['lightControl']['controlled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Controlled Light Intensity Value:'),
+              '#title' => t('Controlled Light Intensity Value: *'),
               '#default_value' => isset($values['greenhouse']['lightControl']['controlled']) ? $values['greenhouse']['lightControl']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -679,7 +679,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['greenhouse']['rooting']['ph']['option'] = array(
               '#type' => 'select',
-              '#title' => t('pH controlled or uncontrolled'),
+              '#title' => t('pH controlled or uncontrolled: *'),
               '#options' => array(
                 0 => '- Select -',
                 1 => 'Controlled',
@@ -690,7 +690,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['greenhouse']['rooting']['ph']['controlled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Controlled pH Value:'),
+              '#title' => t('Controlled pH Value: *'),
               '#default_value' => isset($values['greenhouse']['rooting']['ph']['controlled']) ? $values['greenhouse']['rooting']['ph']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -730,13 +730,13 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
         $form['greenhouse']['temp']['high'] = array(
           '#type' => 'textfield',
-          '#title' => t('Average High Temperature:'),
+          '#title' => t('Average High Temperature: *'),
           '#default_value' => isset($values['greenhouse']['temp']['high']) ? $values['greenhouse']['temp']['high'] : NULL,
         );
 
         $form['greenhouse']['temp']['low'] = array(
           '#type' => 'textfield',
-          '#title' => t('Average Low Temperature:'),
+          '#title' => t('Average Low Temperature: *'),
           '#default_value' => isset($values['greenhouse']['temp']['low']) ? $values['greenhouse']['temp']['low'] : NULL,
         );
         
@@ -748,7 +748,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['greenhouse']['rooting']['option'] = array(
           '#type' => 'select',
-          '#title' => t('Rooting Type:'),
+          '#title' => t('Rooting Type: *'),
           '#options' => array(
             0 => '- Select -',
             1 => 'Aeroponics',
@@ -769,7 +769,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['greenhouse']['rooting']['soil']['type'] = array(
           '#type' => 'select',
-          '#title' => t('Soil Type:'),
+          '#title' => t('Soil Type: *'),
           '#options' => array(
             0 => '- Select -',
             1 => 'Sand',
@@ -793,7 +793,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['greenhouse']['rooting']['soil']['container'] = array(
           '#type' => 'textfield',
-          '#title' => t('Soil Container Type:'),
+          '#title' => t('Soil Container Type: *'),
           '#default_value' => isset($values['greenhouse']['rooting']['soil']['container']) ? $values['greenhouse']['rooting']['soil']['container'] : NULL,
         );
         
@@ -826,7 +826,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['greenhouse']['rooting']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<div class="fieldset-title">Treatments:</div>'),
+          '#title' => t('<div class="fieldset-title">Treatments: *</div>'),
         );
         
         foreach($treatment_options as $key => $option){
@@ -837,7 +837,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
             );
             $form['greenhouse']['rooting']['treatment']["$option-description"] = array(
               '#type' => 'textfield',
-              '#description' => t("$option Description"),
+              '#description' => t("$option Description *"),
               '#default_value' => isset($values['greenhouse']['rooting']['treatment']["$option-description"]) ? $values['greenhouse']['rooting']['treatment']["$option-description"] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -861,7 +861,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['commonGarden']['salinity']['option'] = array(
               '#type' => 'select',
-              '#title' => t('Salinity controlled or uncontrolled'),
+              '#title' => t('Salinity controlled or uncontrolled: *'),
               '#options' => array(
                 0 => '- Select -',
                 1 => 'Controlled',
@@ -872,7 +872,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['commonGarden']['salinity']['controlled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Controlled Salinity Value:'),
+              '#title' => t('Controlled Salinity Value: *'),
               '#default_value' => isset($values['commonGarden']['salinity']['controlled']) ? $values['commonGarden']['salinity']['controlled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -883,7 +883,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
             $form['commonGarden']['salinity']['uncontrolled'] = array(
               '#type' => 'textfield',
-              '#title' => t('Average Salinity Value:'),
+              '#title' => t('Average Salinity Value: *'),
               '#default_value' => isset($values['commonGarden']['salinity']['uncontrolled']) ? $values['commonGarden']['salinity']['uncontrolled'] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -917,7 +917,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['commonGarden']['irrigation']['option'] = array(
           '#type' => 'select',
-          '#title' => t('Irrigation Type:'),
+          '#title' => t('Irrigation Type: *'),
           '#options' => array(
             0 => '- Select -',
             1 => 'Irrigation from top',
@@ -948,7 +948,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['commonGarden']['bioticEnv']['option'] = array(
           '#type' => 'checkboxes',
-          '#title' => t('Biotic Environment:'),
+          '#title' => t('Biotic Environment: *'),
           '#options' => drupal_map_assoc(array(
             t('Herbivores'),
             t('Mutulists'),
@@ -968,7 +968,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['commonGarden']['bioticEnv']['other'] = array(
           '#type' => 'textfield',
-          '#title' => t('Please specify Biotic Environment Type:'),
+          '#title' => t('Please specify Biotic Environment Type: *'),
           '#default_value' => isset($values['commonGarden']['bioticEnv']['other']) ? $values['commonGarden']['bioticEnv']['other'] : NULL,
           '#states' => array(
             'visible' => array(
@@ -979,7 +979,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['commonGarden']['season'] = array(
           '#type' => 'checkboxes',
-          '#title' => t('Seasons:'),
+          '#title' => t('Seasons: *'),
           '#options' => drupal_map_assoc(array(
             t('Spring'),
             t('Summer'),
@@ -1037,7 +1037,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
             );
             $form['commonGarden']['treatment']["$option-description"] = array(
               '#type' => 'textfield',
-              '#description' => t("$option Description"),
+              '#description' => t("$option Description *"),
               '#default_value' => isset($values['commonGarden']['treatment']["$option-description"]) ? $values['commonGarden']['treatment']["$option-description"] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -1069,7 +1069,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['plantation']['season'] = array(
           '#type' => 'checkboxes',
-          '#title' => t('Seasons (select all that apply):'),
+          '#title' => t('Seasons (select all that apply): *'),
           '#options' => drupal_map_assoc(array(
             t('Spring'),
             t('Summer'),
@@ -1091,7 +1091,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['plantation']['assessions'] = array(
           '#type' => 'select',
-          '#title' => t('Number of times the populations were assessed (on average):'),
+          '#title' => t('Number of times the populations were assessed (on average): *'),
           '#default_value' => isset($values['plantation']['assessions']) ? $values['plantation']['assessions'] : 0,
           '#options' => $num_arr,
         );
@@ -1140,7 +1140,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
             );
             $form['plantation']['treatment']["$option-description"] = array(
               '#type' => 'textfield',
-              '#description' => t("$option Description"),
+              '#description' => t("$option Description *"),
               '#default_value' => isset($values['plantation']['treatment']["$option-description"]) ? $values['plantation']['treatment']["$option-description"] : NULL,
               '#states' => array(
                 'visible' => array(
@@ -1162,7 +1162,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
     
     $form['dataType'] = array(
       '#type' => 'select',
-      '#title' => t('Data Type:'),
+      '#title' => t('Data Type: *'),
       '#options' => array(
         '- Select -',
         'Genotype x Phenotype',
@@ -1176,7 +1176,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
     $form['studyType'] = array(
       '#type' => 'select',
-      '#title' => t('Study Type:'),
+      '#title' => t('Study Type: *'),
       '#options' => array(
         0 => '- Select -',
         1 => 'Natural Population (Landscape)',
@@ -1201,6 +1201,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
     $form['Back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
+      '#prefix' => '<div class="input-description">* : Required Field</div>',
     );
     
     $form['Save'] = array(
