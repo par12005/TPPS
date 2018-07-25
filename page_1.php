@@ -12,7 +12,7 @@ function page_1_create_form(&$form, $form_state){
 
         $form['primaryAuthor'] = array(
           '#type' => 'textfield',
-          '#title' => t('Primary Author:'),
+          '#title' => t('Primary Author: *'),
           '#autocomplete_path' => 'author/autocomplete',
           '#default_value' => isset($values['primaryAuthor']) ? $values['primaryAuthor'] : NULL,
           '#attributes' => array(
@@ -24,7 +24,7 @@ function page_1_create_form(&$form, $form_state){
         
         $form['organization'] = array(
           '#type' => 'textfield',
-          '#title' => t('Organization:'),
+          '#title' => t('Organization: *'),
           '#autocomplete_path' => 'organization/autocomplete',
           '#default_value' => isset($values['organization']) ? $values['organization'] : NULL,
           '#attributes' => array(
@@ -66,7 +66,7 @@ function page_1_create_form(&$form, $form_state){
             
             $form['publication']['year'] = array(
               '#type' => 'select',
-              '#title' => t('Year of Publication'),
+              '#title' => t('Year of Publication: *'),
               '#options' => $yearArr,
               '#default_value' => isset($values['publication']['year']) ? $values['publication']['year'] : 0,
               '#states' => array(
@@ -112,7 +112,7 @@ function page_1_create_form(&$form, $form_state){
 
                 $form['publication']['secondaryAuthors'][$i] = array(
                   '#type' => 'textfield',
-                  '#title' => t("Secondary Author $i:"),
+                  '#title' => t("Secondary Author $i: *"),
                   '#autocomplete_path' => 'author/autocomplete',
                   '#default_value' => isset($values['publication']['secondaryAuthors'][$i]) ? $values['publication']['secondaryAuthors'][$i] : NULL,
                 );
@@ -267,7 +267,7 @@ function page_1_create_form(&$form, $form_state){
         
         $form['publication']['status'] = array(
           '#type' => 'select',
-          '#title' => t('Publication Status:'),
+          '#title' => t('Publication Status: *'),
           '#options' => array(
             0 => t('- Select -'),
             'In Preparation or Submitted' => t('In Preparation or Submitted'),
@@ -285,19 +285,19 @@ function page_1_create_form(&$form, $form_state){
 
         $form['publication']['title'] = array(
           '#type' => 'textfield',
-          '#title' => t('Title of Publication:'),
+          '#title' => t('Title of Publication: *'),
           '#default_value' => isset($values['publication']['title']) ? $values['publication']['title'] : NULL,
         );
 
         $form['publication']['abstract'] = array(
           '#type' => 'textarea',
-          '#title' => t('Abstract:'),
+          '#title' => t('Abstract: *'),
           '#default_value' => isset($values['publication']['abstract']) ? $values['publication']['abstract'] : NULL,
         );
 
         $form['publication']['journal'] = array(
           '#type' => 'textfield',
-          '#title' => t('Journal:'),
+          '#title' => t('Journal: *'),
           '#autocomplete_path' => 'journal/autocomplete',
           '#default_value' => isset($values['publication']['journal']) ? $values['publication']['journal'] : NULL,
         );
@@ -338,7 +338,7 @@ function page_1_create_form(&$form, $form_state){
             
             $form['organism']["$i"] = array(
               '#type' => 'textfield',
-              '#title' => t("Species $i:"),
+              '#title' => t("Species $i: *"),
               '#autocomplete_path' => "species/autocomplete",
               '#default_value' => isset($values['organism']["$i"]) ? $values['organism']["$i"] : NULL,
               '#attributes' => array(
@@ -369,6 +369,7 @@ function page_1_create_form(&$form, $form_state){
     $form['Save'] = array(
       '#type' => 'submit',
       '#value' => t('Save'),
+      '#prefix' => '<div class="input-description">* : Required Field</div>',
     );
     
     $form['Next'] = array(
