@@ -16,11 +16,12 @@ function page_4_create_form(&$form, &$form_state){
         
         $fields = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Phenotype Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Phenotype Information:</div>'),
           '#tree' => TRUE,
           '#prefix' => "<div id=\"phenotypes-$id\">",
           '#suffix' => '</div>',
           '#description' => t('Upload a file and/or fill in form fields below to provide us with metadata about your phenotypes.'),
+          '#collapsible' => TRUE,
         );
         
         if (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Add Phenotype-$id"){
@@ -221,7 +222,7 @@ function page_4_create_form(&$form, &$form_state){
 
         $fields['metadata']['columns'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Define Data</h2>'),
+          '#title' => t('<div class="fieldset-title">Define Data</div>'),
           '#states' => array(
             'invisible' => array(
               ':input[name="' . $id . '_phenotype_metadata_upload_button"]' => array('value' => 'Upload')
@@ -230,6 +231,7 @@ function page_4_create_form(&$form, &$form_state){
           '#description' => 'Please define which columns hold the required data: Phenotype name',
           '#prefix' => "<div id=\"header-$id-wrapper\">",
           '#suffix' => '</div>',
+          '#collapsible' => TRUE
         );
 
         $file = 0;
@@ -324,7 +326,8 @@ function page_4_create_form(&$form, &$form_state){
         
         $fields = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Genotype Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Genotype Information:</div>'),
+          '#collapsible' => TRUE,
         );
         
         page_4_marker_info($fields, $values, $id);
@@ -372,7 +375,7 @@ function page_4_create_form(&$form, &$form_state){
 
         $fields['file']['columns'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Define Data</h2>'),
+          '#title' => t('<div class="fieldset-title">Define Data</div>'),
           '#states' => array(
             'invisible' => array(
               ':input[name="' . $id . '_genotype_file_upload_button"]' => array('value' => 'Upload')
@@ -381,6 +384,7 @@ function page_4_create_form(&$form, &$form_state){
           '#description' => 'Please define which columns hold the required data: Tree Identifier',
           '#prefix' => "<div id=\"genotype-header-$id-wrapper\">",
           '#suffix' => '</div>',
+          '#collapsible' => TRUE
         );
         
         $file = 0;
@@ -499,8 +503,9 @@ function page_4_create_form(&$form, &$form_state){
         
         $form["organism-$i"] = array(
           '#type' => 'fieldset',
-          '#title' => t("<h2>$name:</h2>"),
+          '#title' => t("<div class=\"fieldset-title\">$name:</div>"),
           '#tree' => TRUE,
+          '#collapsible' => TRUE
         );
 
         if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
@@ -529,7 +534,7 @@ function page_4_create_form(&$form, &$form_state){
 
             $form["organism-$i"]['phenotype']['file']['columns'] = array(
               '#type' => 'fieldset',
-              '#title' => t('<h2>Define Data</h2>'),
+              '#title' => t('<div class="fieldset-title">Define Data</div>'),
               '#states' => array(
                 'invisible' => array(
                   ':input[name="organism-' . $i . '_phenotype_file_upload_button"]' => array('value' => 'Upload')
@@ -538,6 +543,7 @@ function page_4_create_form(&$form, &$form_state){
               '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)',
               '#prefix' => "<div id=\"phenotype-header-$i-wrapper\">",
               '#suffix' => '</div>',
+              '#collapsible' => TRUE
             );
 
             $file = 0;
@@ -789,7 +795,8 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
                 array_push($options, $link->Id->__tostring());
             }
 
-            $fields['assembly-auto']['#title'] = 'Select all that apply:';
+            $fields['assembly-auto']['#title'] = '<div class="fieldset-title">Select all that apply:</div>';
+            $fields['assembly-auto']['#collapsible'] = TRUE;
 
             foreach ($options as $item){
                 $fields['assembly-auto']["$item"] = array(
@@ -822,13 +829,14 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
     
     $fields['assembly-user']['columns'] = array(
       '#type' => 'fieldset',
-      '#title' => t('<h2>Define Data</h2>'),
+      '#title' => t('<div class="fieldset-title">Define Data</div>'),
       '#description' => 'Please define which column holds the scaffold/chromosome identifier:',
       '#states' => array(
         'invisible' => array(
           ':input[name="' . $id . '_genotype_assembly-user_upload_button"]' => array('value' => 'Upload')
         )
       ),
+      '#collapsible' => TRUE
     );
     
     $file = 0;
@@ -926,12 +934,13 @@ function page_4_marker_info(&$fields, $values, $id){
 
     $fields['SNPs'] = array(
       '#type' => 'fieldset',
-      '#title' => t('<h2>SNPs Information:</h2>'),
+      '#title' => t('<div class="fieldset-title">SNPs Information:</div>'),
       '#states' => array(
         'visible' => array(
           ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => true)
         )
-      )
+      ),
+      '#collapsible' => TRUE
     );
 
      $fields['SNPs']['genotyping-design'] = array(
