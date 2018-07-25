@@ -23,7 +23,7 @@ function page_3_create_form(&$form, &$form_state){
     
     $form['tree-accession']['file'] = array(
       '#type' => 'managed_file',
-      '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of trees used in this study:"),
+      '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of trees used in this study: *"),
       '#upload_location' => "$file_upload_location",
       '#upload_validators' => array(
         'file_validate_extensions' => array('txt csv xlsx'),
@@ -233,7 +233,7 @@ function page_3_create_form(&$form, &$form_state){
             
             $form['tree-accession']["species-$i"]['file'] = array(
               '#type' => 'managed_file',
-              '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of the $name trees used in this study:"),
+              '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of the $name trees used in this study: *"),
               '#upload_location' => "$file_upload_location",
               '#upload_validators' => array(
                 'file_validate_extensions' => array('txt csv xlsx'),
@@ -357,6 +357,7 @@ function page_3_create_form(&$form, &$form_state){
     $form['Back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
+      '#prefix' => '<div class="input-description">* : Required Field</div>',
     );
     
     $form['Save'] = array(
