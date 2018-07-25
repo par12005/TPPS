@@ -29,7 +29,7 @@ function page_2_create_form(&$form, $form_state){
             );
         }
         else {
-            $form[$type . 'Date']['#title'] = t('<h2>Experiment Dates</h2>');
+            $form[$type . 'Date']['#title'] = t('<div class="fieldset-title">Experiment Dates</div>');
         }
         
         $yearArr = array();
@@ -121,8 +121,9 @@ function page_2_create_form(&$form, $form_state){
         
         $form['studyLocation'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Study Location:</h2>'),
+          '#title' => t('<div class="fieldset-title">Study Location:</div>'),
           '#tree' => TRUE,
+          '#collapsible' => TRUE,
         );
         
         $form['studyLocation']['type'] = array(
@@ -233,7 +234,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['naturalPopulation'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Natural Population/Landscape Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Natural Population/Landscape Information:</div>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -243,6 +244,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
               ':input[name="studyType"]' => array('value' => '1')
             )
           ),
+          '#collapsible' => TRUE,
         );
         
         $form['naturalPopulation']['season'] = array(
@@ -453,7 +455,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['growthChamber'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Growth Chamber Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Growth Chamber Information:</div>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -463,6 +465,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
               ':input[name="studyType"]' => array('value' => '2')
             )
           ),
+          '#collapsible' => TRUE,
         );
         
         co2($form, $values);
@@ -473,7 +476,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
         $form['growthChamber']['temp'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Temperature Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Temperature Information:</div>'),
           '#description' => t('Please provide temperatures in Degrees Celsius'),
           '#tree' => true,
         );
@@ -492,7 +495,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['growthChamber']['rooting'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Rooting Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Rooting Information:</div>'),
           '#tree' => true,
         );
         
@@ -701,7 +704,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['greenhouse'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Greenhouse Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Greenhouse Information:</div>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -711,6 +714,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
               ':input[name="studyType"]' => array('value' => '3')
             )
           ),
+          '#collapsible' => TRUE,
         );
         
         greenhumidity($form, $values);
@@ -719,7 +723,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
 
         $form['greenhouse']['temp'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Temperature Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Temperature Information:</div>'),
           '#description' => t('Please provide temperatures in Degrees Celsius'),
           '#tree' => true,
         );
@@ -738,7 +742,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['greenhouse']['rooting'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Rooting Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Rooting Information:</div>'),
           '#tree' => true,
         );
         
@@ -822,7 +826,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['greenhouse']['rooting']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Treatments:</h2>'),
+          '#title' => t('<div class="fieldset-title">Treatments:</div>'),
         );
         
         foreach($treatment_options as $key => $option){
@@ -893,7 +897,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['commonGarden'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Common Garden Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Common Garden Information:</div>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -903,6 +907,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
               ':input[name="studyType"]' => array('value' => '4')
             )
           ),
+          '#collapsible' => TRUE,
         );
         
         $form['commonGarden']['irrigation'] = array(
@@ -1010,7 +1015,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['commonGarden']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Treatments:</h2>'),
+          '#title' => t('<div class="fieldset-title">Treatments:</div>'),
         );
         
         $form['commonGarden']['treatment']['check'] = array(
@@ -1049,7 +1054,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
     function plantation(&$form, $values){
         $form['plantation'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Plantation Information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Plantation Information:</div>'),
           '#tree' => TRUE,
           '#states' => array(
             'visible' => array(
@@ -1059,6 +1064,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
               ':input[name="studyType"]' => array('value' => '5')
             )
           ),
+          '#collapsible' => TRUE
         );
         
         $form['plantation']['season'] = array(
@@ -1112,7 +1118,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['plantation']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Treatments:</h2>')
+          '#title' => t('<div class="fieldset-title">Treatments:</div>')
         );
         
         $form['plantation']['treatment']['check'] = array(
