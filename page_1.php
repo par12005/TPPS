@@ -87,11 +87,6 @@ function page_1_create_form(&$form, $form_state){
             
             $form['publication']['secondaryAuthors'] = array(
               '#type' => 'fieldset',
-              '#states' => array(
-                'invisible' => array(
-                  ':input[name="publication[status]"]' => array('value' => '0')
-                ),
-              )
             );
             
             $form['publication']['secondaryAuthors']['add'] = array(
@@ -263,10 +258,13 @@ function page_1_create_form(&$form, $form_state){
         
         $form['publication'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Publication Information:</h2>'),
-          '#tree' => true,
+          '#title' => t('<div class="fieldset-title">Publication Information:</div>'),
+          '#tree' => TRUE,
+          '#collapsible' => TRUE,
         );
 
+        secondary_authors($form, $values, $form_state);
+        
         $form['publication']['status'] = array(
           '#type' => 'select',
           '#title' => t('Publication Status:'),
@@ -282,8 +280,6 @@ function page_1_create_form(&$form, $form_state){
           ),
           '#default_value' => isset($values['publication']['status']) ? $values['publication']['status'] : 0,
         );
-        
-        secondary_authors($form, $values, $form_state);
         
         year($form, $values, $form_state);
 
@@ -314,8 +310,9 @@ function page_1_create_form(&$form, $form_state){
         $form['organism'] = array(
           '#type' => 'fieldset',
           '#tree' => TRUE,
-          '#title' => t('<h2>Organism information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Organism information:</div>'),
           '#description' => t('Up to 5 organisms per submission.'),
+          '#collapsible' => TRUE
         );
         
         $form['organism']['add'] = array(
