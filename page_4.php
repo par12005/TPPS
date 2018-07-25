@@ -10,24 +10,31 @@ function page_4_create_form(&$form, &$form_state){
     $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
     $phenotype_upload_location = 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
     
+    $form['#tree'] = TRUE;
+    
     function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_location){
         
         $fields = array(
           '#type' => 'fieldset',
           '#title' => t('<h2>Phenotype Information:</h2>'),
           '#tree' => TRUE,
+          '#prefix' => "<div id=\"phenotypes-$id\">",
+          '#suffix' => '</div>',
         );
         
-        if (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#value'] == 'Add Phenotype'){
+        if (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Add Phenotype-$id"){
             $form_state['values'][$id]['phenotype']['number']++;
         }
-        elseif (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#value'] == 'Remove Phenotype' and $form_state['values'][$id]['phenotype']['number'] > 0){
+        elseif (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Remove Phenotype-$id" and $form_state['values'][$id]['phenotype']['number'] > 0){
             $form_state['values'][$id]['phenotype']['number']--;
         }
         $phenotype_number = isset($form_state['values'][$id]['phenotype']['number']) ? $form_state['values'][$id]['phenotype']['number'] : NULL;
         
         if (!isset($phenotype_number) and isset($form_state['saved_values']['fourthPage'][$id]['phenotype']['number'])){
             $phenotype_number = $form_state['saved_values']['fourthPage'][$id]['phenotype']['number'];
+        }
+        if (!isset($phenotype_number)){
+            $phenotype_number = 0;
         }
         
         $fields['check'] = array(
@@ -43,7 +50,7 @@ function page_4_create_form(&$form, &$form_state){
         
         $fields['add'] = array(
           '#type' => 'button',
-          '#title' => t('Add Phenotype'),
+          '#name' => t("Add Phenotype-$id"),
           '#button_type' => 'button',
           '#value' => t('Add Phenotype'),
           '#ajax' => array(
@@ -54,7 +61,7 @@ function page_4_create_form(&$form, &$form_state){
         
         $fields['remove'] = array(
           '#type' => 'button',
-          '#title' => t('Remove Phenotype'),
+          '#name' => t("Remove Phenotype-$id"),
           '#button_type' => 'button',
           '#value' => t('Remove Phenotype'),
           '#ajax' => array(
@@ -70,8 +77,6 @@ function page_4_create_form(&$form, &$form_state){
         
         $fields['phenotypes-meta'] = array(
           '#type' => 'fieldset',
-          '#prefix' => "<div id=\"phenotypes-$id\">",
-          '#suffix' => '</div>',
           '#tree' => TRUE,
         );
         
@@ -652,7 +657,7 @@ function metadata_header_callback($form, $form_state){
 function update_phenotype($form, &$form_state){
     $id = $form_state['triggering_element']['#parents'][0];
     
-    return $form[$id]['phenotype']['phenotypes-meta'];
+    return $form[$id]['phenotype'];
 }
 
 function genotype_header_callback($form, $form_state){
