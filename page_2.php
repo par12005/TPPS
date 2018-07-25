@@ -579,7 +579,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
         
         $form['growthChamber']['rooting']['treatment'] = array(
           '#type' => 'fieldset',
-          '#title' => t('Treatments:'),
+          '#title' => t('<div class="fieldset-title">Treatments:</div>'),
         );
         
         foreach($treatment_options as $key => $option){
