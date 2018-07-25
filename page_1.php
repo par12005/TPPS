@@ -333,7 +333,7 @@ function page_1_create_form(&$form, $form_state){
         );
 
         $form['organism']['number'] = array(
-          '#type' => 'textfield',
+          '#type' => 'hidden',
           '#default_value' => isset($values['organism']['number']) ? $values['organism']['number'] : '1',
         );
     
