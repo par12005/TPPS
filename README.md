@@ -219,7 +219,6 @@ Upon approval, the data from the persistent variable is parsed, organized, and s
 Persistent variables that TPPS creates will be removed from the database upon installation.
 
 # Features in Development
-- Add required indicator to required fields
 - Add use data from previous section option on GPE page
 - Automatically use single phenotype section for all organisms
 - Genotype flow
