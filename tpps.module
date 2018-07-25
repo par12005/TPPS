@@ -1432,10 +1432,9 @@ function tpps_master($form, &$form_state){
                         margin: 10px 10px 10px 0px;
                 }
                 
-                .fieldset-title {
-                        padding: 0px;
+                a.fieldset-title {
+                        display: contents;
                 }
-                
 	</style>';
 	$form['#prefix'] .= '<div class="tgdr_form_status">';
 	
