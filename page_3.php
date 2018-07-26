@@ -443,6 +443,24 @@ function page_3_validate_form(&$form, &$form_state){
         if ($species_number == 1 or $form_state['values']['tree-accession']['check'] == '0'){
             if ($form_state['values']['tree-accession']['file'] != ""){
                 
+                $required_groups = array(
+                  'Tree Id' => array(
+                    'id' => array(1),
+                  ),
+                  'Location' => array(
+                    'gps' => array(2, 3),
+                    'approx' => array(4, 5),
+                  ),
+                  'Species' => array(
+                    'separate' => array(6, 7),
+                    'combined' => array(10),
+                  ),
+                );
+                
+                $file_element = $form['tree-accession']['file'];
+                tpps_file_validate($form, $form_state, $required_groups, $file_element);
+                
+                /*
                 $required_columns = array(
                   '1' => 'Tree Identifier',
                   '2' => 'Country',
@@ -498,6 +516,10 @@ function page_3_validate_form(&$form, &$form_state){
                     if ($item != NULL){
                         form_set_error("tree-accession][file][columns][$item", "Tree Accession file: Please specify a column that holds $item.");
                     }
+                }
+                */
+                if (!form_get_errors()){
+                    form_set_error('Next', 'next.');
                 }
                 
                 if (!form_get_errors()){
@@ -586,6 +608,76 @@ function page_3_validate_form(&$form, &$form_state){
         }
     }
     
+}
+
+function tpps_file_validate(&$form, &$form_state, $required_groups, $file_element){
+    $fid = $file_element['#value']['fid'];
+    $cols = $file_element['#value']['columns'];
+    $file = file_load($fid);
+    $file_name = $file->uri;
+    $location = drupal_realpath("$file_name");
+    $content = parse_xlsx($location);
+    
+    $parents = $file_element['#parents'];
+    $new_end = array_pop($parents) . "-columns";
+    $values = &$form_state['values'];
+    foreach ($parents as $item){
+        $values = &$values[$item];
+    }
+    //initialize form column values in form state
+    $values[$new_end] = array();
+    //hold onto the location of the columns in form state
+    $state_column_values = &$values[$new_end];
+    
+    $error_parts = explode(':', $file_element['#title']);
+    $error_prompt = $error_parts[0];
+    
+    $groups = array();
+    $required_groups_flat = array();
+    foreach($required_groups as $group => $combinations){
+        $groups[$group] = array();
+        $required_groups_flat[$group] = array();
+        foreach ($combinations as $name => $combination){
+            $required_groups_flat[$group] = array_merge($required_groups_flat[$group], $combination);
+        }
+    }
+    
+    foreach ($cols as $name => $type){
+        $state_column_values[$name] = $type;
+        foreach ($required_groups_flat as $group => $types){
+            if (in_array($type, $types)){
+                $groups[$group][$type] = $name;
+                break;
+            }
+        }
+    }
+    
+    foreach($required_groups as $group => $combinations){
+        $group_valid = FALSE;
+        foreach ($combinations as $name => $combination){
+            $combination_valid = TRUE;
+            foreach ($combination as $type){
+                if (!isset($groups[$group][$type])){
+                    $combination_valid = FALSE;
+                    break;
+                }
+            }
+            if ($combination_valid){
+                $group_valid = TRUE;
+                break;
+            }
+        }
+        
+        if (!$group_valid){
+            form_set_error($file_element['#name'], "$error_prompt: Please specify a column or columns that hold $group.");
+        }
+    }
+    
+    dpm($required_groups);
+    dpm($groups);
+    //dpm($state_column_values);
+    //dpm($form_state['values']);
+    dpm($file_element);
 }
 
 function page_3_submit_form(&$form, &$form_state){
