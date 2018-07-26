@@ -469,11 +469,16 @@ function page_3_validate_form(&$form, &$form_state){
                     $location = drupal_realpath($file_name);
                     $content = parse_xlsx($location);
                     
+                    if (isset($form_state['values']['tree-accession']['no-header']) and $form_state['values']['tree-accession']['no-header'] === 1){
+                        tpps_content_no_header($content);
+                    }
+                    
                     foreach ($content as $row => $vals){
                         if ($row !== 'headers' and isset($vals[$id_name]) and $vals[$id_name] !== ""){
                             foreach ($col_names as $item => $val){
                                 if (!isset($vals[$item]) or $vals[$item] === ""){
-                                    form_set_error("tree-accession][file][columns][{$vals[$id_name]}", "Tree Accession file: the required column $item is empty for tree {$vals[$id_name]}.");
+                                    $field = $file_element['columns'][$item]['#options'][$col_names[$item]];
+                                    form_set_error("tree-accession][file][columns][{$vals[$id_name]}", "Tree Accession file: the required field $field is empty for tree \"{$vals[$id_name]}\".");
                                 }
                             }
                         }
