@@ -476,8 +476,8 @@ function page_3_validate_form(&$form, &$form_state){
                     foreach ($content as $row => $vals){
                         if ($row !== 'headers' and isset($vals[$id_name]) and $vals[$id_name] !== ""){
                             foreach ($col_names as $item => $val){
-                                if (!isset($vals[$item]) or $vals[$item] === ""){
-                                    $field = $file_element['columns'][$item]['#options'][$col_names[$item]];
+                                if ((!isset($vals[$item]) or $vals[$item] === "") and $val){
+                                    $field = $file_element['columns'][$item]['#options'][$val];
                                     form_set_error("tree-accession][file][columns][{$vals[$id_name]}", "Tree Accession file: the required field $field is empty for tree \"{$vals[$id_name]}\".");
                                 }
                             }
@@ -512,7 +512,32 @@ function page_3_validate_form(&$form, &$form_state){
                     
                     $file_element = $form['tree-accession']["species-$i"]['file'];
                     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-                    
+
+                    if (!form_get_errors()){
+                        $id_name = $groups['Tree Id']['1'];
+                        $col_names = $form_state['values']['tree-accession']["species-$i"]['file-columns'];
+                        $fid = $form_state['values']['tree-accession']["species-$i"]['file'];
+                        $file = file_load($fid);
+                        $file_name = $file->uri;
+                        $location = drupal_realpath($file_name);
+                        $content = parse_xlsx($location);
+
+                        if (isset($form_state['values']['tree-accession']["species-$i"]['no-header']) and $form_state['values']['tree-accession']["species-$i"]['no-header'] === 1){
+                            tpps_content_no_header($content);
+                        }
+                        
+                        foreach ($content as $row => $vals){
+                            if ($row !== 'headers' and isset($vals[$id_name]) and $vals[$id_name] !== ""){
+                                foreach ($col_names as $item => $val){
+                                    if ((!isset($vals[$item]) or $vals[$item] === "") and $val){
+                                        $field = $file_element['columns'][$item]['#options'][$val];
+                                        form_set_error("tree-accession][species-$i][file][columns][{$vals[$id_name]}", "Tree Accession $i file: the required field $field is empty for tree \"{$vals[$id_name]}\".");
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if (!form_get_errors()){
                         //preserve file if it is valid
                         $file = file_load($form_state['values']['tree-accession']["species-$i"]['file']);
