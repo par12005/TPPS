@@ -461,6 +461,26 @@ function page_3_validate_form(&$form, &$form_state){
                 $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
                 
                 if (!form_get_errors()){
+                    $id_name = $groups['Tree Id']['1'];
+                    $col_names = $form_state['values']['tree-accession']['file-columns'];
+                    $fid = $form_state['values']['tree-accession']['file'];
+                    $file = file_load($fid);
+                    $file_name = $file->uri;
+                    $location = drupal_realpath($file_name);
+                    $content = parse_xlsx($location);
+                    
+                    foreach ($content as $row => $vals){
+                        if ($row !== 'headers' and isset($vals[$id_name]) and $vals[$id_name] !== ""){
+                            foreach ($col_names as $item => $val){
+                                if (!isset($vals[$item]) or $vals[$item] === ""){
+                                    form_set_error("tree-accession][file][columns][{$vals[$id_name]}", "Tree Accession file: the required column $item is empty for tree {$vals[$id_name]}.");
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if (!form_get_errors()){
                     //preserve file if it is valid
                     $file = file_load($form_state['values']['tree-accession']['file']);
                     file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
