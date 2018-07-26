@@ -191,7 +191,7 @@ function page_4_create_form(&$form, &$form_state){
         
         $fields['metadata'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Please upload a file containing columns with the name and description of each of your phenotypes: *'),
+          '#title' => t('Please upload a file containing columns with the name, attribute, description, and units of each of your phenotypes: *'),
           '#upload_location' => "$phenotype_upload_location",
           '#upload_validators' => array(
             'file_validate_extensions' => array('csv tsv xlsx')
@@ -486,7 +486,6 @@ function page_4_create_form(&$form, &$form_state){
             $fields['vcf']['#default_value'] = $fields['vcf']['#value'];
         }
         if (isset($fields['vcf']['#default_value']) and $fields['vcf']['#default_value'] != 0 and ($file = file_load($fields['vcf']['#default_value']))){
-            dpm($file);
             //stop using the file so it can be deleted if the user clicks 'remove'
             file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         }
@@ -505,11 +504,27 @@ function page_4_create_form(&$form, &$form_state){
           '#type' => 'fieldset',
           '#title' => t("<div class=\"fieldset-title\">$name:</div>"),
           '#tree' => TRUE,
-          '#collapsible' => TRUE
+          //'#collapsible' => TRUE
         );
 
         if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
+            if ($i > 1){
+                $form["organism-$i"]['phenotype-repeat-check'] = array(
+                  '#type' => 'checkbox',
+                  '#title' => "Phenotype information for $name is the same as phenotype information for {$form_state['saved_values']['Hellopage']['organism'][$i - 1]}.",
+                  '#default_value' => isset($values["organism-$i"]['phenotype-repeat-check']) ? $values["organism-$i"]['phenotype-repeat-check'] : 1,
+                );
+            }
+            
             $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i", $form_state, $phenotype_upload_location);
+            
+            if ($i > 1){
+                $form["organism-$i"]['phenotype']['#states'] = array(
+                  'invisible' => array(
+                    ":input[name=\"organism-$i\[phenotype-repeat-check]\"]" => array('checked' => TRUE)
+                  )
+                );
+            }
             
             $form["organism-$i"]['phenotype']['file'] = array(
               '#type' => 'managed_file',
@@ -629,7 +644,24 @@ function page_4_create_form(&$form, &$form_state){
         }
         
         if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
+            if ($i > 1){
+                $form["organism-$i"]['genotype-repeat-check'] = array(
+                  '#type' => 'checkbox',
+                  '#title' => "Genotype information for $name is the same as genotype information for {$form_state['saved_values']['Hellopage']['organism'][$i - 1]}.",
+                  '#default_value' => isset($values["organism-$i"]['genotype-repeat-check']) ? $values["organism-$i"]['genotype-repeat-check'] : 1,
+                );
+            }
+            
             $form["organism-$i"]['genotype'] = genotype($form, $form_state, $values, "organism-$i", $genotype_upload_location);
+            
+            if ($i > 1){
+                $form["organism-$i"]['genotype']['#states'] = array(
+                  'invisible' => array(
+                    ":input[name=\"organism-$i\[genotype-repeat-check]\"]" => array('checked' => TRUE)
+                  )
+                );
+            }
+            
         }
     }
     
@@ -1539,12 +1571,18 @@ function page_4_validate_form(&$form, &$form_state){
         for ($i = 1; $i <= $organism_number; $i++){
             $organism = $form_values["organism-$i"];
 
-            if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
+            if ($i > 1 and isset($organism['phenotype-repeat-check']) and $organism['phenotype-repeat-check'] == '1'){
+                unset($organism['phenotype']);
+            }
+            if (isset($organism['phenotype'])){
                 $phenotype = $organism['phenotype'];
                 validate_phenotype($phenotype, "organism-$i", $form, $form_state);
             }
 
-            if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
+            if ($i > 1 and isset($organism['genotype-repeat-check']) and $organism['genotype-repeat-check'] == '1'){
+                unset($organism['genotype']);
+            }
+            if (isset($organism['genotype'])){
                 $genotype = $organism['genotype'];
                 validate_genotype($genotype, "organism-$i", $form, $form_state);
             }
