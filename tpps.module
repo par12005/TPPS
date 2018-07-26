@@ -1304,12 +1304,7 @@ function tpps_standard_coord($raw_coordinate){
 }
 
 function tpps_file_validate_columns(&$form_state, $required_groups, $file_element){
-    $fid = $file_element['#value']['fid'];
     $cols = $file_element['#value']['columns'];
-    $file = file_load($fid);
-    $file_name = $file->uri;
-    $location = drupal_realpath("$file_name");
-    $content = parse_xlsx($location);
     
     $parents = $file_element['#parents'];
     $new_end = end($parents) . "-columns";
