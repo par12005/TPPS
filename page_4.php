@@ -191,7 +191,7 @@ function page_4_create_form(&$form, &$form_state){
         
         $fields['metadata'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Please upload a file containing columns with the name and description of each of your phenotypes: *'),
+          '#title' => t('Please upload a file containing columns with the name, attribute, description, and units of each of your phenotypes: *'),
           '#upload_location' => "$phenotype_upload_location",
           '#upload_validators' => array(
             'file_validate_extensions' => array('csv tsv xlsx')
