@@ -2932,271 +2932,7 @@ function submit_all(&$form_state){
      * Fourth Page submissions *
      ***************************/
     
-    $phenotype_assessed = 0;
-    for ($i = 1; $i <= $organism_number; $i++){
-        
-        if (isset($fourthpage["organism-$i"]['phenotype'])){
-            $phenotype = $fourthpage["organism-$i"]['phenotype'];
-            $phenotype_number = $phenotype['number'];
-            $phenotype_assessed += $phenotype_number;
-            $phenotype_ids = array();
-            $phenotypeprop_ids = array();
-            $phenotypes_meta = array();
-            
-            $phenotype_file_id = tpps_create_record('projectprop', array(
-              'project_id' => $project_id,
-              'type_id' => '2836',
-              'value' => file_create_url(file_load($phenotype['file'])->uri),
-              'rank' => $file_rank
-            ));
-            $phenotype_file = file_load($phenotype['file']);
-            $file_rank++;
-            
-            for ($j = 1; $j <= $phenotype_number; $j++){
-                $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
-                $phenotypes_meta[$name] = array();
-                $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
-                $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
-                $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
-                if ($phenotype['phenotypes-meta'][$j]['struct-check'] == '1'){
-                    $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
-                }
-                if ($phenotype['phenotypes-meta'][$j]['val-check'] == '1'){
-                    $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
-                    $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
-                }
-            }
-            
-            if ($phenotype['check'] == '1'){
-                $phenotype_meta_file_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '2836',
-                  'value' => file_create_url(file_load($phenotype['metadata'])->uri),
-                  'rank' => $file_rank
-                ));
-                $file = file_load($phenotype['metadata']);
-                $location = drupal_realpath($file->uri);
-                $content = parse_xlsx($location);
-                $column_vals = $phenotype['metadata-columns'];
-                
-                foreach ($column_vals as $col => $val){
-                    if ($val == '1'){
-                        $phenotype_name = $col;
-                    }
-                    if ($val == '2'){
-                        $phenotype_attr = $col;
-                    }
-                    if ($val == '3'){
-                        $phenotype_desc = $col;
-                    }
-                    if ($val == '4'){
-                        $phenotype_unit = $col;
-                    }
-                    if ($val == '5'){
-                        $phenotype_struct = $col;
-                    }
-                    if ($val == '6'){
-                        $phenotype_min = $col;
-                    }
-                    if ($val == '7'){
-                        $phenotype_max = $col;
-                    }
-                }
-                
-                for ($j = 0; $j < count($content) - 1; $j++){
-                    $name = strtolower($content[$j][$phenotype_name]);
-                    $phenotypes_meta[$name] = array();
-                    $phentoypes_meta[$name]['attr'] = $content[$j][$phenotype_attr];
-                    $phentoypes_meta[$name]['desc'] = $content[$j][$phenotype_desc];
-                    $phentoypes_meta[$name]['unit'] = $content[$j][$phenotype_unit];
-                    if (isset($phenotype_struct) and isset($content[$j][$phenotype_struct]) and $content[$j][$phenotype_struct] != ''){
-                        $phenotypes_meta[$name]['struct'] = $content[$j][$phenotype_struct];
-                    }
-                    if (isset($phenotype_min) and isset($content[$j][$phenotype_min]) and $content[$j][$phenotype_min] != ''){
-                        $phenotypes_meta[$name]['min'] = $content[$j][$phenotype_min];
-                    }
-                    if (isset($phenotype_max) and isset($content[$j][$phenotype_max]) and $content[$j][$phenotype_max] != ''){
-                        $phenotypes_meta[$name]['max'] = $content[$j][$phenotype_max];
-                    }
-                    $phenotype_assessed ++;
-                }
-                
-                $file->status = FILE_STATUS_PERMANENT;
-                $file = file_save($file);
-                $file_rank++;
-            }
-            
-            $location = drupal_realpath($phenotype_file->uri);
-            $content = parse_xlsx($location);
-            $column_vals = $phenotype['file-columns'];
-
-            foreach ($column_vals as $col => $val){
-                if ($val == '1'){
-                    $tree_id_col = $col;
-                }
-                if ($val == '2'){
-                    $phenotype_name = $col;
-                }
-                if ($val == '3'){
-                    $phenotype_val = $col;
-                }
-            }
-
-            for ($j = 0; $j < count($content) - 1; $j++){
-                $name = strtolower($content[$j][$phenotype_name]);
-                $value = $content[$j][$phenotype_val];
-                $stock_unique = $content[$j][$tree_id_col];
-                
-                $attr = db_select('chado.cvterm', 'c')
-                    ->fields('c', array('cvterm_id'))
-                    ->condition('c.name', db_like($phenotypes_meta[$name]['attr']), 'LIKE')
-                    ->execute()
-                    ->fetchAssoc();
-                $attr_id = $attr['cvterm_id'];
-                if (!isset($attr_id) or $attr_id == ''){
-                    $attr_id = tpps_custom_cvterm($phenotypes_meta[$name]['attr'], '');
-                }
-                
-                if (isset($phenotypes_meta[$name]['struct'])){
-                    $obs = db_select('chado.cvterm', 'c')
-                        ->fields('c', array('cvterm_id'))
-                        ->condition('c.name', db_like($phenotypes_meta[$name]['struct']), 'LIKE')
-                        ->execute()
-                        ->fetchAssoc();
-                    $observable_id = $obs['cvterm_id'];
-
-                    if (!isset($observable_id) or $observable_id == ''){
-                        $observable_id = tpps_custom_cvterm($phenotypes_meta[$name]['struct'], '');
-                    }
-
-                }
-                else {
-                    $observable_id = NULL;
-                }
-                
-                $phenotype_ids[] = tpps_create_record('phenotype', array(
-                  'uniquename' => "$stock_unique-$name-$j",
-                  'name' => $name,
-                  'attr_id' => $attr_id,
-                  'observable_id' => $observable_id,
-                  'value' => $value
-                ));
-                
-                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
-                  'phenotype_id' => end($phenotype_ids),
-                  'type_id' => '2871',
-                  'value' => $phenotypes_meta[$name]['desc']
-                ));
-                
-                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
-                  'phenotype_id' => end($phenotype_ids),
-                  'type_id' => '2883',
-                  'value' => $phenotypes_meta[$name]['unit']
-                ));
-                
-                if (isset($phenotypes_meta[$name]['min'])){
-                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
-                      'phenotype_id' => end($phenotype_ids),
-                      'type_id' => '52214',
-                      'value' => $phenotypes_meta[$name]['min']
-                    ));
-                }
-                
-                if (isset($phenotypes_meta[$name]['max'])){
-                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
-                      'phenotype_id' => end($phenotype_ids),
-                      'type_id' => '52213',
-                      'value' => $phenotypes_meta[$name]['max']
-                    ));
-                }
-            }
-            
-            $phenotype_file->status = FILE_STATUS_PERMANENT;
-            $phenotype_file = file_save($phenotype_file);
-        }
-        
-        if (isset($fourthpage["organism-$i"]['genotype'])){
-            $genotype = $fourthpage["organism-$i"]['genotype'];
-            
-            if ($genotype['ref-genome'] == 'url'){
-                $reference_genome_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '1912',
-                  'value' => $genotype['ref-genome-other']
-                ));
-            }
-            elseif ($genotype['ref-genome'] == 'bio'){
-                
-                $bioproject_id = tpps_create_record('dbxref', array(
-                  'db_id' => '176',
-                  'accession' => $genotype['BioProject-id']
-                ));
-                
-                $project_dbxref_id = tpps_create_record('project_dbxref', array(
-                  'project_id' => $project_id,
-                  'dbxref_id' => $bioproject_id,
-                ));
-                
-                $bioproject_assembly_file_ids = array();
-                foreach ($genotype['assembly-auto'] as $key => $val){
-                    if ($val == '1'){
-                        array_push($bioproject_assembly_file_ids, tpps_create_record('projectprop', array(
-                          'project_id' => $project_id,
-                          'type_id' => '2836',
-                          'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$key",
-                          'rank' => $file_rank
-                        )));
-                        $file_rank++;
-                    }
-                }
-            }
-            elseif ($genotype['ref-genome'] == 'manual'){
-                $assembly_user = $genotype['assembly-user'];
-                $assembly_user_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '2836',
-                  'value' => file_create_url(file_load($assembly_user)->uri),
-                  'rank' => $file_rank
-                ));
-                $file = file_load($assembly_user);
-                $file->status = FILE_STATUS_PERMANENT;
-                $file = file_save($file);
-                $file_rank++;
-            }
-            else {
-                $reference_genome_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '1912',
-                  'value' => $genotype['ref-genome']
-                ));
-            }
-            
-            if ($genotype['marker-type']['SSRs/cpSSRs'] != '0' or $genotype['marker-type']['Other'] != '0'){
-                $genotype_file_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '2836',
-                  'value' => file_create_url(file_load($genotype['file'])->uri),
-                  'rank' => $file_rank
-                ));
-                $file = file_load($genotype['file']);
-                $file->status = FILE_STATUS_PERMANENT;
-                $file = file_save($file);
-                $file_rank++;
-            }
-                
-            if ($genotype['marker-type']['SNPs'] != '0'){
-                $genotype_vcf_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '2836',
-                  'value' => file_create_url(file_load($genotype['vcf'])->uri),
-                  'rank' => $file_rank
-                ));
-                
-                $file_rank++;
-            }
-        }
-    }
-    
+    //for simplicity and efficiency, all fourth page submissions take place in the TPPS File Parsing Tripal Job
 }
 
 function tpps_refresh_landing_page(){
@@ -3748,6 +3484,12 @@ function tpps_file_parsing($form_state){
     $firstpage = $form_state['saved_values']['Hellopage'];
     $organism_number = $firstpage['organism']['number'];
     $organism_ids = array();
+    
+    $project_id = tpps_create_record('project', array(
+      'name' => $firstpage['publication']['title'],
+      'description' => $firstpage['publication']['abstract']
+    ));
+    
     for ($i = 1; $i <= $organism_number; $i++){
         $parts = explode(" ", $firstpage['organism'][$i]);
         $genus = $parts[0];
@@ -3765,12 +3507,264 @@ function tpps_file_parsing($form_state){
           'species' => $species,
           'infraspecific_name' => $infra
         ));
+        
+        if (isset($fourthpage["organism-$i"]['phenotype'])){
+            $phenotype = $fourthpage["organism-$i"]['phenotype'];
+            $phenotype_number = $phenotype['number'];
+            $phenotype_ids = array();
+            $phenotypeprop_ids = array();
+            $phenotypes_meta = array();
+            
+            $phenotype_file_id = tpps_create_record('projectprop', array(
+              'project_id' => $project_id,
+              'type_id' => '2836',
+              'value' => file_create_url(file_load($phenotype['file'])->uri),
+              'rank' => $file_rank
+            ));
+            $phenotype_file = file_load($phenotype['file']);
+            $file_rank++;
+            
+            for ($j = 1; $j <= $phenotype_number; $j++){
+                $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
+                $phenotypes_meta[$name] = array();
+                $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
+                $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
+                $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
+                if ($phenotype['phenotypes-meta'][$j]['struct-check'] == '1'){
+                    $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
+                }
+                if ($phenotype['phenotypes-meta'][$j]['val-check'] == '1'){
+                    $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
+                    $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
+                }
+            }
+            
+            if ($phenotype['check'] == '1'){
+                $phenotype_meta_file_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($phenotype['metadata'])->uri),
+                  'rank' => $file_rank
+                ));
+                $file = file_load($phenotype['metadata']);
+                $location = drupal_realpath($file->uri);
+                $content = parse_xlsx($location);
+                $column_vals = $phenotype['metadata-columns'];
+                
+                foreach ($column_vals as $col => $val){
+                    if ($val == '1'){
+                        $phenotype_name = $col;
+                    }
+                    if ($val == '2'){
+                        $phenotype_attr = $col;
+                    }
+                    if ($val == '3'){
+                        $phenotype_desc = $col;
+                    }
+                    if ($val == '4'){
+                        $phenotype_unit = $col;
+                    }
+                    if ($val == '5'){
+                        $phenotype_struct = $col;
+                    }
+                    if ($val == '6'){
+                        $phenotype_min = $col;
+                    }
+                    if ($val == '7'){
+                        $phenotype_max = $col;
+                    }
+                }
+                
+                for ($j = 0; $j < count($content) - 1; $j++){
+                    $name = strtolower($content[$j][$phenotype_name]);
+                    $phenotypes_meta[$name] = array();
+                    $phentoypes_meta[$name]['attr'] = $content[$j][$phenotype_attr];
+                    $phentoypes_meta[$name]['desc'] = $content[$j][$phenotype_desc];
+                    $phentoypes_meta[$name]['unit'] = $content[$j][$phenotype_unit];
+                    if (isset($phenotype_struct) and isset($content[$j][$phenotype_struct]) and $content[$j][$phenotype_struct] != ''){
+                        $phenotypes_meta[$name]['struct'] = $content[$j][$phenotype_struct];
+                    }
+                    if (isset($phenotype_min) and isset($content[$j][$phenotype_min]) and $content[$j][$phenotype_min] != ''){
+                        $phenotypes_meta[$name]['min'] = $content[$j][$phenotype_min];
+                    }
+                    if (isset($phenotype_max) and isset($content[$j][$phenotype_max]) and $content[$j][$phenotype_max] != ''){
+                        $phenotypes_meta[$name]['max'] = $content[$j][$phenotype_max];
+                    }
+                }
+                
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
+                $file_rank++;
+            }
+            
+            $location = drupal_realpath($phenotype_file->uri);
+            $content = parse_xlsx($location);
+            $column_vals = $phenotype['file-columns'];
 
+            foreach ($column_vals as $col => $val){
+                if ($val == '1'){
+                    $tree_id_col = $col;
+                }
+                if ($val == '2'){
+                    $phenotype_name = $col;
+                }
+                if ($val == '3'){
+                    $phenotype_val = $col;
+                }
+            }
+
+            for ($j = 0; $j < count($content) - 1; $j++){
+                $name = strtolower($content[$j][$phenotype_name]);
+                $value = $content[$j][$phenotype_val];
+                $stock_unique = $content[$j][$tree_id_col];
+                
+                $attr = db_select('chado.cvterm', 'c')
+                    ->fields('c', array('cvterm_id'))
+                    ->condition('c.name', db_like($phenotypes_meta[$name]['attr']), 'LIKE')
+                    ->execute()
+                    ->fetchAssoc();
+                $attr_id = $attr['cvterm_id'];
+                if (!isset($attr_id) or $attr_id == ''){
+                    $attr_id = tpps_custom_cvterm($phenotypes_meta[$name]['attr'], '');
+                }
+                
+                if (isset($phenotypes_meta[$name]['struct'])){
+                    $obs = db_select('chado.cvterm', 'c')
+                        ->fields('c', array('cvterm_id'))
+                        ->condition('c.name', db_like($phenotypes_meta[$name]['struct']), 'LIKE')
+                        ->execute()
+                        ->fetchAssoc();
+                    $observable_id = $obs['cvterm_id'];
+
+                    if (!isset($observable_id) or $observable_id == ''){
+                        $observable_id = tpps_custom_cvterm($phenotypes_meta[$name]['struct'], '');
+                    }
+
+                }
+                else {
+                    $observable_id = NULL;
+                }
+                
+                $phenotype_ids[] = tpps_create_record('phenotype', array(
+                  'uniquename' => "$stock_unique-$name-$j",
+                  'name' => $name,
+                  'attr_id' => $attr_id,
+                  'observable_id' => $observable_id,
+                  'value' => $value
+                ));
+                
+                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                  'phenotype_id' => end($phenotype_ids),
+                  'type_id' => '2871',
+                  'value' => $phenotypes_meta[$name]['desc']
+                ));
+                
+                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                  'phenotype_id' => end($phenotype_ids),
+                  'type_id' => '2883',
+                  'value' => $phenotypes_meta[$name]['unit']
+                ));
+                
+                if (isset($phenotypes_meta[$name]['min'])){
+                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                      'phenotype_id' => end($phenotype_ids),
+                      'type_id' => '52214',
+                      'value' => $phenotypes_meta[$name]['min']
+                    ));
+                }
+                
+                if (isset($phenotypes_meta[$name]['max'])){
+                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                      'phenotype_id' => end($phenotype_ids),
+                      'type_id' => '52213',
+                      'value' => $phenotypes_meta[$name]['max']
+                    ));
+                }
+            }
+            
+            $phenotype_file->status = FILE_STATUS_PERMANENT;
+            $phenotype_file = file_save($phenotype_file);
+        }
+        
         if (isset($fourthpage["organism-$i"]['genotype'])){
             $genotype = $fourthpage["organism-$i"]['genotype'];
             $genotype_count = 0;
+            
+            
+            if ($genotype['ref-genome'] == 'url'){
+                $reference_genome_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '1912',
+                  'value' => $genotype['ref-genome-other']
+                ));
+            }
+            elseif ($genotype['ref-genome'] == 'bio'){
+                
+                $bioproject_id = tpps_create_record('dbxref', array(
+                  'db_id' => '176',
+                  'accession' => $genotype['BioProject-id']
+                ));
+                
+                $project_dbxref_id = tpps_create_record('project_dbxref', array(
+                  'project_id' => $project_id,
+                  'dbxref_id' => $bioproject_id,
+                ));
+                
+                $bioproject_assembly_file_ids = array();
+                foreach ($genotype['assembly-auto'] as $key => $val){
+                    if ($val == '1'){
+                        array_push($bioproject_assembly_file_ids, tpps_create_record('projectprop', array(
+                          'project_id' => $project_id,
+                          'type_id' => '2836',
+                          'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$key",
+                          'rank' => $file_rank
+                        )));
+                        $file_rank++;
+                    }
+                }
+            }
+            elseif ($genotype['ref-genome'] == 'manual'){
+                $assembly_user = $genotype['assembly-user'];
+                $assembly_user_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($assembly_user)->uri),
+                  'rank' => $file_rank
+                ));
+                $file = file_load($assembly_user);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
+                $file_rank++;
+            }
+            else {
+                $reference_genome_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '1912',
+                  'value' => $genotype['ref-genome']
+                ));
+            }
+            
+            if ($genotype['marker-type']['SSRs/cpSSRs'] != '0' or $genotype['marker-type']['Other'] != '0'){
+                $genotype_file_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($genotype['file'])->uri),
+                  'rank' => $file_rank
+                ));
+                $file = file_load($genotype['file']);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
+                $file_rank++;
+            }
 
             if ($genotype['marker-type']['SNPs'] != '0'){
+                $genotype_vcf_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($genotype['vcf'])->uri),
+                  'rank' => $file_rank
+                ));
+                $file_rank++;
 
                 $current_id = $organism_ids[$i];
                 $and = db_and()
@@ -3788,7 +3782,7 @@ function tpps_file_parsing($form_state){
                 $location = drupal_realpath($vcf_file->uri);
                 $vcf_content = fopen($location, 'r');
 
-                //inserts are WAY faster when done as a group, but require a lot of memory
+                //inserts are WAY faster when done as a group
                 $genotype_vals = array();
                 $genotypeprop_vals = array();
                 $format = "";
