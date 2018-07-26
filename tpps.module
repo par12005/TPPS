@@ -1312,7 +1312,8 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
     $content = parse_xlsx($location);
     
     $parents = $file_element['#parents'];
-    $new_end = array_pop($parents) . "-columns";
+    $new_end = end($parents) . "-columns";
+    $group_path = array_pop($parents) . "-groups";
     $values = &$form_state['values'];
     foreach ($parents as $item){
         $values = &$values[$item];
@@ -1356,6 +1357,7 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
                 }
             }
             if ($combination_valid){
+                $groups[$group]['#type'] = $name;
                 $group_valid = TRUE;
                 break;
             }
@@ -1365,6 +1367,8 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
             form_set_error($file_element['#name'] . "[columns][$group", "$error_prompt: Please specify a column or columns that hold $group.");
         }
     }
+    
+    $values[$group_path] = $groups;
     
     return $groups;
 }
