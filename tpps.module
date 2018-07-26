@@ -1303,7 +1303,7 @@ function tpps_standard_coord($raw_coordinate){
     }
 }
 
-function tpps_file_validate(&$form_state, $required_groups, $file_element){
+function tpps_file_validate_columns(&$form_state, $required_groups, $file_element){
     $fid = $file_element['#value']['fid'];
     $cols = $file_element['#value']['columns'];
     $file = file_load($fid);
@@ -1366,6 +1366,7 @@ function tpps_file_validate(&$form_state, $required_groups, $file_element){
         }
     }
     
+    return $groups;
 }
 
 function tpps_page_build(&$page){

@@ -233,7 +233,7 @@ function page_3_create_form(&$form, &$form_state){
             
             $form['tree-accession']["species-$i"]['file'] = array(
               '#type' => 'managed_file',
-              '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of the $name trees used in this study: *"),
+              '#title' => t("$name Accession File: please provide a spreadsheet with columns for the Tree ID and location of the $name trees used in this study: *"),
               '#upload_location' => "$file_upload_location",
               '#upload_validators' => array(
                 'file_validate_extensions' => array('txt csv xlsx'),
@@ -458,7 +458,7 @@ function page_3_validate_form(&$form, &$form_state){
                 );
                 
                 $file_element = $form['tree-accession']['file'];
-                tpps_file_validate($form_state, $required_groups, $file_element);
+                tpps_file_validate_columns($form_state, $required_groups, $file_element);
                 
                 if (!form_get_errors()){
                     //preserve file if it is valid
@@ -475,44 +475,18 @@ function page_3_validate_form(&$form, &$form_state){
             for ($i = 1; $i <= $species_number; $i++){
                 if ($form_state['values']['tree-accession']["species-$i"]['file'] != ""){
                     
-                    $required_columns = array(
-                      '1' => 'Tree Identifier',
-                      '2' => 'Country',
-                      '3' => 'State',
-                      '4' => 'Latitude',
-                      '5' => 'Longitude',
+                    $required_groups = array(
+                      'Tree Id' => array(
+                        'id' => array(1),
+                      ),
+                      'Location (latitude/longitude or country/state)' => array(
+                        'gps' => array(2, 3),
+                        'approx' => array(4, 5),
+                      )
                     );
-
-                    $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
-
-                    foreach ($form['tree-accession']["species-$i"]['file']['#value']['columns'] as $req => $val){
-                        if ($req[0] != '#'){
-                            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req] = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$req];
-
-                            $col_val = $form_state['values']['tree-accession']["species-$i"]['file-columns'][$req];
-                            if ($col_val != '0'){
-                                $required_columns[$col_val] = NULL;
-                            }
-                        }
-                    }
                     
-                    // if country was provided, Lat and Long are not necessary, and vice versa
-                    if (!isset($required_columns['4']) or !isset($required_columns['5'])){
-                        $required_columns['2'] = $required_columns['3'] = NULL;
-                    }
-                    elseif (!isset($required_columns['2']) or !isset($required_columns['3'])){
-                        $required_columns['4'] = $required_columns['5'] = NULL;
-                    }
-                    elseif (isset($required_columns['2']) and isset($required_columns['3']) and isset($required_columns['4']) and isset($required_columns['5'])){
-                        $required_columns['2'] = $required_columns['3'] = $required_columns['4'] = $required_columns['5'] = NULL;
-                        form_set_error("tree-accession][species-$i][file][columns", "Species $i Tree Accession file: Please specify a column that holds Location.");
-                    }
-
-                    foreach ($required_columns as $item){
-                        if ($item != NULL){
-                            form_set_error("tree-accession][species-$i][file][columns][$item", "Species $i Tree Accession file: Please specify a column that holds $item.");
-                        }
-                    }
+                    $file_element = $form['tree-accession']["species-$i"]['file'];
+                    tpps_file_validate_columns($form_state, $required_groups, $file_element);
                     
                     if (!form_get_errors()){
                         //preserve file if it is valid
