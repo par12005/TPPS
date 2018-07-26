@@ -448,8 +448,8 @@ function page_3_validate_form(&$form, &$form_state){
                     'id' => array(1),
                   ),
                   'Location (latitude/longitude or country/state)' => array(
-                    'gps' => array(2, 3),
-                    'approx' => array(4, 5),
+                    'approx' => array(2, 3),
+                    'gps' => array(4, 5),
                   ),
                   'Genus and Species' => array(
                     'separate' => array(6, 7),
@@ -458,7 +458,7 @@ function page_3_validate_form(&$form, &$form_state){
                 );
                 
                 $file_element = $form['tree-accession']['file'];
-                tpps_file_validate_columns($form_state, $required_groups, $file_element);
+                $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
                 
                 if (!form_get_errors()){
                     //preserve file if it is valid
@@ -480,13 +480,13 @@ function page_3_validate_form(&$form, &$form_state){
                         'id' => array(1),
                       ),
                       'Location (latitude/longitude or country/state)' => array(
-                        'gps' => array(2, 3),
-                        'approx' => array(4, 5),
+                        'approx' => array(2, 3),
+                        'gps' => array(4, 5),
                       )
                     );
                     
                     $file_element = $form['tree-accession']["species-$i"]['file'];
-                    tpps_file_validate_columns($form_state, $required_groups, $file_element);
+                    $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
                     
                     if (!form_get_errors()){
                         //preserve file if it is valid
