@@ -3537,7 +3537,6 @@ function tpps_admin_panel_submit($form, &$form_state){
         variable_set($var_name, $state);
         submit_all($state);
         $args = array($state);
-        dpm($state['saved_values']['fourthPage']['organism-1']['phenotype']);
         $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
         $state['job_id'] = $jid;
         
