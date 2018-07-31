@@ -191,7 +191,7 @@ function page_4_create_form(&$form, &$form_state){
         
         $fields['metadata'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Please upload a file containing columns with the name, attribute, description, and units of each of your phenotypes: *'),
+          '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, description, and units of each of your phenotypes: *'),
           '#upload_location' => "$phenotype_upload_location",
           '#upload_validators' => array(
             'file_validate_extensions' => array('csv tsv xlsx')
@@ -1087,45 +1087,28 @@ function page_4_validate_form(&$form, &$form_state){
                     form_set_error("$id][phenotype][metadata", "Phenotype Metadata File: field is required.");
                 }
                 else{
-                    $required_columns = array(
-                      '1' => 'Phenotype Name/Identifier',
-                      '2' => 'Attribute',
-                      '3' => 'Description',
-                      '4' => 'Units',
+                    $required_groups = array(
+                      'Phenotype Id' => array(
+                        'id' => array(1),
+                      ),
+                      'Attribute' => array(
+                        'attr' => array(2),
+                      ),
+                      'Description' => array(
+                        'desc' => array(3),
+                      ),
+                      'Units' => array(
+                        'units' => array(4),
+                      )
                     );
-
-                    $form_state['values'][$id]['phenotype']['metadata-columns'] = array();
-
-                    foreach ($form[$id]['phenotype']['metadata']['#value']['columns'] as $req => $val){
-                        if ($req[0] != '#'){
-                            $form_state['values'][$id]['phenotype']['metadata-columns'][$req] = $form[$id]['phenotype']['metadata']['#value']['columns'][$req];
-
-                            $col_val = $form_state['values'][$id]['phenotype']['metadata-columns'][$req];
-                            if ($col_val != '0'){
-                                $required_columns[$col_val] = NULL;
-                            }
-                        }
-                    }
-
-                    foreach ($required_columns as $item){
-                        if ($item != NULL){
-                            form_set_error("$id][phenotype][metadata][columns][$item", "Phenotype Metadata file: Please specify a column that holds $item.");
-                        }
-                    }
                     
-                    if ($required_columns['1'] === NULL){
-                        //Phenotype Name set
-                        foreach ($form_state['values'][$id]['phenotype']['metadata-columns'] as $key => $val){
-                            //cycle through columns
-                            if ($val == '1'){
-                                //find the column that was assigned phenotype name, keep track of that column, exit loop
-                                $phenotype_name_col = $key;
-                                break;
-                            }
-                        }
-                    }
+                    $file_element = $form[$id]['phenotype']['metadata'];
+                    $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
                     
                     if (!form_get_errors()){
+                        //get phenotype name column
+                        $phenotype_name_col = $groups['Phenotype Id']['1'];
+                        
                         //preserve file if it is valid
                         $file = file_load($form_state['values'][$id]['phenotype']['metadata']);
                         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
@@ -1173,56 +1156,26 @@ function page_4_validate_form(&$form, &$form_state){
                 form_set_error("$id][phenotype][file", "Phenotypes: field is required.");
             }
             else {
-                $required_columns = array(
-                  '1' => 'Tree Identifier',
-                  '2' => 'Phenotype Name/Identifier',
-                  '3' => 'Value(s)'
+                $required_groups = array(
+                  'Tree Identifier' => array(
+                    'id' => array(1),
+                  ),
+                  'Phenotype Name/Identifier' => array(
+                    'phenotype-name' => array(2),
+                  ),
+                  'Phenotype Value(s)' => array(
+                    'val' => array(3),
+                  )
                 );
-
-                $form_state['values'][$id]['phenotype']['file-columns'] = array();
-
-                foreach ($form[$id]['phenotype']['file']['#value']['columns'] as $req => $val){
-                    if ($req[0] != '#'){
-                        $form_state['values'][$id]['phenotype']['file-columns'][$req] = $form[$id]['phenotype']['file']['#value']['columns'][$req];
-
-                        $col_val = $form_state['values'][$id]['phenotype']['file-columns'][$req];
-                        if ($col_val != '0'){
-                            $required_columns[$col_val] = NULL;
-                        }
-                    }
-                }
-
-                foreach ($required_columns as $item){
-                    if ($item != NULL){
-                        form_set_error("$id][phenotype][file][columns][$item", "Phenotype file: Please specify a column that holds $item.");
-                    }
-                }
                 
-                if ($required_columns['2'] === NULL){
-                    //Phenotype name column was detected
-                    foreach ($form_state['values'][$id]['phenotype']['file-columns'] as $key => $val){
-                        //find the column that holds it
-                        if ($val == '2'){
-                            //save that column name
-                            $phenotype_file_name_col = $key;
-                            break;
-                        }
-                    }
-                }
-                
-                if ($required_columns['1'] === NULL){
-                    //tree id column was detected
-                    foreach ($form_state['values'][$id]['phenotype']['file-columns'] as $key => $val){
-                        //find the column that holds it
-                        if ($val == '1'){
-                            //save that column name
-                            $phenotype_file_tree_col = $key;
-                            break;
-                        }
-                    }
-                }
+                $file_element = $form[$id]['phenotype']['file'];
+                $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
                 
                 if (!form_get_errors()){
+                    //get column names
+                    $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
+                    $phenotype_file_name_col = $groups['Phenotype Name/Identifier']['2'];
+                    
                     //preserve file if it is valid
                     $file = file_load($form_state['values'][$id]['phenotype']['file']);
                     file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
@@ -1572,18 +1525,18 @@ function page_4_validate_form(&$form, &$form_state){
             $organism = $form_values["organism-$i"];
 
             if ($i > 1 and isset($organism['phenotype-repeat-check']) and $organism['phenotype-repeat-check'] == '1'){
-                unset($organism['phenotype']);
+                unset($form_state['values']["organism-$i"]['phenotype']);
             }
-            if (isset($organism['phenotype'])){
-                $phenotype = $organism['phenotype'];
+            if (isset($form_state['values']["organism-$i"]['phenotype'])){
+                $phenotype = $form_state['values']["organism-$i"]['phenotype'];
                 validate_phenotype($phenotype, "organism-$i", $form, $form_state);
             }
 
             if ($i > 1 and isset($organism['genotype-repeat-check']) and $organism['genotype-repeat-check'] == '1'){
-                unset($organism['genotype']);
+                unset($form_state['values']["organism-$i"]['genotype']);
             }
-            if (isset($organism['genotype'])){
-                $genotype = $organism['genotype'];
+            if (isset($form_state['values']["organism-$i"]['genotype'])){
+                $genotype = $form_state['values']["organism-$i"]['genotype'];
                 validate_genotype($genotype, "organism-$i", $form, $form_state);
             }
         }
