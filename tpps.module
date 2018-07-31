@@ -2889,11 +2889,11 @@ function submit_all(&$form_state){
     }
     else {
         //multiple files, sorted by species
-        for($i = 0; $i < $organism_number; $i++){
+        for($i = 1; $i <= $organism_number; $i++){
             $tree_accession_id = tpps_create_record('projectprop', array(
               'project_id' => $project_id,
               'type_id' => '2836',
-              'value' => file_create_url(file_load($thirdpage['tree-accession']["species-$i"]['file'])->uri),
+              'value' => drupal_realpath(file_load($thirdpage['tree-accession']["species-$i"]['file'])->uri),
               'rank' => $file_rank
             ));
             
@@ -2992,6 +2992,8 @@ function submit_all(&$form_state){
           'project_id' => $project_id
         ));
     }
+    
+    $form_state['file_rank'] = $file_rank;
     
     /***************************
      * Fourth Page submissions *
@@ -3175,7 +3177,7 @@ function parse_xlsx($location){
     //modified from https://gist.github.com/searbe/3284011
     
     $content = array();
-    $dir = drupal_realpath("public://");
+    $dir = drupal_realpath("public://tpps_xlsx");
     
     $zip = new ZipArchive();
     $zip->open($location);
@@ -3524,7 +3526,6 @@ function tpps_admin_panel_submit($form, &$form_state){
     }
     else{
         global $user;
-        $args = array($state);
         $uid = $user->uid;
         $includes = array();
         $includes[] = module_load_include('module', 'tpps');
@@ -3535,6 +3536,8 @@ function tpps_admin_panel_submit($form, &$form_state){
         $state['status'] = 'Approved';
         variable_set($var_name, $state);
         submit_all($state);
+        $args = array($state);
+        dpm($state['saved_values']['fourthPage']['organism-1']['phenotype']);
         $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
         $state['job_id'] = $jid;
         
@@ -3549,6 +3552,7 @@ function tpps_file_parsing($form_state){
     $firstpage = $form_state['saved_values']['Hellopage'];
     $organism_number = $firstpage['organism']['number'];
     $organism_ids = array();
+    $file_rank = $form_state['file_rank'];
     
     $project_id = tpps_create_record('project', array(
       'name' => $firstpage['publication']['title'],
@@ -3614,21 +3618,15 @@ function tpps_file_parsing($form_state){
                 $file = file_load($phenotype['metadata']);
                 $location = drupal_realpath($file->uri);
                 $content = parse_xlsx($location);
+                $groups = $phenotype['metadata-groups'];
                 $column_vals = $phenotype['metadata-columns'];
                 
+                $phenotype_name = $groups['Phenotype Id']['1'];
+                $phenotype_attr = $groups['Attribute']['2'];
+                $phenotype_desc = $groups['Description']['3'];
+                $phenotype_unit = $groups['Units']['4'];
+                
                 foreach ($column_vals as $col => $val){
-                    if ($val == '1'){
-                        $phenotype_name = $col;
-                    }
-                    if ($val == '2'){
-                        $phenotype_attr = $col;
-                    }
-                    if ($val == '3'){
-                        $phenotype_desc = $col;
-                    }
-                    if ($val == '4'){
-                        $phenotype_unit = $col;
-                    }
                     if ($val == '5'){
                         $phenotype_struct = $col;
                     }
@@ -3643,9 +3641,9 @@ function tpps_file_parsing($form_state){
                 for ($j = 0; $j < count($content) - 1; $j++){
                     $name = strtolower($content[$j][$phenotype_name]);
                     $phenotypes_meta[$name] = array();
-                    $phentoypes_meta[$name]['attr'] = $content[$j][$phenotype_attr];
-                    $phentoypes_meta[$name]['desc'] = $content[$j][$phenotype_desc];
-                    $phentoypes_meta[$name]['unit'] = $content[$j][$phenotype_unit];
+                    $phenotypes_meta[$name]['attr'] = $content[$j][$phenotype_attr];
+                    $phenotypes_meta[$name]['desc'] = $content[$j][$phenotype_desc];
+                    $phenotypes_meta[$name]['unit'] = $content[$j][$phenotype_unit];
                     if (isset($phenotype_struct) and isset($content[$j][$phenotype_struct]) and $content[$j][$phenotype_struct] != ''){
                         $phenotypes_meta[$name]['struct'] = $content[$j][$phenotype_struct];
                     }
@@ -3664,20 +3662,12 @@ function tpps_file_parsing($form_state){
             
             $location = drupal_realpath($phenotype_file->uri);
             $content = parse_xlsx($location);
-            $column_vals = $phenotype['file-columns'];
-
-            foreach ($column_vals as $col => $val){
-                if ($val == '1'){
-                    $tree_id_col = $col;
-                }
-                if ($val == '2'){
-                    $phenotype_name = $col;
-                }
-                if ($val == '3'){
-                    $phenotype_val = $col;
-                }
-            }
-
+            $groups = $phenotype['file-groups'];
+            
+            $tree_id_col = $groups['Tree Identifier']['1'];
+            $phenotype_name = $groups['Phenotype Name/Identifier']['2'];
+            $phenotype_val = $groups['Phenotype Value(s)']['3'];
+            
             for ($j = 0; $j < count($content) - 1; $j++){
                 $name = strtolower($content[$j][$phenotype_name]);
                 $value = $content[$j][$phenotype_val];
@@ -3704,7 +3694,6 @@ function tpps_file_parsing($form_state){
                     if (!isset($observable_id) or $observable_id == ''){
                         $observable_id = tpps_custom_cvterm($phenotypes_meta[$name]['struct'], '');
                     }
-
                 }
                 else {
                     $observable_id = NULL;
