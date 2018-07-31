@@ -223,7 +223,6 @@ Persistent variables that TPPS creates will be removed from the database upon in
 - Dedicated documentation for users/admins
 - Backend genotype data processing
 - Status bar details
-- Move phenotype processing to backend
 - More configurable?
 
 # Resources
