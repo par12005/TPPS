@@ -820,21 +820,38 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
         $options = array();
         $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
         $response_xml_data = file_get_contents($url);
-        $data = simplexml_load_string($response_xml_data)->children()->children()->LinkSetDb->children();
-
-        if(preg_match('/<LinkSetDb>/', $response_xml_data)){
-
-            foreach ($data->Link as $link){
-                array_push($options, $link->Id->__tostring());
+        $link_types = simplexml_load_string($response_xml_data)->children()->children()->LinkSetDb;
+        
+        if (preg_match('/<LinkSetDb>/', $response_xml_data)){
+            
+            foreach($link_types as $type_xml){
+                $type = $type_xml->LinkName->__tostring();
+                
+                switch ($type){
+                    case 'bioproject_nuccore_tsamaster':
+                        $suffix = 'TSA';
+                        break;
+                    
+                    case 'bioproject_nuccore_wgsmaster':
+                        $suffix = 'WGS';
+                        break;
+                    
+                    default:
+                        continue 2;
+                }
+                
+                foreach ($type_xml->Link as $link){
+                    $options[$link->Id->__tostring()] = $suffix;
+                }
             }
-
+            
             $fields['assembly-auto']['#title'] = '<div class="fieldset-title">Select all that apply: *</div>';
             $fields['assembly-auto']['#collapsible'] = TRUE;
-
-            foreach ($options as $item){
+            
+            foreach ($options as $item => $suffix){
                 $fields['assembly-auto']["$item"] = array(
                   '#type' => 'checkbox',
-                  '#title' => t("$item"),
+                  '#title' => "$item ($suffix) <a href=\"https://www.ncbi.nlm.nih.gov/nuccore/$item\" target=\"blank\">View on NCBI</a>",
                   '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"] : NULL,
                 );
             }
