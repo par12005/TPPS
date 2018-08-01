@@ -13,7 +13,7 @@ function page_3_create_form(&$form, &$form_state){
       '#tree' => TRUE,
     );
     
-    $file_description = 'Columns with information describing the Identifier of the tree and the location of the tree are required.';
+    $file_description = "Please upload a spreadsheet file containing tree population data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may omit that drop-down menu. Your file must contain columns with information about at least the Tree Identifier and the Location of the tree (either gps coordinates or country/state).";
     $species_number = $form_state['saved_values']['Hellopage']['organism']['number'];
     $file_upload_location = 'public://' . variable_get('tpps_accession_files_dir', 'tpps_accession');
     
@@ -37,6 +37,10 @@ function page_3_create_form(&$form, &$form_state){
       )) : NULL,
       '#tree' => TRUE
     );
+    
+    if ($species_number > 1){
+        $form['tree-accession']['file']['#description'] .= " If you are uploading a single file with multiple species, your file must also specify the genus and species of each tree.";
+    }
     
     $form['tree-accession']['no-header'] = array(
       '#type' => 'checkbox',
