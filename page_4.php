@@ -745,13 +745,13 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
         }
     }
     
-    $ref_genome_arr["url"] = 'I can provide a URL to my Reference Genome or assembly file(s)';
-    $ref_genome_arr["bio"] = 'I can provide a BioProject accession number and select assembly file(s) from a list';
+    $ref_genome_arr["url"] = 'I can provide a URL to the website of my reference file(s)';
+    $ref_genome_arr["bio"] = 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list';
     $ref_genome_arr["manual"] = 'I can upload my own assembly file';
 
     $fields['ref-genome'] = array(
       '#type' => 'select',
-      '#title' => t('Reference Genome used: *'),
+      '#title' => t('Reference Assembly used: *'),
       '#options' => $ref_genome_arr,
       '#default_value' => isset($values[$id]['genotype']['ref-genome']) ? $values[$id]['genotype']['ref-genome'] : 0,
     );
@@ -978,7 +978,7 @@ function page_4_marker_info(&$fields, $values, $id){
 
      $fields['SNPs']['genotyping-design'] = array(
       '#type' => 'select',
-      '#title' => t('Define Genotyping Design: *'),
+      '#title' => t('Define Experimental Design: *'),
       '#options' => array(
         0 => '- Select -',
         1 => 'GBS',
