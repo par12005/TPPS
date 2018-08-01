@@ -747,7 +747,8 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
     
     $ref_genome_arr["url"] = 'I can provide a URL to the website of my reference file(s)';
     $ref_genome_arr["bio"] = 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list';
-    $ref_genome_arr["manual"] = 'I can upload my own assembly file';
+    $ref_genome_arr["manual"] = 'I can upload my own reference genome file';
+    $ref_genome_arr["manual2"] = 'I can upload my own reference transcriptome file';
 
     $fields['ref-genome'] = array(
       '#type' => 'select',
@@ -871,7 +872,11 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
       '#default_value' => isset($values[$id]['genotype']['assembly-user']) ? $values[$id]['genotype']['assembly-user'] : NULL,
       '#states' => array(
         'visible' => array(
-          ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')
+          array(
+            array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')),
+            'or',
+            array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual2')),
+          )
         )
       ),
       '#tree' => TRUE
@@ -1310,7 +1315,7 @@ function page_4_validate_form(&$form, &$form_state){
                     }
                 }
             }
-            elseif ($ref_genome === 'manual'){
+            elseif ($ref_genome === 'manual' or $ref_genome === 'manual2'){
                 $assembly = $genotype['assembly-user'];
                 
                 if ($assembly == ''){
@@ -1401,7 +1406,7 @@ function page_4_validate_form(&$form, &$form_state){
                 if ($vcf == ''){
                     form_set_error("$id][genotype][vcf", "Genotype VCF File: field is required.");
                 }
-                elseif ($ref_genome === 'manual' and $assembly != '' and isset($scaffold_col) and empty(form_get_errors())){
+                elseif (($ref_genome === 'manual' or $ref_genome === 'manual2') and $assembly != '' and isset($scaffold_col) and empty(form_get_errors())){
                     $vcf_content = fopen(file_load($vcf)->uri, 'r');
                     $assembly_content = fopen(file_load($assembly)->uri, 'r');
                     

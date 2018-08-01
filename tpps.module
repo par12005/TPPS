@@ -3776,7 +3776,7 @@ function tpps_file_parsing($form_state){
                     }
                 }
             }
-            elseif ($genotype['ref-genome'] == 'manual'){
+            elseif ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2'){
                 $assembly_user = $genotype['assembly-user'];
                 $assembly_user_id = tpps_create_record('projectprop', array(
                   'project_id' => $project_id,
