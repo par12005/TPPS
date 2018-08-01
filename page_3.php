@@ -451,11 +451,14 @@ function page_3_validate_form(&$form, &$form_state){
                     'approx' => array(2, 3),
                     'gps' => array(4, 5),
                   ),
-                  'Genus and Species' => array(
-                    'separate' => array(6, 7),
-                    'combined' => array(10),
-                  ),
                 );
+                
+                if ($species_number != 1){
+                    $required_groups['Genus and Species'] = array(
+                      'separate' => array(6, 7),
+                      'combined' => array(10),
+                    );
+                }
                 
                 $file_element = $form['tree-accession']['file'];
                 $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
