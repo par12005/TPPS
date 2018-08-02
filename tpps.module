@@ -4345,7 +4345,7 @@ function tpps_file_parsing($form_state){
                 $file = file_save($file);
                 $file_rank++;
             }
-            else {
+            elseif ($genotype['ref-genome'] != 'none') {
                 $reference_genome_id = tpps_create_record('projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '1912',
