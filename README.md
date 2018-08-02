@@ -219,10 +219,8 @@ Upon approval, the data from the persistent variable is parsed, organized, and s
 Persistent variables that TPPS creates will be removed from the database upon installation.
 
 # Features in Development
-- Genotype flow
 - Dedicated documentation for users/admins
 - Backend genotype data processing
-- Status bar details
 - More configurable?
 
 # Resources
