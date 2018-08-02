@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>4.4. Page 4 &#8212; Tripal Plant PopGen Submit  documentation</title>
+    <title>4.4. Genotype, Phenotype, and Environment &#8212; Tripal Plant PopGen Submit  documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -15,7 +15,7 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="4.3. Page 3" href="page_3.html" />
+    <link rel="prev" title="4.3. Tree Accession" href="page_3.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -32,9 +32,38 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="page-4">
-<h1>4.4. Page 4<a class="headerlink" href="#page-4" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="genotype-phenotype-and-environment">
+<h1>4.4. Genotype, Phenotype, and Environment<a class="headerlink" href="#genotype-phenotype-and-environment" title="Permalink to this headline">¶</a></h1>
+<p>The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section. Here you will be asked to provide the data and metadata for your phenotypes and genotypes. Each of the fields on this page is asked once per tree species:</p>
+<div class="section" id="phenotype">
+<h2>4.4.1. Phenotype<a class="headerlink" href="#phenotype" title="Permalink to this headline">¶</a></h2>
+<p>Phenotype fields are only visible when ‘Genotype x Phenotype’, ‘Genotype x Phenotype x Environment’, or ‘Phenotype x Environment’ was selected from ‘Data type’ in <a class="reference external" href="page_2.html">Study Design</a>.</p>
+<ul>
+<li><p class="first">Phenotype Metadata: select one or both of the following methods to provide phenotype metadata:</p>
+<blockquote>
+<div><ul>
+<li><p class="first">Textfields: click the ‘Add Phenotype’ or ‘Remove Phenotype’ buttons to add or remove phenotypes, respecitively. The following fields are required once per phenotype:</p>
+<blockquote>
+<div><ul class="simple">
+<li>Phenotype Name: text field - The name of the phenotype.</li>
+<li>Phenotype Attribute: text field - The attribute that the phenotype is describing. For example, “amount”, “width”, “mass”, “age”, “density”, “color”, “time” would be phenotype attributes.</li>
+<li>Phenotype Description: text field - A brief description of the phenotype.</li>
+<li>Phenotype Units: text field - The units of the phenotype. For example, “meters”, “cm”, “inches”, “°C”, “Degrees Fahrenheit” would be phenotype units.</li>
+<li>Phenotype Structure: text field - The structure that the phenotype is describing. If your phenotype has a structure, you can click ‘Phenotype has a structure descriptor’ and provide a structure. Structure can refer to a tissue type or to a biological process.</li>
+<li>Phenotype Value Range: text fields - A maximum and minimum value for the phenotype. If your phenotype is binary or has a range, you can click ‘Phenotype has a value range’ and provide a value range.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">File: Click the ‘I would like to upload a phenotype metadata file’ checkbox to upload a phenotype file. You will be shown a table with several drop-down menus, along with the names of your column headers, and the first few rows of data in your file. You will then be asked to select what type of data each of your columns holds: ‘Name/Identifier’, ‘Attribute’, ‘Description’, ‘Units’, ‘Structure’, ‘Minimum Value’, ‘Maximum Value’, or ‘N/A’. Columns marked ‘N/A’ will still be kept in the flat file, but will not be recorded in the database with the other data from the file. Columns that hold ‘Name/Identifier’, ‘Attribute’, ‘Description’, and ‘Units’ must be defined before continuing.</p>
+</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Phenotype Data: file upload - The phenotype data. This file should contain the ‘Tree Id’ of the tree that the phenotype is describing, the ‘Name/Identifier’ of the phenotype, and the ‘Value’ that was actually measured for this phenotype.</p>
+</li>
+</ul>
 <img alt="../_images/TPPS_data1.png" src="../_images/TPPS_data1.png" />
+</div>
 </div>
 
 
@@ -60,10 +89,10 @@
 <li class="toctree-l1"><a class="reference internal" href="../features.html">2. Features</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../admin.html">3. Administrators</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../user.html">4. Users</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="page_1.html">4.1. Page 1</a></li>
-<li class="toctree-l2"><a class="reference internal" href="page_2.html">4.2. Page 2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="page_3.html">4.3. Page 3</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">4.4. Page 4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="page_1.html">4.1. Publication and Species</a></li>
+<li class="toctree-l2"><a class="reference internal" href="page_2.html">4.2. Experimental Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="page_3.html">4.3. Tree Accession</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">4.4. Genotype, Phenotype, and Environment</a></li>
 </ul>
 </li>
 </ul>
@@ -73,7 +102,7 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="../user.html">4. Users</a><ul>
-      <li>Previous: <a href="page_3.html" title="previous chapter">4.3. Page 3</a></li>
+      <li>Previous: <a href="page_3.html" title="previous chapter">4.3. Tree Accession</a></li>
   </ul></li>
   </ul></li>
 </ul>

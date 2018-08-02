@@ -2,8 +2,8 @@ Users
 =====
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Table of Contents
    :glob:
 
-   user_pages/page_*
+   user_pages/*

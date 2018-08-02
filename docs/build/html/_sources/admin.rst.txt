@@ -2,9 +2,12 @@ Administrators
 ==============
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Table of Contents
    :glob:
 
    install
-   admin_pages/page_*
+   config
+   admin_pages/*
+   valid
+   submit

@@ -6,7 +6,7 @@
   <head>
     <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>3.3. Page 2 &#8212; Tripal Plant PopGen Submit  documentation</title>
+    <title>3.5. Study Design &#8212; Tripal Plant PopGen Submit  documentation</title>
     <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
@@ -15,8 +15,8 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="3.4. Page 3" href="page_3.html" />
-    <link rel="prev" title="3.2. Page 1" href="page_1.html" />
+    <link rel="next" title="3.6. Tree Accession" href="page_3.html" />
+    <link rel="prev" title="3.4. Publication and Species Interface" href="page_1.html" />
    
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
   
@@ -33,9 +33,222 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="page-2">
-<h1>3.3. Page 2<a class="headerlink" href="#page-2" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="study-design">
+<h1>3.5. Study Design<a class="headerlink" href="#study-design" title="Permalink to this headline">¶</a></h1>
+<p>The second set of fields in TPPS is the Study Design section, where users upload metadata about their experiment. The form fields and their properties are as follows:</p>
+<ul class="simple">
+<li>Study Start Date: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code><ul>
+<li>Start Date Year: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘1970’ to ‘2018’</li>
+<li>Start Date Month: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘January’ through ‘December’</li>
+</ul>
+</li>
+<li>Study End Date: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code><ul>
+<li>End Date Year: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘1970’ to ‘2018’</li>
+<li>End Date Month: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘January’ through ‘December’</li>
+</ul>
+</li>
+<li>Study Location: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code><ul>
+<li>Coordinate Projection: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘WGS 84’, ‘NAD 83’, ‘ETRS 89’, ‘Custom Location’</li>
+<li>Coordinates: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘WGS 84’, ‘NAD 83’, or ‘ETRS 89’ from ‘Coordinate Projection’</li>
+<li>Custom Location: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘Custom Location’ from ‘Coordinate Projection’</li>
+<li>Map Thumbnail: Google Maps iframe that allows the user to visually validate the location they have provided</li>
+</ul>
+</li>
+<li>Data Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘Genotype’, ‘Genotype x Phenotype’, ‘Genotype x Environment’, ‘Genotype x Phenotype x Environment’, ‘Phenotype x Environment’</li>
+<li>Study Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘Natural Population (Landscape)’, ‘Growth Chamber’, ‘Greenhouse’, ‘Experimental/Common Garden’, ‘Plantation’</li>
+</ul>
+<div class="section" id="natural-population">
+<h2>3.5.1. Natural Population<a class="headerlink" href="#natural-population" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Natural Population: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if the user selects ‘Natural Population’ from ‘Study Type’<ul>
+<li>Season: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> -  options ‘Spring’, ‘Summer’, ‘Fall’, ‘Winter’</li>
+<li>Assessions: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘1’ to ‘30’</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="growth-chamber">
+<h2>3.5.2. Growth Chamber<a class="headerlink" href="#growth-chamber" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">Growth Chamber: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if the user selects ‘Growth Chamber’ from ‘Study Type’</p>
+<ul>
+<li><p class="first">CO2 Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>CO2 Control: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘controlled’, ‘uncontrolled’</li>
+<li>CO2 Value: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Humidity Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Humidity Control: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘controlled’, ‘uncontrolled’</li>
+<li>Humidity Value: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Light Intensity Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Light Intensity Control: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘controlled’, ‘uncontrolled’</li>
+<li>Light Intensity Value: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Temperature Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Average High Temperature: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+<li>Average Low Temperature: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Rooting Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul>
+<li><p class="first">Rooting Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘Aeroponics’, ‘Hydroponics’, and ‘Soil’</p>
+</li>
+<li><p class="first">Soil: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if the user selects ‘Soil’ from ‘Rooting Type’</p>
+<blockquote>
+<div><ul class="simple">
+<li>Soil Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘Sand’, ‘Peat’, ‘Clay’, ‘Mixed’, ‘Other’</li>
+<li>Custom Soil Type: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘Other’ from ‘Soil Type’</li>
+<li>Soil Container Type: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">PH: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>PH Control: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘controlled’, ‘uncontrolled’</li>
+<li>PH Value: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Treatments: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> -  options ‘Seasonal Environment’, ‘Air temperature regime’, ‘Soil Temperature regime’, ‘Antibiotic regime’, ‘Chemical administration’, ‘Disease status’, ‘Fertilizer regime’, ‘Fungicide regime’, ‘Gaseous regime’, ‘Gravity Growth hormone regime’, ‘Mechanical treatment’, ‘Mineral nutrient regime’, ‘Humidity regime’, ‘Non-mineral nutrient regime’, ‘Radiation (light, UV-B, X-ray) regime’, ‘Rainfall regime’, ‘Salt regime’, ‘Watering regime’, ‘Water temperature regime’, ‘Pesticide regime’, ‘pH regime’, ‘other perturbation’</p>
+</li>
+<li><p class="first">Treatments Description: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - if an option from ‘Treatments’ is selected, users must provide a description of the treatment</p>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="greenhouse">
+<h2>3.5.3. Greenhouse<a class="headerlink" href="#greenhouse" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">Greenhouse: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if the user selects ‘Greenhouse’ from ‘Study Type’</p>
+<ul>
+<li><p class="first">Humidity Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Humidity Control: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘controlled’, ‘uncontrolled’</li>
+<li>Humidity Value: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘controlled’ from ‘Humidity Control’</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Light Intensity Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Light Intensity Control: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘controlled’, ‘uncontrolled’</li>
+<li>Light Intensity Value: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘controlled’ from ‘Light Intensity Control’</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Temperature Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Average High Temperature: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+<li>Average Low Temperature: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Rooting Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul>
+<li><p class="first">Soil: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Soil Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘Sand’, ‘Peat’, ‘Clay’, ‘Mixed’, ‘Other’</li>
+<li>Custom Soil Type: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘Other’ from ‘Soil Type’</li>
+<li>Soil Container Type: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">PH: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>PH Control: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘controlled’, ‘uncontrolled’</li>
+<li>PH Value: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘controlled’ from ‘PH Control’</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Treatments: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> - options ‘Seasonal Environment’, ‘Air temperature regime’, ‘Soil Temperature regime’, ‘Antibiotic regime’, ‘Chemical administration’, ‘Disease status’, ‘Fertilizer regime’, ‘Fungicide regime’, ‘Gaseous regime’, ‘Gravity Growth hormone regime’, ‘Mechanical treatment’, ‘Mineral nutrient regime’, ‘Humidity regime’, ‘Non-mineral nutrient regime’, ‘Radiation (light, UV-B, X-ray) regime’, ‘Rainfall regime’, ‘Salt regime’, ‘Watering regime’, ‘Water temperature regime’, ‘Pesticide regime’, ‘pH regime’, ‘other perturbation’</p>
+</li>
+<li><p class="first">Treatments Description: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - if an option from ‘Treatments’ is selected, users must provide a description of the treatment</p>
+</li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="common-garden">
+<h2>3.5.4. Common Garden<a class="headerlink" href="#common-garden" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">Common Garden: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if the user selects ‘Experimental/Common Garden’ from ‘Study Type’</p>
+<ul>
+<li><p class="first">Irrigation: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Irrigation Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘Irrigation from top’, ‘Irrigation from bottom’, ‘Drip Irrigation’, ‘Other’, ‘No Irrigation’</li>
+<li>Custom Irrigation Type: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘Other’ from ‘Irrigation Type’</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Salinity Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Salinity Control: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘controlled’, ‘uncontrolled’</li>
+<li>Salinity Value: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Biotic Environment Info: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li>Biotic Environment Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘Herbivores’, ‘Mutilists’, ‘Pathogens’, ‘Endophyts’, ‘Other’, ‘None’</li>
+<li>Custom Biotic Environment Type: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘Other’ from ‘Biotic Environment Type’</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Season: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> - options ‘Spring’, ‘Summer’, ‘Fall’, ‘Winter’</p>
+</li>
+<li><p class="first">Treatments: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> - options ‘Seasonal environment’, ‘Antibiotic regime’, ‘Chemical administration’, ‘Disease status’, ‘Fertilizer regime’, ‘Fungicide regime’, ‘Gaseous regime’, ‘Gravity Growth hormone regime’, ‘Herbicide regime’, ‘Mechanical treatment’, ‘Mineral nutrient regime’, ‘Non-mineral nutrient regime’, ‘Salt regime’, ‘Watering regime’, ‘Pesticide regime’, ‘pH regime’, ‘Other perturbation’</p>
+</li>
+<li><p class="first">Treatments Description: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - if an option from ‘Treatments’ is selected, users must provide a description of the treatment</p>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="plantation">
+<h2>3.5.5. Plantation<a class="headerlink" href="#plantation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Plantation: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if the user selects ‘Plantation’ from ‘Study Type’<ul>
+<li>Season: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> - options ‘Spring’, ‘Summer’, ‘Fall’, ‘Winter’</li>
+<li>Assessions: <code class="docutils literal notranslate"><span class="pre">textfield</span></code></li>
+<li>Treatments: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> - options ‘Seasonal environment’, ‘Antibiotic regime’, ‘Chemical administration’, ‘Disease status’, ‘Fertilizer regime’, ‘Fungicide regime’, ‘Gaseous regime’, ‘Gravity Growth hormone regime’, ‘Herbicide regime’, ‘Mechanical treatment’, ‘Mineral nutrient regime’, ‘Non-mineral nutrient regime’, ‘Salt regime’, ‘Watering regime’, ‘Pesticide regime’, ‘pH regime’, ‘Other perturbation’</li>
+<li>Treatments Description: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - if an option from ‘Treatments’ is selected, users must provide a description of the treatment</li>
+</ul>
+</li>
+</ul>
 <img alt="../_images/TPPS_exp_cond.png" src="../_images/TPPS_exp_cond.png" />
+</div>
 </div>
 
 
@@ -61,10 +274,15 @@
 <li class="toctree-l1"><a class="reference internal" href="../features.html">2. Features</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="../admin.html">3. Administrators</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="../install.html">3.1. Installation</a></li>
-<li class="toctree-l2"><a class="reference internal" href="page_1.html">3.2. Page 1</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">3.3. Page 2</a></li>
-<li class="toctree-l2"><a class="reference internal" href="page_3.html">3.4. Page 3</a></li>
-<li class="toctree-l2"><a class="reference internal" href="page_4.html">3.5. Page 4</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../config.html">3.2. Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="login.html">3.3. Login and Profile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="page_1.html">3.4. Publication and Species Interface</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">3.5. Study Design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="page_3.html">3.6. Tree Accession</a></li>
+<li class="toctree-l2"><a class="reference internal" href="page_4.html">3.7. Genotype, Phenotype, and Environment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="summary.html">3.8. Submission Summary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../valid.html">3.9. Input Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../submit.html">3.10. Data Submission</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../user.html">4. Users</a></li>
@@ -75,8 +293,8 @@
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
   <li><a href="../admin.html">3. Administrators</a><ul>
-      <li>Previous: <a href="page_1.html" title="previous chapter">3.2. Page 1</a></li>
-      <li>Next: <a href="page_3.html" title="next chapter">3.4. Page 3</a></li>
+      <li>Previous: <a href="page_1.html" title="previous chapter">3.4. Publication and Species Interface</a></li>
+      <li>Next: <a href="page_3.html" title="next chapter">3.6. Tree Accession</a></li>
   </ul></li>
   </ul></li>
 </ul>
