@@ -334,6 +334,16 @@ function page_4_create_form(&$form, &$form_state){
         
         page_4_ref($fields, $form_state, $values, $id, $genotype_upload_location);
         
+        $fields['file-type'] = array(
+          '#type' => 'checkboxes',
+          '#title' => t('Genotype File Types (select all that apply): *'),
+          '#options' => array(
+            'Genotype Assay' => 'Genotype Assay',
+            'VCF' => 'VCF',
+          ),
+          '#default_value' => isset($values[$id]['genotype']['file-type']) ? $values[$id]['genotype']['file-type'] : NULL,
+        );
+        
         $fields['file'] = array(
           '#type' => 'managed_file',
           '#title' => t('Genotype File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
@@ -343,11 +353,7 @@ function page_4_create_form(&$form, &$form_state){
           ),
           '#states' => array(
             'visible' => array(
-              array(
-                array(':input[name="' . $id . '[genotype][marker-type][SSRs/cpSSRs]"]' => array('checked' => true)),
-                'or',
-                array(':input[name="' . $id . '[genotype][marker-type][Other]"]' => array('checked' => true))
-              )
+              ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => true)
             )
           ),
           '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
@@ -364,11 +370,7 @@ function page_4_create_form(&$form, &$form_state){
           ),
           '#states' => array(
             'visible' => array(
-              array(
-                array(':input[name="' . $id . '[genotype][marker-type][SSRs/cpSSRs]"]' => array('checked' => true)),
-                'or',
-                array(':input[name="' . $id . '[genotype][marker-type][Other]"]' => array('checked' => true))
-              )
+              ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => true)
             )
           ),
         );
@@ -475,7 +477,7 @@ function page_4_create_form(&$form, &$form_state){
           ),
           '#states' => array(
             'visible' => array(
-              ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => true),
+              ':input[name="' . $id . '[genotype][file-type][VCF]"]' => array('checked' => true)
             )
           ),
           '#default_value' => isset($values[$id]['genotype']['vcf']) ? $values[$id]['genotype']['vcf'] : NULL,
@@ -1512,7 +1514,6 @@ function page_4_validate_form(&$form, &$form_state){
 
         $form_values = $form_state['values'];
         $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
-        $data_type = $form_state['saved_values']['secondPage']['dataType'];
 
         for ($i = 1; $i <= $organism_number; $i++){
             $organism = $form_values["organism-$i"];
