@@ -968,7 +968,13 @@ function tpps_flatten($state){
     $pub = &$page_1['publication'];
     $org = &$page_1['organism'];
     
-    $data['Title'] = isset($pub['title']) ? $pub['title'] : NULL;
+    if (isset($page_1['#cleared']) and $page_1['#cleared']){
+        $data['#page_1_cleared'] = TRUE;
+    }
+    else {
+        $data['#page_1_cleared'] = FALSE;
+    }
+    $data['Publication Title'] = isset($pub['title']) ? $pub['title'] : NULL;
     $data['Primary Author'] = isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : NULL;
     $data['Organization'] = isset($page_1['organization']) ? $page_1['organization'] : NULL;
     $data['Publication Status'] = isset($pub['status']) ? $pub['status'] : NULL;
@@ -991,7 +997,7 @@ function tpps_flatten($state){
     
     if (isset($org['number'])){
         $data['#number_organisms'] = $org['number'];
-        for ($i = 1; $i < $data['#number_organisms']; $i++){
+        for ($i = 1; $i <= $data['#number_organisms']; $i++){
             if (isset($org["$i"]) and $org["$i"] != ''){
                 $data["Species $i"] = $org["$i"];
             }
@@ -1002,6 +1008,12 @@ function tpps_flatten($state){
     $page_2 = &$data['secondPage'];
     $loc = &$page_2['studyLocation'];
     
+    if (isset($page_2['#cleared']) and $page_2['#cleared']){
+        $data['#page_2_cleared'] = TRUE;
+    }
+    else {
+        $data['#page_2_cleared'] = FALSE;
+    }
     $data['Experiment Starting Month'] = isset($page_2['StartingDate']['month']) ? $page_2['StartingDate']['month'] : NULL;
     $data['Experiment Starting Year'] = isset($page_2['StartingDate']['year']) ? $page_2['StartingDate']['year'] : NULL;
     $data['Experiment Ending Month'] = isset($page_2['EndingDate']['month']) ? $page_2['EndingDate']['month'] : NULL;
@@ -1350,8 +1362,15 @@ function tpps_flatten($state){
     }
     unset($data['secondPage']);
     
-    $page_3 = &$data['thirdPage']['tree-accession'];
+    $page_3 = &$data['thirdPage'];
     
+    if (isset($page_3['#cleared']) and $page_3['#cleared']){
+        $data['#page_3_cleared'] = TRUE;
+    }
+    else {
+        $data['#page_3_cleared'] = FALSE;
+    }
+    $page_3 = &$data['thirdPage']['tree-accession'];
     if (isset($page_3['check']) and $page_3['check']){
         for ($i = 1; $i <= $data['#number_organisms']; $i++){
             if (isset($page_3["species-$i"]['file']) and $page_3["species-$i"]['file']){
@@ -1367,10 +1386,16 @@ function tpps_flatten($state){
     
     $page_4 = &$data['fourthPage'];
     
+    if (isset($page_4['#cleared']) and $page_4['#cleared']){
+        $data['#page_4_cleared'] = TRUE;
+    }
+    else {
+        $data['#page_4_cleared'] = FALSE;
+    }
     for ($i = 1; $i <= $data['#number_organisms']; $i++){
         if (isset($page_4["organism-$i"])){
             $org = &$page_4["organism-$i"];
-            $org_name = $data["Species $i"];
+            $org_name = isset($data["Species $i"]) ? $data["Species $i"] : NULL;
             
             if (isset($org['phenotype'])){
                 $pheno = &$org['phenotype'];
@@ -1411,6 +1436,7 @@ function tpps_flatten($state){
             
             if (isset($org['genotype'])){
                 $geno = &$org['genotype'];
+                $file_type = &$geno['file-type'];
                 
                 $marker_types = array();
                 foreach ($geno['marker-type'] as $key => $val){
@@ -1496,22 +1522,32 @@ function tpps_flatten($state){
                     $data["$org_name Reference Genome"] = $geno['ref-genome'];
                 }
                 
-                //genotype file/vcf file
+                if (isset($file_type['Genotype Assay']) and $file_type['Genotype Assay'] and isset($geno['file']) and $geno['file']){
+                    $data["$org_name Genotype Assay File"] = $geno['file'];
+                }
+                
+                if (isset($file_type['Assay Design']) and $file_type['Assay Design'] and isset($geno['assay-design']) and $geno['assay-design']){
+                    $data["$org_name Genotype Assay Design File"] = $geno['assay-design'];
+                }
+                
+                if (isset($file_type['VCF']) and $file_type['VCF'] and isset($geno['vcf']) and $geno['vcf']){
+                    $data["$org_name Genotype VCF File"] = $geno['vcf'];
+                }
             }
         }
     }
+    unset($data['fourthPage']);
     
-    $data['#dbxref_id'] = $state['dbxref_id'];
-    $data['#accession'] = $state['accession'];
-    $data['#status'] = $state['status'];
+    $data['#dbxref_id'] = isset($state['dbxref_id']) ? $state['dbxref_id'] : NULL;
+    $data['#accession'] = isset($state['accession']) ? $state['accession'] : NULL;
+    $data['#status'] = isset($state['status']) ? $state['status'] : NULL;
     
     foreach ($data as $key => $val){
-        if (!isset($val) or empty($val) or $val === ''){
+        if (!isset($val) or $val === ''){
             unset($data[$key]);
         }
     }
     
-    dpm($data);
     return $data;
 }
 
@@ -4630,140 +4666,71 @@ function tpps_block_view_alter(&$data, $block) {
                 break;
             }
             $ok = "<img src='$base_url/misc/message-16-ok.png'>";
-            //dpm($form_state['saved_values']);
+            $flat = tpps_flatten($form_state);
             
-            //This deals with page 1
-            if (isset($form_state['saved_values']['Hellopage']['#cleared']) and $form_state['saved_values']['Hellopage']['#cleared']){
-                $content .= "Step 1 - Complete<br />";
-                $content .= "Author/Species Information<hr />";
-                $content .= "$ok" . ' Author: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['primaryAuthor'])) . "<br />";
-                $content .= "$ok" . ' Organization: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organization'])) . "<br />";
-                $content .= "$ok" . ' Pub Title: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['title'])) . "<br />";
-                $content .= "$ok" . ' Pub Year: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['year'])) . "<br />";
-                $content .= "$ok" . ' Secondary Authors: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['number'])) . "<br />";
-                $content .= "$ok" . ' Organisms: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organism']['number'])) . "<br />";
-            }
-
-            //This deals with page 2
-            if (isset($form_state['saved_values']['secondPage']['#cleared']) and $form_state['saved_values']['secondPage']['#cleared']){
-                $content .= "<br />";
-                $content .= "Step 2 - Complete<br />";
-                $content .= "Experimental Conditions<br /><hr />";
-                $start = $form_state['saved_values']['secondPage']['StartingDate']['month'] . " " . $form_state['saved_values']['secondPage']['StartingDate']['year'];
-                $content .= "$ok" . ' Starting Date: ' . filter_xss(check_plain($start)) . "<br />";
-                $end = $form_state['saved_values']['secondPage']['EndingDate']['month'] . " " . $form_state['saved_values']['secondPage']['EndingDate']['year'];
-                $content .= "$ok" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
-                if ($form_state['saved_values']['secondPage']['studyLocation']['type'] == '2'){
-                    $location = $form_state['saved_values']['secondPage']['studyLocation']['custom'];
-                    $query = $location;
-                }
-                else {
-                    $location = $form_state['saved_values']['secondPage']['studyLocation']['coordinates'];
-                    $standard_coordinate = tpps_standard_coord($location);
-                    if ($standard_coordinate){
-                        $query = $standard_coordinate;
+            foreach ($flat as $item => $val){
+                if ($item[0] !== '#'){
+                    $item_str = filter_xss(check_plain($item));
+                    $val_str = filter_xss(check_plain($val));
+                    if (preg_match('/File/', $item) and ($file_name = file_load($val)->filename)){
+                        //create links to files
+                        $file_url = check_plain(file_create_url(file_load($val)->uri));
+                        $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
                     }
-                }
-                $content .= "$ok" . ' Study Location: <a id="sidebar_map" style="cursor:pointer">' . filter_xss(check_plain($location)) .  "</a><br>";
-                if (isset($query)){
-                    $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
-                    $js = "jQuery(document).ready(function ($) {
-                        jQuery(\"#sidebar_map\").click(function() {
-                            jQuery(\"#sidebar_map_wrapper\").remove();
-                            jQuery(\"#sidebar_map\").after( \"<div id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
-                        });
-                    });";
-                    drupal_add_js($js, 'inline');
-                }
-                $type = $form_state['saved_values']['secondPage']['studyType'];
-                $type_arr = array(
-                  0 => '- Select -',
-                  1 => 'Natural Population (Landscape)',
-                  2 => 'Growth Chamber',
-                  3 => 'Greenhouse',
-                  4 => 'Experimental/Common Garden',
-                  5 => 'Plantation',
-                );
-                $content .= "$ok" . ' Study Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
-                $type = $form_state['saved_values']['secondPage']['dataType'];
-                $type_arr = array(
-                  '- Select -',
-                  'Genotype x Phenotype',
-                  'Genotype',
-                  'Genotype x Phenotype x Environment',
-                  'Phenotype x Environment',
-                  'Genotype x Environment'
-                );
-                $content .= "$ok" . ' Data Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
-            }
-
-            //This deals with page 3
-            if (isset($form_state['saved_values']['thirdPage']['#cleared']) and $form_state['saved_values']['thirdPage']['#cleared']){
-                $content .= "<br />";
-                $content .= "Step 3 - Complete<br />";
-                $content .= "Tree Accession<br /><hr />";
-                $content .= "$ok" . ' Tree Accession data' .  "<br />";
-                if ($form_state['saved_values']['Hellopage']['organism']['number'] == '1' or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
-                    if (($file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->filename)){
-                        $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->uri));
-                        $content .= "$ok Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                    elseif (preg_match('/Month/', $item)){
+                        //skip experiment start/end month
+                        continue;
                     }
-                }
-                else {
-                    for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
-                        $species_name = $form_state['saved_values']['Hellopage']['organism'][$i];
-                        if (($file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->filename)){
-                            $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->uri));
-                            $content .= "$ok $species_name Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                    elseif (preg_match('/^(.*)Year/', $item, $matches)){
+                        //combine experiment start/end month + year
+                        if (isset($flat[$matches[1] . 'Month'])){
+                            $item_str = $matches[1] . 'Date';
+                            $val_str = "{$flat[$matches[1] . 'Month']} $val_str";
+                        }
+                        else {
+                            continue;
                         }
                     }
+                    elseif (preg_match('/Study Location/', $item) and isset($flat['#location_type']) and $flat['#location_type']){
+                        //add map capability to location
+                        if ($flat['#location_type'] == '2'){
+                            $query = $val_str;
+                        }
+                        elseif ($flat['#location_type'] != '2' and ($standard = tpps_standard_coord($val_str))){
+                            $query = $standard;
+                        }
+                        $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
+                        if (isset($query)){
+                            $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
+                            $js = "jQuery(document).ready(function ($) {
+                                jQuery(\"#sidebar_map\").click(function() {
+                                    jQuery(\"#sidebar_map_wrapper\").remove();
+                                    jQuery(\"#sidebar_map\").after( \"<br><div id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
+                                });
+                            });";
+                            drupal_add_js($js, 'inline');
+                        }
+                    }
+                    $content .= "$ok $item_str: $val_str <br />";
                 }
-            }
-            
-            //This deals with page 4
-            if (isset($form_state['saved_values']['fourthPage']['#cleared']) and $form_state['saved_values']['fourthPage']['#cleared']){
-                $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
-                for ($i = 1; $i <= $organism_number; $i++){
-                    $current_name = $form_state['saved_values']['Hellopage']['organism'][$i];
-                    $content .= "<br />";
-                    $content .= "Step 4 - Complete<br />";
-                    $content .= "Submit Data<br /><hr />";
-                    $content .= "$ok " . filter_xss(check_plain($current_name)) .  "<br />";
-                    
-                    if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype'])){
-                        $content .= "$ok " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
-                        
-                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'] != 0){
-                            if (($genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->filename)){
-                                $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->uri));
-                                $content .= "$ok Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
-                            }
+                elseif (preg_match('/#page_(.)_cleared/', $item, $matches)){
+                    //break between pages
+                    if ($val){
+                        $step_arr = array(
+                          1 => 'Author and Species Information',
+                          2 => 'Experimental Conditions',
+                          3 => 'Tree Accession',
+                          4 => 'Submit Data'
+                        );
+                        if ($matches[1] > 1){
+                            $content .= '<br />';
                         }
-                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'] != 0){
-                            if (($genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->filename)){
-                                $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->uri));
-                                $content .= "$ok Genotype VCF File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
-                            }
-                        }
+                        $content .= "$ok Step {$matches[1]} - Complete<br />{$step_arr[$matches[1]]}<br /><hr />";
                     }
-                    if (isset($form_state['saved_values']['fourthPage']['phenotype'])){
-                        $content .= "$ok " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
-                        
-                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'] != 0){
-                            if (($phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->filename)){
-                                $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->uri));
-                                $content .= "$ok Phenotype Metadata File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
-                            }
-                        }
-                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'] != 0){
-                            if (($phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->filename)){
-                                $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->uri));
-                                $content .= "$ok Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
-                            }
-                        }
+                    else {
+                        //if page not cleared, do not display remaining form state data
+                        break;
                     }
-                    
-                    $content .= "<hr />";
                 }
             }
             
