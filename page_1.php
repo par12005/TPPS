@@ -12,7 +12,7 @@ function page_1_create_form(&$form, $form_state){
 
         $form['primaryAuthor'] = array(
           '#type' => 'textfield',
-          '#title' => t('Primary Author:'),
+          '#title' => t('Primary Author: *'),
           '#autocomplete_path' => 'author/autocomplete',
           '#default_value' => isset($values['primaryAuthor']) ? $values['primaryAuthor'] : NULL,
           '#attributes' => array(
@@ -24,7 +24,7 @@ function page_1_create_form(&$form, $form_state){
         
         $form['organization'] = array(
           '#type' => 'textfield',
-          '#title' => t('Organization:'),
+          '#title' => t('Organization: *'),
           '#autocomplete_path' => 'organization/autocomplete',
           '#default_value' => isset($values['organization']) ? $values['organization'] : NULL,
           '#attributes' => array(
@@ -66,7 +66,7 @@ function page_1_create_form(&$form, $form_state){
             
             $form['publication']['year'] = array(
               '#type' => 'select',
-              '#title' => t('Year of Publication'),
+              '#title' => t('Year of Publication: *'),
               '#options' => $yearArr,
               '#default_value' => isset($values['publication']['year']) ? $values['publication']['year'] : 0,
               '#states' => array(
@@ -87,11 +87,6 @@ function page_1_create_form(&$form, $form_state){
             
             $form['publication']['secondaryAuthors'] = array(
               '#type' => 'fieldset',
-              '#states' => array(
-                'invisible' => array(
-                  ':input[name="publication[status]"]' => array('value' => '0')
-                ),
-              )
             );
             
             $form['publication']['secondaryAuthors']['add'] = array(
@@ -117,7 +112,7 @@ function page_1_create_form(&$form, $form_state){
 
                 $form['publication']['secondaryAuthors'][$i] = array(
                   '#type' => 'textfield',
-                  '#title' => t("Secondary Author $i:"),
+                  '#title' => t("Secondary Author $i: *"),
                   '#autocomplete_path' => 'author/autocomplete',
                   '#default_value' => isset($values['publication']['secondaryAuthors'][$i]) ? $values['publication']['secondaryAuthors'][$i] : NULL,
                 );
@@ -263,13 +258,16 @@ function page_1_create_form(&$form, $form_state){
         
         $form['publication'] = array(
           '#type' => 'fieldset',
-          '#title' => t('<h2>Publication Information:</h2>'),
-          '#tree' => true,
+          '#title' => t('<div class="fieldset-title">Publication Information:</div>'),
+          '#tree' => TRUE,
+          '#collapsible' => TRUE,
         );
 
+        secondary_authors($form, $values, $form_state);
+        
         $form['publication']['status'] = array(
           '#type' => 'select',
-          '#title' => t('Publication Status:'),
+          '#title' => t('Publication Status: *'),
           '#options' => array(
             0 => t('- Select -'),
             'In Preparation or Submitted' => t('In Preparation or Submitted'),
@@ -283,25 +281,23 @@ function page_1_create_form(&$form, $form_state){
           '#default_value' => isset($values['publication']['status']) ? $values['publication']['status'] : 0,
         );
         
-        secondary_authors($form, $values, $form_state);
-        
         year($form, $values, $form_state);
 
         $form['publication']['title'] = array(
           '#type' => 'textfield',
-          '#title' => t('Title of Publication:'),
+          '#title' => t('Title of Publication: *'),
           '#default_value' => isset($values['publication']['title']) ? $values['publication']['title'] : NULL,
         );
 
         $form['publication']['abstract'] = array(
           '#type' => 'textarea',
-          '#title' => t('Abstract:'),
+          '#title' => t('Abstract: *'),
           '#default_value' => isset($values['publication']['abstract']) ? $values['publication']['abstract'] : NULL,
         );
 
         $form['publication']['journal'] = array(
           '#type' => 'textfield',
-          '#title' => t('Journal:'),
+          '#title' => t('Journal: *'),
           '#autocomplete_path' => 'journal/autocomplete',
           '#default_value' => isset($values['publication']['journal']) ? $values['publication']['journal'] : NULL,
         );
@@ -314,8 +310,9 @@ function page_1_create_form(&$form, $form_state){
         $form['organism'] = array(
           '#type' => 'fieldset',
           '#tree' => TRUE,
-          '#title' => t('<h2>Organism information:</h2>'),
+          '#title' => t('<div class="fieldset-title">Organism information:</div>'),
           '#description' => t('Up to 5 organisms per submission.'),
+          '#collapsible' => TRUE
         );
         
         $form['organism']['add'] = array(
@@ -333,22 +330,17 @@ function page_1_create_form(&$form, $form_state){
         );
 
         $form['organism']['number'] = array(
-          '#type' => 'textfield',
+          '#type' => 'hidden',
           '#default_value' => isset($values['organism']['number']) ? $values['organism']['number'] : '1',
         );
     
         for($i = 1; $i <= 5; $i++){
             
             $form['organism']["$i"] = array(
-              '#type' => 'fieldset',
-              //'#title' => t("Tree Species $i:"),
-            );
-            
-            $form['organism']["$i"]['species'] = array(
               '#type' => 'textfield',
-              '#title' => t("Species $i:"),
+              '#title' => t("Species $i: *"),
               '#autocomplete_path' => "species/autocomplete",
-              '#default_value' => isset($values['organism']["$i"]['species']) ? $values['organism']["$i"]['species'] : NULL,
+              '#default_value' => isset($values['organism']["$i"]) ? $values['organism']["$i"] : NULL,
               '#attributes' => array(
                 'data-toggle' => array('tooltip'),
                 'data-placement' => array('left'),
@@ -377,6 +369,7 @@ function page_1_create_form(&$form, $form_state){
     $form['Save'] = array(
       '#type' => 'submit',
       '#value' => t('Save'),
+      '#prefix' => '<div class="input-description">* : Required Field</div>',
     );
     
     $form['Next'] = array(
@@ -499,10 +492,10 @@ function page_1_validate_form(&$form, &$form_state){
         }
         
         for ($i = 1; $i <= $organism_number; $i++){
-            $name = $organism[$i]['species'];
+            $name = $organism[$i];
             
             if ($name == ''){
-                form_set_error("organism[$i][species", "Tree Species $i: field is required.");
+                form_set_error("organism[$i", "Tree Species $i: field is required.");
             }
             else{
                 $name = explode(" ", $name);
@@ -512,7 +505,7 @@ function page_1_validate_form(&$form, &$form_state){
                 $empty_pattern = '/^ *$/';
                 $correct_pattern = '/^[A-Z|a-z|.| ]+$/';
                 if (!isset($genus) or !isset($species) or preg_match($empty_pattern, $genus) or preg_match($empty_pattern, $species) or !preg_match($correct_pattern, $genus) or !preg_match($correct_pattern, $species)){
-                    form_set_error("organism[$i][species", check_plain("Tree Species $i: please provide both genus and species in the form \"<genus> <species>\""));
+                    form_set_error("organism[$i", check_plain("Tree Species $i: please provide both genus and species in the form \"<genus> <species>\"."));
                 }
             }
         }

@@ -78,8 +78,9 @@ jQuery(document).ready(function ($) {
     function Organism(){
         var organism_add = jQuery('#edit-organism-add');
         var organism_remove = jQuery('#edit-organism-remove');
-        var organism_number = jQuery('#edit-organism-number')[0].value;
-        var organisms = jQuery('#edit-organism').children('div').children('fieldset');
+        var number_object = jQuery('#edit-organism div input:hidden');
+        var organism_number = number_object[0].value;
+        var organisms = jQuery('#edit-organism div div.form-type-textfield');
         
         jQuery('#edit-organism-number').hide();
         organisms.hide();
@@ -100,7 +101,7 @@ jQuery(document).ready(function ($) {
         organism_add.on('click', function(){
             if (organism_number < 5){
                 organism_number++;
-                jQuery('#edit-organism-number')[0].value = organism_number;
+                number_object[0].value = organism_number;
                 
                 for (var i = 0; i < organism_number; i++){
                     jQuery(organisms[i]).show();
@@ -115,7 +116,7 @@ jQuery(document).ready(function ($) {
         organism_remove.on('click', function(){
             if (organism_number > 1){
                 organism_number--;
-                jQuery('#edit-organism-number')[0].value = organism_number;
+                number_object[0].value = organism_number;
                 
                 for (var i = 0; i < organism_number; i++){
                     jQuery(organisms[i]).show();

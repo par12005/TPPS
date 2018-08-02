@@ -170,7 +170,7 @@ Your TPPS submission has been received and is pending approval from a TreeGenes 
     <li>Organisms: {$params['organisms']['number']}</li>
 ";
         for ($i = 1; $i <= $params['organisms']['number']; $i++){
-            $message['body'][] = "   <li>Organism $i: {$params['organisms'][$i]['species']}</li>";
+            $message['body'][] = "   <li>Organism $i: {$params['organisms'][$i]}</li>";
         }
 
         $message['body'][] = 
@@ -489,7 +489,7 @@ function tpps_table_display($values){
     $data['Journal'] = $values['Hellopage']['publication']['journal'];
     
     for ($i = 1; $i <= $values['Hellopage']['organism']['number']; $i++){
-        $data["Species $i"] = $values['Hellopage']['organism'][$i]['species'];
+        $data["Species $i"] = $values['Hellopage']['organism'][$i];
     }
     
     $data['Experiment Starting Date'] = $values['secondPage']['StartingDate']['month'] . ' ' . $values['secondPage']['StartingDate']['year'];
@@ -791,7 +791,7 @@ function tpps_table_display($values){
             $file = $values['thirdPage']['tree-accession']["species-$i"]['file'];
             $filename = file_load($file)->filename;
             $file_url = check_plain(file_create_url(file_load($file)->uri));
-            $organism_name = $values['Hellopage']['organism'][$i]['species'];
+            $organism_name = $values['Hellopage']['organism'][$i];
             $data["$organism_name Accession File"] = "<a href='$file_url' target='blank'>$filename</a>";
         }
     }
@@ -869,12 +869,7 @@ function tpps_table_display($values){
         
         if ($values['secondPage']['dataType'] != '4'){
             $genotype = $values['fourthPage']["organism-$i"]['genotype'];
-            $data['Marker Types'] = '';
-            foreach ($genotype['marker-type'] as $key => $val){
-                if ($val !== 0){
-                    $data['Marker Types'] .= $key . ', ';
-                }
-            }
+            
             
             if ($genotype['marker-type']['SNPs'] !== 0){
                 $design_options = array(
@@ -959,6 +954,603 @@ function tpps_table_display($values){
     return $display;
 }
 
+function tpps_flatten($state){
+    $data = isset($state['saved_values']) ? $state['saved_values'] : NULL;
+    
+    if (!$data){
+        return;
+    }
+    unset($data['frontpage']);
+    unset($data['summarypage']);
+    unset($data['form_build_id']);
+    
+    $page_1 = &$data['Hellopage'];
+    $pub = &$page_1['publication'];
+    $org = &$page_1['organism'];
+    
+    if (isset($page_1['#cleared']) and $page_1['#cleared']){
+        $data['#page_1_cleared'] = TRUE;
+    }
+    else {
+        $data['#page_1_cleared'] = FALSE;
+    }
+    $data['Publication Title'] = isset($pub['title']) ? $pub['title'] : NULL;
+    $data['Primary Author'] = isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : NULL;
+    $data['Organization'] = isset($page_1['organization']) ? $page_1['organization'] : NULL;
+    $data['Publication Status'] = isset($pub['status']) ? $pub['status'] : NULL;
+    $data['Publication Year'] = isset($pub['year']) ? $pub['year'] : NULL;
+    $data['Publication Abstract'] = isset($pub['abstract']) ? $pub['abstract'] : NULL;
+    $data['Publication Journal'] = isset($pub['journal']) ? $pub['journal'] : NULL;
+    
+    if (isset($pub['secondaryAuthors']['number'])){
+        $data['#number_secondary_authors'] = $pub['secondaryAuthors']['number'];
+        for ($i = 1; $i < $data['#number_secondary_authors']; $i++){
+            if (isset($pub['secondaryAuthors']["$i"]) and $pub['secondaryAuthors']["$i"] != ''){
+                $data["Secondary Author $i"] = $pub['secondaryAuthors']["$i"];
+            }
+        }
+        if ($pub['secondaryAuthors']['check'] and $pub['secondaryAuthors']['file']){
+            $data["Secondary Authors File"] = $pub['secondaryAuthors']['file'];
+            $data['#secondary_authors_file_no_header'] = isset($pub['secondaryAuthors']['no-header']) ? $pub['secondaryAuthors']['no-header'] : NULL;
+        }
+    }
+    
+    if (isset($org['number'])){
+        $data['#number_organisms'] = $org['number'];
+        for ($i = 1; $i <= $data['#number_organisms']; $i++){
+            if (isset($org["$i"]) and $org["$i"] != ''){
+                $data["Species $i"] = $org["$i"];
+            }
+        }
+    }
+    unset($data['Hellopage']);
+    
+    $page_2 = &$data['secondPage'];
+    $loc = &$page_2['studyLocation'];
+    
+    if (isset($page_2['#cleared']) and $page_2['#cleared']){
+        $data['#page_2_cleared'] = TRUE;
+    }
+    else {
+        $data['#page_2_cleared'] = FALSE;
+    }
+    $data['Experiment Starting Month'] = isset($page_2['StartingDate']['month']) ? $page_2['StartingDate']['month'] : NULL;
+    $data['Experiment Starting Year'] = isset($page_2['StartingDate']['year']) ? $page_2['StartingDate']['year'] : NULL;
+    $data['Experiment Ending Month'] = isset($page_2['EndingDate']['month']) ? $page_2['EndingDate']['month'] : NULL;
+    $data['Experiment Ending Year'] = isset($page_2['EndingDate']['year']) ? $page_2['EndingDate']['year'] : NULL;
+    $data['#location_type'] = (isset($loc['type']) and $loc['type']) ? $loc['type'] : NULL;
+    
+    if ($data['#location_type'] == '2' and isset($loc['custom'])){
+        $data['Study Location'] = $loc['custom'];
+    }
+    elseif ($data['#location_type'] and isset($loc['coordinates'])){
+        $data['Study Location'] = $loc['coordinates'];
+    }
+    
+    if ($page_2['dataType']){
+        $data_type_options = array(
+          1 => 'Genotype x Phenotype',
+          2 => 'Genotype',
+          3 => 'Genotype x Phenotype x Environment',
+          4 => 'Phenotype x Environment',
+          5 => 'Genotype x Environment'
+        );
+        if (isset($data_type_options[$page_2['dataType']])){
+            $data['Data Type'] = $data_type_options[$page_2['dataType']];
+        }
+    }
+    
+    if ($page_2['studyType']){
+        $study_type_options = array(
+          1 => 'Natural Population (Landscape)',
+          2 => 'Growth Chamber',
+          3 => 'Greenhouse',
+          4 => 'Experimental/Common Garden',
+          5 => 'Plantation',
+        );
+        if (isset($study_type_options[$page_2['studyType']])){
+            $data['Study Type'] = $study_type_options[$page_2['studyType']];
+        }
+        
+        switch ($page_2['studyType']){
+            case 1:
+                if (isset($page_2['naturalPopulation'])){
+                    $nat_pop = &$page_2['naturalPopulation'];
+                    $data['Seasons Assessed'] = '';
+                    foreach ($nat_pop['season'] as $key => $item){
+                        if (isset($item) and $item != '0'){
+                            $data['Seasons Assessed'] .= $item . ' ';
+                        }
+                    }
+                    if (isset($nat_pop['assessions']) and $nat_pop['assessions']){
+                        $data['Average number of assessions'] = $nat_pop['assessions'];
+                    }
+                }
+                break;
+                
+            case 2:
+                if (isset($page_2['growthChamber'])){
+                    $growth = &$page_2['growthChamber'];
+                    $root = &$growth['rooting'];
+                    $treatment = &$root['treatment'];
+
+                    if (isset($growth['co2Control']['option']) and $growth['co2Control']['option'] and $growth['co2Control']['option'] == '1'){
+                        $data['CO2 Control'] = 'Controlled';
+                        $data['CO2 Value'] = isset($growth['co2Control']['controlled']) ? $growth['co2Control']['controlled']: NULL;
+                    }
+                    elseif (isset($growth['co2Control']['option']) and $growth['co2Control']['option']){
+                        $data['CO2 Control'] = 'Uncontrolled';
+                        $data['CO2 Value'] = isset($growth['co2Control']['uncontrolled']) ? $growth['co2Control']['uncontrolled'] : NULL;
+                    }
+
+                    if (isset($growth['humidityControl']['option']) and $growth['humidityControl']['option'] and $growth['humidityControl']['option'] == '1'){
+                        $data['Humidity Control'] = 'Controlled';
+                        $data['Humidity Value'] = isset($growth['humidityControl']['controlled']) ? $growth['humidityControl']['controlled']: NULL;
+                    }
+                    elseif (isset($growth['humidityControl']['option']) and $growth['humidityControl']['option']){
+                        $data['Humidity Control'] = 'Uncontrolled';
+                        $data['Humidity Value'] = isset($growth['humidityControl']['uncontrolled']) ? $growth['humidityControl']['uncontrolled'] : NULL;
+                    }
+
+                    if (isset($growth['lightControl']['option']) and $growth['lightControl']['option'] and $growth['lightControl']['option'] == '1'){
+                        $data['Light Intensity Control'] = 'Controlled';
+                        $data['Light Intensity Value'] = isset($growth['lightControl']['controlled']) ? $growth['lightControl']['controlled']: NULL;
+                    }
+                    elseif (isset($growth['lightControl']['option']) and $growth['lightControl']['option']){
+                        $data['Light Intensity Control'] = 'Uncontrolled';
+                        $data['Light Intensity Value'] = isset($growth['lightControl']['uncontrolled']) ? $growth['lightControl']['uncontrolled'] : NULL;
+                    }
+
+                    $data['Average High Temperature'] = isset($growth['temp']['high']) ? $growth['temp']['high'] : NULL;
+                    $data['Average Low Temperature'] = isset($growth['temp']['low']) ? $growth['temp']['low'] : NULL;
+
+                    if (isset($root['option'])){
+                        $rooting_options = array(
+                          1 => 'Aeroponics',
+                          2 => 'Hydroponics',
+                          3 => 'Soil',
+                        );
+                        if (isset($rooting_options[$growth['rooting']['option']])){
+                            $data['Rooting Type'] = $rooting_options[$growth['rooting']['option']];
+                        }
+
+                        if (isset($data['Rooting Type']) and $data['Rooting Type'] == 'Soil'){
+                            $soil_options = array(
+                              1 => 'Sand',
+                              2 => 'Peat',
+                              3 => 'Clay',
+                              4 => 'Mixed',
+                              5 => 'Other'
+                            );
+                            if (isset($soil_options[$root['soil']['type']])){
+                                $data['Soil Type'] = $soil_options[$root['soil']['type']];
+                            }
+
+                            if (isset($data['Soil Type']) and $data['Soil Type'] == 'Other'){
+                                $data['Custom Soil Type'] = $root['soil']['other'];
+                            }
+
+                            $data['Soil Container Type'] = isset($root['soil']['container']) ? $root['soil']['container'] : NULL;
+                        }
+                    }
+
+                    if (isset($root['ph']['option']) and $root['ph']['option']){
+                        $data['pH Control'] = 'Controlled';
+                        $data['pH Value'] = isset($root['ph']['controlled']) ? $root['ph']['controlled'] : NULL;
+                    }
+                    else {
+                        $data['pH Control'] = 'Uncontrolled';
+                        $data['pH Value'] = isset($root['ph']['uncontrolled']) ? $root['ph']['uncontrolled'] : NULL;
+                    }
+
+                    if (isset($treatment)){
+                        $selected = false;
+                        $description = false;
+
+                        foreach ($treatment as $field => $value){
+                            if (!$description){
+                                $description = true;
+                                $selected = $value;
+                                continue;
+                            }
+                            elseif ($selected == '1'){
+                                $treatment_name = substr($field, 0, -12);
+                                $data["Treatment: $treatment_name description"] = isset($value) ? $value : NULL;
+                            }
+                            $description = false;
+                        }
+                    }
+                }
+                break;
+                
+            case 3:
+                if (isset($page_2['greenhouse'])){
+                    $green = &$page_2['greenhouse'];
+                    $root = &$green['rooting'];
+                    $treatment = &$root['treatment'];
+
+                    if (isset($green['humidityControl']['option']) and $green['humidityControl']['option'] and $green['humidityControl']['option'] == '1'){
+                        $data['Humidity Control'] = 'Controlled';
+                        $data['Humidity Value'] = isset($green['humidityControl']['controlled']) ? $green['humidityControl']['controlled']: NULL;
+                    }
+                    elseif (isset($green['humidityControl']['option']) and $green['humidityControl']['option']){
+                        $data['Humidity Control'] = 'Uncontrolled';
+                    }
+
+                    if (isset($green['lightControl']['option']) and $green['lightControl']['option'] and $green['lightControl']['option'] == '1'){
+                        $data['Light Intensity Control'] = 'Controlled';
+                        $data['Light Intensity Value'] = isset($green['lightControl']['controlled']) ? $green['lightControl']['controlled']: NULL;
+                    }
+                    elseif (isset($green['lightControl']['option']) and $green['lightControl']['option']){
+                        $data['Light Intensity Control'] = 'Uncontrolled';
+                    }
+
+                    $data['Average High Temperature'] = isset($green['temp']['high']) ? $green['temp']['high'] : NULL;
+                    $data['Average Low Temperature'] = isset($green['temp']['low']) ? $green['temp']['low'] : NULL;
+
+                    if (isset($root['option'])){
+                        $rooting_options = array(
+                          1 => 'Aeroponics',
+                          2 => 'Hydroponics',
+                          3 => 'Soil',
+                        );
+                        if (isset($rooting_options[$green['rooting']['option']])){
+                            $data['Rooting Type'] = $rooting_options[$green['rooting']['option']];
+                        }
+
+                        if (isset($data['Rooting Type']) and $data['Rooting Type'] == 'Soil'){
+                            $soil_options = array(
+                              1 => 'Sand',
+                              2 => 'Peat',
+                              3 => 'Clay',
+                              4 => 'Mixed',
+                              5 => 'Other'
+                            );
+                            if (isset($soil_options[$root['soil']['type']])){
+                                $data['Soil Type'] = $soil_options[$root['soil']['type']];
+                            }
+
+                            if (isset($data['Soil Type']) and $data['Soil Type'] == 'Other'){
+                                $data['Custom Soil Type'] = $root['soil']['other'];
+                            }
+
+                            $data['Soil Container Type'] = isset($root['soil']['container']) ? $root['soil']['container'] : NULL;
+                        }
+                    }
+
+                    if (isset($root['ph']['option']) and $root['ph']['option']){
+                        $data['pH Control'] = 'Controlled';
+                        $data['pH Value'] = isset($root['ph']['controlled']) ? $root['ph']['controlled'] : NULL;
+                    }
+                    else {
+                        $data['pH Control'] = 'Uncontrolled';
+                    }
+
+                    if (isset($treatment)){
+                        $selected = false;
+                        $description = false;
+
+                        foreach ($treatment as $field => $value){
+                            if (!$description){
+                                $description = true;
+                                $selected = $value;
+                                continue;
+                            }
+                            elseif ($selected == '1'){
+                                $treatment_name = substr($field, 0, -12);
+                                $data["Treatment: $treatment_name description"] = isset($value) ? $value : NULL;
+                            }
+                            $description = false;
+                        }
+                    }
+                }
+                break;
+                
+            case 4:
+                if (isset($page_2['commonGarden'])){
+                    $garden = &$page_2['commonGarden'];
+
+                    if (isset($garden['irrigation']['option']) and $garden['irrigation']['option']){
+                        $irrigation_options = array(
+                          1 => 'Irrigation from top',
+                          2 => 'Irrigation from bottom',
+                          3 => 'Drip Irrigation',
+                          4 => 'Other',
+                          5 => 'No Irrigation',
+                        );
+                        if (isset($irrigation_options[$garden['irrigation']['option']])){
+                            $data['Irrigation Type'] = $irrigation_options[$garden['irrigation']['option']];
+                        }
+
+                        if (isset($data['Irrigation Type']) and $data['Irrigation Type'] == 'Other'){
+                            $data['Custom Irrigation Type'] = $garden['irrigation']['other'];
+                        }
+                    }
+
+                    if (isset($garden['salinity']['option']) and $garden['salinity']['option'] and $garden['salinity']['option'] == '1'){
+                        $data['Salinity Control'] = 'Controlled';
+                        $data['Salinity Value'] = isset($garden['salinity']['controlled']) ? $garden['salinity']['controlled']: NULL;
+                    }
+                    elseif (isset($garden['salinity']['option']) and $garden['salinity']['option']){
+                        $data['Salinity Control'] = 'Uncontrolled';
+                        $data['Salinity Value'] = isset($garden['salinity']['uncontrolled']) ? $garden['salinity']['uncontrolled']: NULL;
+                    }
+
+                    $biotic_envs = array();
+                    foreach ($garden['bioticEnv']['option'] as $key => $val){
+                        if ($val){
+                            $biotic_envs[] = $key;
+                        }
+                    }
+                    $data['Biotic Environment'] = (isset($biotic_envs) and count($biotic_envs) > 1) ? implode(', ', $biotic_envs) : NULL;
+
+                    if (isset($garden['bioticEnv']['option']['Other']) and $garden['bioticEnv']['option']['Other'] and isset($garden['bioticEnv']['other']) and $garden['bioticEnv']['other'] != ''){
+                        $data['Custom Biotic Environment'] = $garden['bioticEnv']['other'];
+                    }
+
+                    $seasons = array();
+                    foreach ($garden['season'] as $key => $item){
+                        if (isset($item) and $item != '0'){
+                            $seasons[] = $item;
+                        }
+                    }
+                    $data['Seasons Assessed'] = (isset($seasons) and count($seasons) > 1) ? implode(', ', $seasons) : NULL;
+
+                    if (isset($garden['treatment']['check']) and $garden['treatment']['check']){
+                        $treatment = &$garden['treatment'];
+                        $selected = false;
+                        $description = false;
+
+                        foreach ($treatment as $field => $value){
+                            if ($field != 'check'){
+                                if (!$description){
+                                    $description = true;
+                                    $selected = $value;
+                                    continue;
+                                }
+                                elseif (isset($selected) and $selected == '1'){
+                                    $treatment_name = substr($field, 0, -12);
+                                    $data["Treatment: $treatment_name description"] = $value;
+                                }
+                                $description = false;
+                            }
+                        }
+                    }
+                }
+                break;
+                
+            case 5:
+                if (isset($page_2['plantation'])){
+                    $plant = &$page_2['naturalPopulation'];
+                    $data['Seasons Assessed'] = '';
+                    foreach ($plant['season'] as $key => $item){
+                        if (isset($item) and $item != '0'){
+                            $data['Seasons Assessed'] .= $item . ' ';
+                        }
+                    }
+                    
+                    if (isset($plant['assessions']) and $plant['assessions']){
+                        $data['Average number of assessions'] = $plant['assessions'];
+                    }
+                    
+                    if (isset($plant['treatment']['check']) and $plant['treatment']['check']){
+                        $treatment = &$plant['treatment'];
+                        $selected = false;
+                        $description = false;
+
+                        foreach ($treatment as $field => $value){
+                            if ($field != 'check'){
+                                if (!$description){
+                                    $description = true;
+                                    $selected = $value;
+                                    continue;
+                                }
+                                elseif (isset($selected) and $selected == '1'){
+                                    $treatment_name = substr($field, 0, -12);
+                                    $data["Treatment: $treatment_name description"] = $value;
+                                }
+                                $description = false;
+                            }
+                        }
+                    }
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+    unset($data['secondPage']);
+    
+    $page_3 = &$data['thirdPage'];
+    
+    if (isset($page_3['#cleared']) and $page_3['#cleared']){
+        $data['#page_3_cleared'] = TRUE;
+    }
+    else {
+        $data['#page_3_cleared'] = FALSE;
+    }
+    $page_3 = &$data['thirdPage']['tree-accession'];
+    if (isset($page_3['check']) and $page_3['check']){
+        for ($i = 1; $i <= $data['#number_organisms']; $i++){
+            if (isset($page_3["species-$i"]['file']) and $page_3["species-$i"]['file']){
+                $organism_name = $data["Species $i"];
+                $data["$organism_name Accession File"] = $page_3["species-$i"]['file'];
+            }
+        }
+    }
+    elseif (isset($page_3['file']) and $page_3['file']){
+        $data['Tree Accession File'] = $page_3['file'];
+    }
+    unset($data['thirdPage']);
+    
+    $page_4 = &$data['fourthPage'];
+    
+    if (isset($page_4['#cleared']) and $page_4['#cleared']){
+        $data['#page_4_cleared'] = TRUE;
+    }
+    else {
+        $data['#page_4_cleared'] = FALSE;
+    }
+    for ($i = 1; $i <= $data['#number_organisms']; $i++){
+        if (isset($page_4["organism-$i"])){
+            $org = &$page_4["organism-$i"];
+            $org_name = isset($data["Species $i"]) ? $data["Species $i"] : NULL;
+            
+            if (isset($org['phenotype'])){
+                $pheno = &$org['phenotype'];
+                
+                if (isset($pheno['number'])){
+                    $data['#number_phenotypes'] = $pheno['number'];
+                    for ($j = 1; $j < $data['#number_phenotypes']; $j++){
+                        $fields = array(
+                          'name' => 'Name',
+                          'attribute' => 'Attribute',
+                          'description' => 'Description',
+                          'units' => 'Units'
+                        );
+                        if (isset($pheno["$j"]['struct-check']) and $pheno["$j"]['struct-check']){
+                            $fields['structure'] = 'Structure';
+                        }
+                        if (isset($pheno["$j"]['val-check']) and $pheno["$j"]['val-check']){
+                            $fields['min'] = 'Minimum Value';
+                            $fields['max'] = 'Maximum Value';
+                        }
+                        
+                        foreach ($fields as $field => $field_string){
+                            if (isset($pheno["$j"][$field]) and $pheno["$j"][$field] != ''){
+                                $data["$org_name Phenotype $j $field_string"] = $pheno[$j][$field];
+                            }
+                        }
+                    }
+                }
+                
+                if (isset($pheno['check']) and $pheno['check'] and isset($pheno['metadata']) and $pheno['metadata']){
+                    $data["$org_name Phenotype Metadata File"] = $pheno['metadata'];
+                }
+                
+                if (isset($pheno['file']) and $pheno['file']){
+                    $data["$org_name Phenotype File"] = $pheno['file'];
+                }
+            }
+            
+            if (isset($org['genotype'])){
+                $geno = &$org['genotype'];
+                $file_type = &$geno['file-type'];
+                
+                $marker_types = array();
+                foreach ($geno['marker-type'] as $key => $val){
+                    if ($val){
+                        $marker_types[] = $key;
+                    }
+                }
+                $data["$org_name Genotype Marker Types"] = isset($marker_types) ? implode(', ', $marker_types) : NULL;
+                
+                if (isset($geno['marker-type']['SNPs']) and $geno['marker-type']['SNPs']){
+                    $snp = $geno['SNPs'];
+                    if (isset($snp['genotyping-design']) and $snp['genotyping-design']){
+                        $geno_design_options = array(
+                          1 => 'GBS',
+                          2 => 'Targeted Capture',
+                          3 => 'Whole Genome Resequencing',
+                          4 => 'RNA-Seq',
+                          5 => 'Genotyping Array'
+                        );
+                        if (isset($geno_design_options[$snp['genotyping-design']])){
+                            $data["$org_name Genotyping Design"] = $geno_design_options[$snp['genotyping-design']];
+                        }
+                        
+                        if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'GBS' and isset($snp['GBS']) and $snp['GBS']){
+                            $gbs_options = array(
+                              1 => 'RADSeq',
+                              2 => 'ddRAD-Seq',
+                              3 => 'NextRAD',
+                              4 => 'RAPTURE',
+                              5 => 'Other'
+                            );
+                            if (isset($gbs_options[$snp['GBS']])){
+                                $data["$org_name GBS Type"] = $gbs_options[$snp['GBS']];
+                            }
+                            
+                            if (isset($data["$org_name GBS Type"]) and $data["$org_name GBS Type"] == 'Other' and isset($snp['GBS-other']) and $snp['GBS-other'] != ''){
+                                $data["$org_name Custom GBS Type"] = $snp['GBS-other'];
+                            }
+                        }
+                        
+                        if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'Targeted Capture' and isset($snp['targeted-capture']) and $snp['targeted-capture']){
+                            $targeted_capture_options = array(
+                              1 => 'Exome Capture',
+                              2 => 'Other'
+                            );
+                            if (isset($targeted_capture_options[$snp['targeted-capture']])){
+                                $data["$org_name Targeted Capture Type"] = $targeted_capture_options[$snp['targeted-capture']];
+                            }
+                            
+                            if (isset($data["$org_name Targeted Capture Type"]) and $data["$org_name Targeted Capture Type"] == 'Other' and isset($snp['targeted-capture-other']) and $snp['targeted-capture-other'] != ''){
+                                $data["$org_name Custom Targeted Capture Type"] = $snp['targeted-capture-other'];
+                            }
+                        }
+                    }
+                }
+                if (isset($geno['marker-type']['SSRs/cpSSRs']) and $geno['marker-type']['SSRs/cpSSRs'] and isset($geno['SSRs/cpSSRs']) and $geno['SSRs/cpSSRs'] != ''){
+                    $data["$org_name SSRs/cpSSRs Type"] = $geno['SSRs/cpSSRs'];
+                }
+                if (isset($geno['marker-type']['Other']) and $geno['marker-type']['Other'] and isset($geno['other-marker']) and $geno['other-marker'] != ''){
+                    $data["$org_name Other Marker Type"] = $geno['other-marker'];
+                }
+                
+                if (isset($geno['ref-genome']) and $geno['ref-genome'] === 'url' and isset($geno['ref-genome-other']) and $geno['ref-genome-other'] != ''){
+                    $data["$org_name Website of reference file"] = $geno['ref-genome-other'];
+                }
+                elseif (isset($geno['ref-genome']) and $geno['ref-genome'] === 'bio' and isset($geno['BioProject-id']) and $geno['BioProject-id'] != ''){
+                    $data["$org_name BioProject Id"] = $geno['BioProject-id'];
+                    
+                    if (isset($geno['assembly-auto']) and gettype($geno['assembly-auto']) === 'array'){
+                        $count = 1;
+                        foreach ($geno['assembly-auto'] as $id => $check){
+                            if (isset($check) and $check){
+                                $data["$org_name Linked Accession $count"] = $id;
+                                $count++;
+                            }
+                        }
+                    }
+                }
+                elseif (isset($geno['ref-genome']) and ($geno['ref-genome'] === 'manual' or $geno['ref-genome'] === 'manual2') and isset($geno['assembly-user']) and $geno['assembly-user']){
+                    $data["$org_name Reference File"] = $geno['assembly-user'];
+                }
+                elseif (isset($geno['ref-genome']) and $geno['ref-genome']){
+                    $data["$org_name Reference Genome"] = $geno['ref-genome'];
+                }
+                
+                if (isset($file_type['Genotype Assay']) and $file_type['Genotype Assay'] and isset($geno['file']) and $geno['file']){
+                    $data["$org_name Genotype Assay File"] = $geno['file'];
+                }
+                
+                if (isset($file_type['Assay Design']) and $file_type['Assay Design'] and isset($geno['assay-design']) and $geno['assay-design']){
+                    $data["$org_name Genotype Assay Design File"] = $geno['assay-design'];
+                }
+                
+                if (isset($file_type['VCF']) and $file_type['VCF'] and isset($geno['vcf']) and $geno['vcf']){
+                    $data["$org_name Genotype VCF File"] = $geno['vcf'];
+                }
+            }
+        }
+    }
+    unset($data['fourthPage']);
+    
+    $data['#dbxref_id'] = isset($state['dbxref_id']) ? $state['dbxref_id'] : NULL;
+    $data['#accession'] = isset($state['accession']) ? $state['accession'] : NULL;
+    $data['#status'] = isset($state['status']) ? $state['status'] : NULL;
+    
+    foreach ($data as $key => $val){
+        if (!isset($val) or $val === ''){
+            unset($data[$key]);
+        }
+    }
+    
+    return $data;
+}
+
 function tpps_init_project($form, &$form_state){
     
     //Get next dbxref_id and accession # for project
@@ -1021,7 +1613,18 @@ function tpps_create_record($table, array $values){
     $default_fields = array();
     $insert = NULL;
     
-    if (!$is_multi){
+    if ($is_multi){
+        $unique_columns = tpps_get_unique_columns($table);
+        foreach ($values as $key => $record){
+            if (($existing_key = tpps_record_exists($table, $record, $unique_columns))){
+                unset($values[$key]);
+            }
+        }
+        if ($values == array()){
+            return;
+        }
+    }
+    else{
         //check record exists
         if (($existing_key = tpps_record_exists($table, $values))){
             //if it does, do not attempt to re-write it.
@@ -1292,6 +1895,71 @@ function tpps_standard_coord($raw_coordinate){
     }
 }
 
+function tpps_file_validate_columns(&$form_state, $required_groups, $file_element){
+    $cols = $file_element['#value']['columns'];
+    
+    $parents = $file_element['#parents'];
+    $new_end = end($parents) . "-columns";
+    $group_path = array_pop($parents) . "-groups";
+    $values = &$form_state['values'];
+    foreach ($parents as $item){
+        $values = &$values[$item];
+    }
+    //initialize form column values in form state
+    $values[$new_end] = array();
+    //hold onto the location of the columns in form state
+    $state_column_values = &$values[$new_end];
+    
+    $error_parts = explode(':', $file_element['#title']);
+    $error_prompt = $error_parts[0];
+    
+    $groups = array();
+    $required_groups_flat = array();
+    foreach($required_groups as $group => $combinations){
+        $groups[$group] = array();
+        $required_groups_flat[$group] = array();
+        foreach ($combinations as $name => $combination){
+            $required_groups_flat[$group] = array_merge($required_groups_flat[$group], $combination);
+        }
+    }
+    
+    foreach ($cols as $name => $type){
+        $state_column_values[$name] = $type;
+        foreach ($required_groups_flat as $group => $types){
+            if (in_array($type, $types)){
+                $groups[$group][$type] = $name;
+                break;
+            }
+        }
+    }
+    
+    foreach($required_groups as $group => $combinations){
+        $group_valid = FALSE;
+        foreach ($combinations as $name => $combination){
+            $combination_valid = TRUE;
+            foreach ($combination as $type){
+                if (!isset($groups[$group][$type])){
+                    $combination_valid = FALSE;
+                    break;
+                }
+            }
+            if ($combination_valid){
+                $groups[$group]['#type'] = $name;
+                $group_valid = TRUE;
+                break;
+            }
+        }
+        
+        if (!$group_valid){
+            form_set_error($file_element['#name'] . "[columns][$group", "$error_prompt: Please specify a column or columns that hold $group.");
+        }
+    }
+    
+    $values[$group_path] = $groups;
+    
+    return $groups;
+}
+
 function tpps_page_build(&$page){
     
     //dpm($page['content']['system_main']['step']['#default_value']);
@@ -1421,6 +2089,9 @@ function tpps_master($form, &$form_state){
                         margin: 10px 10px 10px 0px;
                 }
                 
+                a.fieldset-title {
+                        display: contents;
+                }
 	</style>';
 	$form['#prefix'] .= '<div class="tgdr_form_status">';
 	
@@ -1771,7 +2442,7 @@ function tpps_master_submit($form, &$form_state){
                 $form_state['status'] = 'Pending Approval';
                 variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
                 tpps_submit_email($form, $form_state);
-                drupal_goto('<front>');
+                //drupal_goto('<front>');
                 return;
             }
             break;
@@ -2007,8 +2678,8 @@ function submit_all(&$form_state){
     
     $landing_page_species = "";
     for ($i = 1; $i <= $organism_number; $i++){
-        $landing_page_species .= $firstpage['organism'][$i]['species'] . ", ";
-        $parts = explode(" ", $firstpage['organism'][$i]['species']);
+        $landing_page_species .= $firstpage['organism'][$i] . ", ";
+        $parts = explode(" ", $firstpage['organism'][$i]);
         $genus = $parts[0];
         $species = implode(" ", array_slice($parts, 1));
         if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')){
@@ -2721,15 +3392,12 @@ function submit_all(&$form_state){
             foreach ($column_vals as $col => $val){
                 if ($val == '6'){
                     $genus_col_name = $col;
-                    break;
                 }
-            }
-            
-            //get species column
-            foreach ($column_vals as $col => $val){
                 if ($val == '7'){
                     $species_col_name = $col;
-                    break;
+                }
+                if ($val == '10'){
+                    $org_col_name = $col;
                 }
             }
             
@@ -2738,7 +3406,7 @@ function submit_all(&$form_state){
                 $tree_id = $content[$i][$id_col_accession_name];
                 for ($j = 1; $j <= $organism_number; $j++){
                     //match genus and species to genus and species given on page 1
-                    if ($firstpage['organism'][$j]['species'] == "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}"){
+                    if ($firstpage['organism'][$j] == "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}" or $firstpage['organism'][$j] == "{$content[$i][$org_col_name]}"){
                         //obtain organism id from matching species
                         $id = $organism_ids[$j];
                         break;
@@ -2813,11 +3481,11 @@ function submit_all(&$form_state){
     }
     else {
         //multiple files, sorted by species
-        for($i = 0; $i < $organism_number; $i++){
+        for($i = 1; $i <= $organism_number; $i++){
             $tree_accession_id = tpps_create_record('projectprop', array(
               'project_id' => $project_id,
               'type_id' => '2836',
-              'value' => file_create_url(file_load($thirdpage['tree-accession']["species-$i"]['file'])->uri),
+              'value' => drupal_realpath(file_load($thirdpage['tree-accession']["species-$i"]['file'])->uri),
               'rank' => $file_rank
             ));
             
@@ -2917,414 +3585,13 @@ function submit_all(&$form_state){
         ));
     }
     
+    $form_state['file_rank'] = $file_rank;
+    
     /***************************
      * Fourth Page submissions *
      ***************************/
     
-    $phenotype_assessed = 0;
-    for ($i = 1; $i <= $organism_number; $i++){
-        
-        if (isset($fourthpage["organism-$i"]['phenotype'])){
-            $phenotype = $fourthpage["organism-$i"]['phenotype'];
-            $phenotype_number = $phenotype['number'];
-            $phenotype_assessed += $phenotype_number;
-            $phenotype_ids = array();
-            $phenotypeprop_ids = array();
-            $phenotypes_meta = array();
-            
-            $phenotype_file_id = tpps_create_record('projectprop', array(
-              'project_id' => $project_id,
-              'type_id' => '2836',
-              'value' => file_create_url(file_load($phenotype['file'])->uri),
-              'rank' => $file_rank
-            ));
-            $phenotype_file = file_load($phenotype['file']);
-            $file_rank++;
-            
-            for ($j = 1; $j <= $phenotype_number; $j++){
-                $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
-                $phenotypes_meta[$name] = array();
-                $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
-                $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
-                $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
-                if ($phenotype['phenotypes-meta'][$j]['struct-check'] == '1'){
-                    $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
-                }
-                if ($phenotype['phenotypes-meta'][$j]['val-check'] == '1'){
-                    $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
-                    $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
-                }
-            }
-            
-            if ($phenotype['check'] == '1'){
-                $phenotype_meta_file_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '2836',
-                  'value' => file_create_url(file_load($phenotype['metadata'])->uri),
-                  'rank' => $file_rank
-                ));
-                $file = file_load($phenotype['metadata']);
-                $location = drupal_realpath($file->uri);
-                $content = parse_xlsx($location);
-                $column_vals = $phenotype['metadata-columns'];
-                
-                foreach ($column_vals as $col => $val){
-                    if ($val == '1'){
-                        $phenotype_name = $col;
-                    }
-                    if ($val == '2'){
-                        $phenotype_attr = $col;
-                    }
-                    if ($val == '3'){
-                        $phenotype_desc = $col;
-                    }
-                    if ($val == '4'){
-                        $phenotype_unit = $col;
-                    }
-                    if ($val == '5'){
-                        $phenotype_struct = $col;
-                    }
-                    if ($val == '6'){
-                        $phenotype_min = $col;
-                    }
-                    if ($val == '7'){
-                        $phenotype_max = $col;
-                    }
-                }
-                
-                for ($j = 0; $j < count($content) - 1; $j++){
-                    $name = strtolower($content[$j][$phenotype_name]);
-                    $phenotypes_meta[$name] = array();
-                    $phentoypes_meta[$name]['attr'] = $content[$j][$phenotype_attr];
-                    $phentoypes_meta[$name]['desc'] = $content[$j][$phenotype_desc];
-                    $phentoypes_meta[$name]['unit'] = $content[$j][$phenotype_unit];
-                    if (isset($phenotype_struct) and isset($content[$j][$phenotype_struct]) and $content[$j][$phenotype_struct] != ''){
-                        $phenotypes_meta[$name]['struct'] = $content[$j][$phenotype_struct];
-                    }
-                    if (isset($phenotype_min) and isset($content[$j][$phenotype_min]) and $content[$j][$phenotype_min] != ''){
-                        $phenotypes_meta[$name]['min'] = $content[$j][$phenotype_min];
-                    }
-                    if (isset($phenotype_max) and isset($content[$j][$phenotype_max]) and $content[$j][$phenotype_max] != ''){
-                        $phenotypes_meta[$name]['max'] = $content[$j][$phenotype_max];
-                    }
-                    $phenotype_assessed ++;
-                }
-                
-                $file->status = FILE_STATUS_PERMANENT;
-                $file = file_save($file);
-                $file_rank++;
-            }
-            
-            $location = drupal_realpath($phenotype_file->uri);
-            $content = parse_xlsx($location);
-            $column_vals = $phenotype['file-columns'];
-
-            foreach ($column_vals as $col => $val){
-                if ($val == '1'){
-                    $tree_id_col = $col;
-                }
-                if ($val == '2'){
-                    $phenotype_name = $col;
-                }
-                if ($val == '3'){
-                    $phenotype_val = $col;
-                }
-            }
-
-            for ($j = 0; $j < count($content) - 1; $j++){
-                $name = strtolower($content[$j][$phenotype_name]);
-                $value = $content[$j][$phenotype_val];
-                $stock_unique = $content[$j][$tree_id_col];
-                
-                $attr = db_select('chado.cvterm', 'c')
-                    ->fields('c', array('cvterm_id'))
-                    ->condition('c.name', db_like($phenotypes_meta[$name]['attr']), 'LIKE')
-                    ->execute()
-                    ->fetchAssoc();
-                $attr_id = $attr['cvterm_id'];
-                if (!isset($attr_id) or $attr_id == ''){
-                    $attr_id = tpps_custom_cvterm($phenotypes_meta[$name]['attr'], '');
-                }
-                
-                if (isset($phenotypes_meta[$name]['struct'])){
-                    $obs = db_select('chado.cvterm', 'c')
-                        ->fields('c', array('cvterm_id'))
-                        ->condition('c.name', db_like($phenotypes_meta[$name]['struct']), 'LIKE')
-                        ->execute()
-                        ->fetchAssoc();
-                    $observable_id = $obs['cvterm_id'];
-
-                    if (!isset($observable_id) or $observable_id == ''){
-                        $observable_id = tpps_custom_cvterm($phenotypes_meta[$name]['struct'], '');
-                    }
-
-                }
-                else {
-                    $observable_id = NULL;
-                }
-                
-                $phenotype_ids[] = tpps_create_record('phenotype', array(
-                  'uniquename' => "$stock_unique-$name-$j",
-                  'name' => $name,
-                  'attr_id' => $attr_id,
-                  'observable_id' => $observable_id,
-                  'value' => $value
-                ));
-                
-                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
-                  'phenotype_id' => end($phenotype_ids),
-                  'type_id' => '2871',
-                  'value' => $phenotypes_meta[$name]['desc']
-                ));
-                
-                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
-                  'phenotype_id' => end($phenotype_ids),
-                  'type_id' => '2883',
-                  'value' => $phenotypes_meta[$name]['unit']
-                ));
-                
-                if (isset($phenotypes_meta[$name]['min'])){
-                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
-                      'phenotype_id' => end($phenotype_ids),
-                      'type_id' => '52214',
-                      'value' => $phenotypes_meta[$name]['min']
-                    ));
-                }
-                
-                if (isset($phenotypes_meta[$name]['max'])){
-                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
-                      'phenotype_id' => end($phenotype_ids),
-                      'type_id' => '52213',
-                      'value' => $phenotypes_meta[$name]['max']
-                    ));
-                }
-            }
-            
-            $phenotype_file->status = FILE_STATUS_PERMANENT;
-            $phenotype_file = file_save($phenotype_file);
-        }
-        
-        if (isset($fourthpage["organism-$i"]['genotype'])){
-            $genotype = $fourthpage["organism-$i"]['genotype'];
-            $genotype_count = 0;
-            
-            if ($genotype['ref-genome'] == 'url'){
-                $reference_genome_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '1912',
-                  'value' => $genotype['ref-genome-other']
-                ));
-            }
-            elseif ($genotype['ref-genome'] == 'bio'){
-                
-                $bioproject_id = tpps_create_record('dbxref', array(
-                  'db_id' => '176',
-                  'accession' => $genotype['BioProject-id']
-                ));
-                
-                $project_dbxref_id = tpps_create_record('project_dbxref', array(
-                  'project_id' => $project_id,
-                  'dbxref_id' => $bioproject_id,
-                ));
-                
-                $bioproject_assembly_file_ids = array();
-                foreach ($genotype['assembly-auto'] as $key => $val){
-                    if ($val == '1'){
-                        array_push($bioproject_assembly_file_ids, tpps_create_record('projectprop', array(
-                          'project_id' => $project_id,
-                          'type_id' => '2836',
-                          'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$key",
-                          'rank' => $file_rank
-                        )));
-                        $file_rank++;
-                    }
-                }
-            }
-            elseif ($genotype['ref-genome'] == 'manual'){
-                $assembly_user = $genotype['assembly-user'];
-                $assembly_user_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '2836',
-                  'value' => file_create_url(file_load($assembly_user)->uri),
-                  'rank' => $file_rank
-                ));
-                $file = file_load($assembly_user);
-                $file->status = FILE_STATUS_PERMANENT;
-                $file = file_save($file);
-                $file_rank++;
-            }
-            else {
-                $reference_genome_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '1912',
-                  'value' => $genotype['ref-genome']
-                ));
-            }
-            
-            if ($genotype['marker-type']['SSRs/cpSSRs'] != '0' or $genotype['marker-type']['Other'] != '0'){
-                $genotype_file_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '2836',
-                  'value' => file_create_url(file_load($genotype['file'])->uri),
-                  'rank' => $file_rank
-                ));
-                $file = file_load($genotype['file']);
-                $file->status = FILE_STATUS_PERMANENT;
-                $file = file_save($file);
-                $file_rank++;
-            }
-                
-            if ($genotype['marker-type']['SNPs'] != '0'){
-                $genotype_vcf_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '2836',
-                  'value' => file_create_url(file_load($genotype['vcf'])->uri),
-                  'rank' => $file_rank
-                ));
-                
-                $current_id = $organism_ids[$i];
-                $and = db_and()
-                    ->condition('type_id', '52307')
-                    ->condition('organism_id', "$current_id");
-                $species_code = db_select('chado.organismprop', 'o')
-                    ->fields('o', array('value'))
-                    ->condition($and)
-                    ->execute()
-                    ->fetchAssoc();
-                $species_code = $species_code['value'];
-                $marker = 'SNP';
-                
-                $vcf_file = file_load($genotype['vcf']);
-                $location = drupal_realpath($vcf_file->uri);
-                $vcf_content = fopen($vcf_file->uri, 'r');
-                
-                //inserts are WAY faster when done as a group, but require a lot of memory
-                $genotype_vals = array();
-                $genotypeprop_vals = array();
-                $format = "";
-                $first = TRUE;
-                
-                //dpm('start: ' . date('r'));
-                while (($vcf_line = fgets($vcf_content)) !== FALSE){
-                    if ($vcf_line[0] != '#'){
-                        $genotype_count++;
-                        $vcf_line = explode("\t", $vcf_line);
-                        $scaffold_id = &$vcf_line[0];
-                        $position = &$vcf_line[1];
-                        $ref = &$vcf_line[3];
-                        $alt = &$vcf_line[4];
-                        $qual = &$vcf_line[5];
-                        $filter = &$vcf_line[6];
-                        $info = &$vcf_line[7];
-                        
-                        $description = "$ref:$alt";
-                        
-                        $part = memory_get_usage() / $memory_limit;
-                        //check memory usage, compare to memory limit - if more than 15% is being used, insert what we have so far, then make a new query
-                        if ($part >= .15){
-                            tpps_create_record('genotype', $genotype_vals);
-                            $genotype_vals = array();
-                            tpps_create_record('genotypeprop', $genotypeprop_vals);
-                            $genotypeprop_vals = array();
-                        }
-                        
-                        $genotype_vals[] = array(
-                          'name' => "$marker-$species_code-$scaffold_id-$position",
-                          'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
-                          'description' => $description,
-                          'type_id' => '1205'
-                        );
-                        
-                        if ($first){
-                            $first = FALSE;
-                            $genotype_id = tpps_create_record('genotype', $genotype_vals[0]);
-                            $genotype_vals = array();
-                        }
-                        
-                        if ($format != ""){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '52197',
-                              'value' => $format,
-                            );
-                        }
-                        
-                        //quality score
-                        $genotypeprop_vals[] = array(
-                          'genotype_id' => $genotype_id,
-                          'type_id' => '2079',
-                          'value' => $qual
-                        );
-                        
-                        //filter: pass/fail
-                        $genotypeprop_vals[] = array(
-                          'genotype_id' => $genotype_id,
-                          'type_id' => '52008',
-                          'value' => ($filter == '.') ? "P" : "NP"
-                        );
-                        
-                        //break up info column
-                        $info_vals = explode(";", $info);
-                        foreach($info_vals as $key => $val){
-                            $parts = explode("=", $val);
-                            unset($info_vals[$key]);
-                            $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
-                        }
-                        
-                        //allele frequency, assuming that the info code for allele frequency is 'AF'
-                        if (isset($info_vals['AF']) and $info_vals['AF'] != ''){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '2496',
-                              'value' => $info_vals['AF']
-                            );
-                        }
-                        
-                        //depth coverage, assuming that the info code for depth coverage is 'DP'
-                        if (isset($info_vals['DP']) and $info_vals['DP'] != ''){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '52046',
-                              'value' => $info_vals['DP']
-                            );
-                        }
-                        
-                        //number of samples, assuming that the info code for number of samples is 'NS'
-                        if (isset($info_vals['NS']) and $info_vals['NS'] != ''){
-                            $genotypeprop_vals[] = array(
-                              'genotype_id' => $genotype_id,
-                              'type_id' => '128971',
-                              'value' => $info_vals['NS']
-                            );
-                        }
-                        
-                        $genotype_id++;
-                    }
-                    elseif (preg_match('/##FORMAT=/', $vcf_line)) {
-                        $format .= substr($vcf_line, 9, -1);
-                    }
-                }
-                //insert the last set of values
-                tpps_create_record('genotype', $genotype_vals);
-                tpps_create_record('genotypeprop', $genotypeprop_vals);
-                unset($genotype_vals);
-                unset($genotypeprop_vals);
-                //dpm('done: ' . date('r'));
-                $vcf_file->status = FILE_STATUS_PERMANENT;
-                $vcf_file = file_save($vcf_file);
-                $file_rank++;
-            }
-            
-            //TPPS currently doesn't have permissions for this table
-//            db_insert('chado.project_genotype_count')
-//                ->fields(array(
-//                  'project_id' => $project_id,
-//                  'count' => $genotype_count
-//                ))
-//                ->execute();
-        }
-    }
-    
+    //for simplicity and efficiency, all fourth page submissions take place in the TPPS File Parsing Tripal Job
 }
 
 function tpps_refresh_landing_page(){
@@ -3502,7 +3769,7 @@ function parse_xlsx($location){
     //modified from https://gist.github.com/searbe/3284011
     
     $content = array();
-    $dir = drupal_realpath("public://");
+    $dir = drupal_realpath("public://tpps_xlsx");
     
     $zip = new ZipArchive();
     $zip->open($location);
@@ -3850,15 +4117,447 @@ function tpps_admin_panel_submit($form, &$form_state){
         drupal_goto('<front>');
     }
     else{
+        global $user;
+        $uid = $user->uid;
+        $includes = array();
+        $includes[] = module_load_include('module', 'tpps');
+        
         $params['subject'] = "TPPS Submission Approved: {$state['saved_values']['Hellopage']['publication']['title']}";
         $params['accession'] = $state['accession'];
         
         $state['status'] = 'Approved';
         variable_set($var_name, $state);
         submit_all($state);
+        $args = array($state);
+        $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
+        $state['job_id'] = $jid;
+        
         dpm('Submission Approved! Message has been sent to user.');
         drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
     }
+}
+
+function tpps_file_parsing($form_state){
+    
+    $fourthpage = $form_state['saved_values']['fourthPage'];
+    $firstpage = $form_state['saved_values']['Hellopage'];
+    $organism_number = $firstpage['organism']['number'];
+    $organism_ids = array();
+    $file_rank = $form_state['file_rank'];
+    
+    $project_id = tpps_create_record('project', array(
+      'name' => $firstpage['publication']['title'],
+      'description' => $firstpage['publication']['abstract']
+    ));
+    
+    for ($i = 1; $i <= $organism_number; $i++){
+        $parts = explode(" ", $firstpage['organism'][$i]);
+        $genus = $parts[0];
+        $species = implode(" ", array_slice($parts, 1));
+
+        if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')){
+            $infra = implode(" ", array_slice($parts, 2));
+        }
+        else {
+            $infra = NULL;
+        }
+
+        $organism_ids[$i] = tpps_create_record('organism', array(
+          'genus' => $genus,
+          'species' => $species,
+          'infraspecific_name' => $infra
+        ));
+        
+        if (isset($fourthpage["organism-$i"]['phenotype'])){
+            $phenotype = $fourthpage["organism-$i"]['phenotype'];
+            $phenotype_number = $phenotype['number'];
+            $phenotype_ids = array();
+            $phenotypeprop_ids = array();
+            $phenotypes_meta = array();
+            
+            $phenotype_file_id = tpps_create_record('projectprop', array(
+              'project_id' => $project_id,
+              'type_id' => '2836',
+              'value' => file_create_url(file_load($phenotype['file'])->uri),
+              'rank' => $file_rank
+            ));
+            $phenotype_file = file_load($phenotype['file']);
+            $file_rank++;
+            
+            for ($j = 1; $j <= $phenotype_number; $j++){
+                $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
+                $phenotypes_meta[$name] = array();
+                $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
+                $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
+                $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
+                if ($phenotype['phenotypes-meta'][$j]['struct-check'] == '1'){
+                    $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
+                }
+                if ($phenotype['phenotypes-meta'][$j]['val-check'] == '1'){
+                    $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
+                    $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
+                }
+            }
+            
+            if ($phenotype['check'] == '1'){
+                $phenotype_meta_file_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($phenotype['metadata'])->uri),
+                  'rank' => $file_rank
+                ));
+                $file = file_load($phenotype['metadata']);
+                $location = drupal_realpath($file->uri);
+                $content = parse_xlsx($location);
+                $groups = $phenotype['metadata-groups'];
+                $column_vals = $phenotype['metadata-columns'];
+                
+                $phenotype_name = $groups['Phenotype Id']['1'];
+                $phenotype_attr = $groups['Attribute']['2'];
+                $phenotype_desc = $groups['Description']['3'];
+                $phenotype_unit = $groups['Units']['4'];
+                
+                foreach ($column_vals as $col => $val){
+                    if ($val == '5'){
+                        $phenotype_struct = $col;
+                    }
+                    if ($val == '6'){
+                        $phenotype_min = $col;
+                    }
+                    if ($val == '7'){
+                        $phenotype_max = $col;
+                    }
+                }
+                
+                for ($j = 0; $j < count($content) - 1; $j++){
+                    $name = strtolower($content[$j][$phenotype_name]);
+                    $phenotypes_meta[$name] = array();
+                    $phenotypes_meta[$name]['attr'] = $content[$j][$phenotype_attr];
+                    $phenotypes_meta[$name]['desc'] = $content[$j][$phenotype_desc];
+                    $phenotypes_meta[$name]['unit'] = $content[$j][$phenotype_unit];
+                    if (isset($phenotype_struct) and isset($content[$j][$phenotype_struct]) and $content[$j][$phenotype_struct] != ''){
+                        $phenotypes_meta[$name]['struct'] = $content[$j][$phenotype_struct];
+                    }
+                    if (isset($phenotype_min) and isset($content[$j][$phenotype_min]) and $content[$j][$phenotype_min] != ''){
+                        $phenotypes_meta[$name]['min'] = $content[$j][$phenotype_min];
+                    }
+                    if (isset($phenotype_max) and isset($content[$j][$phenotype_max]) and $content[$j][$phenotype_max] != ''){
+                        $phenotypes_meta[$name]['max'] = $content[$j][$phenotype_max];
+                    }
+                }
+                
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
+                $file_rank++;
+            }
+            
+            $location = drupal_realpath($phenotype_file->uri);
+            $content = parse_xlsx($location);
+            $groups = $phenotype['file-groups'];
+            
+            $tree_id_col = $groups['Tree Identifier']['1'];
+            $phenotype_name = $groups['Phenotype Name/Identifier']['2'];
+            $phenotype_val = $groups['Phenotype Value(s)']['3'];
+            
+            for ($j = 0; $j < count($content) - 1; $j++){
+                $name = strtolower($content[$j][$phenotype_name]);
+                $value = $content[$j][$phenotype_val];
+                $stock_unique = $content[$j][$tree_id_col];
+                
+                $attr = db_select('chado.cvterm', 'c')
+                    ->fields('c', array('cvterm_id'))
+                    ->condition('c.name', db_like($phenotypes_meta[$name]['attr']), 'LIKE')
+                    ->execute()
+                    ->fetchAssoc();
+                $attr_id = $attr['cvterm_id'];
+                if (!isset($attr_id) or $attr_id == ''){
+                    $attr_id = tpps_custom_cvterm($phenotypes_meta[$name]['attr'], '');
+                }
+                
+                if (isset($phenotypes_meta[$name]['struct'])){
+                    $obs = db_select('chado.cvterm', 'c')
+                        ->fields('c', array('cvterm_id'))
+                        ->condition('c.name', db_like($phenotypes_meta[$name]['struct']), 'LIKE')
+                        ->execute()
+                        ->fetchAssoc();
+                    $observable_id = $obs['cvterm_id'];
+
+                    if (!isset($observable_id) or $observable_id == ''){
+                        $observable_id = tpps_custom_cvterm($phenotypes_meta[$name]['struct'], '');
+                    }
+                }
+                else {
+                    $observable_id = NULL;
+                }
+                
+                $phenotype_ids[] = tpps_create_record('phenotype', array(
+                  'uniquename' => "$stock_unique-$name-$j",
+                  'name' => $name,
+                  'attr_id' => $attr_id,
+                  'observable_id' => $observable_id,
+                  'value' => $value
+                ));
+                
+                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                  'phenotype_id' => end($phenotype_ids),
+                  'type_id' => '2871',
+                  'value' => $phenotypes_meta[$name]['desc']
+                ));
+                
+                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                  'phenotype_id' => end($phenotype_ids),
+                  'type_id' => '2883',
+                  'value' => $phenotypes_meta[$name]['unit']
+                ));
+                
+                if (isset($phenotypes_meta[$name]['min'])){
+                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                      'phenotype_id' => end($phenotype_ids),
+                      'type_id' => '52214',
+                      'value' => $phenotypes_meta[$name]['min']
+                    ));
+                }
+                
+                if (isset($phenotypes_meta[$name]['max'])){
+                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                      'phenotype_id' => end($phenotype_ids),
+                      'type_id' => '52213',
+                      'value' => $phenotypes_meta[$name]['max']
+                    ));
+                }
+            }
+            
+            $phenotype_file->status = FILE_STATUS_PERMANENT;
+            $phenotype_file = file_save($phenotype_file);
+        }
+        
+        if (isset($fourthpage["organism-$i"]['genotype'])){
+            $genotype = $fourthpage["organism-$i"]['genotype'];
+            $genotype_count = 0;
+            
+            
+            if ($genotype['ref-genome'] == 'url'){
+                $reference_genome_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '1912',
+                  'value' => $genotype['ref-genome-other']
+                ));
+            }
+            elseif ($genotype['ref-genome'] == 'bio'){
+                
+                $bioproject_id = tpps_create_record('dbxref', array(
+                  'db_id' => '176',
+                  'accession' => $genotype['BioProject-id']
+                ));
+                
+                $project_dbxref_id = tpps_create_record('project_dbxref', array(
+                  'project_id' => $project_id,
+                  'dbxref_id' => $bioproject_id,
+                ));
+                
+                $bioproject_assembly_file_ids = array();
+                foreach ($genotype['assembly-auto'] as $key => $val){
+                    if ($val == '1'){
+                        array_push($bioproject_assembly_file_ids, tpps_create_record('projectprop', array(
+                          'project_id' => $project_id,
+                          'type_id' => '2836',
+                          'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$key",
+                          'rank' => $file_rank
+                        )));
+                        $file_rank++;
+                    }
+                }
+            }
+            elseif ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2'){
+                $assembly_user = $genotype['assembly-user'];
+                $assembly_user_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($assembly_user)->uri),
+                  'rank' => $file_rank
+                ));
+                $file = file_load($assembly_user);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
+                $file_rank++;
+            }
+            elseif ($genotype['ref-genome'] != 'none') {
+                $reference_genome_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '1912',
+                  'value' => $genotype['ref-genome']
+                ));
+            }
+            
+            if ($genotype['file-type']['Genotype Assay']){
+                $genotype_file_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($genotype['file'])->uri),
+                  'rank' => $file_rank
+                ));
+                $file = file_load($genotype['file']);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
+                $file_rank++;
+            }
+
+            if ($genotype['file-type']['Assay Design']){
+                $genotype_file_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($genotype['assay-design'])->uri),
+                  'rank' => $file_rank
+                ));
+                $file = file_load($genotype['assay-design']);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
+                $file_rank++;
+            }
+
+            if ($genotype['file-type']['VCF']){
+                $genotype_vcf_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($genotype['vcf'])->uri),
+                  'rank' => $file_rank
+                ));
+                $file_rank++;
+
+                $current_id = $organism_ids[$i];
+                $and = db_and()
+                    ->condition('type_id', '52307')
+                    ->condition('organism_id', "$current_id");
+                $species_code = db_select('chado.organismprop', 'o')
+                    ->fields('o', array('value'))
+                    ->condition($and)
+                    ->execute()
+                    ->fetchAssoc();
+                $species_code = $species_code['value'];
+                $marker = 'SNP';
+
+                $vcf_file = file_load($genotype['vcf']);
+                $location = drupal_realpath($vcf_file->uri);
+                $vcf_content = fopen($location, 'r');
+
+                //inserts are WAY faster when done as a group
+                $genotype_vals = array();
+                $genotypeprop_vals = array();
+                $format = "";
+                $first = TRUE;
+
+                //dpm('start: ' . date('r'));
+                while (($vcf_line = fgets($vcf_content)) !== FALSE){
+                    if ($vcf_line[0] != '#'){
+                        $genotype_count++;
+                        $vcf_line = explode("\t", $vcf_line);
+                        $scaffold_id = &$vcf_line[0];
+                        $position = &$vcf_line[1];
+                        $ref = &$vcf_line[3];
+                        $alt = &$vcf_line[4];
+                        $qual = &$vcf_line[5];
+                        $filter = &$vcf_line[6];
+                        $info = &$vcf_line[7];
+
+                        $description = "$ref:$alt";
+                        
+                        //Tripal Job has issues when all submissions are made at the same time, so break them up into groups of 10,000 genotypes along with their relevant genotypeprops
+                        if ($genotype_count > 10000){
+                            $genotype_count = 0;
+                            tpps_create_record('genotype', $genotype_vals);
+                            $genotype_vals = array();
+                            tpps_create_record('genotypeprop', $genotypeprop_vals);
+                            $genotypeprop_vals = array();
+                        }
+
+                        $genotype_vals[] = array(
+                          'name' => "$marker-$species_code-$scaffold_id-$position",
+                          'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
+                          'description' => $description,
+                          'type_id' => '1205'
+                        );
+
+                        if ($first){
+                            $first = FALSE;
+                            $genotype_id = tpps_create_record('genotype', $genotype_vals[0]);
+                            $genotype_vals = array();
+                        }
+
+                        if ($format != ""){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '52197',
+                              'value' => $format,
+                            );
+                        }
+
+                        //quality score
+                        $genotypeprop_vals[] = array(
+                          'genotype_id' => $genotype_id,
+                          'type_id' => '2079',
+                          'value' => $qual
+                        );
+
+                        //filter: pass/fail
+                        $genotypeprop_vals[] = array(
+                          'genotype_id' => $genotype_id,
+                          'type_id' => '52008',
+                          'value' => ($filter == '.') ? "P" : "NP"
+                        );
+
+                        //break up info column
+                        $info_vals = explode(";", $info);
+                        foreach($info_vals as $key => $val){
+                            $parts = explode("=", $val);
+                            unset($info_vals[$key]);
+                            $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
+                        }
+
+                        //allele frequency, assuming that the info code for allele frequency is 'AF'
+                        if (isset($info_vals['AF']) and $info_vals['AF'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '2496',
+                              'value' => $info_vals['AF']
+                            );
+                        }
+
+                        //depth coverage, assuming that the info code for depth coverage is 'DP'
+                        if (isset($info_vals['DP']) and $info_vals['DP'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '52046',
+                              'value' => $info_vals['DP']
+                            );
+                        }
+
+                        //number of samples, assuming that the info code for number of samples is 'NS'
+                        if (isset($info_vals['NS']) and $info_vals['NS'] != ''){
+                            $genotypeprop_vals[] = array(
+                              'genotype_id' => $genotype_id,
+                              'type_id' => '128971',
+                              'value' => $info_vals['NS']
+                            );
+                        }
+                        $genotype_id++;
+                    }
+                    elseif (preg_match('/##FORMAT=/', $vcf_line)) {
+                        $format .= substr($vcf_line, 9, -1);
+                    }
+                }
+                //insert the last set of values
+                tpps_create_record('genotype', $genotype_vals);
+                tpps_create_record('genotypeprop', $genotypeprop_vals);
+                unset($genotype_vals);
+                unset($genotypeprop_vals);
+                //dpm('done: ' . date('r'));
+                $vcf_file->status = FILE_STATUS_PERMANENT;
+                $vcf_file = file_save($vcf_file);
+            }
+        }
+    }
+    
+    return;
 }
 
 function tpps_test_page($form, &$form_state){
@@ -3967,140 +4666,71 @@ function tpps_block_view_alter(&$data, $block) {
                 break;
             }
             $ok = "<img src='$base_url/misc/message-16-ok.png'>";
-            //dpm($form_state['saved_values']);
+            $flat = tpps_flatten($form_state);
             
-            //This deals with page 1
-            if (isset($form_state['saved_values']['Hellopage']['#cleared']) and $form_state['saved_values']['Hellopage']['#cleared']){
-                $content .= "Step 1 - Complete<br />";
-                $content .= "Author/Species Information<hr />";
-                $content .= "$ok" . ' Author: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['primaryAuthor'])) . "<br />";
-                $content .= "$ok" . ' Organization: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organization'])) . "<br />";
-                $content .= "$ok" . ' Pub Title: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['title'])) . "<br />";
-                $content .= "$ok" . ' Pub Year: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['year'])) . "<br />";
-                $content .= "$ok" . ' Secondary Authors: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['number'])) . "<br />";
-                $content .= "$ok" . ' Organisms: '. filter_xss(check_plain($form_state['saved_values']['Hellopage']['organism']['number'])) . "<br />";
-            }
-
-            //This deals with page 2
-            if (isset($form_state['saved_values']['secondPage']['#cleared']) and $form_state['saved_values']['secondPage']['#cleared']){
-                $content .= "<br />";
-                $content .= "Step 2 - Complete<br />";
-                $content .= "Experimental Conditions<br /><hr />";
-                $start = $form_state['saved_values']['secondPage']['StartingDate']['month'] . " " . $form_state['saved_values']['secondPage']['StartingDate']['year'];
-                $content .= "$ok" . ' Starting Date: ' . filter_xss(check_plain($start)) . "<br />";
-                $end = $form_state['saved_values']['secondPage']['EndingDate']['month'] . " " . $form_state['saved_values']['secondPage']['EndingDate']['year'];
-                $content .= "$ok" . ' Ending Date: ' . filter_xss(check_plain($end)) . "<br />";
-                if ($form_state['saved_values']['secondPage']['studyLocation']['type'] == '2'){
-                    $location = $form_state['saved_values']['secondPage']['studyLocation']['custom'];
-                    $query = $location;
-                }
-                else {
-                    $location = $form_state['saved_values']['secondPage']['studyLocation']['coordinates'];
-                    $standard_coordinate = tpps_standard_coord($location);
-                    if ($standard_coordinate){
-                        $query = $standard_coordinate;
+            foreach ($flat as $item => $val){
+                if ($item[0] !== '#'){
+                    $item_str = filter_xss(check_plain($item));
+                    $val_str = filter_xss(check_plain($val));
+                    if (preg_match('/File/', $item) and ($file_name = file_load($val)->filename)){
+                        //create links to files
+                        $file_url = check_plain(file_create_url(file_load($val)->uri));
+                        $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
                     }
-                }
-                $content .= "$ok" . ' Study Location: <a id="sidebar_map" style="cursor:pointer">' . filter_xss(check_plain($location)) .  "</a><br>";
-                if (isset($query)){
-                    $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
-                    $js = "jQuery(document).ready(function ($) {
-                        jQuery(\"#sidebar_map\").click(function() {
-                            jQuery(\"#sidebar_map_wrapper\").remove();
-                            jQuery(\"#sidebar_map\").after( \"<div id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
-                        });
-                    });";
-                    drupal_add_js($js, 'inline');
-                }
-                $type = $form_state['saved_values']['secondPage']['studyType'];
-                $type_arr = array(
-                  0 => '- Select -',
-                  1 => 'Natural Population (Landscape)',
-                  2 => 'Growth Chamber',
-                  3 => 'Greenhouse',
-                  4 => 'Experimental/Common Garden',
-                  5 => 'Plantation',
-                );
-                $content .= "$ok" . ' Study Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
-                $type = $form_state['saved_values']['secondPage']['dataType'];
-                $type_arr = array(
-                  '- Select -',
-                  'Genotype x Phenotype',
-                  'Genotype',
-                  'Genotype x Phenotype x Environment',
-                  'Phenotype x Environment',
-                  'Genotype x Environment'
-                );
-                $content .= "$ok" . ' Data Type: ' . filter_xss(check_plain($type_arr[$type])) .  "<br />";
-            }
-
-            //This deals with page 3
-            if (isset($form_state['saved_values']['thirdPage']['#cleared']) and $form_state['saved_values']['thirdPage']['#cleared']){
-                $content .= "<br />";
-                $content .= "Step 3 - Complete<br />";
-                $content .= "Tree Accession<br /><hr />";
-                $content .= "$ok" . ' Tree Accession data' .  "<br />";
-                if ($form_state['saved_values']['Hellopage']['organism']['number'] == '1' or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
-                    if (($file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->filename)){
-                        $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']['file'])->uri));
-                        $content .= "$ok Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                    elseif (preg_match('/Month/', $item)){
+                        //skip experiment start/end month
+                        continue;
                     }
-                }
-                else {
-                    for ($i = 1; $i <= $form_state['saved_values']['Hellopage']['organism']['number']; $i++){
-                        $species_name = $form_state['saved_values']['Hellopage']['organism'][$i]['species'];
-                        if (($file_name = file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->filename)){
-                            $file_url = check_plain(file_create_url(file_load($form_state['saved_values']['thirdPage']['tree-accession']["species-$i"]['file'])->uri));
-                            $content .= "$ok $species_name Tree Accession File: <a href='$file_url' target='blank'>$file_name</a><br />";
+                    elseif (preg_match('/^(.*)Year/', $item, $matches)){
+                        //combine experiment start/end month + year
+                        if (isset($flat[$matches[1] . 'Month'])){
+                            $item_str = $matches[1] . 'Date';
+                            $val_str = "{$flat[$matches[1] . 'Month']} $val_str";
+                        }
+                        else {
+                            continue;
                         }
                     }
+                    elseif (preg_match('/Study Location/', $item) and isset($flat['#location_type']) and $flat['#location_type']){
+                        //add map capability to location
+                        if ($flat['#location_type'] == '2'){
+                            $query = $val_str;
+                        }
+                        elseif ($flat['#location_type'] != '2' and ($standard = tpps_standard_coord($val_str))){
+                            $query = $standard;
+                        }
+                        $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
+                        if (isset($query)){
+                            $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
+                            $js = "jQuery(document).ready(function ($) {
+                                jQuery(\"#sidebar_map\").click(function() {
+                                    jQuery(\"#sidebar_map_wrapper\").remove();
+                                    jQuery(\"#sidebar_map\").after( \"<br><div id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
+                                });
+                            });";
+                            drupal_add_js($js, 'inline');
+                        }
+                    }
+                    $content .= "$ok $item_str: $val_str <br />";
                 }
-            }
-            
-            //This deals with page 4
-            if (isset($form_state['saved_values']['fourthPage']['#cleared']) and $form_state['saved_values']['fourthPage']['#cleared']){
-                $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
-                for ($i = 1; $i <= $organism_number; $i++){
-                    $current_name = $form_state['saved_values']['Hellopage']['organism'][$i]['species'];
-                    $content .= "<br />";
-                    $content .= "Step 4 - Complete<br />";
-                    $content .= "Submit Data<br /><hr />";
-                    $content .= "$ok " . filter_xss(check_plain($current_name)) .  "<br />";
-                    
-                    if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype'])){
-                        $content .= "$ok " . filter_xss(check_plain($current_name)) .  " Genotypic Data<br />";
-                        
-                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'] != 0){
-                            if (($genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->filename)){
-                                $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['file'])->uri));
-                                $content .= "$ok Genotype File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
-                            }
+                elseif (preg_match('/#page_(.)_cleared/', $item, $matches)){
+                    //break between pages
+                    if ($val){
+                        $step_arr = array(
+                          1 => 'Author and Species Information',
+                          2 => 'Experimental Conditions',
+                          3 => 'Tree Accession',
+                          4 => 'Submit Data'
+                        );
+                        if ($matches[1] > 1){
+                            $content .= '<br />';
                         }
-                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf']) and $form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'] != 0){
-                            if (($genotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->filename)){
-                                $genotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['genotype']['vcf'])->uri));
-                                $content .= "$ok Genotype VCF File: <a href='$genotype_url' target='blank'>$genotype_file_name</a><br />";
-                            }
-                        }
+                        $content .= "$ok Step {$matches[1]} - Complete<br />{$step_arr[$matches[1]]}<br /><hr />";
                     }
-                    if (isset($form_state['saved_values']['fourthPage']['phenotype'])){
-                        $content .= "$ok " . filter_xss(check_plain($current_name)) .  " Phenotypic Data<br />";
-                        
-                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'] != 0){
-                            if (($phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->filename)){
-                                $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['metadata'])->uri));
-                                $content .= "$ok Phenotype Metadata File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
-                            }
-                        }
-                        if (isset($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file']) and $form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'] != 0){
-                            if (($phenotype_file_name = file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->filename)){
-                                $phenotype_url = check_plain(file_create_url(file_load($form_state['saved_values']['fourthPage']["organism-$i"]['phenotype']['file'])->uri));
-                                $content .= "$ok Phenotype File: <a href='$phenotype_url' target='blank'>$phenotype_file_name</a><br />";
-                            }
-                        }
+                    else {
+                        //if page not cleared, do not display remaining form state data
+                        break;
                     }
-                    
-                    $content .= "<hr />";
                 }
             }
             
