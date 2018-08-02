@@ -991,7 +991,7 @@ function tpps_flatten($state){
     
     if (isset($org['number'])){
         $data['#number_organisms'] = $org['number'];
-        for ($i = 1; $i < $data['#number_organisms']; $i++){
+        for ($i = 1; $i <= $data['#number_organisms']; $i++){
             if (isset($org["$i"]) and $org["$i"] != ''){
                 $data["Species $i"] = $org["$i"];
             }
@@ -1370,7 +1370,7 @@ function tpps_flatten($state){
     for ($i = 1; $i <= $data['#number_organisms']; $i++){
         if (isset($page_4["organism-$i"])){
             $org = &$page_4["organism-$i"];
-            $org_name = $data["Species $i"];
+            $org_name = isset($data["Species $i"]) ? $data["Species $i"] : NULL;
             
             if (isset($org['phenotype'])){
                 $pheno = &$org['phenotype'];
@@ -1411,6 +1411,7 @@ function tpps_flatten($state){
             
             if (isset($org['genotype'])){
                 $geno = &$org['genotype'];
+                $file_type = &$geno['file-type'];
                 
                 $marker_types = array();
                 foreach ($geno['marker-type'] as $key => $val){
@@ -1496,7 +1497,17 @@ function tpps_flatten($state){
                     $data["$org_name Reference Genome"] = $geno['ref-genome'];
                 }
                 
-                //genotype file/vcf file
+                if (isset($file_type['Genotype Assay']) and $file_type['Genotype Assay'] and isset($geno['file']) and $geno['file']){
+                    $data["$org_name Genotype Assay File"] = $geno['file'];
+                }
+                
+                if (isset($file_type['Assay Design']) and $file_type['Assay Design'] and isset($geno['assay-design']) and $geno['assay-design']){
+                    $data["$org_name Genotype Assay Design File"] = $geno['assay-design'];
+                }
+                
+                if (isset($file_type['VCF']) and $file_type['VCF'] and isset($geno['vcf']) and $geno['vcf']){
+                    $data["$org_name Genotype VCF File"] = $geno['vcf'];
+                }
             }
         }
     }
