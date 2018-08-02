@@ -4366,6 +4366,19 @@ function tpps_file_parsing($form_state){
                 $file_rank++;
             }
 
+            if ($genotype['file-type']['Assay Design']){
+                $genotype_file_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($genotype['assay-design'])->uri),
+                  'rank' => $file_rank
+                ));
+                $file = file_load($genotype['assay-design']);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
+                $file_rank++;
+            }
+
             if ($genotype['file-type']['VCF']){
                 $genotype_vcf_id = tpps_create_record('projectprop', array(
                   'project_id' => $project_id,
