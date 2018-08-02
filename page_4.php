@@ -334,20 +334,27 @@ function page_4_create_form(&$form, &$form_state){
         
         page_4_ref($fields, $form_state, $values, $id, $genotype_upload_location);
         
+        $fields['file-type'] = array(
+          '#type' => 'checkboxes',
+          '#title' => t('Genotype File Types (select all that apply): *'),
+          '#options' => array(
+            'Genotype Assay' => 'Genotype Assay',
+            'Assay Design' => 'Assay Design',
+            'VCF' => 'VCF',
+          ),
+          '#default_value' => isset($values[$id]['genotype']['file-type']) ? $values[$id]['genotype']['file-type'] : NULL,
+        );
+        
         $fields['file'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Genotype File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
+          '#title' => t('Genotype Assay File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
           '#upload_location' => "$genotype_upload_location",
           '#upload_validators' => array(
             'file_validate_extensions' => array('xlsx')
           ),
           '#states' => array(
             'visible' => array(
-              array(
-                array(':input[name="' . $id . '[genotype][marker-type][SSRs/cpSSRs]"]' => array('checked' => true)),
-                'or',
-                array(':input[name="' . $id . '[genotype][marker-type][Other]"]' => array('checked' => true))
-              )
+              ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => true)
             )
           ),
           '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
@@ -364,11 +371,7 @@ function page_4_create_form(&$form, &$form_state){
           ),
           '#states' => array(
             'visible' => array(
-              array(
-                array(':input[name="' . $id . '[genotype][marker-type][SSRs/cpSSRs]"]' => array('checked' => true)),
-                'or',
-                array(':input[name="' . $id . '[genotype][marker-type][Other]"]' => array('checked' => true))
-              )
+              ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => true)
             )
           ),
         );
@@ -466,6 +469,30 @@ function page_4_create_form(&$form, &$form_state){
             }
         }
         
+        $fields['assay-design'] = array(
+          '#type' => 'managed_file',
+          '#title' => 'Genotype Assay Design File: *',
+          '#upload_location' => "$genotype_upload_location",
+          '#upload_validators' => array(
+            'file_validate_extensions' => array('xlsx')
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][file-type][Assay Design]"]' => array('checked' => true)
+            )
+          ),
+          '#default_value' => isset($values[$id]['genotype']['assay-design']) ? $values[$id]['genotype']['assay-design'] : NULL,
+          '#tree' => TRUE,
+        );
+        
+        if (isset($fields['assay-design']['#value'])){
+            $fields['assay-design']['#default_value'] = $fields['assay-design']['#value'];
+        }
+        if (isset($fields['assay-design']['#default_value']) and $fields['assay-design']['#default_value'] and ($file = file_load($fields['assay-design']['#default_value']))){
+            //stop using the file so it can be deleted if the user clicks 'remove'
+            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        }
+        
         $fields['vcf'] = array(
           '#type' => 'managed_file',
           '#title' => t('Genotype VCF File: *'),
@@ -475,7 +502,7 @@ function page_4_create_form(&$form, &$form_state){
           ),
           '#states' => array(
             'visible' => array(
-              ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => true),
+              ':input[name="' . $id . '[genotype][file-type][VCF]"]' => array('checked' => true)
             )
           ),
           '#default_value' => isset($values[$id]['genotype']['vcf']) ? $values[$id]['genotype']['vcf'] : NULL,
@@ -485,7 +512,7 @@ function page_4_create_form(&$form, &$form_state){
         if (isset($fields['vcf']['#value'])){
             $fields['vcf']['#default_value'] = $fields['vcf']['#value'];
         }
-        if (isset($fields['vcf']['#default_value']) and $fields['vcf']['#default_value'] != 0 and ($file = file_load($fields['vcf']['#default_value']))){
+        if (isset($fields['vcf']['#default_value']) and $fields['vcf']['#default_value'] and ($file = file_load($fields['vcf']['#default_value']))){
             //stop using the file so it can be deleted if the user clicks 'remove'
             file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         }
@@ -749,6 +776,7 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
     $ref_genome_arr["bio"] = 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list';
     $ref_genome_arr["manual"] = 'I can upload my own reference genome file';
     $ref_genome_arr["manual2"] = 'I can upload my own reference transcriptome file';
+    $ref_genome_arr["none"] = 'I am unable to provide a reference assembly';
 
     $fields['ref-genome'] = array(
       '#type' => 'select',
@@ -1290,8 +1318,10 @@ function page_4_validate_form(&$form, &$form_state){
             $targeted_capture = $snps['targeted-capture'];
             $bio_id = $genotype['BioProject-id'];
             $ref_genome = $genotype['ref-genome'];
+            $file_type = $genotype['file-type'];
             $vcf = $genotype['vcf'];
-
+            $assay_design = $genotype['assay-design'];
+            
             if ($ref_genome === '0'){
                 form_set_error("$id][genotype][ref-genome", "Reference Genome: field is required.");
             }
@@ -1396,17 +1426,14 @@ function page_4_validate_form(&$form, &$form_state){
                 form_set_error("$id][genotype][other-marker", "Other Genotype marker: field is required.");
             }
 
-            if ($snps_check === 'SNPs'){
-                if (!form_get_errors() and $vcf != ''){
-                    //preserve file if it is valid
-                    $file = file_load($vcf);
-                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-                }
-                
-                if ($vcf == ''){
-                    form_set_error("$id][genotype][vcf", "Genotype VCF File: field is required.");
-                }
-                elseif (($ref_genome === 'manual' or $ref_genome === 'manual2') and $assembly != '' and isset($scaffold_col) and empty(form_get_errors())){
+            if ($file_type['VCF'] . $file_type['Genotype Assay'] === '00'){
+                form_set_error("$id][genotype][file-type", "Genotype File Type: field is required.");
+            }
+            elseif ($file_type['VCF'] and $vcf == ''){
+                form_set_error("$id][genotype][vcf", "Genotype VCF File: field is required.");
+            }
+            elseif ($file_type['VCF']){
+                if (($ref_genome === 'manual' or $ref_genome === 'manual2') and $assembly != '' and isset($scaffold_col) and !form_get_errors()){
                     $vcf_content = fopen(file_load($vcf)->uri, 'r');
                     $assembly_content = fopen(file_load($assembly)->uri, 'r');
                     
@@ -1455,93 +1482,77 @@ function page_4_validate_form(&$form, &$form_state){
                             }
 
                             if (!$match){
-                                //dpm($scaffold_id);
                                 form_set_error('file', "VCF File: scaffold $scaffold_id not found in assembly file(s)");
-                            }
-                            else {
-                                //dpm("matched: $scaffold_id");
                             }
                         }
                     }
                     
                 }
-            }
-            
-            if (($ssrs != '0' or $other_marker != '0') and $genotype_file == ''){
-                form_set_error("$id][genotype][file", "Genotype file: field is required.");
-            }
-            elseif ($ssrs != '0' or $other_marker != '0') {
-                $required_columns = array(
-                  '1' => 'Tree Identifier',
-                );
-
-                $form_state['values'][$id]['genotype']['file-columns'] = array();
-
-                foreach ($form[$id]['genotype']['file']['#value']['columns'] as $req => $val){
-                    if ($req[0] != '#'){
-                        $form_state['values'][$id]['genotype']['file-columns'][$req] = $form[$id]['genotype']['file']['#value']['columns'][$req];
-
-                        $col_val = $form_state['values'][$id]['genotype']['file-columns'][$req];
-                        if ($col_val != '0'){
-                            $required_columns[$col_val] = NULL;
-                        }
-                    }
-                }
                 
-                foreach ($required_columns as $item){
-                    if ($item != NULL){
-                        form_set_error("$id][genotype][file][columns][$item", "Genotype file: Please specify a column that holds $item.");
-                    }
-                }
-
                 if (!form_get_errors()){
                     //preserve file if it is valid
-                    $file = file_load($form_state['values'][$id]['genotype']['file']);
+                    $file = file_load($vcf);
                     file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
                 }
+            }
+            
+            if ($file_type['Genotype Assay'] and $genotype_file == ''){
+                form_set_error("$id][genotype][file", "Genotype file: field is required.");
+            }
+            elseif ($file_type['Genotype Assay']) {
                 
-                //if Tree Identifier is set
-                if ($required_columns['1'] === NULL and empty(form_get_errors())){
-                    //cycle through the columns
-                    foreach ($form_state['values'][$id]['genotype']['file-columns'] as $col => $val){
-                        //find the column where Tree Identifier is selected
-                        if ($val == '1'){
-                            //that column name is the name of the Tree Id column, so keep track of that, and exit loop
-                            $id_col_genotype_name = $col;
-                            break;
-                        }
-                    }
+                $required_groups = array(
+                  'Tree Id' => array(
+                    'id' => array(1),
+                  ),
+                );
 
+                $file_element = $form[$id]['genotype']['file'];
+                $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+                
+                $form_state['values'][$id]['genotype']['file-columns'] = array();
+
+                if (!form_get_errors()){
+                    //get Tree Id column name
+                    $id_col_genotype_name = $groups['Tree Id']['1'];
+                    
                     if ($form_state['saved_values']['Hellopage']['organism']['number'] == 1 or $form_state['saved_values']['thirdPage']['tree-accession']['check'] == '0'){
                         $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']['file'];
-                        $column_vals = $form_state['saved_values']['thirdPage']['tree-accession']['file-columns'];
+                        $id_col_accession_name = $form_state['saved_values']['thirdPage']['tree-accession']['file-groups']['Tree Id']['1'];
                     }
                     else {
                         $num = substr($id, 9);
                         $tree_accession_file = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file'];
-                        $column_vals = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file-columns'];
+                        $id_col_accession_name = $form_state['saved_values']['thirdPage']['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
                     }
-
-                    foreach ($column_vals as $col => $val){
-                        if ($val == '1'){
-                            $id_col_accession_name = $col;
-                            break;
-                        }
-                    }
-
+                    
                     $missing_trees = tpps_compare_files($form_state['values'][$id]['genotype']['file'], $tree_accession_file, $id_col_genotype_name, $id_col_accession_name);
-
+                    
                     if ($missing_trees !== array()){
                         $tree_id_str = implode(', ', $missing_trees);
                         form_set_error("$id][genotype][file", "Genotype file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
                     }
                 }
+                
+                if (!form_get_errors()){
+                    //preserve file if it is valid
+                    $file = file_load($form_state['values'][$id]['genotype']['file']);
+                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                }
+            }
+            
+            if ($file_type['Assay Design'] and $assay_design == ''){
+                form_set_error("$id][genotype][assay-design", "Assay Design file: field is required.");
+            }
+            elseif (!form_get_errors()){
+                //preserve file if it is valid
+                $file = file_load($form_state['values'][$id]['genotype']['assay-design']);
+                file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
             }
         }
 
         $form_values = $form_state['values'];
         $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
-        $data_type = $form_state['saved_values']['secondPage']['dataType'];
 
         for ($i = 1; $i <= $organism_number; $i++){
             $organism = $form_values["organism-$i"];
