@@ -339,6 +339,7 @@ function page_4_create_form(&$form, &$form_state){
           '#title' => t('Genotype File Types (select all that apply): *'),
           '#options' => array(
             'Genotype Assay' => 'Genotype Assay',
+            'Assay Design' => 'Assay Design',
             'VCF' => 'VCF',
           ),
           '#default_value' => isset($values[$id]['genotype']['file-type']) ? $values[$id]['genotype']['file-type'] : NULL,
@@ -346,7 +347,7 @@ function page_4_create_form(&$form, &$form_state){
         
         $fields['file'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Genotype File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
+          '#title' => t('Genotype Assay File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
           '#upload_location' => "$genotype_upload_location",
           '#upload_validators' => array(
             'file_validate_extensions' => array('xlsx')
@@ -467,6 +468,22 @@ function page_4_create_form(&$form, &$form_state){
                 $fields['file']['columns'][$item]['#suffix'] .= $display;
             }
         }
+        
+        $fields['assay-design'] = array(
+          '#type' => 'managed_file',
+          '#title' => 'Genotype Assay Design File: *',
+          '#upload_location' => "$genotype_upload_location",
+          '#upload_validators' => array(
+            'file_validate_extensions' => array('xlsx')
+          ),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[genotype][file-type][Assay Design]"]' => array('checked' => true)
+            )
+          ),
+          '#default_value' => isset($values[$id]['genotype']['assay-design']) ? $values[$id]['genotype']['assay-design'] : NULL,
+          '#tree' => TRUE,
+        );
         
         $fields['vcf'] = array(
           '#type' => 'managed_file',
