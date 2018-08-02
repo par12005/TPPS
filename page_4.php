@@ -1293,8 +1293,9 @@ function page_4_validate_form(&$form, &$form_state){
             $targeted_capture = $snps['targeted-capture'];
             $bio_id = $genotype['BioProject-id'];
             $ref_genome = $genotype['ref-genome'];
+            $file_type = $genotype['file-type'];
             $vcf = $genotype['vcf'];
-
+            
             if ($ref_genome === '0'){
                 form_set_error("$id][genotype][ref-genome", "Reference Genome: field is required.");
             }
@@ -1399,17 +1400,14 @@ function page_4_validate_form(&$form, &$form_state){
                 form_set_error("$id][genotype][other-marker", "Other Genotype marker: field is required.");
             }
 
-            if ($snps_check === 'SNPs'){
-                if (!form_get_errors() and $vcf != ''){
-                    //preserve file if it is valid
-                    $file = file_load($vcf);
-                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-                }
-                
-                if ($vcf == ''){
-                    form_set_error("$id][genotype][vcf", "Genotype VCF File: field is required.");
-                }
-                elseif (($ref_genome === 'manual' or $ref_genome === 'manual2') and $assembly != '' and isset($scaffold_col) and empty(form_get_errors())){
+            if ($file_type['VCF'] . $file_type['Genotype Assay'] === '00'){
+                form_set_error("$id][genotype][file-type", "Genotype File Type: field is required.");
+            }
+            elseif ($file_type['VCF'] and $vcf == ''){
+                form_set_error("$id][genotype][vcf", "Genotype VCF File: field is required.");
+            }
+            elseif ($file_type['VCF']){
+                if (($ref_genome === 'manual' or $ref_genome === 'manual2') and $assembly != '' and isset($scaffold_col) and !form_get_errors()){
                     $vcf_content = fopen(file_load($vcf)->uri, 'r');
                     $assembly_content = fopen(file_load($assembly)->uri, 'r');
                     
@@ -1464,12 +1462,18 @@ function page_4_validate_form(&$form, &$form_state){
                     }
                     
                 }
+                
+                if (!form_get_errors()){
+                    //preserve file if it is valid
+                    $file = file_load($vcf);
+                    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+                }
             }
             
-            if (($ssrs != '0' or $other_marker != '0') and $genotype_file == ''){
+            if ($file_type['Genotype Assay'] and $genotype_file == ''){
                 form_set_error("$id][genotype][file", "Genotype file: field is required.");
             }
-            elseif ($ssrs != '0' or $other_marker != '0') {
+            elseif ($file_type['Genotype Assay']) {
                 
                 $required_groups = array(
                   'Tree Id' => array(
