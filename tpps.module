@@ -1473,9 +1473,30 @@ function tpps_flatten($state){
                     $data["$org_name Other Marker Type"] = $geno['other-marker'];
                 }
                 
-                if (isset($geno['ref-genome']) and $geno['ref-genome'] == 'url' and isset($geno['ref-genome-other']) and $geno['ref-genome-other'] != ''){
+                if (isset($geno['ref-genome']) and $geno['ref-genome'] === 'url' and isset($geno['ref-genome-other']) and $geno['ref-genome-other'] != ''){
                     $data["$org_name Website of reference file"] = $geno['ref-genome-other'];
                 }
+                elseif (isset($geno['ref-genome']) and $geno['ref-genome'] === 'bio' and isset($geno['BioProject-id']) and $geno['BioProject-id'] != ''){
+                    $data["$org_name BioProject Id"] = $geno['BioProject-id'];
+                    
+                    if (isset($geno['assembly-auto']) and gettype($geno['assembly-auto']) === 'array'){
+                        $count = 1;
+                        foreach ($geno['assembly-auto'] as $id => $check){
+                            if (isset($check) and $check){
+                                $data["$org_name Linked Accession $count"] = $id;
+                                $count++;
+                            }
+                        }
+                    }
+                }
+                elseif (isset($geno['ref-genome']) and ($geno['ref-genome'] === 'manual' or $geno['ref-genome'] === 'manual2') and isset($geno['assembly-user']) and $geno['assembly-user']){
+                    $data["$org_name Reference File"] = $geno['assembly-user'];
+                }
+                elseif (isset($geno['ref-genome']) and $geno['ref-genome']){
+                    $data["$org_name Reference Genome"] = $geno['ref-genome'];
+                }
+                
+                //genotype file/vcf file
             }
         }
     }
@@ -4493,10 +4514,6 @@ function tpps_file_parsing($form_state){
 }
 
 function tpps_test_page($form, &$form_state){
-    
-    $state = variable_get('tpps_complete_peter.richter@uconn.eduTGDR003');
-    dpm($state);
-    $data = tpps_flatten($state);
     
     $form['file'] = array(
       '#type' => 'managed_file',
