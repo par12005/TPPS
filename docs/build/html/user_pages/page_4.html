@@ -62,6 +62,48 @@
 <li><p class="first">Phenotype Data: file upload - The phenotype data. This file should contain the ‘Tree Id’ of the tree that the phenotype is describing, the ‘Name/Identifier’ of the phenotype, and the ‘Value’ that was actually measured for this phenotype.</p>
 </li>
 </ul>
+</div>
+<div class="section" id="genotype">
+<h2>4.4.2. Genotype<a class="headerlink" href="#genotype" title="Permalink to this headline">¶</a></h2>
+<p>Genotype fields are only visible when ‘Genotype’, ‘Genotype x Phenotype’, ‘Genotype x Environment’, or ‘Genotype x Phenotype x Environment’ was selected from ‘Data Type’ in <a class="reference external" href="page_2.html">Study Design</a>.</p>
+<ul>
+<li><p class="first">Genotype Marker Type: checkboxes - The types of genotype markers: ‘SNPs’, ‘SSRs/cpSSRs’, ‘Other’. Select all that apply.</p>
+</li>
+<li><p class="first">SNPs Information fields are only visible and required when ‘SNPs’ was selected from ‘Genotype Marker Type’.</p>
+<blockquote>
+<div><ul class="simple">
+<li>Experimental Design: drop-down menu - The experimental design: ‘GBS’, ‘Targeted Capture’, ‘Whole Genome Resequencing’, ‘RNA-Seq’, ‘Genotyping Array’</li>
+<li>GBS Type: drop-down menu - The type of GBS experiment: ‘RADSeq’, ‘ddRAD-Seq’, ‘NextRAD’, ‘RAPTURE’, ‘Other’. Only visible when ‘GBS’ was selected from the ‘Experimental Design’ field.</li>
+<li>Custom GBS Type: text field - Define a custom GBS Type. Only visible when ‘Other’ was selected from the ‘GBS Type’ field.</li>
+<li>Targeted Capture Type: drop-down menu - The type of Targeted Capture experiment: ‘Exome Capture’, ‘Other’. Only visible when ‘Targeted Capture’ was selected from the ‘Experimental Design’ field.</li>
+<li>Custom Targeted Capture Type: text field - Define a custom Targeted Capture type. Only visible when ‘Other’ was selected from the ‘Targeted Capture Type’ field.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">SSRs/cpSSRs Type: text field - The type of SSRs/cpSSRs marker. Only visisble when ‘SSRs/cpSSRs’ was selected from the ‘Genotype Marker Type’ field.</p>
+</li>
+<li><p class="first">Other Marker Type: text field - The type of genotype marker. Only visisble when ‘Other’ was selected from the ‘Genotype Marker Type’ field.</p>
+</li>
+<li><p class="first">Reference Genome/Assembly: drop-down menu - The reference genome/assembly: TPPS finds local reference genomes from the site it is installed on and their versions, and presents them as options in this drop-down. The other available options for a reference genome/assembly are: ‘I can provide a URL to the website of my reference file(s)’, ‘I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list’, ‘I can upload my own reference genome file’, ‘I can upload my own reference transcriptome file’, ‘I am unable to provide a reference assembly’.</p>
+</li>
+<li><p class="first">External Reference Genome/Assembly: Either upload or locate the genome/assembly file(s).</p>
+<blockquote>
+<div><ul class="simple">
+<li>URL to Reference Genome: text field - The URL to a reference genome/assembly, or the website where it resides. Only visible when ‘I can provide a URL to the website of my reference file(s)’ was selected from the ‘Reference Genome/Assembly’ field.</li>
+<li>BioProject Accession number: text field - The NCBI accession number of the BioProject associated with this study. After this number has been provided, TPPS will search NCBI for assembly files that are linked to this BioProject number and present them to you, as well as links to view them individually on NCBI. You will need to select the assembly files that are relevant to this study. Only visible when ‘I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list’ was selected from the ‘Reference Genome/Assembly’ field.</li>
+<li>Manual Upload: file upload - The assembly file associated with this study. You will be required to define which section of your header lines is the scaffold/chromosome name/identifier. Only visible when ‘I can upload my own reference genome file’ or ‘I can upload my own reference transcriptome file’ was selected from the ‘Reference Genome/Assembly’ field.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">Genotype File Types: checkboxes - ‘Genotype Assay’, ‘Assay Design’, ‘VCF’. Select all that apply.</p>
+</li>
+<li><p class="first">Genotype Assay File: file upload - The genotype assay file. You will be required to specify which of your columns holds the Tree ID in each row of your file. Only visible when ‘Genotype Assay’ was selected from the ‘Genotype File Types’ field.</p>
+</li>
+<li><p class="first">Assay Design File: file upload - The assay design file. Only visible when ‘Assay Design’ was selected from the ‘Genotype File Types’ field.</p>
+</li>
+<li><p class="first">VCF File: file upload - The VCF file. Only visible when ‘VCF’ was selected from the ‘Genotype File Types’ field.</p>
+</li>
+</ul>
 <img alt="../_images/TPPS_data1.png" src="../_images/TPPS_data1.png" />
 </div>
 </div>
@@ -83,7 +125,7 @@
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Sections:</span></p>
+<p class="caption"><span class="caption-text">Table of Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../intro.html">1. Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../features.html">2. Features</a></li>

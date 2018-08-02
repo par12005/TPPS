@@ -3,12 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Tripal Plant PopGen Submit's documentation!
-======================================================
+Welcome to the Tripal Plant PopGen Submit (TPPS) pipeline documentation!
+========================================================================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Sections:
+   :caption: Table of Contents:
    :glob:
    :numbered:
 
@@ -17,9 +17,3 @@ Welcome to Tripal Plant PopGen Submit's documentation!
    admin
    user
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
