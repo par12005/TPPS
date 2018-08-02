@@ -4345,7 +4345,7 @@ function tpps_file_parsing($form_state){
                 $file = file_save($file);
                 $file_rank++;
             }
-            else {
+            elseif ($genotype['ref-genome'] != 'none') {
                 $reference_genome_id = tpps_create_record('projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '1912',
@@ -4353,7 +4353,7 @@ function tpps_file_parsing($form_state){
                 ));
             }
             
-            if ($genotype['marker-type']['SSRs/cpSSRs'] != '0' or $genotype['marker-type']['Other'] != '0'){
+            if ($genotype['file-type']['Genotype Assay']){
                 $genotype_file_id = tpps_create_record('projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
@@ -4366,7 +4366,20 @@ function tpps_file_parsing($form_state){
                 $file_rank++;
             }
 
-            if ($genotype['marker-type']['SNPs'] != '0'){
+            if ($genotype['file-type']['Assay Design']){
+                $genotype_file_id = tpps_create_record('projectprop', array(
+                  'project_id' => $project_id,
+                  'type_id' => '2836',
+                  'value' => file_create_url(file_load($genotype['assay-design'])->uri),
+                  'rank' => $file_rank
+                ));
+                $file = file_load($genotype['assay-design']);
+                $file->status = FILE_STATUS_PERMANENT;
+                $file = file_save($file);
+                $file_rank++;
+            }
+
+            if ($genotype['file-type']['VCF']){
                 $genotype_vcf_id = tpps_create_record('projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
@@ -4505,8 +4518,6 @@ function tpps_file_parsing($form_state){
                 $vcf_file->status = FILE_STATUS_PERMANENT;
                 $vcf_file = file_save($vcf_file);
             }
-
-            dpm($genotype_count);
         }
     }
     
