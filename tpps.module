@@ -4353,7 +4353,7 @@ function tpps_file_parsing($form_state){
                 ));
             }
             
-            if ($genotype['marker-type']['SSRs/cpSSRs'] != '0' or $genotype['marker-type']['Other'] != '0'){
+            if ($genotype['file-type']['Genotype Assay']){
                 $genotype_file_id = tpps_create_record('projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
@@ -4366,7 +4366,7 @@ function tpps_file_parsing($form_state){
                 $file_rank++;
             }
 
-            if ($genotype['marker-type']['SNPs'] != '0'){
+            if ($genotype['file-type']['VCF']){
                 $genotype_vcf_id = tpps_create_record('projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
@@ -4505,8 +4505,6 @@ function tpps_file_parsing($form_state){
                 $vcf_file->status = FILE_STATUS_PERMANENT;
                 $vcf_file = file_save($vcf_file);
             }
-
-            dpm($genotype_count);
         }
     }
     
