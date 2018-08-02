@@ -485,6 +485,14 @@ function page_4_create_form(&$form, &$form_state){
           '#tree' => TRUE,
         );
         
+        if (isset($fields['assay-design']['#value'])){
+            $fields['assay-design']['#default_value'] = $fields['assay-design']['#value'];
+        }
+        if (isset($fields['assay-design']['#default_value']) and $fields['assay-design']['#default_value'] and ($file = file_load($fields['assay-design']['#default_value']))){
+            //stop using the file so it can be deleted if the user clicks 'remove'
+            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        }
+        
         $fields['vcf'] = array(
           '#type' => 'managed_file',
           '#title' => t('Genotype VCF File: *'),
@@ -504,7 +512,7 @@ function page_4_create_form(&$form, &$form_state){
         if (isset($fields['vcf']['#value'])){
             $fields['vcf']['#default_value'] = $fields['vcf']['#value'];
         }
-        if (isset($fields['vcf']['#default_value']) and $fields['vcf']['#default_value'] != 0 and ($file = file_load($fields['vcf']['#default_value']))){
+        if (isset($fields['vcf']['#default_value']) and $fields['vcf']['#default_value'] and ($file = file_load($fields['vcf']['#default_value']))){
             //stop using the file so it can be deleted if the user clicks 'remove'
             file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         }
@@ -1312,6 +1320,7 @@ function page_4_validate_form(&$form, &$form_state){
             $ref_genome = $genotype['ref-genome'];
             $file_type = $genotype['file-type'];
             $vcf = $genotype['vcf'];
+            $assay_design = $genotype['assay-design'];
             
             if ($ref_genome === '0'){
                 form_set_error("$id][genotype][ref-genome", "Reference Genome: field is required.");
@@ -1530,6 +1539,15 @@ function page_4_validate_form(&$form, &$form_state){
                     $file = file_load($form_state['values'][$id]['genotype']['file']);
                     file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
                 }
+            }
+            
+            if ($file_type['Assay Design'] and $assay_design == ''){
+                form_set_error("$id][genotype][assay-design", "Assay Design file: field is required.");
+            }
+            elseif (!form_get_errors()){
+                //preserve file if it is valid
+                $file = file_load($form_state['values'][$id]['genotype']['assay-design']);
+                file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
             }
         }
 
