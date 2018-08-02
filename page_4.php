@@ -1544,7 +1544,7 @@ function page_4_validate_form(&$form, &$form_state){
             if ($file_type['Assay Design'] and $assay_design == ''){
                 form_set_error("$id][genotype][assay-design", "Assay Design file: field is required.");
             }
-            elseif (!form_get_errors()){
+            elseif ($file_type['Assay Design'] and !form_get_errors()){
                 //preserve file if it is valid
                 $file = file_load($form_state['values'][$id]['genotype']['assay-design']);
                 file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
