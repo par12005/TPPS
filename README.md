@@ -1,4 +1,7 @@
 # Tripal Plant PopGen Submit (TPPS) pipeline
+[![Documentation Status](https://readthedocs.org/projects/tpps/badge/?version=latest)](https://tpps.readthedocs.io/en/latest/?badge=latest)
+
+# Table of Contents
 1. [Introduction](#introduction)
 2. [Installation](#installation)
 3. [Features](#features)
