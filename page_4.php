@@ -338,16 +338,22 @@ function page_4_create_form(&$form, &$form_state){
           '#type' => 'checkboxes',
           '#title' => t('Genotype File Types (select all that apply): *'),
           '#options' => array(
-            'Genotype Assay' => 'Genotype Assay',
+            'Genotype Assay' => 'Genotype Spreadsheet/Assay',
             'Assay Design' => 'Assay Design',
             'VCF' => 'VCF',
           ),
           '#default_value' => isset($values[$id]['genotype']['file-type']) ? $values[$id]['genotype']['file-type'] : NULL,
         );
         
+        $fields['file-type']['Assay Design']['#states'] = array(
+          'visible' => array(
+            ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => TRUE),
+          )
+        );
+        
         $fields['file'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Genotype Assay File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
+          '#title' => t('Genotype Spreadsheet File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
           '#upload_location' => "$genotype_upload_location",
           '#upload_validators' => array(
             'file_validate_extensions' => array('xlsx')
@@ -478,7 +484,8 @@ function page_4_create_form(&$form, &$form_state){
           ),
           '#states' => array(
             'visible' => array(
-              ':input[name="' . $id . '[genotype][file-type][Assay Design]"]' => array('checked' => true)
+              ':input[name="' . $id . '[genotype][file-type][Assay Design]"]' => array('checked' => TRUE),
+              ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => TRUE),
             )
           ),
           '#default_value' => isset($values[$id]['genotype']['assay-design']) ? $values[$id]['genotype']['assay-design'] : NULL,
@@ -1541,10 +1548,10 @@ function page_4_validate_form(&$form, &$form_state){
                 }
             }
             
-            if ($file_type['Assay Design'] and $assay_design == ''){
+            if ($file_type['Assay Design'] and $snps_check and $assay_design == ''){
                 form_set_error("$id][genotype][assay-design", "Assay Design file: field is required.");
             }
-            elseif ($file_type['Assay Design'] and !form_get_errors()){
+            elseif ($file_type['Assay Design'] and $snps_check and !form_get_errors()){
                 //preserve file if it is valid
                 $file = file_load($form_state['values'][$id]['genotype']['assay-design']);
                 file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
