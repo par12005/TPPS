@@ -216,25 +216,12 @@
 </li>
 <li><p class="first">Genotype SNPs: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if the user selects ‘SNPs’ from ‘Genotype Marker Type’</p>
 <blockquote>
-<div><ul>
-<li><p class="first">SNPs Genotyping Design: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘GBS’, ‘Targeted Capture’, ‘Whole Genome Resequencing’, ‘RNS-Seq’, ‘Genotyping Array’</p>
-</li>
-<li><p class="first">SNPs GBS: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if the user selects ‘GBS’ from ‘SNPs Genotyping Design’</p>
-<blockquote>
 <div><ul class="simple">
-<li>GBS Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘RADSeq’, ‘ddRAD-Seq’, ‘NextRAD’, ‘RAPTURE’, ‘Other’</li>
+<li>SNPs Genotyping Design: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘GBS’, ‘Targeted Capture’, ‘Whole Genome Resequencing’, ‘RNS-Seq’, ‘Genotyping Array’</li>
+<li>GBS Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘RADSeq’, ‘ddRAD-Seq’, ‘NextRAD’, ‘RAPTURE’, ‘Other’ - only visible if the user selects ‘GBS’ from ‘SNPs Genotyping Design’</li>
 <li>GBS Custom Type: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘Other’ from ‘GBS Type’</li>
-</ul>
-</div></blockquote>
-</li>
-<li><p class="first">SNPs Targeted Capture: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if the user selects ‘Targeted Capture’ from ‘SNPs Genotyping Design’</p>
-<blockquote>
-<div><ul class="simple">
-<li>Targeted Capture Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘Exome Capture’, ‘Other’</li>
+<li>Targeted Capture Type: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘Exome Capture’, ‘Other’ - only visible if the user selects ‘Targeted Capture’ from ‘SNPs Genotyping Design’</li>
 <li>Targeted Capture Custom Type: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘Other’ from ‘Targeted Capture Type’</li>
-</ul>
-</div></blockquote>
-</li>
 </ul>
 </div></blockquote>
 </li>
@@ -242,26 +229,30 @@
 </li>
 <li><p class="first">Genotype Other Marker Type: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘Other’ from ‘Genotype Marker Type’</p>
 </li>
-<li><p class="first">Reference Genome: <code class="docutils literal notranslate"><span class="pre">select</span></code> - stored reference genomes, as well as ‘I can provide a URL’, ‘I can provide a BioProject accession’, ‘I can upload my own assembly’</p>
+<li><p class="first">Reference Genome: <code class="docutils literal notranslate"><span class="pre">select</span></code> - stored reference genomes, as well as ‘I can provide a URL to the website of my reference file(s)’, ‘I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list’, ‘I can upload my own reference genome file’, ‘I can upload my own reference transcriptome file’, ‘I am unable to provide a reference assembly’</p>
 </li>
-<li><p class="first">BioProject Accession: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘I can provide a BioProject accession’ from ‘Reference Genome’</p>
+<li><p class="first">BioProject Accession: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list’ from ‘Reference Genome’</p>
 <blockquote>
 <div><ul class="simple">
 <li>NCBI Assembly Accessions: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> - options pulled directly from NCBI</li>
 </ul>
 </div></blockquote>
 </li>
-<li><p class="first">URL to Reference Genome: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘I can provide a URL’ from ‘Reference Genome’</p>
+<li><p class="first">URL to Reference Genome: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘I can provide a URL to the website of my reference file(s)’ from ‘Reference Genome’</p>
 </li>
-<li><p class="first">Manual Assembly File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - FASTA or Multi-FASTA formatted file - only visible if the user selects ‘I can upload my own assembly’ from ‘Reference Genome’</p>
+<li><p class="first">Manual Assembly File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - FASTA or Multi-FASTA formatted file - only visible if the user selects ‘I can upload my own reference genome file’ or ‘I can upload my own reference transcriptome file’ from ‘Reference Genome’</p>
 </li>
 <li><p class="first">Manual Assembly File Columns: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> of <code class="docutils literal notranslate"><span class="pre">select</span></code> elements - user will define which of their columns contain the scaffold/chromosome ID</p>
 </li>
-<li><p class="first">Genotype VCF File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - .VCF file of genotypes - only visible if the user selects ‘SNPs’ from ‘Genotype Marker Type’</p>
+<li><p class="first">Genotype File Type: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> - options ‘Genotype Assay’, ‘Assay Design’, ‘VCF’</p>
 </li>
-<li><p class="first">Genotype File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - spreadsheet of genotypes - only visible if the user selects ‘SSRs/cpSSRs’ or ‘Other’ from ‘Genotype Marker Type’</p>
+<li><p class="first">Genotype VCF File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - .VCF file of genotypes - only visible if the user selects ‘VCF’ from ‘Genotype File Type’</p>
+</li>
+<li><p class="first">Genotype File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - spreadsheet of genotypes - only visible if the user selects ‘Genotype Assay’ from ‘Genotype File Type’</p>
 </li>
 <li><p class="first">Genotype File Columns: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> of <code class="docutils literal notranslate"><span class="pre">select</span></code> elements - user will define which of their columns contain the Tree ID</p>
+</li>
+<li><p class="first">Assay Design File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - Assay design file - only visible if the user selects ‘Assay Design’ from ‘Genotype File Type’</p>
 </li>
 </ul>
 </div></blockquote>

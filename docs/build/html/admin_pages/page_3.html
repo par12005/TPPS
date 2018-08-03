@@ -166,9 +166,10 @@
 <h1>3.6. Tree Accession<a class="headerlink" href="#tree-accession" title="Permalink to this headline">¶</a></h1>
 <p>The third set of fields in TPPS is the Tree Accession section, where users upload information about where trees are located. The form fields and their properties are as follows:</p>
 <ul class="simple">
-<li>Tree Accession: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if number of species in [Publication and Species Interface](#publication-and-species-interface) is 1, or if the ‘Separate Tree Accession’ checkbox is unchecked.<ul>
+<li>Tree Accession: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - only visible if number of species in <a class="reference external" href="page_1.html">Publication and Species Interface</a> is 1, or if the ‘Separate Tree Accession’ checkbox is unchecked.<ul>
 <li>Tree Accession File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - spreadsheet of tree locations</li>
-<li>Tree Accession Columns: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> of <code class="docutils literal notranslate"><span class="pre">select</span></code> elements - user will define which of their columns contain the Tree ID, and which of their columns contain location information</li>
+<li>Tree Accession Columns: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> of <code class="docutils literal notranslate"><span class="pre">select</span></code> elements - user will define which of their columns contain the Tree ID, and which of their columns contain location information. If the number of species is &gt;1, user will also define which of their columns contain the genus and species of each tree.</li>
+<li>Coordinate Projection: <code class="docutils literal notranslate"><span class="pre">select</span></code> - options ‘WGS 84’, ‘NAD 83’, ‘ETRS 89’. Only visible if ‘Latitude’ or ‘Longitude’ columns are selected in ‘Tree Accession Columns’</li>
 <li>Map Thumbnail: Google Maps iframe that allows the user to visually validate the tree locations they have provided</li>
 </ul>
 </li>

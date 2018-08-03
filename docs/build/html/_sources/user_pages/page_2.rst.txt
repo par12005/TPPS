@@ -13,7 +13,7 @@ Experiment Dates
 Study Location
 ==============
 
-* Coordinate Projection: drop-down menu - The coordinate projection of the GPS coordinates of the study location: 'WGS 84', 'NAD 83', 'ETRS 89', or 'Custom Location'
+* Coordinate Projection: drop-down menu - The coordinate projection of the GPS coordinates of the study location: 'WGS 84', 'NAD 83', 'ETRS 89', or 'Custom Location (street address)'
 * Study Location: text field - The location of the study. If the coordinate projection is not a custom location, TPPS will parse and standardize the coordinates to be sent to the map. After you have provided the study location, you can click 'Click here to update map' to view the location of your study on Google Maps. This can be useful to verify that there is not a drastic error in the location.
 
 Data Type

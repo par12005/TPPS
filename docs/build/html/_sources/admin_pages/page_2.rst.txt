@@ -16,7 +16,7 @@ The second set of fields in TPPS is the Study Design section, where users upload
 
 * Study Location: ``fieldset``
 
-  * Coordinate Projection: ``select`` - options 'WGS 84', 'NAD 83', 'ETRS 89', 'Custom Location'
+  * Coordinate Projection: ``select`` - options 'WGS 84', 'NAD 83', 'ETRS 89', 'Custom Location (street address)'
   * Coordinates: ``textfield`` - only visible if the user selects 'WGS 84', 'NAD 83', or 'ETRS 89' from 'Coordinate Projection'
   * Custom Location: ``textfield`` - only visible if the user selects 'Custom Location' from 'Coordinate Projection'
   * Map Thumbnail: Google Maps iframe that allows the user to visually validate the location they have provided

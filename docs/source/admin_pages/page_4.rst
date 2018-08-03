@@ -34,29 +34,26 @@ Genotype
      * Genotype SNPs: ``fieldset`` - only visible if the user selects 'SNPs' from 'Genotype Marker Type'
 
          * SNPs Genotyping Design: ``select`` - options 'GBS', 'Targeted Capture', 'Whole Genome Resequencing', 'RNS-Seq', 'Genotyping Array'
-         * SNPs GBS: ``fieldset`` - only visible if the user selects 'GBS' from 'SNPs Genotyping Design'
-
-              * GBS Type: ``select`` - options 'RADSeq', 'ddRAD-Seq', 'NextRAD', 'RAPTURE', 'Other'
-              * GBS Custom Type: ``textfield`` - only visible if the user selects 'Other' from 'GBS Type'
-
-         * SNPs Targeted Capture: ``fieldset`` - only visible if the user selects 'Targeted Capture' from 'SNPs Genotyping Design'
-
-              * Targeted Capture Type: ``select`` - options 'Exome Capture', 'Other'
-              * Targeted Capture Custom Type: ``textfield`` - only visible if the user selects 'Other' from 'Targeted Capture Type'
+         * GBS Type: ``select`` - options 'RADSeq', 'ddRAD-Seq', 'NextRAD', 'RAPTURE', 'Other' - only visible if the user selects 'GBS' from 'SNPs Genotyping Design'
+         * GBS Custom Type: ``textfield`` - only visible if the user selects 'Other' from 'GBS Type'
+         * Targeted Capture Type: ``select`` - options 'Exome Capture', 'Other' - only visible if the user selects 'Targeted Capture' from 'SNPs Genotyping Design'
+         * Targeted Capture Custom Type: ``textfield`` - only visible if the user selects 'Other' from 'Targeted Capture Type'
 
      * Genotype SSRs/cpSSRs Type: ``textfield`` - only visible if the user selects 'SSRs/cpSSRs' from 'Genotype Marker Type'
      * Genotype Other Marker Type: ``textfield`` - only visible if the user selects 'Other' from 'Genotype Marker Type'
-     * Reference Genome: ``select`` - stored reference genomes, as well as 'I can provide a URL', 'I can provide a BioProject accession', 'I can upload my own assembly'
-     * BioProject Accession: ``textfield`` - only visible if the user selects 'I can provide a BioProject accession' from 'Reference Genome'
+     * Reference Genome: ``select`` - stored reference genomes, as well as 'I can provide a URL to the website of my reference file(s)', 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list', 'I can upload my own reference genome file', 'I can upload my own reference transcriptome file', 'I am unable to provide a reference assembly'
+     * BioProject Accession: ``textfield`` - only visible if the user selects 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list' from 'Reference Genome'
 
          * NCBI Assembly Accessions: ``checkboxes`` - options pulled directly from NCBI
 
-     * URL to Reference Genome: ``textfield`` - only visible if the user selects 'I can provide a URL' from 'Reference Genome'
-     * Manual Assembly File: ``managed_file`` - FASTA or Multi-FASTA formatted file - only visible if the user selects 'I can upload my own assembly' from 'Reference Genome'
+     * URL to Reference Genome: ``textfield`` - only visible if the user selects 'I can provide a URL to the website of my reference file(s)' from 'Reference Genome'
+     * Manual Assembly File: ``managed_file`` - FASTA or Multi-FASTA formatted file - only visible if the user selects 'I can upload my own reference genome file' or 'I can upload my own reference transcriptome file' from 'Reference Genome'
      * Manual Assembly File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the scaffold/chromosome ID
-     * Genotype VCF File: ``managed_file`` - .VCF file of genotypes - only visible if the user selects 'SNPs' from 'Genotype Marker Type'
-     * Genotype File: ``managed_file`` - spreadsheet of genotypes - only visible if the user selects 'SSRs/cpSSRs' or 'Other' from 'Genotype Marker Type'
+     * Genotype File Type: ``checkboxes`` - options 'Genotype Assay', 'Assay Design', 'VCF'
+     * Genotype VCF File: ``managed_file`` - .VCF file of genotypes - only visible if the user selects 'VCF' from 'Genotype File Type'
+     * Genotype File: ``managed_file`` - spreadsheet of genotypes - only visible if the user selects 'Genotype Assay' from 'Genotype File Type'
      * Genotype File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Tree ID
+     * Assay Design File: ``managed_file`` - Assay design file - only visible if the user selects 'Assay Design' from 'Genotype File Type'
 
 .. _`Study Design`: page_2.html
 

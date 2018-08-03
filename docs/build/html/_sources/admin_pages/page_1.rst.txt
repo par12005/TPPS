@@ -11,13 +11,13 @@ The first set of fields in TPPS is the publication and species interface, where 
 
 * Publication: ``fieldset``
 
-  * Publication status: ``select`` - options 'In Preparation or Submitted', 'In press', and 'Published'
   * Secondary Authors: ``fieldset``
 
      * Secondary Author **x**: ``textfield`` - autocomplete options from the ``chado.contact`` table
      * \>30 Secondary Authors: ``checkbox``
      * Secondary Authors file: ``managed_file`` - spreadsheet of secondary authors. This field is only visible if the '>30 Secondary Authors' checkbox is checked.
 
+  * Publication status: ``select`` - options 'In Preparation or Submitted', 'In press', and 'Published'
   * Publication Year: ``select`` - options '1990' to '2018'
   * Publication Title: ``textfield``
   * Publication Abstract: ``textarea``
