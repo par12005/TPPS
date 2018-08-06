@@ -895,7 +895,13 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
     $fasta['#title'] = 'Tripal FASTA Loader';
     $fasta['#states'] = array(
       'visible' => array(
-        ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url')
+        array(
+          array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url')),
+          'or',
+          array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')),
+          'or',
+          array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual2'))
+        )
       )
     );
     
