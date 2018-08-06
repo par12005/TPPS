@@ -1,13 +1,23 @@
 Installation
 ============
 
-1. Inside your /sites/all/modules directory, download TPPS by running:
+1. TPPS requires the following modules:
 
-``git clone https://gitlab.com/TreeGenes/TGDR.git``
+  - Tripal (v3.x)
+  - Tripal Chado
+  - Tripal Jobs
+  - Tripal Jobs Daemon
+  - Ultimate Cron
+
+  TPPS will install Ultimate Cron automatically, but Tripal and Tripal core modules must be installed before installing TPPS.
+
+2. Inside your /sites/all/modules directory, download TPPS by running:
+
+  ``git clone https://gitlab.com/TreeGenes/TGDR.git``
  
-2. Then, enable TPPS by running:
+3. Then, enable TPPS by running:
 
-``drush en TPPS``
+  ``drush en TPPS``
 
 For more instructions, please see the `Drupal documentation page`_.
 
