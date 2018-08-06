@@ -3970,14 +3970,7 @@ function tpps_file_parsing($form_state){
             $genotype_count = 0;
             
             
-            if ($genotype['ref-genome'] == 'url'){
-                $reference_genome_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '1912',
-                  'value' => $genotype['ref-genome-other']
-                ));
-            }
-            elseif ($genotype['ref-genome'] == 'bio'){
+            if ($genotype['ref-genome'] == 'bio'){
                 
                 $bioproject_id = tpps_create_record('dbxref', array(
                   'db_id' => '176',
@@ -4002,18 +3995,46 @@ function tpps_file_parsing($form_state){
                     }
                 }
             }
-            elseif ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2'){
-                $assembly_user = $genotype['assembly-user'];
-                $assembly_user_id = tpps_create_record('projectprop', array(
-                  'project_id' => $project_id,
-                  'type_id' => '2836',
-                  'value' => file_create_url(file_load($assembly_user)->uri),
-                  'rank' => $file_rank
-                ));
-                $file = file_load($assembly_user);
-                $file->status = FILE_STATUS_PERMANENT;
-                $file = file_save($file);
-                $file_rank++;
+            elseif ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url'){
+                if ($genotype['tripal_fasta']['file_upload']){
+                    //uploaded new file
+                    $assembly_user = $genotype['tripal_fasta']['file_upload'];
+                    $assembly_user_id = tpps_create_record('projectprop', array(
+                      'project_id' => $project_id,
+                      'type_id' => '2836',
+                      'value' => file_create_url(file_load($assembly_user)->uri),
+                      'rank' => $file_rank
+                    ));
+                    $file = file_load($assembly_user);
+                    $file->status = FILE_STATUS_PERMANENT;
+                    $file = file_save($file);
+                    $file_rank++;
+                }
+                if ($genotype['tripal_fasta']['file_upload_existing']){
+                    //uploaded existing file
+                    $assembly_user = $genotype['tripal_fasta']['file_upload_existing'];
+                    $assembly_user_id = tpps_create_record('projectprop', array(
+                      'project_id' => $project_id,
+                      'type_id' => '2836',
+                      'value' => file_create_url(file_load($assembly_user)->uri),
+                      'rank' => $file_rank
+                    ));
+                    $file = file_load($assembly_user);
+                    $file->status = FILE_STATUS_PERMANENT;
+                    $file = file_save($file);
+                    $file_rank++;
+                }
+                if ($genotype['tripal_fasta']['file_remote']){
+                    //provided url to file
+                    $assembly_user = $genotype['tripal_fasta']['file_remote'];
+                    $assembly_user_id = tpps_create_record('projectprop', array(
+                      'project_id' => $project_id,
+                      'type_id' => '2836',
+                      'value' => $assembly_user,
+                      'rank' => $file_rank
+                    ));
+                    $file_rank++;
+                }
             }
             elseif ($genotype['ref-genome'] != 'none') {
                 $reference_genome_id = tpps_create_record('projectprop', array(
