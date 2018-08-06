@@ -165,13 +165,28 @@
   <div class="section" id="installation">
 <h1>3.1. Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
 <ol class="arabic simple">
+<li>TPPS requires the following modules:</li>
+</ol>
+<blockquote>
+<div><ul class="simple">
+<li>Tripal (v3.x)</li>
+<li>Tripal Chado</li>
+<li>Tripal Jobs</li>
+<li>Tripal Jobs Daemon</li>
+<li>Ultimate Cron</li>
+</ul>
+<p>TPPS will install Ultimate Cron automatically, but Tripal and Tripal core modules must be installed before installing TPPS.</p>
+</div></blockquote>
+<ol class="arabic simple" start="2">
 <li>Inside your /sites/all/modules directory, download TPPS by running:</li>
 </ol>
-<p><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://gitlab.com/TreeGenes/TGDR.git</span></code></p>
-<ol class="arabic simple" start="2">
+<blockquote>
+<div><code class="docutils literal notranslate"><span class="pre">git</span> <span class="pre">clone</span> <span class="pre">https://gitlab.com/TreeGenes/TGDR.git</span></code></div></blockquote>
+<ol class="arabic simple" start="3">
 <li>Then, enable TPPS by running:</li>
 </ol>
-<p><code class="docutils literal notranslate"><span class="pre">drush</span> <span class="pre">en</span> <span class="pre">TPPS</span></code></p>
+<blockquote>
+<div><code class="docutils literal notranslate"><span class="pre">drush</span> <span class="pre">en</span> <span class="pre">TPPS</span></code></div></blockquote>
 <p>For more instructions, please see the <a class="reference external" href="https://www.drupal.org/node/120641">Drupal documentation page</a>.</p>
 </div>
 
