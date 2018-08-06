@@ -81,7 +81,13 @@
               <p class="caption"><span class="caption-text">Table of Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">2. Features</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#data-types-and-standards">2.1. Data Types and Standards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-accessibility">2.2. Data Accessibility</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#user-friendliness">2.3. User Friendliness</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#administrative-features">2.4. Administrative Features</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="admin.html">3. Administrators</a></li>
 <li class="toctree-l1"><a class="reference internal" href="user.html">4. Users</a></li>
 </ul>
@@ -151,24 +157,44 @@
   <div class="section" id="features">
 <h1>2. Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h1>
 <p>TPPS has many features that make data collection easier for administrators. Here are a few notable ones:</p>
+<div class="section" id="data-types-and-standards">
+<h2>2.1. Data Types and Standards<a class="headerlink" href="#data-types-and-standards" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li>Support for genotype, phenotype, and environmental data and metadata</li>
 <li>Support for population, association, and landscape genetics studies</li>
 <li>Support for ontology standards, including the Minimum Information About a Plant Phenotyping Experiment (<a class="reference external" href="http://www.miappe.org/">MIAPPE</a>)</li>
 <li>Support for standard genotyping file formats, such as .VCF</li>
-<li>Restricted access to approved users of the site</li>
 <li>Automatically submits data according to the Tripal CHADO database schema</li>
+</ul>
+</div>
+<div class="section" id="data-accessibility">
+<h2>2.2. Data Accessibility<a class="headerlink" href="#data-accessibility" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li>Data is standardized and stored in the local database so that other tools, for example, <a class="reference external" href="https://gitlab.com/TreeGenes/CartograTree">CartograTree</a>, can easily collect and analyze it</li>
+<li>Restricted access to approved users of the site</li>
 <li>Accepted studies are associated and stored in the database with longterm accessions that can be used in publication</li>
 <li>The studies can be queried or downloaded (flatfiles) through the Tripal interface</li>
+<li>Display both complete and incomplete submissions on ‘TPPS Submissions’ user profile tab</li>
+</ul>
+</div>
+<div class="section" id="user-friendliness">
+<h2>2.3. User Friendliness<a class="headerlink" href="#user-friendliness" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
 <li>Map thumbnails for quick visual validation</li>
 <li>Auto-complete appropriate fields based on information from the user profile</li>
 <li>Load data from <a class="reference external" href="https://www.ncbi.nlm.nih.gov/">NCBI</a> based on a provided BioProject accession number</li>
-<li>File contents parsing for submission to the CHADO schema</li>
+<li>Automatically parse file contents for submission to the CHADO schema</li>
 <li>Save user progress on incomplete submissions</li>
-<li>Display both complete and incomplete submissions on ‘TPPS Submissions’ user profile tab</li>
+<li>Form flexibility to ensure only the minimum necessary information is being required, but users may provide additional information if they choose</li>
+</ul>
+</div>
+<div class="section" id="administrative-features">
+<h2>2.4. Administrative Features<a class="headerlink" href="#administrative-features" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
 <li>Administrator panel to manually approve completed submissions</li>
 <li>Configuration page to specify file upload locations, TPPS Admin email, etc.</li>
 </ul>
+</div>
 </div>
 
 
