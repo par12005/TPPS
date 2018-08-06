@@ -153,3 +153,12 @@ texinfo_documents = [
      author, 'TripalPlantPopGenSubmit', 'One line description of project.',
      'Miscellaneous'),
 ]
+
+# -- Gitlab Integration ------------------------------------------------------
+html_context = {
+    "display_gitlab": True, # Integrate Gitlab
+    "gitlab_user": "PeterRichter", # Username
+    "gitlab_repo": "TGDR", # Repo name
+    "gitlab_version": "master", # Version
+    "conf_py_path": "/source/", # Path in the checkout to the docs root
+}
