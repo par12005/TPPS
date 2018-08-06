@@ -157,8 +157,8 @@ texinfo_documents = [
 # -- Gitlab Integration ------------------------------------------------------
 html_context = {
     "display_gitlab": True, # Integrate Gitlab
-    "gitlab_user": "PeterRichter", # Username
+    "gitlab_user": "TreeGenes", # Username
     "gitlab_repo": "TGDR", # Repo name
     "gitlab_version": "master", # Version
-    "conf_py_path": "/source/", # Path in the checkout to the docs root
+    "conf_py_path": "/docs/source/", # Path in the checkout to the docs root
 }
