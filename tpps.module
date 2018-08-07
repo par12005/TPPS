@@ -4064,13 +4064,75 @@ function tpps_file_parsing($form_state){
                   'value' => file_create_url(file_load($genotype['file'])->uri),
                   'rank' => $file_rank
                 ));
-                //process genotype assay
+                $file_rank++;
                 
+                $marker = 'SNP';
                 
                 $file = file_load($genotype['file']);
+                //process genotype spreadsheet/assay
+                if ($genotype['marker-type']['SNPs']){
+                    //if SNPs marker, the file is a Genotype Assay
+                    $location = drupal_realpath($file->uri);
+                    $content = parse_xlsx($location);
+                    $groups = $genotype['file-groups'];
+                    
+                    $tree_id_col = $groups['Tree Id']['1'];
+                    $snp_data_cols = $groups['SNP Data']['2'];
+                    
+                    foreach ($content as $key => $row){
+                        if ($key != 'headers'){
+                            $tree_id = $row[$tree_id_col];
+                            
+                            $query = db_select('chado.stock', 's')
+                                ->fields('s', array('organism_id'))
+                                ->condition('uniquename', $tree_id)
+                                ->execute()
+                                ->fetchAssoc();
+                            $organism_id = $query['organism_id'];
+                            
+                            if (!isset($last_org_id) or $last_org_id !== $organism_id){
+                                //if the last organism id is not present or is different from this one, get a new species code. otherwise, keep the last one to avoid some redundant queries
+                                $and = db_and()
+                                    ->condition('type_id', '52307')
+                                    ->condition('organism_id', "$organism_id");
+                                $species_code = db_select('chado.organismprop', 'o')
+                                    ->fields('o', array('value'))
+                                    ->condition($and)
+                                    ->execute()
+                                    ->fetchAssoc();
+                                $species_code = $species_code['value'];
+                            }
+                            
+                            $genotype_vals = array();
+                            foreach ($snp_data_cols as $snp_id){
+                                $genotype_count++;
+                                $snp_value = $row[$snp_id];
+                                
+                                if ($genotype_count > 10000){
+                                    $genotype_count = 0;
+                                    tpps_create_record('genotype', $genotype_vals);
+                                    $genotype_vals = array();
+                                }
+                                
+                                $genotype_vals[] = array(
+                                  'name' => "$snp_id-$species_code-$snp_value",
+                                  'uniquename' => "$snp_id-$species_code-$snp_value",
+                                  'description' => $snp_value,
+                                  'type_id' => '1205'
+                                );
+                            }
+                            
+                            //save the organism id for the next row
+                            $last_org_id = $organism_id;
+                        }
+                    }
+                    tpps_create_record('genotype', $genotype_vals);
+                    unset($genotype_vals);
+                    $genotype_count = 0;
+                }
+                
                 $file->status = FILE_STATUS_PERMANENT;
                 $file = file_save($file);
-                $file_rank++;
             }
 
             if ($genotype['file-type']['Assay Design'] and $genotype['marker-type']['SNPs']){
@@ -4094,7 +4156,7 @@ function tpps_file_parsing($form_state){
                   'rank' => $file_rank
                 ));
                 $file_rank++;
-
+                
                 $current_id = $organism_ids[$i];
                 $and = db_and()
                     ->condition('type_id', '52307')
@@ -4106,7 +4168,7 @@ function tpps_file_parsing($form_state){
                     ->fetchAssoc();
                 $species_code = $species_code['value'];
                 $marker = 'SNP';
-
+                
                 $vcf_file = file_load($genotype['vcf']);
                 $location = drupal_realpath($vcf_file->uri);
                 $vcf_content = fopen($location, 'r');
