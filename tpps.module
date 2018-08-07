@@ -3167,6 +3167,7 @@ function submit_all(&$form_state){
             $ref_genome = $fourthpage["organism-$i"]['genotype']['ref-genome'];
             
             if ($ref_genome === 'url' or $ref_genome === 'manual' or $ref_genome === 'manual2'){
+                //create job for tripal fasta importer
                 $class = 'FASTAImporter';
                 tripal_load_include_importer_class($class);
 
@@ -3763,8 +3764,8 @@ function tpps_admin_panel_submit($form, &$form_state){
         variable_set($var_name, $state);
         submit_all($state);
         $args = array($state);
-        //$jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
-        //$state['job_id'] = $jid;
+        $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
+        $state['job_id'] = $jid;
         
         dpm('Submission Approved! Message has been sent to user.');
         drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
@@ -3969,7 +3970,6 @@ function tpps_file_parsing($form_state){
             $genotype = $fourthpage["organism-$i"]['genotype'];
             $genotype_count = 0;
             
-            
             if ($genotype['ref-genome'] == 'bio'){
                 
                 $bioproject_id = tpps_create_record('dbxref', array(
@@ -4051,13 +4051,16 @@ function tpps_file_parsing($form_state){
                   'value' => file_create_url(file_load($genotype['file'])->uri),
                   'rank' => $file_rank
                 ));
+                //process genotype assay
+                
+                
                 $file = file_load($genotype['file']);
                 $file->status = FILE_STATUS_PERMANENT;
                 $file = file_save($file);
                 $file_rank++;
             }
 
-            if ($genotype['file-type']['Assay Design']){
+            if ($genotype['file-type']['Assay Design'] and $genotype['marker-type']['SNPs']){
                 $genotype_file_id = tpps_create_record('projectprop', array(
                   'project_id' => $project_id,
                   'type_id' => '2836',
@@ -4216,44 +4219,6 @@ function tpps_file_parsing($form_state){
 }
 
 function tpps_test_page($form, &$form_state){
-    global $user;
-    $uid = $user->uid;
-    
-    require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
-    
-    $class = 'FASTAImporter';
-    tripal_load_include_importer_class($class);
-    $tripal_upload_location = "public://tripal/users/$uid";
-    $fasta = tripal_get_importer_form(array(), $form_state, $class);
-    //dpm($fasta);
-    
-    $fasta['#type'] = 'fieldset';
-    $fasta['#title'] = 'FASTA';
-    //unset($fasta['file']['file_remote']);
-    unset($fasta['file']['file_local']);
-    unset($fasta['organism_id']);
-    unset($fasta['method']);
-    unset($fasta['match_type']);
-    unset($fasta['additional']['re_uname']);
-    unset($fasta['additional']['re_help']);
-    unset($fasta['additional']['relationship']);
-    unset($fasta['button']);
-    
-    $upload = array(
-      '#type' => 'managed_file',
-      '#title' => '',
-      '#description' => 'Remember to click the "Upload" button below to send your file to the server.  This interface is capable of uploading very large files.  If you are disconnected you can return, reload the file and it will resume where it left off.  Once the file is uploaded the "Upload Progress" will indicate "Complete".  If the file is already present on the server then the status will quickly update to "Complete".',
-      '#upload_validators' => array(
-        'file_validate_extensions' => array(implode(' ', $class::$file_types))
-      ),
-      //'#default_value' => isset($values[$id]['genotype']['tripal_fasta']['file']['file_upload']) ? $values[$id]['genotype']['tripal_fasta']['file']['file_upload'] : 0,
-      '#upload_location' => $tripal_upload_location,
-    );
-    
-    $fasta['file']['file_upload'] = $upload;
-    $fasta['analysis_id']['#required'] = $fasta['seqtype']['#required'] = FALSE;
-    
-    $form['fasta'] = $fasta;
     
     $form['next'] = array(
       '#type' => 'submit',
