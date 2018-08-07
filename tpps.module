@@ -1481,8 +1481,8 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
     //hold onto the location of the columns in form state
     $state_column_values = &$values[$new_end];
     
-    $error_parts = explode(':', $file_element['#title']);
-    $error_prompt = $error_parts[0];
+    $title_parts = explode(':', $file_element['#title']);
+    $error_prompt = $title_parts[0];
     
     $groups = array();
     $required_groups_flat = array();
@@ -1498,7 +1498,12 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
         $state_column_values[$name] = $type;
         foreach ($required_groups_flat as $group => $types){
             if (in_array($type, $types)){
-                $groups[$group][$type] = $name;
+                if (!isset($groups[$group][$type])){
+                    $groups[$group][$type] = array($name);
+                }
+                else {
+                    $groups[$group][$type][] = $name;
+                }
                 break;
             }
         }
@@ -1523,6 +1528,14 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
         
         if (!$group_valid){
             form_set_error($file_element['#name'] . "[columns][$group", "$error_prompt: Please specify a column or columns that hold $group.");
+        }
+    }
+    
+    foreach ($groups as $key => $group){
+        foreach ($group as $opt_num => $col_names){
+            if ($opt_num != '#type' and count($col_names) == 1){
+                $groups[$key][$opt_num] = $col_names[0];
+            }
         }
     }
     
