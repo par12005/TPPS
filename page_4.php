@@ -332,6 +332,11 @@ function page_4_create_form(&$form, &$form_state){
         
         page_4_marker_info($fields, $values, $id);
         
+        $fields['marker-type']['SNPs']['#ajax'] = array(
+          'callback' => 'snps_file_callback',
+          'wrapper' => "edit-$id-genotype-file-ajax-wrapper"
+        );
+        
         page_4_ref($fields, $form_state, $values, $id, $genotype_upload_location);
         
         $fields['file-type'] = array(
@@ -364,8 +369,21 @@ function page_4_create_form(&$form, &$form_state){
             )
           ),
           '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
+          '#description' => 0,
           '#tree' => TRUE
         );
+        
+        $assay_desc = "Please upload a spreadsheet file containing Genotype Assay data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier, and one column for each SNP data associated with the study. Column data types will default to \"SNP Data\", so please leave any columns with SNP data as the default.";
+        $spreadsheet_desc = "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier.";
+        if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and $form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']){
+            $fields['file']['#description'] = $assay_desc;
+        }
+        if (!$fields['file']['#description'] and !isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and isset($values[$id]['genotype']['marker-type']['SNPs']) and $values[$id]['genotype']['marker-type']['SNPs']){
+            $fields['file']['#description'] = $assay_desc;
+        }
+        if (!$fields['file']['#description']){
+            $fields['file']['#description'] = $spreadsheet_desc;
+        }
         
         $fields['no-header'] = array(
           '#type' => 'checkbox',
@@ -390,7 +408,7 @@ function page_4_create_form(&$form, &$form_state){
               ':input[name="' . $id . '_genotype_file_upload_button"]' => array('value' => 'Upload')
             )
           ),
-          '#description' => 'Please define which columns hold the required data: Tree Identifier',
+          '#description' => 'Please define which columns hold the required data: Tree Identifier, SNP Data',
           '#prefix' => "<div id=\"genotype-header-$id-wrapper\">",
           '#suffix' => '</div>',
           '#collapsible' => TRUE
@@ -428,6 +446,7 @@ function page_4_create_form(&$form, &$form_state){
                 $column_options = array(
                   'N/A',
                   'Tree Identifier',
+                  'SNP Data',
                 );
 
                 $first = TRUE;
@@ -446,6 +465,11 @@ function page_4_create_form(&$form, &$form_state){
                         'title' => array("Select the type of data the '$item' column holds")
                       )
                     );
+                    
+                    if (!isset($values[$id]['genotype']['file-columns'][$item]) and isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and $form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']){
+                        //if Genotype Assay file and the value has not been set, set default value to 'SNP Data'
+                        $fields['file']['columns'][$item]['#default_value'] = 2;
+                    }
 
                     if ($first){
                         $first = FALSE;
@@ -741,6 +765,12 @@ function genotype_header_callback($form, $form_state){
 
 function phenotype_header_callback($form, $form_state){
     return $form[$form_state['triggering_element']['#parents'][0]]['phenotype']['file']['columns'];
+}
+
+function snps_file_callback($form, $form_state){
+    $id = $form_state['triggering_element']['#parents'][0];
+    
+    return $form[$id]['genotype']['file'];
 }
 
 function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_location){
@@ -1389,9 +1419,6 @@ function page_4_validate_form(&$form, &$form_state){
             if ($ref_genome === '0'){
                 form_set_error("$id][genotype][ref-genome", "Reference Genome: field is required.");
             }
-/*            elseif ($ref_genome === 'url' and $genotype['ref-genome-other'] === ''){
-                form_set_error("$id][genotype][ref-genome-other", "Custom Reference Genome: field is required.");
-            }*/
             elseif ($ref_genome === 'bio'){
                 if ($bio_id == ''){
                     form_set_error("$id][genotype][Bioproject-id", 'BioProject Id: field is required.');
