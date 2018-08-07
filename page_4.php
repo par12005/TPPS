@@ -1616,13 +1616,14 @@ function page_4_validate_form(&$form, &$form_state){
                   'Tree Id' => array(
                     'id' => array(1),
                   ),
+                  'SNP Data' => array(
+                    'data' => array(2)
+                  )
                 );
 
                 $file_element = $form[$id]['genotype']['file'];
                 $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
                 
-                $form_state['values'][$id]['genotype']['file-columns'] = array();
-
                 if (!form_get_errors()){
                     //get Tree Id column name
                     $id_col_genotype_name = $groups['Tree Id']['1'];
