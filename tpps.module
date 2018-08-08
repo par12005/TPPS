@@ -4066,70 +4066,89 @@ function tpps_file_parsing($form_state){
                 ));
                 $file_rank++;
                 
-                $marker = 'SNP';
-                
                 $file = file_load($genotype['file']);
+                $location = drupal_realpath($file->uri);
+                $content = parse_xlsx($location);
+                $groups = $genotype['file-groups'];
+                $tree_id_col = $groups['Tree Id']['1'];
+                
                 //process genotype spreadsheet/assay
                 if ($genotype['marker-type']['SNPs']){
                     //if SNPs marker, the file is a Genotype Assay
-                    $location = drupal_realpath($file->uri);
-                    $content = parse_xlsx($location);
-                    $groups = $genotype['file-groups'];
-                    
-                    $tree_id_col = $groups['Tree Id']['1'];
-                    $snp_data_cols = $groups['SNP Data']['2'];
-                    
-                    foreach ($content as $key => $row){
-                        if ($key != 'headers'){
-                            $tree_id = $row[$tree_id_col];
-                            
-                            $query = db_select('chado.stock', 's')
-                                ->fields('s', array('organism_id'))
-                                ->condition('uniquename', $tree_id)
+                    $genotype_cols = $groups['SNP Data']['2'];
+                }
+                else {
+                    //if not SNPs marker, the file is a Genotype spreadsheet, not assay
+                    $genotype_cols = $groups['Genotype Data']['2'];
+                    $marker = ($genotype['marker-type']['SSRs/cpSSRs']) ? $genotype['SSRs/cpSSRs'] : $genotype['other-marker'];
+                }
+                
+                foreach ($content as $key => $row){
+                    if ($key != 'headers'){
+                        $tree_id = $row[$tree_id_col];
+
+                        $query = db_select('chado.stock', 's')
+                            ->fields('s', array('organism_id'))
+                            ->condition('uniquename', $tree_id)
+                            ->execute()
+                            ->fetchAssoc();
+                        $organism_id = $query['organism_id'];
+
+                        if (!isset($last_org_id) or $last_org_id !== $organism_id){
+                            //if the last organism id is not present or is different from this one, get a new species code. otherwise, keep the last one to avoid some redundant queries
+                            $and = db_and()
+                                ->condition('type_id', '52307')
+                                ->condition('organism_id', "$organism_id");
+                            $species_code = db_select('chado.organismprop', 'o')
+                                ->fields('o', array('value'))
+                                ->condition($and)
                                 ->execute()
                                 ->fetchAssoc();
-                            $organism_id = $query['organism_id'];
-                            
-                            if (!isset($last_org_id) or $last_org_id !== $organism_id){
-                                //if the last organism id is not present or is different from this one, get a new species code. otherwise, keep the last one to avoid some redundant queries
-                                $and = db_and()
-                                    ->condition('type_id', '52307')
-                                    ->condition('organism_id', "$organism_id");
-                                $species_code = db_select('chado.organismprop', 'o')
-                                    ->fields('o', array('value'))
-                                    ->condition($and)
-                                    ->execute()
-                                    ->fetchAssoc();
-                                $species_code = $species_code['value'];
-                            }
-                            
-                            $genotype_vals = array();
-                            foreach ($snp_data_cols as $snp_id){
-                                $genotype_count++;
-                                $snp_value = $row[$snp_id];
-                                
-                                if ($genotype_count > 10000){
-                                    $genotype_count = 0;
-                                    tpps_create_record('genotype', $genotype_vals);
-                                    $genotype_vals = array();
-                                }
-                                
-                                $genotype_vals[] = array(
-                                  'name' => "$snp_id-$species_code-$snp_value",
-                                  'uniquename' => "$snp_id-$species_code-$snp_value",
-                                  'description' => $snp_value,
-                                  'type_id' => '1205'
-                                );
-                            }
-                            
-                            //save the organism id for the next row
-                            $last_org_id = $organism_id;
+                            $species_code = $species_code['value'];
                         }
+
+                        $genotype_vals = array();
+                        foreach ($genotype_cols as $marker_id){
+                            $genotype_count++;
+                            $marker_value = $row[$marker_id];
+
+                            if ($genotype_count > 10000){
+                                $genotype_count = 0;
+                                tpps_create_record('genotype', $genotype_vals);
+                                $genotype_vals = array();
+                            }
+                            
+                            if ($genotype['marker-type']['SNPs']){
+                                $marker_type_id = 1205;
+                            }
+                            elseif ($genotype['marker-type']['SSRs/cpSSRs']) {
+                                if ($genotype['SSRs/cpSSRs'] == 'cpSSR'){
+                                    $marker_type_id = 54739;
+                                }
+                                else {
+                                    $marker_type_id = 54733;
+                                }
+                            }
+                            else {
+                                //type_id for "other genotype marker" should just be 'genotype'
+                                $marker_type_id = 1464;
+                            }
+
+                            $genotype_vals[] = array(
+                              'name' => "$marker_id-$species_code-$marker_value",
+                              'uniquename' => "$marker_id-$species_code-$marker_value",
+                              'description' => $marker_value,
+                              'type_id' => "$marker_type_id"
+                            );
+                        }
+
+                        //save the organism id for the next row
+                        $last_org_id = $organism_id;
                     }
-                    tpps_create_record('genotype', $genotype_vals);
-                    unset($genotype_vals);
-                    $genotype_count = 0;
                 }
+                tpps_create_record('genotype', $genotype_vals);
+                unset($genotype_vals);
+                $genotype_count = 0;
                 
                 $file->status = FILE_STATUS_PERMANENT;
                 $file = file_save($file);
