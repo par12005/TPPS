@@ -4129,6 +4129,10 @@ function tpps_file_parsing($form_state){
                                     $marker_type_id = 54733;
                                 }
                             }
+                            else {
+                                //type_id for "other genotype marker" should just be 'genotype'
+                                $marker_type_id = 1464;
+                            }
 
                             $genotype_vals[] = array(
                               'name' => "$marker_id-$species_code-$marker_value",
