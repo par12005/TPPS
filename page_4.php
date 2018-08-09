@@ -788,36 +788,34 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
       'key' => 'filename',
       'recurse' => FALSE
     );
+    
+    $genome_dir = variable_get('tpps_local_genome_dir', NULL);
+    
+    if ($genome_dir){
+        $results = file_scan_directory($genome_dir, '/^([A-Z]|[a-z]){4}$/', $options);
+        foreach($results as $key=>$value){
+            $query = db_select('chado.organismprop', 'organismprop')
+                ->fields('organismprop', array('organism_id'))
+                ->condition('value', $key)
+                ->execute()
+                ->fetchAssoc();
+            $query = db_select('chado.organism', 'organism')
+                ->fields('organism', array('genus', 'species'))
+                ->condition('organism_id', $query['organism_id'])
+                ->execute()
+                ->fetchAssoc();
 
-    $results = file_scan_directory("/isg/treegenes/treegenes_store/FTP/Genomes", '/^([A-Z]|[a-z]){4}$/', $options);
-    //dpm($results);
+            $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
+            foreach($versions as $item){
+                $opt_string = $query['genus'] . " " . $query['species'] . " " . $item->filename;
+                $ref_genome_arr[$opt_string] = $opt_string;
+            }
+        }
+    }
 
     $ref_genome_arr = array();
     $ref_genome_arr[0] = '- Select -';
 
-    foreach($results as $key=>$value){
-        //dpm($key);
-        $query = db_select('chado.organismprop', 'organismprop')
-            ->fields('organismprop', array('organism_id'))
-            ->condition('value', $key)
-            ->execute()
-            ->fetchAssoc();
-        //dpm($query['organism_id']);
-        $query = db_select('chado.organism', 'organism')
-            ->fields('organism', array('genus', 'species'))
-            ->condition('organism_id', $query['organism_id'])
-            ->execute()
-            ->fetchAssoc();
-        //dpm($query['genus'] . " " . $query['species']);
-
-        $versions = file_scan_directory("/isg/treegenes/treegenes_store/FTP/Genomes/$key", '/^v([0-9]|.)+$/', $options);
-        //dpm($versions);
-        foreach($versions as $item){
-            $opt_string = $query['genus'] . " " . $query['species'] . " " . $item->filename;
-            $ref_genome_arr[$opt_string] = $opt_string;
-        }
-    }
-    
     $ref_genome_arr["url"] = 'I can provide a URL to the website of my reference file(s)';
     $ref_genome_arr["bio"] = 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list';
     $ref_genome_arr["manual"] = 'I can upload my own reference genome file';

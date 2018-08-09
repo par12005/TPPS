@@ -3613,6 +3613,13 @@ function tpps_admin_settings($form, &$form_state){
       '#default_value' => variable_get('tpps_admin_email', 'treegenesdb@gmail.com'),
     );
     
+    $form['tpps_local_genome_dir'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Reference Genome file directory:'),
+      '#default_value' => variable_get('tpps_local_genome_dir', NULL),
+      '#description' => 'The directory of local genome files on your web server. If left blank, tpps will skip the searching for local genomes step in the tpps genotype section. Local genome files should be organized according to the following structure: <br>[file directory]/[species code]/[version number]/[genome data] where: <br>&emsp;&emsp;[file directory] is the full path to the genome files provided above <br>&emsp;&emsp;[species code] is the 4-letter standard species code - this must match the species code entry in the "chado.organismprop" table<br>&emsp;&emsp;[version number] is the reference genome version, of the format "v#.#"<br>&emsp;&emsp;[genome data] is the actual reference genome files - these can be any format or structure<br>More information is available <a href="https://tpps.rtfd.io/en/latest/config.html" target="blank">here</a>.',
+    );
+    
     $form['tpps_author_files_dir'] = array(
       '#type' => 'textfield', 
       '#title' => t('Author files:'),
