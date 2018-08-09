@@ -181,6 +181,26 @@ function page_4_create_form(&$form, &$form_state){
             }
             
         }
+        
+        if (preg_match('/E/', $data_type)){
+            if ($i > 1){
+                $form["organism-$i"]['environment-repeat-check'] = array(
+                  '#type' => 'checkbox',
+                  '#title' => "Environmental information for $name is the same as environmental information for {$form_state['saved_values']['Hellopage']['organism'][$i - 1]}.",
+                  '#default_value' => isset($values["organism-$i"]['environment-repeat-check']) ? $values["organism-$i"]['environment-repeat-check'] : 1,
+                );
+            }
+            
+            $form["organism-$i"]['environment'] = environment($form, $form_state, $values, "organism-$i");
+            
+            if ($i > 1){
+                $form["organism-$i"]['environment']['#states'] = array(
+                  'invisible' => array(
+                    ":input[name=\"organism-$i\[environment-repeat-check]\"]" => array('checked' => TRUE)
+                  )
+                );
+            }
+        }
     }
     
     $form['Back'] = array(
@@ -745,6 +765,21 @@ function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location)
         file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
 
+    return $fields;
+}
+
+function environment(&$form, &$form_state, $values, $id){
+    $fields = array(
+      '#type' => 'fieldset',
+      '#title' => t('<div class="fieldset-title">Environmental Information:</div>'),
+      '#collapsible' => TRUE,
+    );
+    
+    $fields['info'] = array(
+      '#type' => 'textfield',
+      '#title' => 'info',
+    );
+    
     return $fields;
 }
 
