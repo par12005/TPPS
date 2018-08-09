@@ -775,8 +775,16 @@ function phenotype_header_callback($form, $form_state){
 
 function snps_file_callback($form, $form_state){
     $id = $form_state['triggering_element']['#parents'][0];
+    $commands = array();
+    $commands[] = ajax_command_replace("#edit-$id-genotype-file-ajax-wrapper", drupal_render($form[$id]['genotype']['file']));
+    if (!$form_state['complete form'][$id]['genotype']['file-type']['Genotype Assay']['#value']){
+        $commands[] = ajax_command_invoke(".form-item-$id-genotype-file", 'hide');
+    }
+    else {
+        $commands[] = ajax_command_invoke(".form-item-$id-genotype-file", 'show');
+    }
     
-    return $form[$id]['genotype']['file'];
+    return array('#type' => 'ajax', '#commands' => $commands);
 }
 
 function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_location){
