@@ -790,9 +790,11 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
     );
     
     $genome_dir = variable_get('tpps_local_genome_dir', NULL);
+    $ref_genome_arr = array();
+    $ref_genome_arr[0] = '- Select -';
     
     if ($genome_dir){
-        $results = file_scan_directory($genome_dir, '/^([A-Z]|[a-z]){4}$/', $options);
+        $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
         foreach($results as $key=>$value){
             $query = db_select('chado.organismprop', 'organismprop')
                 ->fields('organismprop', array('organism_id'))
@@ -804,7 +806,7 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
                 ->condition('organism_id', $query['organism_id'])
                 ->execute()
                 ->fetchAssoc();
-
+            
             $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
             foreach($versions as $item){
                 $opt_string = $query['genus'] . " " . $query['species'] . " " . $item->filename;
@@ -812,9 +814,6 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
             }
         }
     }
-
-    $ref_genome_arr = array();
-    $ref_genome_arr[0] = '- Select -';
 
     $ref_genome_arr["url"] = 'I can provide a URL to the website of my reference file(s)';
     $ref_genome_arr["bio"] = 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list';
