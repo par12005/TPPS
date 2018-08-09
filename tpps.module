@@ -593,17 +593,8 @@ function tpps_flatten($state){
         $data['Study Location'] = $loc['coordinates'];
     }
     
-    if ($page_2['dataType']){
-        $data_type_options = array(
-          1 => 'Genotype x Phenotype',
-          2 => 'Genotype',
-          3 => 'Genotype x Phenotype x Environment',
-          4 => 'Phenotype x Environment',
-          5 => 'Genotype x Environment'
-        );
-        if (isset($data_type_options[$page_2['dataType']])){
-            $data['Data Type'] = $data_type_options[$page_2['dataType']];
-        }
+    if (isset($page_2['dataType']) and $page_2['dataType']){
+        $data['Data Type'] = $page_2['dataType'];
     }
     
     if ($page_2['studyType']){
@@ -2067,14 +2058,6 @@ function tpps_submit_email($form, $form_state){
       4 => 'Experimental/Common Garden',
       5 => 'Plantation',
     );
-    $data_options = array(
-      '- Select -',
-      'Genotype x Phenotype',
-      'Genotype',
-      'Genotype x Phenotype x Environment',
-      'Phenotype x Environment',
-      'Genotype x Environment'
-    );
     
     $params['author'] = $form_state['saved_values']['Hellopage']['primaryAuthor'];
     $params['org'] = $form_state['saved_values']['Hellopage']['organization'];
@@ -2082,7 +2065,7 @@ function tpps_submit_email($form, $form_state){
     $params['journal'] = $form_state['saved_values']['Hellopage']['publication']['journal'];
     $params['organisms'] = $form_state['saved_values']['Hellopage']['organism'];
     $params['study_type'] = $study_options[$form_state['saved_values']['secondPage']['studyType']];
-    $params['data_type'] = $data_options[$form_state['saved_values']['secondPage']['dataType']];
+    $params['data_type'] = $form_state['saved_values']['secondPage']['dataType'];
     $params['accession'] = $form_state['accession'];
     $params['base_url'] = $base_url;
     $params['body'] = '';
@@ -2332,16 +2315,7 @@ function submit_all(&$form_state){
         ));
     }
     
-    $datatype_options = array(
-      '0' => '- Select -',
-      '1' => 'Genotype x Phenotype',
-      '2' => 'Genotype',
-      '3' => 'Genotype x Phenotype x Environment',
-      '4' => 'Phenotype x Environment',
-      '5' => 'Genotype x Environment'
-    );
-    
-    $datatype = $datatype_options[$secondpage['dataType']];
+    $datatype = $secondpage['dataType'];
     
     $datatype_id = tpps_create_record('projectprop', array(
       'project_id' => $project_id,

@@ -560,7 +560,6 @@ function page_4_create_form(&$form, &$form_state){
     
     $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
     $data_type = $form_state['saved_values']['secondPage']['dataType'];
-    //dpm($data_type);
     for ($i = 1; $i <= $organism_number; $i++){
         
         $name = $form_state['saved_values']['Hellopage']['organism']["$i"];
@@ -572,7 +571,7 @@ function page_4_create_form(&$form, &$form_state){
           //'#collapsible' => TRUE
         );
 
-        if ($data_type == '1' or $data_type == '3' or $data_type == '4'){
+        if (preg_match('/P/', $data_type)){
             if ($i > 1){
                 $form["organism-$i"]['phenotype-repeat-check'] = array(
                   '#type' => 'checkbox',
@@ -708,7 +707,7 @@ function page_4_create_form(&$form, &$form_state){
             }
         }
         
-        if ($data_type == '1' or $data_type == '2' or $data_type == '3' or $data_type == '5'){
+        if (preg_match('/G/', $data_type)){
             if ($i > 1){
                 $form["organism-$i"]['genotype-repeat-check'] = array(
                   '#type' => 'checkbox',

@@ -1164,12 +1164,12 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>'
       '#type' => 'select',
       '#title' => t('Data Type: *'),
       '#options' => array(
-        '- Select -',
-        'Genotype x Phenotype',
-        'Genotype',
-        'Genotype x Phenotype x Environment',
-        'Phenotype x Environment',
-        'Genotype x Environment'
+        0 => '- Select -',
+        'Genotype x Phenotype' => 'Genotype x Phenotype',
+        'Genotype' => 'Genotype',
+        'Genotype x Phenotype x Environment' => 'Genotype x Phenotype x Environment',
+        'Phenotype x Environment' => 'Phenotype x Environment',
+        'Genotype x Environment' => 'Genotype x Environment'
       ),
       '#default_value' => isset($values['dataType']) ? $values['dataType'] : 0,
     );
@@ -1277,7 +1277,7 @@ function page_2_validate_form(&$form, &$form_state){
             }
         }
 
-        if ($data_type == '0'){
+        if (!$data_type){
             form_set_error('dataType', 'Data Type: field is required.');
         }
 
