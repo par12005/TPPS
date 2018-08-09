@@ -12,552 +12,6 @@ function page_4_create_form(&$form, &$form_state){
     
     $form['#tree'] = TRUE;
     
-    function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_location){
-        
-        $fields = array(
-          '#type' => 'fieldset',
-          '#title' => t('<div class="fieldset-title">Phenotype Information:</div>'),
-          '#tree' => TRUE,
-          '#prefix' => "<div id=\"phenotypes-$id\">",
-          '#suffix' => '</div>',
-          '#description' => t('Upload a file and/or fill in form fields below to provide us with metadata about your phenotypes.'),
-          '#collapsible' => TRUE,
-        );
-        
-        if (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Add Phenotype-$id"){
-            $form_state['values'][$id]['phenotype']['number']++;
-        }
-        elseif (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Remove Phenotype-$id" and $form_state['values'][$id]['phenotype']['number'] > 0){
-            $form_state['values'][$id]['phenotype']['number']--;
-        }
-        $phenotype_number = isset($form_state['values'][$id]['phenotype']['number']) ? $form_state['values'][$id]['phenotype']['number'] : NULL;
-        
-        if (!isset($phenotype_number) and isset($form_state['saved_values']['fourthPage'][$id]['phenotype']['number'])){
-            $phenotype_number = $form_state['saved_values']['fourthPage'][$id]['phenotype']['number'];
-        }
-        if (!isset($phenotype_number)){
-            $phenotype_number = 0;
-        }
-        
-        $fields['check'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('I would like to upload a phenotype metadata file'),
-          '#default_value' => isset($values[$id]['phenotype']['check']) ? $values[$id]['phenotype']['check'] : NULL,
-          '#attributes' => array(
-            'data-toggle' => array('tooltip'),
-            'data-placement' => array('left'),
-            'title' => array('Upload a file')
-          )
-        );
-        
-        $fields['add'] = array(
-          '#type' => 'button',
-          '#name' => t("Add Phenotype-$id"),
-          '#button_type' => 'button',
-          '#value' => t('Add Phenotype'),
-          '#ajax' => array(
-            'callback' => 'update_phenotype',
-            'wrapper' => "phenotypes-$id"
-          ),
-        );
-        
-        $fields['remove'] = array(
-          '#type' => 'button',
-          '#name' => t("Remove Phenotype-$id"),
-          '#button_type' => 'button',
-          '#value' => t('Remove Phenotype'),
-          '#ajax' => array(
-            'callback' => 'update_phenotype',
-            'wrapper' => "phenotypes-$id"
-          ),
-        );
-        
-        $fields['number'] = array(
-          '#type' => 'hidden',
-          '#value' => "$phenotype_number"
-        );
-        
-        $fields['phenotypes-meta'] = array(
-          '#type' => 'fieldset',
-          '#tree' => TRUE,
-        );
-        
-        for ($i = 1; $i <= $phenotype_number; $i++){
-            
-            $fields['phenotypes-meta']["$i"] = array(
-              '#type' => 'fieldset',
-              '#tree' => TRUE,
-            );
-            
-            $fields['phenotypes-meta']["$i"]['name'] = array(
-              '#type' => 'textfield',
-              '#title' => t("Phenotype $i Name: *"),
-              '#autocomplete_path' => 'phenotype/autocomplete',
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['name']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['name'] : NULL,
-              '#prefix' => "<label><b>Phenotype $i:</b></label>",
-              '#attributes' => array(
-                'data-toggle' => array('tooltip'),
-                'data-placement' => array('left'),
-                'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
-              ),
-              '#description' => t("Phenotype \"name\" is the human-readable name of the phenotype, where \"attribute\" is the thing that the phenotype is describing. Phenotype \"name\" should match the data in the \"Phenotype Name/Identifier\" column that you select in your <a href=\"#edit-$id-phenotype-file-ajax-wrapper\">Phenotype file</a> below.")
-            );
-            
-            $fields['phenotypes-meta']["$i"]['attribute'] = array(
-              '#type' => 'textfield',
-              '#title' => t("Phenotype $i Attribute: *"),
-              '#autocomplete_path' => 'attribute/autocomplete',
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute'] : NULL,
-              '#attributes' => array(
-                'data-toggle' => array('tooltip'),
-                'data-placement' => array('left'),
-                'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
-              ),
-              '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
-            );
-            
-            $fields['phenotypes-meta']["$i"]['description'] = array(
-              '#type' => 'textfield',
-              '#title' => t("Phenotype $i Description: *"),
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['description']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['description'] : NULL,
-              '#description' => t("Please provide a short description of Phenotype $i"),
-            );
-            
-            $fields['phenotypes-meta']["$i"]['units'] = array(
-              '#type' => 'textfield',
-              '#title' => t("Phenotype $i Units: *"),
-              '#autocomplete_path' => 'units/autocomplete',
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['units']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['units'] : NULL,
-              '#attributes' => array(
-                'data-toggle' => array('tooltip'),
-                'data-placement' => array('left'),
-                'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
-              ),
-              '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
-            );
-            
-            $fields['phenotypes-meta']["$i"]['struct-check'] = array(
-              '#type' => 'checkbox',
-              '#title' => t("Phenotype $i has a structure descriptor"),
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['struct-check']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['struct-check'] : NULL,
-            );
-            
-            $fields['phenotypes-meta']["$i"]['structure'] = array(
-              '#type' => 'textfield',
-              '#title' => t("Phenotype $i Structure: *"),
-              '#autocomplete_path' => 'structure/autocomplete',
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['structure']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['structure'] : NULL,
-              '#attributes' => array(
-                'data-toggle' => array('tooltip'),
-                'data-placement' => array('left'),
-                'title' => array('If your structure is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
-              ),
-              '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][struct-check]"]' => array('checked' => TRUE)
-                )
-              ),
-            );
-            
-            $fields['phenotypes-meta']["$i"]['val-check'] = array(
-              '#type' => 'checkbox',
-              '#title' => t("Phenotype $i has a value range"),
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['val-check']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['val-check'] : NULL,
-            );
-            
-            $fields['phenotypes-meta']["$i"]['min'] = array(
-              '#type' => 'textfield',
-              '#title' => t("Phenotype $i Minimum Value (type 1 for binary): *"),
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['min']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['min'] : NULL,
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE)
-                )
-              ),
-            );
-            
-            $fields['phenotypes-meta']["$i"]['max'] = array(
-              '#type' => 'textfield',
-              '#title' => t("Phenotype $i Maximum Value (type 2 for binary): *"),
-              '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['max']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['max'] : NULL,
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE)
-                )
-              ),
-            );
-        }
-        
-        $fields['metadata'] = array(
-          '#type' => 'managed_file',
-          '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, description, and units of each of your phenotypes: *'),
-          '#upload_location' => "$phenotype_upload_location",
-          '#upload_validators' => array(
-            'file_validate_extensions' => array('csv tsv xlsx')
-          ),
-          '#default_value' => isset($values[$id]['phenotype']['metadata']) ? $values[$id]['phenotype']['metadata'] : NULL,
-          '#states' => array(
-            'visible' => array(
-              ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE)
-            )
-          ),
-          '#tree' => TRUE
-        );
-
-        $fields['no-header'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('My file has no header row'),
-          '#default_value' => isset($values[$id]['phenotype']['no-header']) ? $values[$id]['phenotype']['no-header'] : NULL,
-          '#ajax' => array(
-            'wrapper' => "header-$id-wrapper",
-            'callback' => 'metadata_header_callback',
-          ),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE)
-            )
-          ),
-        );
-
-        $fields['metadata']['columns'] = array(
-          '#type' => 'fieldset',
-          '#title' => t('<div class="fieldset-title">Define Data</div>'),
-          '#states' => array(
-            'invisible' => array(
-              ':input[name="' . $id . '_phenotype_metadata_upload_button"]' => array('value' => 'Upload')
-            )
-          ),
-          '#description' => 'Please define which columns hold the required data: Phenotype name',
-          '#prefix' => "<div id=\"header-$id-wrapper\">",
-          '#suffix' => '</div>',
-          '#collapsible' => TRUE
-        );
-
-        $file = 0;
-        if (isset($form_state['values']["$id"]['phenotype']['metadata']) and $form_state['values']["$id"]['phenotype']['metadata'] != 0){
-            $file = $form_state['values']["$id"]['phenotype']['metadata'];
-            $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'] = $form_state['values']["$id"]['phenotype']['metadata'];
-        }
-        elseif (isset($form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata']) and $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'] != 0){
-            $file = $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'];
-        }
-
-        if ($file != 0){
-            if (($file = file_load($file))){
-                $file_name = $file->uri;
-                
-                //stop using the file so it can be deleted if the user clicks 'remove'
-                file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
-                $location = drupal_realpath("$file_name");
-                $content = parse_xlsx($location);
-                $no_header = FALSE;
-
-                if (isset($form_state['complete form']["$id"]['phenotype']['no-header']['#value']) and $form_state['complete form']["$id"]['phenotype']['no-header']['#value'] == 1){
-                    tpps_content_no_header($content);
-                    $no_header = TRUE;
-                }
-                elseif (!isset($form_state['complete form']["$id"]['phenotype']['no-header']['#value']) and isset($values["$id"]['phenotype']['no-header']) and $values["$id"]['phenotype']['no-header'] == 1){
-                    tpps_content_no_header($content);
-                    $no_header = TRUE;
-                }
-                
-                $column_options = array(
-                  'N/A',
-                  'Phenotype Name/Identifier',
-                  'Attribute',
-                  'Description',
-                  'Units',
-                  'Structure',
-                  'Minimum Value',
-                  'Maximum Value'
-                );
-
-                $first = TRUE;
-
-                foreach ($content['headers'] as $item){
-                    $fields['metadata']['columns'][$item] = array(
-                      '#type' => 'select',
-                      '#title' => t($item),
-                      '#options' => $column_options,
-                      '#default_value' => isset($values["$id"]['phenotype']['metadata-columns'][$item]) ? $values["$id"]['phenotype']['metadata-columns'][$item] : 0,
-                      '#prefix' => "<td>",
-                      '#suffix' => "</td>",
-                      '#attributes' => array(
-                        'data-toggle' => array('tooltip'),
-                        'data-placement' => array('left'),
-                        'title' => array("Select the type of data the '$item' column holds")
-                      )
-                    );
-
-                    if ($first){
-                        $first = FALSE;
-                        $fields['metadata']['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $fields['metadata']['columns'][$item]['#prefix'];
-                    }
-
-                    if ($no_header){
-                        $fields['metadata']['columns'][$item]['#title'] = '';
-                        $fields['metadata']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
-                    }
-                }
-
-                // display sample data
-                $display = "</tr>";
-                for ($j = 0; $j < 3; $j++){
-                    if (isset($content[$j])){
-                        $display .= "<tr>";
-                        foreach ($content['headers'] as $item){
-                            $display .= "<th>{$content[$j][$item]}</th>";
-                        }
-                        $display .= "</tr>";
-                    }
-                }
-                $display .= "</tbody></table></div>";
-
-                $fields['metadata']['columns'][$item]['#suffix'] .= $display;
-            }
-        }
-        
-        return $fields;
-    }
-    
-    function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location){
-        
-        $fields = array(
-          '#type' => 'fieldset',
-          '#title' => t('<div class="fieldset-title">Genotype Information:</div>'),
-          '#collapsible' => TRUE,
-        );
-        
-        page_4_marker_info($fields, $values, $id);
-        
-        $fields['marker-type']['SNPs']['#ajax'] = array(
-          'callback' => 'snps_file_callback',
-          'wrapper' => "edit-$id-genotype-file-ajax-wrapper"
-        );
-        
-        page_4_ref($fields, $form_state, $values, $id, $genotype_upload_location);
-        
-        $fields['file-type'] = array(
-          '#type' => 'checkboxes',
-          '#title' => t('Genotype File Types (select all that apply): *'),
-          '#options' => array(
-            'Genotype Assay' => 'Genotype Spreadsheet/Assay',
-            'Assay Design' => 'Assay Design',
-            'VCF' => 'VCF',
-          ),
-          '#default_value' => isset($values[$id]['genotype']['file-type']) ? $values[$id]['genotype']['file-type'] : NULL,
-        );
-        
-        $fields['file-type']['Assay Design']['#states'] = array(
-          'visible' => array(
-            ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => TRUE),
-          )
-        );
-        
-        $fields['file'] = array(
-          '#type' => 'managed_file',
-          '#title' => t('Genotype Spreadsheet File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
-          '#upload_location' => "$genotype_upload_location",
-          '#upload_validators' => array(
-            'file_validate_extensions' => array('xlsx')
-          ),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => true)
-            )
-          ),
-          '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
-          '#description' => 0,
-          '#tree' => TRUE
-        );
-        
-        $assay_desc = "Please upload a spreadsheet file containing Genotype Assay data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier, and one column for each SNP data associated with the study. Column data types will default to \"SNP Data\", so please leave any columns with SNP data as the default.";
-        $spreadsheet_desc = "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier.";
-        if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and $form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']){
-            $fields['file']['#description'] = $assay_desc;
-        }
-        if (!$fields['file']['#description'] and !isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and isset($values[$id]['genotype']['marker-type']['SNPs']) and $values[$id]['genotype']['marker-type']['SNPs']){
-            $fields['file']['#description'] = $assay_desc;
-        }
-        if (!$fields['file']['#description']){
-            $fields['file']['#description'] = $spreadsheet_desc;
-        }
-        
-        $fields['no-header'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('My file has no header row'),
-          '#default_value' => isset($values[$id]['genotype']['no-header']) ? $values[$id]['genotype']['no-header'] : NULL,
-          '#ajax' => array(
-            'wrapper' => "genotype-header-$id-wrapper",
-            'callback' => 'genotype_header_callback',
-          ),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => true)
-            )
-          ),
-        );
-
-        $fields['file']['columns'] = array(
-          '#type' => 'fieldset',
-          '#title' => t('<div class="fieldset-title">Define Data</div>'),
-          '#states' => array(
-            'invisible' => array(
-              ':input[name="' . $id . '_genotype_file_upload_button"]' => array('value' => 'Upload')
-            )
-          ),
-          '#description' => 'Please define which columns hold the required data: Tree Identifier, SNP Data',
-          '#prefix' => "<div id=\"genotype-header-$id-wrapper\">",
-          '#suffix' => '</div>',
-          '#collapsible' => TRUE
-        );
-        
-        $file = 0;
-        if (isset($form_state['values'][$id]['genotype']['file']) and $form_state['values'][$id]['genotype']['file'] != 0){
-            $file = $form_state['values'][$id]['genotype']['file'];
-            //dpm($file);
-        }
-        elseif (isset($form_state['saved_values']['fourthPage'][$id]['genotype']['file']) and $form_state['saved_values']['fourthPage'][$id]['genotype']['file'] != 0){
-            $file = $form_state['saved_values']['fourthPage'][$id]['genotype']['file'];
-        }
-        
-        if ($file != 0){
-            if (($file = file_load($file))){
-                $file_name = $file->uri;
-                
-                //stop using the file so it can be deleted if the user clicks 'remove'
-                file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
-                $location = drupal_realpath("$file_name");
-                $content = parse_xlsx($location);
-                $no_header = FALSE;
-
-                if (isset($form_state['complete form'][$id]['genotype']['no-header']['#value']) and $form_state['complete form'][$id]['genotype']['no-header']['#value'] == 1){
-                    tpps_content_no_header($content);
-                    $no_header = TRUE;
-                }
-                elseif (!isset($form_state['complete form'][$id]['genotype']['no-header']['#value']) and isset($values[$id]['genotype']['no-header']) and $values[$id]['genotype']['no-header'] == 1){
-                    tpps_content_no_header($content);
-                    $no_header = TRUE;
-                }
-
-                $column_options = array(
-                  'N/A',
-                  'Tree Identifier',
-                  'SNP Data',
-                );
-                
-                if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and !$form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']){
-                    $column_options[2] = 'Genotype Data';
-                }
-                elseif (!isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and isset($values[$id]['genotype']['marker-type']['SNPs']) and !$values[$id]['genotype']['marker-type']['SNPs']){
-                    $column_options[2] = 'Genotype Data';
-                }
-
-                $first = TRUE;
-
-                foreach ($content['headers'] as $item){
-                    $fields['file']['columns'][$item] = array(
-                      '#type' => 'select',
-                      '#title' => t($item),
-                      '#options' => $column_options,
-                      '#default_value' => isset($values[$id]['genotype']['file-columns'][$item]) ? $values[$id]['genotype']['file-columns'][$item] : 0,
-                      '#prefix' => "<td>",
-                      '#suffix' => "</td>",
-                      '#attributes' => array(
-                        'data-toggle' => array('tooltip'),
-                        'data-placement' => array('left'),
-                        'title' => array("Select the type of data the '$item' column holds")
-                      )
-                    );
-                    
-                    if (!isset($values[$id]['genotype']['file-columns'][$item]) and isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and $form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']){
-                        //if Genotype Assay file and the value has not been set, set default value to 'SNP Data'
-                        $fields['file']['columns'][$item]['#default_value'] = 2;
-                    }
-
-                    if ($first){
-                        $first = FALSE;
-                        $fields['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
-                    }
-
-                    if ($no_header){
-                        $fields['file']['columns'][$item]['#title'] = '';
-                        $fields['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
-                    }
-                }
-
-                // display sample data
-                $display = "</tr>";
-                for ($i = 0; $i < 3; $i++){
-                    if (isset($content[$i])){
-                        $display .= "<tr>";
-                        foreach ($content['headers'] as $item){
-                            $display .= "<th>{$content[$i][$item]}</th>";
-                        }
-                        $display .= "</tr>";
-                    }
-                }
-                $display .= "</tbody></table></div>";
-
-                $fields['file']['columns'][$item]['#suffix'] .= $display;
-            }
-        }
-        
-        $fields['assay-design'] = array(
-          '#type' => 'managed_file',
-          '#title' => 'Genotype Assay Design File: *',
-          '#upload_location' => "$genotype_upload_location",
-          '#upload_validators' => array(
-            'file_validate_extensions' => array('xlsx')
-          ),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="' . $id . '[genotype][file-type][Assay Design]"]' => array('checked' => TRUE),
-              ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => TRUE),
-            )
-          ),
-          '#default_value' => isset($values[$id]['genotype']['assay-design']) ? $values[$id]['genotype']['assay-design'] : NULL,
-          '#tree' => TRUE,
-        );
-        
-        if (isset($fields['assay-design']['#value'])){
-            $fields['assay-design']['#default_value'] = $fields['assay-design']['#value'];
-        }
-        if (isset($fields['assay-design']['#default_value']) and $fields['assay-design']['#default_value'] and ($file = file_load($fields['assay-design']['#default_value']))){
-            //stop using the file so it can be deleted if the user clicks 'remove'
-            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        }
-        
-        $fields['vcf'] = array(
-          '#type' => 'managed_file',
-          '#title' => t('Genotype VCF File: *'),
-          '#upload_location' => "$genotype_upload_location",
-          '#upload_validators' => array(
-            'file_validate_extensions' => array('vcf')
-          ),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="' . $id . '[genotype][file-type][VCF]"]' => array('checked' => true)
-            )
-          ),
-          '#default_value' => isset($values[$id]['genotype']['vcf']) ? $values[$id]['genotype']['vcf'] : NULL,
-          '#tree' => TRUE
-        );
-        
-        if (isset($fields['vcf']['#value'])){
-            $fields['vcf']['#default_value'] = $fields['vcf']['#value'];
-        }
-        if (isset($fields['vcf']['#default_value']) and $fields['vcf']['#default_value'] and ($file = file_load($fields['vcf']['#default_value']))){
-            //stop using the file so it can be deleted if the user clicks 'remove'
-            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        }
-        
-        return $fields;
-    }
-    
     $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
     $data_type = $form_state['saved_values']['secondPage']['dataType'];
     for ($i = 1; $i <= $organism_number; $i++){
@@ -746,6 +200,552 @@ function page_4_create_form(&$form, &$form_state){
     );
     
     return $form;
+}
+
+function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_location){
+
+    $fields = array(
+      '#type' => 'fieldset',
+      '#title' => t('<div class="fieldset-title">Phenotype Information:</div>'),
+      '#tree' => TRUE,
+      '#prefix' => "<div id=\"phenotypes-$id\">",
+      '#suffix' => '</div>',
+      '#description' => t('Upload a file and/or fill in form fields below to provide us with metadata about your phenotypes.'),
+      '#collapsible' => TRUE,
+    );
+
+    if (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Add Phenotype-$id"){
+        $form_state['values'][$id]['phenotype']['number']++;
+    }
+    elseif (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Remove Phenotype-$id" and $form_state['values'][$id]['phenotype']['number'] > 0){
+        $form_state['values'][$id]['phenotype']['number']--;
+    }
+    $phenotype_number = isset($form_state['values'][$id]['phenotype']['number']) ? $form_state['values'][$id]['phenotype']['number'] : NULL;
+
+    if (!isset($phenotype_number) and isset($form_state['saved_values']['fourthPage'][$id]['phenotype']['number'])){
+        $phenotype_number = $form_state['saved_values']['fourthPage'][$id]['phenotype']['number'];
+    }
+    if (!isset($phenotype_number)){
+        $phenotype_number = 0;
+    }
+
+    $fields['check'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('I would like to upload a phenotype metadata file'),
+      '#default_value' => isset($values[$id]['phenotype']['check']) ? $values[$id]['phenotype']['check'] : NULL,
+      '#attributes' => array(
+        'data-toggle' => array('tooltip'),
+        'data-placement' => array('left'),
+        'title' => array('Upload a file')
+      )
+    );
+
+    $fields['add'] = array(
+      '#type' => 'button',
+      '#name' => t("Add Phenotype-$id"),
+      '#button_type' => 'button',
+      '#value' => t('Add Phenotype'),
+      '#ajax' => array(
+        'callback' => 'update_phenotype',
+        'wrapper' => "phenotypes-$id"
+      ),
+    );
+
+    $fields['remove'] = array(
+      '#type' => 'button',
+      '#name' => t("Remove Phenotype-$id"),
+      '#button_type' => 'button',
+      '#value' => t('Remove Phenotype'),
+      '#ajax' => array(
+        'callback' => 'update_phenotype',
+        'wrapper' => "phenotypes-$id"
+      ),
+    );
+
+    $fields['number'] = array(
+      '#type' => 'hidden',
+      '#value' => "$phenotype_number"
+    );
+
+    $fields['phenotypes-meta'] = array(
+      '#type' => 'fieldset',
+      '#tree' => TRUE,
+    );
+
+    for ($i = 1; $i <= $phenotype_number; $i++){
+
+        $fields['phenotypes-meta']["$i"] = array(
+          '#type' => 'fieldset',
+          '#tree' => TRUE,
+        );
+
+        $fields['phenotypes-meta']["$i"]['name'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Phenotype $i Name: *"),
+          '#autocomplete_path' => 'phenotype/autocomplete',
+          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['name']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['name'] : NULL,
+          '#prefix' => "<label><b>Phenotype $i:</b></label>",
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('left'),
+            'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
+          ),
+          '#description' => t("Phenotype \"name\" is the human-readable name of the phenotype, where \"attribute\" is the thing that the phenotype is describing. Phenotype \"name\" should match the data in the \"Phenotype Name/Identifier\" column that you select in your <a href=\"#edit-$id-phenotype-file-ajax-wrapper\">Phenotype file</a> below.")
+        );
+
+        $fields['phenotypes-meta']["$i"]['attribute'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Phenotype $i Attribute: *"),
+          '#autocomplete_path' => 'attribute/autocomplete',
+          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute'] : NULL,
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('left'),
+            'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
+          ),
+          '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
+        );
+
+        $fields['phenotypes-meta']["$i"]['description'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Phenotype $i Description: *"),
+          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['description']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['description'] : NULL,
+          '#description' => t("Please provide a short description of Phenotype $i"),
+        );
+
+        $fields['phenotypes-meta']["$i"]['units'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Phenotype $i Units: *"),
+          '#autocomplete_path' => 'units/autocomplete',
+          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['units']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['units'] : NULL,
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('left'),
+            'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
+          ),
+          '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
+        );
+
+        $fields['phenotypes-meta']["$i"]['struct-check'] = array(
+          '#type' => 'checkbox',
+          '#title' => t("Phenotype $i has a structure descriptor"),
+          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['struct-check']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['struct-check'] : NULL,
+        );
+
+        $fields['phenotypes-meta']["$i"]['structure'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Phenotype $i Structure: *"),
+          '#autocomplete_path' => 'structure/autocomplete',
+          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['structure']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['structure'] : NULL,
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('left'),
+            'title' => array('If your structure is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.')
+          ),
+          '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][struct-check]"]' => array('checked' => TRUE)
+            )
+          ),
+        );
+
+        $fields['phenotypes-meta']["$i"]['val-check'] = array(
+          '#type' => 'checkbox',
+          '#title' => t("Phenotype $i has a value range"),
+          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['val-check']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['val-check'] : NULL,
+        );
+
+        $fields['phenotypes-meta']["$i"]['min'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Phenotype $i Minimum Value (type 1 for binary): *"),
+          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['min']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['min'] : NULL,
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE)
+            )
+          ),
+        );
+
+        $fields['phenotypes-meta']["$i"]['max'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Phenotype $i Maximum Value (type 2 for binary): *"),
+          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['max']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['max'] : NULL,
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE)
+            )
+          ),
+        );
+    }
+
+    $fields['metadata'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, description, and units of each of your phenotypes: *'),
+      '#upload_location' => "$phenotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx')
+      ),
+      '#default_value' => isset($values[$id]['phenotype']['metadata']) ? $values[$id]['phenotype']['metadata'] : NULL,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE)
+        )
+      ),
+      '#tree' => TRUE
+    );
+
+    $fields['no-header'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('My file has no header row'),
+      '#default_value' => isset($values[$id]['phenotype']['no-header']) ? $values[$id]['phenotype']['no-header'] : NULL,
+      '#ajax' => array(
+        'wrapper' => "header-$id-wrapper",
+        'callback' => 'metadata_header_callback',
+      ),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE)
+        )
+      ),
+    );
+
+    $fields['metadata']['columns'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('<div class="fieldset-title">Define Data</div>'),
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="' . $id . '_phenotype_metadata_upload_button"]' => array('value' => 'Upload')
+        )
+      ),
+      '#description' => 'Please define which columns hold the required data: Phenotype name',
+      '#prefix' => "<div id=\"header-$id-wrapper\">",
+      '#suffix' => '</div>',
+      '#collapsible' => TRUE
+    );
+
+    $file = 0;
+    if (isset($form_state['values']["$id"]['phenotype']['metadata']) and $form_state['values']["$id"]['phenotype']['metadata'] != 0){
+        $file = $form_state['values']["$id"]['phenotype']['metadata'];
+        $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'] = $form_state['values']["$id"]['phenotype']['metadata'];
+    }
+    elseif (isset($form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata']) and $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'] != 0){
+        $file = $form_state['saved_values']['fourthPage']["$id"]['phenotype']['metadata'];
+    }
+
+    if ($file != 0){
+        if (($file = file_load($file))){
+            $file_name = $file->uri;
+
+            //stop using the file so it can be deleted if the user clicks 'remove'
+            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+
+            $location = drupal_realpath("$file_name");
+            $content = parse_xlsx($location);
+            $no_header = FALSE;
+
+            if (isset($form_state['complete form']["$id"]['phenotype']['no-header']['#value']) and $form_state['complete form']["$id"]['phenotype']['no-header']['#value'] == 1){
+                tpps_content_no_header($content);
+                $no_header = TRUE;
+            }
+            elseif (!isset($form_state['complete form']["$id"]['phenotype']['no-header']['#value']) and isset($values["$id"]['phenotype']['no-header']) and $values["$id"]['phenotype']['no-header'] == 1){
+                tpps_content_no_header($content);
+                $no_header = TRUE;
+            }
+
+            $column_options = array(
+              'N/A',
+              'Phenotype Name/Identifier',
+              'Attribute',
+              'Description',
+              'Units',
+              'Structure',
+              'Minimum Value',
+              'Maximum Value'
+            );
+
+            $first = TRUE;
+
+            foreach ($content['headers'] as $item){
+                $fields['metadata']['columns'][$item] = array(
+                  '#type' => 'select',
+                  '#title' => t($item),
+                  '#options' => $column_options,
+                  '#default_value' => isset($values["$id"]['phenotype']['metadata-columns'][$item]) ? $values["$id"]['phenotype']['metadata-columns'][$item] : 0,
+                  '#prefix' => "<td>",
+                  '#suffix' => "</td>",
+                  '#attributes' => array(
+                    'data-toggle' => array('tooltip'),
+                    'data-placement' => array('left'),
+                    'title' => array("Select the type of data the '$item' column holds")
+                  )
+                );
+
+                if ($first){
+                    $first = FALSE;
+                    $fields['metadata']['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $fields['metadata']['columns'][$item]['#prefix'];
+                }
+
+                if ($no_header){
+                    $fields['metadata']['columns'][$item]['#title'] = '';
+                    $fields['metadata']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
+                }
+            }
+
+            // display sample data
+            $display = "</tr>";
+            for ($j = 0; $j < 3; $j++){
+                if (isset($content[$j])){
+                    $display .= "<tr>";
+                    foreach ($content['headers'] as $item){
+                        $display .= "<th>{$content[$j][$item]}</th>";
+                    }
+                    $display .= "</tr>";
+                }
+            }
+            $display .= "</tbody></table></div>";
+
+            $fields['metadata']['columns'][$item]['#suffix'] .= $display;
+        }
+    }
+
+    return $fields;
+}
+
+function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location){
+
+    $fields = array(
+      '#type' => 'fieldset',
+      '#title' => t('<div class="fieldset-title">Genotype Information:</div>'),
+      '#collapsible' => TRUE,
+    );
+
+    page_4_marker_info($fields, $values, $id);
+
+    $fields['marker-type']['SNPs']['#ajax'] = array(
+      'callback' => 'snps_file_callback',
+      'wrapper' => "edit-$id-genotype-file-ajax-wrapper"
+    );
+
+    page_4_ref($fields, $form_state, $values, $id, $genotype_upload_location);
+
+    $fields['file-type'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Genotype File Types (select all that apply): *'),
+      '#options' => array(
+        'Genotype Assay' => 'Genotype Spreadsheet/Assay',
+        'Assay Design' => 'Assay Design',
+        'VCF' => 'VCF',
+      ),
+      '#default_value' => isset($values[$id]['genotype']['file-type']) ? $values[$id]['genotype']['file-type'] : NULL,
+    );
+
+    $fields['file-type']['Assay Design']['#states'] = array(
+      'visible' => array(
+        ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => TRUE),
+      )
+    );
+
+    $fields['file'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Genotype Spreadsheet File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
+      '#upload_location' => "$genotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('xlsx')
+      ),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => true)
+        )
+      ),
+      '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
+      '#description' => 0,
+      '#tree' => TRUE
+    );
+
+    $assay_desc = "Please upload a spreadsheet file containing Genotype Assay data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier, and one column for each SNP data associated with the study. Column data types will default to \"SNP Data\", so please leave any columns with SNP data as the default.";
+    $spreadsheet_desc = "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier.";
+    if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and $form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']){
+        $fields['file']['#description'] = $assay_desc;
+    }
+    if (!$fields['file']['#description'] and !isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and isset($values[$id]['genotype']['marker-type']['SNPs']) and $values[$id]['genotype']['marker-type']['SNPs']){
+        $fields['file']['#description'] = $assay_desc;
+    }
+    if (!$fields['file']['#description']){
+        $fields['file']['#description'] = $spreadsheet_desc;
+    }
+
+    $fields['no-header'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('My file has no header row'),
+      '#default_value' => isset($values[$id]['genotype']['no-header']) ? $values[$id]['genotype']['no-header'] : NULL,
+      '#ajax' => array(
+        'wrapper' => "genotype-header-$id-wrapper",
+        'callback' => 'genotype_header_callback',
+      ),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => true)
+        )
+      ),
+    );
+
+    $fields['file']['columns'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('<div class="fieldset-title">Define Data</div>'),
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="' . $id . '_genotype_file_upload_button"]' => array('value' => 'Upload')
+        )
+      ),
+      '#description' => 'Please define which columns hold the required data: Tree Identifier, SNP Data',
+      '#prefix' => "<div id=\"genotype-header-$id-wrapper\">",
+      '#suffix' => '</div>',
+      '#collapsible' => TRUE
+    );
+
+    $file = 0;
+    if (isset($form_state['values'][$id]['genotype']['file']) and $form_state['values'][$id]['genotype']['file'] != 0){
+        $file = $form_state['values'][$id]['genotype']['file'];
+        //dpm($file);
+    }
+    elseif (isset($form_state['saved_values']['fourthPage'][$id]['genotype']['file']) and $form_state['saved_values']['fourthPage'][$id]['genotype']['file'] != 0){
+        $file = $form_state['saved_values']['fourthPage'][$id]['genotype']['file'];
+    }
+
+    if ($file != 0){
+        if (($file = file_load($file))){
+            $file_name = $file->uri;
+
+            //stop using the file so it can be deleted if the user clicks 'remove'
+            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+
+            $location = drupal_realpath("$file_name");
+            $content = parse_xlsx($location);
+            $no_header = FALSE;
+
+            if (isset($form_state['complete form'][$id]['genotype']['no-header']['#value']) and $form_state['complete form'][$id]['genotype']['no-header']['#value'] == 1){
+                tpps_content_no_header($content);
+                $no_header = TRUE;
+            }
+            elseif (!isset($form_state['complete form'][$id]['genotype']['no-header']['#value']) and isset($values[$id]['genotype']['no-header']) and $values[$id]['genotype']['no-header'] == 1){
+                tpps_content_no_header($content);
+                $no_header = TRUE;
+            }
+
+            $column_options = array(
+              'N/A',
+              'Tree Identifier',
+              'SNP Data',
+            );
+
+            if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and !$form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']){
+                $column_options[2] = 'Genotype Data';
+            }
+            elseif (!isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and isset($values[$id]['genotype']['marker-type']['SNPs']) and !$values[$id]['genotype']['marker-type']['SNPs']){
+                $column_options[2] = 'Genotype Data';
+            }
+
+            $first = TRUE;
+
+            foreach ($content['headers'] as $item){
+                $fields['file']['columns'][$item] = array(
+                  '#type' => 'select',
+                  '#title' => t($item),
+                  '#options' => $column_options,
+                  '#default_value' => isset($values[$id]['genotype']['file-columns'][$item]) ? $values[$id]['genotype']['file-columns'][$item] : 0,
+                  '#prefix' => "<td>",
+                  '#suffix' => "</td>",
+                  '#attributes' => array(
+                    'data-toggle' => array('tooltip'),
+                    'data-placement' => array('left'),
+                    'title' => array("Select the type of data the '$item' column holds")
+                  )
+                );
+
+                if (!isset($values[$id]['genotype']['file-columns'][$item]) and isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and $form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']){
+                    //if Genotype Assay file and the value has not been set, set default value to 'SNP Data'
+                    $fields['file']['columns'][$item]['#default_value'] = 2;
+                }
+
+                if ($first){
+                    $first = FALSE;
+                    $fields['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $fields['file']['columns'][$item]['#prefix'];
+                }
+
+                if ($no_header){
+                    $fields['file']['columns'][$item]['#title'] = '';
+                    $fields['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
+                }
+            }
+
+            // display sample data
+            $display = "</tr>";
+            for ($i = 0; $i < 3; $i++){
+                if (isset($content[$i])){
+                    $display .= "<tr>";
+                    foreach ($content['headers'] as $item){
+                        $display .= "<th>{$content[$i][$item]}</th>";
+                    }
+                    $display .= "</tr>";
+                }
+            }
+            $display .= "</tbody></table></div>";
+
+            $fields['file']['columns'][$item]['#suffix'] .= $display;
+        }
+    }
+
+    $fields['assay-design'] = array(
+      '#type' => 'managed_file',
+      '#title' => 'Genotype Assay Design File: *',
+      '#upload_location' => "$genotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('xlsx')
+      ),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[genotype][file-type][Assay Design]"]' => array('checked' => TRUE),
+          ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => TRUE),
+        )
+      ),
+      '#default_value' => isset($values[$id]['genotype']['assay-design']) ? $values[$id]['genotype']['assay-design'] : NULL,
+      '#tree' => TRUE,
+    );
+
+    if (isset($fields['assay-design']['#value'])){
+        $fields['assay-design']['#default_value'] = $fields['assay-design']['#value'];
+    }
+    if (isset($fields['assay-design']['#default_value']) and $fields['assay-design']['#default_value'] and ($file = file_load($fields['assay-design']['#default_value']))){
+        //stop using the file so it can be deleted if the user clicks 'remove'
+        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+
+    $fields['vcf'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Genotype VCF File: *'),
+      '#upload_location' => "$genotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('vcf')
+      ),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[genotype][file-type][VCF]"]' => array('checked' => true)
+        )
+      ),
+      '#default_value' => isset($values[$id]['genotype']['vcf']) ? $values[$id]['genotype']['vcf'] : NULL,
+      '#tree' => TRUE
+    );
+
+    if (isset($fields['vcf']['#value'])){
+        $fields['vcf']['#default_value'] = $fields['vcf']['#value'];
+    }
+    if (isset($fields['vcf']['#default_value']) and $fields['vcf']['#default_value'] and ($file = file_load($fields['vcf']['#default_value']))){
+        //stop using the file so it can be deleted if the user clicks 'remove'
+        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+
+    return $fields;
 }
 
 function ajax_bioproject_callback(&$form, $form_state){
