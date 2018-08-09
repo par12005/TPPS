@@ -448,6 +448,13 @@ function page_4_create_form(&$form, &$form_state){
                   'Tree Identifier',
                   'SNP Data',
                 );
+                
+                if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and !$form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']){
+                    $column_options[2] = 'Genotype Data';
+                }
+                elseif (!isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value']) and isset($values[$id]['genotype']['marker-type']['SNPs']) and !$values[$id]['genotype']['marker-type']['SNPs']){
+                    $column_options[2] = 'Genotype Data';
+                }
 
                 $first = TRUE;
 
