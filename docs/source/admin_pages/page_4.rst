@@ -2,7 +2,7 @@
 Genotype, Phenotype, and Environment
 ************************************
 
-The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section, where users upload Genotypic, Phenotypic, and Environmental data and metadata. The form fields and their properties are as follows:
+The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section, where users upload Genotypic, Phenotypic, and Environmental data and metadata about each organism. In multi-species submissions, users can reuse data from the previous species by checking the '<Genotype/Phenotype/Environmental> information for <organism i> is the same as <genotype/phenotype/environmental> information for <organism i-1>.' box, which is only available after the first organism. The form fields and their properties are as follows:
 
 * Tree Species **x**: ``fieldset``
 
@@ -46,13 +46,11 @@ Genotype
 
          * NCBI Assembly Accessions: ``checkboxes`` - options pulled directly from NCBI
 
-     * URL to Reference Genome: ``textfield`` - only visible if the user selects 'I can provide a URL to the website of my reference file(s)' from 'Reference Genome'
-     * Manual Assembly File: ``managed_file`` - FASTA or Multi-FASTA formatted file - only visible if the user selects 'I can upload my own reference genome file' or 'I can upload my own reference transcriptome file' from 'Reference Genome'
-     * Manual Assembly File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the scaffold/chromosome ID
-     * Genotype File Type: ``checkboxes`` - options 'Genotype Assay', 'Assay Design', 'VCF'
+     * URL or Manual Assembly File: ``fieldset`` - Tripal FASTA Loader fields - only visible if the user selects 'I can provide a URL to the website of my reference file(s)', 'I can upload my own reference genome file', or 'I can upload my own reference transcriptome file' from 'Reference Genome'
+     * Genotype File Type: ``checkboxes`` - options 'Genotype Spreadsheet/Assay', 'Assay Design', 'VCF'. 'Assay Design' only visible if the user selects 'SNPs' from 'Genotype Marker Type'.
      * Genotype VCF File: ``managed_file`` - .VCF file of genotypes - only visible if the user selects 'VCF' from 'Genotype File Type'
-     * Genotype File: ``managed_file`` - spreadsheet of genotypes - only visible if the user selects 'Genotype Assay' from 'Genotype File Type'
-     * Genotype File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Tree ID
+     * Genotype File: ``managed_file`` - spreadsheet of genotypes - only visible if the user selects 'Genotype Spreadsheet/Assay' from 'Genotype File Type'
+     * Genotype File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Tree ID and Genotype Data
      * Assay Design File: ``managed_file`` - Assay design file - only visible if the user selects 'Assay Design' from 'Genotype File Type'
 
 .. _`Study Design`: page_2.html

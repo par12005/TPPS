@@ -163,7 +163,7 @@
             
   <div class="section" id="genotype-phenotype-and-environment">
 <h1>4.4. Genotype, Phenotype, and Environment<a class="headerlink" href="#genotype-phenotype-and-environment" title="Permalink to this headline">¶</a></h1>
-<p>The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section. Here you will be asked to provide the data and metadata for your phenotypes and genotypes. Each of the fields on this page is asked once per tree species:</p>
+<p>The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section. Here you will be asked to provide the data and metadata for your phenotypes and genotypes. If you are submitting a study with multiple species, and would like to use the same phenotype/genotype data across multiple species, you can select the ‘&lt;Genotype/Phenotype&gt; information for &lt;organism i&gt; is the same as &lt;genotype/phenotype&gt; information for &lt;organism i-1&gt;.’ box. Each of the fields on this page is asked once per tree species:</p>
 <div class="section" id="phenotype">
 <h2>4.4.1. Phenotype<a class="headerlink" href="#phenotype" title="Permalink to this headline">¶</a></h2>
 <p>Phenotype fields are only visible when ‘Genotype x Phenotype’, ‘Genotype x Phenotype x Environment’, or ‘Phenotype x Environment’ was selected from ‘Data type’ in <a class="reference external" href="page_2.html">Study Design</a>.</p>
@@ -218,15 +218,15 @@
 <li><p class="first">External Reference Genome/Assembly: Either upload or locate the genome/assembly file(s).</p>
 <blockquote>
 <div><ul class="simple">
-<li>URL to Reference Genome: text field - The URL to a reference genome/assembly, or the website where it resides. Only visible when ‘I can provide a URL to the website of my reference file(s)’ was selected from the ‘Reference Genome/Assembly’ field.</li>
 <li>BioProject Accession number: text field - The NCBI accession number of the BioProject associated with this study. After this number has been provided, TPPS will search NCBI for assembly files that are linked to this BioProject number and present them to you, as well as links to view them individually on NCBI. You will need to select the assembly files that are relevant to this study. Only visible when ‘I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list’ was selected from the ‘Reference Genome/Assembly’ field.</li>
-<li>Manual Upload: file upload - The assembly file associated with this study. You will be required to define which section of your header lines is the scaffold/chromosome name/identifier. Only visible when ‘I can upload my own reference genome file’ or ‘I can upload my own reference transcriptome file’ was selected from the ‘Reference Genome/Assembly’ field.</li>
+<li>Load Reference from URL: For ‘I can provide a URL to the website of my reference file(s)’ option, you will be presented with a set of form fields based on the ‘Tripal FASTA Loader’. You can skip the ‘Existing File(s)’ and ‘You may select a file that is already uploaded’ sections. You will just need to specify the remote path of the reference, the analysis type, and the sequence type. If you would like, you can also specify an external database where the sequences from your url have a cross-reference. If you do, you will also need to provide a regular expression for the accession number. External database cross-reference and accession number are not required.</li>
+<li>Upload Reference manually: For the ‘I can upload my own reference genome file’, or ‘I can upload my own reference transcriptome file’ options, you will be presented with a set of form fields based on the ‘Tripal FASTA Loader’. You only need to supply a file from the ‘Existing File(s)’ <strong>or</strong> the ‘You may select a file that is already uploaded’ section. You can skip the ‘Remote path’ section. You will need to specify the assembly type and sequence type. External database for cross-reference and regular expression for external database accession number are optional.</li>
 </ul>
 </div></blockquote>
 </li>
-<li><p class="first">Genotype File Types: checkboxes - ‘Genotype Assay’, ‘Assay Design’, ‘VCF’. Select all that apply.</p>
+<li><p class="first">Genotype File Types: checkboxes - ‘Genotype Spreadsheet/Assay’, ‘Assay Design’, ‘VCF’. Select all that apply. ‘Assay Design’ is only visible when ‘SNPs’ was selected from the ‘Genotype Marker Type’ field.</p>
 </li>
-<li><p class="first">Genotype Assay File: file upload - The genotype assay file. You will be required to specify which of your columns holds the Tree ID in each row of your file. Only visible when ‘Genotype Assay’ was selected from the ‘Genotype File Types’ field.</p>
+<li><p class="first">Genotype Spreadsheet/Assay File: file upload - The genotype assay file. You will be required to specify which of your columns holds the Tree ID and genotype data in each row of your file. Only visible when ‘Genotype Spreadsheet/Assay’ was selected from the ‘Genotype File Types’ field.</p>
 </li>
 <li><p class="first">Assay Design File: file upload - The assay design file. Only visible when ‘Assay Design’ was selected from the ‘Genotype File Types’ field.</p>
 </li>
