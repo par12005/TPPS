@@ -222,8 +222,10 @@ function tpps_element_info_alter(&$type){
 function tpps_form_alter(&$form, &$form_state, $form_id){
     if ($form['#form_id'] == 'tpps_master'){
         $stage = $form_state['stage'];
-        $saved_vals = $form_state['saved_values'][$stage];
-        tpps_leaves($form, $saved_vals);;
+        if (!isset($form_state['saved_values'][$stage])){
+            $form_state['saved_values'][$stage] = array();
+        }
+        tpps_leaves($form, $form_state['saved_values'][$stage]);
     }
 }
 
@@ -231,11 +233,39 @@ function tpps_leaves(&$elements, $saved_vals){
     foreach($elements as $key => &$element){
         if ($key[0] != '#' and isset($element['#type'])){
             
-            if ($element['#type'] == 'textfield' and !isset($element['#default_value']) and isset($saved_vals[$key])){
+            //element types that should be loading some default value, usually for the purposes of persistent form data
+            $load_defaults = array(
+              'textfield',
+              'textarea',
+              'checkbox',
+              'select',
+              'managed_file',
+            );
+            //if element is a type that should pull from 'saved_values', try to load the old value
+            if (in_array($element['#type'], $load_defaults) and !isset($element['#default_value']) and isset($saved_vals[$key])){
                 $element['#default_value'] = $saved_vals[$key];
             }
+            //if element is a select type and still has no default value, then there is no saved value, so the default should be 0
+            elseif ($element['#type'] == 'select' and !isset($element['#default_value'])){
+                $element['#default_value'] = 0;
+            }
             
-            if (isset($saved_vals[$key])){
+            //checkboxes elements work a little differently
+            if ($element['#type'] == 'checkboxes'){
+                $options = $element['#options'];
+                //get checkboxes options
+                foreach ($options as $option){
+                    //if the option does not yet have a default, try to pull from 'saved_values'
+                    if (!isset($element[$option]['#default_value']) and isset($saved_vals[$key][$option])){
+                        $element[$option]['#default_value'] = $saved_vals[$key][$option];
+                    }
+                }
+            }
+            
+            if ($element['#type'] == 'fieldset'){
+                if (!isset($saved_vals[$key])){
+                    $saved_vals[$key] = array();
+                }
                 tpps_leaves($element, $saved_vals[$key]);
             }
         }
@@ -648,7 +678,7 @@ function tpps_flatten($state){
         $data['Data Type'] = $page_2['dataType'];
     }
     
-    if ($page_2['studyType']){
+    if (isset($page_2['studyType']) and $page_2['studyType']){
         $study_type_options = array(
           1 => 'Natural Population (Landscape)',
           2 => 'Growth Chamber',

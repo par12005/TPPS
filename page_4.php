@@ -51,14 +51,12 @@ function page_4_create_form(&$form, &$form_state){
               '#upload_validators' => array(
                 'file_validate_extensions' => array('csv tsv xlsx')
               ),
-              '#default_value' => isset($values["organism-$i"]['phenotype']['file']) ? $values["organism-$i"]['phenotype']['file'] : NULL,
               '#tree' => TRUE,
             );
 
             $form["organism-$i"]['phenotype']['file-no-header'] = array(
               '#type' => 'checkbox',
               '#title' => t('My file has no header row'),
-              '#default_value' => isset($values["organism-$i"]['phenotype']['file-no-header']) ? $values["organism-$i"]['phenotype']['file-no-header'] : NULL,
               '#ajax' => array(
                 'wrapper' => "phenotype-header-$i-wrapper",
                 'callback' => 'phenotype_header_callback',
@@ -252,7 +250,6 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
     $fields['check'] = array(
       '#type' => 'checkbox',
       '#title' => t('I would like to upload a phenotype metadata file'),
-      '#default_value' => isset($values[$id]['phenotype']['check']) ? $values[$id]['phenotype']['check'] : NULL,
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
         'data-placement' => array('left'),
@@ -303,7 +300,6 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
           '#type' => 'textfield',
           '#title' => t("Phenotype $i Name: *"),
           '#autocomplete_path' => 'phenotype/autocomplete',
-          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['name']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['name'] : NULL,
           '#prefix' => "<label><b>Phenotype $i:</b></label>",
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
@@ -317,7 +313,6 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
           '#type' => 'textfield',
           '#title' => t("Phenotype $i Attribute: *"),
           '#autocomplete_path' => 'attribute/autocomplete',
-          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['attribute'] : NULL,
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('left'),
@@ -329,7 +324,6 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
         $fields['phenotypes-meta']["$i"]['description'] = array(
           '#type' => 'textfield',
           '#title' => t("Phenotype $i Description: *"),
-          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['description']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['description'] : NULL,
           '#description' => t("Please provide a short description of Phenotype $i"),
         );
 
@@ -337,7 +331,6 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
           '#type' => 'textfield',
           '#title' => t("Phenotype $i Units: *"),
           '#autocomplete_path' => 'units/autocomplete',
-          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['units']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['units'] : NULL,
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('left'),
@@ -349,14 +342,12 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
         $fields['phenotypes-meta']["$i"]['struct-check'] = array(
           '#type' => 'checkbox',
           '#title' => t("Phenotype $i has a structure descriptor"),
-          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['struct-check']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['struct-check'] : NULL,
         );
 
         $fields['phenotypes-meta']["$i"]['structure'] = array(
           '#type' => 'textfield',
           '#title' => t("Phenotype $i Structure: *"),
           '#autocomplete_path' => 'structure/autocomplete',
-          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['structure']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['structure'] : NULL,
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('left'),
@@ -373,13 +364,11 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
         $fields['phenotypes-meta']["$i"]['val-check'] = array(
           '#type' => 'checkbox',
           '#title' => t("Phenotype $i has a value range"),
-          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['val-check']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['val-check'] : NULL,
         );
 
         $fields['phenotypes-meta']["$i"]['min'] = array(
           '#type' => 'textfield',
           '#title' => t("Phenotype $i Minimum Value (type 1 for binary): *"),
-          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['min']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['min'] : NULL,
           '#states' => array(
             'visible' => array(
               ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE)
@@ -390,7 +379,6 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
         $fields['phenotypes-meta']["$i"]['max'] = array(
           '#type' => 'textfield',
           '#title' => t("Phenotype $i Maximum Value (type 2 for binary): *"),
-          '#default_value' => isset($values[$id]['phenotype']['phenotypes-meta']["$i"]['max']) ? $values[$id]['phenotype']['phenotypes-meta']["$i"]['max'] : NULL,
           '#states' => array(
             'visible' => array(
               ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE)
@@ -406,7 +394,6 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx')
       ),
-      '#default_value' => isset($values[$id]['phenotype']['metadata']) ? $values[$id]['phenotype']['metadata'] : NULL,
       '#states' => array(
         'visible' => array(
           ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE)
@@ -418,7 +405,6 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
     $fields['no-header'] = array(
       '#type' => 'checkbox',
       '#title' => t('My file has no header row'),
-      '#default_value' => isset($values[$id]['phenotype']['no-header']) ? $values[$id]['phenotype']['no-header'] : NULL,
       '#ajax' => array(
         'wrapper' => "header-$id-wrapper",
         'callback' => 'metadata_header_callback',
@@ -557,9 +543,8 @@ function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location)
         'Assay Design' => 'Assay Design',
         'VCF' => 'VCF',
       ),
-      '#default_value' => isset($values[$id]['genotype']['file-type']) ? $values[$id]['genotype']['file-type'] : NULL,
     );
-
+    
     $fields['file-type']['Assay Design']['#states'] = array(
       'visible' => array(
         ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => TRUE),
@@ -578,7 +563,6 @@ function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location)
           ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => true)
         )
       ),
-      '#default_value' => isset($values[$id]['genotype']['file']) ? $values[$id]['genotype']['file'] : NULL,
       '#description' => 0,
       '#tree' => TRUE
     );
@@ -598,7 +582,6 @@ function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location)
     $fields['no-header'] = array(
       '#type' => 'checkbox',
       '#title' => t('My file has no header row'),
-      '#default_value' => isset($values[$id]['genotype']['no-header']) ? $values[$id]['genotype']['no-header'] : NULL,
       '#ajax' => array(
         'wrapper' => "genotype-header-$id-wrapper",
         'callback' => 'genotype_header_callback',
@@ -729,7 +712,6 @@ function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location)
           ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => TRUE),
         )
       ),
-      '#default_value' => isset($values[$id]['genotype']['assay-design']) ? $values[$id]['genotype']['assay-design'] : NULL,
       '#tree' => TRUE,
     );
 
@@ -753,7 +735,6 @@ function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location)
           ':input[name="' . $id . '[genotype][file-type][VCF]"]' => array('checked' => true)
         )
       ),
-      '#default_value' => isset($values[$id]['genotype']['vcf']) ? $values[$id]['genotype']['vcf'] : NULL,
       '#tree' => TRUE
     );
 
@@ -867,13 +848,11 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
       '#type' => 'select',
       '#title' => t('Reference Assembly used: *'),
       '#options' => $ref_genome_arr,
-      '#default_value' => isset($values[$id]['genotype']['ref-genome']) ? $values[$id]['genotype']['ref-genome'] : 0,
     );
 
     $fields['BioProject-id'] = array(
       '#type' => 'textfield',
       '#title' => t('BioProject Accession Number: *'),
-      '#default_value' => isset($values[$id]['genotype']['BioProject-id']) ? $values[$id]['genotype']['BioProject-id'] : NULL,
       '#ajax' => array(
         'callback' => 'ajax_bioproject_callback',
         'wrapper' => "$id-assembly-auto",
@@ -950,7 +929,6 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
                 $fields['assembly-auto']["$item"] = array(
                   '#type' => 'checkbox',
                   '#title' => "$item ($suffix) <a href=\"https://www.ncbi.nlm.nih.gov/nuccore/$item\" target=\"blank\">View on NCBI</a>",
-                  '#default_value' => isset($form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"]) ? $form_state['saved_values']['fourthPage']["$id"]['genotype']['assembly-auto']["$item"] : NULL,
                 );
             }
         }
@@ -991,11 +969,6 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
     $fasta['db']['#collapsible'] = TRUE;
     unset($fasta['button']);
     
-    $fasta['file']['file_remote']['#default_value'] = isset($values[$id]['genotype']['tripal_fasta']['file']['file_remote']) ? $values[$id]['genotype']['tripal_fasta']['file']['file_remote'] : NULL;
-    $fasta['file']['file_upload_existing']['#default_value'] = isset($values[$id]['genotype']['tripal_fasta']['file']['file_upload_existing']) ? $values[$id]['genotype']['tripal_fasta']['file']['file_upload_existing'] : NULL;
-    $fasta['analysis_id']['#default_value'] = isset($values[$id]['genotype']['tripal_fasta']['analysis_id']) ? $values[$id]['genotype']['tripal_fasta']['analysis_id'] : NULL;
-    $fasta['seqtype']['#default_value'] = isset($values[$id]['genotype']['tripal_fasta']['seqtype']) ? $values[$id]['genotype']['tripal_fasta']['seqtype'] : NULL;
-    
     $upload = array(
       '#type' => 'managed_file',
       '#title' => '',
@@ -1003,135 +976,11 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
       '#upload_validators' => array(
         'file_validate_extensions' => array(implode(' ', $class::$file_types))
       ),
-      '#default_value' => isset($values[$id]['genotype']['tripal_fasta']['file']['file_upload']) ? $values[$id]['genotype']['tripal_fasta']['file']['file_upload'] : 0,
       '#upload_location' => $tripal_upload_location,
     );
     
     $fasta['file']['file_upload'] = $upload;
     $fasta['analysis_id']['#required'] = $fasta['seqtype']['#required'] = FALSE;
-    /*
-//    $fields['ref-genome-other'] = array(
-//      '#type' => 'textfield',
-//      '#title' => t('URL to Reference Genome:'),
-//      '#default_value' => isset($values[$id]['genotype']['ref-genome-other']) ? $values[$id]['genotype']['ref-genome-other'] : NULL,
-//      '#states' => array(
-//        'visible' => array(
-//          ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url'),
-//        )
-//      ),
-//      '#attributes' => array(
-//        'data-toggle' => array('tooltip'),
-//        'data-placement' => array('left'),
-//        'title' => array('This should be a link to a reference genome on NCBI')
-//      )
-//    );
-    
-    
-    $fields['assembly-user'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('Assembly File: please provide an assembly file in FASTA or Multi-FASTA format: *'),
-      '#upload_location' => "$genotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('fsa_nt')
-      ),
-      '#default_value' => isset($values[$id]['genotype']['assembly-user']) ? $values[$id]['genotype']['assembly-user'] : NULL,
-      '#states' => array(
-        'visible' => array(
-          array(
-            array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')),
-            'or',
-            array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual2')),
-          )
-        )
-      ),
-      '#tree' => TRUE
-    );
-    
-    $fields['assembly-user']['columns'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('<div class="fieldset-title">Define Data</div>'),
-      '#description' => 'Please define which column holds the scaffold/chromosome identifier:',
-      '#states' => array(
-        'invisible' => array(
-          ':input[name="' . $id . '_genotype_assembly-user_upload_button"]' => array('value' => 'Upload')
-        )
-      ),
-      '#collapsible' => TRUE
-    );
-    
-    $file = 0;
-    if (isset($form_state['values'][$id]['genotype']['assembly-user']) and $form_state['values'][$id]['genotype']['assembly-user'] != 0){
-        $file = $form_state['values'][$id]['genotype']['assembly-user'];
-        $form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-user'] = $form_state['values'][$id]['genotype']['assembly-user'];
-    }
-    elseif (isset($form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-user']) and $form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-user'] != 0){
-        $file = $form_state['saved_values']['fourthPage'][$id]['genotype']['assembly-user'];
-    }
-    
-    if ($file != 0){
-        if (($file = file_load($file))){
-            $content = fopen($file->uri, 'r');
-            
-            //stop using the file so it can be deleted if the user clicks 'remove'
-            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
-            $first = TRUE;
-
-            $column_options = array(
-              'N/A',
-              'Scaffold/Chromosome',
-            );
-            $headers = array();
-
-            for ($i = 0; $i < 3; $i++){
-                $line = fgets($content);
-                $line = explode(' ', $line);
-
-                if ($first){
-                    foreach ($line as $col => $name){
-                        $headers[$col] = $col;
-                        $col = preg_replace('/[^a-zA-Z0-9-_\.]/', '', $col);
-                        $fields['assembly-user']['columns'][$col] = array(
-                          '#type' => 'select',
-                          '#title' => '',
-                          '#options' => $column_options,
-                          '#default_value' => isset($values[$id]['genotype']['assembly-user-columns'][$col]) ? $values[$id]['genotype']['assembly-user-columns'][$col] : 0,
-                          '#prefix' => "<td>",
-                          '#suffix' => "</td>",
-                          '#attributes' => array(
-                            'data-toggle' => array('tooltip'),
-                            'data-placement' => array('left'),
-                            'title' => array("Select if this column holds the scaffold/chromosome identifier")
-                          )
-                        );
-
-                        if ($first){
-                            $first = FALSE;
-                            $fields['assembly-user']['columns'][$col]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $fields['assembly-user']['columns'][$col]['#prefix'];
-                        }
-                    }
-                    $display = "<tr>";
-                }
-                if ($line[0][0] == '>'){
-                    $display .= "<tr>";
-                    for ($j = 0; $j < count($headers); $j++){
-                        $display .= "<th>{$line[$j]}</th>";
-                    }
-                    $display .= "</tr>";
-                }
-                elseif (!isset($line)){
-                    break;
-                }
-                else{
-                    $i--;
-                }
-
-            }
-            $display .= "</tbody></table></div>";
-
-            $fields['assembly-user']['columns'][$col]['#suffix'] .= $display;
-        }
-    }*/
     
     $fields['tripal_fasta'] = $fasta;
     //dpm($fasta);
@@ -1150,11 +999,7 @@ function page_4_marker_info(&$fields, $values, $id){
         t('Other'),
       ))
     );
-
-    $fields['marker-type']['SNPs']['#default_value'] = isset($values[$id]['genotype']['marker-type']['SNPs']) ? $values[$id]['genotype']['marker-type']['SNPs'] : NULL;
-    $fields['marker-type']['SSRs/cpSSRs']['#default_value'] = isset($values[$id]['genotype']['marker-type']['SSRs/cpSSRs']) ? $values[$id]['genotype']['marker-type']['SSRs/cpSSRs'] : NULL;
-    $fields['marker-type']['Other']['#default_value'] = isset($values[$id]['genotype']['marker-type']['Other']) ? $values[$id]['genotype']['marker-type']['Other'] : NULL;
-
+    
     $fields['SNPs'] = array(
       '#type' => 'fieldset',
       '#title' => t('<div class="fieldset-title">SNPs Information:</div>'),
@@ -1177,7 +1022,6 @@ function page_4_marker_info(&$fields, $values, $id){
         4 => 'RNA-Seq',
         5 => 'Genotyping Array'
       ),
-      '#default_value' => isset($values[$id]['genotype']['SNPs']['genotyping-design']) ? $values[$id]['genotype']['SNPs']['genotyping-design'] : 0,
     );
 
     $fields['SNPs']['GBS'] = array(
@@ -1196,7 +1040,6 @@ function page_4_marker_info(&$fields, $values, $id){
           ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '1')
         )
       ),
-      '#default_value' => isset($values[$id]['genotype']['SNPs']['GBS']) ? $values[$id]['genotype']['SNPs']['GBS'] : 0,
     );
 
     $fields['SNPs']['GBS-other'] = array(
@@ -1207,7 +1050,6 @@ function page_4_marker_info(&$fields, $values, $id){
           ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '1')
         )
       ),
-      '#default_value' => isset($values[$id]['genotype']['SNPs']['GBS-other']) ? $values[$id]['genotype']['SNPs']['GBS-other'] : NULL,
     );
 
     $fields['SNPs']['targeted-capture'] = array(
@@ -1223,7 +1065,6 @@ function page_4_marker_info(&$fields, $values, $id){
           ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '2')
         )
       ),
-      '#default_value' => isset($values[$id]['genotype']['SNPs']['targeted-capture']) ? $values[$id]['genotype']['SNPs']['targeted-capture'] : 0,
     );
 
     $fields['SNPs']['targeted-capture-other'] = array(
@@ -1234,13 +1075,11 @@ function page_4_marker_info(&$fields, $values, $id){
           ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '2')
         )
       ),
-      '#default_value' => isset($values[$id]['genotype']['SNPs']['targeted-capture-other']) ? $values[$id]['genotype']['SNPs']['targeted-capture-other'] : NULL,
     );
     
     $fields['SSRs/cpSSRs'] = array(
       '#type' => 'textfield',
       '#title' => t('Define SSRs/cpSSRs Type: *'),
-      '#default_value' => isset($values[$id]['genotype']['SSRs/cpSSRs']) ? $values[$id]['genotype']['SSRs/cpSSRs'] : NULL,
       '#states' => array(
         'visible' => array(
           ':input[name="' . $id . '[genotype][marker-type][SSRs/cpSSRs]"]' => array('checked' => true)
@@ -1251,7 +1090,6 @@ function page_4_marker_info(&$fields, $values, $id){
     $fields['other-marker'] = array(
       '#type' => 'textfield',
       '#title' => t('Define Other Marker Type: *'),
-      '#default_value' => isset($values[$id]['genotype']['other-marker']) ? $values[$id]['genotype']['other-marker'] : NULL,
       '#states' => array(
         'visible' => array(
           ':input[name="' . $id . '[genotype][marker-type][Other]"]' => array('checked' => true)

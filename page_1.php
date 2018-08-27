@@ -14,7 +14,6 @@ function page_1_create_form(&$form, $form_state){
           '#type' => 'textfield',
           '#title' => t('Primary Author: *'),
           '#autocomplete_path' => 'author/autocomplete',
-          '#default_value' => isset($values['primaryAuthor']) ? $values['primaryAuthor'] : NULL,
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('left'),
@@ -26,7 +25,6 @@ function page_1_create_form(&$form, $form_state){
           '#type' => 'textfield',
           '#title' => t('Organization: *'),
           '#autocomplete_path' => 'organization/autocomplete',
-          '#default_value' => isset($values['organization']) ? $values['organization'] : NULL,
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('left'),
@@ -68,7 +66,6 @@ function page_1_create_form(&$form, $form_state){
               '#type' => 'select',
               '#title' => t('Year of Publication: *'),
               '#options' => $yearArr,
-              '#default_value' => isset($values['publication']['year']) ? $values['publication']['year'] : 0,
               '#states' => array(
                 'invisible' => array(
                   ':input[name="publication[status]"]' => array('value' => '0')
@@ -114,14 +111,12 @@ function page_1_create_form(&$form, $form_state){
                   '#type' => 'textfield',
                   '#title' => t("Secondary Author $i: *"),
                   '#autocomplete_path' => 'author/autocomplete',
-                  '#default_value' => isset($values['publication']['secondaryAuthors'][$i]) ? $values['publication']['secondaryAuthors'][$i] : NULL,
                 );
             }
             
             $form['publication']['secondaryAuthors']['check'] = array(
               '#type' => 'checkbox',
               '#title' => t('I have >30 Secondary Authors'),
-              '#default_value' => isset($values['publication']['secondaryAuthors']['check']) ? $values['publication']['secondaryAuthors']['check'] : NULL,
               '#attributes' => array(
                 'data-toggle' => array('tooltip'),
                 'data-placement' => array('left'),
@@ -136,7 +131,6 @@ function page_1_create_form(&$form, $form_state){
               '#upload_validators' => array(
                 'file_validate_extensions' => array('txt csv xlsx')
               ),
-              '#default_value' => isset($values['publication']['secondaryAuthors']['file']) ? $values['publication']['secondaryAuthors']['file'] : NULL,
               '#states' => array(
                 'visible' => array(
                   ':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
@@ -148,7 +142,6 @@ function page_1_create_form(&$form, $form_state){
             $form['publication']['secondaryAuthors']['no-header'] = array(
               '#type' => 'checkbox',
               '#title' => t('My file has no header row'),
-              '#default_value' => isset($values['publication']['secondaryAuthors']['no-header']) ? $values['publication']['secondaryAuthors']['no-header'] : NULL,
               '#ajax' => array(
                 'wrapper' => 'header-wrapper',
                 'callback' => 'authors_header_callback',
@@ -215,7 +208,6 @@ function page_1_create_form(&$form, $form_state){
                           '#type' => 'select',
                           '#title' => t($item),
                           '#options' => $column_options,
-                          '#default_value' => isset($values['publication']['secondaryAuthors']['file-columns'][$item]) ? $values['publication']['secondaryAuthors']['file-columns'][$item] : 0,
                           '#prefix' => "<td>",
                           '#suffix' => "</td>",
                           '#attributes' => array(
@@ -278,7 +270,6 @@ function page_1_create_form(&$form, $form_state){
             'callback' => 'page_1_pub_status',
             'wrapper' => 'pubyear'
           ),
-          '#default_value' => isset($values['publication']['status']) ? $values['publication']['status'] : 0,
         );
         
         year($form, $values, $form_state);
@@ -286,20 +277,17 @@ function page_1_create_form(&$form, $form_state){
         $form['publication']['title'] = array(
           '#type' => 'textfield',
           '#title' => t('Title of Publication: *'),
-          '#default_value' => isset($values['publication']['title']) ? $values['publication']['title'] : NULL,
         );
 
         $form['publication']['abstract'] = array(
           '#type' => 'textarea',
           '#title' => t('Abstract: *'),
-          '#default_value' => isset($values['publication']['abstract']) ? $values['publication']['abstract'] : NULL,
         );
 
         $form['publication']['journal'] = array(
           '#type' => 'textfield',
           '#title' => t('Journal: *'),
           '#autocomplete_path' => 'journal/autocomplete',
-          '#default_value' => isset($values['publication']['journal']) ? $values['publication']['journal'] : NULL,
         );
         
         return $form;
@@ -340,7 +328,6 @@ function page_1_create_form(&$form, $form_state){
               '#type' => 'textfield',
               '#title' => t("Species $i: *"),
               '#autocomplete_path' => "species/autocomplete",
-              '#default_value' => isset($values['organism']["$i"]) ? $values['organism']["$i"] : NULL,
               '#attributes' => array(
                 'data-toggle' => array('tooltip'),
                 'data-placement' => array('left'),

@@ -28,7 +28,6 @@ function page_3_create_form(&$form, &$form_state){
       '#upload_validators' => array(
         'file_validate_extensions' => array('txt csv xlsx'),
       ),
-      '#default_value' => isset($values['tree-accession']['file']) ? $values['tree-accession']['file'] : NULL,
       '#description' => $file_description,
       '#states' => ($species_number > 1) ? (array(
         'visible' => array(
@@ -45,7 +44,6 @@ function page_3_create_form(&$form, &$form_state){
     $form['tree-accession']['no-header'] = array(
       '#type' => 'checkbox',
       '#title' => t('My file has no header row'),
-      '#default_value' => isset($values['tree-accession']['no-header']) ? $values['tree-accession']['no-header'] : NULL,
       '#ajax' => array(
         'wrapper' => 'header-wrapper',
         'callback' => 'accession_header_callback',
@@ -60,7 +58,7 @@ function page_3_create_form(&$form, &$form_state){
     $form['tree-accession']['empty'] = array(
       '#type' => 'textfield',
       '#title' => t('Tree Accession File empty field'),
-      //'#default_value' => isset($values['tree-accession']['empty']) ? $values['tree-accession']['empty'] : 'NA',
+      '#default_value' => isset($values['tree-accession']['empty']) ? $values['tree-accession']['empty'] : 'NA',
       '#states' => ($species_number > 1) ? (array(
         'visible' => array(
           ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
@@ -192,7 +190,6 @@ function page_3_create_form(&$form, &$form_state){
                 'NAD 83',
                 'ETRS 89',
               ),
-              '#default_value' => isset($values['tree-accession']['file']['coord-format']) ? $values['tree-accession']['file']['coord-format'] : 0,
               '#states' => array(
                 'visible' => array(
                   $states_arr
@@ -230,7 +227,6 @@ function page_3_create_form(&$form, &$form_state){
         $form['tree-accession']['check'] = array(
           '#type' => 'checkbox',
           '#title' => t('I would like to upload a separate tree accession file for each species.'),
-          '#default_value' => isset($values['tree-accession']['check']) ? $values['tree-accession']['check'] : NULL,
         );
 
         for ($i = 1; $i <= $species_number; $i++){
@@ -254,7 +250,6 @@ function page_3_create_form(&$form, &$form_state){
               '#upload_validators' => array(
                 'file_validate_extensions' => array('txt csv xlsx'),
               ),
-              '#default_value' => isset($values['tree-accession']["species-$i"]['file']) ? $values['tree-accession']["species-$i"]['file'] : NULL,
               '#description' => $file_description,
               '#tree' => TRUE
             );
@@ -262,7 +257,6 @@ function page_3_create_form(&$form, &$form_state){
             $form['tree-accession']["species-$i"]['no-header'] = array(
               '#type' => 'checkbox',
               '#title' => t('My file has no header row'),
-              '#default_value' => isset($values['tree-accession']["species-$i"]['no-header']) ? $values['tree-accession']["species-$i"]['no-header'] : NULL,
               '#ajax' => array(
                 'wrapper' => "header-$i-wrapper",
                 'callback' => 'accession_header_callback',
