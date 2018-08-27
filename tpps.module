@@ -221,9 +221,67 @@ Your submission should be public on the <a href=\"{$params['base_url']}/tpps_det
 function tpps_element_info_alter(&$type){
     if (isset($type['textfield']['#maxlength'])){
         $type['textfield']['#maxlength'] = 512;
+        //dpm($type['textfield']);
+    }
+    //dpm('test_alter');
+}
+
+function tpps_form_alter(&$form, &$form_state, $form_id){
+    if ($form['#form_id'] == 'tpps_master'){
+        $stage = $form_state['stage'];
+        $saved_vals = $form_state['saved_values'][$stage];
+        tpps_leaves($form, $saved_vals);;
     }
 }
 
+function tpps_leaves(&$elements, $saved_vals){
+    foreach($elements as $key => &$element){
+        if ($key[0] != '#' and isset($element['#type'])){
+            
+            if ($element['#type'] == 'textfield' and !isset($element['#default_value']) and isset($saved_vals[$key])){
+                $element['#default_value'] = $saved_vals[$key];
+            }
+            
+            if (isset($saved_vals[$key])){
+                tpps_leaves($element, $saved_vals[$key]);
+            }
+        }
+    }
+    return;
+}
+
+/*
+function tpps_element_info(){
+    //dpm('test');
+    $types = array();
+    $types['textfield'] = array('#process' => array('process_test_no_hook'));
+    return $types;
+}
+
+function process_test_no_hook($element, $state){
+    if (isset($state['complete form']['#form_id']) and $state['complete form']['#form_id'] == 'tpps_master' and isset($state['rebuild']) and $state['rebuild']){
+        //dpm($state['stage']);
+        $stage = $state['stage'];
+        if (!isset($element['#default_value'])){
+            $parents = $element['#parents'];
+            $saved_val = $state['saved_values'][$stage];
+            dpm($saved_val);
+            dpm($parents);
+            foreach($parents as $parent){
+                $saved_val = isset($saved_val[$parent]) ? $saved_val[$parent] : NULL;
+            }
+            dpm('test');
+            if ($saved_val){
+                $element['#default_value'] = $saved_val;
+                $element['#defaults_loaded'] = FALSE;
+            }
+            dpm($element);
+        }
+    }
+    
+    return $element;
+}
+*/
 function tpps_tab_create($type, $user, $name = NULL){
     
     global $base_url;

@@ -57,6 +57,18 @@ function page_3_create_form(&$form, &$form_state){
       )) : NULL,
     );
     
+    $form['tree-accession']['empty'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Tree Accession File empty field'),
+      //'#default_value' => isset($values['tree-accession']['empty']) ? $values['tree-accession']['empty'] : 'NA',
+      '#states' => ($species_number > 1) ? (array(
+        'visible' => array(
+          ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
+        )
+      )) : NULL,
+      '#description' => 'By default, TPPS will treat cells with the value "NA" as empty. If you used a different empty value indicator, please provide it here.'
+    );
+    
     $form['tree-accession']['file']['columns'] = array(
       '#type' => 'fieldset',
       '#title' => t('<div class="fieldset-title">Define Data</div>'),
@@ -480,10 +492,11 @@ function page_3_validate_form(&$form, &$form_state){
                         tpps_content_no_header($content);
                     }
                     
+                    $empty = $form_state['values']['tree-accession']['empty'];
                     foreach ($content as $row => $vals){
                         if ($row !== 'headers' and isset($vals[$id_name]) and $vals[$id_name] !== ""){
                             foreach ($col_names as $item => $val){
-                                if ((!isset($vals[$item]) or $vals[$item] === "") and $val){
+                                if ((!isset($vals[$item]) or $vals[$item] === "" or $vals[$item] === $empty) and $val){
                                     $field = $file_element['columns'][$item]['#options'][$val];
                                     form_set_error("tree-accession][file][columns][{$vals[$id_name]}", "Tree Accession file: the required field $field is empty for tree \"{$vals[$id_name]}\".");
                                 }
