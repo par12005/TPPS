@@ -189,7 +189,7 @@ function page_1_create_form(&$form, $form_state){
                     file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
                     
                     $location = drupal_realpath("$file_name");
-                    $content = parse_xlsx($location);
+                    $content = tpps_parse_xlsx($location);
                     $no_header = FALSE;
 
                     if (isset($form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value']) and $form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value'] == 1){
