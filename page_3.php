@@ -100,7 +100,7 @@ function page_3_create_form(&$form, &$form_state){
             file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
             
             $location = drupal_realpath("$file_name");
-            $content = parse_xlsx($location);
+            $content = tpps_parse_xlsx($location);
             $no_header = FALSE;
             
             if (isset($form_state['complete form']['tree-accession']['no-header']['#value']) and $form_state['complete form']['tree-accession']['no-header']['#value'] == 1){
@@ -300,7 +300,7 @@ function page_3_create_form(&$form, &$form_state){
                     file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
                     $location = drupal_realpath("$file_name");
-                    $content = parse_xlsx($location);
+                    $content = tpps_parse_xlsx($location);
                     $no_header = FALSE;
 
                     if (isset($form_state['complete form']['tree-accession']["species-$i"]['no-header']['#value']) and $form_state['complete form']['tree-accession']["species-$i"]['no-header']['#value'] == 1){
@@ -427,7 +427,7 @@ function page_3_multi_map($form, $form_state){
             $file_name = $file->uri;
 
             $location = drupal_realpath("$file_name");
-            $content = parse_xlsx($location);
+            $content = tpps_parse_xlsx($location);
 
             if (isset($form_state['values']['tree-accession']['no-header']) and $form_state['values']['tree-accession']['no-header'] == 1){
                 tpps_content_no_header($content);
@@ -486,7 +486,7 @@ function page_3_validate_form(&$form, &$form_state){
                     $file = file_load($fid);
                     $file_name = $file->uri;
                     $location = drupal_realpath($file_name);
-                    $content = parse_xlsx($location);
+                    $content = tpps_parse_xlsx($location);
                     
                     if (isset($form_state['values']['tree-accession']['no-header']) and $form_state['values']['tree-accession']['no-header'] === 1){
                         tpps_content_no_header($content);
@@ -540,7 +540,7 @@ function page_3_validate_form(&$form, &$form_state){
                         $file = file_load($fid);
                         $file_name = $file->uri;
                         $location = drupal_realpath($file_name);
-                        $content = parse_xlsx($location);
+                        $content = tpps_parse_xlsx($location);
 
                         if (isset($form_state['values']['tree-accession']["species-$i"]['no-header']) and $form_state['values']['tree-accession']["species-$i"]['no-header'] === 1){
                             tpps_content_no_header($content);

@@ -170,7 +170,7 @@
             
   <div class="section" id="genotype-phenotype-and-environment">
 <h1>3.7. Genotype, Phenotype, and Environment<a class="headerlink" href="#genotype-phenotype-and-environment" title="Permalink to this headline">¶</a></h1>
-<p>The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section, where users upload Genotypic, Phenotypic, and Environmental data and metadata. The form fields and their properties are as follows:</p>
+<p>The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section, where users upload Genotypic, Phenotypic, and Environmental data and metadata about each organism. In multi-species submissions, users can reuse data from the previous species by checking the ‘&lt;Genotype/Phenotype/Environmental&gt; information for &lt;organism i&gt; is the same as &lt;genotype/phenotype/environmental&gt; information for &lt;organism i-1&gt;.’ box, which is only available after the first organism. The form fields and their properties are as follows:</p>
 <ul class="simple">
 <li>Tree Species <strong>x</strong>: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code></li>
 </ul>
@@ -240,19 +240,15 @@
 </ul>
 </div></blockquote>
 </li>
-<li><p class="first">URL to Reference Genome: <code class="docutils literal notranslate"><span class="pre">textfield</span></code> - only visible if the user selects ‘I can provide a URL to the website of my reference file(s)’ from ‘Reference Genome’</p>
+<li><p class="first">URL or Manual Assembly File: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> - Tripal FASTA Loader fields - only visible if the user selects ‘I can provide a URL to the website of my reference file(s)’, ‘I can upload my own reference genome file’, or ‘I can upload my own reference transcriptome file’ from ‘Reference Genome’</p>
 </li>
-<li><p class="first">Manual Assembly File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - FASTA or Multi-FASTA formatted file - only visible if the user selects ‘I can upload my own reference genome file’ or ‘I can upload my own reference transcriptome file’ from ‘Reference Genome’</p>
-</li>
-<li><p class="first">Manual Assembly File Columns: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> of <code class="docutils literal notranslate"><span class="pre">select</span></code> elements - user will define which of their columns contain the scaffold/chromosome ID</p>
-</li>
-<li><p class="first">Genotype File Type: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> - options ‘Genotype Assay’, ‘Assay Design’, ‘VCF’</p>
+<li><p class="first">Genotype File Type: <code class="docutils literal notranslate"><span class="pre">checkboxes</span></code> - options ‘Genotype Spreadsheet/Assay’, ‘Assay Design’, ‘VCF’. ‘Assay Design’ only visible if the user selects ‘SNPs’ from ‘Genotype Marker Type’.</p>
 </li>
 <li><p class="first">Genotype VCF File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - .VCF file of genotypes - only visible if the user selects ‘VCF’ from ‘Genotype File Type’</p>
 </li>
-<li><p class="first">Genotype File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - spreadsheet of genotypes - only visible if the user selects ‘Genotype Assay’ from ‘Genotype File Type’</p>
+<li><p class="first">Genotype File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - spreadsheet of genotypes - only visible if the user selects ‘Genotype Spreadsheet/Assay’ from ‘Genotype File Type’</p>
 </li>
-<li><p class="first">Genotype File Columns: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> of <code class="docutils literal notranslate"><span class="pre">select</span></code> elements - user will define which of their columns contain the Tree ID</p>
+<li><p class="first">Genotype File Columns: <code class="docutils literal notranslate"><span class="pre">fieldset</span></code> of <code class="docutils literal notranslate"><span class="pre">select</span></code> elements - user will define which of their columns contain the Tree ID and Genotype Data</p>
 </li>
 <li><p class="first">Assay Design File: <code class="docutils literal notranslate"><span class="pre">managed_file</span></code> - Assay design file - only visible if the user selects ‘Assay Design’ from ‘Genotype File Type’</p>
 </li>
