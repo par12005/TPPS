@@ -139,33 +139,12 @@ function page_1_create_form(&$form, $form_state){
               '#tree' => TRUE,
             );
             
-            $form['publication']['secondaryAuthors']['no-header'] = array(
-              '#type' => 'checkbox',
-              '#title' => t('My file has no header row'),
-              '#ajax' => array(
-                'wrapper' => 'header-wrapper',
-                'callback' => 'authors_header_callback',
-              ),
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
-                )
-              ),
-            );
+            $form['publication']['secondaryAuthors']['publication-secondaryAuthors-file-no-header'] = array();
             
             $form['publication']['secondaryAuthors']['file']['columns'] = array(
-              '#type' => 'fieldset',
-              '#title' => t('<h2>Define Data</h2>'),
-              '#states' => array(
-                'invisible' => array(
-                  ':input[name="publication_secondaryAuthors_file_upload_button"]' => array('value' => 'Upload')
-                )
-              ),
               '#description' => 'Please define which columns hold the required data: Last Name, First Name, and Middle Initial',
-              '#prefix' => '<div id="header-wrapper">',
-              '#suffix' => '</div>'
             );
-            
+            /*
             $file = 0;
             if (isset($form_state['values']['publication']['secondaryAuthors']['file']) and $form_state['values']['publication']['secondaryAuthors']['file'] != 0){
                 $file = $form_state['values']['publication']['secondaryAuthors']['file'];
@@ -244,7 +223,7 @@ function page_1_create_form(&$form, $form_state){
                     $form['publication']['secondaryAuthors']['file']['columns'][$item]['#suffix'] .= $display;
                 }
             }
-            
+            */
             return $form;
         }
         

@@ -34,7 +34,6 @@ function page_3_create_form(&$form, &$form_state){
           ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
         )
       )) : NULL,
-      '#tree' => TRUE
     );
     
     if ($species_number > 1){
@@ -68,17 +67,12 @@ function page_3_create_form(&$form, &$form_state){
     );
     
     $form['tree-accession']['file']['columns'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('<div class="fieldset-title">Define Data</div>'),
       '#states' => array(
         'invisible' => array(
           ':input[name="tree-accession_file_upload_button"]' => array('value' => 'Upload')
         )
       ),
       '#description' => 'Please define which columns hold the required data: Tree Identifier and Location',
-      '#prefix' => '<div id="header-wrapper">',
-      '#suffix' => '</div>',
-      '#collapsible' => TRUE
     );
     
     $file = 0;

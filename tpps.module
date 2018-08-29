@@ -214,7 +214,6 @@ Your submission should be public on the <a href=\"{$params['base_url']}/tpps_det
 function tpps_element_info_alter(&$type){
     if (isset($type['textfield']['#maxlength'])){
         $type['textfield']['#maxlength'] = 512;
-        //dpm($type['textfield']);
     }
     //dpm('test_alter');
 }
@@ -222,16 +221,24 @@ function tpps_element_info_alter(&$type){
 function tpps_form_alter(&$form, &$form_state, $form_id){
     if ($form['#form_id'] == 'tpps_master'){
         $stage = $form_state['stage'];
+        
+        //dpm($form);
         if (!isset($form_state['saved_values'][$stage])){
             $form_state['saved_values'][$stage] = array();
         }
-        tpps_leaves($form, $form_state['saved_values'][$stage]);
+        if (!isset($form_state['values'])){
+            $form_state['values'] = array();
+        }
+        
+        tpps_leaves($form, $form_state['values'], $form_state['saved_values'][$stage]);
     }
 }
 
-function tpps_leaves(&$elements, $saved_vals){
+function tpps_leaves(&$elements, $vals, $saved_vals){
     foreach($elements as $key => &$element){
         if ($key[0] != '#' and isset($element['#type'])){
+            
+            $element['#parents'] = array_merge($elements['#parents'], array($key));
             
             //element types that should be loading some default value, usually for the purposes of persistent form data
             $load_defaults = array(
@@ -250,7 +257,7 @@ function tpps_leaves(&$elements, $saved_vals){
                 $element['#default_value'] = 0;
             }
             
-            //checkboxes elements work a little differently
+            //checkboxes elements work a little differently in terms of default values
             if ($element['#type'] == 'checkboxes'){
                 $options = $element['#options'];
                 //get checkboxes options
@@ -262,11 +269,133 @@ function tpps_leaves(&$elements, $saved_vals){
                 }
             }
             
+            //managed files with column definition sections
+            if ($element['#type'] == 'managed_file' and isset($element['columns'])){
+                $element['#tree'] = TRUE;
+                
+                $upload_button_name = implode('_', $element['#parents']) . '_upload_button';
+                $no_header_key = implode('-', $element['#parents']) . '-no-header';
+                
+                //no-header element
+                if (!isset($elements[$no_header_key])){
+                    $elements[$no_header_key] = array(
+                      '#type' => 'checkbox',
+                      '#title' => t('My file has no header row'),
+                      '#ajax' => array(
+                        'wrapper' => "$no_header_key-wrapper",
+                        'callback' => 'tpps_no_header_callback',
+                      ),
+                      '#states' => array(
+                        'invisible' => array(
+                          ":input[name=\"$upload_button_name\"]" => array('value' => 'Upload')
+                        )
+                      ),
+                      '#default_value' => isset($saved_vals[$key][$no_header_key]) ? $saved_vals[$key][$no_header_key] : NULL,
+                    );
+                }
+                
+                //columns definition element
+                $element['columns']['#type'] = 'fieldset';
+                $element['columns']['#title'] = '<div class="fieldset-title">Define Data</div>';
+                $element['columns']['#states'] = array(
+                  'invisible' => array(
+                    ":input[name=\"$upload_button_name\"]" => array('value' => 'Upload')
+                  )
+                );
+                $element['columns']['#prefix'] = "<div id=\"$no_header_key-wrapper\">";
+                $element['columns']['#suffix'] = '</div>';
+                $element['columns']['#collapsible'] = TRUE;
+                //dpm($element);
+                
+                $file = 0;
+                if (!empty($vals[$key])){
+                    $file = $vals[$key];
+                }
+                elseif (!empty($saved_vals[$key])){
+                    $file = $saved_vals[$key];
+                }
+                //dpm($vals);
+                //dpm($saved_vals);
+                if ($file != 0 and FALSE){
+                    if (($file = file_load($file))){
+                        $file_name = $file->uri;
+
+                        //stop using the file so it can be deleted if the user clicks 'remove'
+                        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+
+                        $location = drupal_realpath("$file_name");
+                        $content = tpps_parse_xlsx($location);
+                        $no_header = FALSE;
+
+                        if (isset($form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value']) and $form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value'] == 1){
+                            tpps_content_no_header($content);
+                            $no_header = TRUE;
+                        }
+                        elseif (!isset($form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value']) and isset($values['publication']['secondaryAuthors']['no-header']) and $values['publication']['secondaryAuthors']['no-header'] == 1){
+                            tpps_content_no_header($content);
+                            $no_header = TRUE;
+                        }
+
+                        $column_options = array(
+                          'N/A',
+                          'First Name',
+                          'Last Name',
+                          'Middle Initial'
+                        );
+
+                        $first = TRUE;
+
+                        foreach ($content['headers'] as $item){
+                            $form['publication']['secondaryAuthors']['file']['columns'][$item] = array(
+                              '#type' => 'select',
+                              '#title' => t($item),
+                              '#options' => $column_options,
+                              '#prefix' => "<td>",
+                              '#suffix' => "</td>",
+                              '#attributes' => array(
+                                'data-toggle' => array('tooltip'),
+                                'data-placement' => array('left'),
+                                'title' => array("Select the type of data the '$item' column holds")
+                              )
+                            );
+
+                            if ($first){
+                                $first = FALSE;
+                                $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'];
+                            }
+
+                            if ($no_header){
+                                $form['publication']['secondaryAuthors']['file']['columns'][$item]['#title'] = '';
+                                $form['publication']['secondaryAuthors']['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
+                            }
+                        }
+
+                        // display sample data
+                        $display = "</tr>";
+                        for ($i = 0; $i < 3; $i++){
+                            if (isset($content[$i])){
+                                $display .= "<tr>";
+                                foreach ($content['headers'] as $item){
+                                    $display .= "<th>{$content[$i][$item]}</th>";
+                                }
+                                $display .= "</tr>";
+                            }
+                        }
+                        $display .= "</tbody></table></div>";
+
+                        $form['publication']['secondaryAuthors']['file']['columns'][$item]['#suffix'] .= $display;
+                    }
+                }
+            }
+            
             if ($element['#type'] == 'fieldset'){
                 if (!isset($saved_vals[$key])){
                     $saved_vals[$key] = array();
                 }
-                tpps_leaves($element, $saved_vals[$key]);
+                if (!isset($vals[$key])){
+                    $vals[$key] = array();
+                }
+                tpps_leaves($element, $vals[$key], $saved_vals[$key]);
             }
         }
     }
@@ -3521,6 +3650,24 @@ function tpps_parse_xlsx($location){
     
     return $content;
     
+}
+
+function tpps_no_header_callback($form, &$form_state){
+    
+    $parents = $form_state['triggering_element']['#parents'];
+    $wrapper = "<div id=\"{$form_state['triggering_element']['#ajax']['wrapper']}\">";
+    array_pop($parents);
+    
+    $no_header_parent = $form;
+    foreach ($parents as $parent){
+        $no_header_parent = $no_header_parent[$parent];
+    }
+    
+    foreach ($no_header_parent as $element){
+        if (isset($element['columns']['#prefix']) and $element['columns']['#prefix'] == $wrapper){
+            return $element['columns'];
+        }
+    }
 }
 
 function tpps_content_no_header(&$content){
