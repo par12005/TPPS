@@ -215,14 +215,126 @@ function tpps_element_info_alter(&$type){
     if (isset($type['textfield']['#maxlength'])){
         $type['textfield']['#maxlength'] = 512;
     }
-    //dpm('test_alter');
+    //dpm('element_info_alter');
+    $type['managed_file']['#process'][] = 'tpps_managed_file_process';
+}
+
+function tpps_managed_file_process($element, &$form_state, $form){
+    
+    if (isset($element['columns'])){
+        $fid = $element['#value']['fid'];
+        $wrapper = substr($element['#id'], 0, -7) . '-ajax-wrapper';
+
+        $saved_value_parents = $no_header_parents = $element['#parents'];
+        $no_header_parents[] = '#value';
+        $no_header_parents[] = 'no-header';
+        
+        $no_header = drupal_array_get_nested_value($form_state['complete form'], $no_header_parents);
+        if ($no_header){
+//            dpm($no_header);
+        }
+        elseif (!isset($form_state['triggering_element']['#ajax']['callback']) or (isset($form_state['triggering_element']['#ajax']['callback']) and $form_state['triggering_element']['#ajax']['callback'] != 'tpps_no_header_callback')){
+            //dpm($no_header);
+            //dpm($form_state['triggering_element']);
+            $end = array_pop($saved_value_parents);
+            $saved_value_parents[] = $end . "-no-header";
+            $no_header = drupal_array_get_nested_value($form_state['saved_values'][$form_state['stage']], $saved_value_parents);
+        }
+        
+        $element['no-header'] = array(
+          '#type' => 'checkbox',
+          '#title' => 'My file has no header row',
+          '#ajax' => array(
+            'wrapper' => $wrapper,
+            'callback' => 'tpps_no_header_callback'
+          ),
+          '#states' => isset($element['#states']) ? $element['#states'] : NULL,
+          '#default_value' => $no_header ? $no_header : NULL,
+        );
+        
+        if (!empty($fid) and ($file = file_load($fid))){
+            
+            $saved_vals = $form_state['saved_values'][$form_state['stage']];
+            $element['columns']['#type'] = 'fieldset';
+            $element['columns']['#title'] = t('<div class="fieldset-title">Define Data</div>');
+            $element['columns']['#collapsible'] = TRUE;
+            
+            $file_name = $file->uri;
+            
+            //stop using the file so it can be deleted if the user clicks 'remove'
+            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+            
+            $location = drupal_realpath("$file_name");
+            $content = tpps_parse_xlsx($location);
+            
+            if (!empty($no_header)){
+                tpps_content_no_header($content);
+            }
+            
+            $options = $element['columns-options']['#value'];
+            
+            $first = TRUE;
+            
+            foreach ($content['headers'] as $item){
+                $item_parents = $element['#parents'];
+                array_pop($item_parents);
+                $item_parents[] = end($element['#parents']) . '-columns';
+                $item_parents[] = $item;
+                
+                $default = drupal_array_get_nested_value($saved_vals, $item_parents);
+                //dpm($item_parents);
+                
+                $element['columns'][$item] = array(
+                  '#type' => 'select',
+                  '#title' => t($item),
+                  '#options' => $options,
+                  '#default_value' => $default,
+                  '#prefix' => "<td>",
+                  '#suffix' => "</td>",
+                  '#attributes' => array(
+                    'data-toggle' => array('tooltip'),
+                    'data-placement' => array('left'),
+                    'title' => array("Select the type of data the '$item' column holds")
+                  )
+                );
+
+                if ($first){
+                    $first = FALSE;
+                    $element['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $element['columns'][$item]['#prefix'];
+                }
+
+                if (!empty($no_header)){
+                    $element['columns'][$item]['#title'] = '';
+                    $element['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
+                }
+            }
+            
+            // display sample data
+            $display = "</tr>";
+            for ($j = 0; $j < 3; $j++){
+                if (isset($content[$j])){
+                    $display .= "<tr>";
+                    foreach ($content['headers'] as $item){
+                        $display .= "<th>{$content[$j][$item]}</th>";
+                    }
+                    $display .= "</tr>";
+                }
+            }
+            $display .= "</tbody></table></div>";
+
+            $element['columns'][$item]['#suffix'] .= $display;
+        }
+        
+    }
+    //dpm($element);
+    //dpm($form_state['saved_values']);
+    return $element;
 }
 
 function tpps_form_alter(&$form, &$form_state, $form_id){
     if ($form['#form_id'] == 'tpps_master'){
         $stage = $form_state['stage'];
         
-        //dpm($form);
         if (!isset($form_state['saved_values'][$stage])){
             $form_state['saved_values'][$stage] = array();
         }
@@ -269,7 +381,7 @@ function tpps_leaves(&$elements, $vals, $saved_vals){
                 }
             }
             
-            //managed files with column definition sections
+            /*//managed files with column definition sections
             if ($element['#type'] == 'managed_file' and isset($element['columns'])){
                 $element['#tree'] = TRUE;
                 
@@ -387,7 +499,7 @@ function tpps_leaves(&$elements, $vals, $saved_vals){
                     }
                 }
             }
-            
+            */
             if ($element['#type'] == 'fieldset'){
                 if (!isset($saved_vals[$key])){
                     $saved_vals[$key] = array();
@@ -1671,16 +1783,18 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
     $cols = $file_element['#value']['columns'];
     
     $parents = $file_element['#parents'];
-    $new_end = end($parents) . "-columns";
+    $new_end_columns = end($parents) . "-columns";
+    $new_end_no_header = end($parents) . "-no-header";
     $group_path = array_pop($parents) . "-groups";
     $values = &$form_state['values'];
     foreach ($parents as $item){
         $values = &$values[$item];
     }
     //initialize form column values in form state
-    $values[$new_end] = array();
+    $values[$new_end_columns] = array();
     //hold onto the location of the columns in form state
-    $state_column_values = &$values[$new_end];
+    $state_column_values = &$values[$new_end_columns];
+    $values[$new_end_no_header] = isset($file_element['#value']['no-header']) ? $file_element['#value']['no-header'] : NULL;
     
     $title_parts = explode(':', $file_element['#title']);
     $error_prompt = $title_parts[0];
@@ -3655,19 +3769,10 @@ function tpps_parse_xlsx($location){
 function tpps_no_header_callback($form, &$form_state){
     
     $parents = $form_state['triggering_element']['#parents'];
-    $wrapper = "<div id=\"{$form_state['triggering_element']['#ajax']['wrapper']}\">";
     array_pop($parents);
     
-    $no_header_parent = $form;
-    foreach ($parents as $parent){
-        $no_header_parent = $no_header_parent[$parent];
-    }
-    
-    foreach ($no_header_parent as $element){
-        if (isset($element['columns']['#prefix']) and $element['columns']['#prefix'] == $wrapper){
-            return $element['columns'];
-        }
-    }
+    $element = drupal_array_get_nested_value($form, $parents);
+    return $element;
 }
 
 function tpps_content_no_header(&$content){
