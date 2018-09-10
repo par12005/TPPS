@@ -357,8 +357,6 @@ function page_3_validate_form(&$form, &$form_state){
                     form_set_error("tree-accession][species-$i][file", "Species $i Tree Accession file: field is required.");
                 }
             }
-            dpm($form_state['values']['tree-accession']);
-            dpm($form_state['saved_values']['thirdPage']['tree-accession']);
         }
         
         if (form_get_errors() and ($species_number == 1 or $form_state['values']['tree-accession']['check'] == '0')){
