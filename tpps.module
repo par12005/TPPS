@@ -3739,7 +3739,7 @@ If you would like to submit your data, you can click the button 'Continue to TPP
 }
 
 function tpps_summary_create_form(&$form, $form_state){
-    dpm($form_state['saved_values']);
+    
     $form['Back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
