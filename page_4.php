@@ -516,10 +516,6 @@ function update_phenotype($form, &$form_state){
     return $form[$id]['phenotype'];
 }
 
-function genotype_header_callback($form, $form_state){
-    return $form[$form_state['triggering_element']['#parents'][0]]['genotype']['file']['columns'];
-}
-
 function snps_file_callback($form, $form_state){
     $id = $form_state['triggering_element']['#parents'][0];
     $commands = array();
