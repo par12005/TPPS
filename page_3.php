@@ -54,16 +54,8 @@ function page_3_create_form(&$form, &$form_state){
       )) : NULL,
     );
     
-    $form['tree-accession']['empty'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Tree Accession File empty field'),
-      '#default_value' => isset($values['tree-accession']['empty']) ? $values['tree-accession']['empty'] : 'NA',
-      '#states' => ($species_number > 1) ? (array(
-        'visible' => array(
-          ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
-        )
-      )) : NULL,
-      '#description' => 'By default, TPPS will treat cells with the value "NA" as empty. If you used a different empty value indicator, please provide it here.'
+    $form['tree-accession']['file']['empty'] = array(
+      '#default_value' => isset($values['tree-accession']['file']['empty']) ? $values['tree-accession']['file']['empty'] : 'NA',
     );
     
     $form['tree-accession']['file']['columns'] = array(

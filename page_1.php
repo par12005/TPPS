@@ -139,6 +139,10 @@ function page_1_create_form(&$form, $form_state){
               '#tree' => TRUE,
             );
             
+            $form['publication']['secondaryAuthors']['file']['empty'] = array(
+              '#default_value' => isset($values['publication']['secondaryAuthors']['file']['empty']) ? $values['publication']['secondaryAuthors']['file']['empty'] : 'NA',
+            );
+            
             $form['publication']['secondaryAuthors']['file']['columns'] = array(
               '#description' => 'Please define which columns hold the required data: Last Name, First Name, and Middle Initial',
             );

@@ -232,8 +232,6 @@ function tpps_managed_file_process($element, &$form_state, $form){
         $no_header = drupal_array_get_nested_value($form_state['complete form'], $no_header_parents);
         $callback = isset($form_state['triggering_element']['#ajax']['callback']) ? $form_state['triggering_element']['#ajax']['callback'] : NULL;
         if (!$no_header and ($callback != 'tpps_no_header_callback')){
-            //dpm($no_header);
-            //dpm($form_state['triggering_element']);
             $end = array_pop($saved_value_parents);
             $saved_value_parents[] = $end . "-no-header";
             $no_header = drupal_array_get_nested_value($form_state['saved_values'][$form_state['stage']], $saved_value_parents);
@@ -322,10 +320,16 @@ function tpps_managed_file_process($element, &$form_state, $form){
 
             $element['columns'][$item]['#suffix'] .= $display;
         }
-        
     }
-    //dpm($element);
-    //dpm($form_state['saved_values']);
+    
+    if (isset($element['empty'])){
+        
+        $element['empty']['#type'] = 'textfield';
+        $element['empty']['#title'] = t('File Upload empty field:');
+        $element['empty']['#states'] = isset($element['#states']) ? $element['#states'] : NULL;
+        $element['empty']['#description'] = 'By default, TPPS will treat cells with the value "NA" as empty. If you used a different empty value indicator, please provide it here.';
+    }
+    
     return $element;
 }
 
