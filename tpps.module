@@ -215,6 +215,186 @@ function tpps_element_info_alter(&$type){
     if (isset($type['textfield']['#maxlength'])){
         $type['textfield']['#maxlength'] = 512;
     }
+    //dpm('element_info_alter');
+    $type['managed_file']['#process'][] = 'tpps_managed_file_process';
+}
+
+function tpps_managed_file_process($element, &$form_state, $form){
+    
+    if (isset($element['columns'])){
+        $fid = $element['#value']['fid'];
+        $wrapper = substr($element['#id'], 0, -7) . '-ajax-wrapper';
+
+        $saved_value_parents = $no_header_parents = $element['#parents'];
+        $no_header_parents[] = '#value';
+        $no_header_parents[] = 'no-header';
+        
+        $no_header = drupal_array_get_nested_value($form_state['complete form'], $no_header_parents);
+        $callback = isset($form_state['triggering_element']['#ajax']['callback']) ? $form_state['triggering_element']['#ajax']['callback'] : NULL;
+        if (!$no_header and ($callback != 'tpps_no_header_callback')){
+            $end = array_pop($saved_value_parents);
+            $saved_value_parents[] = $end . "-no-header";
+            $no_header = drupal_array_get_nested_value($form_state['saved_values'][$form_state['stage']], $saved_value_parents);
+        }
+        
+        $element['no-header'] = array(
+          '#type' => 'checkbox',
+          '#title' => 'My file has no header row',
+          '#ajax' => array(
+            'wrapper' => $wrapper,
+            'callback' => 'tpps_no_header_callback'
+          ),
+          '#states' => isset($element['#states']) ? $element['#states'] : NULL,
+          '#default_value' => $no_header ? $no_header : NULL,
+        );
+        
+        if (!empty($fid) and ($file = file_load($fid))){
+            
+            $saved_vals = $form_state['saved_values'][$form_state['stage']];
+            $element['columns']['#type'] = 'fieldset';
+            $element['columns']['#title'] = t('<div class="fieldset-title">Define Data</div>');
+            $element['columns']['#collapsible'] = TRUE;
+            
+            $file_name = $file->uri;
+            
+            //stop using the file so it can be deleted if the user clicks 'remove'
+            file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+            
+            $location = drupal_realpath("$file_name");
+            $content = tpps_parse_xlsx($location);
+            
+            if (!empty($no_header)){
+                tpps_content_no_header($content);
+            }
+            
+            $options = $element['columns-options']['#value'];
+            
+            $first = TRUE;
+            
+            foreach ($content['headers'] as $item){
+                $item_parents = $element['#parents'];
+                array_pop($item_parents);
+                $item_parents[] = end($element['#parents']) . '-columns';
+                $item_parents[] = $item;
+                
+                $default = drupal_array_get_nested_value($saved_vals, $item_parents);
+                //dpm($item_parents);
+                
+                $element['columns'][$item] = array(
+                  '#type' => 'select',
+                  '#title' => t($item),
+                  '#options' => $options,
+                  '#default_value' => $default,
+                  '#prefix' => "<td>",
+                  '#suffix' => "</td>",
+                  '#attributes' => array(
+                    'data-toggle' => array('tooltip'),
+                    'data-placement' => array('left'),
+                    'title' => array("Select the type of data the '$item' column holds")
+                  )
+                );
+
+                if ($first){
+                    $first = FALSE;
+                    $element['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $element['columns'][$item]['#prefix'];
+                }
+
+                if (!empty($no_header)){
+                    $element['columns'][$item]['#title'] = '';
+                    $element['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
+                }
+            }
+            
+            // display sample data
+            $display = "</tr>";
+            for ($j = 0; $j < 3; $j++){
+                if (isset($content[$j])){
+                    $display .= "<tr>";
+                    foreach ($content['headers'] as $item){
+                        $display .= "<th>{$content[$j][$item]}</th>";
+                    }
+                    $display .= "</tr>";
+                }
+            }
+            $display .= "</tbody></table></div>";
+
+            $element['columns'][$item]['#suffix'] .= $display;
+        }
+    }
+    
+    if (isset($element['empty'])){
+        
+        $element['empty']['#type'] = 'textfield';
+        $element['empty']['#title'] = t('File Upload empty field:');
+        $element['empty']['#states'] = isset($element['#states']) ? $element['#states'] : NULL;
+        $element['empty']['#description'] = 'By default, TPPS will treat cells with the value "NA" as empty. If you used a different empty value indicator, please provide it here.';
+    }
+    
+    return $element;
+}
+
+function tpps_form_alter(&$form, &$form_state, $form_id){
+    if ($form['#form_id'] == 'tpps_master'){
+        $stage = $form_state['stage'];
+        
+        if (!isset($form_state['saved_values'][$stage])){
+            $form_state['saved_values'][$stage] = array();
+        }
+        if (!isset($form_state['values'])){
+            $form_state['values'] = array();
+        }
+        
+        tpps_leaves($form, $form_state['values'], $form_state['saved_values'][$stage]);
+    }
+}
+
+function tpps_leaves(&$elements, $vals, $saved_vals){
+    foreach($elements as $key => &$element){
+        if ($key[0] != '#' and isset($element['#type'])){
+            
+            $element['#parents'] = array_merge($elements['#parents'], array($key));
+            
+            //element types that should be loading some default value, usually for the purposes of persistent form data
+            $load_defaults = array(
+              'textfield',
+              'textarea',
+              'checkbox',
+              'select',
+              'managed_file',
+            );
+            //if element is a type that should pull from 'saved_values', try to load the old value
+            if (in_array($element['#type'], $load_defaults) and !isset($element['#default_value']) and isset($saved_vals[$key])){
+                $element['#default_value'] = $saved_vals[$key];
+            }
+            //if element is a select type and still has no default value, then there is no saved value, so the default should be 0
+            elseif ($element['#type'] == 'select' and !isset($element['#default_value'])){
+                $element['#default_value'] = 0;
+            }
+            
+            //checkboxes elements work a little differently in terms of default values
+            if ($element['#type'] == 'checkboxes'){
+                $options = $element['#options'];
+                //get checkboxes options
+                foreach ($options as $option){
+                    //if the option does not yet have a default, try to pull from 'saved_values'
+                    if (!isset($element[$option]['#default_value']) and isset($saved_vals[$key][$option])){
+                        $element[$option]['#default_value'] = $saved_vals[$key][$option];
+                    }
+                }
+            }
+            
+            if ($element['#type'] == 'fieldset'){
+                if (!isset($saved_vals[$key])){
+                    $saved_vals[$key] = array();
+                }
+                if (!isset($vals[$key])){
+                    $vals[$key] = array();
+                }
+                tpps_leaves($element, $vals[$key], $saved_vals[$key]);
+            }
+        }
+    }
+    return;
 }
 
 function tpps_tab_create($type, $user, $name = NULL){
@@ -550,7 +730,7 @@ function tpps_flatten($state){
         }
         if ($pub['secondaryAuthors']['check'] and $pub['secondaryAuthors']['file']){
             $data["Secondary Authors File"] = $pub['secondaryAuthors']['file'];
-            $data['#secondary_authors_file_no_header'] = isset($pub['secondaryAuthors']['no-header']) ? $pub['secondaryAuthors']['no-header'] : NULL;
+            $data['#secondary_authors_file_no_header'] = isset($pub['secondaryAuthors']['file-no-header']) ? $pub['secondaryAuthors']['file-no-header'] : NULL;
         }
     }
     
@@ -590,7 +770,7 @@ function tpps_flatten($state){
         $data['Data Type'] = $page_2['dataType'];
     }
     
-    if ($page_2['studyType']){
+    if (isset($page_2['studyType']) and $page_2['studyType']){
         $study_type_options = array(
           1 => 'Natural Population (Landscape)',
           2 => 'Growth Chamber',
@@ -1454,16 +1634,20 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
     $cols = $file_element['#value']['columns'];
     
     $parents = $file_element['#parents'];
-    $new_end = end($parents) . "-columns";
+    $new_end_columns = end($parents) . "-columns";
+    $new_end_no_header = end($parents) . "-no-header";
+    $new_end_empty = end($parents) . "-empty";
     $group_path = array_pop($parents) . "-groups";
     $values = &$form_state['values'];
     foreach ($parents as $item){
         $values = &$values[$item];
     }
     //initialize form column values in form state
-    $values[$new_end] = array();
+    $values[$new_end_columns] = array();
     //hold onto the location of the columns in form state
-    $state_column_values = &$values[$new_end];
+    $state_column_values = &$values[$new_end_columns];
+    $values[$new_end_no_header] = isset($file_element['#value']['no-header']) ? $file_element['#value']['no-header'] : NULL;
+    $values[$new_end_empty] = isset($file_element['#value']['empty']) ? $file_element['#value']['empty'] : NULL;
     
     $title_parts = explode(':', $file_element['#title']);
     $error_prompt = $title_parts[0];
@@ -2208,16 +2392,19 @@ function tpps_submit_all(&$form_state){
         $location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location);
         $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
+        $groups = $firstpage['publication']['secondaryAuthors']['file-groups'];
+        
+        if (!empty($firstpage['publication']['secondaryAuthors']['file-no-header'])){
+            tpps_content_no_header($content);
+        }
+        
+        $first_name = $groups['First Name']['1'];
+        $last_name = $groups['Last Name']['2'];
         
         foreach ($column_vals as $col => $val){
-            if ($val == '1'){
-                $first_name = $col;
-            }
-            if ($val == '2'){
-                $last_name = $col;
-            }
             if ($val == '3'){
                 $middle_initial = $col;
+                break;
             }
         }
         
@@ -2900,23 +3087,9 @@ function tpps_submit_all(&$form_state){
         $location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location);
         $column_vals = $thirdpage['tree-accession']['file-columns'];
+        $groups = $thirdpage['tree-accession']['file-columns'];
         
         foreach ($column_vals as $col => $val){
-            if ($val == '4'){
-                $lat_name = $col;
-            }
-            if ($val == '1'){
-                $id_col_accession_name = $col;
-            }
-            if ($val == '5'){
-                $long_name = $col;
-            }
-            if ($val == '2'){
-                $country_col_name = $col;
-            }
-            if ($val == '3'){
-                $state_col_name = $col;
-            }
             if ($val == '8'){
                 $county_col_name = $col;
             }
@@ -2924,6 +3097,8 @@ function tpps_submit_all(&$form_state){
                 $district_col_name = $col;
             }
         }
+        
+        $id_col_accession_name = $groups['Tree Id']['1'];
         
         if ($organism_number == '1'){
             //only one species
@@ -2939,17 +3114,13 @@ function tpps_submit_all(&$form_state){
         else {
             //multiple species in one tree accession file -> users must define species and genus columns
             
-            //get genus column
-            foreach ($column_vals as $col => $val){
-                if ($val == '6'){
-                    $genus_col_name = $col;
-                }
-                if ($val == '7'){
-                    $species_col_name = $col;
-                }
-                if ($val == '10'){
-                    $org_col_name = $col;
-                }
+            //get genus/species column
+            if ($groups['Genus and Species']['#type'] == 'separate'){
+                $genus_col_name = $groups['Genus and Species']['6'];
+                $species_col_name = $groups['Genus and Species']['7'];
+            }
+            else {
+                $org_col_name = $groups['Genus and Species']['10'];
             }
             
             //parse file
@@ -2957,7 +3128,14 @@ function tpps_submit_all(&$form_state){
                 $tree_id = $content[$i][$id_col_accession_name];
                 for ($j = 1; $j <= $organism_number; $j++){
                     //match genus and species to genus and species given on page 1
-                    if ($firstpage['organism'][$j] == "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}" or $firstpage['organism'][$j] == "{$content[$i][$org_col_name]}"){
+                    if ($groups['Genus and Species']['#type'] == 'separate'){
+                        $genus_full_name = "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}";
+                    }
+                    else {
+                        $genus_full_name = "{$content[$i][$org_col_name]}";
+                    }
+                    
+                    if ($firstpage['organism'][$j] == $genus_full_name){
                         //obtain organism id from matching species
                         $id = $organism_ids[$j];
                         break;
@@ -2973,7 +3151,10 @@ function tpps_submit_all(&$form_state){
             }
         }
         
-        if (isset($lat_name) and isset($long_name)){
+        if ($groups['Location (latitude/longitude or country/state)']['#type'] == 'gps'){
+            $lat_name = $groups['Location (latitude/longitude or country/state)']['4'];
+            $long_name = $groups['Location (latitude/longitude or country/state)']['5'];
+            
             for ($i = 0; $i < count($content) - 1; $i++){
                 $tree_id = $content[$i][$id_col_accession_name];
                 $stock_id = $stock_ids[$tree_id];
@@ -2992,6 +3173,9 @@ function tpps_submit_all(&$form_state){
             }
         }
         else {
+            $country_col_name = $groups['Location (latitude/longitude or country/state)']['2'];
+            $state_col_name = $groups['Location (latitude/longitude or country/state)']['3'];
+            
             for ($i = 0; $i < count($content) - 1; $i++){
                 $tree_id = $content[$i][$id_col_accession_name];
                 $stock_id = $stock_ids[$tree_id];
@@ -3044,23 +3228,11 @@ function tpps_submit_all(&$form_state){
             $location = drupal_realpath($file->uri);
             $content = tpps_parse_xlsx($location);
             $column_vals = $thirdpage['tree-accession']["species-$i"]['file-columns'];
+            $groups = $thirdpage['tree-accession']["species-$i"]['file-groups'];
+            
+            $id_col_accession_name = $groups['Tree Id']['1'];
 
             foreach ($column_vals as $col => $val){
-                if ($val == '4'){
-                    $lat_name = $col;
-                }
-                if ($val == '1'){
-                    $id_col_accession_name = $col;
-                }
-                if ($val == '5'){
-                    $long_name = $col;
-                }
-                if ($val == '2'){
-                    $country_col_name = $col;
-                }
-                if ($val == '3'){
-                    $state_col_name = $col;
-                }
                 if ($val == '8'){
                     $county_col_name = $col;
                 }
@@ -3077,7 +3249,10 @@ function tpps_submit_all(&$form_state){
                   'organism_id' => $organism_ids[$i],
                 ));
                 
-                if (isset($lat_name) and isset($long_name)){
+                if ($groups['Location (latitude/longitude or country/state)']['#type'] == 'gps'){
+                    $lat_name = $groups['Location (latitude/longitude or country/state)']['4'];
+                    $long_name = $groups['Location (latitude/longitude or country/state)']['5'];
+                    
                     $stockprop_ids[] = tpps_create_record('stockprop', array(
                       'stock_id' => $stock_ids[$tree_id],
                       'type_id' => '54718',
@@ -3091,6 +3266,8 @@ function tpps_submit_all(&$form_state){
                     ));
                 }
                 else {
+                    $country_col_name = $groups['Location (latitude/longitude or country/state)']['2'];
+                    $state_col_name = $groups['Location (latitude/longitude or country/state)']['3'];
                     
                     $stockprop_ids[] = tpps_create_record('stockprop', array(
                       'stock_id' => $stock_id,
@@ -3433,6 +3610,15 @@ function tpps_parse_xlsx($location){
     
     return $content;
     
+}
+
+function tpps_no_header_callback($form, &$form_state){
+    
+    $parents = $form_state['triggering_element']['#parents'];
+    array_pop($parents);
+    
+    $element = drupal_array_get_nested_value($form, $parents);
+    return $element;
 }
 
 function tpps_content_no_header(&$content){

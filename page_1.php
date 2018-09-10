@@ -14,7 +14,6 @@ function page_1_create_form(&$form, $form_state){
           '#type' => 'textfield',
           '#title' => t('Primary Author: *'),
           '#autocomplete_path' => 'author/autocomplete',
-          '#default_value' => isset($values['primaryAuthor']) ? $values['primaryAuthor'] : NULL,
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('left'),
@@ -26,7 +25,6 @@ function page_1_create_form(&$form, $form_state){
           '#type' => 'textfield',
           '#title' => t('Organization: *'),
           '#autocomplete_path' => 'organization/autocomplete',
-          '#default_value' => isset($values['organization']) ? $values['organization'] : NULL,
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('left'),
@@ -68,7 +66,6 @@ function page_1_create_form(&$form, $form_state){
               '#type' => 'select',
               '#title' => t('Year of Publication: *'),
               '#options' => $yearArr,
-              '#default_value' => isset($values['publication']['year']) ? $values['publication']['year'] : 0,
               '#states' => array(
                 'invisible' => array(
                   ':input[name="publication[status]"]' => array('value' => '0')
@@ -114,14 +111,12 @@ function page_1_create_form(&$form, $form_state){
                   '#type' => 'textfield',
                   '#title' => t("Secondary Author $i: *"),
                   '#autocomplete_path' => 'author/autocomplete',
-                  '#default_value' => isset($values['publication']['secondaryAuthors'][$i]) ? $values['publication']['secondaryAuthors'][$i] : NULL,
                 );
             }
             
             $form['publication']['secondaryAuthors']['check'] = array(
               '#type' => 'checkbox',
               '#title' => t('I have >30 Secondary Authors'),
-              '#default_value' => isset($values['publication']['secondaryAuthors']['check']) ? $values['publication']['secondaryAuthors']['check'] : NULL,
               '#attributes' => array(
                 'data-toggle' => array('tooltip'),
                 'data-placement' => array('left'),
@@ -136,7 +131,6 @@ function page_1_create_form(&$form, $form_state){
               '#upload_validators' => array(
                 'file_validate_extensions' => array('txt csv xlsx')
               ),
-              '#default_value' => isset($values['publication']['secondaryAuthors']['file']) ? $values['publication']['secondaryAuthors']['file'] : NULL,
               '#states' => array(
                 'visible' => array(
                   ':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
@@ -145,113 +139,27 @@ function page_1_create_form(&$form, $form_state){
               '#tree' => TRUE,
             );
             
-            $form['publication']['secondaryAuthors']['no-header'] = array(
-              '#type' => 'checkbox',
-              '#title' => t('My file has no header row'),
-              '#default_value' => isset($values['publication']['secondaryAuthors']['no-header']) ? $values['publication']['secondaryAuthors']['no-header'] : NULL,
-              '#ajax' => array(
-                'wrapper' => 'header-wrapper',
-                'callback' => 'authors_header_callback',
-              ),
-              '#states' => array(
-                'visible' => array(
-                  ':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE)
-                )
-              ),
+            $form['publication']['secondaryAuthors']['file']['empty'] = array(
+              '#default_value' => isset($values['publication']['secondaryAuthors']['file']['empty']) ? $values['publication']['secondaryAuthors']['file']['empty'] : 'NA',
             );
             
             $form['publication']['secondaryAuthors']['file']['columns'] = array(
-              '#type' => 'fieldset',
-              '#title' => t('<h2>Define Data</h2>'),
-              '#states' => array(
-                'invisible' => array(
-                  ':input[name="publication_secondaryAuthors_file_upload_button"]' => array('value' => 'Upload')
-                )
-              ),
-              '#description' => 'Please define which columns hold the required data: Last Name, First Name, and Middle Initial',
-              '#prefix' => '<div id="header-wrapper">',
-              '#suffix' => '</div>'
+              '#description' => 'Please define which columns hold the required data: Last Name, First Name.',
             );
             
-            $file = 0;
-            if (isset($form_state['values']['publication']['secondaryAuthors']['file']) and $form_state['values']['publication']['secondaryAuthors']['file'] != 0){
-                $file = $form_state['values']['publication']['secondaryAuthors']['file'];
-            }
-            elseif (isset($form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['file']) and $form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['file'] != 0){
-                $file = $form_state['saved_values']['Hellopage']['publication']['secondaryAuthors']['file'];
-            }
+            $column_options = array(
+              'N/A',
+              'First Name',
+              'Last Name',
+              'Middle Initial'
+            );
+
+            $form['publication']['secondaryAuthors']['file']['columns-options'] = array(
+              '#type' => 'hidden',
+              '#value' => $column_options,
+            );
             
-            if ($file != 0){
-                if (($file = file_load($file))){
-                    $file_name = $file->uri;
-                    
-                    //stop using the file so it can be deleted if the user clicks 'remove'
-                    file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-                    
-                    $location = drupal_realpath("$file_name");
-                    $content = tpps_parse_xlsx($location);
-                    $no_header = FALSE;
-
-                    if (isset($form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value']) and $form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value'] == 1){
-                        tpps_content_no_header($content);
-                        $no_header = TRUE;
-                    }
-                    elseif (!isset($form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value']) and isset($values['publication']['secondaryAuthors']['no-header']) and $values['publication']['secondaryAuthors']['no-header'] == 1){
-                        tpps_content_no_header($content);
-                        $no_header = TRUE;
-                    }
-
-                    $column_options = array(
-                      'N/A',
-                      'First Name',
-                      'Last Name',
-                      'Middle Initial'
-                    );
-
-                    $first = TRUE;
-
-                    foreach ($content['headers'] as $item){
-                        $form['publication']['secondaryAuthors']['file']['columns'][$item] = array(
-                          '#type' => 'select',
-                          '#title' => t($item),
-                          '#options' => $column_options,
-                          '#default_value' => isset($values['publication']['secondaryAuthors']['file-columns'][$item]) ? $values['publication']['secondaryAuthors']['file-columns'][$item] : 0,
-                          '#prefix' => "<td>",
-                          '#suffix' => "</td>",
-                          '#attributes' => array(
-                            'data-toggle' => array('tooltip'),
-                            'data-placement' => array('left'),
-                            'title' => array("Select the type of data the '$item' column holds")
-                          )
-                        );
-
-                        if ($first){
-                            $first = FALSE;
-                            $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'];
-                        }
-
-                        if ($no_header){
-                            $form['publication']['secondaryAuthors']['file']['columns'][$item]['#title'] = '';
-                            $form['publication']['secondaryAuthors']['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
-                        }
-                    }
-
-                    // display sample data
-                    $display = "</tr>";
-                    for ($i = 0; $i < 3; $i++){
-                        if (isset($content[$i])){
-                            $display .= "<tr>";
-                            foreach ($content['headers'] as $item){
-                                $display .= "<th>{$content[$i][$item]}</th>";
-                            }
-                            $display .= "</tr>";
-                        }
-                    }
-                    $display .= "</tbody></table></div>";
-
-                    $form['publication']['secondaryAuthors']['file']['columns'][$item]['#suffix'] .= $display;
-                }
-            }
+            $form['publication']['secondaryAuthors']['file']['no-header'] = array();
             
             return $form;
         }
@@ -278,7 +186,6 @@ function page_1_create_form(&$form, $form_state){
             'callback' => 'page_1_pub_status',
             'wrapper' => 'pubyear'
           ),
-          '#default_value' => isset($values['publication']['status']) ? $values['publication']['status'] : 0,
         );
         
         year($form, $values, $form_state);
@@ -286,20 +193,17 @@ function page_1_create_form(&$form, $form_state){
         $form['publication']['title'] = array(
           '#type' => 'textfield',
           '#title' => t('Title of Publication: *'),
-          '#default_value' => isset($values['publication']['title']) ? $values['publication']['title'] : NULL,
         );
 
         $form['publication']['abstract'] = array(
           '#type' => 'textarea',
           '#title' => t('Abstract: *'),
-          '#default_value' => isset($values['publication']['abstract']) ? $values['publication']['abstract'] : NULL,
         );
 
         $form['publication']['journal'] = array(
           '#type' => 'textfield',
           '#title' => t('Journal: *'),
           '#autocomplete_path' => 'journal/autocomplete',
-          '#default_value' => isset($values['publication']['journal']) ? $values['publication']['journal'] : NULL,
         );
         
         return $form;
@@ -340,7 +244,6 @@ function page_1_create_form(&$form, $form_state){
               '#type' => 'textfield',
               '#title' => t("Species $i: *"),
               '#autocomplete_path' => "species/autocomplete",
-              '#default_value' => isset($values['organism']["$i"]) ? $values['organism']["$i"] : NULL,
               '#attributes' => array(
                 'data-toggle' => array('tooltip'),
                 'data-placement' => array('left'),
@@ -384,10 +287,6 @@ function page_1_pub_status($form, $form_state){
     return $form['publication']['year'];
 }
 
-function authors_header_callback($form, $form_state){
-    return $form['publication']['secondaryAuthors']['file']['columns'];
-}
-
 function page_1_validate_form(&$form, &$form_state){
     //for testing only.
     /*foreach($form_state['values'] as $key => $value){
@@ -411,34 +310,41 @@ function page_1_validate_form(&$form, &$form_state){
         $organism = $form_values['organism'];
         $organism_number = $form_values['organism']['number'];
         
-        function validate_secondary_authors($secondary_authors_file, $form, &$form_state){
-            if ($secondary_authors_file != ""){
-                
-                $required_columns = array(
-                  '1' => 'First Name',
-                  '2' => 'Last Name',
-                );
-                
-                $form_state['values']['publication']['secondaryAuthors']['file-columns'] = array();
-                //dpm($form['publication']['secondaryAuthors']['file']['columns']);
-                
-                foreach ($form['publication']['secondaryAuthors']['file']['columns'] as $req => $val){
-                    if ($req[0] != '#'){
-                        $form_state['values']['publication']['secondaryAuthors']['file-columns'][$req] = $form['publication']['secondaryAuthors']['file']['columns'][$req]['#value'];
+        if ($primary_author == ''){
+            form_set_error('primaryAuthor', 'Primary Author: field is required.');
+        }
+        
+        if ($organization == ''){
+            form_set_error('organization', 'Organization: field is required.');
+        }
+        
+        if (!$publication_status){
+            form_set_error('publication][status', 'Publication Status: field is required.');
+        }
+        
+        if ($secondary_authors_number > 0 and !$secondary_authors_check){
+            for($i = 1; $i <= $secondary_authors_number; $i++){
+                if ($secondary_authors_array[$i] == ''){
+                    form_set_error("publication][secondaryAuthors][$i", "Secondary Author $i: field is required.");
+                }
+            }
+        }
+        elseif ($secondary_authors_check){
+            $file_element = $form_values['publication']['secondaryAuthors']['file'];
 
-                        $col_val = $form_state['values']['publication']['secondaryAuthors']['file-columns'][$req];
-                        if ($col_val != '0'){
-                            $required_columns[$col_val] = NULL;
-                        }
-                    }
-                }
-                
-                foreach ($required_columns as $item){
-                    if ($item != NULL){
-                        form_set_error("publication][secondaryAuthors][file][columns][$item", "Secondary Authors file: Please specify a column that holds $item.");
-                    }
-                }
-                
+            if ($secondary_authors_file != ""){
+                $required_groups = array(
+                  'First Name' => array(
+                    'first' => array(1),
+                  ),
+                  'Last Name' => array(
+                    'last' => array(2),
+                  ),
+                );
+
+                $file_element = $form['publication']['secondaryAuthors']['file'];
+                $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+
                 if (!form_get_errors()){
                     //preserve file if it is valid
                     $file = file_load($form_state['values']['publication']['secondaryAuthors']['file']);
@@ -449,46 +355,21 @@ function page_1_validate_form(&$form, &$form_state){
                 form_set_error('publication][secondaryAuthors][file', 'Secondary Authors file: field is required.');
             }
         }
-        
-        if ($primary_author == ''){
-            form_set_error('primaryAuthor', 'Primary Author: field is required.');
+
+        if (!$year){
+            form_set_error('publication][year', 'Year of Publication: field is required.');
         }
-        
-        if ($organization == ''){
-            form_set_error('organization', 'Organization: field is required.');
+
+        if ($publication_title == ''){
+            form_set_error('publication][title', 'Title of Publication: field is required.');
         }
-        
-        if ($publication_status == '0'){
-            form_set_error('publication][status', 'Publication Status: field is required.');
+
+        if ($publication_abstract == ''){
+            form_set_error('publication][abstract', 'Abstract: field is required.');
         }
-        else{
-            
-            if ($secondary_authors_number > 0 and $secondary_authors_check == '0'){
-                for($i = 1; $i <= $secondary_authors_number; $i++){
-                    if ($secondary_authors_array[$i] == ''){
-                        form_set_error("publication][secondaryAuthors][$i", "Secondary Author $i: field is required.");
-                    }
-                }
-            }
-            elseif ($secondary_authors_check == '1'){
-                validate_secondary_authors($secondary_authors_file, $form, $form_state);
-            }
 
-            if ($year == '0'){
-                form_set_error('publication][year', 'Year of Publication: field is required.');
-            }
-
-            if ($publication_title == ''){
-                form_set_error('publication][title', 'Title of Publication: field is required.');
-            }
-
-            if ($publication_abstract == ''){
-                form_set_error('publication][abstract', 'Abstract: field is required.');
-            }
-
-            if ($publication_journal == ''){
-                form_set_error('publication][journal', 'Journal: field is required.');
-            }
+        if ($publication_journal == ''){
+            form_set_error('publication][journal', 'Journal: field is required.');
         }
         
         for ($i = 1; $i <= $organism_number; $i++){
