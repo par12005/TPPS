@@ -230,10 +230,8 @@ function tpps_managed_file_process($element, &$form_state, $form){
         $no_header_parents[] = 'no-header';
         
         $no_header = drupal_array_get_nested_value($form_state['complete form'], $no_header_parents);
-        if ($no_header){
-//            dpm($no_header);
-        }
-        elseif (!isset($form_state['triggering_element']['#ajax']['callback']) or (isset($form_state['triggering_element']['#ajax']['callback']) and $form_state['triggering_element']['#ajax']['callback'] != 'tpps_no_header_callback')){
+        $callback = isset($form_state['triggering_element']['#ajax']['callback']) ? $form_state['triggering_element']['#ajax']['callback'] : NULL;
+        if (!$no_header and ($callback != 'tpps_no_header_callback')){
             //dpm($no_header);
             //dpm($form_state['triggering_element']);
             $end = array_pop($saved_value_parents);
@@ -381,125 +379,6 @@ function tpps_leaves(&$elements, $vals, $saved_vals){
                 }
             }
             
-            /*//managed files with column definition sections
-            if ($element['#type'] == 'managed_file' and isset($element['columns'])){
-                $element['#tree'] = TRUE;
-                
-                $upload_button_name = implode('_', $element['#parents']) . '_upload_button';
-                $no_header_key = implode('-', $element['#parents']) . '-no-header';
-                
-                //no-header element
-                if (!isset($elements[$no_header_key])){
-                    $elements[$no_header_key] = array(
-                      '#type' => 'checkbox',
-                      '#title' => t('My file has no header row'),
-                      '#ajax' => array(
-                        'wrapper' => "$no_header_key-wrapper",
-                        'callback' => 'tpps_no_header_callback',
-                      ),
-                      '#states' => array(
-                        'invisible' => array(
-                          ":input[name=\"$upload_button_name\"]" => array('value' => 'Upload')
-                        )
-                      ),
-                      '#default_value' => isset($saved_vals[$key][$no_header_key]) ? $saved_vals[$key][$no_header_key] : NULL,
-                    );
-                }
-                
-                //columns definition element
-                $element['columns']['#type'] = 'fieldset';
-                $element['columns']['#title'] = '<div class="fieldset-title">Define Data</div>';
-                $element['columns']['#states'] = array(
-                  'invisible' => array(
-                    ":input[name=\"$upload_button_name\"]" => array('value' => 'Upload')
-                  )
-                );
-                $element['columns']['#prefix'] = "<div id=\"$no_header_key-wrapper\">";
-                $element['columns']['#suffix'] = '</div>';
-                $element['columns']['#collapsible'] = TRUE;
-                //dpm($element);
-                
-                $file = 0;
-                if (!empty($vals[$key])){
-                    $file = $vals[$key];
-                }
-                elseif (!empty($saved_vals[$key])){
-                    $file = $saved_vals[$key];
-                }
-                //dpm($vals);
-                //dpm($saved_vals);
-                if ($file != 0 and FALSE){
-                    if (($file = file_load($file))){
-                        $file_name = $file->uri;
-
-                        //stop using the file so it can be deleted if the user clicks 'remove'
-                        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
-                        $location = drupal_realpath("$file_name");
-                        $content = tpps_parse_xlsx($location);
-                        $no_header = FALSE;
-
-                        if (isset($form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value']) and $form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value'] == 1){
-                            tpps_content_no_header($content);
-                            $no_header = TRUE;
-                        }
-                        elseif (!isset($form_state['complete form']['publication']['secondaryAuthors']['no-header']['#value']) and isset($values['publication']['secondaryAuthors']['no-header']) and $values['publication']['secondaryAuthors']['no-header'] == 1){
-                            tpps_content_no_header($content);
-                            $no_header = TRUE;
-                        }
-
-                        $column_options = array(
-                          'N/A',
-                          'First Name',
-                          'Last Name',
-                          'Middle Initial'
-                        );
-
-                        $first = TRUE;
-
-                        foreach ($content['headers'] as $item){
-                            $form['publication']['secondaryAuthors']['file']['columns'][$item] = array(
-                              '#type' => 'select',
-                              '#title' => t($item),
-                              '#options' => $column_options,
-                              '#prefix' => "<td>",
-                              '#suffix' => "</td>",
-                              '#attributes' => array(
-                                'data-toggle' => array('tooltip'),
-                                'data-placement' => array('left'),
-                                'title' => array("Select the type of data the '$item' column holds")
-                              )
-                            );
-
-                            if ($first){
-                                $first = FALSE;
-                                $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $form['publication']['secondaryAuthors']['file']['columns'][$item]['#prefix'];
-                            }
-
-                            if ($no_header){
-                                $form['publication']['secondaryAuthors']['file']['columns'][$item]['#title'] = '';
-                                $form['publication']['secondaryAuthors']['file']['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
-                            }
-                        }
-
-                        // display sample data
-                        $display = "</tr>";
-                        for ($i = 0; $i < 3; $i++){
-                            if (isset($content[$i])){
-                                $display .= "<tr>";
-                                foreach ($content['headers'] as $item){
-                                    $display .= "<th>{$content[$i][$item]}</th>";
-                                }
-                                $display .= "</tr>";
-                            }
-                        }
-                        $display .= "</tbody></table></div>";
-
-                        $form['publication']['secondaryAuthors']['file']['columns'][$item]['#suffix'] .= $display;
-                    }
-                }
-            }
-            */
             if ($element['#type'] == 'fieldset'){
                 if (!isset($saved_vals[$key])){
                     $saved_vals[$key] = array();
@@ -514,38 +393,6 @@ function tpps_leaves(&$elements, $vals, $saved_vals){
     return;
 }
 
-/*
-function tpps_element_info(){
-    //dpm('test');
-    $types = array();
-    $types['textfield'] = array('#process' => array('process_test_no_hook'));
-    return $types;
-}
-
-function process_test_no_hook($element, $state){
-    if (isset($state['complete form']['#form_id']) and $state['complete form']['#form_id'] == 'tpps_master' and isset($state['rebuild']) and $state['rebuild']){
-        //dpm($state['stage']);
-        $stage = $state['stage'];
-        if (!isset($element['#default_value'])){
-            $parents = $element['#parents'];
-            $saved_val = $state['saved_values'][$stage];
-            dpm($saved_val);
-            dpm($parents);
-            foreach($parents as $parent){
-                $saved_val = isset($saved_val[$parent]) ? $saved_val[$parent] : NULL;
-            }
-            dpm('test');
-            if ($saved_val){
-                $element['#default_value'] = $saved_val;
-                $element['#defaults_loaded'] = FALSE;
-            }
-            dpm($element);
-        }
-    }
-    
-    return $element;
-}
-*/
 function tpps_tab_create($type, $user, $name = NULL){
     
     global $base_url;
