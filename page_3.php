@@ -277,7 +277,7 @@ function page_3_validate_form(&$form, &$form_state){
                     $location = drupal_realpath($file_name);
                     $content = tpps_parse_xlsx($location);
                     
-                    if (isset($form_state['values']['tree-accession']['file-no-header']) and $form_state['values']['tree-accession']['file-no-header'] === 1){
+                    if (!empty($form_state['values']['tree-accession']['file-no-header'])){
                         tpps_content_no_header($content);
                     }
                     

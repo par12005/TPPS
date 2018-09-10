@@ -730,7 +730,7 @@ function tpps_flatten($state){
         }
         if ($pub['secondaryAuthors']['check'] and $pub['secondaryAuthors']['file']){
             $data["Secondary Authors File"] = $pub['secondaryAuthors']['file'];
-            $data['#secondary_authors_file_no_header'] = isset($pub['secondaryAuthors']['no-header']) ? $pub['secondaryAuthors']['no-header'] : NULL;
+            $data['#secondary_authors_file_no_header'] = isset($pub['secondaryAuthors']['file-no-header']) ? $pub['secondaryAuthors']['file-no-header'] : NULL;
         }
     }
     
@@ -2392,16 +2392,19 @@ function tpps_submit_all(&$form_state){
         $location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location);
         $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
+        $groups = $firstpage['publication']['secondaryAuthors']['file-groups'];
+        
+        if (!empty($firstpage['publication']['secondaryAuthors']['file-no-header'])){
+            tpps_content_no_header($content);
+        }
+        
+        $first_name = $groups['First Name']['1'];
+        $last_name = $groups['Last Name']['2'];
         
         foreach ($column_vals as $col => $val){
-            if ($val == '1'){
-                $first_name = $col;
-            }
-            if ($val == '2'){
-                $last_name = $col;
-            }
             if ($val == '3'){
                 $middle_initial = $col;
+                break;
             }
         }
         
@@ -3084,23 +3087,9 @@ function tpps_submit_all(&$form_state){
         $location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location);
         $column_vals = $thirdpage['tree-accession']['file-columns'];
+        $groups = $thirdpage['tree-accession']['file-columns'];
         
         foreach ($column_vals as $col => $val){
-            if ($val == '4'){
-                $lat_name = $col;
-            }
-            if ($val == '1'){
-                $id_col_accession_name = $col;
-            }
-            if ($val == '5'){
-                $long_name = $col;
-            }
-            if ($val == '2'){
-                $country_col_name = $col;
-            }
-            if ($val == '3'){
-                $state_col_name = $col;
-            }
             if ($val == '8'){
                 $county_col_name = $col;
             }
@@ -3108,6 +3097,8 @@ function tpps_submit_all(&$form_state){
                 $district_col_name = $col;
             }
         }
+        
+        $id_col_accession_name = $groups['Tree Id']['1'];
         
         if ($organism_number == '1'){
             //only one species
@@ -3123,17 +3114,13 @@ function tpps_submit_all(&$form_state){
         else {
             //multiple species in one tree accession file -> users must define species and genus columns
             
-            //get genus column
-            foreach ($column_vals as $col => $val){
-                if ($val == '6'){
-                    $genus_col_name = $col;
-                }
-                if ($val == '7'){
-                    $species_col_name = $col;
-                }
-                if ($val == '10'){
-                    $org_col_name = $col;
-                }
+            //get genus/species column
+            if ($groups['Genus and Species']['#type'] == 'separate'){
+                $genus_col_name = $groups['Genus and Species']['6'];
+                $species_col_name = $groups['Genus and Species']['7'];
+            }
+            else {
+                $org_col_name = $groups['Genus and Species']['10'];
             }
             
             //parse file
@@ -3141,7 +3128,14 @@ function tpps_submit_all(&$form_state){
                 $tree_id = $content[$i][$id_col_accession_name];
                 for ($j = 1; $j <= $organism_number; $j++){
                     //match genus and species to genus and species given on page 1
-                    if ($firstpage['organism'][$j] == "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}" or $firstpage['organism'][$j] == "{$content[$i][$org_col_name]}"){
+                    if ($groups['Genus and Species']['#type'] == 'separate'){
+                        $genus_full_name = "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}";
+                    }
+                    else {
+                        $genus_full_name = "{$content[$i][$org_col_name]}";
+                    }
+                    
+                    if ($firstpage['organism'][$j] == $genus_full_name){
                         //obtain organism id from matching species
                         $id = $organism_ids[$j];
                         break;
@@ -3157,7 +3151,10 @@ function tpps_submit_all(&$form_state){
             }
         }
         
-        if (isset($lat_name) and isset($long_name)){
+        if ($groups['Location (latitude/longitude or country/state)']['#type'] == 'gps'){
+            $lat_name = $groups['Location (latitude/longitude or country/state)']['4'];
+            $long_name = $groups['Location (latitude/longitude or country/state)']['5'];
+            
             for ($i = 0; $i < count($content) - 1; $i++){
                 $tree_id = $content[$i][$id_col_accession_name];
                 $stock_id = $stock_ids[$tree_id];
@@ -3176,6 +3173,9 @@ function tpps_submit_all(&$form_state){
             }
         }
         else {
+            $country_col_name = $groups['Location (latitude/longitude or country/state)']['2'];
+            $state_col_name = $groups['Location (latitude/longitude or country/state)']['3'];
+            
             for ($i = 0; $i < count($content) - 1; $i++){
                 $tree_id = $content[$i][$id_col_accession_name];
                 $stock_id = $stock_ids[$tree_id];
@@ -3228,23 +3228,11 @@ function tpps_submit_all(&$form_state){
             $location = drupal_realpath($file->uri);
             $content = tpps_parse_xlsx($location);
             $column_vals = $thirdpage['tree-accession']["species-$i"]['file-columns'];
+            $groups = $thirdpage['tree-accession']["species-$i"]['file-groups'];
+            
+            $id_col_accession_name = $groups['Tree Id']['1'];
 
             foreach ($column_vals as $col => $val){
-                if ($val == '4'){
-                    $lat_name = $col;
-                }
-                if ($val == '1'){
-                    $id_col_accession_name = $col;
-                }
-                if ($val == '5'){
-                    $long_name = $col;
-                }
-                if ($val == '2'){
-                    $country_col_name = $col;
-                }
-                if ($val == '3'){
-                    $state_col_name = $col;
-                }
                 if ($val == '8'){
                     $county_col_name = $col;
                 }
@@ -3261,7 +3249,10 @@ function tpps_submit_all(&$form_state){
                   'organism_id' => $organism_ids[$i],
                 ));
                 
-                if (isset($lat_name) and isset($long_name)){
+                if ($groups['Location (latitude/longitude or country/state)']['#type'] == 'gps'){
+                    $lat_name = $groups['Location (latitude/longitude or country/state)']['4'];
+                    $long_name = $groups['Location (latitude/longitude or country/state)']['5'];
+                    
                     $stockprop_ids[] = tpps_create_record('stockprop', array(
                       'stock_id' => $stock_ids[$tree_id],
                       'type_id' => '54718',
@@ -3275,6 +3266,8 @@ function tpps_submit_all(&$form_state){
                     ));
                 }
                 else {
+                    $country_col_name = $groups['Location (latitude/longitude or country/state)']['2'];
+                    $state_col_name = $groups['Location (latitude/longitude or country/state)']['3'];
                     
                     $stockprop_ids[] = tpps_create_record('stockprop', array(
                       'stock_id' => $stock_id,
@@ -3746,7 +3739,7 @@ If you would like to submit your data, you can click the button 'Continue to TPP
 }
 
 function tpps_summary_create_form(&$form, $form_state){
-    
+    dpm($form_state['saved_values']);
     $form['Back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
