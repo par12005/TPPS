@@ -144,7 +144,7 @@ function page_1_create_form(&$form, $form_state){
             );
             
             $form['publication']['secondaryAuthors']['file']['columns'] = array(
-              '#description' => 'Please define which columns hold the required data: Last Name, First Name, and Middle Initial',
+              '#description' => 'Please define which columns hold the required data: Last Name, First Name.',
             );
             
             $column_options = array(
@@ -285,10 +285,6 @@ function page_1_create_form(&$form, $form_state){
 
 function page_1_pub_status($form, $form_state){
     return $form['publication']['year'];
-}
-
-function authors_header_callback($form, $form_state){
-    return $form['publication']['secondaryAuthors']['file']['columns'];
 }
 
 function page_1_validate_form(&$form, &$form_state){
