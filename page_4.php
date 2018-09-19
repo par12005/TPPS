@@ -1306,7 +1306,7 @@ function page_4_validate_form(&$form, &$form_state){
         
         if (form_get_errors() and !$form_state['rebuild']){
             $form_state['rebuild'] = TRUE;
-            $new_form = drupal_rebuild_form('tpps_master', $form_state, $form);
+            $new_form = drupal_rebuild_form('tpps_main', $form_state, $form);
             
             for ($i = 1; $i <= $organism_number; $i++){
                 
