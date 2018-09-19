@@ -10,10 +10,10 @@ function tpps_menu() {
 
     $items = array();
 
-    $items['master'] = array(
+    $items['tpps'] = array(
       'title' => 'Tripal Plant PopGen Submit pipeline',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('tpps_master'),
+      'page arguments' => array('tpps_main'),
       'access callback' => 'user_access',
       'access arguments' => array('access content'),
       'type' => MENU_NORMAL_ITEM,
@@ -334,7 +334,7 @@ function tpps_managed_file_process($element, &$form_state, $form){
 }
 
 function tpps_form_alter(&$form, &$form_state, $form_id){
-    if ($form['#form_id'] == 'tpps_master'){
+    if ($form['#form_id'] == 'tpps_main'){
         $stage = $form_state['stage'];
         
         if (!isset($form_state['saved_values'][$stage])){
@@ -451,7 +451,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         
         if (isset($state['saved_values']['Hellopage']['publication']['title'])){
             $title = check_plain($state['saved_values']['Hellopage']['publication']['title']);
-            $display .= "<td><a href='$base_url/master?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
+            $display .= "<td><a href='$base_url/tpps?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
         }
         else {
             $display .= "<td></td>";
@@ -589,7 +589,7 @@ function tpps_tab_create($type, $user, $name = NULL){
     if (!$t1 and !$t2){
         $display = $style;
         $display .= "<h2>Could not find any Submissions</h2>";
-        $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/master>here.</a></p>";
+        $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/tpps>here.</a></p>";
     }
     
     $final .= $display;
@@ -1715,7 +1715,7 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
 function tpps_page_build(&$page){
     
     //dpm($page['content']['system_main']['step']['#default_value']);
-    if (!isset($page['content']['system_main']['form_id']['#value']) or $page['content']['system_main']['form_id']['#value'] != 'tpps_master'){
+    if (!isset($page['content']['system_main']['form_id']['#value']) or $page['content']['system_main']['form_id']['#value'] != 'tpps_main'){
         return $page;
     }
     
@@ -1739,7 +1739,7 @@ function tpps_page_build(&$page){
     return $page;
 }
 
-function tpps_master($form, &$form_state){
+function tpps_main($form, &$form_state){
     
     global $user;
     $params = drupal_get_query_parameters();
@@ -1979,7 +1979,7 @@ function tpps_master($form, &$form_state){
     return $form;
 }
 
-function tpps_master_validate(&$form, &$form_state){
+function tpps_main_validate(&$form, &$form_state){
     
     if ($form_state['triggering_element']['#value'] == 'Back' or $form_state['triggering_element']['#value'] == 'Save'){
         
@@ -2128,7 +2128,7 @@ function tpps_master_validate(&$form, &$form_state){
     }
 }
 
-function tpps_master_submit($form, &$form_state){
+function tpps_main_submit($form, &$form_state){
     
     global $user;
     
