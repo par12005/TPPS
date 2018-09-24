@@ -497,11 +497,6 @@ function environment(&$form, &$form_state, $values, $id){
       '#collapsible' => TRUE,
     );
     
-    $fields['info'] = array(
-      '#type' => 'textfield',
-      '#title' => 'info',
-    );
-    
     if ($cartogratree_env){
         
         $query = db_select('variable', 'v')
@@ -552,6 +547,68 @@ function environment(&$form, &$form_state, $values, $id){
             $fields['env_layers'][$layer]['#default_value'] = isset($values[$id]['environment']['env_layers'][$layer]) ? $values[$id]['environment']['env_layers'][$layer] : 0;
         }
     }
+    
+    $fields['env_manual_check'] = array(
+      '#type' => 'checkbox',
+      '#title' => 'I have environmental data that I collected myself.',
+    );
+    
+    if (isset($form_state['values'][$id]['environment']['number']) and $form_state['triggering_element']['#name'] == "Add Environment Data-$id"){
+        $form_state['values'][$id]['environment']['number']++;
+    }
+    elseif (isset($form_state['values'][$id]['environment']['number']) and $form_state['triggering_element']['#name'] == "Remove Environment Data-$id" and $form_state['values'][$id]['environment']['number'] > 0){
+        $form_state['values'][$id]['environment']['number']--;
+    }
+    $environment_number = isset($form_state['values'][$id]['environment']['number']) ? $form_state['values'][$id]['environment']['number'] : NULL;
+    
+    if (!isset($environment_number) and isset($form_state['saved_values']['fourthPage'][$id]['environment']['number'])){
+        $environment_number = $form_state['saved_values']['fourthPage'][$id]['environment']['number'];
+    }
+    if (!isset($environment_number)){
+        $environment_number = 0;
+    }
+    
+    $fields['add'] = array(
+      '#type' => 'button',
+      '#name' => t("Add Environment Data-$id"),
+      '#button_type' => 'button',
+      '#value' => t('Add Environment Data'),
+      '#ajax' => array(
+        'callback' => 'update_environment',
+        'wrapper' => "environment-$id"
+      ),
+    );
+
+    $fields['remove'] = array(
+      '#type' => 'button',
+      '#name' => t("Remove Environment Data-$id"),
+      '#button_type' => 'button',
+      '#value' => t('Remove Environment Data'),
+      '#ajax' => array(
+        'callback' => 'update_environment',
+        'wrapper' => "environment-$id"
+      ),
+    );
+
+    $fields['number'] = array(
+      '#type' => 'hidden',
+      '#value' => "$environment_number"
+    );
+
+    $fields['env_manual'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Custom Environmental Data:',
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[environment][env_manual_check]"]' => array('checked' => TRUE)
+        )
+      ),
+      '#tree' => TRUE,
+      '#prefix' => "<div id=\"environment-$id\">",
+      '#suffix' => '</div>',
+      '#collapsible' => TRUE,
+    );
+    
     
     return $fields;
 }
