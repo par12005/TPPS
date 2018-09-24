@@ -17,7 +17,7 @@ Installation
  
 3. Then, enable TPPS by running:
 
-  ``drush en TPPS``
+  ``drush en tpps``
 
 For more instructions, please see the `Drupal documentation page`_.
 
