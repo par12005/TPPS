@@ -489,6 +489,8 @@ function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location)
 }
 
 function environment(&$form, &$form_state, $values, $id){
+    $cartogratree_env = variable_get('tpps_cartogratree_env', FALSE);
+    
     $fields = array(
       '#type' => 'fieldset',
       '#title' => t('<div class="fieldset-title">Environmental Information:</div>'),
@@ -499,6 +501,57 @@ function environment(&$form, &$form_state, $values, $id){
       '#type' => 'textfield',
       '#title' => 'info',
     );
+    
+    if ($cartogratree_env){
+        
+        $query = db_select('variable', 'v')
+            ->fields('v')
+            ->condition('name', db_like('tpps_layer_group_') . '%', 'LIKE');
+        
+        $results = $query->execute();
+        $options = array();
+        
+        while (($result = $results->fetchObject())){
+            $group_id = substr($result->name, 17);
+            $group = db_select('cartogratree_groups', 'g')
+                ->fields('g', array('group_id', 'group_name'))
+                ->condition('group_id', $group_id)
+                ->execute()
+                ->fetchObject();
+            $group_is_enabled = variable_get("tpps_layer_group_$group_id", FALSE);
+            
+            if ($group_is_enabled){
+                $layers_query = db_select('cartogratree_layers', 'c')
+                    ->fields('c', array('title', 'group_id'))
+                    ->condition('c.group_id', $group_id);
+                $layers_results = $layers_query->execute();
+                while (($layer = $layers_results->fetchObject())){
+                    $options[$layer->title] = $group->group_name . ": <strong>" . $layer->title . '</strong>';
+                }
+            }
+        }
+        
+        $fields['use_layers'] = array(
+          '#type' => 'checkbox',
+          '#title' => 'I used environmental layers in my study that are indexed by CartograTree.',
+          '#description' => 'If the layer you used is not in the list below, then the administrator for this site might not have enabled the layer group you used. Please contact them for more information.'
+        );
+
+        $fields['env_layers'] = array(
+          '#type' => 'checkboxes',
+          '#title' => 'Cartogratree Environmental Layers:',
+          '#options' => $options,
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE)
+            )
+          )
+        );
+        
+        foreach ($options as $layer => $val){
+            $fields['env_layers'][$layer]['#default_value'] = isset($values[$id]['environment']['env_layers'][$layer]) ? $values[$id]['environment']['env_layers'][$layer] : 0;
+        }
+    }
     
     return $fields;
 }
@@ -1280,6 +1333,20 @@ function page_4_validate_form(&$form, &$form_state){
                 file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
             }
         }
+        
+        function validate_environment($environment, $id, $form, &$form_state){
+            if ($environment['use_layers']){
+                //using cartogratree environment layers
+                $layer_check = '';
+                foreach ($environment['env_layers'] as $layer){
+                    $layer_check .= $layer;
+                }
+                dpm($layer_check);
+                if(preg_match('/^0+$/', $layer_check)){
+                    form_set_error("$id][environment][env_layers]", 'CartograTree environmental layers: field is required.');
+                }
+            }
+        }
 
         $form_values = $form_state['values'];
         $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
@@ -1301,6 +1368,14 @@ function page_4_validate_form(&$form, &$form_state){
             if (isset($form_state['values']["organism-$i"]['genotype'])){
                 $genotype = $form_state['values']["organism-$i"]['genotype'];
                 validate_genotype($genotype, "organism-$i", $form, $form_state);
+            }
+            
+            if ($i > 1 and isset($organism['environment-repeat-check']) and $organism['environment-repeat-check'] == '1'){
+                unset($form_state['values']["organism-$i"]['environment']);
+            }
+            if (isset($form_state['values']["organism-$i"]['environment'])){
+                $environment = $form_state['values']["organism-$i"]['environment'];
+                validate_environment($environment, "organism-$i", $form, $form_state);
             }
         }
         
