@@ -495,6 +495,9 @@ function environment(&$form, &$form_state, $values, $id){
       '#type' => 'fieldset',
       '#title' => t('<div class="fieldset-title">Environmental Information:</div>'),
       '#collapsible' => TRUE,
+      '#tree' => TRUE,
+      '#prefix' => "<div id=\"environment-$id\">",
+      '#suffix' => '</div>',
     );
     
     if ($cartogratree_env){
@@ -568,28 +571,6 @@ function environment(&$form, &$form_state, $values, $id){
         $environment_number = 0;
     }
     
-    $fields['add'] = array(
-      '#type' => 'button',
-      '#name' => t("Add Environment Data-$id"),
-      '#button_type' => 'button',
-      '#value' => t('Add Environment Data'),
-      '#ajax' => array(
-        'callback' => 'update_environment',
-        'wrapper' => "environment-$id"
-      ),
-    );
-
-    $fields['remove'] = array(
-      '#type' => 'button',
-      '#name' => t("Remove Environment Data-$id"),
-      '#button_type' => 'button',
-      '#value' => t('Remove Environment Data'),
-      '#ajax' => array(
-        'callback' => 'update_environment',
-        'wrapper' => "environment-$id"
-      ),
-    );
-
     $fields['number'] = array(
       '#type' => 'hidden',
       '#value' => "$environment_number"
@@ -603,12 +584,58 @@ function environment(&$form, &$form_state, $values, $id){
           ':input[name="' . $id . '[environment][env_manual_check]"]' => array('checked' => TRUE)
         )
       ),
-      '#tree' => TRUE,
-      '#prefix' => "<div id=\"environment-$id\">",
-      '#suffix' => '</div>',
       '#collapsible' => TRUE,
     );
     
+    $fields['env_manual']['add'] = array(
+      '#type' => 'button',
+      '#name' => t("Add Environment Data-$id"),
+      '#button_type' => 'button',
+      '#value' => t('Add Environment Data'),
+      '#ajax' => array(
+        'callback' => 'update_environment',
+        'wrapper' => "environment-$id"
+      ),
+    );
+
+    $fields['env_manual']['remove'] = array(
+      '#type' => 'button',
+      '#name' => t("Remove Environment Data-$id"),
+      '#button_type' => 'button',
+      '#value' => t('Remove Environment Data'),
+      '#ajax' => array(
+        'callback' => 'update_environment',
+        'wrapper' => "environment-$id"
+      ),
+    );
+
+    for ($i = 1; $i <= $environment_number; $i++){
+
+        $fields['env_manual']["$i"] = array(
+          '#type' => 'fieldset',
+          '#tree' => TRUE,
+        );
+        
+        $fields['env_manual']["$i"]['name'] = array(
+          '#type' => 'textfield',
+          '#title' => "Environmental Data $i Name: *",
+          '#prefix' => "<label><b>Environment Data $i:</b></label>",
+          '#description' => t("Please provide the name of Environmental Data $i. Some example environmental data names might include \"soil chemistry\", \"rainfall\", \"average temperature\", etc."),
+        );
+        
+        $fields['env_manual']["$i"]['description'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Environmental Data $i Description: *"),
+          '#description' => t("Please provide a short description of Environmental Data $i."),
+        );
+        
+        $fields['env_manual']["$i"]['units'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Environmental Data $i Units: *"),
+          '#description' => t("Please provide the units of Environmental Data $i."),
+        );
+        
+    }
     
     return $fields;
 }
@@ -624,6 +651,12 @@ function update_phenotype($form, &$form_state){
     $id = $form_state['triggering_element']['#parents'][0];
     
     return $form[$id]['phenotype'];
+}
+
+function update_environment($form, &$form_state){
+    $id = $form_state['triggering_element']['#parents'][0];
+    
+    return $form[$id]['environment'];
 }
 
 function snps_file_callback($form, $form_state){
@@ -1398,10 +1431,34 @@ function page_4_validate_form(&$form, &$form_state){
                 foreach ($environment['env_layers'] as $layer){
                     $layer_check .= $layer;
                 }
-                dpm($layer_check);
+                
                 if(preg_match('/^0+$/', $layer_check)){
-                    form_set_error("$id][environment][env_layers]", 'CartograTree environmental layers: field is required.');
+                    form_set_error("$id][environment][env_layers", 'CartograTree environmental layers: field is required.');
                 }
+            }
+            
+            if ($environment['env_manual_check']){
+                $env_number = $environment['number'];
+                for ($i = 1; $i <= $env_number; $i++){
+                    $current_env = $environment['env_manual']["$i"];
+                    $name = $current_env['name'];
+                    $desc = $current_env['description'];
+                    $unit = $current_env['units'];
+                    
+                    if (empty($name)){
+                        form_set_error("$id][environment][env_manual][$i][name", "Environment Data $i Name: field is required.");
+                    }
+                    if (empty($desc)){
+                        form_set_error("$id][environment][env_manual][$i][description", "Environment Data $i Description: field is required.");
+                    }
+                    if (empty($unit)){
+                        form_set_error("$id][environment][env_manual][$i][units", "Environment Data $i Units: field is required.");
+                    }
+                }
+            }
+            
+            if (empty($environment['env_manual_check']) and empty($environment['use_layers'])){
+                form_set_error("$id][environment", 'Environment: field is required.');
             }
         }
 
