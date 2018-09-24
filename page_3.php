@@ -361,7 +361,7 @@ function page_3_validate_form(&$form, &$form_state){
         
         if (form_get_errors() and ($species_number == 1 or $form_state['values']['tree-accession']['check'] == '0')){
             $form_state['rebuild'] = TRUE;
-            $new_form = drupal_rebuild_form('tpps_master', $form_state, $form);
+            $new_form = drupal_rebuild_form('tpps_main', $form_state, $form);
             $form['tree-accession']['file']['upload'] = $new_form['tree-accession']['file']['upload'];
             $form['tree-accession']['file']['columns'] = $new_form['tree-accession']['file']['columns'];
             $form['tree-accession']['file']['upload']['#id'] = "edit-tree-accession-file-upload";
@@ -369,7 +369,7 @@ function page_3_validate_form(&$form, &$form_state){
         }
         elseif (form_get_errors()){
             $form_state['rebuild'] = TRUE;
-            $new_form = drupal_rebuild_form('tpps_master', $form_state, $form);
+            $new_form = drupal_rebuild_form('tpps_main', $form_state, $form);
             for ($i = 1; $i <= $species_number; $i++){
                 $form['tree-accession']["species-$i"]['file']['upload'] = $new_form['tree-accession']["species-$i"]['file']['upload'];
                 $form['tree-accession']["species-$i"]['file']['columns'] = $new_form['tree-accession']["species-$i"]['file']['columns'];
