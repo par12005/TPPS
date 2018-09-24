@@ -568,7 +568,7 @@ function environment(&$form, &$form_state, $values, $id){
         $environment_number = $form_state['saved_values']['fourthPage'][$id]['environment']['number'];
     }
     if (!isset($environment_number)){
-        $environment_number = 0;
+        $environment_number = 1;
     }
     
     $fields['number'] = array(
@@ -635,6 +635,11 @@ function environment(&$form, &$form_state, $values, $id){
           '#description' => t("Please provide the units of Environmental Data $i."),
         );
         
+        $fields['env_manual']["$i"]['value'] = array(
+          '#type' => 'textfield',
+          '#title' => t("Environmental Data $i Value: *"),
+          '#description' => t("Please provide the value of Environmental Data $i."),
+        );
     }
     
     return $fields;
@@ -1444,6 +1449,7 @@ function page_4_validate_form(&$form, &$form_state){
                     $name = $current_env['name'];
                     $desc = $current_env['description'];
                     $unit = $current_env['units'];
+                    $val = $current_env['value'];
                     
                     if (empty($name)){
                         form_set_error("$id][environment][env_manual][$i][name", "Environment Data $i Name: field is required.");
@@ -1453,6 +1459,9 @@ function page_4_validate_form(&$form, &$form_state){
                     }
                     if (empty($unit)){
                         form_set_error("$id][environment][env_manual][$i][units", "Environment Data $i Units: field is required.");
+                    }
+                    if (empty($val)){
+                        form_set_error("$id][environment][env_manual][$i][value", "Environment Data $i Value: field is required.");
                     }
                 }
             }

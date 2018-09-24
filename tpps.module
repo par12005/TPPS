@@ -4517,6 +4517,39 @@ function tpps_file_parsing($form_state){
                 $vcf_file = file_save($vcf_file);
             }
         }
+        
+        if (isset($fourthpage["organism-$i"]['environment'])){
+            $environment = $fourthpage["organism-$i"]['environment'];
+            $env_layers_check = $environment['use_layers'];
+            $env_layers = $environment['env_layers'];
+            $env_number = $environment['number'];
+            
+            for ($j = 1; $j <= $env_number; $j++){
+                $current_env = $environment['env_manual'][$j];
+                $name = $current_env['name'];
+                $desc = $current_env['description'];
+                $unit = $current_env['units'];
+                $val = $current_env['value'];
+                
+                $env_id = tpps_create_record('phenotype', array(
+                  'uniquename' => "$name-{$form_state['accession']}-$j",
+                  'name' => $name,
+                  'value' => $value,
+                ));
+                
+                tpps_create_record('phenotypeprop', array(
+                  'phenotype_id' => $env_id,
+                  'type_id' => '2871',
+                  'value' => $desc
+                ));
+                
+                tpps_create_record('phenotypeprop', array(
+                  'phenotype_id' => $env_id,
+                  'type_id' => '2883',
+                  'value' => $unit,
+                ));
+            }
+        }
     }
     
     return;
