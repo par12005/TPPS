@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>3. Administrators &mdash; Tripal Plant PopGen Submit  documentation</title>
+  <title>3.11. Submission Approval and Rejection &mdash; Tripal Plant PopGen Submit  documentation</title>
   
 
   
@@ -28,8 +28,8 @@
   <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="3.1. Installation" href="install.html" />
-    <link rel="prev" title="2. Features" href="features.html" /> 
+    <link rel="next" title="4. Users" href="user.html" />
+    <link rel="prev" title="3.10. Data Submission" href="submit.html" /> 
 
   
   <script src="_static/js/modernizr.min.js"></script>
@@ -82,7 +82,7 @@
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="intro.html">1. Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="features.html">2. Features</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">3. Administrators</a><ul>
+<li class="toctree-l1 current"><a class="reference internal" href="admin.html">3. Administrators</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="install.html">3.1. Installation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="config.html">3.2. Configuration</a></li>
 <li class="toctree-l2"><a class="reference internal" href="admin_pages/login.html">3.3. Login and Profile</a></li>
@@ -93,7 +93,7 @@
 <li class="toctree-l2"><a class="reference internal" href="admin_pages/summary.html">3.8. Submission Summary</a></li>
 <li class="toctree-l2"><a class="reference internal" href="valid.html">3.9. Input Validation</a></li>
 <li class="toctree-l2"><a class="reference internal" href="submit.html">3.10. Data Submission</a></li>
-<li class="toctree-l2"><a class="reference internal" href="approve.html">3.11. Submission Approval and Rejection</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">3.11. Submission Approval and Rejection</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="user.html">4. Users</a></li>
@@ -142,14 +142,16 @@
     
       <li><a href="index.html">Docs</a> &raquo;</li>
         
-      <li>3. Administrators</li>
+          <li><a href="admin.html">3. Administrators</a> &raquo;</li>
+        
+      <li>3.11. Submission Approval and Rejection</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
             
             
-              <a href="https://gitlab.com/TreeGenes/TGDR/blob/master/docs/source/admin.rst" class="fa fa-gitlab"> Edit on GitLab</a>
+              <a href="https://gitlab.com/TreeGenes/TGDR/blob/master/docs/source/approve.rst" class="fa fa-gitlab"> Edit on GitLab</a>
             
           
         
@@ -163,24 +165,16 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="administrators">
-<h1>3. Administrators<a class="headerlink" href="#administrators" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<p class="caption"><span class="caption-text">Table of Contents</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="install.html">3.1. Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="config.html">3.2. Configuration</a></li>
-<li class="toctree-l1"><a class="reference internal" href="admin_pages/login.html">3.3. Login and Profile</a></li>
-<li class="toctree-l1"><a class="reference internal" href="admin_pages/page_1.html">3.4. Publication and Species Interface</a></li>
-<li class="toctree-l1"><a class="reference internal" href="admin_pages/page_2.html">3.5. Study Design</a></li>
-<li class="toctree-l1"><a class="reference internal" href="admin_pages/page_3.html">3.6. Tree Accession</a></li>
-<li class="toctree-l1"><a class="reference internal" href="admin_pages/page_4.html">3.7. Genotype, Phenotype, and Environment</a></li>
-<li class="toctree-l1"><a class="reference internal" href="admin_pages/summary.html">3.8. Submission Summary</a></li>
-<li class="toctree-l1"><a class="reference internal" href="valid.html">3.9. Input Validation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="submit.html">3.10. Data Submission</a></li>
-<li class="toctree-l1"><a class="reference internal" href="approve.html">3.11. Submission Approval and Rejection</a></li>
-</ul>
-</div>
+  <div class="section" id="submission-approval-and-rejection">
+<h1>3.11. Submission Approval and Rejection<a class="headerlink" href="#submission-approval-and-rejection" title="Permalink to this headline">¶</a></h1>
+<p>Once a submission is completed, it is not available to the public until it has been approved by an administrator. This can be done from the tpps admin approval panel, which can be accessed in one of two ways:</p>
+<ol class="arabic simple">
+<li>Click the link in the alert sent to the site admin email</li>
+<li>Navigate to <code class="docutils literal notranslate"><span class="pre">http://&lt;site</span> <span class="pre">domain&gt;/&lt;Drupal</span> <span class="pre">root&gt;/tpps-admin-panel?accession=&lt;accession</span> <span class="pre">number&gt;</span></code></li>
+</ol>
+<p>Once you are on the submission approval panel, you can either fill out the rejection reason field and click <code class="docutils literal notranslate"><span class="pre">Reject</span></code> to reject the submission, or you can check the <code class="docutils literal notranslate"><span class="pre">This</span> <span class="pre">submission</span> <span class="pre">has</span> <span class="pre">been</span> <span class="pre">reviewed</span> <span class="pre">and</span> <span class="pre">approved</span></code> box, and click <code class="docutils literal notranslate"><span class="pre">Approve</span></code> to approve it.</p>
+<p>If the submission is approved the user will recieve a notification via email, and the data that was not added through file uploads will be added to chado. The remaining data, which was added through file uploads, will be added to chado later during a tripal job. This data can take a long time to add, which is why it is added in a tripal job rather than immediately after approval.</p>
+<p>If the submission is rejected, the user will recieve a notification via email, and the submission will move from the <code class="docutils literal notranslate"><span class="pre">completed</span></code> state back to an <code class="docutils literal notranslate"><span class="pre">incomplete</span></code> submission. That way, the user can see the comments from the administrator, and can make appropriate changes to their submission.</p>
 </div>
 
 
@@ -191,10 +185,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="install.html" class="btn btn-neutral float-right" title="3.1. Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+        <a href="user.html" class="btn btn-neutral float-right" title="4. Users" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
       
       
-        <a href="features.html" class="btn btn-neutral" title="2. Features" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+        <a href="submit.html" class="btn btn-neutral" title="3.10. Data Submission" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
       
     </div>
   
