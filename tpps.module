@@ -3759,6 +3759,7 @@ function tpps_admin_settings($form, &$form_state){
     $accession = variable_get('tpps_accession_files_dir', 'tpps_accession');
     $genotype = variable_get('tpps_genotype_files_dir', 'tpps_genotype');
     $phenotype = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
+    $cartogratree_env = variable_get('tpps_cartogratree_env', FALSE);
     
     $form['tpps_admin_email'] = array(
       '#type' => 'textfield',
@@ -3766,6 +3767,38 @@ function tpps_admin_settings($form, &$form_state){
       '#default_value' => variable_get('tpps_admin_email', 'treegenesdb@gmail.com'),
     );
     
+    
+    $form['tpps_cartogratree_env'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Use environmental layers from CartograTree'),
+      '#default_value' => $cartogratree_env,
+      '#description' => t("If CartograTree is installed, TPPS can add an optional field to the environment section for environment layers, using the data pulled in through CartograTree.")
+    );
+    
+    $form['layer_groups'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'CartograTree Environmental Layer Groups:',
+      '#description' => 'Please select which layer groups will contain environmental data that is relevant to TPPS. TPPS will use the selected groups to decide which layers to present as environmental options to the users.',
+      '#states' => array(
+        'visible' => array(
+          ':input[name="tpps_cartogratree_env"]' => array('checked' => TRUE)
+        )
+      )
+    );
+    
+    $query = db_select('cartogratree_groups', 'g')
+        ->fields('g', array('group_name', 'group_id'));
+    
+    $results = $query->execute();
+    
+    while (($result = $results->fetchObject())){
+        
+        $form['layer_groups']["tpps_layer_group_{$result->group_id}"] = array(
+          '#type' => 'checkbox',
+          '#title' => $result->group_name,
+          '#default_value' => variable_get("tpps_layer_group_{$result->group_id}", FALSE),
+        );
+    }
     
     $form['tpps_genotype_group'] = array(
       '#type' => 'textfield',
@@ -3824,6 +3857,14 @@ function tpps_admin_settings_validate($form, &$form_state){
         elseif ($key == 'tpps_admin_email'){
             if (!valid_email_address($value)){
                 form_set_error("$key", "Error: please enter a valid email address.");
+            }
+        }
+        elseif ($key == 'tpps_cartogratree_env'){
+            if (!empty($value) and !module_exists('cartogratree')){
+                form_set_error("$key", "Error: The CartograTree module is not installed.");
+            }
+            elseif (!empty($value) and (!db_table_exists('cartogratree_groups') or !db_table_exists('cartogratree_layers'))){
+                form_set_error("$key", "Error: TPPS was unable to find the required CartograTree tables for environmental layers.");
             }
         }
     }
@@ -4474,6 +4515,39 @@ function tpps_file_parsing($form_state){
                 //dpm('done: ' . date('r'));
                 $vcf_file->status = FILE_STATUS_PERMANENT;
                 $vcf_file = file_save($vcf_file);
+            }
+        }
+        
+        if (isset($fourthpage["organism-$i"]['environment'])){
+            $environment = $fourthpage["organism-$i"]['environment'];
+            $env_layers_check = $environment['use_layers'];
+            $env_layers = $environment['env_layers'];
+            $env_number = $environment['number'];
+            
+            for ($j = 1; $j <= $env_number; $j++){
+                $current_env = $environment['env_manual'][$j];
+                $name = $current_env['name'];
+                $desc = $current_env['description'];
+                $unit = $current_env['units'];
+                $val = $current_env['value'];
+                
+                $env_id = tpps_create_record('phenotype', array(
+                  'uniquename' => "$name-{$form_state['accession']}-$j",
+                  'name' => $name,
+                  'value' => $value,
+                ));
+                
+                tpps_create_record('phenotypeprop', array(
+                  'phenotype_id' => $env_id,
+                  'type_id' => '2871',
+                  'value' => $desc
+                ));
+                
+                tpps_create_record('phenotypeprop', array(
+                  'phenotype_id' => $env_id,
+                  'type_id' => '2883',
+                  'value' => $unit,
+                ));
             }
         }
     }
