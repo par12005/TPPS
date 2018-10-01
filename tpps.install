@@ -7,13 +7,77 @@ function tpps_install(){
         $result .= exec('drush pm-enable --resolve-dependencies ultimate_cron -y');
         print_r($result);
     }
+}
+
+function tpps_uninstall(){
     
-    $query = db_select('chado.plusgeno_view', 'p')
-        ->fields('p');
+    //remove all incomplete submissions connected to user profiles
+    $results = db_delete('public.variable')
+        ->condition('name', db_like('tpps_incomplete_') . '%', 'LIKE')
+        ->execute();
     
-    try{
-        $query = $query->execute();
-    } catch (Exception $ex) {
+    //remove all complete submissions connected to user profiles
+    $results = db_delete('public.variable')
+        ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
+        ->execute();
+    
+    $tpps_usage = db_select('public.file_usage', 'f')
+        ->fields('f')
+        ->condition('module', 'tpps')
+        ->execute();
+    
+    foreach ($tpps_usage as $row){
+        dpm($row);
+        file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
+    }
+    // only need to remove data from the public.variable table - incomplete submissions 
+    // or submissions pending approval will be removed with the chado.tpps_* tables, and
+    // approved submissions can stay on the website if people want them to.
+    
+}
+
+function tpps_update_7000(){
+    if (!db_table_exists('chado.stock_phenotype')){
+        //create stock_phenotype table if it does not exist
+        db_query('create table chado.stock_phenotype (stock_id integer, phenotype_id integer);');
+    }
+}
+
+function tpps_update_7001(){
+    $query = db_select('pg_class', 'p')
+        ->fields('p')
+        ->condition('relname', 'genotype_call_genotype_call_id_seq')
+        ->execute();
+    if (!($result = $query->fetchObject())){
+        $create_seq = db_query('CREATE SEQUENCE genotype_call_genotype_call_id_seq START 1;');
+    }
+}
+
+function tpps_update_7002(){
+    if (!db_table_exists('chado.genotype_call')){
+        //create genotype_call table if it does not exist
+        db_query('create table chado.genotype_call (genotype_call_id bigint PRIMARY KEY NOT NULL DEFAULT nextval(\'genotype_call_genotype_call_id_seq\'::regclass),
+            variant_id bigint NOT NULL,
+            marker_id bigint NOT NULL,
+            genotype_id bigint NOT NULL,
+            project_id bigint NOT NULL,
+            stock_id bigint NOT NULL,
+            meta_data json,
+            CONSTRAINT "genotype_call_genotype_id_fkey" FOREIGN KEY (genotype_id) REFERENCES chado.genotype(genotype_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+            CONSTRAINT "genotype_call_marker_id_fkey" FOREIGN KEY (marker_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+            CONSTRAINT "genotype_call_project_id_fkey" FOREIGN KEY (project_id) REFERENCES chado.project(project_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+            CONSTRAINT "genotype_call_stock_id_fkey" FOREIGN KEY (stock_id) REFERENCES chado.stock(stock_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+            CONSTRAINT "genotype_call_variant_id_fkey" FOREIGN KEY (variant_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED);');
+    }
+}
+
+function tpps_update_7003(){
+    $query = db_select('pg_class', 'p')
+        ->fields('p')
+        ->condition('relname', 'plusgeno_view')
+        ->execute();
+    if (!($result = $query->fetchObject())){
+        //create plusgeno_view if it does not exist
         $create_view = db_query('create materialized view chado.plusgeno_view as SELECT DISTINCT p.project_id,
      d.accession,
      ppub.title,
@@ -49,38 +113,5 @@ function tpps_install(){
              count(genotype_call.genotype_call_id) OVER (PARTITION BY genotype_call.project_id) AS gen_count
             FROM chado.genotype_call) g ON p.project_id = g.project_id
    WHERE d.db_id = 95;');
-        
-        $query = db_select('chado.plusgeno_view', 'p')
-            ->fields('p')
-            ->execute();
     }
-    
-}
-
-function tpps_uninstall(){
-    
-    //remove all incomplete submissions connected to user profiles
-    $results = db_delete('public.variable')
-        ->condition('name', db_like('tpps_incomplete_') . '%', 'LIKE')
-        ->execute();
-    
-    //remove all complete submissions connected to user profiles
-    $results = db_delete('public.variable')
-        ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
-        ->execute();
-    
-    $tpps_usage = db_select('public.file_usage', 'f')
-        ->fields('f')
-        ->condition('module', 'tpps')
-        ->execute();
-    
-    foreach ($tpps_usage as $row){
-        dpm($row);
-        file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
-    }
-    // only need to remove data from the public.variable table - incomplete submissions 
-    // or submissions pending approval will be removed with the chado.tpps_* tables, and
-    // approved submissions can stay on the website if people want them to.
-    
-    $delete_view = db_query('drop materialized view chado.plusgeno_view');
 }
