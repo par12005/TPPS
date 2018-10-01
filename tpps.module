@@ -1714,26 +1714,19 @@ function tpps_file_validate_columns(&$form_state, $required_groups, $file_elemen
 
 function tpps_page_build(&$page){
     
-    //dpm($page['content']['system_main']['step']['#default_value']);
-    if (!isset($page['content']['system_main']['form_id']['#value']) or $page['content']['system_main']['form_id']['#value'] != 'tpps_main'){
+    if (empty($page['content']['system_main']['#form_id']) or $page['content']['system_main']['#form_id'] != 'tpps_main' or empty($page['content']['system_main']['step']['#default_value'])){
         return $page;
     }
     
-    if (isset($page['content']['system_main']['step']) and $page['content']['system_main']['step']['#default_value'] != 'frontpage' and $page['content']['system_main']['step']['#default_value'] != 'Hellopage'){
+    $step = $page['content']['system_main']['step']['#default_value'];
+    if ($step != 'frontpage' and $step != 'Hellopage' and $step != 'summarypage'){
         $blockObject = block_load('views', 'tpps_status');
-        $blockObject->title = ($page['content']['system_main']['step']['#default_value'] != 'summarypage') ? 'TPPS Status' : '';
+        $blockObject->title = 'TPPS Status';
         $blockObject->subject = '';
         $blockObject->region = 'Content';
         $block = _block_get_renderable_array(_block_render_blocks(array($blockObject)));
-        $tpps_status = $block['views_tpps_status']['#markup'];
-        if ($page['content']['system_main']['step']['#default_value'] != 'summarypage'){
-            $tpps_status = "<div class='block block-system contextual-links-region block-menu tpps-status-block'>$tpps_status</div>";
-            drupal_add_region_content('sidebar_second', $tpps_status);
-        }
-        else {
-            $tpps_status = "<div id='tpps-status'></br>$tpps_status</div>";
-            drupal_add_region_content('content', $tpps_status);
-        }
+        $tpps_status = "<div class='block block-system contextual-links-region block-menu tpps-status-block'>{$block['views_tpps_status']['#markup']}</div>";
+        drupal_add_region_content('sidebar_second', $tpps_status);
     }
     
     return $page;
@@ -3743,6 +3736,7 @@ function tpps_summary_create_form(&$form, $form_state){
     $form['Back'] = array(
       '#type' => 'submit',
       '#value' => t('Back'),
+      '#prefix' => tpps_table_display($form_state),
     );
     
     $form['Next'] = array(
