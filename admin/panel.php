@@ -149,7 +149,7 @@ function tpps_admin_panel_submit($form, &$form_state){
         drupal_goto('<front>');
     }
     else{
-        module_load_include('php', 'tpps', 'forms/submit/submit_all.php');
+        module_load_include('php', 'tpps', 'forms/submit/submit_all');
         global $user;
         $uid = $user->uid;
         $includes = array();
