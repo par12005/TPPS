@@ -1,4 +1,5 @@
 <?php
+define("TPPS_JS_PATH", '/js/tpps.js');
 
 //hook_init
 function tpps_init() {
@@ -1743,7 +1744,7 @@ function tpps_main($form, &$form_state){
     
         tpps_front_create_form($form, $form_state);
     
-        drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+        drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
         
         return $form;
     }
@@ -1768,7 +1769,7 @@ function tpps_main($form, &$form_state){
     
             tpps_front_create_form($form, $form_state);
 
-            drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+            drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
 
             return $form;
         }
@@ -1967,7 +1968,7 @@ function tpps_main($form, &$form_state){
         $form['#suffix'] = $suffix;
     }
     
-    drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
     
     return $form;
 }
@@ -2087,25 +2088,25 @@ function tpps_main_validate(&$form, &$form_state){
         case 'Hellopage':
             include_once('page_1.php');
             page_1_validate_form($form, $form_state);
-            drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+            drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
             break;
         
         case 'secondPage':
             include_once('page_2.php');
             page_2_validate_form($form, $form_state);
-            drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+            drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
             break;
         
         case 'thirdPage':
             include_once('page_3.php');
             page_3_validate_form($form, $form_state);
-            drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+            drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
             break;
         
         case 'fourthPage':
             include_once('page_4.php');
             page_4_validate_form($form, $form_state);
-            drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+            drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
             break;
         
         default:
