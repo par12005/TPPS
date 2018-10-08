@@ -148,3 +148,12 @@ function tpps_structure_autocomplete($string){
     
     drupal_json_output($matches);
 }
+
+function tpps_no_header_callback($form, &$form_state){
+    
+    $parents = $form_state['triggering_element']['#parents'];
+    array_pop($parents);
+    
+    $element = drupal_array_get_nested_value($form, $parents);
+    return $element;
+}
