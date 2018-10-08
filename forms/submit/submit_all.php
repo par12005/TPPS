@@ -15,14 +15,14 @@ function tpps_submit_all(&$form_state){
     
     tpps_submit_page_2($form_state, $project_id, $file_rank);
     
-    tpps_submit_page_3($form_state, $project_id, $file_rank);
+    tpps_submit_page_3($form_state, $project_id, $file_rank, $organism_ids);
     
     tpps_submit_page_4($form_state, $project_id, $file_rank, $organism_ids);
     
     //for simplicity and efficiency, all fourth page submissions take place in the TPPS File Parsing Tripal Job
 }
 
-function tpps_submit_page_1($form_state, $project_id, &$file_rank){
+function tpps_submit_page_1(&$form_state, $project_id, &$file_rank){
     
     $dbxref_id = $form_state['dbxref_id'];
     $firstpage = $form_state['saved_values']['Hellopage'];
@@ -186,7 +186,7 @@ function tpps_submit_page_1($form_state, $project_id, &$file_rank){
     return $organism_ids;
 }
 
-function tpps_submit_page_2($form_state, $project_id, &$file_rank){
+function tpps_submit_page_2(&$form_state, $project_id, &$file_rank){
     
     $secondpage = $form_state['saved_values']['secondPage'];
 
@@ -795,7 +795,7 @@ function tpps_submit_page_2($form_state, $project_id, &$file_rank){
     }
 }
 
-function tpps_submit_page_3($form_state, $project_id, &$file_rank){
+function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_ids){
     
     $firstpage = $form_state['saved_values']['Hellopage'];
     $thirdpage = $form_state['saved_values']['thirdPage'];
