@@ -442,6 +442,11 @@ function environment(&$form, &$form_state, $values, $id){
                     )
                   )
                 );
+                
+                foreach ($layer_params as $param_id => $param){
+                    $default = isset($values[$id]['environment']['env_layers']["$layer_title-params"][$param_id]) ? $values[$id]['environment']['env_layers']["$layer_title-params"][$param_id] : NULL;
+                    $fields['env_layers']["$layer_title-params"][$param_id]['#default_value'] = $default;
+                }
             }
         }
     }
