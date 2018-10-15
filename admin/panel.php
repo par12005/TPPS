@@ -30,7 +30,7 @@ function tpps_admin_panel($form, &$form_state){
                 
                 $item = array(
                   'link' => l($state['accession'], "$base_url/tpps-admin-panel?accession={$state['accession']}"),
-                  'title' => $state['saved_values']['Hellopage']['publication']['title'],
+                  'title' => $state['saved_values'][PAGE_1]['publication']['title'],
                   'status' => $state['status'],
                 );
                 if ($state['status'] == "Pending Approval"){
@@ -129,11 +129,11 @@ function tpps_admin_panel_submit($form, &$form_state){
     $params = array();
 
     $from = variable_get('site_mail', '');
-    $params['subject'] = "TPPS Submission Rejected: {$state['saved_values']['Hellopage']['publication']['title']}";
+    $params['subject'] = "TPPS Submission Rejected: {$state['saved_values'][PAGE_1]['publication']['title']}";
     $params['uid'] = user_load_by_name($to)->uid;
     $params['reject-reason'] = $form_state['values']['reject-reason'];
     $params['base_url'] = $base_url;
-    $params['title'] = $state['saved_values']['Hellopage']['publication']['title'];
+    $params['title'] = $state['saved_values'][PAGE_1]['publication']['title'];
     $params['body'] = '';
 
     $params['headers'][] = 'MIME-Version: 1.0';
@@ -155,7 +155,7 @@ function tpps_admin_panel_submit($form, &$form_state){
         $includes = array();
         $includes[] = module_load_include('module', 'tpps');
         
-        $params['subject'] = "TPPS Submission Approved: {$state['saved_values']['Hellopage']['publication']['title']}";
+        $params['subject'] = "TPPS Submission Approved: {$state['saved_values'][PAGE_1]['publication']['title']}";
         $params['accession'] = $state['accession'];
         
         $state['status'] = 'Approved';

@@ -2,8 +2,8 @@
 
 function tpps_file_parsing($form_state){
     
-    $fourthpage = $form_state['saved_values']['fourthPage'];
-    $firstpage = $form_state['saved_values']['Hellopage'];
+    $fourthpage = $form_state['saved_values'][PAGE_4];
+    $firstpage = $form_state['saved_values'][PAGE_1];
     $organism_number = $firstpage['organism']['number'];
     $organism_ids = array();
     $file_rank = $form_state['file_rank'];

@@ -1,6 +1,9 @@
 <?php
 define("TPPS_JS_PATH", '/js/tpps.js');
-//define("PAGE_1", 'Hellopage');
+define("PAGE_1", 'Hellopage');
+define("PAGE_2", 'secondPage');
+define("PAGE_3", 'thirdPage');
+define("PAGE_4", 'fourthPage');
 require_once 'includes/create_record.inc';
 require_once 'includes/flatten.inc';
 require_once 'includes/init_project.inc';
@@ -434,7 +437,7 @@ function tpps_page_build(&$page){
     }
     
     $step = $page['content']['system_main']['step']['#default_value'];
-    if ($step != 'frontpage' and $step != 'Hellopage' and $step != 'summarypage'){
+    if ($step != 'frontpage' and $step != PAGE_1 and $step != 'summarypage'){
         $blockObject = block_load('views', 'tpps_status');
         $blockObject->title = 'TPPS Status';
         $blockObject->subject = '';
@@ -521,7 +524,7 @@ function tpps_main($form, &$form_state){
     
     status_bar($form, $form_state);
     
-    if (!isset($form_state['saved_values']['Hellopage']['primaryAuthor']) or !isset($form_state['saved_values']['Hellopage']['organization'])){
+    if (!isset($form_state['saved_values'][PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][PAGE_1]['organization'])){
   	$and = db_and();
 	$and->condition('value', $user->mail);
 	$and->condition('type_id', '50268');
@@ -537,7 +540,7 @@ function tpps_main($form, &$form_state){
 	    ->execute()
 	    ->fetchAssoc();
 	$name = $name['name'];
-	$form_state['saved_values']['Hellopage']['primaryAuthor'] = $name;
+	$form_state['saved_values'][PAGE_1]['primaryAuthor'] = $name;
 	$and = db_and();
 	$and->condition('contact_id', $contact_id);
 	$and->condition('type_id', '72');
@@ -547,26 +550,26 @@ function tpps_main($form, &$form_state){
 	    ->execute()
 	    ->fetchAssoc();
 	$org = $org['value'];
-	$form_state['saved_values']['Hellopage']['organization'] = $org;
+	$form_state['saved_values'][PAGE_1]['organization'] = $org;
     }
     
     switch ($form_state['stage']){
-        case 'Hellopage':
+        case PAGE_1:
             require_once('forms/build/page_1.php');
             page_1_create_form($form, $form_state);
             break;
         
-        case 'secondPage':
+        case PAGE_2:
             require_once('forms/build/page_2.php');
             page_2_create_form($form, $form_state);
             break;
         
-        case 'thirdPage':
+        case PAGE_3:
             require_once('forms/build/page_3.php');
             page_3_create_form($form, $form_state);
             break;
         
-        case 'fourthPage':
+        case PAGE_4:
             require_once('forms/build/page_4.php');
             page_4_create_form($form, $form_state);
             break;
@@ -609,25 +612,25 @@ function tpps_main_validate(&$form, &$form_state){
     }
     
     switch ($form_state['stage']){
-        case 'Hellopage':
+        case PAGE_1:
             require_once('forms/validate/page_1.php');
             page_1_validate_form($form, $form_state);
             drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
             break;
         
-        case 'secondPage':
+        case PAGE_2:
             require_once('forms/validate/page_2.php');
             page_2_validate_form($form, $form_state);
             drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
             break;
         
-        case 'thirdPage':
+        case PAGE_3:
             require_once('forms/validate/page_3.php');
             page_3_validate_form($form, $form_state);
             drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
             break;
         
-        case 'fourthPage':
+        case PAGE_4:
             require_once('forms/validate/page_4.php');
             page_4_validate_form($form, $form_state);
             drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
@@ -669,34 +672,34 @@ function tpps_main_submit($form, &$form_state){
     switch ($form_state['stage']){
         case 'frontpage':
             $persist = FALSE;
-            $form_state['stage'] = 'Hellopage';
+            $form_state['stage'] = PAGE_1;
             break;
         
-        case 'Hellopage':
-            $form_state['stage'] = 'secondPage';
+        case PAGE_1:
+            $form_state['stage'] = PAGE_2;
             break;
             
-        case 'secondPage':
+        case PAGE_2:
             if ($form_state['triggering_element']['#value'] == 'Back'){
-                $form_state['stage'] = 'Hellopage';
+                $form_state['stage'] = PAGE_1;
             }
             else{
-                $form_state['stage'] = 'thirdPage';
+                $form_state['stage'] = PAGE_3;
             }
             break;
             
-        case 'thirdPage':
+        case PAGE_3:
             if ($form_state['triggering_element']['#value'] == 'Back'){
-                $form_state['stage'] = 'secondPage';
+                $form_state['stage'] = PAGE_2;
             }
             else{
-                $form_state['stage'] = 'fourthPage';
+                $form_state['stage'] = PAGE_4;
             }
             break;
             
-        case 'fourthPage':
+        case PAGE_4:
             if ($form_state['triggering_element']['#value'] == 'Back'){
-                $form_state['stage'] = 'thirdPage';
+                $form_state['stage'] = PAGE_3;
             }
             else{
                 $form_state['stage'] = 'summarypage';
@@ -705,7 +708,7 @@ function tpps_main_submit($form, &$form_state){
             
         case 'summarypage':
             if ($form_state['triggering_element']['#value'] == 'Back'){
-                $form_state['stage'] = 'fourthPage';
+                $form_state['stage'] = PAGE_4;
             }
             else{
                 variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);

@@ -20,8 +20,8 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
     }
     $phenotype_number = isset($form_state['values'][$id]['phenotype']['number']) ? $form_state['values'][$id]['phenotype']['number'] : NULL;
 
-    if (!isset($phenotype_number) and isset($form_state['saved_values']['fourthPage'][$id]['phenotype']['number'])){
-        $phenotype_number = $form_state['saved_values']['fourthPage'][$id]['phenotype']['number'];
+    if (!isset($phenotype_number) and isset($form_state['saved_values'][PAGE_4][$id]['phenotype']['number'])){
+        $phenotype_number = $form_state['saved_values'][PAGE_4][$id]['phenotype']['number'];
     }
     if (!isset($phenotype_number)){
         $phenotype_number = 0;
@@ -426,8 +426,8 @@ function environment(&$form, &$form_state, $values, $id){
     }
     $environment_number = isset($form_state['values'][$id]['environment']['number']) ? $form_state['values'][$id]['environment']['number'] : NULL;
     
-    if (!isset($environment_number) and isset($form_state['saved_values']['fourthPage'][$id]['environment']['number'])){
-        $environment_number = $form_state['saved_values']['fourthPage'][$id]['environment']['number'];
+    if (!isset($environment_number) and isset($form_state['saved_values'][PAGE_4][$id]['environment']['number'])){
+        $environment_number = $form_state['saved_values'][PAGE_4][$id]['environment']['number'];
     }
     if (!isset($environment_number)){
         $environment_number = 1;
@@ -583,10 +583,10 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
     
     if (isset($form_state['values'][$id]['genotype']['BioProject-id']) and $form_state['values'][$id]['genotype']['BioProject-id'] != ''){
         $bio_id = $form_state['values']["$id"]['genotype']['BioProject-id'];
-        $form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'] = $form_state['values'][$id]['genotype']['BioProject-id'];
+        $form_state['saved_values'][PAGE_4][$id]['genotype']['BioProject-id'] = $form_state['values'][$id]['genotype']['BioProject-id'];
     }
-    elseif (isset($form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id']) and $form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'] != ''){
-        $bio_id = $form_state['saved_values']['fourthPage'][$id]['genotype']['BioProject-id'];
+    elseif (isset($form_state['saved_values'][PAGE_4][$id]['genotype']['BioProject-id']) and $form_state['saved_values'][PAGE_4][$id]['genotype']['BioProject-id'] != ''){
+        $bio_id = $form_state['saved_values'][PAGE_4][$id]['genotype']['BioProject-id'];
     }
     elseif (isset($form_state['complete form']['organism-1']['genotype']['BioProject-id']['#value']) and $form_state['complete form']['organism-1']['genotype']['BioProject-id']['#value'] != '') {
         $bio_id = $form_state['complete form']['organism-1']['genotype']['BioProject-id']['#value'];

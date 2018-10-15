@@ -10,7 +10,7 @@ function tpps_flatten($state){
     unset($data['summarypage']);
     unset($data['form_build_id']);
     
-    $page_1 = &$data['Hellopage'];
+    $page_1 = &$data[PAGE_1];
     $pub = &$page_1['publication'];
     $org = &$page_1['organism'];
     
@@ -49,9 +49,9 @@ function tpps_flatten($state){
             }
         }
     }
-    unset($data['Hellopage']);
+    unset($data[PAGE_1]);
     
-    $page_2 = &$data['secondPage'];
+    $page_2 = &$data[PAGE_2];
     $loc = &$page_2['studyLocation'];
     
     if (isset($page_2['#cleared']) and $page_2['#cleared']){
@@ -397,9 +397,9 @@ function tpps_flatten($state){
                 break;
         }
     }
-    unset($data['secondPage']);
+    unset($data[PAGE_2]);
     
-    $page_3 = &$data['thirdPage'];
+    $page_3 = &$data[PAGE_3];
     
     if (isset($page_3['#cleared']) and $page_3['#cleared']){
         $data['#page_3_cleared'] = TRUE;
@@ -407,7 +407,7 @@ function tpps_flatten($state){
     else {
         $data['#page_3_cleared'] = FALSE;
     }
-    $page_3 = &$data['thirdPage']['tree-accession'];
+    $page_3 = &$data[PAGE_3]['tree-accession'];
     if (isset($page_3['check']) and $page_3['check']){
         for ($i = 1; $i <= $data['#number_organisms']; $i++){
             if (isset($page_3["species-$i"]['file']) and $page_3["species-$i"]['file']){
@@ -419,9 +419,9 @@ function tpps_flatten($state){
     elseif (isset($page_3['file']) and $page_3['file']){
         $data['Tree Accession File'] = $page_3['file'];
     }
-    unset($data['thirdPage']);
+    unset($data[PAGE_3]);
     
-    $page_4 = &$data['fourthPage'];
+    $page_4 = &$data[PAGE_4];
     
     if (isset($page_4['#cleared']) and $page_4['#cleared']){
         $data['#page_4_cleared'] = TRUE;
@@ -578,7 +578,7 @@ function tpps_flatten($state){
             }
         }
     }
-    unset($data['fourthPage']);
+    unset($data[PAGE_4]);
     
     $data['#dbxref_id'] = isset($state['dbxref_id']) ? $state['dbxref_id'] : NULL;
     $data['#accession'] = isset($state['accession']) ? $state['accession'] : NULL;

@@ -19,13 +19,13 @@ function tpps_front_create_form(&$form, $form_state){
             $name = $item->name;
             $state = variable_get($name, NULL);
             
-            if ($state != NULL and isset($state['saved_values']['Hellopage']['publication']['title'])){
-                $title = ($state['saved_values']['Hellopage']['publication']['title'] != NULL) ? $state['saved_values']['Hellopage']['publication']['title'] : "No Title";
+            if ($state != NULL and isset($state['saved_values'][PAGE_1]['publication']['title'])){
+                $title = ($state['saved_values'][PAGE_1]['publication']['title'] != NULL) ? $state['saved_values'][PAGE_1]['publication']['title'] : "No Title";
                 $tgdr_id = $state['accession'];
                 $options_arr["$tgdr_id"] = "$title";
             }
             else {
-                if (isset($state) and !isset($state['saved_values']['Hellopage'])){
+                if (isset($state) and !isset($state['saved_values'][PAGE_1])){
                     variable_del($name);
                     $and = db_and()
                         ->condition('accession', $state['accession'])

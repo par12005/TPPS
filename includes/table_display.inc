@@ -2,7 +2,7 @@
 
 function tpps_table_display($state){
     
-    $accession = $state['saved_values']['fourthPage']['accession'];
+    $accession = $state['saved_values'][PAGE_4]['accession'];
     $display = "<div class='tpps_complete_submission'><table id='tpps_$accession' style='width:-webkit-fill-available' border='1'><thead>";
     //$display .= "<tr><th>Field</th><th>Value</th>";
     $display .= "</thead><tbody>";

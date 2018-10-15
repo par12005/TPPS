@@ -3,7 +3,7 @@
 function page_3_validate_form(&$form, &$form_state){
     if ($form_state['submitted'] == '1'){
         
-        $species_number = $form_state['saved_values']['Hellopage']['organism']['number'];
+        $species_number = $form_state['saved_values'][PAGE_1]['organism']['number'];
         if ($species_number == 1 or $form_state['values']['tree-accession']['check'] == '0'){
             if ($form_state['values']['tree-accession']['file'] != ""){
                 

@@ -125,8 +125,8 @@ function year(&$form, $values, $form_state){
     if (isset($form_state['values']['publication']['status']) and $form_state['values']['publication']['status'] != '0'){
         $pub_status = $form_state['values']['publication']['status'];
     }
-    elseif (isset($form_state['saved_values']['Hellopage']['publication']['status']) and $form_state['saved_values']['Hellopage']['publication']['status'] != '0'){
-        $pub_status = $form_state['saved_values']['Hellopage']['publication']['status'];
+    elseif (isset($form_state['saved_values'][PAGE_1]['publication']['status']) and $form_state['saved_values'][PAGE_1]['publication']['status'] != '0'){
+        $pub_status = $form_state['saved_values'][PAGE_1]['publication']['status'];
     }
 
     if (isset($pub_status) and $pub_status != 'Published'){

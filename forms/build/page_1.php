@@ -4,8 +4,8 @@ require_once 'page_1_ajax.php';
 
 function page_1_create_form(&$form, $form_state){
     
-    if (isset($form_state['saved_values']['Hellopage'])){
-        $values = $form_state['saved_values']['Hellopage'];
+    if (isset($form_state['saved_values'][PAGE_1])){
+        $values = $form_state['saved_values'][PAGE_1];
     }
     else{
         $values = array();

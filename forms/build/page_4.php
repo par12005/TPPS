@@ -4,8 +4,8 @@ require_once 'page_4_ajax.php';
 require_once 'page_4_helper.php';
 
 function page_4_create_form(&$form, &$form_state){
-    if (isset($form_state['saved_values']['fourthPage'])){
-        $values = $form_state['saved_values']['fourthPage'];
+    if (isset($form_state['saved_values'][PAGE_4])){
+        $values = $form_state['saved_values'][PAGE_4];
     }
     else{
         $values = array();
@@ -16,11 +16,11 @@ function page_4_create_form(&$form, &$form_state){
     
     $form['#tree'] = TRUE;
     
-    $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
-    $data_type = $form_state['saved_values']['secondPage']['dataType'];
+    $organism_number = $form_state['saved_values'][PAGE_1]['organism']['number'];
+    $data_type = $form_state['saved_values'][PAGE_2]['dataType'];
     for ($i = 1; $i <= $organism_number; $i++){
         
-        $name = $form_state['saved_values']['Hellopage']['organism']["$i"];
+        $name = $form_state['saved_values'][PAGE_1]['organism']["$i"];
         
         $form["organism-$i"] = array(
           '#type' => 'fieldset',
@@ -33,7 +33,7 @@ function page_4_create_form(&$form, &$form_state){
             if ($i > 1){
                 $form["organism-$i"]['phenotype-repeat-check'] = array(
                   '#type' => 'checkbox',
-                  '#title' => "Phenotype information for $name is the same as phenotype information for {$form_state['saved_values']['Hellopage']['organism'][$i - 1]}.",
+                  '#title' => "Phenotype information for $name is the same as phenotype information for {$form_state['saved_values'][PAGE_1]['organism'][$i - 1]}.",
                   '#default_value' => isset($values["organism-$i"]['phenotype-repeat-check']) ? $values["organism-$i"]['phenotype-repeat-check'] : 1,
                 );
             }
@@ -85,7 +85,7 @@ function page_4_create_form(&$form, &$form_state){
             if ($i > 1){
                 $form["organism-$i"]['genotype-repeat-check'] = array(
                   '#type' => 'checkbox',
-                  '#title' => "Genotype information for $name is the same as genotype information for {$form_state['saved_values']['Hellopage']['organism'][$i - 1]}.",
+                  '#title' => "Genotype information for $name is the same as genotype information for {$form_state['saved_values'][PAGE_1]['organism'][$i - 1]}.",
                   '#default_value' => isset($values["organism-$i"]['genotype-repeat-check']) ? $values["organism-$i"]['genotype-repeat-check'] : 1,
                 );
             }
@@ -106,7 +106,7 @@ function page_4_create_form(&$form, &$form_state){
             if ($i > 1){
                 $form["organism-$i"]['environment-repeat-check'] = array(
                   '#type' => 'checkbox',
-                  '#title' => "Environmental information for $name is the same as environmental information for {$form_state['saved_values']['Hellopage']['organism'][$i - 1]}.",
+                  '#title' => "Environmental information for $name is the same as environmental information for {$form_state['saved_values'][PAGE_1]['organism'][$i - 1]}.",
                   '#default_value' => isset($values["organism-$i"]['environment-repeat-check']) ? $values["organism-$i"]['environment-repeat-check'] : 1,
                 );
             }

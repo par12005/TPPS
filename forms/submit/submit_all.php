@@ -3,7 +3,7 @@
 function tpps_submit_all(&$form_state){
     
     $values = $form_state['saved_values'];
-    $firstpage = $values['Hellopage'];
+    $firstpage = $values[PAGE_1];
     $file_rank = 0;
 
     $project_id = tpps_create_record('project', array(
@@ -25,7 +25,7 @@ function tpps_submit_all(&$form_state){
 function tpps_submit_page_1(&$form_state, $project_id, &$file_rank){
     
     $dbxref_id = $form_state['dbxref_id'];
-    $firstpage = $form_state['saved_values']['Hellopage'];
+    $firstpage = $form_state['saved_values'][PAGE_1];
 
     tpps_create_record('project_dbxref', array(
       'project_id' => $project_id,
@@ -188,7 +188,7 @@ function tpps_submit_page_1(&$form_state, $project_id, &$file_rank){
 
 function tpps_submit_page_2(&$form_state, $project_id, &$file_rank){
     
-    $secondpage = $form_state['saved_values']['secondPage'];
+    $secondpage = $form_state['saved_values'][PAGE_2];
 
     $start = $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'];
     $end = $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'];
@@ -797,8 +797,8 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank){
 
 function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_ids){
     
-    $firstpage = $form_state['saved_values']['Hellopage'];
-    $thirdpage = $form_state['saved_values']['thirdPage'];
+    $firstpage = $form_state['saved_values'][PAGE_1];
+    $thirdpage = $form_state['saved_values'][PAGE_3];
     $organism_number = $firstpage['organism']['number'];
     
     $stock_ids = array();
@@ -1046,8 +1046,8 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
 }
 
 function tpps_submit_page_4(&$form_state, $project_id, &$file_rank, $organism_ids){
-    $fourthpage = $form_state['saved_values']['fourthPage'];
-    $organism_number = $form_state['saved_values']['Hellopage']['organism']['number'];
+    $fourthpage = $form_state['saved_values'][PAGE_4];
+    $organism_number = $form_state['saved_values'][PAGE_1]['organism']['number'];
     
     for ($i = 1; $i <= $organism_number; $i++){
         if (isset($fourthpage["organism-$i"]['genotype'])){

@@ -10,7 +10,7 @@ function tpps_submit_email($form, $form_state){
     
     $to = $user->mail;
     $from = variable_get('site_mail', '');
-    $params['subject'] = "TPPS Submission Received: {$form_state['saved_values']['Hellopage']['publication']['title']}";
+    $params['subject'] = "TPPS Submission Received: {$form_state['saved_values'][PAGE_1]['publication']['title']}";
     
     $study_options = array(
       0 => '- Select -',
@@ -21,13 +21,13 @@ function tpps_submit_email($form, $form_state){
       5 => 'Plantation',
     );
     
-    $params['author'] = $form_state['saved_values']['Hellopage']['primaryAuthor'];
-    $params['org'] = $form_state['saved_values']['Hellopage']['organization'];
-    $params['title'] = $form_state['saved_values']['Hellopage']['publication']['title'];
-    $params['journal'] = $form_state['saved_values']['Hellopage']['publication']['journal'];
-    $params['organisms'] = $form_state['saved_values']['Hellopage']['organism'];
-    $params['study_type'] = $study_options[$form_state['saved_values']['secondPage']['studyType']];
-    $params['data_type'] = $form_state['saved_values']['secondPage']['dataType'];
+    $params['author'] = $form_state['saved_values'][PAGE_1]['primaryAuthor'];
+    $params['org'] = $form_state['saved_values'][PAGE_1]['organization'];
+    $params['title'] = $form_state['saved_values'][PAGE_1]['publication']['title'];
+    $params['journal'] = $form_state['saved_values'][PAGE_1]['publication']['journal'];
+    $params['organisms'] = $form_state['saved_values'][PAGE_1]['organism'];
+    $params['study_type'] = $study_options[$form_state['saved_values'][PAGE_2]['studyType']];
+    $params['data_type'] = $form_state['saved_values'][PAGE_2]['dataType'];
     $params['accession'] = $form_state['accession'];
     $params['base_url'] = $base_url;
     $params['body'] = '';

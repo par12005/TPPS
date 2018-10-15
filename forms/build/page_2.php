@@ -5,8 +5,8 @@ require_once 'page_2_helper.php';
 
 function page_2_create_form(&$form, $form_state){
     
-    if (isset($form_state['saved_values']['secondPage'])){
-        $values = $form_state['saved_values']['secondPage'];
+    if (isset($form_state['saved_values'][PAGE_2])){
+        $values = $form_state['saved_values'][PAGE_2];
     }
     else{
         $values = array();
