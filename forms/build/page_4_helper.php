@@ -382,11 +382,24 @@ function environment(&$form, &$form_state, $values, $id){
             
             if ($group_is_enabled){
                 $layers_query = db_select('cartogratree_layers', 'c')
-                    ->fields('c', array('title', 'group_id'))
+                    ->fields('c', array('title', 'group_id', 'layer_id'))
                     ->condition('c.group_id', $group_id);
                 $layers_results = $layers_query->execute();
                 while (($layer = $layers_results->fetchObject())){
-                    $options[$layer->title] = $group->group_name . ": <strong>" . $layer->title . '</strong>';
+                    $params_query = db_select ('cartogratree_fields', 'f')
+                       ->fields('f', array('display_name', 'field_id'))
+                       ->condition('f.layer_id', $layer->layer_id);
+                    $params_results = $params_query->execute();
+                    $params = array();
+                    while (($param = $params_results->fetchObject())){
+                       $params[$param->field_id] = $param->display_name;
+                    }
+                    $options[$layer->layer_id] = array(
+                      'group_id' => $layer->group_id,
+                      'group' => $group->group_name,
+                      'title' => $layer->title, 
+                      'params' => $params
+                    );
                 }
             }
         }
@@ -398,9 +411,9 @@ function environment(&$form, &$form_state, $values, $id){
         );
 
         $fields['env_layers'] = array(
-          '#type' => 'checkboxes',
-          '#title' => 'Cartogratree Environmental Layers:',
-          '#options' => $options,
+          '#type' => 'fieldset',
+          '#title' => 'Cartogratree Environmental Layers: *',
+          '#collapsible' => TRUE,
           '#states' => array(
             'visible' => array(
               ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE)
@@ -408,8 +421,28 @@ function environment(&$form, &$form_state, $values, $id){
           )
         );
         
-        foreach ($options as $layer => $val){
-            $fields['env_layers'][$layer]['#default_value'] = isset($values[$id]['environment']['env_layers'][$layer]) ? $values[$id]['environment']['env_layers'][$layer] : 0;
+        foreach ($options as $layer_id => $layer_info){
+            $layer_title = $layer_info['title'];
+            $layer_group = $layer_info['group'];
+            $layer_params = $layer_info['params'];
+            $fields['env_layers'][$layer_title] = array(
+              '#type' => 'checkbox',
+              '#title' => "<strong>$layer_title</strong> - $layer_group",
+            );
+            
+            if (!empty($layer_params)){
+                $fields['env_layers']["$layer_title-params"] = array(
+                  '#type' => 'checkboxes',
+                  '#title' => "$layer_title Parameters",
+                  '#description' => "Please select the parameters you used from the $layer_title layer.",
+                  '#options' => $layer_params,
+                  '#states' => array(
+                    'visible' => array(
+                      ':input[name="' . $id . '[environment][env_layers][' . $layer_title . ']"]' => array('checked' => TRUE)
+                    )
+                  )
+                );
+            }
         }
     }
     
