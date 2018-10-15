@@ -84,7 +84,7 @@ function tpps_menu() {
       'page callback' => 'tpps_author_autocomplete',
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
-      'file' => 'tpps_ajax.php'
+      'file' => 'ajax/tpps_ajax.php'
     );
     
     $items['organization/autocomplete'] = array(
@@ -92,7 +92,7 @@ function tpps_menu() {
       'page callback' => 'tpps_organization_autocomplete',
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
-      'file' => 'tpps_ajax.php'
+      'file' => 'ajax/tpps_ajax.php'
     );
     
     $items['journal/autocomplete'] = array(
@@ -100,7 +100,7 @@ function tpps_menu() {
       'page callback' => 'tpps_journal_autocomplete',
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
-      'file' => 'tpps_ajax.php'
+      'file' => 'ajax/tpps_ajax.php'
     );
     
     $items['species/autocomplete'] = array(
@@ -108,7 +108,7 @@ function tpps_menu() {
       'page callback' => 'tpps_species_autocomplete',
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
-      'file' => 'tpps_ajax.php'
+      'file' => 'ajax/tpps_ajax.php'
     );
     
     $items['phenotype/autocomplete'] = array(
@@ -116,7 +116,7 @@ function tpps_menu() {
       'page callback' => 'tpps_phenotype_autocomplete',
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
-      'file' => 'tpps_ajax.php'
+      'file' => 'ajax/tpps_ajax.php'
     );
     
     $items['attribute/autocomplete'] = array(
@@ -124,7 +124,7 @@ function tpps_menu() {
       'page callback' => 'tpps_attribute_autocomplete',
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
-      'file' => 'tpps_ajax.php'
+      'file' => 'ajax/tpps_ajax.php'
     );
     
     $items['units/autocomplete'] = array(
@@ -132,7 +132,7 @@ function tpps_menu() {
       'page callback' => 'tpps_units_autocomplete',
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
-      'file' => 'tpps_ajax.php'
+      'file' => 'ajax/tpps_ajax.php'
     );
     
     $items['structure/autocomplete'] = array(
@@ -140,7 +140,7 @@ function tpps_menu() {
       'page callback' => 'tpps_structure_autocomplete',
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
-      'file' => 'tpps_ajax.php'
+      'file' => 'ajax/tpps_ajax.php'
     );
     
     $items['testpage'] = array(
