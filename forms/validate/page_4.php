@@ -525,7 +525,12 @@ function validate_environment($environment, $id, $form, &$form_state){
         //using cartogratree environment layers
         $layer_check = '';
         foreach ($environment['env_layers'] as $layer){
-            $layer_check .= $layer;
+            if (gettype($layer) == 'array'){
+                $layer_check .= "1";
+            }
+            else {
+                $layer_check .= $layer;
+            }
         }
 
         if(preg_match('/^0+$/', $layer_check)){

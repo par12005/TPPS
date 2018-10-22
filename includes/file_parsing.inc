@@ -530,6 +530,36 @@ function tpps_file_parsing($form_state){
             $env_layers = $environment['env_layers'];
             $env_number = $environment['number'];
             
+            if ($env_layers_check){
+                foreach ($env_layers as $layer => $response){
+                    if (gettype($response) == 'array'){
+                        $params = $response;
+                    }
+                    else {
+                        $params = FALSE;
+                    }
+                    
+                    $query = db_select('cartogratree_layers', 'l')
+                        ->fields('l', array('layer_id'))
+                        ->condition('l.title', $layer)
+                        ->range(0,1)
+                        ->execute();
+                    
+                    $result = $query->fetchObject();
+                    $layer_id = $result->layer_id;
+                    
+                    foreach ($params as $param_id => $param_response){
+                        if ($param_response){
+                            //per-parameter operation
+                        }
+                    }
+                    
+                    
+                    //record layer
+                    
+                }
+            }
+            
             for ($j = 1; $j <= $env_number; $j++){
                 $current_env = $environment['env_manual'][$j];
                 $name = $current_env['name'];
