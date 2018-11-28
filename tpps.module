@@ -253,7 +253,9 @@ function tpps_element_info_alter(&$type){
 }
 
 function tpps_managed_file_process($element, &$form_state, $form){
-    
+    if ($form_state['build_info']['form_id'] !== 'tpps_main'){
+        return $element;
+    }
     if (isset($element['columns'])){
         $fid = $element['#value']['fid'];
         $wrapper = substr($element['#id'], 0, -7) . '-ajax-wrapper';

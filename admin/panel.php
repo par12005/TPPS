@@ -69,8 +69,55 @@ function tpps_admin_panel($form, &$form_state){
           '#value' => $var_name,
           '#suffix' => $display
         );
-        
+
         if ($status == "Pending Approval"){
+            
+            $form['params'] = array(
+              '#type' => 'fieldset',
+              '#title' => 'Select Environmental parameter types:',
+              '#tree' => TRUE,
+              '#description' => ''
+            );
+            
+            $orgamism_num = $submission_state['saved_values'][PAGE_1]['organism']['number'];
+            $show_layers = FALSE;
+            for ($i = 1; $i <= $orgamism_num; $i++){
+                if ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['use_layers']){
+                    foreach ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['env_layers'] as $layer => $layer_id){
+                        if (!empty($layer_id)){
+                            foreach ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['env_params'][$layer] as $param_name => $param_id){
+                                if (!empty($param_id)){
+                                    $type = variable_get("tpps_param_{$param_id}_type", NULL);
+                                    if (empty($type)){
+                                        $query = db_select('cartogratree_fields', 'f')
+                                            ->fields('f', array('display_name'))
+                                            ->condition('field_id', $param_id)
+                                            ->execute();
+                                        $result = $query->fetchObject();
+                                        $name = $result->display_name;
+
+                                        $form['params'][$param_id] = array(
+                                          '#type' => 'radios',
+                                          '#title' => "Select Type for environmental layer parameter \"$name\":",
+                                          '#options' => array(
+                                            'attr_id' => 'attr_id',
+                                            'cvterm' => 'cvterm'
+                                          ),
+                                          '#required' => TRUE,
+                                        );
+                                        $show_layers = TRUE;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (!$show_layers){
+                unset($form['params']);
+            }
+
             $form['approve-check'] = array(
               '#type' => 'checkbox',
               '#title' => t('This submission has been reviewed and approved.')
@@ -138,6 +185,12 @@ function tpps_admin_panel_submit($form, &$form_state){
 
     $params['headers'][] = 'MIME-Version: 1.0';
     $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
+    
+    if (isset($form_state['values']['params'])){
+        foreach($form_state['values']['params'] as $param_id => $type){
+            variable_set("tpps_param_{$param_id}_type", $type);
+        }
+    }
 
     if ($form_state['triggering_element']['#value'] == 'Reject'){
         
