@@ -1,5 +1,7 @@
 <?php
 
+require_once 'get_env_data.inc';
+
 function tpps_file_parsing($form_state){
     
     $fourthpage = $form_state['saved_values'][PAGE_4];
@@ -528,62 +530,148 @@ function tpps_file_parsing($form_state){
             $environment = $fourthpage["organism-$i"]['environment'];
             $env_layers_check = $environment['use_layers'];
             $env_layers = $environment['env_layers'];
+            $env_params = $environment['env_params'];
             $env_number = $environment['number'];
             
+            if ($organism_number == 1 or !$form_state['saved_values'][PAGE_3]['tree-accession']['check']){
+                $accession_file = file_load($form_state['saved_values'][PAGE_3]['tree-accession']['file']);
+                $id_col = $form_state['saved_values'][PAGE_3]['tree-accession']['file-groups']['Tree Id'][1];
+            }
+            else {
+                $accession_file = file_load($form_state['saved_values'][PAGE_3]['tree-accession']["species-$i"]['file']);
+                $id_col = $form_state['saved_values'][PAGE_3]['tree-accession']["species-$i"]['file-groups']['Tree Id'][1];
+            }
+            
+            $location = drupal_realpath($accession_file->uri);
+            $content = tpps_parse_xlsx($location);
+            
             if ($env_layers_check){
-                foreach ($env_layers as $layer => $response){
-                    if (gettype($response) == 'array'){
-                        $params = $response;
-                    }
-                    else {
-                        $params = FALSE;
-                    }
-                    
-                    $query = db_select('cartogratree_layers', 'l')
-                        ->fields('l', array('layer_id'))
-                        ->condition('l.title', $layer)
-                        ->range(0,1)
-                        ->execute();
-                    
-                    $result = $query->fetchObject();
-                    $layer_id = $result->layer_id;
-                    
-                    foreach ($params as $param_id => $param_response){
-                        if ($param_response){
-                            //per-parameter operation
+                $layers_params = array();
+                
+                foreach ($env_layers as $layer_name => $layer_id){
+                    if (!empty($layer_id) and !empty($env_params[$layer_name])){
+                        $layers_params[$layer_id] = array();
+                        $params = $env_params[$layer_name];
+                        foreach ($params as $param_name => $param_id){
+                            if (!empty($param_id)){
+                                $layers_params[$layer_id][$param_id] = $param_name;
+                            }
                         }
                     }
+                }
+                
+                for ($j = 0; $j < count($content) - 1; $j++){
+                    $tree_id = $content[$j][$id_col];
+                    $stock_query = db_select('chado.stock', 's')
+                        ->fields('s', array('stock_id'))
+                        ->condition('uniquename', t($tree_id))
+                        ->execute();
                     
+                    $stock_id = $stock_query->fetchObject()->stock_id;
                     
-                    //record layer
+                    $and = db_and()
+                        ->condition('stock_id', $stock_id)
+                        ->condition('type_id', '54718');
+                    $gps_query = db_select('chado.stockprop', 's')
+                        ->fields('s', array('value'))
+                        ->condition($and)
+                        ->execute();
                     
+                    $lat = $gps_query->fetchObject()->value;
+                    
+                    $and = db_and()
+                        ->condition('stock_id', $stock_id)
+                        ->condition('type_id', '54717');
+                    $gps_query = db_select('chado.stockprop', 's')
+                        ->fields('s', array('value'))
+                        ->condition($and)
+                        ->execute();
+                    
+                    $long = $gps_query->fetchObject()->value;
+                    
+                    foreach ($layers_params as $layer_id => $params){
+                        $layer_query = db_select('cartogratree_layers', 'l')
+                            ->fields('l', array('title'))
+                            ->condition('layer_id', $layer_id)
+                            ->execute();
+                        
+                        $layer_name = $layer_query->fetchObject()->title;
+                        
+                        foreach ($params as $param_id => $param){
+                            $param_query = db_select('cartogratree_fields', 'f')
+                                ->fields('f', array('field_name'))
+                                ->condition('field_id', $param_id)
+                                ->execute();
+                            
+                            $param_name = $param_query->fetchObject()->field_name;
+                            
+                            $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
+                            $type = variable_get("tpps_param_{$param_id}_type");
+                            
+                            if ($type == 'attr_id'){
+                                tpps_create_record('phenotype', array(
+                                  'uniquename' => "$tree_id-$layer_name-$param_name-$j",
+                                  'name' => "$param_name",
+                                  'attr_id' => '128089',
+                                  'value' => "$value"
+                                ));
+                            }
+                            else {
+                                $phenotype_id = tpps_create_record('phenotype', array(
+                                  'uniquename' => "$tree_id-$layer_name-$param_name-$j",
+                                  'name' => "$param_name",
+                                  'value' => "$value",
+                                ));
+                                
+                                tpps_create_record('phenotype_cvterm', array(
+                                  'phenotype_id' => $phenotype_id,
+                                  'cvterm_id' => '128089'
+                                ));
+                            }
+                        }
+                    }
                 }
             }
             
+            $env_meta = array();
+            
             for ($j = 1; $j <= $env_number; $j++){
                 $current_env = $environment['env_manual'][$j];
-                $name = $current_env['name'];
-                $desc = $current_env['description'];
-                $unit = $current_env['units'];
-                $val = $current_env['value'];
-                
-                $env_id = tpps_create_record('phenotype', array(
-                  'uniquename' => "$name-{$form_state['accession']}-$j",
-                  'name' => $name,
-                  'value' => $val,
-                ));
-                
-                tpps_create_record('phenotypeprop', array(
-                  'phenotype_id' => $env_id,
-                  'type_id' => '2871',
-                  'value' => $desc
-                ));
-                
-                tpps_create_record('phenotypeprop', array(
-                  'phenotype_id' => $env_id,
-                  'type_id' => '2883',
-                  'value' => $unit,
-                ));
+                $env_meta[] = array(
+                  'name' => $current_env['name'],
+                  'desc' => $current_env['description'],
+                  'unit' => $current_env['units'],
+                  'val' => $current_env['value']
+                );
+            }
+            
+            for ($j = 0; $j < count($content) - 1; $j++){
+                $tree_id = $content[$j][$id_col];
+                foreach ($env_meta as $current_env){
+                    $name = $current_env['name'];
+                    $desc = $current_env['desc'];
+                    $unit = $current_env['unit'];
+                    $val = $current_env['val'];
+                    
+                    $env_id = tpps_create_record('phenotype', array(
+                      'uniquename' => "$tree_id-$name-$j",
+                      'name' => "$name",
+                      'attr_id' => '128089',
+                      'value' => "$val"
+                    ));
+                    
+                    tpps_create_record('phenotypeprop', array(
+                      'phenotype_id' => $env_id,
+                      'type_id' => '2871',
+                      'value' => $desc
+                    ));
+                    
+                    tpps_create_record('phenotypeprop', array(
+                      'phenotype_id' => $env_id,
+                      'type_id' => '2883',
+                      'value' => $unit,
+                    ));
+                }
             }
         }
     }

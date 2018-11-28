@@ -421,6 +421,17 @@ function environment(&$form, &$form_state, $values, $id){
           )
         );
         
+        $fields['env_params'] = array(
+          '#type' => 'fieldset',
+          '#title' => 'CartograTree Environmental Layer Parameters: *',
+          '#collapsible' => TRUE,
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE)
+            )
+          )
+        );
+        
         foreach ($options as $layer_id => $layer_info){
             $layer_title = $layer_info['title'];
             $layer_group = $layer_info['group'];
@@ -428,14 +439,14 @@ function environment(&$form, &$form_state, $values, $id){
             $fields['env_layers'][$layer_title] = array(
               '#type' => 'checkbox',
               '#title' => "<strong>$layer_title</strong> - $layer_group",
+              '#return_value' => $layer_id,
             );
             
             if (!empty($layer_params)){
-                $fields['env_layers']["$layer_title-params"] = array(
-                  '#type' => 'checkboxes',
+                $fields['env_params']["$layer_title"] = array(
+                  '#type' => 'fieldset',
                   '#title' => "$layer_title Parameters",
                   '#description' => "Please select the parameters you used from the $layer_title layer.",
-                  '#options' => $layer_params,
                   '#states' => array(
                     'visible' => array(
                       ':input[name="' . $id . '[environment][env_layers][' . $layer_title . ']"]' => array('checked' => TRUE)
@@ -444,8 +455,11 @@ function environment(&$form, &$form_state, $values, $id){
                 );
                 
                 foreach ($layer_params as $param_id => $param){
-                    $default = isset($values[$id]['environment']['env_layers']["$layer_title-params"][$param_id]) ? $values[$id]['environment']['env_layers']["$layer_title-params"][$param_id] : NULL;
-                    $fields['env_layers']["$layer_title-params"][$param_id]['#default_value'] = $default;
+                    $fields['env_params']["$layer_title"][$param] = array(
+                      '#type' => 'checkbox',
+                      '#title' => $param,
+                      '#return_value' => $param_id
+                    );
                 }
             }
         }

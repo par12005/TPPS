@@ -83,10 +83,10 @@ function tpps_admin_panel($form, &$form_state){
             $show_layers = FALSE;
             for ($i = 1; $i <= $orgamism_num; $i++){
                 if ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['use_layers']){
-                    foreach ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['env_layers'] as $layer => $response){
-                        if (gettype($response) == 'array'){
-                            foreach ($response as $param_id => $param_response){
-                                if ($param_response){
+                    foreach ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['env_layers'] as $layer => $layer_id){
+                        if (!empty($layer_id)){
+                            foreach ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['env_params'][$layer] as $param_name => $param_id){
+                                if (!empty($param_id)){
                                     $type = variable_get("tpps_param_{$param_id}_type", NULL);
                                     if (empty($type)){
                                         $query = db_select('cartogratree_fields', 'f')

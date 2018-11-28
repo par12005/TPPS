@@ -1,15 +1,16 @@
 <?php
 
-function tpps_get_environmental_layer_data($layer_id, $lat, $long){
+function tpps_get_environmental_layer_data($layer_id, $lat, $long, $param){
     
     $response = tpps_get_env_response($layer_id, $lat, $long);
-    
     if (($response = explode("\n", $response))){
-        if (($data = explode("=", $response[2]))){
-            return trim($data[1]);
+        $response = array_slice($response, 2, -2);
+        foreach($response as $line){
+            if (($item = explode("=", $line)) and trim($item[0]) == $param){
+                return trim($item[1]);
+            }
         }
     }
-    
     return NULL;
 }
 
