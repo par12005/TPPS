@@ -28,6 +28,6 @@ The first set of fields in TPPS is the publication and species interface, where 
   * Species **x**: ``textfield`` -  autocomplete options from the ``chado.organism`` table
   * Up to 5 different species are allowed per submission
 
-.. image:: ../../../screenshots/TPPS_author_species.png
+.. image:: ../../../images/TPPS_author_species.png
 
 
