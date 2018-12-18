@@ -24,6 +24,10 @@ The second set of fields in TPPS is the Study Design section, where users upload
 * Data Type: ``select`` - options 'Genotype', 'Genotype x Phenotype', 'Genotype x Environment', 'Genotype x Phenotype x Environment', 'Phenotype x Environment'
 * Study Type: ``select`` - options 'Natural Population (Landscape)', 'Growth Chamber', 'Greenhouse', 'Experimental/Common Garden', 'Plantation'
 
+A screenshot of the Study Date and Study Location fields can be seen below:
+
+.. image:: ../../../images/TPPS_exp_cond.png
+
 Natural Population
 ==================
 
@@ -31,6 +35,10 @@ Natural Population
 
   * Season: ``checkboxes`` -  options 'Spring', 'Summer', 'Fall', 'Winter'
   * Assessions: ``select`` - options '1' to '30'
+
+A screenshot of the Natural Population fields can be seen below:
+
+.. image:: ../../../images/TPPS_nat_pop.png
 
 Growth Chamber
 ==============
@@ -74,6 +82,10 @@ Growth Chamber
      * Treatments: ``checkboxes`` -  options 'Seasonal Environment', 'Air temperature regime', 'Soil Temperature regime', 'Antibiotic regime', 'Chemical administration', 'Disease status', 'Fertilizer regime', 'Fungicide regime', 'Gaseous regime', 'Gravity Growth hormone regime', 'Mechanical treatment', 'Mineral nutrient regime', 'Humidity regime', 'Non-mineral nutrient regime', 'Radiation (light, UV-B, X-ray) regime', 'Rainfall regime', 'Salt regime', 'Watering regime', 'Water temperature regime', 'Pesticide regime', 'pH regime', 'other perturbation'
      * Treatments Description: ``textfield`` - if an option from 'Treatments' is selected, users must provide a description of the treatment
 
+A screenshot of the Growth Chamber fields can be seen below:
+
+.. image:: ../../../images/TPPS_gro_cha.png
+
 Greenhouse
 ==========
 
@@ -110,6 +122,10 @@ Greenhouse
      * Treatments: ``checkboxes`` - options 'Seasonal Environment', 'Air temperature regime', 'Soil Temperature regime', 'Antibiotic regime', 'Chemical administration', 'Disease status', 'Fertilizer regime', 'Fungicide regime', 'Gaseous regime', 'Gravity Growth hormone regime', 'Mechanical treatment', 'Mineral nutrient regime', 'Humidity regime', 'Non-mineral nutrient regime', 'Radiation (light, UV-B, X-ray) regime', 'Rainfall regime', 'Salt regime', 'Watering regime', 'Water temperature regime', 'Pesticide regime', 'pH regime', 'other perturbation'
      * Treatments Description: ``textfield`` - if an option from 'Treatments' is selected, users must provide a description of the treatment
 
+A screenshot of the Greenhouse fields can be seen below:
+
+.. image:: ../../../images/TPPS_green.png
+
 Common Garden
 =============
 
@@ -134,6 +150,10 @@ Common Garden
   * Treatments: ``checkboxes`` - options 'Seasonal environment', 'Antibiotic regime', 'Chemical administration', 'Disease status', 'Fertilizer regime', 'Fungicide regime', 'Gaseous regime', 'Gravity Growth hormone regime', 'Herbicide regime', 'Mechanical treatment', 'Mineral nutrient regime', 'Non-mineral nutrient regime', 'Salt regime', 'Watering regime', 'Pesticide regime', 'pH regime', 'Other perturbation'
   * Treatments Description: ``textfield`` - if an option from 'Treatments' is selected, users must provide a description of the treatment
 
+A screenshot of the Common Garden fields can be seen below:
+
+.. image:: ../../../images/TPPS_com_gar.png
+
 Plantation
 ==========
 
@@ -144,6 +164,7 @@ Plantation
   * Treatments: ``checkboxes`` - options 'Seasonal environment', 'Antibiotic regime', 'Chemical administration', 'Disease status', 'Fertilizer regime', 'Fungicide regime', 'Gaseous regime', 'Gravity Growth hormone regime', 'Herbicide regime', 'Mechanical treatment', 'Mineral nutrient regime', 'Non-mineral nutrient regime', 'Salt regime', 'Watering regime', 'Pesticide regime', 'pH regime', 'Other perturbation'
   * Treatments Description: ``textfield`` - if an option from 'Treatments' is selected, users must provide a description of the treatment
 
-.. image:: ../../../images/TPPS_exp_cond.png
+A screenshot of the Plantation fields can be seen below:
 
+.. image:: ../../../images/TPPS_plant.png
 
