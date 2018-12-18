@@ -413,11 +413,23 @@ function tpps_flatten($state){
             if (isset($page_3["species-$i"]['file']) and $page_3["species-$i"]['file']){
                 $organism_name = $data["Species $i"];
                 $data["$organism_name Accession File"] = $page_3["species-$i"]['file'];
+                if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state)']['#type'] == "gps"){
+                    $data["#{$organism_name}_accession_no_header"] = isset($page_3["species-$i"]['file-no-header']) ? $page_3["species-$i"]['file-no-header'] : '0';
+                    $data["#{$organism_name}_accession_id_col"] = $page_3["species-$i"]['file-groups']['Tree Id'][1];
+                    $data["#{$organism_name}_accession_lat_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state)'][4];
+                    $data["#{$organism_name}_accession_long_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state)'][5];
+                }
             }
         }
     }
     elseif (isset($page_3['file']) and $page_3['file']){
         $data['Tree Accession File'] = $page_3['file'];
+        if (!empty($page_3['file-groups']['Location (latitude/longitude or country/state)']['#type']) and $page_3['file-groups']['Location (latitude/longitude or country/state)']['#type'] == "gps"){
+            $data["#accession_no_header"] = isset($page_3['file-no-header']) ? $page_3['file-no-header'] : '0';
+            $data["#accession_id_col"] = $page_3['file-groups']['Tree Id'][1];
+            $data["#accession_lat_col"] = $page_3['file-groups']['Location (latitude/longitude or country/state)'][4];
+            $data["#accession_long_col"] = $page_3['file-groups']['Location (latitude/longitude or country/state)'][5];
+        }
     }
     unset($data[PAGE_3]);
     
