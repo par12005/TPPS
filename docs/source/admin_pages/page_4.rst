@@ -55,6 +55,6 @@ Genotype
 
 .. _`Study Design`: page_2.html
 
-.. image:: ../../../screenshots/TPPS_data.png
+.. image:: ../../../images/TPPS_data.png
 
 

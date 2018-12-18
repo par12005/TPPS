@@ -71,6 +71,6 @@ If the user is logged in, and they have any incomplete TPPS Submissions, they wi
 
 A screenshot of the landing page for a logged in user with a submission in progress can be seen below
 
-.. image:: ../../../screenshots/TPPS_landing.png
+.. image:: ../../../images/TPPS_landing.png
 
 

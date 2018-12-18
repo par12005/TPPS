@@ -32,6 +32,6 @@ Tree Species
 
 A screenshot of the Publication and Species page can be seen below:
 
-.. image:: ../../../screenshots/TPPS_author_species.png
+.. image:: ../../../images/TPPS_author_species.png
 
 

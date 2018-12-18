@@ -108,6 +108,6 @@ Plantation fields are only visible when 'Plantation' was selected from the 'Stud
 
 A screenshot of the Experimental Conditions page can be seen below:
 
-.. image:: ../../../screenshots/TPPS_exp_cond.png
+.. image:: ../../../images/TPPS_exp_cond.png
 
 

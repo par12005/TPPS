@@ -13,6 +13,6 @@ The third set of fields in TPPS is the Tree Accession section. Here you will be 
 
 A screenshot of the Tree Accession page can be seen below:
 
-.. image:: ../../../screenshots/TPPS_accession.png
+.. image:: ../../../images/TPPS_accession.png
 
 

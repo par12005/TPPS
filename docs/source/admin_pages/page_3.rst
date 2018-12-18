@@ -19,6 +19,6 @@ The third set of fields in TPPS is the Tree Accession section, where users uploa
 
 .. _`Publication and Species Interface`: page_1.html
 
-.. image:: ../../../screenshots/TPPS_accession.png
+.. image:: ../../../images/TPPS_accession.png
 
 

@@ -144,6 +144,6 @@ Plantation
   * Treatments: ``checkboxes`` - options 'Seasonal environment', 'Antibiotic regime', 'Chemical administration', 'Disease status', 'Fertilizer regime', 'Fungicide regime', 'Gaseous regime', 'Gravity Growth hormone regime', 'Herbicide regime', 'Mechanical treatment', 'Mineral nutrient regime', 'Non-mineral nutrient regime', 'Salt regime', 'Watering regime', 'Pesticide regime', 'pH regime', 'Other perturbation'
   * Treatments Description: ``textfield`` - if an option from 'Treatments' is selected, users must provide a description of the treatment
 
-.. image:: ../../../screenshots/TPPS_exp_cond.png
+.. image:: ../../../images/TPPS_exp_cond.png
 
 
