@@ -1,7 +1,5 @@
 <?php
 
-require_once 'page_3_ajax.php';
-
 function page_3_create_form(&$form, &$form_state){
     
     if (isset($form_state['saved_values'][PAGE_3])){
@@ -16,8 +14,17 @@ function page_3_create_form(&$form, &$form_state){
       '#tree' => TRUE,
     );
     
-    $file_description = "Please upload a spreadsheet file containing tree population data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may omit that drop-down menu. Your file must contain columns with information about at least the Tree Identifier and the Location of the tree (either gps coordinates or country/state).";
     $species_number = $form_state['saved_values'][PAGE_1]['organism']['number'];
+    
+    if ($species_number > 1){
+        // Create the single/multiple file checkbox.
+        $form['tree-accession']['check'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('I would like to upload a separate tree accession file for each species.'),
+        );
+    }
+    
+    $file_description = "Please upload a spreadsheet file containing tree population data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may omit that drop-down menu. Your file must contain columns with information about at least the Tree Identifier and the Location of the tree (either gps coordinates or country/state).";
     $file_upload_location = 'public://' . variable_get('tpps_accession_files_dir', 'tpps_accession');
     
     if ($form_state['saved_values'][PAGE_2]['studyType'] == '4'){
@@ -86,23 +93,13 @@ function page_3_create_form(&$form, &$form_state){
         'My file does not use coordinates for tree locations'
       ),
       '#states' => $form['tree-accession']['file']['#states'],
+      // Add map button after coordinate format option.
+      '#suffix' => "<div id=\"map_wrapper\"></div>"
+        . "<input id=\"map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
     );
     
-    $form['tree-accession']['map-button'] = array(
-      '#type' => 'button',
-      '#title' => 'Click here to update map',
-      '#value' => 'Click here to update map',
-      '#button_type' => 'button',
-      '#executes_submit_callback' => FALSE,
-      '#ajax' => array(
-        'callback' => 'page_3_multi_map',
-        'wrapper' => 'multi_map',
-      ),
-      '#prefix' => '<div id="multi_map">',
-      '#suffix' => '<div id="map_wrapper"></div></div>',
-    );
-    
-    $form['tree-accession']['map-button']['#suffix'] .= '
+    // Add the google maps api call after the map button.
+    $form['tree-accession']['coord-format']['#suffix'] .= '
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&callback=initMap"
     async defer></script>
     <style>
@@ -111,13 +108,7 @@ function page_3_create_form(&$form, &$form_state){
       }
     </style>';
     
-    
     if ($species_number > 1){
-        $form['tree-accession']['check'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('I would like to upload a separate tree accession file for each species.'),
-        );
-
         for ($i = 1; $i <= $species_number; $i++){
             $name = $form_state['saved_values'][PAGE_1]['organism']["$i"];
             
@@ -168,6 +159,11 @@ function page_3_create_form(&$form, &$form_state){
             );
             
             $form['tree-accession']["species-$i"]['file']['no-header'] = array();
+            $parts = explode(" ", $name);
+            $id_name = implode("_", $parts);
+            $form['tree-accession']["species-$i"]['#suffix'] = "<div id=\"{$id_name}_map_wrapper\"></div>"
+                . "<input id=\"{$id_name}_map_button\" type=\"button\" value=\"Click here to view $name trees on map!\"></input>"
+                . "<div id=\"{$id_name}_species_number\" style=\"display:none;\">$i</div>";
         }
     }
     
