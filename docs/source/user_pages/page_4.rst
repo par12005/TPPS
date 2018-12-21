@@ -24,6 +24,18 @@ Phenotype fields are only visible when 'Genotype x Phenotype', 'Genotype x Pheno
 
 * Phenotype Data: file upload - The phenotype data. This file should contain the 'Tree Id' of the tree that the phenotype is describing, the 'Name/Identifier' of the phenotype, and the 'Value' that was actually measured for this phenotype.
 
+A screenshot of the manual phenotype information fields can be seen below:
+
+.. image:: ../../../images/TPPS_phenotype_manual.png
+
+A screenshot of the phenotype metadata file field can be seen below:
+
+.. image:: ../../../images/TPPS_phenotype_meta.png
+
+A screenshot of the phenotype data file field can be seen below:
+
+.. image:: ../../../images/TPPS_phenotype_data.png
+
 Genotype
 ========
 
@@ -40,6 +52,11 @@ Genotype fields are only visible when 'Genotype', 'Genotype x Phenotype', 'Genot
 
 * SSRs/cpSSRs Type: text field - The type of SSRs/cpSSRs marker. Only visisble when 'SSRs/cpSSRs' was selected from the 'Genotype Marker Type' field.
 * Other Marker Type: text field - The type of genotype marker. Only visisble when 'Other' was selected from the 'Genotype Marker Type' field.
+
+A screenshot of the genotype marker type fields can be seen below:
+
+.. image:: ../../../images/TPPS_genotype_marker.png
+
 * Reference Genome/Assembly: drop-down menu - The reference genome/assembly: TPPS finds local reference genomes from the site it is installed on and their versions, and presents them as options in this drop-down. The other available options for a reference genome/assembly are: 'I can provide a URL to the website of my reference file(s)', 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list', 'I can upload my own reference genome file', 'I can upload my own reference transcriptome file', 'I am unable to provide a reference assembly'.
 * External Reference Genome/Assembly: Either upload or locate the genome/assembly file(s).
 
@@ -47,13 +64,19 @@ Genotype fields are only visible when 'Genotype', 'Genotype x Phenotype', 'Genot
    * Load Reference from URL: For 'I can provide a URL to the website of my reference file(s)' option, you will be presented with a set of form fields based on the 'Tripal FASTA Loader'. You can skip the 'Existing File(s)' and 'You may select a file that is already uploaded' sections. You will just need to specify the remote path of the reference, the analysis type, and the sequence type. If you would like, you can also specify an external database where the sequences from your url have a cross-reference. If you do, you will also need to provide a regular expression for the accession number. External database cross-reference and accession number are not required.
    * Upload Reference manually: For the 'I can upload my own reference genome file', or 'I can upload my own reference transcriptome file' options, you will be presented with a set of form fields based on the 'Tripal FASTA Loader'. You only need to supply a file from the 'Existing File(s)' **or** the 'You may select a file that is already uploaded' section. You can skip the 'Remote path' section. You will need to specify the assembly type and sequence type. External database for cross-reference and regular expression for external database accession number are optional.
 
+A screenshot of the genotype reference fields can be seen below:
+
+.. image:: ../../../images/TPPS_genotype_ref.png
+
 * Genotype File Types: checkboxes - 'Genotype Spreadsheet/Assay', 'Assay Design', 'VCF'. Select all that apply. 'Assay Design' is only visible when 'SNPs' was selected from the 'Genotype Marker Type' field.
 * Genotype Spreadsheet/Assay File: file upload - The genotype assay file. You will be required to specify which of your columns holds the Tree ID and genotype data in each row of your file. Only visible when 'Genotype Spreadsheet/Assay' was selected from the 'Genotype File Types' field.
 * Assay Design File: file upload - The assay design file. Only visible when 'Assay Design' was selected from the 'Genotype File Types' field.
 * VCF File: file upload - The VCF file. Only visible when 'VCF' was selected from the 'Genotype File Types' field.
 
-.. _`Study Design`: page_2.html
+A screenshot of the genotype file fields can be seen below:
 
-.. image:: ../../../images/TPPS_data.png
+.. image:: ../../../images/TPPS_genotype_file.png
+
+.. _`Study Design`: page_2.html
 
 
