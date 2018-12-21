@@ -169,7 +169,7 @@ var maps = {};
 function accessionButtons(){
     var acc_check = jQuery("#edit-tree-accession-check");
     jQuery('div').filter(function() { return this.id.match(/map_wrapper/); }).hide();
-    if (acc_check[0].checked){
+    if (typeof acc_check[0] !== 'undefined' && acc_check[0].checked){
         jQuery("#map_button").hide();
         jQuery.each(jQuery('input').filter(function() { return (this.id.match(/_map_button/)); }), function() {
             jQuery(this).show();
