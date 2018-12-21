@@ -54,10 +54,6 @@ Genotype
      * Genotype SSRs/cpSSRs Type: ``textfield`` - only visible if the user selects 'SSRs/cpSSRs' from 'Genotype Marker Type'
      * Genotype Other Marker Type: ``textfield`` - only visible if the user selects 'Other' from 'Genotype Marker Type'
 
-A screenshot of the genotype marker type fields can be seen below:
-
-.. image:: ../../../images/TPPS_genotype_marker.png
-
      * Reference Genome: ``select`` - stored reference genomes, as well as 'I can provide a URL to the website of my reference file(s)', 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list', 'I can upload my own reference genome file', 'I can upload my own reference transcriptome file', 'I am unable to provide a reference assembly'
      * BioProject Accession: ``textfield`` - only visible if the user selects 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list' from 'Reference Genome'
 
@@ -65,15 +61,19 @@ A screenshot of the genotype marker type fields can be seen below:
 
      * URL or Manual Assembly File: ``fieldset`` - Tripal FASTA Loader fields - only visible if the user selects 'I can provide a URL to the website of my reference file(s)', 'I can upload my own reference genome file', or 'I can upload my own reference transcriptome file' from 'Reference Genome'
 
-A screenshot of the genotype reference fields can be seen below:
-
-.. image:: ../../../images/TPPS_genotype_ref.png
-
      * Genotype File Type: ``checkboxes`` - options 'Genotype Spreadsheet/Assay', 'Assay Design', 'VCF'. 'Assay Design' only visible if the user selects 'SNPs' from 'Genotype Marker Type'.
      * Genotype VCF File: ``managed_file`` - .VCF file of genotypes - only visible if the user selects 'VCF' from 'Genotype File Type'
      * Genotype File: ``managed_file`` - spreadsheet of genotypes - only visible if the user selects 'Genotype Spreadsheet/Assay' from 'Genotype File Type'
      * Genotype File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Tree ID and Genotype Data
      * Assay Design File: ``managed_file`` - Assay design file - only visible if the user selects 'Assay Design' from 'Genotype File Type'
+
+A screenshot of the genotype marker type fields can be seen below:
+
+.. image:: ../../../images/TPPS_genotype_marker.png
+
+A screenshot of the genotype reference fields can be seen below:
+
+.. image:: ../../../images/TPPS_genotype_ref.png
 
 A screenshot of the genotype file fields can be seen below:
 
