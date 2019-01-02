@@ -130,6 +130,60 @@ jQuery(document).ready(function ($) {
         
     }
     
+    function Supplemental_Files(){
+        var files_add = jQuery('#edit-files-add');
+        var files_remove = jQuery('#edit-files-remove');
+        var number_object = jQuery('#edit-files div input:hidden');
+        var files_number = number_object[0].value;
+        var files = jQuery('#edit-files div div.form-type-managed-file');
+        
+        files.hide();
+        
+        if (files_number > 0){
+            for (var i = 0; i < files_number; i++){
+                jQuery(files[i]).show();
+            }
+
+            for (var i = files_number; i < 10; i++){
+                jQuery(files[i]).hide();
+            }
+        }
+        
+        files_add.attr('type', 'button');
+        files_remove.attr('type', 'button');
+
+        files_add.on('click', function(){
+            if (files_number < 10){
+                files_number++;
+                number_object[0].value = files_number;
+                
+                for (var i = 0; i < files_number; i++){
+                    jQuery(files[i]).show();
+                }
+
+                for (var i = files_number; i < 10; i++){
+                    jQuery(files[i]).hide();
+                }
+            }
+        });
+        
+        files_remove.on('click', function(){
+            if (files_number > 0){
+                files_number--;
+                number_object[0].value = files_number;
+                
+                for (var i = 0; i < files_number; i++){
+                    jQuery(files[i]).show();
+                }
+
+                for (var i = files_number; i < 10; i++){
+                    jQuery(files[i]).hide();
+                }
+            }
+        });
+        
+    }
+    
     jQuery("#edit-step").hide();
     
     if (jQuery("#edit-step").length > 0){
@@ -149,6 +203,7 @@ jQuery(document).ready(function ($) {
         }
         
         if (jQuery("#edit-step")[0].value === 'summarypage'){
+            Supplemental_Files();
             jQuery("#tpps-status").insertAfter(".tgdr_form_status");
             jQuery("#edit-next").on('click', function(){
                 jQuery("#tpps-status").html("<label>Loading... </label><br>This step may take several minutes.");
