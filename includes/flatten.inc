@@ -7,7 +7,6 @@ function tpps_flatten($state){
         return;
     }
     unset($data['frontpage']);
-    unset($data['summarypage']);
     unset($data['form_build_id']);
     
     $page_1 = &$data[PAGE_1];
@@ -630,12 +629,23 @@ function tpps_flatten($state){
     }
     unset($data[PAGE_4]);
     
+    $sum_page = &$data['summarypage'];
+    if (!empty($sum_page['comments'])){
+        $data["Additional Comments"] = $sum_page['comments'];
+    }
+    for ($i = 1; $i <= 10; $i++){
+        if (!empty($sum_page['files'][$i])){
+            $data["Supplemental File $i"] = $sum_page['files'][$i];
+        }
+    }
+    unset($data['summarypage']);
+    
     $data['#dbxref_id'] = isset($state['dbxref_id']) ? $state['dbxref_id'] : NULL;
     $data['#accession'] = isset($state['accession']) ? $state['accession'] : NULL;
     $data['#status'] = isset($state['status']) ? $state['status'] : NULL;
     
     foreach ($data as $key => $val){
-        if (!isset($val) or $val === ''){
+        if (empty($val)){
             unset($data[$key]);
         }
     }

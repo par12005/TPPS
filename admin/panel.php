@@ -82,7 +82,7 @@ function tpps_admin_panel($form, &$form_state){
             $orgamism_num = $submission_state['saved_values'][PAGE_1]['organism']['number'];
             $show_layers = FALSE;
             for ($i = 1; $i <= $orgamism_num; $i++){
-                if ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['use_layers']){
+                if (!empty($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['use_layers'])){
                     foreach ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['env_layers'] as $layer => $layer_id){
                         if (!empty($layer_id)){
                             foreach ($submission_state['saved_values'][PAGE_4]["organism-$i"]['environment']['env_params'][$layer] as $param_name => $param_id){
