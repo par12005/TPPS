@@ -98,7 +98,7 @@ function tpps_tab_create($type, $user, $name = NULL){
         if (isset($state['accession'])){
             $display .= "<td style='text-align:center'><input type='submit' id='delete-{$state['accession']}' onclick='";
             $title = (isset($state['saved_values'][PAGE_1]['publication']['title'])) ? ' titled ' . $state['saved_values'][PAGE_1]['publication']['title'] : '';
-            $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/user/{$user->uid}/TPPS?accession={$state['accession']}&action=DELETE\"}";
+            $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/user/{$user->uid}/tpps?accession={$state['accession']}&action=DELETE\"}";
             $display .= "' name='op' class='form-button' value='Delete'></td>";
         }
         else {

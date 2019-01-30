@@ -880,9 +880,9 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
             }
         }
         
-        if ($groups['Location (latitude/longitude or country/state)']['#type'] == 'gps'){
-            $lat_name = $groups['Location (latitude/longitude or country/state)']['4'];
-            $long_name = $groups['Location (latitude/longitude or country/state)']['5'];
+        if ($groups['Location (latitude/longitude or country/state or population group)']['#type'] == 'gps'){
+            $lat_name = $groups['Location (latitude/longitude or country/state or population group)']['4'];
+            $long_name = $groups['Location (latitude/longitude or country/state or population group)']['5'];
             
             for ($i = 0; $i < count($content) - 1; $i++){
                 $tree_id = $content[$i][$id_col_accession_name];
@@ -901,9 +901,9 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
                 ));
             }
         }
-        else {
-            $country_col_name = $groups['Location (latitude/longitude or country/state)']['2'];
-            $state_col_name = $groups['Location (latitude/longitude or country/state)']['3'];
+        elseif ($groups['Location (latitude/longitude or country/state or population group)']['#type'] == 'approx'){
+            $country_col_name = $groups['Location (latitude/longitude or country/state or population group)']['2'];
+            $state_col_name = $groups['Location (latitude/longitude or country/state or population group)']['3'];
             
             for ($i = 0; $i < count($content) - 1; $i++){
                 $tree_id = $content[$i][$id_col_accession_name];
@@ -936,6 +936,22 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
                       'value' => $content[$i][$district_col_name]
                     ));
                 }
+            }
+        }
+        else {
+            $pop_group_name = $groups['Location (latitude/longitude or country/state or population group)']['12'];
+            
+            for ($i = 0; $i < count($content) - 1; $i++){
+                $tree_id = $content[$i][$id_col_accession_name];
+                $stock_id = $stock_ids[$tree_id];
+                
+                $loc = $thirdpage['tree-accession']['pop-group'][$content[$i][$pop_group_name]];
+                
+                tpps_create_record('stockprop', array(
+                  'stock_id' => $stock_id,
+                  'type_id' => '54097',
+                  'value' => $loc
+                ));
             }
         }
         
@@ -978,9 +994,9 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
                   'organism_id' => $organism_ids[$i],
                 ));
                 
-                if ($groups['Location (latitude/longitude or country/state)']['#type'] == 'gps'){
-                    $lat_name = $groups['Location (latitude/longitude or country/state)']['4'];
-                    $long_name = $groups['Location (latitude/longitude or country/state)']['5'];
+                if ($groups['Location (latitude/longitude or country/state or population group)']['#type'] == 'gps'){
+                    $lat_name = $groups['Location (latitude/longitude or country/state or population group)']['4'];
+                    $long_name = $groups['Location (latitude/longitude or country/state or population group)']['5'];
                     
                     tpps_create_record('stockprop', array(
                       'stock_id' => $stock_ids[$tree_id],
@@ -994,9 +1010,9 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
                       'value' => $content[$j][$long_name]
                     ));
                 }
-                else {
-                    $country_col_name = $groups['Location (latitude/longitude or country/state)']['2'];
-                    $state_col_name = $groups['Location (latitude/longitude or country/state)']['3'];
+                elseif ($groups['Location (latitude/longitude or country/state or population group)']['#type'] == 'approx') {
+                    $country_col_name = $groups['Location (latitude/longitude or country/state or population group)']['2'];
+                    $state_col_name = $groups['Location (latitude/longitude or country/state or population group)']['3'];
                     
                     tpps_create_record('stockprop', array(
                       'stock_id' => $stock_id,
@@ -1025,6 +1041,17 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
                           'value' => $content[$j][$district_col_name]
                         ));
                     }
+                }
+                else {
+                    $pop_group_name = $groups['Location (latitude/longitude or country/state or population group)']['12'];
+
+                    $loc = $thirdpage['tree-accession']['pop-group'][$content[$j][$pop_group_name]];
+
+                    tpps_create_record('stockprop', array(
+                      'stock_id' => $stock_id,
+                      'type_id' => '54097',
+                      'value' => $loc
+                    ));
                 }
             }
 
