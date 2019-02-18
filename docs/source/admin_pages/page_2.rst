@@ -143,7 +143,7 @@ Common Garden
 
   * Biotic Environment Info: ``fieldset``
 
-     * Biotic Environment Type: ``select`` - options 'Herbivores', 'Mutilists', 'Pathogens', 'Endophyts', 'Other', 'None'
+     * Biotic Environment Type: ``select`` - options 'Herbivores', 'Mutilists', 'Pathogens', 'Endophytes', 'Other', 'None'
      * Custom Biotic Environment Type: ``textfield`` - only visible if the user selects 'Other' from 'Biotic Environment Type'
 
   * Season: ``checkboxes`` - options 'Spring', 'Summer', 'Fall', 'Winter'
