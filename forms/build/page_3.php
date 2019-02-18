@@ -1,5 +1,7 @@
 <?php
 
+require_once 'page_3_ajax.php';
+
 function page_3_create_form(&$form, &$form_state){
     
     if (isset($form_state['saved_values'][PAGE_3])){
@@ -55,7 +57,7 @@ function page_3_create_form(&$form, &$form_state){
     );
     
     $form['tree-accession']['file']['columns'] = array(
-      '#description' => 'Please define which columns hold the required data: Tree Identifier and Location',
+      '#description' => 'Please define which columns hold the required data: Tree Identifier and Location. If your trees are located based on a population group, you can provide the population group column and a mapping of population group to location below.',
     );
     
     $column_options = array(
@@ -63,16 +65,21 @@ function page_3_create_form(&$form, &$form_state){
       '1' => 'Tree Identifier',
       '2' => 'Country',
       '3' => 'State',
-      '8' => 'County',
-      '9' => 'District',
       '4' => 'Latitude',
       '5' => 'Longitude',
+      '8' => 'County',
+      '9' => 'District',
+      '12' => 'Population Group'
     );
     
     if ($species_number > 1){
         $column_options['6'] = 'Genus';
         $column_options['7'] = 'Species';
         $column_options['10'] = 'Genus + Species';
+    }
+    
+    if ($form_state['saved_values'][PAGE_2]['studyType'] != '1'){
+        $column_options['11'] = 'Source Tree Identifier';
     }
 
     $form['tree-accession']['file']['columns-options'] = array(
@@ -108,6 +115,58 @@ function page_3_create_form(&$form, &$form_state){
       }
     </style>';
     
+    $pop_group_show = FALSE;
+    if (isset($form_state['complete form']['tree-accession']['file']['columns'])){
+        foreach ($form_state['complete form']['tree-accession']['file']['columns'] as $col_name => $data){
+            if ($col_name[0] == '#'){
+                continue;
+            }
+            elseif ($data['#value'] == '12') {
+                $pop_group_show = TRUE;
+                $pop_col = $col_name;
+                $fid = $form_state['complete form']['tree-accession']['file']['#value']['fid'];
+                break;
+            }
+        }
+    }
+    elseif (isset($form_state['saved_values'][PAGE_3]['tree-accession']['file-columns'])){
+        foreach ($form_state['saved_values'][PAGE_3]['tree-accession']['file-columns'] as $col_name => $data){
+            if ($data == '12') {
+                $pop_group_show = TRUE;
+                $pop_col = $col_name;
+                $fid = $form_state['saved_values'][PAGE_3]['tree-accession']['file'];
+                break;
+            }
+        }
+    }
+    
+    $form['tree-accession']['pop-group'] = array(
+      '#type' => 'hidden',
+      '#title' => 'Population group mapping',
+      '#prefix' => '<div id="population-mapping">',
+      '#suffix' => '</div>',
+      '#tree' => TRUE,
+    );
+    
+    
+    if (!empty($fid) and ($file = file_load($fid)) and $pop_group_show){
+        $form['tree-accession']['pop-group']['#type'] = 'fieldset';
+        
+        $file_name = $file->uri;
+        $location = drupal_realpath("$file_name");
+        $content = tpps_parse_xlsx($location);
+        
+        for ($i = 0; $i < count($content) - 1; $i++){
+            $pop_group = $content[$i][$pop_col];
+            if (empty($form['tree-accession']['pop-group'][$pop_group])){
+                $form['tree-accession']['pop-group'][$pop_group] = array(
+                  '#type' => 'textfield',
+                  '#title' => "Location for trees from group $pop_group:",
+                );
+            }
+        }
+    }
+    
     if ($species_number > 1){
         for ($i = 1; $i <= $species_number; $i++){
             $name = $form_state['saved_values'][PAGE_1]['organism']["$i"];
@@ -139,7 +198,7 @@ function page_3_create_form(&$form, &$form_state){
             );
             
             $form['tree-accession']["species-$i"]['file']['columns'] = array(
-              '#description' => 'Please define which columns hold the required data: Tree Identifier and Location',
+              '#description' => 'Please define which columns hold the required data: Tree Identifier and Location. If your trees are located based on a population group, you can provide the population group column and a mapping of population group to location below.',
             );
             
             $column_options = array(
@@ -147,11 +206,16 @@ function page_3_create_form(&$form, &$form_state){
               '1' => 'Tree Identifier',
               '2' => 'Country',
               '3' => 'State',
-              '8' => 'County',
-              '9' => 'District',
               '4' => 'Latitude',
               '5' => 'Longitude',
+              '8' => 'County',
+              '9' => 'District',
+              '12' => 'Population Group'
             );
+            
+            if ($form_state['saved_values'][PAGE_2]['studyType'] != '1'){
+                $column_options['11'] = 'Source Tree Identifier';
+            }
             
             $form['tree-accession']["species-$i"]['file']['columns-options'] = array(
               '#type' => 'hidden',
@@ -164,6 +228,47 @@ function page_3_create_form(&$form, &$form_state){
             $form['tree-accession']["species-$i"]['#suffix'] = "<div id=\"{$id_name}_map_wrapper\"></div>"
                 . "<input id=\"{$id_name}_map_button\" type=\"button\" value=\"Click here to view $name trees on map!\"></input>"
                 . "<div id=\"{$id_name}_species_number\" style=\"display:none;\">$i</div>";
+
+            $pop_group_show = FALSE;
+            if (isset($form_state['complete form']['tree-accession']["species-$i"]['file']['columns'])){
+                foreach ($form_state['complete form']['tree-accession']["species-$i"]['file']['columns'] as $col_name => $data){
+                    if ($col_name[0] == '#'){
+                        continue;
+                    }
+                    elseif ($data['#value'] == '12') {
+                        $pop_group_show = TRUE;
+                        $pop_col = $col_name;
+                        break;
+                    }
+                }
+            }
+
+            $form['tree-accession']["species-$i"]['pop-group'] = array(
+              '#type' => 'hidden',
+              '#title' => 'Population group mapping',
+              '#prefix' => '<div id="population-mapping">',
+              '#suffix' => '</div>',
+              '#tree' => TRUE,
+            );
+
+            if (!empty($form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid']) and ($file = file_load($form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid'])) and $pop_group_show){
+                $form['tree-accession']["species-$i"]['pop-group']['#type'] = 'fieldset';
+
+                $file_name = $file->uri;
+                $location = drupal_realpath("$file_name");
+                $content = tpps_parse_xlsx($location);
+
+                for ($i = 0; $i < count($content) - 1; $i++){
+                    $pop_group = $content[$i][$pop_col];
+                    if (empty($form['tree-accession']["species-$i"]['pop-group'][$pop_group])){
+                        $form['tree-accession']["species-$i"]['pop-group'][$pop_group] = array(
+                          '#type' => 'textfield',
+                          '#title' => "Location for $name trees from group $pop_group:",
+                        );
+                    }
+                }
+            }
+
         }
     }
     

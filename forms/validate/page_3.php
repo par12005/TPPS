@@ -2,7 +2,6 @@
 
 function page_3_validate_form(&$form, &$form_state){
     if ($form_state['submitted'] == '1'){
-        
         $species_number = $form_state['saved_values'][PAGE_1]['organism']['number'];
         if ($species_number == 1 or $form_state['values']['tree-accession']['check'] == '0'){
             if ($form_state['values']['tree-accession']['file'] != ""){
@@ -11,9 +10,10 @@ function page_3_validate_form(&$form, &$form_state){
                   'Tree Id' => array(
                     'id' => array(1),
                   ),
-                  'Location (latitude/longitude or country/state)' => array(
+                  'Location (latitude/longitude or country/state or population group)' => array(
                     'approx' => array(2, 3),
                     'gps' => array(4, 5),
+                    'pop_group' => array(12),
                   ),
                 );
                 
@@ -62,6 +62,14 @@ function page_3_validate_form(&$form, &$form_state){
             else{
                 form_set_error('tree-accession][file', 'Tree Accession file: field is required.');
             }
+            
+            if (gettype($form_state['values']['tree-accession']['pop-group']) === 'array'){
+                foreach($form_state['values']['tree-accession']['pop-group'] as $pop_name => $location){
+                    if (empty($location)){
+                        form_set_error("tree-accession][pop-group][$pop_name", "Population Group $pop_name Location: field is required.");
+                    }
+                }
+            }
         }
         else {
             for ($i = 1; $i <= $species_number; $i++){
@@ -71,9 +79,10 @@ function page_3_validate_form(&$form, &$form_state){
                       'Tree Id' => array(
                         'id' => array(1),
                       ),
-                      'Location (latitude/longitude or country/state)' => array(
+                      'Location (latitude/longitude or country/state or population group)' => array(
                         'approx' => array(2, 3),
                         'gps' => array(4, 5),
+                        'pop_group' => array(12),
                       )
                     );
                     
@@ -115,6 +124,15 @@ function page_3_validate_form(&$form, &$form_state){
                 else{
                     form_set_error("tree-accession][species-$i][file", "Species $i Tree Accession file: field is required.");
                 }
+                
+                
+            if (gettype($form_state['values']['tree-accession']["species-$i"]['pop-group']) === 'array'){
+                foreach($form_state['values']['tree-accession']["species-$i"]['pop-group'] as $pop_name => $location){
+                    if (empty($location)){
+                        form_set_error("tree-accession][species-$i][pop-group][$pop_name", "Species $i Population Group $pop_name Location: field is required.");
+                    }
+                }
+            }
             }
         }
         

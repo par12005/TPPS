@@ -92,7 +92,7 @@ Common Garden fields are only visible when 'Common Garden' was selected from the
 * Custom Irrigation Type: text field - Define a custom irrigation type. Only visible when 'Other' was selected from the 'Irrigation Type' field.
 * Salinity Control: drop-down menu - Whether the Salinity level was controlled during the study: 'controlled', 'uncontrolled'
 * Salinity Value: text field - The Salinity level during the study. If the level was not controlled, then provide the average Salinity level.
-* Biotic Environment: drop-down menu - The type of biotic environment: 'Herbivores', 'Mutilists', 'Pathogens', 'Endophyts', 'Other', 'None'
+* Biotic Environment: drop-down menu - The type of biotic environment: 'Herbivores', 'Mutilists', 'Pathogens', 'Endophytes', 'Other', 'None'
 * Custom Biotic Environment Type: text field - Define a custom biotic environment type. Only visible when 'Other' was selected from the 'Biotic Environment' field.
 * Season: checkboxes - The season(s) that the trees were assessed.
 * Treatments: checkboxes with textfields - The treatments the trees were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.

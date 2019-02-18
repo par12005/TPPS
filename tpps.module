@@ -339,7 +339,7 @@ function tpps_managed_file_process($element, &$form_state, $form){
                     'title' => array("Select the type of data the '$item' column holds")
                   )
                 );
-
+                
                 if ($first){
                     $first = FALSE;
                     $element['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $element['columns'][$item]['#prefix'];
@@ -348,6 +348,21 @@ function tpps_managed_file_process($element, &$form_state, $form){
                 if (!empty($no_header)){
                     $element['columns'][$item]['#title'] = '';
                     $element['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
+                }
+                
+                if ($form_state['stage'] == PAGE_3){
+                    if ($form_state['saved_values'][PAGE_1]['organism']['number'] > 1 and !empty($form_state['saved_values'][PAGE_3]['tree-accession']['check'])){
+                        $species_num = $element['#parents'];
+                        array_pop($species_num);
+                        $species_num = "-" . end($species_num);
+                    }
+                    else {
+                        $species_num = "";
+                    }
+                    $element['columns'][$item]['#ajax'] = array(
+                      'callback' => 'tpps_accession_pop_group',
+                      'wrapper' => "population-mapping$species_num",
+                    );
                 }
             }
             
@@ -878,7 +893,7 @@ function tpps_block_view_alter(&$data, $block) {
                     $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
                 }
             }
-            if ($flat['#page_3_cleared']){
+            if (!empty($flat['#page_3_cleared'])){
                 $content .= "<script src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&callback=initMap\"
                 async defer></script>";
             }

@@ -2,7 +2,7 @@
 Submission Approval and Rejection
 *********************************
 
-Once a submission is completed, it is not available to the public until it has been approved by an administrator. This can be done from the tpps admin approval panel, which can be accessed in one of two ways:
+Once a submission is completed, it is not available to the public until it has been approved by an administrator. This can be done from the TPPS admin approval panel, which can be accessed in one of two ways:
 
 1. Click the link in the alert sent to the site admin email
 2. Navigate to ``http://<site domain>/<Drupal root>/tpps-admin-panel?accession=<accession number>``
