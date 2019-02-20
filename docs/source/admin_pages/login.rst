@@ -6,7 +6,7 @@ Users can only access the TPPS form while they are logged into their Tripal acco
 
 Checking if the user is logged in, loading relevant submissions, and redirecting or displaying the correct form is handled in the following snippet::
 
-    function tpps_master($form, &$form_state){
+    function tpps_main($form, &$form_state){
 
         global $user;
         $params = drupal_get_query_parameters();
@@ -17,7 +17,7 @@ Checking if the user is logged in, loading relevant submissions, and redirecting
 
             front_create_form($form, $form_state);
 
-            drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+            drupal_add_js(drupal_get_path('module', 'tpps') . "/js/tpps.js");
 
             return $form;
         }
@@ -42,7 +42,7 @@ Checking if the user is logged in, loading relevant submissions, and redirecting
 
                 front_create_form($form, $form_state);
 
-                drupal_add_js(drupal_get_path('module', 'tpps') . "/tpps.js");
+                drupal_add_js(drupal_get_path('module', 'tpps') . "/js/tpps.js");
 
                 return $form;
             }
