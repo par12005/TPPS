@@ -27,7 +27,6 @@ function tpps_uninstall(){
         ->execute();
     
     foreach ($tpps_usage as $row){
-        dpm($row);
         file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
     }
     // only need to remove data from the public.variable table - incomplete submissions 
