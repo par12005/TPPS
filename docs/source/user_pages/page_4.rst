@@ -77,6 +77,19 @@ A screenshot of the genotype file fields can be seen below:
 
 .. image:: ../../../images/TPPS_genotype_file.png
 
+Environment
+===========
+
+* Use CartograTree Layers: If CartograTree Layers were enabled by your site administrator, you should have the option to use Environmental Layers provided by CartograTree that you used in your study.
+* CartograTree Environmental Layers: checkboxes - All available CartograTree Environmental Layers. From here you can view the names and descriptions of each CartograTree Environmental layer you have to choose from.
+* CartograTree Environmental Layer Parameters: checkboxes - If you selected some CartograTree Environmental Layers, you will need to indicate which variables from the layer you used in your study. Parameter fields will only be visible for layers that you selected.
+* Custom Environmental Data: Provide custom environmental data that you collected yourself:
+
+    * Environmental Data Name: text field - The name of the custom Environmental Data.
+    * Environmental Data Description: text field - A description of the custom Environmental Data.
+    * Environmental Data Units: text field - The units used to measure the custom Environmental Data.
+    * Environmental Data Value: text field - The value of the measured custom Environmental Data.
+
 .. _`Study Design`: page_2.html
 
 
