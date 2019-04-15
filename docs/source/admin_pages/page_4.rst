@@ -79,5 +79,27 @@ A screenshot of the genotype file fields can be seen below:
 
 .. image:: ../../../images/TPPS_genotype_file.png
 
+Environment
+===========
+
+  * Environment Information: ``fieldset`` - only visible if the user selects 'Environment', 'Phenotype x Environment', 'Genotype x Environment', or 'Genotype x Phenotype x Environment' from 'Data Type' in `Study Design`_
+
+     * CartograTree Environmental Layers: ``fieldset`` - only visible if CartograTree Layers are enabled in TPPS admin configuration and the 'I used environmental layers in my study that are indexed by CartograTree.' checkbox is checked.
+
+         * CartograTree Environmental Layer **x**: ``checkbox`` - Indicates if the CartograTree Environmental Layer **x** was used.
+
+     * CartograTree Environmental Layer Parameters: ``fieldset`` - only visible if CartograTree Layers are enabled in TPPS admin configuration and the 'I used environmental layers in my study that are indexed by CartograTree.' checkbox is checked.
+
+         * CartograTree Environmental Layer **x** Parameters: ``checkboxes`` - options of possible parameter types for the selected CartograTree Environmental Layer. Each CartograTree Environmental Layer **x** Parameters checkboxes set is only visible if that layer was selected in 'CartograTree Environmental Layers'.
+     
+     * Custom Environmental Data: ``fieldset`` - only visible if the 'I have environmental data that I collected myself.' checkbox was checked.
+
+         * Environmental Data **x**: ``fieldset``
+     
+              * Environmental Data Name: ``textfield``
+              * Environmental Data Description: ``textfield``
+              * Environmental Data Units: ``textfield``
+              * Environmental Data Value: ``textifled``
+
 .. _`Study Design`: page_2.html
 
