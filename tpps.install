@@ -1,172 +1,196 @@
 <?php
 
-function tpps_install(){
-    
-    if (!module_exists('ultimate_cron')){
-        $result = exec('drush pm-download ultimate_cron');
-        $result .= exec('drush pm-enable --resolve-dependencies ultimate_cron -y');
-        print_r($result);
-    }
+/**
+ * @file
+ */
+
+/**
+ *
+ */
+function tpps_install() {
+
+  if (!module_exists('ultimate_cron')) {
+    $result = exec('drush pm-download ultimate_cron');
+    $result .= exec('drush pm-enable --resolve-dependencies ultimate_cron -y');
+    print_r($result);
+  }
 }
 
-function tpps_uninstall(){
-    
-    //remove all incomplete submissions connected to user profiles
-    $results = db_delete('public.variable')
-        ->condition('name', db_like('tpps_incomplete_') . '%', 'LIKE')
-        ->execute();
-    
-    //remove all complete submissions connected to user profiles
-    $results = db_delete('public.variable')
-        ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
-        ->execute();
-    
-    $tpps_usage = db_select('public.file_usage', 'f')
-        ->fields('f')
-        ->condition('module', 'tpps')
-        ->execute();
-    
-    foreach ($tpps_usage as $row){
-        file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
-    }
-    // only need to remove data from the public.variable table - incomplete submissions 
-    // or submissions pending approval will be removed with the chado.tpps_* tables, and
-    // approved submissions can stay on the website if people want them to.
-    
+/**
+ *
+ */
+function tpps_uninstall() {
+
+  // Remove all incomplete submissions connected to user profiles.
+  $results = db_delete('public.variable')
+    ->condition('name', db_like('tpps_incomplete_') . '%', 'LIKE')
+    ->execute();
+
+  // Remove all complete submissions connected to user profiles.
+  $results = db_delete('public.variable')
+    ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
+    ->execute();
+
+  $tpps_usage = db_select('public.file_usage', 'f')
+    ->fields('f')
+    ->condition('module', 'tpps')
+    ->execute();
+
+  foreach ($tpps_usage as $row) {
+    file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
+  }
+  // Only need to remove data from the public.variable table - incomplete submissions
+  // or submissions pending approval will be removed with the chado.tpps_* tables, and
+  // approved submissions can stay on the website if people want them to.
 }
 
-function tpps_update_7000(){
-    if (!db_table_exists('chado.stock_phenotype')){
-        //create stock_phenotype table if it does not exist
-        db_query('create table chado.stock_phenotype (stock_id integer, phenotype_id integer);');
-    }
+/**
+ *
+ */
+function tpps_update_7000() {
+  if (!db_table_exists('chado.stock_phenotype')) {
+    // Create stock_phenotype table if it does not exist.
+    db_query('create table chado.stock_phenotype (stock_id integer, phenotype_id integer);');
+  }
 }
 
-function tpps_update_7001(){
-    $query = db_select('pg_class', 'p')
-        ->fields('p')
-        ->condition('relname', 'genotype_call_genotype_call_id_seq')
-        ->execute();
-    if (!($result = $query->fetchObject())){
-        $create_seq = db_query('CREATE SEQUENCE genotype_call_genotype_call_id_seq START 1;');
-    }
+/**
+ *
+ */
+function tpps_update_7001() {
+  $query = db_select('pg_class', 'p')
+    ->fields('p')
+    ->condition('relname', 'genotype_call_genotype_call_id_seq')
+    ->execute();
+  if (!($result = $query->fetchObject())) {
+    $create_seq = db_query('CREATE SEQUENCE genotype_call_genotype_call_id_seq START 1;');
+  }
 }
 
-function tpps_update_7002(){
-    if (!db_table_exists('chado.genotype_call')){
-        //create genotype_call table if it does not exist
-        db_query('create table chado.genotype_call (genotype_call_id bigint PRIMARY KEY NOT NULL DEFAULT nextval(\'genotype_call_genotype_call_id_seq\'::regclass),
-            variant_id bigint NOT NULL,
-            marker_id bigint NOT NULL,
-            genotype_id bigint NOT NULL,
-            project_id bigint NOT NULL,
-            stock_id bigint NOT NULL,
-            meta_data json,
-            CONSTRAINT "genotype_call_genotype_id_fkey" FOREIGN KEY (genotype_id) REFERENCES chado.genotype(genotype_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-            CONSTRAINT "genotype_call_marker_id_fkey" FOREIGN KEY (marker_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-            CONSTRAINT "genotype_call_project_id_fkey" FOREIGN KEY (project_id) REFERENCES chado.project(project_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-            CONSTRAINT "genotype_call_stock_id_fkey" FOREIGN KEY (stock_id) REFERENCES chado.stock(stock_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-            CONSTRAINT "genotype_call_variant_id_fkey" FOREIGN KEY (variant_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED);');
-    }
+/**
+ *
+ */
+function tpps_update_7002() {
+  if (!db_table_exists('chado.genotype_call')) {
+    // Create genotype_call table if it does not exist.
+    db_query('create table chado.genotype_call (genotype_call_id bigint PRIMARY KEY NOT NULL DEFAULT nextval(\'genotype_call_genotype_call_id_seq\'::regclass),
+      variant_id bigint NOT NULL,
+      marker_id bigint NOT NULL,
+      genotype_id bigint NOT NULL,
+      project_id bigint NOT NULL,
+      stock_id bigint NOT NULL,
+      meta_data json,
+      CONSTRAINT "genotype_call_genotype_id_fkey" FOREIGN KEY (genotype_id) REFERENCES chado.genotype(genotype_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+      CONSTRAINT "genotype_call_marker_id_fkey" FOREIGN KEY (marker_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+      CONSTRAINT "genotype_call_project_id_fkey" FOREIGN KEY (project_id) REFERENCES chado.project(project_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+      CONSTRAINT "genotype_call_stock_id_fkey" FOREIGN KEY (stock_id) REFERENCES chado.stock(stock_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+      CONSTRAINT "genotype_call_variant_id_fkey" FOREIGN KEY (variant_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED);');
+  }
 }
 
-function tpps_update_7003(){
-    $query = db_select('pg_class', 'p')
-        ->fields('p')
-        ->condition('relname', 'plusgeno_view')
-        ->execute();
-    if (!($result = $query->fetchObject())){
-        //create plusgeno_view if it does not exist
-        $create_view = db_query('create materialized view chado.plusgeno_view as SELECT DISTINCT p.project_id,
-     d.accession,
-     ppub.title,
-     o.species,
-     count(o.stock_id) OVER (PARTITION BY p.project_id) AS tree_count,
-     sum(phen.count) OVER (PARTITION BY p.project_id) AS phen_count,
-     unique_phen.phenotypes_assessed,
-     g.gen_count
-    FROM chado.project_dbxref p
-      JOIN chado.dbxref d ON p.dbxref_id = d.dbxref_id
-      JOIN ( SELECT pp.project_id,
-             pub.title
-            FROM chado.project_pub pp
-              JOIN chado.pub ON pp.pub_id = pub.pub_id) ppub ON p.project_id = ppub.project_id
-      JOIN ( SELECT DISTINCT ps.project_id,
-             (org.genus::text || \' \'::text) || org.species::text AS species,
-             stock.stock_id
-            FROM chado.project_stock ps
-              JOIN chado.stock ON ps.stock_id = stock.stock_id
-              JOIN chado.organism org ON stock.organism_id = org.organism_id) o ON p.project_id = o.project_id
-      LEFT JOIN ( SELECT stock_phenotype.stock_id,
-             count(stock_phenotype.phenotype_id) OVER (PARTITION BY stock_phenotype.stock_id) AS count
-            FROM chado.stock_phenotype) phen ON o.stock_id = phen.stock_id
-      LEFT JOIN ( SELECT DISTINCT pc.project_id,
-             count(pc.name) OVER (PARTITION BY pc.project_id) AS phenotypes_assessed
-            FROM ( SELECT DISTINCT ps.project_id,
-                     ph.name
-                   FROM chado.phenotype ph
-                      JOIN chado.stock_phenotype sp ON ph.phenotype_id = sp.phenotype_id
-                      JOIN chado.stock s ON sp.stock_id = s.stock_id
-                      JOIN chado.project_stock ps ON s.stock_id = ps.stock_id) pc) unique_phen ON p.project_id = unique_phen.project_id
-      LEFT JOIN ( SELECT DISTINCT genotype_call.project_id,
-             count(genotype_call.genotype_call_id) OVER (PARTITION BY genotype_call.project_id) AS gen_count
-            FROM chado.genotype_call) g ON p.project_id = g.project_id
+/**
+ *
+ */
+function tpps_update_7003() {
+  $query = db_select('pg_class', 'p')
+    ->fields('p')
+    ->condition('relname', 'plusgeno_view')
+    ->execute();
+  if (!($result = $query->fetchObject())) {
+    // Create plusgeno_view if it does not exist.
+    $create_view = db_query('create materialized view chado.plusgeno_view as SELECT DISTINCT p.project_id,
+   d.accession,
+   ppub.title,
+   o.species,
+   count(o.stock_id) OVER (PARTITION BY p.project_id) AS tree_count,
+   sum(phen.count) OVER (PARTITION BY p.project_id) AS phen_count,
+   unique_phen.phenotypes_assessed,
+   g.gen_count
+  FROM chado.project_dbxref p
+    JOIN chado.dbxref d ON p.dbxref_id = d.dbxref_id
+    JOIN ( SELECT pp.project_id,
+       pub.title
+      FROM chado.project_pub pp
+        JOIN chado.pub ON pp.pub_id = pub.pub_id) ppub ON p.project_id = ppub.project_id
+    JOIN ( SELECT DISTINCT ps.project_id,
+       (org.genus::text || \' \'::text) || org.species::text AS species,
+       stock.stock_id
+      FROM chado.project_stock ps
+        JOIN chado.stock ON ps.stock_id = stock.stock_id
+        JOIN chado.organism org ON stock.organism_id = org.organism_id) o ON p.project_id = o.project_id
+    LEFT JOIN ( SELECT stock_phenotype.stock_id,
+       count(stock_phenotype.phenotype_id) OVER (PARTITION BY stock_phenotype.stock_id) AS count
+      FROM chado.stock_phenotype) phen ON o.stock_id = phen.stock_id
+    LEFT JOIN ( SELECT DISTINCT pc.project_id,
+       count(pc.name) OVER (PARTITION BY pc.project_id) AS phenotypes_assessed
+      FROM ( SELECT DISTINCT ps.project_id,
+           ph.name
+           FROM chado.phenotype ph
+            JOIN chado.stock_phenotype sp ON ph.phenotype_id = sp.phenotype_id
+            JOIN chado.stock s ON sp.stock_id = s.stock_id
+            JOIN chado.project_stock ps ON s.stock_id = ps.stock_id) pc) unique_phen ON p.project_id = unique_phen.project_id
+    LEFT JOIN ( SELECT DISTINCT genotype_call.project_id,
+       count(genotype_call.genotype_call_id) OVER (PARTITION BY genotype_call.project_id) AS gen_count
+      FROM chado.genotype_call) g ON p.project_id = g.project_id
    WHERE d.db_id = 95;');
-    }
+  }
 }
 
-function tpps_update_7004(){
-    
-    // Create local cvterms for the TPPS module.
-    $local_cv = chado_get_cv(array('name' => 'local'));
-    $local_db = chado_get_db(array('name' => 'local'));
-    
-    $terms = array(
-      'study_start' => 'The month and year that the study began.',
-      'study_end' => 'The month and year that the study ended.',
-      'experiment_location' => 'Geographic location of the experiment.',
-      'assession_season' => 'Season the trees were assessed.',
-      'assession_number' => 'Number of times the trees were assessed, on average.',
-      'co2_control' => 'Whether or not the co2 level of the environment was controlled. True or False.',
-      'co2_level' => 'Must have an associated co2_control property. If co2_control is True, this term describes the co2 level the environment was kept at. If co2_control is False, this term describes the average measured co2 value in the environment.',
-      'humidity_control' => 'Whether or not the air humidity level of the environment was controlled. True or False.',
-      'humidity_level' => 'Must have an associated humidity_control property. If humidity_control is True, this term describes the air humidity level the environment was kept at. If humidity_control is False, this term describes the average measured air humidity value in the environment.',
-      'light_control' => 'Whether or not the light intensity level of the environment was controlled. True or False.',
-      'light_level' => 'Must have an associated light_control property. If light_control is True, this term describes the light intensity level the environment was kept at. If light_control is False, this term describes the average measured light intensity value in the environment.',
-      'temperature_high' => 'Average high temperature of the environment.',
-      'temperature_low' => 'Average low temperature of the environment.',
-      'rooting_type' => 'Type of rooting. Aeroponics, Hydroponics, or Soil.',
-      'soil_type' => 'Type of soil. For example: Sand, Peat, Mixed, etc.',
-      'soil_container' => 'Type of soil container.',
-      'pH_control' => 'Whether or not the pH level of the environment was controlled. True or False.',
-      'pH_level' => 'Must have an associated pH_control property. If pH_control is True, this term describes the pH level the environment was kept at. If pH_control is False, this term describes the average measured pH value in the environment.',
-      'treatment' => 'Describes the treatment of the trees during the study. For example, air or soil temperature regimes, chemical administration, fertilizer, non-mineral nutrient, or rainfall regimes, disease status, etc.',
-      'irrigation_type' => 'Describes the type of irrigation. For example, drip irrigation, irrigation from the top, no irrigation, etc.',
-      'salinity_control' => 'Whether or not the salinity level of the environment was controlled. True or False.',
-      'salinity_level' => 'Must have an associated salinity_control property. If salinity_control is True, this term describes the salinity level the environment was kept at. If salinity_control is False, this term describes the average measured salinity value in the environment.',
-      'biotic_environment' => 'Describes the biotic environment.',
-      'study_type' => 'Describes the type of environment the trees were in during the study. Possible values are Natural Population (Landscape), Growth Chamber, Greenhouse, Experimental/Common Garden, Plantation.',
-      'phenotype_binary_type' => 'Describes one type of a binary phenotype.',
-      'file_path' => 'Specifies the path to a file',
-      'contact photo' => 'A profile photo for a contact record',
-      'number_samples' => 'Number of samples',
-      'gps_latitude' => 'Coordinate that specifies north-south position on Earth\'s surface',
-      'gps_longitude' => 'Coordinate that specifies east-west position on Earth\'s surface',
-      'association_results_type' => 'The type of the association results.',
-      'county' => 'A political and administrative division of a state',
-      'district' => 'A distinct area of a geographic entity, such as a country or city',
-      'organism 4 letter code' => '4 letter abbreviation of species. Usually first two letters of genus + first two letters of species, may be different if that code already exists (use next letters from species if possible).',
-      'cpSSR' => 'Chloroplast simple sequence repeats.',
-      'SSR' => 'Simple sequence repeats. Microsatellite.',
+/**
+ *
+ */
+function tpps_update_7004() {
+
+  // Create local cvterms for the TPPS module.
+  $local_cv = chado_get_cv(array('name' => 'local'));
+  $local_db = chado_get_db(array('name' => 'local'));
+
+  $terms = array(
+    'study_start' => 'The month and year that the study began.',
+    'study_end' => 'The month and year that the study ended.',
+    'experiment_location' => 'Geographic location of the experiment.',
+    'assession_season' => 'Season the trees were assessed.',
+    'assession_number' => 'Number of times the trees were assessed, on average.',
+    'co2_control' => 'Whether or not the co2 level of the environment was controlled. True or False.',
+    'co2_level' => 'Must have an associated co2_control property. If co2_control is True, this term describes the co2 level the environment was kept at. If co2_control is False, this term describes the average measured co2 value in the environment.',
+    'humidity_control' => 'Whether or not the air humidity level of the environment was controlled. True or False.',
+    'humidity_level' => 'Must have an associated humidity_control property. If humidity_control is True, this term describes the air humidity level the environment was kept at. If humidity_control is False, this term describes the average measured air humidity value in the environment.',
+    'light_control' => 'Whether or not the light intensity level of the environment was controlled. True or False.',
+    'light_level' => 'Must have an associated light_control property. If light_control is True, this term describes the light intensity level the environment was kept at. If light_control is False, this term describes the average measured light intensity value in the environment.',
+    'temperature_high' => 'Average high temperature of the environment.',
+    'temperature_low' => 'Average low temperature of the environment.',
+    'rooting_type' => 'Type of rooting. Aeroponics, Hydroponics, or Soil.',
+    'soil_type' => 'Type of soil. For example: Sand, Peat, Mixed, etc.',
+    'soil_container' => 'Type of soil container.',
+    'pH_control' => 'Whether or not the pH level of the environment was controlled. True or False.',
+    'pH_level' => 'Must have an associated pH_control property. If pH_control is True, this term describes the pH level the environment was kept at. If pH_control is False, this term describes the average measured pH value in the environment.',
+    'treatment' => 'Describes the treatment of the trees during the study. For example, air or soil temperature regimes, chemical administration, fertilizer, non-mineral nutrient, or rainfall regimes, disease status, etc.',
+    'irrigation_type' => 'Describes the type of irrigation. For example, drip irrigation, irrigation from the top, no irrigation, etc.',
+    'salinity_control' => 'Whether or not the salinity level of the environment was controlled. True or False.',
+    'salinity_level' => 'Must have an associated salinity_control property. If salinity_control is True, this term describes the salinity level the environment was kept at. If salinity_control is False, this term describes the average measured salinity value in the environment.',
+    'biotic_environment' => 'Describes the biotic environment.',
+    'study_type' => 'Describes the type of environment the trees were in during the study. Possible values are Natural Population (Landscape), Growth Chamber, Greenhouse, Experimental/Common Garden, Plantation.',
+    'phenotype_binary_type' => 'Describes one type of a binary phenotype.',
+    'file_path' => 'Specifies the path to a file',
+    'contact photo' => 'A profile photo for a contact record',
+    'number_samples' => 'Number of samples',
+    'gps_latitude' => 'Coordinate that specifies north-south position on Earth\'s surface',
+    'gps_longitude' => 'Coordinate that specifies east-west position on Earth\'s surface',
+    'association_results_type' => 'The type of the association results.',
+    'county' => 'A political and administrative division of a state',
+    'district' => 'A distinct area of a geographic entity, such as a country or city',
+    'organism 4 letter code' => '4 letter abbreviation of species. Usually first two letters of genus + first two letters of species, may be different if that code already exists (use next letters from species if possible).',
+    'cpSSR' => 'Chloroplast simple sequence repeats.',
+    'SSR' => 'Simple sequence repeats. Microsatellite.',
+  );
+
+  foreach ($terms as $term_name => $term_definition) {
+    $term = array(
+      'id' => "{$local_db->name}:$term_name",
+      'name' => $term_name,
+      'definition' => $term_definition,
+      'cv_name' => $local_cv->name,
     );
-    
-    foreach ($terms as $term_name => $term_definition){
-        $term = array(
-          'id' => "{$local_db->name}:$term_name",
-          'name' => $term_name,
-          'definition' => $term_definition,
-          'cv_name' => $local_cv->name,
-        );
-        chado_insert_cvterm($term);
-    }
+    chado_insert_cvterm($term);
+  }
 }
