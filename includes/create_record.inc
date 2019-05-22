@@ -1,150 +1,88 @@
 <?php
 
-function tpps_create_record($table, array $values){
-    if (isset($values[0]) and gettype($values[0]) === "array"){
-        $is_multi = TRUE;
+function tpps_chado_insert_record($table, $records, $options = array()){
+    //TODO: multi-record optimization
+    if (!array_key_exists('multi', $options)){
+        $options['multi'] = FALSE;
+    }
+    
+    if (!$options['multi']){
+        $records = array($records);
     }
     else {
-        $is_multi = FALSE;
+        $has_fields = FALSE;
+        $insert = db_insert("chado.$table");
+        $fields_arr = array();
+        foreach ($records[0] as $field => $val){
+            $fields_arr[] = $field;
+        }
+        $insert->fields($fields_arr);
     }
     
-    $default_fields = array();
-    $insert = NULL;
-    
-    if ($is_multi){
-        $unique_columns = tpps_get_unique_columns($table);
-        foreach ($values as $key => $record){
-            if (($existing_key = tpps_record_exists($table, $record, $unique_columns))){
-                unset($values[$key]);
+    $table_desc = chado_get_schema($table);
+    if (!$table_desc)
+        return FALSE;
+    $primary = !empty($table_desc['primary key'][0]) ? $table_desc['primary key'][0] : NULL;
+    foreach($records as $values){
+        // Populate insert_values array and check if a record with the same unique 
+        // fields already exists. If it does, return the existing primary key.
+        $insert_values = array();
+
+        foreach ($values as $field => $value) {
+            if (is_array($value)) {
+                $results = chado_schema_get_foreign_key($table_desc, $field, $value);
+                if (sizeof($results) != 1)
+                    return FALSE;
+                else 
+                    $insert_values[$field] = $results[0];
+            }
+            else {
+                $insert_values[$field] = $value;
             }
         }
-        if ($values == array()){
-            return;
-        }
-    }
-    else{
-        //check record exists
-        if (($existing_key = tpps_record_exists($table, $values))){
-            //if it does, do not attempt to re-write it.
-            //drupal_set_message(t('Error: Record already exists.'), 'error');
-            return $existing_key;
-        }
-    }
-    
-    $fields = db_query("select column_name from INFORMATION_SCHEMA.columns where table_name='$table' and table_schema='chado'");
-    $set_fields = array();
-    
-    if ($is_multi){
-        while (($field = $fields->fetchAssoc())){
-            $key = $field['column_name'];
-            $top = reset($values);
-            if (!isset($top[$key])){
-                $default_fields[] = $key;
-                foreach ($values as $index => $record){
-                    unset($values[$index][$key]);
+
+        $unique = array();
+        if (array_key_exists('unique keys', $table_desc))
+            $unique = $table_desc['unique keys'];
+        $u_cols = array($primary);
+        $u_vals = array();
+
+        $exists = FALSE;
+        foreach ($unique as $name => $fields) {
+            foreach ($fields as $index => $field) {
+                $u_cols[] = $field;
+                if (!array_key_exists($field, $insert_values)){
+                    if (array_key_exists('default', $table_desc['fields'][$field]))
+                        $u_vals[$field] = $table_desc['fields'][$field]['default'];
+                }
+                else 
+                    $u_vals[$field] = $insert_values[$field];
+            }
+            
+            if (($results = chado_select_record($table, $u_cols, $u_vals))) {
+                $exists = TRUE;
+                // If the new values match with exactly one record, update that one
+                // and return the primary key.
+                if (!$options['multi'] and sizeof($results == 1)){
+                    chado_update_record($table, $u_vals, $insert_values);
+                    return $results[0]->{$primary};
                 }
             }
-            else {
-                $set_fields[] = $key;
-            }
+        }
+        
+        if (!$exists and $options['multi']){
+            $insert->values($insert_values);
+            $has_fields = TRUE;
+        }
+        
+        if (!$options['multi']){
+            if ($exists)
+                return $results[0]->{$primary};
+            $new_record = chado_insert_record($table, $insert_values, $options);
+            return $new_record[$primary];
         }
     }
-    else {
-        //get default values
-        while (($field = $fields->fetchAssoc())){
-            $key = $field['column_name'];
-            if (!isset($values[$key])){
-                $default_fields[] = $key;
-                unset($values[$key]);
-            }
-            else {
-                $set_fields[] = $key;
-            }
-        }
-    }
-    
-    //print_r($default_fields);
-//    dpm($table);
-//    dpm($values);
-//    dpm($default_fields);
-    if ($is_multi){
-        $insert = db_insert("chado.$table")
-            ->useDefaults($default_fields)
-            ->fields($set_fields);
-        foreach ($values as $record){
-            $insert->values($record);
-        }
+    if ($options['multi'] and $has_fields){
         $insert->execute();
-        return;
-    }
-    else {
-        //Insert the record
-        $insert = db_insert("chado.$table")
-            ->useDefaults($default_fields)
-            ->fields($set_fields)
-            ->values($values)
-            ->execute();
-
-        return $insert;
-    }
-}
-
-function tpps_record_exists($table, array $values, $unique_columns = NULL){
-    
-    if (!isset($unique_columns)){
-        $unique_columns = tpps_get_unique_columns($table);
-        if (!isset($unique_columns)){
-            return FALSE;
-        }
-    }
-    
-    $results = db_select("chado.$table", 't')
-        ->fields('t');
-    
-    $and = db_and();
-    foreach ($unique_columns as $field){
-        if (isset($values[$field]) and $values[$field] != ''){
-            $and->condition($field, "$values[$field]");
-        }
-    }
-    
-    $results = $results->condition($and)
-        ->execute()
-        ->fetchAssoc();
-    
-    if ($results){
-        $primary = tpps_get_primary_key($table);
-        return $results[$primary];
-    }
-    
-    return FALSE;
-}
-
-function tpps_get_unique_columns($table){
-    
-    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and schemaname = 'chado' and indexdef LIKE '%UNIQUE%' and indexname NOT LIKE '%_pkey';")
-        ->fetchAssoc();
-    
-    if ($result){
-        $result = preg_split('/(\(|\))/',$result['indexdef']);
-        $result = explode(', ', $result[1]);
-        return $result;
-    }
-    else {
-        return NULL;
-    }
-}
-
-function tpps_get_primary_key($table){
-    
-    $result = db_query("select indexdef from pg_indexes where tablename = '$table' and schemaname = 'chado' and indexdef LIKE '%UNIQUE%' and indexname LIKE '%_pkey';")
-    ->fetchAssoc();
-    
-    if ($result){
-        $result = preg_split('/(\(|\))/',$result['indexdef']);
-        return $result[1];
-    }
-    else {
-        return NULL;
     }
 }

@@ -11,7 +11,7 @@ function tpps_file_parsing($form_state){
     $file_rank = $form_state['file_rank'];
     $genotype_group = variable_get('tpps_genotype_group', 10000);
     
-    $project_id = tpps_create_record('project', array(
+    $project_id = tpps_chado_insert_record('project', array(
       'name' => $firstpage['publication']['title'],
       'description' => $firstpage['publication']['abstract']
     ));
@@ -28,7 +28,7 @@ function tpps_file_parsing($form_state){
             $infra = NULL;
         }
 
-        $organism_ids[$i] = tpps_create_record('organism', array(
+        $organism_ids[$i] = tpps_chado_insert_record('organism', array(
           'genus' => $genus,
           'species' => $species,
           'infraspecific_name' => $infra
@@ -41,9 +41,15 @@ function tpps_file_parsing($form_state){
             $phenotypeprop_ids = array();
             $phenotypes_meta = array();
             
-            $phenotype_file_id = tpps_create_record('projectprop', array(
+            $phenotype_file_id = tpps_chado_insert_record('projectprop', array(
               'project_id' => $project_id,
-              'type_id' => '2836',
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'schema'
+                ),
+                'name' => 'url',
+                'is_obsolete' => 0
+              ),
               'value' => file_create_url(file_load($phenotype['file'])->uri),
               'rank' => $file_rank
             ));
@@ -66,9 +72,15 @@ function tpps_file_parsing($form_state){
             }
             
             if ($phenotype['check'] == '1'){
-                $phenotype_meta_file_id = tpps_create_record('projectprop', array(
+                $phenotype_meta_file_id = tpps_chado_insert_record('projectprop', array(
                   'project_id' => $project_id,
-                  'type_id' => '2836',
+                  'type_id' => array(
+                    'cv_id' => array(
+                      'name' => 'schema'
+                    ),
+                    'name' => 'url',
+                    'is_obsolete' => 0
+                  ),
                   'value' => file_create_url(file_load($phenotype['metadata'])->uri),
                   'rank' => $file_rank
                 ));
@@ -156,7 +168,7 @@ function tpps_file_parsing($form_state){
                     $observable_id = NULL;
                 }
                 
-                $phenotype_ids[] = tpps_create_record('phenotype', array(
+                $phenotype_ids[] = tpps_chado_insert_record('phenotype', array(
                   'uniquename' => "$stock_unique-$name-$j",
                   'name' => $name,
                   'attr_id' => $attr_id,
@@ -164,30 +176,54 @@ function tpps_file_parsing($form_state){
                   'value' => $value
                 ));
                 
-                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
                   'phenotype_id' => end($phenotype_ids),
-                  'type_id' => '2871',
+                  'type_id' => array(
+                    'cv_id' => array(
+                      'name' => 'schema'
+                    ),
+                    'name' => 'description',
+                    'is_obsolete' => 0
+                  ),
                   'value' => $phenotypes_meta[$name]['desc']
                 ));
                 
-                $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
                   'phenotype_id' => end($phenotype_ids),
-                  'type_id' => '2883',
+                  'type_id' => array(
+                    'cv_id' => array(
+                      'name' => 'uo'
+                    ),
+                    'name' => 'unit',
+                    'is_obsolete' => 0
+                  ),
                   'value' => $phenotypes_meta[$name]['unit']
                 ));
                 
                 if (isset($phenotypes_meta[$name]['min'])){
-                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                    $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
                       'phenotype_id' => end($phenotype_ids),
-                      'type_id' => '52214',
+                      'type_id' => array(
+                        'cv_id' => array(
+                          'name' => 'default_namespace'
+                        ),
+                        'name' => 'minimum parameter',
+                        'is_obsolete' => 0
+                      ),
                       'value' => $phenotypes_meta[$name]['min']
                     ));
                 }
                 
                 if (isset($phenotypes_meta[$name]['max'])){
-                    $phenotypeprop_ids[] = tpps_create_record('phenotypeprop', array(
+                    $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
                       'phenotype_id' => end($phenotype_ids),
-                      'type_id' => '52213',
+                      'type_id' => array(
+                        'cv_id' => array(
+                          'name' => 'default_namespace'
+                        ),
+                        'name' => 'maximum parameter',
+                        'is_obsolete' => 0
+                      ),
                       'value' => $phenotypes_meta[$name]['max']
                     ));
                 }
@@ -203,12 +239,14 @@ function tpps_file_parsing($form_state){
             
             if ($genotype['ref-genome'] == 'bio'){
                 
-                $bioproject_id = tpps_create_record('dbxref', array(
-                  'db_id' => '176',
+                $bioproject_id = tpps_chado_insert_record('dbxref', array(
+                  'db_id' => array(
+                    'name' => 'NCBI BioProject'
+                  ),
                   'accession' => $genotype['BioProject-id']
                 ));
                 
-                $project_dbxref_id = tpps_create_record('project_dbxref', array(
+                $project_dbxref_id = tpps_chado_insert_record('project_dbxref', array(
                   'project_id' => $project_id,
                   'dbxref_id' => $bioproject_id,
                 ));
@@ -216,9 +254,15 @@ function tpps_file_parsing($form_state){
                 $bioproject_assembly_file_ids = array();
                 foreach ($genotype['assembly-auto'] as $key => $val){
                     if ($val == '1'){
-                        array_push($bioproject_assembly_file_ids, tpps_create_record('projectprop', array(
+                        array_push($bioproject_assembly_file_ids, tpps_chado_insert_record('projectprop', array(
                           'project_id' => $project_id,
-                          'type_id' => '2836',
+                          'type_id' => array(
+                            'cv_id' => array(
+                              'name' => 'schema'
+                            ),
+                            'name' => 'url',
+                            'is_obsolete' => 0
+                          ),
                           'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$key",
                           'rank' => $file_rank
                         )));
@@ -230,9 +274,15 @@ function tpps_file_parsing($form_state){
                 if ($genotype['tripal_fasta']['file_upload']){
                     //uploaded new file
                     $assembly_user = $genotype['tripal_fasta']['file_upload'];
-                    $assembly_user_id = tpps_create_record('projectprop', array(
+                    $assembly_user_id = tpps_chado_insert_record('projectprop', array(
                       'project_id' => $project_id,
-                      'type_id' => '2836',
+                      'type_id' => array(
+                        'cv_id' => array(
+                          'name' => 'schema'
+                        ),
+                        'name' => 'url',
+                        'is_obsolete' => 0
+                      ),
                       'value' => file_create_url(file_load($assembly_user)->uri),
                       'rank' => $file_rank
                     ));
@@ -244,9 +294,15 @@ function tpps_file_parsing($form_state){
                 if ($genotype['tripal_fasta']['file_upload_existing']){
                     //uploaded existing file
                     $assembly_user = $genotype['tripal_fasta']['file_upload_existing'];
-                    $assembly_user_id = tpps_create_record('projectprop', array(
+                    $assembly_user_id = tpps_chado_insert_record('projectprop', array(
                       'project_id' => $project_id,
-                      'type_id' => '2836',
+                      'type_id' => array(
+                        'cv_id' => array(
+                          'name' => 'schema'
+                        ),
+                        'name' => 'url',
+                        'is_obsolete' => 0
+                      ),
                       'value' => file_create_url(file_load($assembly_user)->uri),
                       'rank' => $file_rank
                     ));
@@ -258,9 +314,15 @@ function tpps_file_parsing($form_state){
                 if ($genotype['tripal_fasta']['file_remote']){
                     //provided url to file
                     $assembly_user = $genotype['tripal_fasta']['file_remote'];
-                    $assembly_user_id = tpps_create_record('projectprop', array(
+                    $assembly_user_id = tpps_chado_insert_record('projectprop', array(
                       'project_id' => $project_id,
-                      'type_id' => '2836',
+                      'type_id' => array(
+                        'cv_id' => array(
+                          'name' => 'schema'
+                        ),
+                        'name' => 'url',
+                        'is_obsolete' => 0
+                      ),
                       'value' => $assembly_user,
                       'rank' => $file_rank
                     ));
@@ -268,17 +330,29 @@ function tpps_file_parsing($form_state){
                 }
             }
             elseif ($genotype['ref-genome'] != 'none') {
-                $reference_genome_id = tpps_create_record('projectprop', array(
+                $reference_genome_id = tpps_chado_insert_record('projectprop', array(
                   'project_id' => $project_id,
-                  'type_id' => '1912',
+                  'type_id' => array(
+                    'cv_id' => array(
+                      'name' => 'sequence'
+                    ),
+                    'name' => 'reference_genome',
+                    'is_obsolete' => 0
+                  ),
                   'value' => $genotype['ref-genome']
                 ));
             }
             
             if ($genotype['file-type']['Genotype Assay']){
-                $genotype_file_id = tpps_create_record('projectprop', array(
+                $genotype_file_id = tpps_chado_insert_record('projectprop', array(
                   'project_id' => $project_id,
-                  'type_id' => '2836',
+                  'type_id' => array(
+                    'cv_id' => array(
+                      'name' => 'schema'
+                    ),
+                    'name' => 'url',
+                    'is_obsolete' => 0
+                  ),
                   'value' => file_create_url(file_load($genotype['file'])->uri),
                   'rank' => $file_rank
                 ));
@@ -315,7 +389,7 @@ function tpps_file_parsing($form_state){
                         if (!isset($last_org_id) or $last_org_id !== $organism_id){
                             //if the last organism id is not present or is different from this one, get a new species code. otherwise, keep the last one to avoid some redundant queries
                             $and = db_and()
-                                ->condition('type_id', '52307')
+                                ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local'))))
                                 ->condition('organism_id', "$organism_id");
                             $species_code = db_select('chado.organismprop', 'o')
                                 ->fields('o', array('value'))
@@ -332,24 +406,24 @@ function tpps_file_parsing($form_state){
 
                             if ($genotype_count > $genotype_group){
                                 $genotype_count = 0;
-                                tpps_create_record('genotype', $genotype_vals);
+                                tpps_chado_insert_record('genotype', $genotype_vals);
                                 $genotype_vals = array();
                             }
                             
                             if ($genotype['marker-type']['SNPs']){
-                                $marker_type_id = 1205;
+                                $marker_type_id = chado_get_cvterm(array('name' => 'SNP', 'cv_id' => array('name' => 'sequence')));
                             }
                             elseif ($genotype['marker-type']['SSRs/cpSSRs']) {
                                 if ($genotype['SSRs/cpSSRs'] == 'cpSSR'){
-                                    $marker_type_id = 54739;
+                                    $marker_type_id = chado_get_cvterm(array('name' => 'cpSSR', 'cv_id' => array('name' => 'local')));
                                 }
                                 else {
-                                    $marker_type_id = 54733;
+                                    $marker_type_id = chado_get_cvterm(array('name' => 'SSR', 'cv_id' => array('name' => 'local')));
                                 }
                             }
                             else {
                                 //type_id for "other genotype marker" should just be 'genotype'
-                                $marker_type_id = 1464;
+                                $marker_type_id = chado_get_cvterm(array('name' => 'genotype', 'cv_id' => array('name' => 'sequence')));
                             }
 
                             $genotype_vals[] = array(
@@ -364,7 +438,7 @@ function tpps_file_parsing($form_state){
                         $last_org_id = $organism_id;
                     }
                 }
-                tpps_create_record('genotype', $genotype_vals);
+                tpps_chado_insert_record('genotype', $genotype_vals);
                 unset($genotype_vals);
                 $genotype_count = 0;
                 
@@ -373,9 +447,15 @@ function tpps_file_parsing($form_state){
             }
 
             if ($genotype['file-type']['Assay Design'] and $genotype['marker-type']['SNPs']){
-                $genotype_file_id = tpps_create_record('projectprop', array(
+                $genotype_file_id = tpps_chado_insert_record('projectprop', array(
                   'project_id' => $project_id,
-                  'type_id' => '2836',
+                  'type_id' => array(
+                    'cv_id' => array(
+                      'name' => 'schema'
+                    ),
+                    'name' => 'url',
+                    'is_obsolete' => 0
+                  ),
                   'value' => file_create_url(file_load($genotype['assay-design'])->uri),
                   'rank' => $file_rank
                 ));
@@ -386,9 +466,15 @@ function tpps_file_parsing($form_state){
             }
 
             if ($genotype['file-type']['VCF']){
-                $genotype_vcf_id = tpps_create_record('projectprop', array(
+                $genotype_vcf_id = tpps_chado_insert_record('projectprop', array(
                   'project_id' => $project_id,
-                  'type_id' => '2836',
+                  'type_id' => array(
+                    'cv_id' => array(
+                      'name' => 'schema'
+                    ),
+                    'name' => 'url',
+                    'is_obsolete' => 0
+                  ),
                   'value' => file_create_url(file_load($genotype['vcf'])->uri),
                   'rank' => $file_rank
                 ));
@@ -396,7 +482,7 @@ function tpps_file_parsing($form_state){
                 
                 $current_id = $organism_ids[$i];
                 $and = db_and()
-                    ->condition('type_id', '52307')
+                    ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local'))))
                     ->condition('organism_id', "$current_id");
                 $species_code = db_select('chado.organismprop', 'o')
                     ->fields('o', array('value'))
@@ -434,9 +520,9 @@ function tpps_file_parsing($form_state){
                         //Tripal Job has issues when all submissions are made at the same time, so break them up into groups of 10,000 genotypes along with their relevant genotypeprops
                         if ($genotype_count > $genotype_group){
                             $genotype_count = 0;
-                            tpps_create_record('genotype', $genotype_vals);
+                            tpps_chado_insert_record('genotype', $genotype_vals);
                             $genotype_vals = array();
-                            tpps_create_record('genotypeprop', $genotypeprop_vals);
+                            tpps_chado_insert_record('genotypeprop', $genotypeprop_vals);
                             $genotypeprop_vals = array();
                         }
 
@@ -444,19 +530,31 @@ function tpps_file_parsing($form_state){
                           'name' => "$marker-$species_code-$scaffold_id-$position",
                           'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
                           'description' => $description,
-                          'type_id' => '1205'
+                          'type_id' => array(
+                            'cv_id' => array(
+                              'name' => 'sequence'
+                            ),
+                            'name' => 'SNP',
+                            'is_obsolete' => 0
+                          ),
                         );
 
                         if ($first){
                             $first = FALSE;
-                            $genotype_id = tpps_create_record('genotype', $genotype_vals[0]);
+                            $genotype_id = tpps_chado_insert_record('genotype', $genotype_vals[0]);
                             $genotype_vals = array();
                         }
 
                         if ($format != ""){
                             $genotypeprop_vals[] = array(
                               'genotype_id' => $genotype_id,
-                              'type_id' => '52197',
+                              'type_id' => array(
+                                'cv_id' => array(
+                                  'name' => 'default_namespace'
+                                ),
+                                'name' => 'format',
+                                'is_obsolete' => 0
+                              ),
                               'value' => $format,
                             );
                         }
@@ -464,14 +562,26 @@ function tpps_file_parsing($form_state){
                         //quality score
                         $genotypeprop_vals[] = array(
                           'genotype_id' => $genotype_id,
-                          'type_id' => '2079',
+                          'type_id' => array(
+                            'cv_id' => array(
+                              'name' => 'sequence'
+                            ),
+                            'name' => 'quality_value',
+                            'is_obsolete' => 0
+                          ),
                           'value' => $qual
                         );
 
                         //filter: pass/fail
                         $genotypeprop_vals[] = array(
                           'genotype_id' => $genotype_id,
-                          'type_id' => '52008',
+                          'type_id' => array(
+                            'cv_id' => array(
+                              'name' => 'operation'
+                            ),
+                            'name' => 'Sequence contamination filtering',
+                            'is_obsolete' => 0
+                          ),
                           'value' => ($filter == '.') ? "P" : "NP"
                         );
 
@@ -487,7 +597,13 @@ function tpps_file_parsing($form_state){
                         if (isset($info_vals['AF']) and $info_vals['AF'] != ''){
                             $genotypeprop_vals[] = array(
                               'genotype_id' => $genotype_id,
-                              'type_id' => '2496',
+                              'type_id' => array(
+                                'cv_id' => array(
+                                  'name' => 'sequence'
+                                ),
+                                'name' => 'allelic_frequency',
+                                'is_obsolete' => 0
+                              ),
                               'value' => $info_vals['AF']
                             );
                         }
@@ -496,7 +612,13 @@ function tpps_file_parsing($form_state){
                         if (isset($info_vals['DP']) and $info_vals['DP'] != ''){
                             $genotypeprop_vals[] = array(
                               'genotype_id' => $genotype_id,
-                              'type_id' => '52046',
+                              'type_id' => array(
+                                'cv_id' => array(
+                                  'name' => 'operation'
+                                ),
+                                'name' => 'Read depth analysis',
+                                'is_obsolete' => 0
+                              ),
                               'value' => $info_vals['DP']
                             );
                         }
@@ -505,7 +627,13 @@ function tpps_file_parsing($form_state){
                         if (isset($info_vals['NS']) and $info_vals['NS'] != ''){
                             $genotypeprop_vals[] = array(
                               'genotype_id' => $genotype_id,
-                              'type_id' => '128971',
+                              'type_id' => array(
+                                'cv_id' => array(
+                                  'name' => 'local'
+                                ),
+                                'name' => 'number_samples',
+                                'is_obsolete' => 0
+                              ),
                               'value' => $info_vals['NS']
                             );
                         }
@@ -516,8 +644,8 @@ function tpps_file_parsing($form_state){
                     }
                 }
                 //insert the last set of values
-                tpps_create_record('genotype', $genotype_vals);
-                tpps_create_record('genotypeprop', $genotypeprop_vals);
+                tpps_chado_insert_record('genotype', $genotype_vals);
+                tpps_chado_insert_record('genotypeprop', $genotypeprop_vals);
                 unset($genotype_vals);
                 unset($genotypeprop_vals);
                 //dpm('done: ' . date('r'));
@@ -571,7 +699,7 @@ function tpps_file_parsing($form_state){
                     
                     $and = db_and()
                         ->condition('stock_id', $stock_id)
-                        ->condition('type_id', '54718');
+                        ->condition('type_id', chado_get_cvterm(array('name' => 'gps_latitude', 'cv_id' => array('name' => 'local'))));
                     $gps_query = db_select('chado.stockprop', 's')
                         ->fields('s', array('value'))
                         ->condition($and)
@@ -581,7 +709,7 @@ function tpps_file_parsing($form_state){
                     
                     $and = db_and()
                         ->condition('stock_id', $stock_id)
-                        ->condition('type_id', '54717');
+                        ->condition('type_id', chado_get_cvterm(array('name' => 'gps_longitude', 'cv_id' => array('name' => 'local'))));
                     $gps_query = db_select('chado.stockprop', 's')
                         ->fields('s', array('value'))
                         ->condition($and)
@@ -609,23 +737,35 @@ function tpps_file_parsing($form_state){
                             $type = variable_get("tpps_param_{$param_id}_type");
                             
                             if ($type == 'attr_id'){
-                                tpps_create_record('phenotype', array(
+                                tpps_chado_insert_record('phenotype', array(
                                   'uniquename' => "$tree_id-$layer_name-$param_name-$j",
                                   'name' => "$param_name",
-                                  'attr_id' => '128089',
+                                  'attr_id' => array(
+                                    'cv_id' => array(
+                                      'name' => 'biomaterial_property'
+                                    ),
+                                    'name' => 'climate_environment',
+                                    'is_obsolete' => 0
+                                  ),
                                   'value' => "$value"
                                 ));
                             }
                             else {
-                                $phenotype_id = tpps_create_record('phenotype', array(
+                                $phenotype_id = tpps_chado_insert_record('phenotype', array(
                                   'uniquename' => "$tree_id-$layer_name-$param_name-$j",
                                   'name' => "$param_name",
                                   'value' => "$value",
                                 ));
                                 
-                                tpps_create_record('phenotype_cvterm', array(
+                                tpps_chado_insert_record('phenotype_cvterm', array(
                                   'phenotype_id' => $phenotype_id,
-                                  'cvterm_id' => '128089'
+                                  'cvterm_id' => array(
+                                    'cv_id' => array(
+                                      'name' => 'biomaterial_property'
+                                    ),
+                                    'name' => 'climate_environment',
+                                    'is_obsolete' => 0
+                                  ),
                                 ));
                             }
                         }
@@ -653,22 +793,40 @@ function tpps_file_parsing($form_state){
                     $unit = $current_env['unit'];
                     $val = $current_env['val'];
                     
-                    $env_id = tpps_create_record('phenotype', array(
+                    $env_id = tpps_chado_insert_record('phenotype', array(
                       'uniquename' => "$tree_id-$name-$j",
                       'name' => "$name",
-                      'attr_id' => '128089',
+                      'attr_id' => array(
+                        'cv_id' => array(
+                          'name' => 'biomaterial_property'
+                        ),
+                        'name' => 'climate_environment',
+                        'is_obsolete' => 0
+                      ),
                       'value' => "$val"
                     ));
                     
-                    tpps_create_record('phenotypeprop', array(
+                    tpps_chado_insert_record('phenotypeprop', array(
                       'phenotype_id' => $env_id,
-                      'type_id' => '2871',
+                      'type_id' => array(
+                        'cv_id' => array(
+                          'name' => 'schema'
+                        ),
+                        'name' => 'description',
+                        'is_obsolete' => 0
+                      ),
                       'value' => $desc
                     ));
                     
-                    tpps_create_record('phenotypeprop', array(
+                    tpps_chado_insert_record('phenotypeprop', array(
                       'phenotype_id' => $env_id,
-                      'type_id' => '2883',
+                      'type_id' => array(
+                        'cv_id' => array(
+                          'name' => 'uo'
+                        ),
+                        'name' => 'unit',
+                        'is_obsolete' => 0
+                      ),
                       'value' => $unit,
                     ));
                 }
