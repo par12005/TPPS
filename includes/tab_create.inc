@@ -59,32 +59,32 @@ function tpps_tab_create($type, $user, $name = NULL) {
 
     $display .= "<tr>";
 
-    if (isset($state['saved_values'][PAGE_1]['publication']['title'])) {
-      $title = check_plain($state['saved_values'][PAGE_1]['publication']['title']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
+      $title = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['title']);
       $display .= "<td><a href='$base_url/tpps?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
     }
     else {
       $display .= "<td></td>";
     }
 
-    if (isset($state['saved_values'][PAGE_1]['primaryAuthor'])) {
-      $author = check_plain($state['saved_values'][PAGE_1]['primaryAuthor']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])) {
+      $author = check_plain($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']);
       $display .= "<td>$author</td>";
     }
     else {
       $display .= "<td></td>";
     }
 
-    if (isset($state['saved_values'][PAGE_1]['organism']['number'])) {
-      $species_number = check_plain($state['saved_values'][PAGE_1]['organism']['number']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['organism']['number'])) {
+      $species_number = check_plain($state['saved_values'][TPPS_PAGE_1]['organism']['number']);
       $display .= "<td>$species_number</td>";
     }
     else {
       $display .= "<td></td>";
     }
 
-    if (isset($state['saved_values'][PAGE_1]['publication']['abstract'])) {
-      $abstract = check_plain($state['saved_values'][PAGE_1]['publication']['abstract']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['abstract'])) {
+      $abstract = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['abstract']);
       if (strlen($abstract) > 103) {
         $abstract = check_plain(substr($abstract, 0, 100) . "...");
       }
@@ -94,8 +94,8 @@ function tpps_tab_create($type, $user, $name = NULL) {
       $display .= "<td></td>";
     }
 
-    if (isset($state['saved_values'][PAGE_1]['publication']['journal'])) {
-      $journal = check_plain($state['saved_values'][PAGE_1]['publication']['journal']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['journal'])) {
+      $journal = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['journal']);
       $display .= "<td>$journal</td>";
     }
     else {
@@ -104,7 +104,7 @@ function tpps_tab_create($type, $user, $name = NULL) {
 
     if (isset($state['accession'])) {
       $display .= "<td style='text-align:center'><input type='submit' id='delete-{$state['accession']}' onclick='";
-      $title = (isset($state['saved_values'][PAGE_1]['publication']['title'])) ? ' titled ' . $state['saved_values'][PAGE_1]['publication']['title'] : '';
+      $title = (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) ? ' titled ' . $state['saved_values'][TPPS_PAGE_1]['publication']['title'] : '';
       $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/user/{$user->uid}/tpps?accession={$state['accession']}&action=DELETE\"}";
       $display .= "' name='op' class='form-button' value='Delete'></td>";
     }
@@ -142,32 +142,32 @@ function tpps_tab_create($type, $user, $name = NULL) {
 
     $display .= "<tr>";
 
-    if (isset($state['saved_values'][PAGE_1]['publication']['title'])) {
-      $title = check_plain($state['saved_values'][PAGE_1]['publication']['title']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
+      $title = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['title']);
       $display .= "<td><a href='$base_url/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
     }
     else {
       $display .= "<td></td>";
     }
 
-    if (isset($state['saved_values'][PAGE_1]['primaryAuthor'])) {
-      $author = check_plain($state['saved_values'][PAGE_1]['primaryAuthor']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])) {
+      $author = check_plain($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']);
       $display .= "<td>$author</td>";
     }
     else {
       $display .= "<td></td>";
     }
 
-    if (isset($state['saved_values'][PAGE_1]['organism']['number'])) {
-      $species_number = check_plain($state['saved_values'][PAGE_1]['organism']['number']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['organism']['number'])) {
+      $species_number = check_plain($state['saved_values'][TPPS_PAGE_1]['organism']['number']);
       $display .= "<td>$species_number</td>";
     }
     else {
       $display .= "<td></td>";
     }
 
-    if (isset($state['saved_values'][PAGE_1]['publication']['abstract'])) {
-      $abstract = check_plain($state['saved_values'][PAGE_1]['publication']['abstract']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['abstract'])) {
+      $abstract = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['abstract']);
       if (strlen($abstract) > 103) {
         $abstract = check_plain(substr($abstract, 0, 100) . "...");
       }
@@ -177,8 +177,8 @@ function tpps_tab_create($type, $user, $name = NULL) {
       $display .= "<td></td>";
     }
 
-    if (isset($state['saved_values'][PAGE_1]['publication']['journal'])) {
-      $journal = check_plain($state['saved_values'][PAGE_1]['publication']['journal']);
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['journal'])) {
+      $journal = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['journal']);
       $display .= "<td>$journal</td>";
     }
     else {

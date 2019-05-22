@@ -11,8 +11,8 @@ require_once 'get_env_data.inc';
  */
 function tpps_file_parsing($form_state) {
 
-  $fourthpage = $form_state['saved_values'][PAGE_4];
-  $firstpage = $form_state['saved_values'][PAGE_1];
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $organism_number = $firstpage['organism']['number'];
   $organism_ids = array();
   $file_rank = $form_state['file_rank'];
@@ -668,13 +668,13 @@ function tpps_file_parsing($form_state) {
       $env_params = $environment['env_params'];
       $env_number = $environment['number'];
 
-      if ($organism_number == 1 or !$form_state['saved_values'][PAGE_3]['tree-accession']['check']) {
-        $accession_file = file_load($form_state['saved_values'][PAGE_3]['tree-accession']['file']);
-        $id_col = $form_state['saved_values'][PAGE_3]['tree-accession']['file-groups']['Tree Id'][1];
+      if ($organism_number == 1 or !$form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check']) {
+        $accession_file = file_load($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file']);
+        $id_col = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-groups']['Tree Id'][1];
       }
       else {
-        $accession_file = file_load($form_state['saved_values'][PAGE_3]['tree-accession']["species-$i"]['file']);
-        $id_col = $form_state['saved_values'][PAGE_3]['tree-accession']["species-$i"]['file-groups']['Tree Id'][1];
+        $accession_file = file_load($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file']);
+        $id_col = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file-groups']['Tree Id'][1];
       }
 
       $location = drupal_realpath($accession_file->uri);

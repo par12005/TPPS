@@ -16,7 +16,7 @@ function tpps_flatten($state) {
   unset($data['frontpage']);
   unset($data['form_build_id']);
 
-  $page_1 = &$data[PAGE_1];
+  $page_1 = &$data[TPPS_PAGE_1];
   $pub = &$page_1['publication'];
   $org = &$page_1['organism'];
 
@@ -55,9 +55,9 @@ function tpps_flatten($state) {
       }
     }
   }
-  unset($data[PAGE_1]);
+  unset($data[TPPS_PAGE_1]);
 
-  $page_2 = &$data[PAGE_2];
+  $page_2 = &$data[TPPS_PAGE_2];
   $loc = &$page_2['studyLocation'];
 
   if (isset($page_2['#cleared']) and $page_2['#cleared']) {
@@ -403,9 +403,9 @@ function tpps_flatten($state) {
         break;
     }
   }
-  unset($data[PAGE_2]);
+  unset($data[TPPS_PAGE_2]);
 
-  $page_3 = &$data[PAGE_3];
+  $page_3 = &$data[TPPS_PAGE_3];
 
   if (isset($page_3['#cleared']) and $page_3['#cleared']) {
     $data['#page_3_cleared'] = TRUE;
@@ -413,7 +413,7 @@ function tpps_flatten($state) {
   else {
     $data['#page_3_cleared'] = FALSE;
   }
-  $page_3 = &$data[PAGE_3]['tree-accession'];
+  $page_3 = &$data[TPPS_PAGE_3]['tree-accession'];
   if (isset($page_3['check']) and $page_3['check']) {
     for ($i = 1; $i <= $data['#number_organisms']; $i++) {
       if (isset($page_3["species-$i"]['file']) and $page_3["species-$i"]['file']) {
@@ -437,9 +437,9 @@ function tpps_flatten($state) {
       $data["#accession_long_col"] = $page_3['file-groups']['Location (latitude/longitude or country/state)'][5];
     }
   }
-  unset($data[PAGE_3]);
+  unset($data[TPPS_PAGE_3]);
 
-  $page_4 = &$data[PAGE_4];
+  $page_4 = &$data[TPPS_PAGE_4];
 
   if (isset($page_4['#cleared']) and $page_4['#cleared']) {
     $data['#page_4_cleared'] = TRUE;
@@ -634,7 +634,7 @@ function tpps_flatten($state) {
       }
     }
   }
-  unset($data[PAGE_4]);
+  unset($data[TPPS_PAGE_4]);
 
   $sum_page = &$data['summarypage'];
   if (!empty($sum_page['comments'])) {

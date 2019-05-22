@@ -42,7 +42,7 @@ function status_bar(&$form, $form_state) {
   $form['#prefix'] .= '<div class="tgdr_form_status">';
 
   /**** Page 1 ****/
-  if (isset($form_state['saved_values'][PAGE_1]) and $form_state['stage'] != PAGE_1) {
+  if (isset($form_state['saved_values'][TPPS_PAGE_1]) and $form_state['stage'] != TPPS_PAGE_1) {
     $image_fname = 'message-16-ok.png';
   }
   else {
@@ -51,10 +51,10 @@ function status_bar(&$form, $form_state) {
   $form['#prefix'] .= "<div><img src='$base_url/misc/$image_fname'> Author and Species Information</div>";
 
   /**** Page 2 ****/
-  if ($form_state['stage'] != PAGE_2 and !isset($form_state['saved_values'][PAGE_2]['#cleared'])) {
+  if ($form_state['stage'] != TPPS_PAGE_2 and !isset($form_state['saved_values'][TPPS_PAGE_2]['#cleared'])) {
     $image_fname = 'message-16-error.png';
   }
-  elseif ($form_state['stage'] != PAGE_2 and $form_state['saved_values'][PAGE_2]['#cleared'] == TRUE) {
+  elseif ($form_state['stage'] != TPPS_PAGE_2 and $form_state['saved_values'][TPPS_PAGE_2]['#cleared'] == TRUE) {
     $image_fname = 'message-16-ok.png';
   }
   else {
@@ -63,10 +63,10 @@ function status_bar(&$form, $form_state) {
   $form['#prefix'] .= "<div><img src='$base_url/misc/$image_fname'> Experimental Conditions</div>";
 
   /**** Page 3 ****/
-  if ($form_state['stage'] != PAGE_3 and !isset($form_state['saved_values'][PAGE_3]['#cleared'])) {
+  if ($form_state['stage'] != TPPS_PAGE_3 and !isset($form_state['saved_values'][TPPS_PAGE_3]['#cleared'])) {
     $image_fname = 'message-16-error.png';
   }
-  elseif ($form_state['stage'] != PAGE_3 and $form_state['saved_values'][PAGE_3]['#cleared'] == TRUE) {
+  elseif ($form_state['stage'] != TPPS_PAGE_3 and $form_state['saved_values'][TPPS_PAGE_3]['#cleared'] == TRUE) {
     $image_fname = 'message-16-ok.png';
   }
   else {
@@ -75,10 +75,10 @@ function status_bar(&$form, $form_state) {
   $form['#prefix'] .= "<div><img src='$base_url/misc/$image_fname'> Tree Accession</div>";
 
   /**** Page 4 ****/
-  if ($form_state['stage'] != PAGE_4 and !isset($form_state['saved_values'][PAGE_4]['#cleared'])) {
+  if ($form_state['stage'] != TPPS_PAGE_4 and !isset($form_state['saved_values'][TPPS_PAGE_4]['#cleared'])) {
     $image_fname = 'message-16-error.png';
   }
-  elseif ($form_state['stage'] != PAGE_4 and $form_state['saved_values'][PAGE_4]['#cleared'] == TRUE) {
+  elseif ($form_state['stage'] != TPPS_PAGE_4 and $form_state['saved_values'][TPPS_PAGE_4]['#cleared'] == TRUE) {
     $image_fname = 'message-16-ok.png';
   }
   else {

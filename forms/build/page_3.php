@@ -11,8 +11,8 @@ require_once 'page_3_ajax.php';
  */
 function page_3_create_form(&$form, &$form_state) {
 
-  if (isset($form_state['saved_values'][PAGE_3])) {
-    $values = $form_state['saved_values'][PAGE_3];
+  if (isset($form_state['saved_values'][TPPS_PAGE_3])) {
+    $values = $form_state['saved_values'][TPPS_PAGE_3];
   }
   else {
     $values = array();
@@ -23,7 +23,7 @@ function page_3_create_form(&$form, &$form_state) {
     '#tree' => TRUE,
   );
 
-  $species_number = $form_state['saved_values'][PAGE_1]['organism']['number'];
+  $species_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
 
   if ($species_number > 1) {
     // Create the single/multiple file checkbox.
@@ -36,7 +36,7 @@ function page_3_create_form(&$form, &$form_state) {
   $file_description = "Please upload a spreadsheet file containing tree population data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may omit that drop-down menu. Your file must contain columns with information about at least the Tree Identifier and the Location of the tree (either gps coordinates or country/state).";
   $file_upload_location = 'public://' . variable_get('tpps_accession_files_dir', 'tpps_accession');
 
-  if ($form_state['saved_values'][PAGE_2]['studyType'] == '4') {
+  if ($form_state['saved_values'][TPPS_PAGE_2]['studyType'] == '4') {
     $file_description .= ' Location columns should describe the location of the source tree for the Common Garden.';
   }
 
@@ -85,7 +85,7 @@ function page_3_create_form(&$form, &$form_state) {
     $column_options['10'] = 'Genus + Species';
   }
 
-  if ($form_state['saved_values'][PAGE_2]['studyType'] != '1') {
+  if ($form_state['saved_values'][TPPS_PAGE_2]['studyType'] != '1') {
     $column_options['11'] = 'Source Tree Identifier';
   }
 
@@ -136,12 +136,12 @@ function page_3_create_form(&$form, &$form_state) {
       }
     }
   }
-  elseif (isset($form_state['saved_values'][PAGE_3]['tree-accession']['file-columns'])) {
-    foreach ($form_state['saved_values'][PAGE_3]['tree-accession']['file-columns'] as $col_name => $data) {
+  elseif (isset($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-columns'])) {
+    foreach ($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-columns'] as $col_name => $data) {
       if ($data == '12') {
         $pop_group_show = TRUE;
         $pop_col = $col_name;
-        $fid = $form_state['saved_values'][PAGE_3]['tree-accession']['file'];
+        $fid = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
         break;
       }
     }
@@ -175,7 +175,7 @@ function page_3_create_form(&$form, &$form_state) {
 
   if ($species_number > 1) {
     for ($i = 1; $i <= $species_number; $i++) {
-      $name = $form_state['saved_values'][PAGE_1]['organism']["$i"];
+      $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"];
 
       $form['tree-accession']["species-$i"] = array(
         '#type' => 'fieldset',
@@ -219,7 +219,7 @@ function page_3_create_form(&$form, &$form_state) {
         '12' => 'Population Group',
       );
 
-      if ($form_state['saved_values'][PAGE_2]['studyType'] != '1') {
+      if ($form_state['saved_values'][TPPS_PAGE_2]['studyType'] != '1') {
         $column_options['11'] = 'Source Tree Identifier';
       }
 

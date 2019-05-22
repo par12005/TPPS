@@ -191,8 +191,8 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>',
   if (isset($form_state['values']['studyLocation'])) {
     $location = $form_state['values']['studyLocation'];
   }
-  elseif (isset($form_state['saved_values'][PAGE_2]['studyLocation'])) {
-    $location = $form_state['saved_values'][PAGE_2]['studyLocation'];
+  elseif (isset($form_state['saved_values'][TPPS_PAGE_2]['studyLocation'])) {
+    $location = $form_state['saved_values'][TPPS_PAGE_2]['studyLocation'];
   }
 
   if (isset($location)) {
