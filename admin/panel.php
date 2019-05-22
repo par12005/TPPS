@@ -2,12 +2,37 @@
 
 /**
  * @file
+ * Defines contents of TPPS administrative panel.
+ *
+ * Site administrators will use this form to approve or reject completed TPPS
+ * submissions.
  */
 
 /**
+ * Creates the administrative panel form.
  *
+ * If the administrator is looking at one specific TPPS submission, they are
+ * provided with options to reject the submission and leave a reason for the
+ * rejection, or to approve the submission and start loading the data into the
+ * database. If the submission includes CartograTree layers with environmental
+ * parameters, the administrator will need to select the kind of parameter the
+ * user has selected - an attr_id, or a cvterm. This will be important when the
+ * submission is recording the environmental data of the trees.
+ *
+ * @param array $form
+ *   The form being created.
+ * @param array $form_state
+ *   The state of the form being created.
+ *
+ * @global stdClass $user
+ *   The user accessing the administrative panel.
+ * @global string $base_url
+ *   The base url of the site.
+ *
+ * @return array
+ *   The administrative panel form.
  */
-function tpps_admin_panel($form, &$form_state) {
+function tpps_admin_panel(array $form, array &$form_state) {
 
   global $user;
   global $base_url;
@@ -68,7 +93,7 @@ function tpps_admin_panel($form, &$form_state) {
     $var_name = $results['name'];
     $submission_state = variable_get($var_name);
     $status = $submission_state['status'];
-    $display = l("Back to TPPS Admin Panel", "$base_url/tpps-admin-panel");
+    $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
     $display .= tpps_table_display($submission_state);
 
     $form['form_table'] = array(
@@ -165,7 +190,10 @@ function tpps_admin_panel($form, &$form_state) {
 }
 
 /**
+ * Implements hook_form_validate().
  *
+ * Checks that the reject reason has been filled out if the submission was
+ * rejected.
  */
 function tpps_admin_panel_validate($form, &$form_state) {
   if ($form_state['submitted'] == '1') {
@@ -176,7 +204,11 @@ function tpps_admin_panel_validate($form, &$form_state) {
 }
 
 /**
+ * Implements hook_form_submit().
  *
+ * Either rejects or approves the TPPS submission, and notifies the user of the
+ * status update via email. If the submission was approved, starts a tripal job
+ * for file parsing.
  */
 function tpps_admin_panel_submit($form, &$form_state) {
 
@@ -211,7 +243,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     variable_del($var_name);
     unset($state['status']);
     variable_set('tpps_incomplete_' . $suffix, $state);
-    dpm('Submission Rejected. Message has been sent to user.');
+    drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
     drupal_goto('<front>');
   }
   else {
@@ -231,7 +263,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
     $state['job_id'] = $jid;
 
-    dpm('Submission Approved! Message has been sent to user.');
+    drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
     drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
   }
 }

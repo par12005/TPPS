@@ -2,12 +2,21 @@
 
 /**
  * @file
+ * Defines the admin settings form at admin/config/content/tpps.
  */
 
 /**
+ * Creates the admin settings form and loads default settings.
  *
+ * @param array $form
+ *   The form being built.
+ * @param array $form_state
+ *   The state of the form being built.
+ *
+ * @return array
+ *   The system settings form.
  */
-function tpps_admin_settings($form, &$form_state) {
+function tpps_admin_settings(array $form, array &$form_state) {
 
   $authors = variable_get('tpps_author_files_dir', 'tpps_authors');
   $accession = variable_get('tpps_accession_files_dir', 'tpps_accession');
@@ -71,36 +80,38 @@ function tpps_admin_settings($form, &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Author files:'),
     '#default_value' => $authors,
-    '#description' => t("Currently points to " . drupal_realpath("public://$authors") . '.'),
-    '#prefix' => t('<h1>File Upload locations</h1>' . 'All file locations are relative to the "public://" file stream. Your current "public://" file stream points to "' . drupal_realpath('public://') . '".<br><br>'),
+    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$authors"))),
+    '#prefix' => t('<h1>File Upload locations</h1>All file locations are relative to the "public://" file stream. Your current "public://" file stream points to "@path".<br><br>', array('@path' => drupal_realpath('public://'))),
   );
 
   $form['tpps_accession_files_dir'] = array(
     '#type' => 'textfield',
     '#title' => t('Tree Accession files:'),
     '#default_value' => $accession,
-    '#description' => t("Currently points to " . drupal_realpath("public://$accession") . '.'),
+    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$accession"))),
   );
 
   $form['tpps_genotype_files_dir'] = array(
     '#type' => 'textfield',
     '#title' => t('Genotype files:'),
     '#default_value' => $genotype,
-    '#description' => t("Currently points to " . drupal_realpath("public://$genotype") . '.'),
+    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$genotype"))),
   );
 
   $form['tpps_phenotype_files_dir'] = array(
     '#type' => 'textfield',
     '#title' => t('Phenotype files:'),
     '#default_value' => $phenotype,
-    '#description' => t("Currently points to " . drupal_realpath("public://$phenotype") . '.'),
+    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$phenotype"))),
   );
 
   return system_settings_form($form);
 }
 
 /**
+ * Implements hook_form_validate().
  *
+ * Validates administrative TPPS settings.
  */
 function tpps_admin_settings_validate($form, &$form_state) {
   foreach ($form_state['values'] as $key => $value) {

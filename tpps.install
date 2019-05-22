@@ -2,10 +2,13 @@
 
 /**
  * @file
+ * Defines install, uninstall, and update processes.
  */
 
 /**
+ * Implements hook_install().
  *
+ * Downloads and installs Ultimate Cron if it is not already enabled.
  */
 function tpps_install() {
 
@@ -17,7 +20,10 @@ function tpps_install() {
 }
 
 /**
+ * Implements hook_uninstall().
  *
+ * Removes TPPS variables from the public.variable table. Also removes TPPS file
+ * usage from public.file_usage.
  */
 function tpps_uninstall() {
 
@@ -39,13 +45,12 @@ function tpps_uninstall() {
   foreach ($tpps_usage as $row) {
     file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
   }
-  // Only need to remove data from the public.variable table - incomplete submissions
-  // or submissions pending approval will be removed with the chado.tpps_* tables, and
-  // approved submissions can stay on the website if people want them to.
 }
 
 /**
+ * Implements hook_update_N().
  *
+ * Adds the chado.stock_phenotype linking table if it does not exist.
  */
 function tpps_update_7000() {
   if (!db_table_exists('chado.stock_phenotype')) {
@@ -55,7 +60,10 @@ function tpps_update_7000() {
 }
 
 /**
+ * Implements hook_update_N().
  *
+ * Adds the genotype_call_genotype_call_id_seq sequence for the genotype_call
+ * table.
  */
 function tpps_update_7001() {
   $query = db_select('pg_class', 'p')
@@ -68,7 +76,9 @@ function tpps_update_7001() {
 }
 
 /**
+ * Implements hook_update_N().
  *
+ * Creates the chado.genotype_call table if it does not exist.
  */
 function tpps_update_7002() {
   if (!db_table_exists('chado.genotype_call')) {
@@ -89,7 +99,9 @@ function tpps_update_7002() {
 }
 
 /**
+ * Implements hook_update_N().
  *
+ * Creates materialized view plusgeno_view if it does not exist.
  */
 function tpps_update_7003() {
   $query = db_select('pg_class', 'p')
@@ -137,7 +149,9 @@ function tpps_update_7003() {
 }
 
 /**
+ * Implements hook_update_N().
  *
+ * Defines local cvterms specific to the TPPS module.
  */
 function tpps_update_7004() {
 

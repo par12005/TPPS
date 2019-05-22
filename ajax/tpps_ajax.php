@@ -2,12 +2,17 @@
 
 /**
  * @file
+ * Defines some ajax callback functions that TPPS uses often.
  */
 
 /**
+ * Author auto-complete matching.
  *
+ * @param string $string
+ *   The string the user has already entered into the text field.
  */
 function tpps_author_autocomplete($string) {
+  // TODO: load chado cvterm_ids with tripal api functions.
   $matches = array();
   $result = db_select('chado.contact', 'contact')
     ->fields('contact', array('name', 'type_id'))
@@ -23,7 +28,10 @@ function tpps_author_autocomplete($string) {
 }
 
 /**
+ * Organization auto-complete matching.
  *
+ * @param string $string
+ *   The string the user has already entered into the text field.
  */
 function tpps_organization_autocomplete($string) {
   $matches = array();
@@ -41,7 +49,10 @@ function tpps_organization_autocomplete($string) {
 }
 
 /**
+ * Journal auto-complete matching.
  *
+ * @param string $string
+ *   The string the user has already entered into the text field.
  */
 function tpps_journal_autocomplete($string) {
   $matches = array();
@@ -58,7 +69,10 @@ function tpps_journal_autocomplete($string) {
 }
 
 /**
+ * Species auto-complete matching.
  *
+ * @param string $string
+ *   The string the user has already entered into the text field.
  */
 function tpps_species_autocomplete($string) {
   $matches = array();
@@ -84,7 +98,10 @@ function tpps_species_autocomplete($string) {
 }
 
 /**
+ * Phenotype name auto-complete matching.
  *
+ * @param string $string
+ *   The string the user has already entered into the text field.
  */
 function tpps_phenotype_autocomplete($string) {
   $matches = array();
@@ -102,7 +119,10 @@ function tpps_phenotype_autocomplete($string) {
 }
 
 /**
+ * Phenotype attribute auto-complete matching.
  *
+ * @param string $string
+ *   The string the user has already entered into the text field.
  */
 function tpps_attribute_autocomplete($string) {
   $matches = array();
@@ -128,7 +148,10 @@ function tpps_attribute_autocomplete($string) {
 }
 
 /**
+ * Phenotype units auto-complete matching.
  *
+ * @param string $string
+ *   The string the user has already entered into the text field.
  */
 function tpps_units_autocomplete($string) {
   $matches = array();
@@ -151,7 +174,10 @@ function tpps_units_autocomplete($string) {
 }
 
 /**
+ * Phenotype structure auto-complete matching.
  *
+ * @param string $string
+ *   The string the user has already entered into the text field.
  */
 function tpps_structure_autocomplete($string) {
   $matches = array();
@@ -177,9 +203,20 @@ function tpps_structure_autocomplete($string) {
 }
 
 /**
+ * Return updated managed_file form element.
  *
+ * This function is called after a no_header element is changed, triggering an
+ * update of the managed_file element.
+ *
+ * @param array $form
+ *   The form that needs to be updated.
+ * @param array $form_state
+ *   The state of the form that needs to be updated.
+ *
+ * @return array
+ *   The part of the form to be updated.
  */
-function tpps_no_header_callback($form, &$form_state) {
+function tpps_no_header_callback(array $form, array &$form_state) {
 
   $parents = $form_state['triggering_element']['#parents'];
   array_pop($parents);
