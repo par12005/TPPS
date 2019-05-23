@@ -57,5 +57,15 @@ function ajax_date_month_callback(array &$form, array $form_state) {
  *   The element in the form to be updated.
  */
 function page_2_map_ajax(array $form, array $form_state) {
-  return $form['studyLocation']['map-button'];
+  return $form['study_location']['map-button'];
+}
+
+/**
+ * 
+ * @param array $form
+ * @param array $form_state
+ * @return array
+ */
+function study_type_callback(array &$form, array $form_state){
+  return $form['study_info'];
 }

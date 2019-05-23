@@ -240,10 +240,7 @@ function tpps_submit_page_1(&$form_state, $project_id, &$file_rank) {
 function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
 
   $secondpage = $form_state['saved_values'][TPPS_PAGE_2];
-
-  $start = $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'];
-  $end = $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'];
-
+  
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $project_id,
   // This cvterm was created custom for TPPS.
@@ -254,7 +251,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       'name' => 'study_start',
       'is_obsolete' => 0,
     ),
-    'value' => $start,
+    'value' => $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'],
   ));
 
   tpps_chado_insert_record('projectprop', array(
@@ -267,11 +264,11 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       'name' => 'study_end',
       'is_obsolete' => 0,
     ),
-    'value' => $end,
+    'value' => $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'],
   ));
 
-  if ($secondpage['studyLocation']['type'] !== '2') {
-    $standard_coordinate = explode(',', tpps_standard_coord($secondpage['studyLocation']['coordinates']));
+  if ($secondpage['study_location']['type'] !== '2') {
+    $standard_coordinate = explode(',', tpps_standard_coord($secondpage['study_location']['coordinates']));
     $latitude = $standard_coordinate[0];
     $longitude = $standard_coordinate[1];
 
@@ -302,7 +299,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
     ));
   }
   else {
-    $location = $secondpage['studyLocation']['custom'];
+    $location = $secondpage['study_location']['custom'];
 
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $project_id,
@@ -317,9 +314,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       'value' => $location,
     ));
   }
-
-  $datatype = $secondpage['dataType'];
-
+  
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $project_id,
   // This cvterm was created custom for TPPS.
@@ -330,7 +325,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       'name' => 'association_results_type',
       'is_obsolete' => 0,
     ),
-    'value' => $datatype,
+    'value' => $secondpage['data_type'],
   ));
 
   $studytype_options = array(
@@ -342,8 +337,6 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
     5 => 'Plantation',
   );
 
-  $study_type = $studytype_options[$secondpage['studyType']];
-
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $project_id,
   // This cvterm was created custom for TPPS.
@@ -354,54 +347,267 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       'name' => 'study_type',
       'is_obsolete' => 0,
     ),
-    'value' => $study_type,
+    'value' => $studytype_options[$secondpage['study_type']],
   ));
 
-  switch ($secondpage['studyType']) {
-    case ('1'):
-      $natural_population = $secondpage['naturalPopulation'];
-      $number_assessions = $natural_population['assessions'];
-      $seasons = "";
-      foreach ($natural_population['season'] as $key => $item) {
-        if ($item != '0') {
-          $seasons .= $key . ', ';
-        }
+  if (!empty($secondpage['study_info']['season'])){
+    $seasons = implode($secondpage['study_info']['season']);
+    
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $project_id,
+      // This cvterm was created custom for TPPS.
+      'type_id' => array(
+        'cv_id' => array(
+          'name' => 'local',
+        ),
+        'name' => 'assession_season',
+        'is_obsolete' => 0,
+      ),
+      'value' => $seasons,
+    ));
+  }
+
+  if (!empty($secondpage['study_info']['assessions'])){
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $project_id,
+      // This cvterm was created custom for TPPS.
+      'type_id' => array(
+        'cv_id' => array(
+          'name' => 'local',
+        ),
+        'name' => 'assession_number',
+        'is_obsolete' => 0,
+      ),
+      'value' => $secondpage['study_info']['assessions'],
+    ));
+  }
+
+  if (!empty($secondpage['study_info']['temp'])){
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $project_id,
+      // This cvterm was created custom for TPPS.
+      'type_id' => array(
+        'cv_id' => array(
+          'name' => 'local',
+        ),
+        'name' => 'temperature_high',
+        'is_obsolete' => 0,
+      ),
+      'value' => $secondpage['study_info']['temp'],
+    ));
+    
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $project_id,
+      // This cvterm was created custom for TPPS.
+      'type_id' => array(
+        'cv_id' => array(
+          'name' => 'local',
+        ),
+        'name' => 'temperature_low',
+        'is_obsolete' => 0,
+      ),
+      'value' => $secondpage['study_info']['temp'],
+    ));
+  }
+
+  $types = array(
+    'co2',
+    'humidity',
+    'light',
+    'salinity'
+  );
+
+  foreach ($types as $type){
+    if (!empty($secondpage['study_info'][$type])){
+      $set = $secondpage['study_info'][$type];
+      
+      tpps_chado_insert_record('projectprop', array(
+        'project_id' => $project_id,
+        // This cvterm was created custom for TPPS.
+        'type_id' => array(
+          'cv_id' => array(
+            'name' => 'local',
+          ),
+          'name' => "{$type}_control",
+          'is_obsolete' => 0,
+        ),
+        'value' => ($set['option'] == '1') ? 'True' : 'False',
+      ));
+          
+      if ($set['option'] == '1'){
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $project_id,
+          // This cvterm was created custom for TPPS.
+          'type_id' => array(
+            'cv_id' => array(
+              'name' => 'local',
+            ),
+            'name' => "{$type}_level",
+            'is_obsolete' => 0,
+          ),
+          'value' => $set['controlled'],
+        ));
       }
-
+      elseif (!empty($set['uncontrolled'])){
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $project_id,
+          // This cvterm was created custom for TPPS.
+          'type_id' => array(
+            'cv_id' => array(
+              'name' => 'local',
+            ),
+            'name' => "{$type}_level",
+            'is_obsolete' => 0,
+          ),
+          'value' => $set['uncontrolled'],
+        ));
+      }
+    }
+  }
+  
+  if (!empty($secondpage['study_info']['rooting'])){
+    $root = $secondpage['study_info']['rooting'];
+    
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $project_id,
+      // This cvterm was created custom for TPPS.
+      'type_id' => array(
+        'cv_id' => array(
+          'name' => 'local',
+        ),
+        'name' => 'rooting_type',
+        'is_obsolete' => 0,
+      ),
+      'value' => $root['option'],
+    ));
+    
+    if ($root['option'] == 'Soil'){
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $project_id,
-      // This cvterm was created custom for TPPS.
+        // This cvterm was created custom for TPPS.
         'type_id' => array(
           'cv_id' => array(
             'name' => 'local',
           ),
-          'name' => 'assession_season',
+          'name' => 'soil_type',
           'is_obsolete' => 0,
         ),
-        'value' => $seasons,
+        'value' => ($root['soil']['type'] == 'Other') ? $root['soil']['other'] : $root['soil']['type'],
       ));
+
+      //Working here
+      if (!$root['soil']['container'])
+        form_set_error('study_info][rooting][soil][type', 'Soil Container Type: field is required.');
+    }
+
+    if (!empty($secondpage['study_info']['rooting']['ph'])){
+      $set = $secondpage['study_info']['rooting']['ph'];
 
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $project_id,
-      // This cvterm was created custom for TPPS.
+        // This cvterm was created custom for TPPS.
         'type_id' => array(
           'cv_id' => array(
             'name' => 'local',
           ),
-          'name' => 'assession_number',
+          'name' => "pH_control",
           'is_obsolete' => 0,
         ),
-        'value' => $number_assessions,
+        'value' => ($set['option'] == '1') ? 'True' : 'False',
       ));
-      break;
 
+      if ($set['option'] == '1'){
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $project_id,
+          // This cvterm was created custom for TPPS.
+          'type_id' => array(
+            'cv_id' => array(
+              'name' => 'local',
+            ),
+            'name' => "pH_level",
+            'is_obsolete' => 0,
+          ),
+          'value' => $set['controlled'],
+        ));
+      }
+      elseif (!empty($set['uncontrolled'])){
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $project_id,
+          // This cvterm was created custom for TPPS.
+          'type_id' => array(
+            'cv_id' => array(
+              'name' => 'local',
+            ),
+            'name' => "pH_level",
+            'is_obsolete' => 0,
+          ),
+          'value' => $set['uncontrolled'],
+        ));
+      }
+    }
+
+    $selected = FALSE;
+    $description = FALSE;
+
+    foreach ($root['treatment'] as $field => $value){
+      if (!$description) {
+        $description = TRUE;
+        $selected = $value;
+        continue;
+      }
+      elseif ($selected and !$value){
+        form_set_error("study_info][rooting][treatment][$field", "$field: field is required.");
+      }
+      $description = FALSE;
+    }
+  }
+
+  if (!empty($form_state['values']['study_info']['irrigation'])){
+    $irrigation = $form_state['values']['study_info']['irrigation'];
+    if (!$irrigation['option']){
+      form_set_error('study_info][irrigation][option', 'Irrigation Type: field is required.');
+    }
+    elseif ($irrigation['option'] == '4' and !$irrigation['other']){
+      form_set_error('study_info][irrigation][other', 'Custom Irrigation Type: field is required.');
+    }
+  }
+
+  if (!empty($form_state['values']['study_info']['biotic_env']) and preg_match('/0+/', implode('', $form_state['values']['study_info']['biotic_env']))){
+    form_set_error('study_info][biotic_env', 'Biotic Environment: field is required.');
+  }
+  elseif ($form_state['values']['study_info']['biotic_env']['option']['Other'] and !$form_state['values']['study_info']['biotic_env']['other']){
+    form_set_error('study_info][biotic_env][other', 'Custom Biotic Environment: field is required.');
+  }
+
+  if (!empty($form_state['values']['study_info']['treatment']) and $form_state['values']['study_info']['treatment']['check']){
+    $selected = FALSE;
+    $description = FALSE;
+    $treatment_empty = TRUE;
+
+    foreach ($treatment as $field => $value) {
+      if ($field != 'check') {
+        if (!$description) {
+          $description = TRUE;
+          $selected = $value;
+          if ($value) {
+            $treatment_empty = FALSE;
+          }
+          continue;
+        }
+        elseif ($selected and !$value) {
+          form_set_error("study_info][treatment][$field", "$field: field is required.");
+        }
+        $description = FALSE;
+      }
+    }
+
+    if ($treatment_empty)
+      form_set_error("study_info][treatment", 'Treatment: field is required.');
+  }
+  
+  switch ($secondpage['study_type']) {
     case ('2'):
       $growth_chamber = $secondpage['growthChamber'];
-      $co2 = $growth_chamber['co2Control'];
-      $humidity = $growth_chamber['humidityControl'];
-      $light = $growth_chamber['lightControl'];
-      $temp_high = $growth_chamber['temp']['high'];
-      $temp_low = $growth_chamber['temp']['low'];
       $rooting = $growth_chamber['rooting'];
       $rooting_type = $rooting['option'];
       $soil = $rooting['soil'];
@@ -409,242 +615,9 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       $ph = $rooting['ph'];
       $treatments = $rooting['treatment'];
 
-      if ($co2['option'] == '1') {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'co2_control',
-            'is_obsolete' => 0,
-          ),
-          'value' => 'True',
-        ));
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'co2_level',
-            'is_obsolete' => 0,
-          ),
-          'value' => $co2['controlled'],
-        ));
-      }
-      else {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'co2_control',
-            'is_obsolete' => 0,
-          ),
-          'value' => 'False',
-        ));
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'co2_level',
-            'is_obsolete' => 0,
-          ),
-          'value' => $co2['uncontrolled'],
-        ));
-      }
-
-      if ($humidity['option'] == '1') {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'humidity_control',
-            'is_obsolete' => 0,
-          ),
-          'value' => 'True',
-        ));
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'humidity_level',
-            'is_obsolete' => 0,
-          ),
-          'value' => $humidity['controlled'],
-        ));
-      }
-      else {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'humidity_control',
-            'is_obsolete' => 0,
-          ),
-          'value' => 'False',
-        ));
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'humidity_level',
-            'is_obsolete' => 0,
-          ),
-          'value' => $humidity['uncontrolled'],
-        ));
-      }
-
-      if ($light['option'] == '1') {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'light_control',
-            'is_obsolete' => 0,
-          ),
-          'value' => 'True',
-        ));
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'light_level',
-            'is_obsolete' => 0,
-          ),
-          'value' => $light['controlled'],
-        ));
-      }
-      else {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'light_control',
-            'is_obsolete' => 0,
-          ),
-          'value' => 'False',
-        ));
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'light_level',
-            'is_obsolete' => 0,
-          ),
-          'value' => $light['uncontrolled'],
-        ));
-      }
-
-      tpps_chado_insert_record('projectprop', array(
-        'project_id' => $project_id,
-      // This cvterm was created custom for TPPS.
-        'type_id' => array(
-          'cv_id' => array(
-            'name' => 'local',
-          ),
-          'name' => 'temperature_high',
-          'is_obsolete' => 0,
-        ),
-        'value' => $temp_high,
-      ));
-      tpps_chado_insert_record('projectprop', array(
-        'project_id' => $project_id,
-      // This cvterm was created custom for TPPS.
-        'type_id' => array(
-          'cv_id' => array(
-            'name' => 'local',
-          ),
-          'name' => 'temperature_low',
-          'is_obsolete' => 0,
-        ),
-        'value' => $temp_low,
-      ));
-
       switch ((string) $rooting_type) {
-        case '1':
-          tpps_chado_insert_record('projectprop', array(
-            'project_id' => $project_id,
-          // This cvterm was created custom for TPPS.
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
-              'name' => 'rooting_type',
-              'is_obsolete' => 0,
-            ),
-            'value' => 'Aeroponics',
-          ));
-          break;
-
-        case '2':
-          tpps_chado_insert_record('projectprop', array(
-            'project_id' => $project_id,
-          // This cvterm was created custom for TPPS.
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
-              'name' => 'rooting_type',
-              'is_obsolete' => 0,
-            ),
-            'value' => 'Hydroponics',
-          ));
-          break;
-
+        
         case '3':
-          tpps_chado_insert_record('projectprop', array(
-            'project_id' => $project_id,
-          // This cvterm was created custom for TPPS.
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
-              'name' => 'rooting_type',
-              'is_obsolete' => 0,
-            ),
-            'value' => 'Soil',
-          ));
-          $soil_options = array(
-            0 => '- Select -',
-            1 => 'Sand',
-            2 => 'Peat',
-            3 => 'Clay',
-            4 => 'Mixed',
-            5 => 'Other',
-          );
           $soil_type = $soil_options[$soil['type']];
           if ($soil_type == 'Other') {
             $soil_type = $soil['other'];
@@ -678,59 +651,6 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
 
         default:
           break;
-      }
-
-      if ($ph['option'] == '1') {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'pH_control',
-            'is_obsolete' => 0,
-          ),
-          'value' => 'True',
-        ));
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'pH_level',
-            'is_obsolete' => 0,
-          ),
-          'value' => $ph['controlled'],
-        ));
-      }
-      else {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'pH_control',
-            'is_obsolete' => 0,
-          ),
-          'value' => 'False',
-        ));
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-        // This cvterm was created custom for TPPS.
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
-            'name' => 'pH_level',
-            'is_obsolete' => 0,
-          ),
-          'value' => $ph['uncontrolled'],
-        ));
       }
 
       $is_description = FALSE;

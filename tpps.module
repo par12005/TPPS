@@ -6,10 +6,10 @@
  */
 
 define("TPPS_JS_PATH", '/js/tpps.js');
-define("TPPS_PAGE_1", 'Hellopage');
-define("TPPS_PAGE_2", 'secondPage');
-define("TPPS_PAGE_3", 'thirdPage');
-define("TPPS_PAGE_4", 'fourthPage');
+define("TPPS_PAGE_1", 1);
+define("TPPS_PAGE_2", 2);
+define("TPPS_PAGE_3", 3);
+define("TPPS_PAGE_4", 4);
 require_once 'includes/create_record.inc';
 require_once 'includes/flatten.inc';
 require_once 'includes/init_project.inc';
@@ -462,7 +462,21 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
   foreach ($elements as $key => &$element) {
     if ($key[0] != '#' and isset($element['#type'])) {
 
-      $element['#parents'] = array_merge($elements['#parents'], array($key));
+      // If #tree is not set in the current element, and #tree is set and false
+      // in the parent element, then set #tree to false in the current element.
+      if (!isset($element['#tree']) and isset($elements['#tree']) and !$elements['#tree']){
+        $element['#tree'] = FALSE;
+      }
+      
+      // If #tree is not set or is set to true, then populate the #parents array
+      // with the parents of the parent element plus the current key. Otherwise,
+      // the #parents array should just be the current key.
+      if (!isset($element['#tree']) or $element['#tree']){
+        $element['#parents'] = array_merge($elements['#parents'], array($key));
+      }
+      else {
+        $element['#parents'] = array($key);
+      }
 
       // Element types that should be loading some default value, usually for
       // the purposes of persistent form data.
@@ -701,7 +715,7 @@ function tpps_main(array $form, array &$form_state) {
   }
 
   drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-
+  
   return $form;
 }
 

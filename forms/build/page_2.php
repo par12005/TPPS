@@ -37,7 +37,7 @@ function page_2_create_form(array &$form, array $form_state) {
 
   study_location($form, $values, $form_state);
 
-  $form['dataType'] = array(
+  $form['data_type'] = array(
     '#type' => 'select',
     '#title' => t('Data Type: *'),
     '#options' => array(
@@ -52,7 +52,7 @@ function page_2_create_form(array &$form, array $form_state) {
     ),
   );
 
-  $form['studyType'] = array(
+  $form['study_type'] = array(
     '#type' => 'select',
     '#title' => t('Study Type: *'),
     '#options' => array(
@@ -63,18 +63,53 @@ function page_2_create_form(array &$form, array $form_state) {
       4 => 'Experimental/Common Garden',
       5 => 'Plantation',
     ),
+    '#ajax' => array(
+      'wrapper' => 'study_info',
+      'callback' => 'study_type_callback'
+    )
   );
+  
+  $form['study_info'] = array(
+    '#type' => 'fieldset',
+    '#tree' => TRUE,
+    '#collapsible' => TRUE,
+    '#prefix' => '<div id="study_info">',
+    '#suffix' => '</div>'
+  );
+  
+  if (!empty($form_state['values']['study_type'])){
+    $type = $form_state['values']['study_type'];
+  }
+  elseif (!empty($form_state['saved_values'][TPPS_PAGE_2]['study_type'])){
+    $type = $form_state['saved_values'][TPPS_PAGE_2]['study_type'];
+  }
+  else {
+    $type = 0;
+  }
 
-  natural_population($form, $values);
-
-  growth_chamber($form, $values);
-
-  greenhouse($form, $values);
-
-  common_garden($form, $values);
-
-  plantation($form, $values);
-
+  switch($type){
+    case '1':
+      natural_population($form['study_info']);
+      break;
+    case '2':
+      growth_chamber($form['study_info']);
+      break;
+    case '3':
+      greenhouse($form['study_info']);
+      unset($form['study_info']['humidity']['uncontrolled']);
+      unset($form['study_info']['light']['uncontrolled']);
+      unset($form['study_info']['rooting']['ph']['uncontrolled']);
+      break;
+    case '4':
+      common_garden($form['study_info']);
+      break;
+    case '5':
+      plantation($form['study_info']);
+      break;
+    default:
+      break;
+  }
+  
   $form['Back'] = array(
     '#type' => 'submit',
     '#value' => t('Back'),

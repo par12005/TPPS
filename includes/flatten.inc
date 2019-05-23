@@ -58,7 +58,7 @@ function tpps_flatten($state) {
   unset($data[TPPS_PAGE_1]);
 
   $page_2 = &$data[TPPS_PAGE_2];
-  $loc = &$page_2['studyLocation'];
+  $loc = &$page_2['study_location'];
 
   if (isset($page_2['#cleared']) and $page_2['#cleared']) {
     $data['#page_2_cleared'] = TRUE;
@@ -79,11 +79,11 @@ function tpps_flatten($state) {
     $data['Study Location'] = $loc['coordinates'];
   }
 
-  if (isset($page_2['dataType']) and $page_2['dataType']) {
-    $data['Data Type'] = $page_2['dataType'];
+  if (isset($page_2['data_type']) and $page_2['data_type']) {
+    $data['Data Type'] = $page_2['data_type'];
   }
 
-  if (isset($page_2['studyType']) and $page_2['studyType']) {
+  if (isset($page_2['study_type']) and $page_2['study_type']) {
     $study_type_options = array(
       1 => 'Natural Population (Landscape)',
       2 => 'Growth Chamber',
@@ -91,11 +91,11 @@ function tpps_flatten($state) {
       4 => 'Experimental/Common Garden',
       5 => 'Plantation',
     );
-    if (isset($study_type_options[$page_2['studyType']])) {
-      $data['Study Type'] = $study_type_options[$page_2['studyType']];
+    if (isset($study_type_options[$page_2['study_type']])) {
+      $data['Study Type'] = $study_type_options[$page_2['study_type']];
     }
 
-    switch ($page_2['studyType']) {
+    switch ($page_2['study_type']) {
       case 1:
         if (isset($page_2['naturalPopulation'])) {
           $nat_pop = &$page_2['naturalPopulation'];

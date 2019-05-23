@@ -36,7 +36,7 @@ function page_3_create_form(&$form, &$form_state) {
   $file_description = "Please upload a spreadsheet file containing tree population data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may omit that drop-down menu. Your file must contain columns with information about at least the Tree Identifier and the Location of the tree (either gps coordinates or country/state).";
   $file_upload_location = 'public://' . variable_get('tpps_accession_files_dir', 'tpps_accession');
 
-  if ($form_state['saved_values'][TPPS_PAGE_2]['studyType'] == '4') {
+  if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] == '4') {
     $file_description .= ' Location columns should describe the location of the source tree for the Common Garden.';
   }
 
@@ -85,7 +85,7 @@ function page_3_create_form(&$form, &$form_state) {
     $column_options['10'] = 'Genus + Species';
   }
 
-  if ($form_state['saved_values'][TPPS_PAGE_2]['studyType'] != '1') {
+  if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != '1') {
     $column_options['11'] = 'Source Tree Identifier';
   }
 
@@ -219,7 +219,7 @@ function page_3_create_form(&$form, &$form_state) {
         '12' => 'Population Group',
       );
 
-      if ($form_state['saved_values'][TPPS_PAGE_2]['studyType'] != '1') {
+      if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != '1') {
         $column_options['11'] = 'Source Tree Identifier';
       }
 

@@ -24,7 +24,7 @@ function page_4_create_form(&$form, &$form_state) {
   $form['#tree'] = TRUE;
 
   $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  $data_type = $form_state['saved_values'][TPPS_PAGE_2]['dataType'];
+  $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'];
   for ($i = 1; $i <= $organism_number; $i++) {
 
     $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"];
