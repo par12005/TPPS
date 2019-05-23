@@ -203,7 +203,7 @@ function tpps_structure_autocomplete($string) {
 }
 
 /**
- * Return updated managed_file form element.
+ * Indicate the managed_file element to be updated.
  *
  * This function is called after a no_header element is changed, triggering an
  * update of the managed_file element.
@@ -214,7 +214,7 @@ function tpps_structure_autocomplete($string) {
  *   The state of the form that needs to be updated.
  *
  * @return array
- *   The part of the form to be updated.
+ *   The element in the form to be updated.
  */
 function tpps_no_header_callback(array $form, array &$form_state) {
 

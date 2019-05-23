@@ -2,12 +2,29 @@
 
 /**
  * @file
+ * Define the TPPS landing page.
+ *
+ * This page can be accessed even by anonymous users. If the user is logged in,
+ * they are able to select an existing TPPS Submission, or create a new one.
  */
 
 /**
+ * Creates the landing page and its form.
  *
+ * @param array $form
+ *   The form being created.
+ * @param array $form_state
+ *   The state of the form being created.
+ *
+ * @global string $base_url
+ *   The base url of the site.
+ * @global stdClass $user
+ *   The user trying to access the form.
+ *
+ * @return array
+ *   The form for the TPPS landing page.
  */
-function tpps_front_create_form(&$form, $form_state) {
+function tpps_front_create_form(array &$form, array $form_state) {
 
   global $base_url;
   global $user;

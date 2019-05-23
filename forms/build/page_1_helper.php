@@ -2,12 +2,21 @@
 
 /**
  * @file
+ * Define the helper functions for the Publication/Species Information page.
  */
 
 /**
+ * This function creates fields describing the primary author.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function user_info(&$form, $values) {
+function user_info(array &$form, array $values) {
 
   $form['primaryAuthor'] = array(
     '#type' => 'textfield',
@@ -35,9 +44,22 @@ function user_info(&$form, $values) {
 }
 
 /**
+ * This function creates fields describing the publication.
  *
+ * This includes the secondary authors, status, year, title, abstract, and
+ * journal.
+ *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function publication(&$form, $values, $form_state) {
+function publication(array &$form, array $values, array $form_state) {
 
   $form['publication'] = array(
     '#type' => 'fieldset',
@@ -85,9 +107,17 @@ function publication(&$form, $values, $form_state) {
 }
 
 /**
+ * This function creates fields describing the species in the publication.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function organism(&$form, $values) {
+function organism(array &$form, array $values) {
 
   $form['organism'] = array(
     '#type' => 'fieldset',
@@ -120,7 +150,7 @@ function organism(&$form, $values) {
 
     $form['organism']["$i"] = array(
       '#type' => 'textfield',
-      '#title' => t("Species $i: *"),
+      '#title' => t("Species @num: *", array('@num' => $i)),
       '#autocomplete_path' => "species/autocomplete",
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -134,9 +164,22 @@ function organism(&$form, $values) {
 }
 
 /**
+ * This function creates the year field for the publication.
  *
+ * This field changes its options based on the selection made for publication
+ * status.
+ *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function year(&$form, $values, $form_state) {
+function year(array &$form, array $values, array $form_state) {
 
   if (isset($form_state['values']['publication']['status']) and $form_state['values']['publication']['status'] != '0') {
     $pub_status = $form_state['values']['publication']['status'];
@@ -178,9 +221,19 @@ function year(&$form, $values, $form_state) {
 }
 
 /**
+ * This function creates fields for the secondary authors of the publication.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function secondary_authors(&$form, $values, $form_state) {
+function secondary_authors(array &$form, array $values, array $form_state) {
 
   $file_upload_location = 'public://' . variable_get('tpps_author_files_dir', 'tpps_authors');
 
@@ -211,7 +264,7 @@ function secondary_authors(&$form, $values, $form_state) {
 
     $form['publication']['secondaryAuthors'][$i] = array(
       '#type' => 'textfield',
-      '#title' => t("Secondary Author $i: *"),
+      '#title' => t("Secondary Author @num: *", array('@num' => $i)),
       '#autocomplete_path' => 'author/autocomplete',
     );
   }

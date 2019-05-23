@@ -2,15 +2,27 @@
 
 /**
  * @file
+ * Creates the Study Design page and includes helper files.
  */
 
 require_once 'page_2_ajax.php';
 require_once 'page_2_helper.php';
 
 /**
+ * Creates the Study Design form page.
  *
+ * This function mainly calls the helper functions for the start date, end date,
+ * and various study types.
+ *
+ * @param array $form
+ *   The form being created.
+ * @param array $form_state
+ *   The state of the form being created.
+ *
+ * @return array
+ *   The completed Study Design form.
  */
-function page_2_create_form(&$form, $form_state) {
+function page_2_create_form(array &$form, array $form_state) {
 
   if (isset($form_state['saved_values'][TPPS_PAGE_2])) {
     $values = $form_state['saved_values'][TPPS_PAGE_2];
@@ -19,11 +31,11 @@ function page_2_create_form(&$form, $form_state) {
     $values = array();
   }
 
-  studyDate('Starting', $form, $values, $form_state);
+  study_date('Starting', $form, $values, $form_state);
 
-  studyDate('Ending', $form, $values, $form_state);
+  study_date('Ending', $form, $values, $form_state);
 
-  studyLocation($form, $values, $form_state);
+  study_location($form, $values, $form_state);
 
   $form['dataType'] = array(
     '#type' => 'select',
@@ -53,13 +65,13 @@ function page_2_create_form(&$form, $form_state) {
     ),
   );
 
-  naturalPopulation($form, $values);
+  natural_population($form, $values);
 
-  growthChamber($form, $values);
+  growth_chamber($form, $values);
 
   greenhouse($form, $values);
 
-  commonGarden($form, $values);
+  common_garden($form, $values);
 
   plantation($form, $values);
 

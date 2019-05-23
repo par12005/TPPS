@@ -2,12 +2,25 @@
 
 /**
  * @file
+ * Define the helper functions for the Study Design page.
  */
 
 /**
+ * This function creates fields describing the study dates.
  *
+ * @param string $type
+ *   The type of date, 'Starting' or 'Ending'.
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function studyDate($type, &$form, $values, &$form_state) {
+function study_date($type, array &$form, array $values, array &$form_state) {
 
   $form[$type . 'Date'] = array(
     '#prefix' => "<div class='container-inline'>",
@@ -55,13 +68,13 @@ function studyDate($type, &$form, $values, &$form_state) {
 
   $form[$type . 'Date']['year'] = array(
     '#type' => 'select',
-    '#title' => t("$type Year: *"),
+    '#title' => t("@type Year: *", array('@type' => $type)),
     '#options' => $yearArr,
   );
 
   $form[$type . 'Date']['month'] = array(
     '#type' => 'select',
-    '#title' => t("$type Month: *"),
+    '#title' => t("@type Month: *", array('@type' => $type)),
     '#options' => $monthArr,
     '#states' => array(
       'invisible' => array(
@@ -115,9 +128,19 @@ function studyDate($type, &$form, $values, &$form_state) {
 }
 
 /**
+ * This function creates fields describing the study location.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function studyLocation(&$form, $values, &$form_state) {
+function study_location(array &$form, array $values, array &$form_state) {
 
   $form['studyLocation'] = array(
     '#type' => 'fieldset',
@@ -209,7 +232,7 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>',
         $query = $standard_coordinate;
       }
       else {
-        dpm('Invalid coordinates');
+        drupal_set_message(t('Invalid coordinates'), 'error');
       }
     }
 
@@ -228,9 +251,17 @@ Decimal Degrees: 41.8077° N, 72.2540° W<br>',
 }
 
 /**
+ * This function creates fields for the natural population study type.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function naturalPopulation(&$form, $values) {
+function natural_population(array &$form, array $values) {
 
   $form['naturalPopulation'] = array(
     '#type' => 'fieldset',
@@ -274,9 +305,17 @@ function naturalPopulation(&$form, $values) {
 }
 
 /**
+ * This function creates fields for the growth chamber study type.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function growthChamber(&$form, $values) {
+function growth_chamber(array &$form, array $values) {
 
   $form['growthChamber'] = array(
     '#type' => 'fieldset',
@@ -404,12 +443,12 @@ function growthChamber(&$form, $values) {
   foreach ($treatment_options as $key => $option) {
     $form['growthChamber']['rooting']['treatment']["$option"] = array(
       '#type' => 'checkbox',
-      '#title' => t("$option"),
+      '#title' => t("@opt", array('@opt' => $option)),
     );
 
     $form['growthChamber']['rooting']['treatment']["$option-description"] = array(
       '#type' => 'textfield',
-      '#description' => t("$option Description *"),
+      '#description' => t("@opt Description *", array('@opt' => $option)),
       '#states' => array(
         'visible' => array(
           ':input[name="growthChamber[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE),
@@ -422,9 +461,17 @@ function growthChamber(&$form, $values) {
 }
 
 /**
+ * This function creates fields for the greenhouse study type.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function greenhouse(&$form, $values) {
+function greenhouse(array &$form, array $values) {
 
   $form['greenhouse'] = array(
     '#type' => 'fieldset',
@@ -550,11 +597,11 @@ function greenhouse(&$form, $values) {
   foreach ($treatment_options as $key => $option) {
     $form['greenhouse']['rooting']['treatment']["$option"] = array(
       '#type' => 'checkbox',
-      '#title' => t("$option"),
+      '#title' => t("@opt", array('@opt' => $option)),
     );
     $form['greenhouse']['rooting']['treatment']["$option-description"] = array(
       '#type' => 'textfield',
-      '#description' => t("$option Description *"),
+      '#description' => t("@opt Description *", array('@opt' => $option)),
       '#states' => array(
         'visible' => array(
           ':input[name="greenhouse[rooting][treatment][' . $option . ']"]' => array('checked' => TRUE),
@@ -567,9 +614,17 @@ function greenhouse(&$form, $values) {
 }
 
 /**
+ * This function creates fields for the common garden study type.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function commonGarden(&$form, $values) {
+function common_garden(array &$form, array $values) {
 
   $form['commonGarden'] = array(
     '#type' => 'fieldset',
@@ -687,7 +742,7 @@ function commonGarden(&$form, $values) {
   foreach ($treatment_options as $key => $option) {
     $form['commonGarden']['treatment']["$option"] = array(
       '#type' => 'checkbox',
-      '#title' => t("$option"),
+      '#title' => t("@opt", array('@opt' => $option)),
       '#states' => array(
         'visible' => array(
           ':input[name="commonGarden[treatment][check]"]' => array('checked' => TRUE),
@@ -696,7 +751,7 @@ function commonGarden(&$form, $values) {
     );
     $form['commonGarden']['treatment']["$option-description"] = array(
       '#type' => 'textfield',
-      '#description' => t("$option Description *"),
+      '#description' => t("@opt Description *", array('@opt' => $option)),
       '#states' => array(
         'visible' => array(
           ':input[name="commonGarden[treatment][' . $option . ']"]' => array('checked' => TRUE),
@@ -710,9 +765,17 @@ function commonGarden(&$form, $values) {
 }
 
 /**
+ * This function creates fields for the plantation study type.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function plantation(&$form, $values) {
+function plantation(array &$form, array $values) {
   $form['plantation'] = array(
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">Plantation Information:</div>'),
@@ -784,7 +847,7 @@ function plantation(&$form, $values) {
   foreach ($treatment_options as $key => $option) {
     $form['plantation']['treatment']["$option"] = array(
       '#type' => 'checkbox',
-      '#title' => t("$option"),
+      '#title' => t("@opt", array('@opt' => $option)),
       '#states' => array(
         'visible' => array(
           ':input[name="plantation[treatment][check]"]' => array('checked' => TRUE),
@@ -793,7 +856,7 @@ function plantation(&$form, $values) {
     );
     $form['plantation']['treatment']["$option-description"] = array(
       '#type' => 'textfield',
-      '#description' => t("$option Description *"),
+      '#description' => t("@opt Description *", array('@opt' => $option)),
       '#states' => array(
         'visible' => array(
           ':input[name="plantation[treatment][' . $option . ']"]' => array('checked' => TRUE),
@@ -807,9 +870,17 @@ function plantation(&$form, $values) {
 }
 
 /**
- * Growthchamber helper helpers.
+ * This function creates fields describing growth chamber co2.
+ *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function co2(&$form, $values) {
+function co2(array &$form, array $values) {
 
   $form['growthChamber']['co2Control'] = array(
     '#type' => 'fieldset',
@@ -850,9 +921,17 @@ function co2(&$form, $values) {
 }
 
 /**
+ * This function creates fields describing growth chamber humidity.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function humidity(&$form, $values) {
+function humidity(array &$form, array $values) {
 
   $form['growthChamber']['humidityControl'] = array(
     '#type' => 'fieldset',
@@ -893,9 +972,17 @@ function humidity(&$form, $values) {
 }
 
 /**
+ * This function creates fields describing growth chamber light.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function light(&$form, $values) {
+function light(array &$form, array $values) {
 
   $form['growthChamber']['lightControl'] = array(
     '#type' => 'fieldset',
@@ -936,9 +1023,17 @@ function light(&$form, $values) {
 }
 
 /**
+ * This function creates fields describing growth chamber pH.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function ph(&$form, $values) {
+function ph(array &$form, array $values) {
 
   $form['growthChamber']['rooting']['ph'] = array(
     '#type' => 'fieldset',
@@ -979,9 +1074,17 @@ function ph(&$form, $values) {
 }
 
 /**
- * Greenhouse helper helpers.
+ * This function creates fields describing greenhouse humidity.
+ *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function greenhumidity(&$form, $values) {
+function greenhumidity(array &$form, array $values) {
 
   $form['greenhouse']['humidityControl'] = array(
     '#type' => 'fieldset',
@@ -1012,9 +1115,17 @@ function greenhumidity(&$form, $values) {
 }
 
 /**
+ * This function creates fields describing greenhouse light.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function greenlight(&$form, $values) {
+function greenlight(array &$form, array $values) {
 
   $form['greenhouse']['lightControl'] = array(
     '#type' => 'fieldset',
@@ -1045,9 +1156,17 @@ function greenlight(&$form, $values) {
 }
 
 /**
+ * This function creates fields describing greenhouse pH.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function greenph(&$form, $values) {
+function greenph(array &$form, array $values) {
 
   $form['greenhouse']['rooting']['ph'] = array(
     '#type' => 'fieldset',
@@ -1078,9 +1197,17 @@ function greenph(&$form, $values) {
 }
 
 /**
- * Commongarden helper helpers.
+ * This function creates fields describing common garden salinity.
+ *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function salinity(&$form, $values) {
+function salinity(array &$form, array $values) {
 
   $form['commonGarden']['salinity'] = array(
     '#type' => 'fieldset',
