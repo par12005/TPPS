@@ -180,11 +180,10 @@ function study_location(array &$form, array $values, array &$form_state) {
       ),
       ),
     ),
-    '#description' =>
-    'Accepted formats: <br>
-Degrees Minutes Seconds: 41° 48\' 27.7" N, 72° 15\' 14.4" W<br>
-Degrees Decimal Minutes: 41° 48.462\' N, 72° 15.24\' W<br>
-Decimal Degrees: 41.8077° N, 72.2540° W<br>',
+    '#description' => 'Accepted formats: <br>'
+    . 'Degrees Minutes Seconds: 41° 48\' 27.7" N, 72° 15\' 14.4" W<br>'
+    . 'Degrees Decimal Minutes: 41° 48.462\' N, 72° 15.24\' W<br>'
+    . 'Decimal Degrees: 41.8077° N, 72.2540° W<br>',
   );
 
   $form['study_location']['custom'] = array(
@@ -387,11 +386,11 @@ function common_garden(array &$form) {
     '#title' => t('Irrigation Type: *'),
     '#options' => array(
       0 => '- Select -',
-      1 => 'Irrigation from top',
-      2 => 'Irrigation from bottom',
-      3 => 'Drip Irrigation',
-      4 => 'Other',
-      5 => 'No Irrigation',
+      'Irrigation from top' => 'Irrigation from top',
+      'Irrigation from bottom' => 'Irrigation from bottom',
+      'Drip Irrigation' => 'Drip Irrigation',
+      'Other' => 'Other',
+      'No Irrigation' => 'No Irrigation',
     ),
   );
 
@@ -399,7 +398,7 @@ function common_garden(array &$form) {
     '#type' => 'textfield',
     '#states' => array(
       'visible' => array(
-        ':input[name="study_info[irrigation][option]"]' => array('value' => '4'),
+        ':input[name="study_info[irrigation][option]"]' => array('value' => 'Other'),
       ),
     ),
   );

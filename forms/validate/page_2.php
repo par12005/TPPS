@@ -136,7 +136,7 @@ function page_2_validate_form(&$form, &$form_state) {
       if (!$irrigation['option']){
         form_set_error('study_info][irrigation][option', 'Irrigation Type: field is required.');
       }
-      elseif ($irrigation['option'] == '4' and !$irrigation['other']){
+      elseif ($irrigation['option'] == 'Other' and !$irrigation['other']){
         form_set_error('study_info][irrigation][other', 'Custom Irrigation Type: field is required.');
       }
     }
