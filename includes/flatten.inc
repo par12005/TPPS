@@ -95,312 +95,119 @@ function tpps_flatten($state) {
       $data['Study Type'] = $study_type_options[$page_2['study_type']];
     }
 
-    switch ($page_2['study_type']) {
-      case 1:
-        if (isset($page_2['naturalPopulation'])) {
-          $nat_pop = &$page_2['naturalPopulation'];
-          $data['Seasons Assessed'] = '';
-          foreach ($nat_pop['season'] as $key => $item) {
-            if (isset($item) and $item != '0') {
-              $data['Seasons Assessed'] .= $item . ' ';
-            }
+    if (!empty($page_2['study_info']['season']))
+      $data['Seasons Assessed'] = implode($page_2['study_info']['season']);
+    
+    if (!empty($page_2['study_info']['assessions']))
+      $data['Average number of assessions'] = $page_2['study_info']['assessions'];
+    
+    $data['Average High Temperature'] = isset($page_2['study_info']['temp']['high']) ? $page_2['study_info']['temp']['high'] : NULL;
+    $data['Average Low Temperature'] = isset($page_2['study_info']['temp']['low']) ? $page_2['study_info']['temp']['low'] : NULL;
+
+    $types = array(
+      'co2' => 'CO2',
+      'humidity' => 'Air Humidity',
+      'light' => 'Light Intensity',
+      'salinity' => 'Salinity'
+    );
+
+    foreach ($types as $type => $label){
+      if (!empty($page_2['study_info'][$type])){
+        $set = $page_2['study_info'][$type];
+        if (!empty($set['option'])){
+          $data["$label Control"] = ($set['option'] == '1') ? 'Controlled' : 'Uncontrolled';
+          if ($set['option'] == '1' and !empty($set['controlled'])){
+            $data["$label Value"] = $set['controlled'];
           }
-          if (isset($nat_pop['assessions']) and $nat_pop['assessions']) {
-            $data['Average number of assessions'] = $nat_pop['assessions'];
-          }
-        }
-        break;
-
-      case 2:
-        if (isset($page_2['growthChamber'])) {
-          $growth = &$page_2['growthChamber'];
-          $root = &$growth['rooting'];
-          $treatment = &$root['treatment'];
-
-          if (isset($growth['co2Control']['option']) and $growth['co2Control']['option'] and $growth['co2Control']['option'] == '1') {
-            $data['CO2 Control'] = 'Controlled';
-            $data['CO2 Value'] = isset($growth['co2Control']['controlled']) ? $growth['co2Control']['controlled'] : NULL;
-          }
-          elseif (isset($growth['co2Control']['option']) and $growth['co2Control']['option']) {
-            $data['CO2 Control'] = 'Uncontrolled';
-            $data['CO2 Value'] = isset($growth['co2Control']['uncontrolled']) ? $growth['co2Control']['uncontrolled'] : NULL;
-          }
-
-          if (isset($growth['humidityControl']['option']) and $growth['humidityControl']['option'] and $growth['humidityControl']['option'] == '1') {
-            $data['Humidity Control'] = 'Controlled';
-            $data['Humidity Value'] = isset($growth['humidityControl']['controlled']) ? $growth['humidityControl']['controlled'] : NULL;
-          }
-          elseif (isset($growth['humidityControl']['option']) and $growth['humidityControl']['option']) {
-            $data['Humidity Control'] = 'Uncontrolled';
-            $data['Humidity Value'] = isset($growth['humidityControl']['uncontrolled']) ? $growth['humidityControl']['uncontrolled'] : NULL;
-          }
-
-          if (isset($growth['lightControl']['option']) and $growth['lightControl']['option'] and $growth['lightControl']['option'] == '1') {
-            $data['Light Intensity Control'] = 'Controlled';
-            $data['Light Intensity Value'] = isset($growth['lightControl']['controlled']) ? $growth['lightControl']['controlled'] : NULL;
-          }
-          elseif (isset($growth['lightControl']['option']) and $growth['lightControl']['option']) {
-            $data['Light Intensity Control'] = 'Uncontrolled';
-            $data['Light Intensity Value'] = isset($growth['lightControl']['uncontrolled']) ? $growth['lightControl']['uncontrolled'] : NULL;
-          }
-
-          $data['Average High Temperature'] = isset($growth['temp']['high']) ? $growth['temp']['high'] : NULL;
-          $data['Average Low Temperature'] = isset($growth['temp']['low']) ? $growth['temp']['low'] : NULL;
-
-          if (isset($root['option'])) {
-            $rooting_options = array(
-              1 => 'Aeroponics',
-              2 => 'Hydroponics',
-              3 => 'Soil',
-            );
-            if (isset($rooting_options[$growth['rooting']['option']])) {
-              $data['Rooting Type'] = $rooting_options[$growth['rooting']['option']];
-            }
-
-            if (isset($data['Rooting Type']) and $data['Rooting Type'] == 'Soil') {
-              $soil_options = array(
-                1 => 'Sand',
-                2 => 'Peat',
-                3 => 'Clay',
-                4 => 'Mixed',
-                5 => 'Other',
-              );
-              if (isset($soil_options[$root['soil']['type']])) {
-                $data['Soil Type'] = $soil_options[$root['soil']['type']];
-              }
-
-              if (isset($data['Soil Type']) and $data['Soil Type'] == 'Other') {
-                $data['Custom Soil Type'] = $root['soil']['other'];
-              }
-
-              $data['Soil Container Type'] = isset($root['soil']['container']) ? $root['soil']['container'] : NULL;
-            }
-          }
-
-          if (isset($root['ph']['option']) and $root['ph']['option']) {
-            $data['pH Control'] = 'Controlled';
-            $data['pH Value'] = isset($root['ph']['controlled']) ? $root['ph']['controlled'] : NULL;
-          }
-          else {
-            $data['pH Control'] = 'Uncontrolled';
-            $data['pH Value'] = isset($root['ph']['uncontrolled']) ? $root['ph']['uncontrolled'] : NULL;
-          }
-
-          if (isset($treatment)) {
-            $selected = FALSE;
-            $description = FALSE;
-
-            foreach ($treatment as $field => $value) {
-              if (!$description) {
-                $description = TRUE;
-                $selected = $value;
-                continue;
-              }
-              elseif ($selected == '1') {
-                $treatment_name = substr($field, 0, -12);
-                $data["Treatment: $treatment_name description"] = isset($value) ? $value : NULL;
-              }
-              $description = FALSE;
-            }
+          elseif (!empty($set['uncontrolled'])){
+            $data["$label Value"] = $set['uncontrolled'];
           }
         }
-        break;
+      }
+    }
 
-      case 3:
-        if (isset($page_2['greenhouse'])) {
-          $green = &$page_2['greenhouse'];
-          $root = &$green['rooting'];
-          $treatment = &$root['treatment'];
+    if (!empty($page_2['study_info']['rooting']['option'])){
+      $data['Rooting Type'] = $page_2['study_info']['rooting']['option'];
 
-          if (isset($green['humidityControl']['option']) and $green['humidityControl']['option'] and $green['humidityControl']['option'] == '1') {
-            $data['Humidity Control'] = 'Controlled';
-            $data['Humidity Value'] = isset($green['humidityControl']['controlled']) ? $green['humidityControl']['controlled'] : NULL;
-          }
-          elseif (isset($green['humidityControl']['option']) and $green['humidityControl']['option']) {
-            $data['Humidity Control'] = 'Uncontrolled';
-          }
+      if ($data['Rooting Type'] == 'Soil' and !empty($page_2['study_info']['rooting']['soil']['type'])){
+        $soil = &$page_2['study_info']['rooting']['soil'];
+        $data['Soil Type'] =$soil['type'];
 
-          if (isset($green['lightControl']['option']) and $green['lightControl']['option'] and $green['lightControl']['option'] == '1') {
-            $data['Light Intensity Control'] = 'Controlled';
-            $data['Light Intensity Value'] = isset($green['lightControl']['controlled']) ? $green['lightControl']['controlled'] : NULL;
-          }
-          elseif (isset($green['lightControl']['option']) and $green['lightControl']['option']) {
-            $data['Light Intensity Control'] = 'Uncontrolled';
-          }
+        if ($data['Soil Type'] == 'Other')
+          $data['Custom Soil Type'] = $soil['other'];
+        
+        $data['Soil Container Type'] = isset($soil['container']) ? $soil['container'] : NULL;
+      }
+    }
 
-          $data['Average High Temperature'] = isset($green['temp']['high']) ? $green['temp']['high'] : NULL;
-          $data['Average Low Temperature'] = isset($green['temp']['low']) ? $green['temp']['low'] : NULL;
+    if (!empty($page_2['study_info']['rooting']['ph']['option'])){
+      $set = $page_2['study_info']['rooting']['ph'];
+      $data['pH Control'] = ($set['option'] == '1') ? 'Controlled' : 'Uncontrolled';
+      
+      if ($set['option'] == '1' and !empty($set['controlled'])){
+        $data["pH Value"] = $set['controlled'];
+      }
+      elseif (!empty($set['uncontrolled'])){
+        $data["pH Value"] = $set['uncontrolled'];
+      }
+    }
 
-          if (isset($root['option'])) {
-            $rooting_options = array(
-              1 => 'Aeroponics',
-              2 => 'Hydroponics',
-              3 => 'Soil',
-            );
-            if (isset($rooting_options[$green['rooting']['option']])) {
-              $data['Rooting Type'] = $rooting_options[$green['rooting']['option']];
-            }
+    if (!empty($page_2['study_info']['rooting']['treatment'])){
+      $treatment = $page_2['study_info']['rooting']['treatment'];
+      $selected = FALSE;
+      $description = FALSE;
 
-            if (isset($data['Rooting Type']) and $data['Rooting Type'] == 'Soil') {
-              $soil_options = array(
-                1 => 'Sand',
-                2 => 'Peat',
-                3 => 'Clay',
-                4 => 'Mixed',
-                5 => 'Other',
-              );
-              if (isset($soil_options[$root['soil']['type']])) {
-                $data['Soil Type'] = $soil_options[$root['soil']['type']];
-              }
-
-              if (isset($data['Soil Type']) and $data['Soil Type'] == 'Other') {
-                $data['Custom Soil Type'] = $root['soil']['other'];
-              }
-
-              $data['Soil Container Type'] = isset($root['soil']['container']) ? $root['soil']['container'] : NULL;
-            }
-          }
-
-          if (isset($root['ph']['option']) and $root['ph']['option']) {
-            $data['pH Control'] = 'Controlled';
-            $data['pH Value'] = isset($root['ph']['controlled']) ? $root['ph']['controlled'] : NULL;
-          }
-          else {
-            $data['pH Control'] = 'Uncontrolled';
-          }
-
-          if (isset($treatment)) {
-            $selected = FALSE;
-            $description = FALSE;
-
-            foreach ($treatment as $field => $value) {
-              if (!$description) {
-                $description = TRUE;
-                $selected = $value;
-                continue;
-              }
-              elseif ($selected == '1') {
-                $treatment_name = substr($field, 0, -12);
-                $data["Treatment: $treatment_name description"] = isset($value) ? $value : NULL;
-              }
-              $description = FALSE;
-            }
-          }
+      foreach ($treatment as $field => $value) {
+        if (!$description) {
+          $description = TRUE;
+          $selected = ($value) ? $field : FALSE;
+          continue;
         }
-        break;
-
-      case 4:
-        if (isset($page_2['commonGarden'])) {
-          $garden = &$page_2['commonGarden'];
-
-          if (isset($garden['irrigation']['option']) and $garden['irrigation']['option']) {
-            $irrigation_options = array(
-              1 => 'Irrigation from top',
-              2 => 'Irrigation from bottom',
-              3 => 'Drip Irrigation',
-              4 => 'Other',
-              5 => 'No Irrigation',
-            );
-            if (isset($irrigation_options[$garden['irrigation']['option']])) {
-              $data['Irrigation Type'] = $irrigation_options[$garden['irrigation']['option']];
-            }
-
-            if (isset($data['Irrigation Type']) and $data['Irrigation Type'] == 'Other') {
-              $data['Custom Irrigation Type'] = $garden['irrigation']['other'];
-            }
-          }
-
-          if (isset($garden['salinity']['option']) and $garden['salinity']['option'] and $garden['salinity']['option'] == '1') {
-            $data['Salinity Control'] = 'Controlled';
-            $data['Salinity Value'] = isset($garden['salinity']['controlled']) ? $garden['salinity']['controlled'] : NULL;
-          }
-          elseif (isset($garden['salinity']['option']) and $garden['salinity']['option']) {
-            $data['Salinity Control'] = 'Uncontrolled';
-            $data['Salinity Value'] = isset($garden['salinity']['uncontrolled']) ? $garden['salinity']['uncontrolled'] : NULL;
-          }
-
-          $biotic_envs = array();
-          foreach ($garden['bioticEnv']['option'] as $key => $val) {
-            if ($val) {
-              $biotic_envs[] = $key;
-            }
-          }
-          $data['Biotic Environment'] = (isset($biotic_envs) and count($biotic_envs) > 1) ? implode(', ', $biotic_envs) : NULL;
-
-          if (isset($garden['bioticEnv']['option']['Other']) and $garden['bioticEnv']['option']['Other'] and isset($garden['bioticEnv']['other']) and $garden['bioticEnv']['other'] != '') {
-            $data['Custom Biotic Environment'] = $garden['bioticEnv']['other'];
-          }
-
-          $seasons = array();
-          foreach ($garden['season'] as $key => $item) {
-            if (isset($item) and $item != '0') {
-              $seasons[] = $item;
-            }
-          }
-          $data['Seasons Assessed'] = (isset($seasons) and count($seasons) > 1) ? implode(', ', $seasons) : NULL;
-
-          if (isset($garden['treatment']['check']) and $garden['treatment']['check']) {
-            $treatment = &$garden['treatment'];
-            $selected = FALSE;
-            $description = FALSE;
-
-            foreach ($treatment as $field => $value) {
-              if ($field != 'check') {
-                if (!$description) {
-                  $description = TRUE;
-                  $selected = $value;
-                  continue;
-                }
-                elseif (isset($selected) and $selected == '1') {
-                  $treatment_name = substr($field, 0, -12);
-                  $data["Treatment: $treatment_name description"] = $value;
-                }
-                $description = FALSE;
-              }
-            }
-          }
+        elseif ($selected and !empty($value)) {
+          $data["Treatment: $selected description"] = $value;
         }
-        break;
+        $description = FALSE;
+      }
+    }
 
-      case 5:
-        if (isset($page_2['plantation'])) {
-          $plant = &$page_2['naturalPopulation'];
-          $data['Seasons Assessed'] = '';
-          foreach ($plant['season'] as $key => $item) {
-            if (isset($item) and $item != '0') {
-              $data['Seasons Assessed'] .= $item . ' ';
-            }
+    if (!empty($page_2['study_info']['irrigation']) and !empty($page_2['study_info']['irrigation']['option'])){
+      $data['Irrigation Type'] = $page_2['study_info']['irrigation']['option'];
+      if ($data['Irrigation Type'] == 'Other' and !empty($page_2['study_info']['irrigation']['other']))
+        $data['Custom Irrigation Type'] = $page_2['study_info']['irrigation']['other'];
+    }
+
+    if (!empty($page_2['study_info']['biotic_env']['option'])){
+      $biotic_envs = array();
+      foreach ($page_2['study_info']['biotic_env']['option'] as $key => $val){
+        if ($val)
+          $biotic_envs[] = $key;
+      }
+  
+      if (!empty($biotic_envs)){
+        $data['Biotic Environment'] = implode(', ', $biotic_envs);
+        if (in_array('Other', $biotic_envs) and !empty($page_2['study_info']['biotic_env']['other']))
+          $data['Custom Biotic Environment'] = $page_2['study_info']['biotic_env']['other'];
+      }
+    }
+
+    if (!empty($page_2['study_info']['treatment']['check'])){
+      $treatment = &$page_2['study_info']['treatment'];
+      $selected = FALSE;
+      $description = FALSE;
+
+      foreach ($treatment as $field => $value) {
+        if ($field != 'check') {
+          if (!$description) {
+            $description = TRUE;
+            $selected = ($value) ? $field : FALSE;
+            continue;
           }
-
-          if (isset($plant['assessions']) and $plant['assessions']) {
-            $data['Average number of assessions'] = $plant['assessions'];
+          elseif ($selected and !empty($value)) {
+            $data["Treatment: $selected description"] = $value;
           }
-
-          if (isset($plant['treatment']['check']) and $plant['treatment']['check']) {
-            $treatment = &$plant['treatment'];
-            $selected = FALSE;
-            $description = FALSE;
-
-            foreach ($treatment as $field => $value) {
-              if ($field != 'check') {
-                if (!$description) {
-                  $description = TRUE;
-                  $selected = $value;
-                  continue;
-                }
-                elseif (isset($selected) and $selected == '1') {
-                  $treatment_name = substr($field, 0, -12);
-                  $data["Treatment: $treatment_name description"] = $value;
-                }
-                $description = FALSE;
-              }
-            }
-          }
+          $description = FALSE;
         }
-        break;
-
-      default:
-        break;
+      }
     }
   }
   unset($data[TPPS_PAGE_2]);

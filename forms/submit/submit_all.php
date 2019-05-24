@@ -383,7 +383,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
         'name' => 'temperature_high',
         'is_obsolete' => 0,
       ),
-      'value' => $secondpage['study_info']['temp'],
+      'value' => $secondpage['study_info']['temp']['high'],
     ));
     
     tpps_chado_insert_record('projectprop', array(
@@ -395,7 +395,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
         'name' => 'temperature_low',
         'is_obsolete' => 0,
       ),
-      'value' => $secondpage['study_info']['temp'],
+      'value' => $secondpage['study_info']['temp']['low'],
     ));
   }
 
