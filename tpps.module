@@ -28,6 +28,7 @@ require_once 'includes/status_bar.inc';
 require_once 'includes/save_file_columns.inc';
 require_once 'includes/file_parsing.inc';
 require_once 'includes/accession_coordinates.inc';
+require_once 'includes/submissions.inc';
 
 /**
  * Implements hook_menu().
@@ -590,6 +591,7 @@ function tpps_main(array $form, array &$form_state) {
   }
   elseif (isset($params['accession']) and !isset($form_state['stage'])) {
     // Logged in, and with accession in link.
+    $old_form_state = tpps_load_submission($params['accession']);
     $old_form_state = variable_get('tpps_incomplete_' . $user->mail . $params['accession']);
     $form_state['saved_values'] = $old_form_state['saved_values'];
     $form_state['stage'] = $old_form_state['stage'];
@@ -613,6 +615,7 @@ function tpps_main(array $form, array &$form_state) {
       if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')) {
         // No submissions, or selected to create new submission.
         tpps_init_project($form, $form_state);
+        tpps_create_submission($form_state, $user->uid);
         variable_set('tpps_incomplete_' . $user->mail . $form_state['saved_values']['frontpage']['accession'], $form_state);
       }
       $old_form_state = variable_get('tpps_incomplete_' . $user->mail . $form_state['saved_values']['frontpage']['accession']);

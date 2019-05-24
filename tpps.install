@@ -17,6 +17,10 @@ function tpps_install() {
     $result .= exec('drush pm-enable --resolve-dependencies ultimate_cron -y');
     print_r($result);
   }
+
+  // Create foreign key for tpps_submission to reference users table.
+  db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_uid_fkey FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE;');
+  db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES chado.dbxref(dbxref_id) ON DELETE CASCADE;');
 }
 
 /**
@@ -45,6 +49,76 @@ function tpps_uninstall() {
   foreach ($tpps_usage as $row) {
     file_usage_delete(file_load($row->fid), $row->module, $row->type, $row->id, $row->count);
   }
+}
+
+/**
+ * Implements hook_schema().
+ *
+ * @return array
+ *   An array of tables defined in the schema.
+ */
+function tpps_schema() {
+  $schema['tpps_submission'] = array(
+    'description' => 'Contains TPPS Submissions',
+    'fields' => array(
+      'tpps_submission_id' => array(
+        'description' => 'The id of the TPPS submission.',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'user id of the user who created the submission.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'description' => 'Status of the submission - Incomplete, Pending Approval, or Approved.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'accession' => array(
+        'description' => 'The TGDR### accession number of the submission',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'dbxref_id' => array(
+        'description' => 'The dbxref_id from chado.dbxref.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'submission_state' => array(
+        'description' => 'The form_state of the submission.',
+        'type' => 'blob',
+        'size' => 'big',
+        'not null' => TRUE
+      )
+    ),
+    'foreign keys' => array(
+      'uid' => array(
+        'table' => 'users',
+        'columns' => array(
+          'uid' => 'uid'
+        )
+      ),
+      'dbxref_id' => array(
+        'table' => 'chado.dbxref',
+        'columns' => array(
+          'dbxref_id' => 'dbxref_id'
+        )
+      )
+    ),
+    'primary key' => array(
+      'tpps_submission_id'
+    )
+  );
+
+  return $schema;
 }
 
 /**

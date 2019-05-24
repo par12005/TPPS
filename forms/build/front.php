@@ -51,11 +51,8 @@ function tpps_front_create_form(array &$form, array $form_state) {
       else {
         if (isset($state) and !isset($state['saved_values'][TPPS_PAGE_1])) {
           variable_del($name);
-          $and = db_and()
-            ->condition('accession', $state['accession'])
-            ->condition('db_id', 95);
           $results = db_delete('chado.dbxref')
-            ->condition($and)
+          ->condition('accession', $state['accession'])
             ->execute();
         }
       }
