@@ -36,6 +36,7 @@ function tpps_submit_all(&$form_state) {
  */
 function tpps_submit_page_1(&$form_state, $project_id, &$file_rank) {
 
+  dpm($form_state);
   $dbxref_id = $form_state['dbxref_id'];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
 

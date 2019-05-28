@@ -46,9 +46,12 @@ function tpps_admin_panel(array $form, array &$form_state) {
   }
   elseif (empty($accession)) {
 
-    $query = db_select('variable', 'v')
-      ->fields('v', array('name'))
-      ->condition('v.name', db_like("tpps_complete_") . '%', 'LIKE')
+    $or = db_or()
+      ->condition('status', 'Pending Approval')
+      ->condition('status', 'Approved');
+    $query = db_select('tpps_submission', 's')
+      ->fields('s')
+      ->condition($or)
       ->execute();
 
     $display = "<table style='width:-webkit-fill-available' border='1'><thead>";
@@ -56,8 +59,7 @@ function tpps_admin_panel(array $form, array &$form_state) {
     $display .= "</thead><tbody>";
     $data = array();
     while (($result = $query->fetchObject())) {
-      $name = $result->name;
-      $state = variable_get($name, NULL);
+      $state = tpps_load_submission($result->accession);
       if (!empty($state)) {
 
         $item = array(
@@ -85,20 +87,14 @@ function tpps_admin_panel(array $form, array &$form_state) {
     );
   }
   else {
-    $results = db_select('variable', 'v')
-      ->fields('v', array('name'))
-      ->condition('v.name', db_like("tpps_complete_") . '%' . db_like("$accession"), 'LIKE')
-      ->execute()
-      ->fetchAssoc();
-    $var_name = $results['name'];
-    $submission_state = variable_get($var_name);
+    $submission_state = tpps_load_submission($accession);
     $status = $submission_state['status'];
     $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
     $display .= tpps_table_display($submission_state);
 
     $form['form_table'] = array(
       '#type' => 'hidden',
-      '#value' => $var_name,
+      '#value' => $accession,
       '#suffix' => $display,
     );
 
@@ -214,15 +210,16 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
   global $base_url;
 
-  $var_name = $form_state['values']['form_table'];
-  $suffix = substr($var_name, 14);
-  $to = substr($var_name, 14, -7);
-  $state = variable_get($var_name);
+  $accession = $form_state['values']['form_table'];
+  $submission = tpps_load_submission($accession, FALSE);
+  $user = user_load($submission->uid);
+  $to = $user->mail;
+  $state = unserialize($submission->submission_state);
   $params = array();
 
   $from = variable_get('site_mail', '');
   $params['subject'] = "TPPS Submission Rejected: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-  $params['uid'] = user_load_by_name($to)->uid;
+  $params['uid'] = $user->uid;
   $params['reject-reason'] = $form_state['values']['reject-reason'];
   $params['base_url'] = $base_url;
   $params['title'] = $state['saved_values'][TPPS_PAGE_1]['publication']['title'];
@@ -239,10 +236,9 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
   if ($form_state['triggering_element']['#value'] == 'Reject') {
 
-    drupal_mail('tpps', 'user_rejected', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
-    variable_del($var_name);
+    drupal_mail('tpps', 'user_rejected', $to, user_preferred_language($user), $params, $from, TRUE);
     unset($state['status']);
-    variable_set('tpps_incomplete_' . $suffix, $state);
+    tpps_update_submission($state, array('status' => 'Incomplete'));
     drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
     drupal_goto('<front>');
   }
@@ -257,7 +253,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     $params['accession'] = $state['accession'];
 
     $state['status'] = 'Approved';
-    variable_set($var_name, $state);
+    tpps_update_submission($state, array('status' => 'Approved'));
     tpps_submit_all($state);
     $args = array($state);
     $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);

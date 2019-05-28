@@ -592,7 +592,6 @@ function tpps_main(array $form, array &$form_state) {
   elseif (isset($params['accession']) and !isset($form_state['stage'])) {
     // Logged in, and with accession in link.
     $old_form_state = tpps_load_submission($params['accession']);
-    $old_form_state = variable_get('tpps_incomplete_' . $user->mail . $params['accession']);
     $form_state['saved_values'] = $old_form_state['saved_values'];
     $form_state['stage'] = $old_form_state['stage'];
     $form_state['accession'] = $old_form_state['accession'];
@@ -616,9 +615,8 @@ function tpps_main(array $form, array &$form_state) {
         // No submissions, or selected to create new submission.
         tpps_init_project($form, $form_state);
         tpps_create_submission($form_state, $user->uid);
-        variable_set('tpps_incomplete_' . $user->mail . $form_state['saved_values']['frontpage']['accession'], $form_state);
       }
-      $old_form_state = variable_get('tpps_incomplete_' . $user->mail . $form_state['saved_values']['frontpage']['accession']);
+      $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
       $form_state['saved_values'] = $old_form_state['saved_values'];
       $form_state['stage'] = $old_form_state['stage'];
       $form_state['accession'] = $old_form_state['accession'];
@@ -646,7 +644,7 @@ function tpps_main(array $form, array &$form_state) {
   if (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization'])) {
     $and = db_and();
     $and->condition('value', $user->mail);
-    $and->condition('type_id', '50268');
+    $and->condition('type_id', chado_get_cvterm(array('name' => 'Email address', 'cv_id' => array('name' => 'identifier')))->cvterm_id);
     $contact_id = db_select('chado.contactprop', 'contactprop')
       ->fields('contactprop', array('contact_id'))
       ->condition($and)
@@ -662,7 +660,7 @@ function tpps_main(array $form, array &$form_state) {
     $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = $name;
     $and = db_and();
     $and->condition('contact_id', $contact_id);
-    $and->condition('type_id', '72');
+    $and->condition('type_id', chado_get_cvterm(array('name' => 'Organization', 'cv_id' => array('name' => 'tripal_contact')))->cvterm_id);
     $org = db_select('chado.contactprop', 'contactprop')
       ->fields('contactprop', array('value'))
       ->condition($and)
@@ -796,7 +794,7 @@ function tpps_main_submit($form, &$form_state) {
     $form_state['saved_values']['form_build_id'] = $form_state['values']['form_build_id'];
     $form_state['rebuild'] = TRUE;
 
-    variable_set('tpps_incomplete_' . $user->mail . $form_state['accession'], $form_state);
+    tpps_update_submission($form_state);
     return;
   }
 
@@ -842,9 +840,8 @@ function tpps_main_submit($form, &$form_state) {
         $form_state['stage'] = TPPS_PAGE_4;
       }
       else {
-        variable_del('tpps_incomplete_' . $user->mail . $form_state['accession']);
         $form_state['status'] = 'Pending Approval';
-        variable_set('tpps_complete_' . $user->mail . $form_state['accession'], $form_state);
+        tpps_update_submission($form_state, array('status' => 'Pending Approval'));
         tpps_submit_email($form, $form_state);
         // drupal_goto('<front>');.
         return;
@@ -863,7 +860,7 @@ function tpps_main_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 
   if ($persist) {
-    variable_set('tpps_incomplete_' . $user->mail . $form_state['accession'], $form_state);
+    tpps_update_submission($form_state);
   }
 }
 
@@ -906,7 +903,7 @@ function tpps_block_view_alter(&$data, $block) {
       global $user;
       if (isset($_REQUEST['accession'])) {
         $accession = $_REQUEST['accession'];
-        $form_state = variable_get('tpps_incomplete_' . $user->mail . $accession);
+        $form_state = tpps_load_submission($accession);
       }
       else {
         $content .= '</div>';
@@ -975,7 +972,7 @@ function tpps_block_view_alter(&$data, $block) {
               drupal_add_js($js, 'inline');
             }
           }
-          $content .= "$ok $item_str: $val_str <br />";
+          $content .= "$ok $item_str: $val_str <br>";
         }
         elseif (preg_match('/#page_(.)_cleared/', $item, $matches)) {
           // Break between pages.
@@ -1008,7 +1005,7 @@ function tpps_block_view_alter(&$data, $block) {
         async defer></script>";
       }
       $content .= "</div>";
-      $data['content'] = filter_xss($content);
+      $data['content'] = $content;
 
       break;
 

@@ -38,10 +38,14 @@ function tpps_front_create_form(array &$form, array $form_state) {
       ->fields('variable', array('name'))
       ->condition('name', db_like('tpps_incomplete_' . $user->mail) . '%', 'LIKE')
       ->execute();
+    
+    $results = db_select('tpps_submission', 's')
+      ->fields('s')
+      ->condition('status', 'Incomplete')
+      ->execute();
 
     foreach ($results as $item) {
-      $name = $item->name;
-      $state = variable_get($name, NULL);
+      $state = tpps_load_submission($item->accession);
 
       if ($state != NULL and isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
         $title = ($state['saved_values'][TPPS_PAGE_1]['publication']['title'] != NULL) ? $state['saved_values'][TPPS_PAGE_1]['publication']['title'] : "No Title";
@@ -50,10 +54,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
       }
       else {
         if (isset($state) and !isset($state['saved_values'][TPPS_PAGE_1])) {
-          variable_del($name);
-          $results = db_delete('chado.dbxref')
-          ->condition('accession', $state['accession'])
-            ->execute();
+          tpps_delete_submission($item->accession);
         }
       }
     }

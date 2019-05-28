@@ -15,7 +15,7 @@ function tpps_completed_display($form, $form_state) {
   $accession = $params['id'];
   $link = "$base_url/tpps_details/accession/$accession";
 
-  $old_form_state = variable_get('tpps_complete_' . $user->mail . $accession);
+  $old_form_state = tpps_load_submission($accession);
   $values = $old_form_state['saved_values'];
 
   $css = "

@@ -17,27 +17,15 @@ function tpps_tab_create($type, $user, $name = NULL) {
   $t1 = $t2 = FALSE;
 
   if (isset($params['accession']) and isset($params['action']) and $params['action'] === 'DELETE') {
-    $delete_name = $state_name . $params['accession'];
-    $results = db_select("public.variable", "variable")
-      ->fields('variable')
-      ->condition('name', db_like($delete_name), 'LIKE')
-      ->execute()
-      ->fetchAssoc();
-
-    variable_del($results['name']);
-    $and = db_and()
-      ->condition('accession', $params['accession'])
-      ->condition('db_id', 95);
-    $results = db_delete('chado.dbxref')
-      ->condition($and)
-      ->execute();
-
-    // dpm($results);
+    tpps_delete_submission($params['accession']);
   }
 
-  $results = db_select("public.variable", "variable")
-    ->fields('variable')
-    ->condition('name', db_like($state_name) . '%', 'LIKE')
+  $and = db_and()
+    ->condition('uid', $user->uid)
+    ->condition('status', 'Incomplete');
+  $results = db_select('tpps_submission', 's')
+    ->fields('s')
+    ->condition($and)
     ->execute();
 
   $style =
@@ -54,8 +42,7 @@ function tpps_tab_create($type, $user, $name = NULL) {
   $display .= "</thead><tbody>";
 
   foreach ($results as $item) {
-    $name = $item->name;
-    $state = variable_get($name, NULL);
+    $state = unserialize($item->submission_state);
 
     $display .= "<tr>";
 
@@ -115,7 +102,7 @@ function tpps_tab_create($type, $user, $name = NULL) {
     $display .= "</tr>";
   }
 
-  if (!isset($name)) {
+  if (!isset($item)) {
     $display = $style;
   }
   else {
@@ -125,11 +112,17 @@ function tpps_tab_create($type, $user, $name = NULL) {
 
   $final .= $display;
   $state_name = 'tpps_complete_' . $email;
-  $name = NULL;
+  $item = NULL;
 
-  $results = db_select("public.variable", "variable")
-    ->fields('variable')
-    ->condition('name', db_like($state_name) . '%', 'LIKE')
+  $or = db_or()
+    ->condition('status', 'Pending Approval')
+    ->condition('status', 'Approved');
+  $and = db_and()
+    ->condition('uid', $user->uid)
+    ->condition($or);
+  $results = db_select('tpps_submission', 's')
+    ->fields('s')
+    ->condition($and)
     ->execute();
 
   $display = "<label for='tpps_complete_table'>Complete Submissions</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
@@ -137,8 +130,7 @@ function tpps_tab_create($type, $user, $name = NULL) {
   $display .= "</thead><tbody>";
 
   foreach ($results as $item) {
-    $name = $item->name;
-    $state = variable_get($name, NULL);
+    $state = unserialize($item->submission_state);
 
     $display .= "<tr>";
 
@@ -188,7 +180,7 @@ function tpps_tab_create($type, $user, $name = NULL) {
     $display .= "<td>{$state['status']}</td></tr>";
   }
 
-  if (!isset($name)) {
+  if (!isset($item)) {
     $display = "";
   }
   else {

@@ -396,7 +396,7 @@ function tpps_file_parsing($form_state) {
             if (!isset($last_org_id) or $last_org_id !== $organism_id) {
               // If the last organism id is not present or is different from this one, get a new species code. otherwise, keep the last one to avoid some redundant queries.
               $and = db_and()
-                ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local'))))
+                ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local')))->cvterm_id)
                 ->condition('organism_id', "$organism_id");
               $species_code = db_select('chado.organismprop', 'o')
                 ->fields('o', array('value'))
@@ -418,19 +418,19 @@ function tpps_file_parsing($form_state) {
               }
 
               if ($genotype['marker-type']['SNPs']) {
-                $marker_type_id = chado_get_cvterm(array('name' => 'SNP', 'cv_id' => array('name' => 'sequence')));
+                $marker_type_id = chado_get_cvterm(array('name' => 'SNP', 'cv_id' => array('name' => 'sequence')))->cvterm_id;
               }
               elseif ($genotype['marker-type']['SSRs/cpSSRs']) {
                 if ($genotype['SSRs/cpSSRs'] == 'cpSSR') {
-                  $marker_type_id = chado_get_cvterm(array('name' => 'cpSSR', 'cv_id' => array('name' => 'local')));
+                  $marker_type_id = chado_get_cvterm(array('name' => 'cpSSR', 'cv_id' => array('name' => 'local')))->cvterm_id;
                 }
                 else {
-                  $marker_type_id = chado_get_cvterm(array('name' => 'SSR', 'cv_id' => array('name' => 'local')));
+                  $marker_type_id = chado_get_cvterm(array('name' => 'SSR', 'cv_id' => array('name' => 'local')))->cvterm_id;
                 }
               }
               else {
                 // type_id for "other genotype marker" should just be 'genotype'.
-                $marker_type_id = chado_get_cvterm(array('name' => 'genotype', 'cv_id' => array('name' => 'sequence')));
+                $marker_type_id = chado_get_cvterm(array('name' => 'genotype', 'cv_id' => array('name' => 'sequence')))->cvterm_id;
               }
 
               $genotype_vals[] = array(
@@ -489,7 +489,7 @@ function tpps_file_parsing($form_state) {
 
         $current_id = $organism_ids[$i];
         $and = db_and()
-          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local'))))
+          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local')))->cvterm_id)
           ->condition('organism_id', "$current_id");
         $species_code = db_select('chado.organismprop', 'o')
           ->fields('o', array('value'))
@@ -706,7 +706,7 @@ function tpps_file_parsing($form_state) {
 
           $and = db_and()
             ->condition('stock_id', $stock_id)
-            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_latitude', 'cv_id' => array('name' => 'local'))));
+            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_latitude', 'cv_id' => array('name' => 'local')))->cvterm_id);
           $gps_query = db_select('chado.stockprop', 's')
             ->fields('s', array('value'))
             ->condition($and)
@@ -716,7 +716,7 @@ function tpps_file_parsing($form_state) {
 
           $and = db_and()
             ->condition('stock_id', $stock_id)
-            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_longitude', 'cv_id' => array('name' => 'local'))));
+            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_longitude', 'cv_id' => array('name' => 'local')))->cvterm_id);
           $gps_query = db_select('chado.stockprop', 's')
             ->fields('s', array('value'))
             ->condition($and)
