@@ -54,8 +54,8 @@ function tpps_uninstall() {
 /**
  * Implements hook_schema().
  *
- * @return array
- *   An array of tables defined in the schema.
+ * This function defines and creates the tpps_submission table that TPPS uses to
+ * keep track of submissions.
  */
 function tpps_schema() {
   $schema['tpps_submission'] = array(
@@ -96,26 +96,26 @@ function tpps_schema() {
         'description' => 'The form_state of the submission.',
         'type' => 'blob',
         'size' => 'big',
-        'not null' => TRUE
-      )
+        'not null' => TRUE,
+      ),
     ),
     'foreign keys' => array(
       'uid' => array(
         'table' => 'users',
         'columns' => array(
-          'uid' => 'uid'
-        )
+          'uid' => 'uid',
+        ),
       ),
       'dbxref_id' => array(
         'table' => 'chado.dbxref',
         'columns' => array(
-          'dbxref_id' => 'dbxref_id'
-        )
-      )
+          'dbxref_id' => 'dbxref_id',
+        ),
+      ),
     ),
     'primary key' => array(
-      'tpps_submission_id'
-    )
+      'tpps_submission_id',
+    ),
   );
 
   return $schema;

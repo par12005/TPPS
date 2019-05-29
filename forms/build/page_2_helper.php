@@ -254,9 +254,6 @@ function study_location(array &$form, array $values, array &$form_state) {
  *
  * @param array $form
  *   The form to be populated.
- *
- * @return array
- *   The populated form.
  */
 function natural_population(array &$form) {
 
@@ -291,12 +288,9 @@ function natural_population(array &$form) {
  *
  * @param array $form
  *   The form to be populated.
- *
- * @return array
- *   The populated form.
  */
 function growth_chamber(array &$form) {
-  
+
   $form['#title'] = t('<div class="fieldset-title">Growth Chamber Information:</div>');
 
   control($form, 'co2', 'CO2');
@@ -319,7 +313,7 @@ function growth_chamber(array &$form) {
     '#type' => 'textfield',
     '#title' => t('Average Low Temperature: *'),
   );
-  
+
   rooting($form);
 }
 
@@ -328,11 +322,6 @@ function growth_chamber(array &$form) {
  *
  * @param array $form
  *   The form to be populated.
- * @param array $values
- *   The form_state values of the form to be populated.
- *
- * @return array
- *   The populated form.
  */
 function greenhouse(array &$form) {
 
@@ -366,11 +355,6 @@ function greenhouse(array &$form) {
  *
  * @param array $form
  *   The form to be populated.
- * @param array $values
- *   The form_state values of the form to be populated.
- *
- * @return array
- *   The populated form.
  */
 function common_garden(array &$form) {
 
@@ -502,14 +486,9 @@ function common_garden(array &$form) {
  *
  * @param array $form
  *   The form to be populated.
- * @param array $values
- *   The form_state values of the form to be populated.
- *
- * @return array
- *   The populated form.
  */
 function plantation(array &$form) {
-  
+
   $form['#title'] = t('<div class="fieldset-title">Plantation Information:</div>');
 
   $form['season'] = array(
@@ -589,11 +568,13 @@ function plantation(array &$form) {
 }
 
 /**
- * 
+ * This function creates fields for rooting information.
+ *
  * @param array $form
+ *   The form to be populated.
  */
-function rooting(array &$form){
-  
+function rooting(array &$form) {
+
   $form['rooting'] = array(
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">Rooting Information:</div>'),
@@ -627,7 +608,7 @@ function rooting(array &$form){
       0 => '- Select -',
       'Sand' => 'Sand',
       'Peat' => 'Peat',
-      'Clay'=> 'Clay',
+      'Clay' => 'Clay',
       'Mixed' => 'Mixed',
       'Other' => 'Other',
     ),
@@ -697,18 +678,23 @@ function rooting(array &$form){
 }
 
 /**
- * 
+ * This function creates fields for the items that have control options.
+ *
+ * This includes co2, humidity, light intensity, salinity, and pH.
  *
  * @param array $form
+ *   The form to be updated.
  * @param string $type
+ *   The machine-readable type of control options.
  * @param string $label
+ *   The human-readable label for the control options.
  */
-function control(array &$form, $type, $label){
+function control(array &$form, $type, $label) {
   $form[$type] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
   );
-  
+
   $form[$type]['option'] = array(
     '#type' => 'select',
     '#title' => t('@label controlled or uncontrolled: *', array('@label' => $label)),
@@ -738,8 +724,8 @@ function control(array &$form, $type, $label){
       ),
     ),
   );
-  
-  if ($type == 'ph'){
+
+  if ($type == 'ph') {
     $form[$type]['controlled']['#states']['visible'] = array(
       ':input[name="study_info[rooting][ph][option]"]' => array('value' => '1'),
     );

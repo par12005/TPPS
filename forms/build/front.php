@@ -38,7 +38,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
       ->fields('variable', array('name'))
       ->condition('name', db_like('tpps_incomplete_' . $user->mail) . '%', 'LIKE')
       ->execute();
-    
+
     $results = db_select('tpps_submission', 's')
       ->fields('s')
       ->condition('status', 'Incomplete')
