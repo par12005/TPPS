@@ -47,6 +47,8 @@ function tpps_file_parsing($form_state) {
       $phenotype_ids = array();
       $phenotypeprop_ids = array();
       $phenotypes_meta = array();
+      $local_cv = chado_get_cv(array('name' => 'local'));
+      $local_db = chado_get_db(array('name' => 'local'));
 
       $phenotype_file_id = tpps_chado_insert_record('projectprop', array(
         'project_id' => $project_id,
@@ -156,7 +158,12 @@ function tpps_file_parsing($form_state) {
           ->fetchAssoc();
         $attr_id = $attr['cvterm_id'];
         if (!isset($attr_id) or $attr_id == '') {
-          $attr_id = tpps_custom_cvterm($phenotypes_meta[$name]['attr'], '');
+          $attr_id = chado_insert_cvterm(array(
+            'id' => "{$local_db->name}:{$phenotypes_meta[$name]['attr']}",
+            'name' => $phenotypes_meta[$name]['attr'],
+            'definition' => '',
+            'cv_name' => $local_cv->name,
+          ));
         }
 
         if (isset($phenotypes_meta[$name]['struct'])) {
@@ -168,7 +175,12 @@ function tpps_file_parsing($form_state) {
           $observable_id = $obs['cvterm_id'];
 
           if (!isset($observable_id) or $observable_id == '') {
-            $observable_id = tpps_custom_cvterm($phenotypes_meta[$name]['struct'], '');
+            $observable_id = chado_insert_cvterm(array(
+            'id' => "{$local_db->name}:{$phenotypes_meta[$name]['struct']}",
+            'name' => $phenotypes_meta[$name]['struct'],
+            'definition' => '',
+            'cv_name' => $local_cv->name,
+          ));
           }
         }
         else {
