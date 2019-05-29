@@ -2,10 +2,26 @@
 
 /**
  * @file
+ * Defines function to compare two file columns.
  */
 
 /**
+ * Compares two file columns.
  *
+ * Returns the array of items that are found in file 1, column file_1_id_name,
+ * and are not found in file 2, column file_2_id_name.
+ *
+ * @param int $fid_1
+ *   File 1 identifier.
+ * @param int $fid_2
+ *   File 2 identifier.
+ * @param mixed $file_1_id_name
+ *   Name of column to check in file 1. String or integer.
+ * @param mixed $file_2_id_name
+ *   Name of column to check in file 2. String or integer.
+ *
+ * @return array
+ *   The array of items found in file 1 that were not found in file 2.
  */
 function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name) {
 

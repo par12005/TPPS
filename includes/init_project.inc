@@ -10,26 +10,27 @@
 function tpps_init_project($form, &$form_state) {
 
   $values = array(
-    'accession' => 'TGDR.*'
+    'accession' => 'TGDR.*',
   );
 
   $options = array(
     'order_by' => array(
-      'accession' => 'DESC'
+      'accession' => 'DESC',
     ),
     'limit' => '1',
-    'regex_columns' => array('accession')
+    'regex_columns' => array('accession'),
   );
 
   $result = chado_select_record('dbxref', array('accession'), $values, $options);
 
-  if (empty($result)){
+  if (empty($result)) {
     $accession = 'TGDR001';
   }
   else {
     $accession = substr($result[0]->accession, 4) + 1;
-    while (strlen($accession) < 3)
+    while (strlen($accession) < 3) {
       $accession = "0$accession";
+    }
     $accession = "TGDR$accession";
   }
 
@@ -37,7 +38,7 @@ function tpps_init_project($form, &$form_state) {
     'db_id' => array(
       'name' => 'local',
     ),
-    'accession' => $accession
+    'accession' => $accession,
   ));
 
   $form_state['dbxref_id'] = $dbxref_id['dbxref_id'];

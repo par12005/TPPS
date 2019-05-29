@@ -95,12 +95,14 @@ function tpps_flatten($state) {
       $data['Study Type'] = $study_type_options[$page_2['study_type']];
     }
 
-    if (!empty($page_2['study_info']['season']))
+    if (!empty($page_2['study_info']['season'])) {
       $data['Seasons Assessed'] = implode($page_2['study_info']['season']);
-    
-    if (!empty($page_2['study_info']['assessions']))
+    }
+
+    if (!empty($page_2['study_info']['assessions'])) {
       $data['Average number of assessions'] = $page_2['study_info']['assessions'];
-    
+    }
+
     $data['Average High Temperature'] = isset($page_2['study_info']['temp']['high']) ? $page_2['study_info']['temp']['high'] : NULL;
     $data['Average Low Temperature'] = isset($page_2['study_info']['temp']['low']) ? $page_2['study_info']['temp']['low'] : NULL;
 
@@ -108,51 +110,52 @@ function tpps_flatten($state) {
       'co2' => 'CO2',
       'humidity' => 'Air Humidity',
       'light' => 'Light Intensity',
-      'salinity' => 'Salinity'
+      'salinity' => 'Salinity',
     );
 
-    foreach ($types as $type => $label){
-      if (!empty($page_2['study_info'][$type])){
+    foreach ($types as $type => $label) {
+      if (!empty($page_2['study_info'][$type])) {
         $set = $page_2['study_info'][$type];
-        if (!empty($set['option'])){
+        if (!empty($set['option'])) {
           $data["$label Control"] = ($set['option'] == '1') ? 'Controlled' : 'Uncontrolled';
-          if ($set['option'] == '1' and !empty($set['controlled'])){
+          if ($set['option'] == '1' and !empty($set['controlled'])) {
             $data["$label Value"] = $set['controlled'];
           }
-          elseif (!empty($set['uncontrolled'])){
+          elseif (!empty($set['uncontrolled'])) {
             $data["$label Value"] = $set['uncontrolled'];
           }
         }
       }
     }
 
-    if (!empty($page_2['study_info']['rooting']['option'])){
+    if (!empty($page_2['study_info']['rooting']['option'])) {
       $data['Rooting Type'] = $page_2['study_info']['rooting']['option'];
 
-      if ($data['Rooting Type'] == 'Soil' and !empty($page_2['study_info']['rooting']['soil']['type'])){
+      if ($data['Rooting Type'] == 'Soil' and !empty($page_2['study_info']['rooting']['soil']['type'])) {
         $soil = &$page_2['study_info']['rooting']['soil'];
-        $data['Soil Type'] =$soil['type'];
+        $data['Soil Type'] = $soil['type'];
 
-        if ($data['Soil Type'] == 'Other')
+        if ($data['Soil Type'] == 'Other') {
           $data['Custom Soil Type'] = $soil['other'];
-        
+        }
+
         $data['Soil Container Type'] = isset($soil['container']) ? $soil['container'] : NULL;
       }
     }
 
-    if (!empty($page_2['study_info']['rooting']['ph']['option'])){
+    if (!empty($page_2['study_info']['rooting']['ph']['option'])) {
       $set = $page_2['study_info']['rooting']['ph'];
       $data['pH Control'] = ($set['option'] == '1') ? 'Controlled' : 'Uncontrolled';
-      
-      if ($set['option'] == '1' and !empty($set['controlled'])){
+
+      if ($set['option'] == '1' and !empty($set['controlled'])) {
         $data["pH Value"] = $set['controlled'];
       }
-      elseif (!empty($set['uncontrolled'])){
+      elseif (!empty($set['uncontrolled'])) {
         $data["pH Value"] = $set['uncontrolled'];
       }
     }
 
-    if (!empty($page_2['study_info']['rooting']['treatment'])){
+    if (!empty($page_2['study_info']['rooting']['treatment'])) {
       $treatment = $page_2['study_info']['rooting']['treatment'];
       $selected = FALSE;
       $description = FALSE;
@@ -170,27 +173,30 @@ function tpps_flatten($state) {
       }
     }
 
-    if (!empty($page_2['study_info']['irrigation']) and !empty($page_2['study_info']['irrigation']['option'])){
+    if (!empty($page_2['study_info']['irrigation']) and !empty($page_2['study_info']['irrigation']['option'])) {
       $data['Irrigation Type'] = $page_2['study_info']['irrigation']['option'];
-      if ($data['Irrigation Type'] == 'Other' and !empty($page_2['study_info']['irrigation']['other']))
+      if ($data['Irrigation Type'] == 'Other' and !empty($page_2['study_info']['irrigation']['other'])) {
         $data['Custom Irrigation Type'] = $page_2['study_info']['irrigation']['other'];
+      }
     }
 
-    if (!empty($page_2['study_info']['biotic_env']['option'])){
+    if (!empty($page_2['study_info']['biotic_env']['option'])) {
       $biotic_envs = array();
-      foreach ($page_2['study_info']['biotic_env']['option'] as $key => $val){
-        if ($val)
+      foreach ($page_2['study_info']['biotic_env']['option'] as $key => $val) {
+        if ($val) {
           $biotic_envs[] = $key;
+        }
       }
-  
-      if (!empty($biotic_envs)){
+
+      if (!empty($biotic_envs)) {
         $data['Biotic Environment'] = implode(', ', $biotic_envs);
-        if (in_array('Other', $biotic_envs) and !empty($page_2['study_info']['biotic_env']['other']))
+        if (in_array('Other', $biotic_envs) and !empty($page_2['study_info']['biotic_env']['other'])) {
           $data['Custom Biotic Environment'] = $page_2['study_info']['biotic_env']['other'];
+        }
       }
     }
 
-    if (!empty($page_2['study_info']['treatment']['check'])){
+    if (!empty($page_2['study_info']['treatment']['check'])) {
       $treatment = &$page_2['study_info']['treatment'];
       $selected = FALSE;
       $description = FALSE;

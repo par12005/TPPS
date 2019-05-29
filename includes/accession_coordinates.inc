@@ -2,10 +2,11 @@
 
 /**
  * @file
+ * Defines Ajax callback for tree accession coordinates.
  */
 
 /**
- *
+ * Returns an array of standardized coordinates based on a file id number.
  */
 function tpps_accession_coordinates() {
   $params = drupal_get_query_parameters($_POST);
@@ -29,7 +30,10 @@ function tpps_accession_coordinates() {
         if (($coord = tpps_standard_coord("{$content[$i][$lat_col]},{$content[$i][$long_col]}"))) {
           $pair = explode(',', $coord);
           // Add the standardized coordinates.
-          array_push($coordinates, array("{$content[$i][$id_col]}", $pair[0], $pair[1]));
+          array_push($coordinates, array("{$content[$i][$id_col]}",
+            $pair[0],
+            $pair[1],
+          ));
         }
       }
 
