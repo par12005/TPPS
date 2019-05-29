@@ -2,12 +2,20 @@
 
 /**
  * @file
+ * Defines function tpps_submit_all and its helper functions.
+ *
+ * The functions defined in this file do not actually submit the genotype,
+ * phenotype, or environmental data collected from page 4. That data is instead
+ * submitted through a Tripal job due to the size of the data.
  */
 
 /**
+ * Creates a record for the project and calls the submission helper functions.
  *
+ * @param array $form_state
+ *   The state of the form being submitted.
  */
-function tpps_submit_all(&$form_state) {
+function tpps_submit_all(array &$form_state) {
 
   $values = $form_state['saved_values'];
   $firstpage = $values[TPPS_PAGE_1];
@@ -18,8 +26,6 @@ function tpps_submit_all(&$form_state) {
     'description' => $firstpage['publication']['abstract'],
   ));
 
-  dpm($project_id);
-
   $organism_ids = tpps_submit_page_1($form_state, $project_id, $file_rank);
 
   tpps_submit_page_2($form_state, $project_id, $file_rank);
@@ -28,15 +34,25 @@ function tpps_submit_all(&$form_state) {
 
   tpps_submit_page_4($form_state, $project_id, $file_rank, $organism_ids);
 
-  // For simplicity and efficiency, all fourth page submissions take place in the TPPS File Parsing Tripal Job.
+  // For simplicity and efficiency, all fourth page submissions take place in
+  // the TPPS File Parsing Tripal Job.
 }
 
 /**
+ * Submits Publication and Species data to the database.
  *
+ * @param array $form_state
+ *   The state of the form being submitted.
+ * @param int $project_id
+ *   The project_id of the project that the data will reference in the database.
+ * @param int $file_rank
+ *   The rank number for files associated with the project.
+ *
+ * @return array
+ *   An array of the organism_ids associated with the project.
  */
-function tpps_submit_page_1(&$form_state, $project_id, &$file_rank) {
+function tpps_submit_page_1(array &$form_state, $project_id, &$file_rank) {
 
-  dpm($form_state);
   $dbxref_id = $form_state['dbxref_id'];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
 
@@ -236,12 +252,19 @@ function tpps_submit_page_1(&$form_state, $project_id, &$file_rank) {
 }
 
 /**
+ * Submits Study Design data to the database.
  *
+ * @param array $form_state
+ *   The state of the form being submitted.
+ * @param int $project_id
+ *   The project_id of the project that the data will reference in the database.
+ * @param int $file_rank
+ *   The rank number for files associated with the project.
  */
-function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
+function tpps_submit_page_2(array &$form_state, $project_id, &$file_rank) {
 
   $secondpage = $form_state['saved_values'][TPPS_PAGE_2];
-  
+
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $project_id,
     'type_id' => array(
@@ -310,7 +333,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       'value' => $location,
     ));
   }
-  
+
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $project_id,
     'type_id' => array(
@@ -344,9 +367,9 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
     'value' => $studytype_options[$secondpage['study_type']],
   ));
 
-  if (!empty($secondpage['study_info']['season'])){
+  if (!empty($secondpage['study_info']['season'])) {
     $seasons = implode($secondpage['study_info']['season']);
-    
+
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $project_id,
       'type_id' => array(
@@ -360,7 +383,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
     ));
   }
 
-  if (!empty($secondpage['study_info']['assessions'])){
+  if (!empty($secondpage['study_info']['assessions'])) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $project_id,
       'type_id' => array(
@@ -374,7 +397,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
     ));
   }
 
-  if (!empty($secondpage['study_info']['temp'])){
+  if (!empty($secondpage['study_info']['temp'])) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $project_id,
       'type_id' => array(
@@ -386,7 +409,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       ),
       'value' => $secondpage['study_info']['temp']['high'],
     ));
-    
+
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $project_id,
       'type_id' => array(
@@ -404,13 +427,13 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
     'co2',
     'humidity',
     'light',
-    'salinity'
+    'salinity',
   );
 
-  foreach ($types as $type){
-    if (!empty($secondpage['study_info'][$type])){
+  foreach ($types as $type) {
+    if (!empty($secondpage['study_info'][$type])) {
       $set = $secondpage['study_info'][$type];
-      
+
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $project_id,
         'type_id' => array(
@@ -422,8 +445,8 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
         ),
         'value' => ($set['option'] == '1') ? 'True' : 'False',
       ));
-          
-      if ($set['option'] == '1'){
+
+      if ($set['option'] == '1') {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -436,7 +459,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
           'value' => $set['controlled'],
         ));
       }
-      elseif (!empty($set['uncontrolled'])){
+      elseif (!empty($set['uncontrolled'])) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -451,10 +474,10 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       }
     }
   }
-  
-  if (!empty($secondpage['study_info']['rooting'])){
+
+  if (!empty($secondpage['study_info']['rooting'])) {
     $root = $secondpage['study_info']['rooting'];
-    
+
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $project_id,
       'type_id' => array(
@@ -466,8 +489,8 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
       ),
       'value' => $root['option'],
     ));
-    
-    if ($root['option'] == 'Soil'){
+
+    if ($root['option'] == 'Soil') {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $project_id,
         'type_id' => array(
@@ -489,11 +512,11 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
           'name' => 'soil_container',
           'is_obsolete' => 0,
         ),
-        'value' => $root['soil']['container']
+        'value' => $root['soil']['container'],
       ));
     }
 
-    if (!empty($secondpage['study_info']['rooting']['ph'])){
+    if (!empty($secondpage['study_info']['rooting']['ph'])) {
       $set = $secondpage['study_info']['rooting']['ph'];
 
       tpps_chado_insert_record('projectprop', array(
@@ -508,7 +531,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
         'value' => ($set['option'] == '1') ? 'True' : 'False',
       ));
 
-      if ($set['option'] == '1'){
+      if ($set['option'] == '1') {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -521,7 +544,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
           'value' => $set['controlled'],
         ));
       }
-      elseif (!empty($set['uncontrolled'])){
+      elseif (!empty($set['uncontrolled'])) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -538,16 +561,18 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
 
     $description = FALSE;
     $rank = 0;
-    foreach ($root['treatment'] as $value){
+    foreach ($root['treatment'] as $value) {
       if (!$description) {
-        if ($value)
+        if ($value) {
           $record_next = TRUE;
-        else
+        }
+        else {
           $record_next = FALSE;
+        }
         $description = TRUE;
         continue;
       }
-      elseif ($record_next){
+      elseif ($record_next) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -566,7 +591,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
     }
   }
 
-  if (!empty($form_state['values']['study_info']['irrigation'])){
+  if (!empty($form_state['values']['study_info']['irrigation'])) {
     $irrigation = $form_state['values']['study_info']['irrigation'];
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $project_id,
@@ -581,8 +606,8 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
     ));
   }
 
-  foreach ($form_state['values']['study_info']['biotic_env']['option'] as $key => $check){
-    if ($check){
+  foreach ($form_state['values']['study_info']['biotic_env']['option'] as $key => $check) {
+    if ($check) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $project_id,
         'type_id' => array(
@@ -597,7 +622,7 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
     }
   }
 
-  if (!empty($form_state['values']['study_info']['treatment']) and $form_state['values']['study_info']['treatment']['check']){
+  if (!empty($form_state['values']['study_info']['treatment']) and $form_state['values']['study_info']['treatment']['check']) {
     $description = FALSE;
     $rank = 0;
 
@@ -630,9 +655,18 @@ function tpps_submit_page_2(&$form_state, $project_id, &$file_rank) {
 }
 
 /**
+ * Submits Tree Accession data to the database.
  *
+ * @param array $form_state
+ *   The state of the form being submitted.
+ * @param int $project_id
+ *   The project_id of the project that the data will reference in the database.
+ * @param int $file_rank
+ *   The rank number for files associated with the project.
+ * @param array $organism_ids
+ *   The array of organism_ids associated with the project.
  */
-function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_ids) {
+function tpps_submit_page_3(array &$form_state, $project_id, &$file_rank, array $organism_ids) {
 
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
@@ -677,7 +711,7 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
       for ($i = 0; $i < count($content) - 1; $i++) {
         $tree_id = $content[$i][$id_col_accession_name];
         $stock_ids[$tree_id] = tpps_chado_insert_record('stock', array(
-          'uniquename' => t($tree_id),
+          'uniquename' => $tree_id,
           'type_id' => array(
             'cv_id' => array(
               'name' => 'obi',
@@ -690,8 +724,8 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
       }
     }
     else {
-      // Multiple species in one tree accession file -> users must define species and genus columns
-      // get genus/species column.
+      // Multiple species in one tree accession file -> users must define
+      // species and genus columns get genus/species column.
       if ($groups['Genus and Species']['#type'] == 'separate') {
         $genus_col_name = $groups['Genus and Species']['6'];
         $species_col_name = $groups['Genus and Species']['7'];
@@ -721,7 +755,7 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
 
         // Create record with the new id.
         $stock_ids[$tree_id] = tpps_chado_insert_record('stock', array(
-          'uniquename' => t($tree_id),
+          'uniquename' => $tree_id,
           'type_id' => array(
             'cv_id' => array(
               'name' => 'obi',
@@ -920,7 +954,7 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
       for ($j = 0; $j < count($content) - 1; $j++) {
         $tree_id = $content[$j][$id_col_accession_name];
         $stock_ids[$tree_id] = tpps_chado_insert_record('stock', array(
-          'uniquename' => t($tree_id),
+          'uniquename' => $tree_id,
           'type_id' => array(
             'cv_id' => array(
               'name' => 'obi',
@@ -1081,9 +1115,21 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
 }
 
 /**
+ * Submits Tripal FASTAImporter job for reference genome.
  *
+ * The remaining data for the fourth page is submitted during the TPPS File
+ * Parsing Tripal Job due to its size.
+ *
+ * @param array $form_state
+ *   The state of the form being submitted.
+ * @param int $project_id
+ *   The project_id of the project that the data will reference in the database.
+ * @param int $file_rank
+ *   The rank number for files associated with the project.
+ * @param array $organism_ids
+ *   The array of organism_ids associated with the project.
  */
-function tpps_submit_page_4(&$form_state, $project_id, &$file_rank, $organism_ids) {
+function tpps_submit_page_4(array &$form_state, $project_id, &$file_rank, array $organism_ids) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
 
