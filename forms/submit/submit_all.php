@@ -606,19 +606,21 @@ function tpps_submit_page_2(array &$form_state, $project_id, &$file_rank) {
     ));
   }
 
-  foreach ($form_state['values']['study_info']['biotic_env']['option'] as $key => $check) {
-    if ($check) {
-      tpps_chado_insert_record('projectprop', array(
-        'project_id' => $project_id,
-        'type_id' => array(
-          'cv_id' => array(
-            'name' => 'local',
+  if (!empty($form_state['values']['study_info']['biotic_env']['option'])){
+    foreach ($form_state['values']['study_info']['biotic_env']['option'] as $key => $check) {
+      if ($check) {
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $project_id,
+          'type_id' => array(
+            'cv_id' => array(
+              'name' => 'local',
+            ),
+            'name' => 'biotic_environment',
+            'is_obsolete' => 0,
           ),
-          'name' => 'biotic_environment',
-          'is_obsolete' => 0,
-        ),
-        'value' => ($key == 'Other') ? $form_state['values']['study_info']['biotic_env']['other'] : $key,
-      ));
+          'value' => ($key == 'Other') ? $form_state['values']['study_info']['biotic_env']['other'] : $key,
+        ));
+      }
     }
   }
 
