@@ -12,12 +12,11 @@
  *   The string the user has already entered into the text field.
  */
 function tpps_author_autocomplete($string) {
-  // TODO: load chado cvterm_ids with tripal api functions.
   $matches = array();
   $result = db_select('chado.contact', 'contact')
     ->fields('contact', array('name', 'type_id'))
     ->condition('name', db_like($string) . '%', 'LIKE')
-    ->condition('type_id', '71', 'LIKE')
+    ->condition('type_id', chado_get_cvterm(array('name' => 'Person', 'cv_id' => array('name' => 'tripal_contact')))->cvterm_id, 'LIKE')
     ->execute();
 
   foreach ($result as $row) {
@@ -38,7 +37,7 @@ function tpps_organization_autocomplete($string) {
   $result = db_select('chado.contact', 'contact')
     ->fields('contact', array('name', 'type_id'))
     ->condition('name', db_like($string) . '%', 'LIKE')
-    ->condition('type_id', '72', 'LIKE')
+    ->condition('type_id', chado_get_cvterm(array('name' => 'Organization', 'cv_id' => array('name' => 'tripal_contact')))->cvterm_id, 'LIKE')
     ->execute();
 
   foreach ($result as $row) {
@@ -157,7 +156,7 @@ function tpps_units_autocomplete($string) {
   $matches = array();
 
   $and = db_and()
-    ->condition('type_id', '2842')
+    ->condition('type_id', chado_get_cvterm(array('name' => 'unit', 'cv_id' => array('name' => 'uo')))->cvterm_id)
     ->condition('value', db_like($string) . '%', 'LIKE');
 
   $result = db_select('chado.phenotypeprop', 'p')
