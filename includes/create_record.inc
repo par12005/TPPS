@@ -2,12 +2,29 @@
 
 /**
  * @file
+ * Defines function to create chado records using the Tripal Chado API.
  */
 
 /**
+ * Inserts a record to a chado table using the Tripal Chado API.
  *
+ * This function uses the Tripal Chado API to insert a record. However, if the
+ * record already exists, then this function will update that record in the
+ * database instead. This function also supports insertion of multiple records
+ * at a time, while the standard Tripal chado_insert_record function does not.
+ *
+ * @param string $table
+ *   The name of the Chado table being inserted to.
+ * @param mixed $records
+ *   The record or array of records to be inserted to chado.
+ * @param array $options
+ *   An array of additional options which can be passed to chado_insert_record.
+ *
+ * @return mixed
+ *   The id of the new record in the database. False if insertion aborted.
+ *   This is only supported for single record insertions
  */
-function tpps_chado_insert_record($table, $records, $options = array()) {
+function tpps_chado_insert_record($table, $records, array $options = array()) {
   if (!array_key_exists('multi', $options)) {
     $options['multi'] = FALSE;
   }
@@ -38,7 +55,7 @@ function tpps_chado_insert_record($table, $records, $options = array()) {
     foreach ($values as $field => $value) {
       if (is_array($value)) {
         $results = chado_schema_get_foreign_key($table_desc, $field, $value);
-        if (sizeof($results) != 1) {
+        if (count($results) != 1) {
           return FALSE;
         }
         else {
@@ -75,7 +92,7 @@ function tpps_chado_insert_record($table, $records, $options = array()) {
         $exists = TRUE;
         // If the new values match with exactly one record, update that one
         // and return the primary key.
-        if (!$options['multi'] and sizeof($results == 1)) {
+        if (!$options['multi'] and count($results) == 1) {
           chado_update_record($table, $u_vals, $insert_values);
           return $results[0]->{$primary};
         }

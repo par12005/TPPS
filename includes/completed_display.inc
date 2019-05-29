@@ -2,14 +2,20 @@
 
 /**
  * @file
+ * Defines function to display details for a completed TPPS Submission.
  */
 
 /**
+ * Creates a details page for a completed TPPS Submission.
  *
+ * @global string $base_url
+ *   The base url of the site.
+ *
+ * @return string
+ *   The rendered page.
  */
 function tpps_completed_display() {
 
-  global $user;
   global $base_url;
   $params = drupal_get_query_parameters();
   $accession = $params['id'];
@@ -31,6 +37,6 @@ function tpps_completed_display() {
   $display = "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
 
   $display .= tpps_table_display($old_form_state);
-  
+
   return render($display);
 }
