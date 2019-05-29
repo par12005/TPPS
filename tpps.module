@@ -156,16 +156,6 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['testpage'] = array(
-    'title' => 'TPPS test page',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_test_page'),
-    'access callback' => 'user_access',
-    'access arguments' => array('access content'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'test.php',
-  );
-
   return $items;
 }
 
