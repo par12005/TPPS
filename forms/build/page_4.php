@@ -2,15 +2,25 @@
 
 /**
  * @file
+ * Creates GxPxE Data form page and includes helper files.
  */
 
 require_once 'page_4_ajax.php';
 require_once 'page_4_helper.php';
 
 /**
+ * Creates the GxPxE Data form page.
  *
+ * This function creates the genotype, phenotype, and environmental fieldsets
+ * based on the data type selection made on page 2. It will then call all
+ * necessary helper functions.
+ *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
  */
-function page_4_create_form(&$form, &$form_state) {
+function page_4_create_form(array &$form, array &$form_state) {
   if (isset($form_state['saved_values'][TPPS_PAGE_4])) {
     $values = $form_state['saved_values'][TPPS_PAGE_4];
   }
@@ -31,7 +41,7 @@ function page_4_create_form(&$form, &$form_state) {
 
     $form["organism-$i"] = array(
       '#type' => 'fieldset',
-      '#title' => t("<div class=\"fieldset-title\">$name:</div>"),
+      '#title' => "<div class=\"fieldset-title\">$name:</div>",
       '#tree' => TRUE,
       // '#collapsible' => TRUE.
     );
@@ -45,7 +55,7 @@ function page_4_create_form(&$form, &$form_state) {
         );
       }
 
-      $form["organism-$i"]['phenotype'] = phenotype($form, $values, "organism-$i", $form_state, $phenotype_upload_location);
+      $form["organism-$i"]['phenotype'] = phenotype($form, $form_state, $values, "organism-$i", $phenotype_upload_location);
 
       if ($i > 1) {
         $form["organism-$i"]['phenotype']['#states'] = array(
@@ -145,6 +155,4 @@ function page_4_create_form(&$form, &$form_state) {
     '#type' => 'submit',
     '#value' => t('Review Information and Submit'),
   );
-
-  return $form;
 }

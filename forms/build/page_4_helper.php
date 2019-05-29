@@ -2,12 +2,27 @@
 
 /**
  * @file
+ * Define the helper functions for the GxPxE Data page.
  */
 
 /**
+ * Creates fields describing the phenotype data for the submission.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param string $id
+ *   The id of the organism fieldset being populated.
+ * @param string $phenotype_upload_location
+ *   The file stream where phenotype file uploads should go.
+ *
+ * @return array
+ *   The populated form.
  */
-function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_location) {
+function phenotype(array &$form, array &$form_state, array $values, $id, $phenotype_upload_location) {
 
   $fields = array(
     '#type' => 'fieldset',
@@ -46,7 +61,7 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
 
   $fields['add'] = array(
     '#type' => 'button',
-    '#name' => t("Add Phenotype-$id"),
+    '#name' => t("Add Phenotype-@i", array('@i' => $id)),
     '#button_type' => 'button',
     '#value' => t('Add Phenotype'),
     '#ajax' => array(
@@ -57,7 +72,7 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
 
   $fields['remove'] = array(
     '#type' => 'button',
-    '#name' => t("Remove Phenotype-$id"),
+    '#name' => t("Remove Phenotype-@i", array('@i' => $id)),
     '#button_type' => 'button',
     '#value' => t('Remove Phenotype'),
     '#ajax' => array(
@@ -85,7 +100,7 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
 
     $fields['phenotypes-meta']["$i"]['name'] = array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype $i Name: *"),
+      '#title' => t("Phenotype @i Name: *", array('@i' => $i)),
       '#autocomplete_path' => 'phenotype/autocomplete',
       '#prefix' => "<label><b>Phenotype $i:</b></label>",
       '#attributes' => array(
@@ -93,12 +108,12 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
         'data-placement' => array('left'),
         'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
-      '#description' => t("Phenotype \"name\" is the human-readable name of the phenotype, where \"attribute\" is the thing that the phenotype is describing. Phenotype \"name\" should match the data in the \"Phenotype Name/Identifier\" column that you select in your <a href=\"#edit-$id-phenotype-file-ajax-wrapper\">Phenotype file</a> below."),
+      '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your @link below.', array('@link' => "<a href=\"#edit-$id-phenotype-file-ajax-wrapper\">Phenotype file</a>")),
     );
 
     $fields['phenotypes-meta']["$i"]['attribute'] = array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype $i Attribute: *"),
+      '#title' => t("Phenotype @i Attribute: *", array('@i' => $i)),
       '#autocomplete_path' => 'attribute/autocomplete',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -110,13 +125,13 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
 
     $fields['phenotypes-meta']["$i"]['description'] = array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype $i Description: *"),
-      '#description' => t("Please provide a short description of Phenotype $i"),
+      '#title' => t("Phenotype @i Description: *", array('@i' => $i)),
+      '#description' => t("Please provide a short description of Phenotype @i", array('@i' => $i)),
     );
 
     $fields['phenotypes-meta']["$i"]['units'] = array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype $i Units: *"),
+      '#title' => t("Phenotype @i Units: *", array('@i' => $i)),
       '#autocomplete_path' => 'units/autocomplete',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -128,12 +143,12 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
 
     $fields['phenotypes-meta']["$i"]['struct-check'] = array(
       '#type' => 'checkbox',
-      '#title' => t("Phenotype $i has a structure descriptor"),
+      '#title' => t("Phenotype @i has a structure descriptor", array('@i' => $i)),
     );
 
     $fields['phenotypes-meta']["$i"]['structure'] = array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype $i Structure: *"),
+      '#title' => t("Phenotype @i Structure: *", array('@i' => $i)),
       '#autocomplete_path' => 'structure/autocomplete',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -150,12 +165,12 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
 
     $fields['phenotypes-meta']["$i"]['val-check'] = array(
       '#type' => 'checkbox',
-      '#title' => t("Phenotype $i has a value range"),
+      '#title' => t("Phenotype @i has a value range", array('@i' => $i)),
     );
 
     $fields['phenotypes-meta']["$i"]['min'] = array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype $i Minimum Value (type 1 for binary): *"),
+      '#title' => t("Phenotype @i Minimum Value (type 1 for binary): *", array('@i' => $i)),
       '#states' => array(
         'visible' => array(
           ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE),
@@ -165,7 +180,7 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
 
     $fields['phenotypes-meta']["$i"]['max'] = array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype $i Maximum Value (type 2 for binary): *"),
+      '#title' => t("Phenotype @i Maximum Value (type 2 for binary): *", array('@i' => $i)),
       '#states' => array(
         'visible' => array(
           ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE),
@@ -219,9 +234,23 @@ function phenotype(&$form, $values, $id, &$form_state, $phenotype_upload_locatio
 }
 
 /**
+ * Creates fields describing the genotype data for the submission.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param string $id
+ *   The id of the organism fieldset being populated.
+ * @param string $genotype_upload_location
+ *   The file stream where genotype file uploads should go.
+ *
+ * @return array
+ *   The populated form.
  */
-function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location) {
+function genotype(array &$form, array &$form_state, array $values, $id, $genotype_upload_location) {
 
   $fields = array(
     '#type' => 'fieldset',
@@ -236,7 +265,7 @@ function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location)
     'wrapper' => "edit-$id-genotype-file-ajax-wrapper",
   );
 
-  page_4_ref($fields, $form_state, $values, $id, $genotype_upload_location);
+  page_4_ref($fields, $form_state, $values, $id);
 
   $fields['file-type'] = array(
     '#type' => 'checkboxes',
@@ -361,9 +390,21 @@ function genotype(&$form, &$form_state, $values, $id, $genotype_upload_location)
 }
 
 /**
+ * Creates fields describing the environmental data for the submission.
  *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param string $id
+ *   The id of the organism fieldset being populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function environment(&$form, &$form_state, $values, $id) {
+function environment(array &$form, array &$form_state, array $values, $id) {
   $cartogratree_env = variable_get('tpps_cartogratree_env', FALSE);
 
   $fields = array(
@@ -516,7 +557,7 @@ function environment(&$form, &$form_state, $values, $id) {
 
   $fields['env_manual']['add'] = array(
     '#type' => 'button',
-    '#name' => t("Add Environment Data-$id"),
+    '#name' => t("Add Environment Data-@i", array('@i' => $id)),
     '#button_type' => 'button',
     '#value' => t('Add Environment Data'),
     '#ajax' => array(
@@ -527,7 +568,7 @@ function environment(&$form, &$form_state, $values, $id) {
 
   $fields['env_manual']['remove'] = array(
     '#type' => 'button',
-    '#name' => t("Remove Environment Data-$id"),
+    '#name' => t("Remove Environment Data-@i", array('@i' => $id)),
     '#button_type' => 'button',
     '#value' => t('Remove Environment Data'),
     '#ajax' => array(
@@ -545,27 +586,27 @@ function environment(&$form, &$form_state, $values, $id) {
 
     $fields['env_manual']["$i"]['name'] = array(
       '#type' => 'textfield',
-      '#title' => "Environmental Data $i Name: *",
+      '#title' => t("Environmental Data @i Name: *", array('@i' => $i)),
       '#prefix' => "<label><b>Environment Data $i:</b></label>",
-      '#description' => t("Please provide the name of Environmental Data $i. Some example environmental data names might include \"soil chemistry\", \"rainfall\", \"average temperature\", etc."),
+      '#description' => t('Please provide the name of Environmental Data @i. Some example environmental data names might include "soil chemistry", "rainfall", "average temperature", etc.', array('@i' => $i)),
     );
 
     $fields['env_manual']["$i"]['description'] = array(
       '#type' => 'textfield',
-      '#title' => t("Environmental Data $i Description: *"),
-      '#description' => t("Please provide a short description of Environmental Data $i."),
+      '#title' => t("Environmental Data @i Description: *", array('@i' => $i)),
+      '#description' => t("Please provide a short description of Environmental Data @i.", array('@i' => $i)),
     );
 
     $fields['env_manual']["$i"]['units'] = array(
       '#type' => 'textfield',
-      '#title' => t("Environmental Data $i Units: *"),
-      '#description' => t("Please provide the units of Environmental Data $i."),
+      '#title' => t("Environmental Data @i Units: *", array('@i' => $i)),
+      '#description' => t("Please provide the units of Environmental Data @i.", array('@i' => $i)),
     );
 
     $fields['env_manual']["$i"]['value'] = array(
       '#type' => 'textfield',
-      '#title' => t("Environmental Data $i Value: *"),
-      '#description' => t("Please provide the value of Environmental Data $i."),
+      '#title' => t("Environmental Data @i Value: *", array('@i' => $i)),
+      '#description' => t("Please provide the value of Environmental Data @i.", array('@i' => $i)),
     );
   }
 
@@ -573,9 +614,21 @@ function environment(&$form, &$form_state, $values, $id) {
 }
 
 /**
+ * Creates fields for the user to specify a reference genome.
  *
+ * @param array $fields
+ *   The form element being populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param string $id
+ *   The id of the organism fieldset being populated.
+ *
+ * @global stdClass $user
+ *   The user accessing the form.
  */
-function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_location) {
+function page_4_ref(array &$fields, array &$form_state, array $values, $id) {
   global $user;
   $uid = $user->uid;
 
@@ -754,14 +807,19 @@ function page_4_ref(&$fields, &$form_state, $values, $id, $genotype_upload_locat
   $fasta['analysis_id']['#required'] = $fasta['seqtype']['#required'] = FALSE;
 
   $fields['tripal_fasta'] = $fasta;
-  // dpm($fasta);
-  return $fields;
 }
 
 /**
+ * Creates fields describing the genotype markers used in the submission.
  *
+ * @param array $fields
+ *   The form element being populated.
+ * @param array $values
+ *   The form_state values of the form to be populated.
+ * @param string $id
+ *   The id of the organism fieldset being populated.
  */
-function page_4_marker_info(&$fields, $values, $id) {
+function page_4_marker_info(array &$fields, array $values, $id) {
 
   $fields['marker-type'] = array(
     '#type' => 'checkboxes',
@@ -869,6 +927,4 @@ function page_4_marker_info(&$fields, $values, $id) {
       ),
     ),
   );
-
-  return $fields;
 }

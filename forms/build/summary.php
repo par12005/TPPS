@@ -2,12 +2,25 @@
 
 /**
  * @file
+ * Creates the Submission Summary form page.
  */
 
 /**
+ * Creates the Submission Summary form page.
  *
+ * This function displays the data that the user has already submitted, and also
+ * allows fields to add additional files to the submission and provide optional
+ * comments.
+ *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
+ *
+ * @return array
+ *   The populated form.
  */
-function tpps_summary_create_form(&$form, $form_state) {
+function tpps_summary_create_form(array &$form, array $form_state) {
 
   $supplemental_upload_location = 'public://' . variable_get('tpps_supplemental_files_dir', 'tpps_supplemental');
 
@@ -48,7 +61,7 @@ function tpps_summary_create_form(&$form, $form_state) {
 
     $form['files']["$i"] = array(
       '#type' => 'managed_file',
-      '#title' => t("Supplemental File $i"),
+      '#title' => t("Supplemental File @i", array('@i' => $i)),
       '#upload_validators' => array(
       // These were all the relevant file types I could think of.
         'file_validate_extensions' => array('csv tsv xlsx txt pdf vcf doc docx xls ppt pptx fa fasta img png jpeg jpg zip gz fsa_nt html flat fsa ai '),
