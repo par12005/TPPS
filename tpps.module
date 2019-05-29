@@ -57,8 +57,7 @@ function tpps_menu() {
 
   $items['completed-submission'] = array(
     'title' => 'TPPS Completed Submission',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_completed_display'),
+    'page callback' => 'tpps_completed_display',
     'access callback' => 'user_access',
     'access arguments' => array('access content'),
     'type' => MENU_NORMAL_ITEM,

@@ -7,7 +7,7 @@
 /**
  *
  */
-function tpps_completed_display($form, $form_state) {
+function tpps_completed_display() {
 
   global $user;
   global $base_url;
@@ -31,11 +31,6 @@ function tpps_completed_display($form, $form_state) {
   $display = "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
 
   $display .= tpps_table_display($old_form_state);
-
-  $form['a'] = array(
-    '#type' => 'hidden',
-    '#suffix' => $display,
-  );
-
-  return $form;
+  
+  return render($display);
 }
