@@ -2,12 +2,18 @@
 
 /**
  * @file
+ * Defines the data integrity checks for the fourth page of the form.
  */
 
 /**
+ * Defines the data integrity checks for the fourth page of the form.
  *
+ * @param array $form
+ *   The form that is being validated.
+ * @param array $form_state
+ *   The state of the form that is being validated.
  */
-function page_4_validate_form(&$form, &$form_state) {
+function page_4_validate_form(array &$form, array &$form_state) {
 
   if ($form_state['submitted'] == '1') {
 
@@ -21,24 +27,21 @@ function page_4_validate_form(&$form, &$form_state) {
         unset($form_state['values']["organism-$i"]['phenotype']);
       }
       if (isset($form_state['values']["organism-$i"]['phenotype'])) {
-        $phenotype = $form_state['values']["organism-$i"]['phenotype'];
-        validate_phenotype($phenotype, "organism-$i", $form, $form_state);
+        validate_phenotype($form_state['values']["organism-$i"]['phenotype'], "organism-$i", $form, $form_state);
       }
 
       if ($i > 1 and isset($organism['genotype-repeat-check']) and $organism['genotype-repeat-check'] == '1') {
         unset($form_state['values']["organism-$i"]['genotype']);
       }
       if (isset($form_state['values']["organism-$i"]['genotype'])) {
-        $genotype = $form_state['values']["organism-$i"]['genotype'];
-        validate_genotype($genotype, "organism-$i", $form, $form_state);
+        validate_genotype($form_state['values']["organism-$i"]['genotype'], "organism-$i", $form, $form_state);
       }
 
       if ($i > 1 and isset($organism['environment-repeat-check']) and $organism['environment-repeat-check'] == '1') {
         unset($form_state['values']["organism-$i"]['environment']);
       }
       if (isset($form_state['values']["organism-$i"]['environment'])) {
-        $environment = $form_state['values']["organism-$i"]['environment'];
-        validate_environment($environment, "organism-$i", $form, $form_state);
+        validate_environment($form_state['values']["organism-$i"]['environment'], "organism-$i");
       }
     }
 
@@ -78,9 +81,18 @@ function page_4_validate_form(&$form, &$form_state) {
 }
 
 /**
+ * Validates the phenotype section of the fourth page of the form.
  *
+ * @param array $phenotype
+ *   The form_state values of the phenotype fieldset for organism $id.
+ * @param string $id
+ *   The id of the organism fieldset being validated.
+ * @param array $form
+ *   The form being validated.
+ * @param array $form_state
+ *   The state of the form being validated.
  */
-function validate_phenotype($phenotype, $id, $form, &$form_state) {
+function validate_phenotype(array $phenotype, $id, array $form, array &$form_state) {
   $phenotype_number = $phenotype['number'];
   $phenotype_check = $phenotype['check'];
   $phenotype_meta = $phenotype['metadata'];
@@ -260,9 +272,18 @@ function validate_phenotype($phenotype, $id, $form, &$form_state) {
 }
 
 /**
+ * Validates the genotype section of the fourth page of the form.
  *
+ * @param array $genotype
+ *   The form_state values of the genotype fieldset for organism $id.
+ * @param string $id
+ *   The id of the organism fieldset being validated.
+ * @param array $form
+ *   The form being validated.
+ * @param array $form_state
+ *   The state of the form being validated.
  */
-function validate_genotype($genotype, $id, $form, &$form_state) {
+function validate_genotype(array $genotype, $id, array $form, array &$form_state) {
   $genotype_file = $genotype['file'];
   $marker_type = $genotype['marker-type'];
   $snps_check = $marker_type['SNPs'];
@@ -339,31 +360,6 @@ function validate_genotype($genotype, $id, $form, &$form_state) {
     if (!form_get_errors()) {
       $assembly = $file_existing ? $file_existing : ($file_upload ? $file_upload : $file_remote);
     }
-
-    /*$assembly = $genotype['assembly-user'];
-
-    if ($assembly == ''){
-    form_set_error("$id][genotype][assembly-user", 'Assembly file: field is required.');
-    }
-    else {
-    $required_groups = array(
-    'Scaffold/Chromosome Id' => array(
-    'id' => array(1)
-    )
-    );
-
-    $file_element = $form[$id]['genotype']['assembly-user'];
-    $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-
-    if (!form_get_errors()){
-    //get scaffold id column number
-    $scaffold_col = $groups['Scaffold/Chromosome Id']['1'];
-
-    //preserve file if it is valid
-    $file = file_load($form_state['values'][$id]['genotype']['assembly-user']);
-    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-    }
-    }*/
   }
 
   if ($marker_check === '000') {
@@ -533,9 +529,14 @@ function validate_genotype($genotype, $id, $form, &$form_state) {
 }
 
 /**
+ * Validates the environment section of the fourth page of the form.
  *
+ * @param array $environment
+ *   The form_state values of the environment fieldset for organism $id.
+ * @param string $id
+ *   The id of the organism fieldset being validated.
  */
-function validate_environment($environment, $id, $form, &$form_state) {
+function validate_environment(array $environment, $id) {
   if ($environment['use_layers']) {
     // Using cartogratree environment layers.
     $layer_check = '';

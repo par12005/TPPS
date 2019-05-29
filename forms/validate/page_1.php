@@ -2,12 +2,18 @@
 
 /**
  * @file
+ * Defines the data integrity checks for the first page of the form.
  */
 
 /**
+ * Defines the data integrity checks for the first page of the form.
  *
+ * @param array $form
+ *   The form that is being validated.
+ * @param array $form_state
+ *   The state of the form that is being validated.
  */
-function page_1_validate_form(&$form, &$form_state) {
+function page_1_validate_form(array &$form, array &$form_state) {
   // for testing only.
   /*foreach($form_state['values'] as $key => $value){
   print_r($key . " => " . $value . ";<br>");

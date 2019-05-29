@@ -2,12 +2,18 @@
 
 /**
  * @file
+ * Defines the data integrity checks for the third page of the form.
  */
 
 /**
+ * Defines the data integrity checks for the third page of the form.
  *
+ * @param array $form
+ *   The form that is being validated.
+ * @param array $form_state
+ *   The state of the form that is being validated.
  */
-function page_3_validate_form(&$form, &$form_state) {
+function page_3_validate_form(array &$form, array &$form_state) {
   if ($form_state['submitted'] == '1') {
     $species_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     if ($species_number == 1 or $form_state['values']['tree-accession']['check'] == '0') {
