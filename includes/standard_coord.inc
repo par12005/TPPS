@@ -2,10 +2,19 @@
 
 /**
  * @file
+ * Defines function to standardize and validate coordinates.
  */
 
 /**
+ * This function returns a standardized set of coordinates from raw coordinates.
  *
+ * If the raw coordinates provided are invalid, the function returns false.
+ *
+ * @param string $raw_coordinate
+ *   The non-standard coordinates to be evaluated and standardized.
+ *
+ * @return mixed
+ *   The coordinates in standardized form. False if coordinates were not valid.
  */
 function tpps_standard_coord($raw_coordinate) {
 

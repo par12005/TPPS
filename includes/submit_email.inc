@@ -2,12 +2,24 @@
 
 /**
  * @file
+ * Defines function to send notification emails upon TPPS Submission completion.
  */
 
 /**
+ * This function sends notification emails upon TPPS Submission completion.
  *
+ * Emails are sent to the user completing the form as well as the administrator
+ * email specified in the TPPS configuration form.
+ *
+ * @param array $form_state
+ *   The state of the form being submitted.
+ *
+ * @global stdClass $user
+ *   The user submitting the form.
+ * @global string $base_url
+ *   The base URL of the site.
  */
-function tpps_submit_email($form, $form_state) {
+function tpps_submit_email(array &$form_state) {
 
   global $user;
   global $base_url;
@@ -47,6 +59,4 @@ function tpps_submit_email($form, $form_state) {
   $params['user_mail'] = $user->mail;
 
   drupal_mail('tpps', 'admin_recieved', $admin, user_preferred_language($user), $params, $from, TRUE);
-
-  return;
 }

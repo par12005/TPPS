@@ -2,12 +2,19 @@
 
 /**
  * @file
+ * Defines a function to format a TPPS Submission form state into an HTML table.
  */
 
 /**
+ * Returns a formatted HTML table based on a TPPS Submission form state.
  *
+ * @param array $state
+ *   The form_state of the TPPS Submission form.
+ *
+ * @return string
+ *   The TPPS Submission formatted in an HTML table.
  */
-function tpps_table_display($state) {
+function tpps_table_display(array &$state) {
 
   $accession = $state['saved_values'][TPPS_PAGE_4]['accession'];
   $display = "<div class='tpps_complete_submission'><table id='tpps_$accession' style='width:-webkit-fill-available' border='1'><thead>";

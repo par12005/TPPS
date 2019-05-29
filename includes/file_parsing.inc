@@ -2,14 +2,22 @@
 
 /**
  * @file
+ * Defines function to parse genotype and phenotype files from the submission.
  */
 
 require_once 'get_env_data.inc';
 
 /**
+ * Parses genotype and phenotype files and creates records in the database.
  *
+ * This function is only called from Tripal Jobs because of the size of genotype
+ * and phenotype files and the number of records needed to properly store and
+ * integrate the data.
+ *
+ * @param array $form_state
+ *   The state of the completed submission form.
  */
-function tpps_file_parsing($form_state) {
+function tpps_file_parsing(array $form_state) {
 
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
@@ -176,11 +184,11 @@ function tpps_file_parsing($form_state) {
 
           if (!isset($observable_id) or $observable_id == '') {
             $observable_id = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$phenotypes_meta[$name]['struct']}",
-            'name' => $phenotypes_meta[$name]['struct'],
-            'definition' => '',
-            'cv_name' => $local_cv->name,
-          ));
+              'id' => "{$local_db->name}:{$phenotypes_meta[$name]['struct']}",
+              'name' => $phenotypes_meta[$name]['struct'],
+              'definition' => '',
+              'cv_name' => $local_cv->name,
+            ));
           }
         }
         else {
@@ -406,7 +414,9 @@ function tpps_file_parsing($form_state) {
             $organism_id = $query['organism_id'];
 
             if (!isset($last_org_id) or $last_org_id !== $organism_id) {
-              // If the last organism id is not present or is different from this one, get a new species code. otherwise, keep the last one to avoid some redundant queries.
+              // If the last organism id is not present or is different from
+              // this one, get a new species code. otherwise, keep the last one
+              // to avoid some redundant queries.
               $and = db_and()
                 ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local')))->cvterm_id)
                 ->condition('organism_id', "$organism_id");
@@ -441,7 +451,7 @@ function tpps_file_parsing($form_state) {
                 }
               }
               else {
-                // type_id for "other genotype marker" should just be 'genotype'.
+                // type_id for other genotype markers should just be 'genotype'.
                 $marker_type_id = chado_get_cvterm(array('name' => 'genotype', 'cv_id' => array('name' => 'sequence')))->cvterm_id;
               }
 
@@ -536,7 +546,9 @@ function tpps_file_parsing($form_state) {
 
             $description = "$ref:$alt";
 
-            // Tripal Job has issues when all submissions are made at the same time, so break them up into groups of 10,000 genotypes along with their relevant genotypeprops.
+            // Tripal Job has issues when all submissions are made at the same
+            // time, so break them up into groups of 10,000 genotypes along with
+            // their relevant genotypeprops.
             if ($genotype_count > $genotype_group) {
               $genotype_count = 0;
               tpps_chado_insert_record('genotype', $genotype_vals);
@@ -612,7 +624,8 @@ function tpps_file_parsing($form_state) {
               $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
             }
 
-            // Allele frequency, assuming that the info code for allele frequency is 'AF'.
+            // Allele frequency, assuming that the info code for allele
+            // frequency is 'AF'.
             if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
               $genotypeprop_vals[] = array(
                 'genotype_id' => $genotype_id,
@@ -627,7 +640,8 @@ function tpps_file_parsing($form_state) {
               );
             }
 
-            // Depth coverage, assuming that the info code for depth coverage is 'DP'.
+            // Depth coverage, assuming that the info code for depth coverage is
+            // 'DP'.
             if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
               $genotypeprop_vals[] = array(
                 'genotype_id' => $genotype_id,
@@ -642,7 +656,8 @@ function tpps_file_parsing($form_state) {
               );
             }
 
-            // Number of samples, assuming that the info code for number of samples is 'NS'.
+            // Number of samples, assuming that the info code for number of
+            // samples is 'NS'.
             if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
               $genotypeprop_vals[] = array(
                 'genotype_id' => $genotype_id,
@@ -711,7 +726,7 @@ function tpps_file_parsing($form_state) {
           $tree_id = $content[$j][$id_col];
           $stock_query = db_select('chado.stock', 's')
             ->fields('s', array('stock_id'))
-            ->condition('uniquename', t($tree_id))
+            ->condition('uniquename', $tree_id)
             ->execute();
 
           $stock_id = $stock_query->fetchObject()->stock_id;
@@ -852,6 +867,4 @@ function tpps_file_parsing($form_state) {
       }
     }
   }
-
-  return;
 }

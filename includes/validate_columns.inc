@@ -2,12 +2,42 @@
 
 /**
  * @file
+ * Defines a function to validate the columns of a managed_file element.
  */
 
 /**
+ * This function validates that the file contains all of the required groups.
  *
+ * A "required group" is a column type that must be present within the file for
+ * the file to be considered valid. For instance, a required group for a tree
+ * accession file would be the "Location" group. The required groups array
+ * should satisfy the structure:
+ *  array(
+ *    '<group name>' => array(
+ *      '<type>' => array(<column option index>[, <column option index>...])[,
+ *      '<type>' => array(<column option index>[, <column option index>...])...]
+ *    )[,
+ *    '<group name>' => array(
+ *      '<type>' => array(<column option index>[, <column option index>...])[,
+ *      '<type>' => array(<column option index>[, <column option index>...])...]
+ *    )...]
+ *  )
+ * where <group name> is the name of the required group, <type> is the name of
+ * the set of options that could satisfy the required group, and each of the
+ * <column option index>s is a key within the file element['column-options']
+ * field.
+ *
+ * @param array $form_state
+ *   The state of the form that the file is part of.
+ * @param array $required_groups
+ *   The required column option groups for the file.
+ * @param array $file_element
+ *   The managed_file element of the file within the form.
+ *
+ * @return array
+ *   The groups and the column option types that the file was valid for.
  */
-function tpps_file_validate_columns(&$form_state, $required_groups, $file_element) {
+function tpps_file_validate_columns(array &$form_state, array $required_groups, array $file_element) {
   $cols = $file_element['#value']['columns'];
 
   $parents = $file_element['#parents'];

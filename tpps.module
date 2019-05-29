@@ -22,7 +22,6 @@ require_once 'includes/validate_columns.inc';
 require_once 'includes/refresh_landing_page.inc';
 require_once 'includes/parse_xlsx.inc';
 require_once 'includes/content_no_header.inc';
-require_once 'includes/custom_cvterm.inc';
 require_once 'includes/submit_email.inc';
 require_once 'includes/status_bar.inc';
 require_once 'includes/save_file_columns.inc';
@@ -49,7 +48,7 @@ function tpps_menu() {
   $items['user/%user/tpps'] = array(
     'title' => 'TPPS Submissions',
     'page callback' => 'tpps_tab_create',
-    'page arguments' => array('user', 1),
+    'page arguments' => array(1),
     'access callback' => 'user_access',
     'access arguments' => array('access content'),
     'type' => MENU_LOCAL_TASK,
@@ -612,7 +611,7 @@ function tpps_main(array $form, array &$form_state) {
       // Not first access.
       if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')) {
         // No submissions, or selected to create new submission.
-        tpps_init_project($form, $form_state);
+        tpps_init_project($form_state);
         tpps_create_submission($form_state, $user->uid);
       }
       $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
@@ -635,7 +634,7 @@ function tpps_main(array $form, array &$form_state) {
   );
 
   if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
-    tpps_init_project($form, $form_state);
+    tpps_init_project($form_state);
   }
 
   status_bar($form, $form_state);
@@ -841,7 +840,7 @@ function tpps_main_submit($form, &$form_state) {
       else {
         $form_state['status'] = 'Pending Approval';
         tpps_update_submission($form_state, array('status' => 'Pending Approval'));
-        tpps_submit_email($form, $form_state);
+        tpps_submit_email($form_state);
         // drupal_goto('<front>');.
         return;
       }

@@ -2,10 +2,17 @@
 
 /**
  * @file
+ * Defines a function used to parse excel files for their content.
  */
 
 /**
+ * This function parses an .xlsx file and returns an array of its content.
  *
+ * @param string $location
+ *   The path on the server to the file being parsed.
+ *
+ * @return array
+ *   An array containing the content headers and content body.
  */
 function tpps_parse_xlsx($location) {
 

@@ -2,10 +2,15 @@
 
 /**
  * @file
+ * Defines the callback for the 'tpps_refresh_landing_page' callback.
  */
 
 /**
+ * Refreshes the chado.plusgeno_view materialized view.
  *
+ * The chado.plusgeno_view is the materialized view that the tpps_details module
+ * uses to retrieve information about TPPS submissions on the landing page. It
+ * should be refreshed periodically as part of a cron job.
  */
 function tpps_refresh_landing_page() {
 

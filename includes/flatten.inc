@@ -2,16 +2,26 @@
 
 /**
  * @file
+ * Defines a function to flatten a form state array.
  */
 
 /**
+ * This function returns a flattened and filtered form state.
  *
+ * This is useful for any functions that display all of the detailed contents of
+ * a TPPS Submission.
+ *
+ * @param array $state
+ *   The state of the submission form.
+ *
+ * @return array
+ *   The flattened state array.
  */
-function tpps_flatten($state) {
+function tpps_flatten(array $state) {
   $data = isset($state['saved_values']) ? $state['saved_values'] : NULL;
 
   if (!$data) {
-    return;
+    return array();
   }
   unset($data['frontpage']);
   unset($data['form_build_id']);

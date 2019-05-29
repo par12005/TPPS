@@ -2,12 +2,22 @@
 
 /**
  * @file
+ * Defines a function to populate the TPPS Submissions user tab.
  */
 
 /**
+ * This function populates the TPPS Submissions user tab.
  *
+ * @param int $user
+ *   The id of the user.
+ *
+ * @global string $base_url
+ *   The base URL of the site.
+ *
+ * @return string
+ *   The HTML of the TPPS user tab.
  */
-function tpps_tab_create($type, $user, $name = NULL) {
+function tpps_tab_create($user) {
 
   global $base_url;
   $email = $user->mail;

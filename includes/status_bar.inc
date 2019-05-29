@@ -2,12 +2,24 @@
 
 /**
  * @file
+ * Defines function to display the TPPS Status Bar.
  */
 
 /**
+ * Adds the TPPS Status Bar to the top of the form.
  *
+ * The status bar allows users to see where they are in the TPPS Submission form
+ * steps.
+ *
+ * @param array $form
+ *   The form being populated.
+ * @param array $form_state
+ *   The state of the form being populated.
+ *
+ * @global string $base_url
+ *   The base URL of the site.
  */
-function status_bar(&$form, $form_state) {
+function status_bar(array &$form, array $form_state) {
 
   global $base_url;
 
