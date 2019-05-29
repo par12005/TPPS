@@ -512,10 +512,10 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
       }
 
       if ($element['#type'] == 'fieldset') {
-        if (!isset($saved_vals[$key])) {
+        if (empty($saved_vals[$key]) or !is_array($saved_vals[$key])) {
           $saved_vals[$key] = array();
         }
-        if (!isset($vals[$key])) {
+        if (empty($vals[$key]) or !is_array($vals[$key])) {
           $vals[$key] = array();
         }
         tpps_leaves($element, $vals[$key], $saved_vals[$key]);

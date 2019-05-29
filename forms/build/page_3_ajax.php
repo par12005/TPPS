@@ -8,6 +8,9 @@
 /**
  * Ajax callback for the population group fieldset.
  *
+ * This function indicates the element to be updated when a population group
+ * option is selected for a column in an accession file.
+ *
  * @param array $form
  *   The form to be updated.
  * @param array $form_state

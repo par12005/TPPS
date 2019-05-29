@@ -836,18 +836,47 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
         $stock_id = $stock_ids[$tree_id];
 
         $loc = $thirdpage['tree-accession']['pop-group'][$content[$i][$pop_group_name]];
+        $coord = tpps_standard_coord($loc);
 
-        tpps_chado_insert_record('stockprop', array(
-          'stock_id' => $stock_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'nd_geolocation_property',
+        if ($coord) {
+          $parts = explode(',', $coord);
+          tpps_chado_insert_record('stockprop', array(
+            'stock_id' => $stock_id,
+            'type_id' => array(
+              'cv_id' => array(
+                'name' => 'local',
+              ),
+              'name' => 'gps_latitude',
+              'is_obsolete' => 0,
             ),
-            'name' => 'Location',
-            'is_obsolete' => 0,
-          ),
-          'value' => $loc,
-        ));
+            'value' => $parts[0],
+          ));
+
+          tpps_chado_insert_record('stockprop', array(
+            'stock_id' => $stock_id,
+            'type_id' => array(
+              'cv_id' => array(
+                'name' => 'local',
+              ),
+              'name' => 'gps_longitude',
+              'is_obsolete' => 0,
+            ),
+            'value' => $parts[1],
+          ));
+        }
+        else {
+          tpps_chado_insert_record('stockprop', array(
+            'stock_id' => $stock_id,
+            'type_id' => array(
+              'cv_id' => array(
+                'name' => 'nd_geolocation_property',
+              ),
+              'name' => 'Location',
+              'is_obsolete' => 0,
+            ),
+            'value' => $loc,
+          ));
+        }
       }
     }
 
@@ -989,19 +1018,48 @@ function tpps_submit_page_3(&$form_state, $project_id, &$file_rank, $organism_id
         else {
           $pop_group_name = $groups['Location (latitude/longitude or country/state or population group)']['12'];
 
-          $loc = $thirdpage['tree-accession']['pop-group'][$content[$j][$pop_group_name]];
+          $loc = $thirdpage['tree-accession']['pop-group'][$content[$i][$pop_group_name]];
+          $coord = tpps_standard_coord($loc);
 
-          tpps_chado_insert_record('stockprop', array(
-            'stock_id' => $stock_id,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'nd_geolocation_property',
+          if ($coord) {
+            $parts = explode(',', $coord);
+            tpps_chado_insert_record('stockprop', array(
+              'stock_id' => $stock_id,
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'local',
+                ),
+                'name' => 'gps_latitude',
+                'is_obsolete' => 0,
               ),
-              'name' => 'Location',
-              'is_obsolete' => 0,
-            ),
-            'value' => $loc,
-          ));
+              'value' => $parts[0],
+            ));
+
+            tpps_chado_insert_record('stockprop', array(
+              'stock_id' => $stock_id,
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'local',
+                ),
+                'name' => 'gps_longitude',
+                'is_obsolete' => 0,
+              ),
+              'value' => $parts[1],
+            ));
+          }
+          else {
+            tpps_chado_insert_record('stockprop', array(
+              'stock_id' => $stock_id,
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'nd_geolocation_property',
+                ),
+                'name' => 'Location',
+                'is_obsolete' => 0,
+              ),
+              'value' => $loc,
+            ));
+          }
         }
       }
 
