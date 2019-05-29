@@ -465,14 +465,14 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
 
       // If #tree is not set in the current element, and #tree is set and false
       // in the parent element, then set #tree to false in the current element.
-      if (!isset($element['#tree']) and isset($elements['#tree']) and !$elements['#tree']){
+      if (!isset($element['#tree']) and isset($elements['#tree']) and !$elements['#tree']) {
         $element['#tree'] = FALSE;
       }
-      
+
       // If #tree is not set or is set to true, then populate the #parents array
       // with the parents of the parent element plus the current key. Otherwise,
       // the #parents array should just be the current key.
-      if (!isset($element['#tree']) or $element['#tree']){
+      if (!isset($element['#tree']) or $element['#tree']) {
         $element['#parents'] = array_merge($elements['#parents'], array($key));
       }
       else {
@@ -716,7 +716,7 @@ function tpps_main(array $form, array &$form_state) {
   }
 
   drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-  
+
   return $form;
 }
 

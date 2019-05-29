@@ -2,14 +2,25 @@
 
 /**
  * @file
+ * Creates the Accession file form page and includes helper files.
  */
 
 require_once 'page_3_ajax.php';
 
 /**
+ * Creates the Accession file form page.
  *
+ * This function creates a single accession file field if the user has indicated
+ * that their study only includes one species. Otherwise, the user may choose to
+ * either upload a single accession file with every species type, or to upload
+ * multiple files sorted by species.
+ *
+ * @param array $form
+ *   The form to be populated.
+ * @param array $form_state
+ *   The state of the form to be populated.
  */
-function page_3_create_form(&$form, &$form_state) {
+function page_3_create_form(array &$form, array &$form_state) {
 
   if (isset($form_state['saved_values'][TPPS_PAGE_3])) {
     $values = $form_state['saved_values'][TPPS_PAGE_3];
@@ -179,7 +190,7 @@ function page_3_create_form(&$form, &$form_state) {
 
       $form['tree-accession']["species-$i"] = array(
         '#type' => 'fieldset',
-        '#title' => t("<div class=\"fieldset-title\">Tree Accession information for $name trees:</div>"),
+        '#title' => "<div class=\"fieldset-title\">" . t("Tree Accession information for @name trees:", array('@name' => $name)) . "</div>",
         '#states' => array(
           'visible' => array(
             ':input[name="tree-accession[check]"]' => array('checked' => TRUE),
@@ -190,7 +201,7 @@ function page_3_create_form(&$form, &$form_state) {
 
       $form['tree-accession']["species-$i"]['file'] = array(
         '#type' => 'managed_file',
-        '#title' => t("$name Accession File: please provide a spreadsheet with columns for the Tree ID and location of the $name trees used in this study: *"),
+        '#title' => t("@name Accession File: please provide a spreadsheet with columns for the Tree ID and location of the @name trees used in this study: *", array('@name' => $name)),
         '#upload_location' => "$file_upload_location",
         '#upload_validators' => array(
           'file_validate_extensions' => array('txt csv xlsx'),
@@ -293,6 +304,4 @@ function page_3_create_form(&$form, &$form_state) {
     '#type' => 'submit',
     '#value' => t('Next'),
   );
-
-  return $form;
 }

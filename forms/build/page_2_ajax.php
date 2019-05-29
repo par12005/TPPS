@@ -61,11 +61,19 @@ function page_2_map_ajax(array $form, array $form_state) {
 }
 
 /**
- * 
+ * Ajax callback for study type.
+ *
+ * This function updates the study_info fieldset when the study type dropdown
+ * menu element is changed.
+ *
  * @param array $form
+ *   The form being updated.
  * @param array $form_state
+ *   The state of the form being updated.
+ *
  * @return array
+ *   The part of the form to be updated.
  */
-function study_type_callback(array &$form, array $form_state){
+function study_type_callback(array &$form, array $form_state) {
   return $form['study_info'];
 }
