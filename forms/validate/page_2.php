@@ -144,7 +144,7 @@ function page_2_validate_form(&$form, &$form_state) {
     if (!empty($form_state['values']['study_info']['biotic_env']) and preg_match('/^0+$/', implode('', $form_state['values']['study_info']['biotic_env']['option']))){
       form_set_error('study_info][biotic_env', 'Biotic Environment: field is required.');
     }
-    elseif ($form_state['values']['study_info']['biotic_env']['option']['Other'] and !$form_state['values']['study_info']['biotic_env']['other']){
+    elseif (!empty($form_state['values']['study_info']['biotic_env']['option']['Other']) and !$form_state['values']['study_info']['biotic_env']['other']){
       form_set_error('study_info][biotic_env][other', 'Custom Biotic Environment: field is required.');
     }
     
