@@ -606,7 +606,7 @@ function tpps_submit_page_2(array &$form_state, $project_id, &$file_rank) {
     ));
   }
 
-  if (!empty($form_state['values']['study_info']['biotic_env']['option'])){
+  if (!empty($form_state['values']['study_info']['biotic_env']['option'])) {
     foreach ($form_state['values']['study_info']['biotic_env']['option'] as $key => $check) {
       if ($check) {
         tpps_chado_insert_record('projectprop', array(

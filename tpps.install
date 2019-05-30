@@ -2,19 +2,24 @@
 
 /**
  * @file
- * Defines install, uninstall, and update processes.
+ * Defines module schema and install/uninstall processes.
  */
 
 /**
  * Implements hook_install().
  *
- * Downloads and installs Ultimate Cron if it is not already enabled.
+ * Define local cvterms, add necessary foreign keys to schema tables, create
+ * necessary materialized views.
  */
 function tpps_install() {
 
-  // Create foreign key for tpps_submission to reference users table.
-  db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_uid_fkey FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE;');
-  db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES chado.dbxref(dbxref_id) ON DELETE CASCADE;');
+  tpps_install_cvterms();
+
+  tpps_alter_tpps_submissions();
+
+  tpps_alter_genotype_call();
+
+  tpps_create_plusgeno_view();
 }
 
 /**
@@ -112,118 +117,118 @@ function tpps_schema() {
     ),
   );
 
+  if (!db_table_exists('chado.stock_phenotype')) {
+    $schema['chado.stock_phenotype'] = array(
+      'description' => '',
+      'fields' => array(
+        'stock_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'size' => 'normal',
+        ),
+        'phenotype_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'size' => 'normal',
+        ),
+      ),
+    );
+  }
+
+  if (!db_table_exists('chado.genotype_call')) {
+    $schema['chado.genotype_call'] = array(
+      'description' => '',
+      'fields' => array(
+        'genotype_call_id' => array(
+          'description' => '',
+          'type' => 'serial',
+          'size' => 'normal',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'variant_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'marker_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'genotype_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'project_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'stock_id' => array(
+          'description' => '',
+          'type' => 'int',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'meta_data' => array(
+          'description' => '',
+          // Drupal does not support the json data type by default, we will use
+          // a placeholder for meta_data for now, and upon install we will
+          // change the type to json.
+          'type' => 'text',
+        ),
+      ),
+      'foreign keys' => array(
+        'genotype_id' => array(
+          'table' => 'chado.genotype',
+          'columns' => array(
+            'genotype_id' => 'genotype_id',
+          ),
+        ),
+        'variant_id' => array(
+          'table' => 'chado.feature',
+          'columns' => array(
+            'variant_id' => 'feature_id',
+          ),
+        ),
+        'marker_id' => array(
+          'table' => 'chado.feature',
+          'columns' => array(
+            'marker_id' => 'feature_id',
+          ),
+        ),
+        'project_id' => array(
+          'table' => 'chado.project',
+          'columns' => array(
+            'project_id' => 'project_id',
+          ),
+        ),
+        'stock_id' => array(
+          'table' => 'chado.stock',
+          'columns' => array(
+            'stock_id' => 'stock_id',
+          ),
+        ),
+      ),
+      'primary key' => array(
+        'genotype_call_id',
+      ),
+    );
+  }
+
   return $schema;
 }
 
 /**
- * Implements hook_update_N().
- *
- * Adds the chado.stock_phenotype linking table if it does not exist.
+ * Adds local TPPS cvterms.
  */
-function tpps_update_7000() {
-  if (!db_table_exists('chado.stock_phenotype')) {
-    // Create stock_phenotype table if it does not exist.
-    db_query('create table chado.stock_phenotype (stock_id integer, phenotype_id integer);');
-  }
-}
-
-/**
- * Implements hook_update_N().
- *
- * Adds the genotype_call_genotype_call_id_seq sequence for the genotype_call
- * table.
- */
-function tpps_update_7001() {
-  $query = db_select('pg_class', 'p')
-    ->fields('p')
-    ->condition('relname', 'genotype_call_genotype_call_id_seq')
-    ->execute();
-  if (!($result = $query->fetchObject())) {
-    $create_seq = db_query('CREATE SEQUENCE genotype_call_genotype_call_id_seq START 1;');
-  }
-}
-
-/**
- * Implements hook_update_N().
- *
- * Creates the chado.genotype_call table if it does not exist.
- */
-function tpps_update_7002() {
-  if (!db_table_exists('chado.genotype_call')) {
-    // Create genotype_call table if it does not exist.
-    db_query('create table chado.genotype_call (genotype_call_id bigint PRIMARY KEY NOT NULL DEFAULT nextval(\'genotype_call_genotype_call_id_seq\'::regclass),
-      variant_id bigint NOT NULL,
-      marker_id bigint NOT NULL,
-      genotype_id bigint NOT NULL,
-      project_id bigint NOT NULL,
-      stock_id bigint NOT NULL,
-      meta_data json,
-      CONSTRAINT "genotype_call_genotype_id_fkey" FOREIGN KEY (genotype_id) REFERENCES chado.genotype(genotype_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-      CONSTRAINT "genotype_call_marker_id_fkey" FOREIGN KEY (marker_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-      CONSTRAINT "genotype_call_project_id_fkey" FOREIGN KEY (project_id) REFERENCES chado.project(project_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-      CONSTRAINT "genotype_call_stock_id_fkey" FOREIGN KEY (stock_id) REFERENCES chado.stock(stock_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-      CONSTRAINT "genotype_call_variant_id_fkey" FOREIGN KEY (variant_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED);');
-  }
-}
-
-/**
- * Implements hook_update_N().
- *
- * Creates materialized view plusgeno_view if it does not exist.
- */
-function tpps_update_7003() {
-  $query = db_select('pg_class', 'p')
-    ->fields('p')
-    ->condition('relname', 'plusgeno_view')
-    ->execute();
-  if (!($result = $query->fetchObject())) {
-    // Create plusgeno_view if it does not exist.
-    $create_view = db_query('create materialized view chado.plusgeno_view as SELECT DISTINCT p.project_id,
-   d.accession,
-   ppub.title,
-   o.species,
-   count(o.stock_id) OVER (PARTITION BY p.project_id) AS tree_count,
-   sum(phen.count) OVER (PARTITION BY p.project_id) AS phen_count,
-   unique_phen.phenotypes_assessed,
-   g.gen_count
-  FROM chado.project_dbxref p
-    JOIN chado.dbxref d ON p.dbxref_id = d.dbxref_id
-    JOIN ( SELECT pp.project_id,
-       pub.title
-      FROM chado.project_pub pp
-        JOIN chado.pub ON pp.pub_id = pub.pub_id) ppub ON p.project_id = ppub.project_id
-    JOIN ( SELECT DISTINCT ps.project_id,
-       (org.genus::text || \' \'::text) || org.species::text AS species,
-       stock.stock_id
-      FROM chado.project_stock ps
-        JOIN chado.stock ON ps.stock_id = stock.stock_id
-        JOIN chado.organism org ON stock.organism_id = org.organism_id) o ON p.project_id = o.project_id
-    LEFT JOIN ( SELECT stock_phenotype.stock_id,
-       count(stock_phenotype.phenotype_id) OVER (PARTITION BY stock_phenotype.stock_id) AS count
-      FROM chado.stock_phenotype) phen ON o.stock_id = phen.stock_id
-    LEFT JOIN ( SELECT DISTINCT pc.project_id,
-       count(pc.name) OVER (PARTITION BY pc.project_id) AS phenotypes_assessed
-      FROM ( SELECT DISTINCT ps.project_id,
-           ph.name
-           FROM chado.phenotype ph
-            JOIN chado.stock_phenotype sp ON ph.phenotype_id = sp.phenotype_id
-            JOIN chado.stock s ON sp.stock_id = s.stock_id
-            JOIN chado.project_stock ps ON s.stock_id = ps.stock_id) pc) unique_phen ON p.project_id = unique_phen.project_id
-    LEFT JOIN ( SELECT DISTINCT genotype_call.project_id,
-       count(genotype_call.genotype_call_id) OVER (PARTITION BY genotype_call.project_id) AS gen_count
-      FROM chado.genotype_call) g ON p.project_id = g.project_id
-   WHERE d.db_id = 95;');
-  }
-}
-
-/**
- * Implements hook_update_N().
- *
- * Defines local cvterms specific to the TPPS module.
- */
-function tpps_update_7004() {
-
-  // Create local cvterms for the TPPS module.
+function tpps_install_cvterms() {
   $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = chado_get_db(array('name' => 'local'));
 
@@ -274,5 +279,97 @@ function tpps_update_7004() {
       'cv_name' => $local_cv->name,
     );
     chado_insert_cvterm($term);
+  }
+}
+
+/**
+ * Add foreign key constraints to the chado.genotype_call table.
+ */
+function tpps_alter_genotype_call() {
+  $results = db_query("SELECT contype "
+    . "FROM pg_catalog.pg_constraint con JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid "
+    . "WHERE rel.relname = 'genotype_call' AND contype like 'f';");
+  if (!$results->rowCount()) {
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_genotype_id_fkey FOREIGN KEY (genotype_id) REFERENCES genotype(genotype_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_marker_id_fkey FOREIGN KEY (marker_id) REFERENCES feature(marker_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_variant_id_fkey FOREIGN KEY (variant_id) REFERENCES feature(variant_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(project_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_stock_id_fkey FOREIGN KEY (stock_id) REFERENCES stock(stock_id) ON DELETE CASCADE;');
+  }
+
+  $and = db_and()
+    ->condition('column_name', 'meta_data')
+    ->condition('table_name', 'genotype_call');
+  $meta_type = db_select('information_schema.columns', 'c')
+    ->fields('c', array('data_type'))
+    ->condition($and)
+    ->execute()->fetchObject()->data_type;
+
+  if ($meta_type != 'json') {
+    db_query('ALTER TABLE chado.genotype_call ALTER COLUMN meta_data TYPE json USING meta_data::json;');
+  }
+}
+
+/**
+ * Add foreign key constraints to the tpps_submission table.
+ */
+function tpps_alter_tpps_submissions() {
+  $results = db_query("SELECT contype "
+    . "FROM pg_catalog.pg_constraint con JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid "
+    . "WHERE rel.relname = 'tpps_submission' AND contype like 'f';");
+  if (!$results->rowCount()) {
+    // Create foreign key for tpps_submission to reference users table.
+    db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_uid_fkey FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE;');
+    db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES chado.dbxref(dbxref_id) ON DELETE CASCADE;');
+  }
+}
+
+/**
+ * Create the chado.plusgeno_view materialized view.
+ */
+function tpps_create_plusgeno_view() {
+  $local_db = chado_get_db(array('name' => 'local'));
+
+  $query = db_select('pg_class', 'p')
+    ->fields('p')
+    ->condition('relname', 'plusgeno_view')
+    ->execute();
+  if (!($result = $query->fetchObject())) {
+    // Create plusgeno_view if it does not exist.
+    db_query('create materialized view chado.plusgeno_view as SELECT DISTINCT p.project_id,
+   d.accession,
+   ppub.title,
+   o.species,
+   count(o.stock_id) OVER (PARTITION BY p.project_id) AS tree_count,
+   sum(phen.count) OVER (PARTITION BY p.project_id) AS phen_count,
+   unique_phen.phenotypes_assessed,
+   g.gen_count
+  FROM chado.project_dbxref p
+    JOIN chado.dbxref d ON p.dbxref_id = d.dbxref_id
+    JOIN ( SELECT pp.project_id,
+       pub.title
+      FROM chado.project_pub pp
+        JOIN chado.pub ON pp.pub_id = pub.pub_id) ppub ON p.project_id = ppub.project_id
+    JOIN ( SELECT DISTINCT ps.project_id,
+       (org.genus::text || \' \'::text) || org.species::text AS species,
+       stock.stock_id
+      FROM chado.project_stock ps
+        JOIN chado.stock ON ps.stock_id = stock.stock_id
+        JOIN chado.organism org ON stock.organism_id = org.organism_id) o ON p.project_id = o.project_id
+    LEFT JOIN ( SELECT stock_phenotype.stock_id,
+       count(stock_phenotype.phenotype_id) OVER (PARTITION BY stock_phenotype.stock_id) AS count
+      FROM chado.stock_phenotype) phen ON o.stock_id = phen.stock_id
+    LEFT JOIN ( SELECT DISTINCT pc.project_id,
+       count(pc.name) OVER (PARTITION BY pc.project_id) AS phenotypes_assessed
+      FROM ( SELECT DISTINCT ps.project_id,
+           ph.name
+           FROM chado.phenotype ph
+            JOIN chado.stock_phenotype sp ON ph.phenotype_id = sp.phenotype_id
+            JOIN chado.stock s ON sp.stock_id = s.stock_id
+            JOIN chado.project_stock ps ON s.stock_id = ps.stock_id) pc) unique_phen ON p.project_id = unique_phen.project_id
+    LEFT JOIN ( SELECT DISTINCT genotype_call.project_id,
+       count(genotype_call.genotype_call_id) OVER (PARTITION BY genotype_call.project_id) AS gen_count
+      FROM chado.genotype_call) g ON p.project_id = g.project_id
+   WHERE d.db_id = ' . $local_db->db_id . ';');
   }
 }
