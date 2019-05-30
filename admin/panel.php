@@ -253,9 +253,9 @@ function tpps_admin_panel_submit($form, &$form_state) {
     $params['accession'] = $state['accession'];
 
     $state['status'] = 'Approved';
-    tpps_update_submission($state, array('status' => 'Approved'));
     tpps_submit_all($state);
-    $args = array($state);
+    tpps_update_submission($state, array('status' => 'Approved'));
+    $args = array($state['accession']);
     $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
     $state['job_id'] = $jid;
 
