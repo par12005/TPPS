@@ -14,10 +14,11 @@ require_once 'get_env_data.inc';
  * and phenotype files and the number of records needed to properly store and
  * integrate the data.
  *
- * @param array $form_state
- *   The state of the completed submission form.
+ * @param string $accession
+ *   The accession number of the completed submission.
  */
-function tpps_file_parsing(array $form_state) {
+function tpps_file_parsing($accession) {
+  $form_state = tpps_load_submission($accession);
 
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
