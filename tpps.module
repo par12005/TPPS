@@ -10,6 +10,7 @@ define("TPPS_PAGE_1", 1);
 define("TPPS_PAGE_2", 2);
 define("TPPS_PAGE_3", 3);
 define("TPPS_PAGE_4", 4);
+define("TPPS_ZENODO_TOKEN", 'gHVu18hhGIZvMATRexRJARf55nlu9YerTIvLAf1cbTu8T0mbXGHHU93769B8');
 require_once 'includes/create_record.inc';
 require_once 'includes/flatten.inc';
 require_once 'includes/init_project.inc';
@@ -28,6 +29,7 @@ require_once 'includes/save_file_columns.inc';
 require_once 'includes/file_parsing.inc';
 require_once 'includes/accession_coordinates.inc';
 require_once 'includes/submissions.inc';
+require_once 'includes/zenodo.inc';
 
 /**
  * Implements hook_menu().
@@ -558,7 +560,7 @@ function tpps_page_build(&$page) {
 function tpps_main(array $form, array &$form_state) {
 
   require_once 'forms/build/front.php';
-
+  curl();
   global $user;
   $params = drupal_get_query_parameters();
 
@@ -1000,4 +1002,22 @@ function tpps_block_view_alter(&$data, $block) {
     default:
       break;
   }
+}
+
+function curl() {
+  $id = tpps_create_upload();
+  
+  $metadata = (object) array(
+    'title' => 'First Upload',
+    'upload_type' => 'poster',
+    'description' => 'This is the first upload',
+    'creators' => array(
+      (object) array(
+        'name' => 'Richter, Peter',
+        'affiliation' => 'UConn'
+      )
+    )
+  );
+  
+  tpps_upload_metadata($id, $metadata);
 }
