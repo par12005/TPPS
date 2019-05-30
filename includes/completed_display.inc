@@ -37,6 +37,14 @@ function tpps_completed_display() {
   $display = "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
 
   $display .= tpps_table_display($old_form_state);
+  
+  if (!empty($old_form_state['zenodo_id'])){
+    $display .= "<input type=\"submit\" id=\"publish-doi\" value=\"Activate Zenodo DOI\" class=\"form-submit\">";
+  }
+  
+  //$id = tpps_generate_doi($accession);
+  //$old_form_state['zenodo_id'] = $id;
+  //tpps_update_submission($old_form_state);
 
   return render($display);
 }

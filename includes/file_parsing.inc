@@ -24,7 +24,7 @@ function tpps_file_parsing($accession) {
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $organism_number = $firstpage['organism']['number'];
   $organism_ids = array();
-  $file_rank = $form_state['file_rank'];
+  $file_rank = &$form_state['file_rank'];
   $genotype_group = variable_get('tpps_genotype_group', 10000);
 
   $project_id = tpps_chado_insert_record('project', array(
@@ -868,4 +868,11 @@ function tpps_file_parsing($accession) {
       }
     }
   }
+  
+  $token = variable_get('tpps_zenodo_api_key', NULL);
+  if (!empty($token)){
+    $form_state['zenodo_id'] = tpps_generate_doi($accession);
+  }
+  
+  tpps_update_submission($form_state);
 }
