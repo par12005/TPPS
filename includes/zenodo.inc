@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Defines functions to create and populate Zenodo DOIs.
@@ -8,36 +9,36 @@
  * Creates a Zenodo DOI and loads metadata from a TPPS Submission accession.
  *
  * @param string $accession
- *   The accession number of the TPPS Submission
+ *   The accession number of the TPPS Submission.
  *
  * @global string $base_url
  *   The base URL of the site.
  *
- * @return stdClass
+ * @return object
  *   The Zenodo DOI Deposition object.
  */
 function tpps_generate_doi($accession) {
   global $base_url;
   $state = tpps_load_submission($accession);
-  
+
   $id = tpps_doi_create();
   $creators = array(
     (object) array(
       'name' => tpps_doi_format_name($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']),
-      'affiliation' => $state['saved_values'][TPPS_PAGE_1]['organization']
-    )
+      'affiliation' => $state['saved_values'][TPPS_PAGE_1]['organization'],
+    ),
   );
-  for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['number']; $i++){
+  for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['number']; $i++) {
     $creators[] = (object) array(
-      'name' => tpps_doi_format_name($state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors'][$i])
+      'name' => tpps_doi_format_name($state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors'][$i]),
     );
   }
-  
+
   $keywords = array();
-  for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++){
+  for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
     $keywords[] = $state['saved_values'][TPPS_PAGE_1]['organism'][$i];
   }
-  
+
   $study_type_options = array(
     1 => 'Natural Population (Landscape)',
     2 => 'Growth Chamber',
@@ -45,29 +46,29 @@ function tpps_generate_doi($accession) {
     4 => 'Experimental/Common Garden',
     5 => 'Plantation',
   );
-  
+
   $keywords[] = $study_type_options[$state['saved_values'][TPPS_PAGE_2]['study_type']];
-  
+
   $metadata = (object) array(
     'title' => $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
     'upload_type' => 'dataset',
     'description' => $state['saved_values'][TPPS_PAGE_1]['publication']['abstract'],
     'creators' => $creators,
-    //'access_right' => 'embargoed', //TODO: collect embargo date from user.
+    // 'access_right' => 'embargoed', //TODO: collect embargo date from user.
     'keywords' => $keywords,
     'notes' => $state['saved_values']['summarypage']['comments'],
     'related_identifiers' => array(
       (object) array(
         'relation' => 'isAlternateIdentifier',
-        'identifier' => "$base_url/tpps_details/accession/$accession"
-      )
+        'identifier' => "$base_url/tpps_details/accession/$accession",
+      ),
     ),
   );
-  
+
   tpps_doi_upload_files($id, $state);
-  
+
   $upload = tpps_doi_metadata($id, $metadata);
-  
+
   return $upload;
 }
 
@@ -77,7 +78,7 @@ function tpps_generate_doi($accession) {
  * @return int
  *   The Zenodo Deposition id number.
  */
-function tpps_doi_create(){
+function tpps_doi_create() {
   $token = variable_get('tpps_zenodo_api_key', NULL);
   $prefix = variable_get('tpps_zenodo_prefix', '');
   $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions?" . http_build_query(array('access_token' => $token)));
@@ -85,7 +86,7 @@ function tpps_doi_create(){
   curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
   curl_setopt($ch, CURLOPT_POST, 1);
   curl_setopt($ch, CURLOPT_POSTFIELDS, '{}');
-  
+
   $out = json_decode(curl_exec($ch));
   curl_close($ch);
   return $out->id;
@@ -96,18 +97,18 @@ function tpps_doi_create(){
  *
  * @param int $id
  *   The Deposition identifier.
- * @param stdClass $metadata
+ * @param object $metadata
  *   The metadata object describing the deposition.
  *
- * @return stdClass
+ * @return object
  *   The updated Deposition object.
  */
-function tpps_doi_metadata($id, $metadata){
-  
+function tpps_doi_metadata($id, $metadata) {
+
   $data = new stdClass();
   $data->metadata = $metadata;
   $data_json = json_encode($data);
-  
+
   $token = variable_get('tpps_zenodo_api_key', NULL);
   $prefix = variable_get('tpps_zenodo_prefix', '');
   $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id?" . http_build_query(array('access_token' => $token)));
@@ -115,7 +116,7 @@ function tpps_doi_metadata($id, $metadata){
   curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'Content-Length: ' . strlen($data_json)));
   curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
   curl_setopt($ch, CURLOPT_POSTFIELDS, $data_json);
-  
+
   $out = json_decode(curl_exec($ch));
   curl_close($ch);
   return $out;
@@ -129,63 +130,63 @@ function tpps_doi_metadata($id, $metadata){
  * @param array $state
  *   The form_state of the TPPS Submission form.
  */
-function tpps_doi_upload_files($id, array &$state){
+function tpps_doi_upload_files($id, array &$state) {
   $token = variable_get('tpps_zenodo_api_key', NULL);
   $prefix = variable_get('tpps_zenodo_prefix', '');
   $files = array();
-  if (!empty($state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['check'])){
+  if (!empty($state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['check'])) {
     $files[] = $state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['file'];
   }
-  
-  if ($state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])){
+
+  if ($state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
     $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
   }
   else {
-    for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++){
+    for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
       $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
     }
   }
-  
-  for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++){
-    if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'])){
+
+  for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
+    if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'])) {
       $phenotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
       $files[] = $phenotype['file'];
-      if ($phenotype['check']){
+      if ($phenotype['check']) {
         $files[] = $phenotype['metadata'];
       }
     }
-    
-    if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])){
+
+    if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])) {
       $genotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'];
-      if ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url'){
-        if ($genotype['tripal_fasta']['file_upload']){
+      if ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url') {
+        if ($genotype['tripal_fasta']['file_upload']) {
           $files[] = $genotype['tripal_fasta']['file_upload'];
         }
 
-        if ($genotype['tripal_fasta']['file_upload_existing']){
+        if ($genotype['tripal_fasta']['file_upload_existing']) {
           $files[] = $genotype['tripal_fasta']['file_upload_existing'];
         }
       }
-      
-      if ($genotype['file-type']['Genotype Assay']){
+
+      if ($genotype['file-type']['Genotype Assay']) {
         $files[] = $genotype['file'];
       }
-      if ($genotype['file-type']['Assay Design'] and $genotype['marker-type']['SNPs']){
+      if ($genotype['file-type']['Assay Design'] and $genotype['marker-type']['SNPs']) {
         $files[] = $genotype['assay-design'];
       }
-      if ($genotype['file-type']['VCF']){
+      if ($genotype['file-type']['VCF']) {
         $files[] = $genotype['vcf'];
       }
     }
   }
-  
-  foreach ($files as $file){
+
+  foreach ($files as $file) {
     $file = file_load($file);
     $path = drupal_realpath($file->uri);
     $data = array(
-      'file' => curl_file_create($path, $file->filemime, $file->filename)
+      'file' => curl_file_create($path, $file->filemime, $file->filename),
     );
-    
+
     $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id/files?" . http_build_query(array('access_token' => $token)));
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data'));
@@ -202,17 +203,17 @@ function tpps_doi_upload_files($id, array &$state){
  * @param int $id
  *   The identifier for the Deposition.
  *
- * @return stdClass
+ * @return object
  *   The updated Deposition object.
  */
-function tpps_doi_publish($id){
+function tpps_doi_publish($id) {
   $token = variable_get('tpps_zenodo_api_key', NULL);
   $prefix = variable_get('tpps_zenodo_prefix', '');
   $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id/actions/publish?" . http_build_query(array('access_token' => $token)));
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($ch, CURLOPT_POST, 1);
   curl_setopt($ch, CURLOPT_POSTFIELDS, '');
-  
+
   $out = json_decode(curl_exec($ch));
   curl_close($ch);
   return $out;
@@ -224,10 +225,10 @@ function tpps_doi_publish($id){
  * @param int $id
  *   The identifier for the Deposition.
  *
- * @return stdClass
+ * @return object
  *   The loaded Deposition object.
  */
-function tpps_doi_load($id){
+function tpps_doi_load($id) {
   $token = variable_get('tpps_zenodo_api_key', NULL);
   $prefix = variable_get('tpps_zenodo_prefix', '');
   $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id?" . http_build_query(array('access_token' => $token)));
@@ -247,7 +248,7 @@ function tpps_doi_load($id){
  * @return string
  *   The formatted name.
  */
-function tpps_doi_format_name($name){
+function tpps_doi_format_name($name) {
   $parts = explode(' ', $name);
   $first = $parts[0];
   $last = implode(' ', array_slice($parts, 1));

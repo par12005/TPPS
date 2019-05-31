@@ -79,7 +79,7 @@ function tpps_menu() {
     'page arguments' => array(2),
     'access arguments' => array('access content'),
     'type' => MENU_NORMAL_ITEM,
-    'file' => 'includes/manage_doi.inc'
+    'file' => 'includes/manage_doi.inc',
   );
 
   $items['admin/config/content/tpps'] = array(

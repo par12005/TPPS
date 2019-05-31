@@ -29,14 +29,14 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#title' => t('TPPS Zenodo API Key'),
     '#default_value' => variable_get('tpps_zenodo_api_key', NULL),
   );
-  
+
   $form['tpps_zenodo_prefix'] = array(
     '#type' => 'textfield',
     '#title' => t('TPPS Zenodo Prefix'),
     '#default_value' => variable_get('tpps_zenodo_prefix', ''),
-    '#description' => 'For testing and development purposes. Set this field to "sandbox." to create dois in the Zenodo sandbox rather than the real site. Please keep in mind that you will need a separate API key for sandbox.zenodo.org.'
+    '#description' => 'For testing and development purposes. Set this field to "sandbox." to create dois in the Zenodo sandbox rather than the real site. Please keep in mind that you will need a separate API key for sandbox.zenodo.org.',
   );
-  
+
   $form['tpps_admin_email'] = array(
     '#type' => 'textfield',
     '#title' => t('TPPS Admin Email Address'),
@@ -147,9 +147,10 @@ function tpps_admin_settings_validate($form, &$form_state) {
         form_set_error("$key", "Error: TPPS was unable to find the required CartograTree tables for environmental layers.");
       }
     }
-    elseif ($key == 'tpps_zenodo_prefix'){
-      if ($value and $value != 'sandbox.')
+    elseif ($key == 'tpps_zenodo_prefix') {
+      if ($value and $value != 'sandbox.') {
         form_set_error("$key", "Error: Zenodo Prefix must either be empty or 'sandbox.'");
+      }
     }
   }
 }

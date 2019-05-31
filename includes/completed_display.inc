@@ -37,6 +37,6 @@ function tpps_completed_display() {
   $display = "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
 
   $display .= tpps_table_display($old_form_state);
-  
+
   return render($display);
 }
