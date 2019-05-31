@@ -868,11 +868,6 @@ function tpps_file_parsing($accession) {
       }
     }
   }
-  
-  $token = variable_get('tpps_zenodo_api_key', NULL);
-  if (!empty($token)){
-    $form_state['zenodo_id'] = tpps_generate_doi($accession);
-  }
-  
+
   tpps_update_submission($form_state);
 }

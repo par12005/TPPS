@@ -5,10 +5,16 @@
  */
 
 /**
- * 
- * @global type $base_url
- * @param type $accession
- * @return type
+ * Creates a Zenodo DOI and loads metadata from a TPPS Submission accession.
+ *
+ * @param string $accession
+ *   The accession number of the TPPS Submission
+ *
+ * @global string $base_url
+ *   The base URL of the site.
+ *
+ * @return stdClass
+ *   The Zenodo DOI Deposition object.
  */
 function tpps_generate_doi($accession) {
   global $base_url;
@@ -43,7 +49,7 @@ function tpps_generate_doi($accession) {
   $keywords[] = $study_type_options[$state['saved_values'][TPPS_PAGE_2]['study_type']];
   
   $metadata = (object) array(
-    'title' => $state['saved_values'][TPPS_PAGE_1]['publication']['title'] . 'test2',
+    'title' => $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
     'upload_type' => 'dataset',
     'description' => $state['saved_values'][TPPS_PAGE_1]['publication']['abstract'],
     'creators' => $creators,
@@ -58,16 +64,18 @@ function tpps_generate_doi($accession) {
     ),
   );
   
-  tpps_doi_load_files($id, $state);
+  tpps_doi_upload_files($id, $state);
   
-  tpps_doi_metadata($id, $metadata);
+  $upload = tpps_doi_metadata($id, $metadata);
   
-  return $id;
+  return $upload;
 }
 
 /**
- * 
- * @return type
+ * Creates a blank Zenodo DOI Deposition. Returns the Zenodo id number.
+ *
+ * @return int
+ *   The Zenodo Deposition id number.
  */
 function tpps_doi_create(){
   $token = variable_get('tpps_zenodo_api_key', NULL);
@@ -84,10 +92,15 @@ function tpps_doi_create(){
 }
 
 /**
- * 
- * @param type $id
- * @param type $metadata
- * @return type
+ * Adds metadata to a Zenodo DOI Deposition. Returns the Deposition object.
+ *
+ * @param int $id
+ *   The Deposition identifier.
+ * @param stdClass $metadata
+ *   The metadata object describing the deposition.
+ *
+ * @return stdClass
+ *   The updated Deposition object.
  */
 function tpps_doi_metadata($id, $metadata){
   
@@ -109,11 +122,14 @@ function tpps_doi_metadata($id, $metadata){
 }
 
 /**
- * 
- * @param type $id
- * @param type $state
+ * Adds files to a Zenodo Deposition from the state of a TPPS Submission form.
+ *
+ * @param int $id
+ *   The identifier for the Deposition.
+ * @param array $state
+ *   The form_state of the TPPS Submission form.
  */
-function tpps_doi_load_files($id, &$state){
+function tpps_doi_upload_files($id, array &$state){
   $token = variable_get('tpps_zenodo_api_key', NULL);
   $prefix = variable_get('tpps_zenodo_prefix', '');
   $files = array();
@@ -181,9 +197,13 @@ function tpps_doi_load_files($id, &$state){
 }
 
 /**
- * 
- * @param type $id
- * @return type
+ * Publishes a completed Zenodo Deposition. Returns the Deposition object.
+ *
+ * @param int $id
+ *   The identifier for the Deposition.
+ *
+ * @return stdClass
+ *   The updated Deposition object.
  */
 function tpps_doi_publish($id){
   $token = variable_get('tpps_zenodo_api_key', NULL);
@@ -191,6 +211,7 @@ function tpps_doi_publish($id){
   $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id/actions/publish?" . http_build_query(array('access_token' => $token)));
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($ch, CURLOPT_POST, 1);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, '');
   
   $out = json_decode(curl_exec($ch));
   curl_close($ch);
@@ -198,9 +219,33 @@ function tpps_doi_publish($id){
 }
 
 /**
- * 
- * @param type $name
- * @return type
+ * Loads and returns the Deposition object for an existing Zenodo Deposition.
+ *
+ * @param int $id
+ *   The identifier for the Deposition.
+ *
+ * @return stdClass
+ *   The loaded Deposition object.
+ */
+function tpps_doi_load($id){
+  $token = variable_get('tpps_zenodo_api_key', NULL);
+  $prefix = variable_get('tpps_zenodo_prefix', '');
+  $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id?" . http_build_query(array('access_token' => $token)));
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+  $out = json_decode(curl_exec($ch));
+  curl_close($ch);
+  return $out;
+}
+
+/**
+ * Formats an author name for Zenodo metadata fields.
+ *
+ * @param string $name
+ *   The name to format.
+ *
+ * @return string
+ *   The formatted name.
  */
 function tpps_doi_format_name($name){
   $parts = explode(' ', $name);

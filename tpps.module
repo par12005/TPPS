@@ -73,6 +73,15 @@ function tpps_menu() {
     'file' => 'admin/panel.php',
   );
 
+  $items['tpps/doi/%'] = array(
+    'title' => 'TPPS DOI',
+    'page callback' => 'tpps_manage_doi',
+    'page arguments' => array(2),
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/manage_doi.inc'
+  );
+
   $items['admin/config/content/tpps'] = array(
     'title' => 'TPPS Settings',
     'description' => 'Configuration for TPPS module',
@@ -201,56 +210,46 @@ function tpps_mail($key, array &$message, array $params) {
   switch ($key) {
     case 'user_recieved':
       $message['body'][] = "Congratulations!<br><br>
-
-Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
-  <li>Primary Author: {$params['author']}</li>
-  <li>Organization: {$params['org']}</li>
-  <li>Publication title: {$params['title']}</li>
-  <li>Journal: {$params['journal']}</li>
-  <li>Organisms: {$params['organisms']['number']}</li>
-";
+      Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
+      <li>Primary Author: {$params['author']}</li>
+      <li>Organization: {$params['org']}</li>
+      <li>Publication title: {$params['title']}</li>
+      <li>Journal: {$params['journal']}</li>
+      <li>Organisms: {$params['organisms']['number']}</li>";
       for ($i = 1; $i <= $params['organisms']['number']; $i++) {
         $message['body'][] = "   <li>Organism $i: {$params['organisms'][$i]}</li>";
       }
 
       $message['body'][] =
-      "   <li>Study Type: {$params['study_type']}</li>
-  <li>Data Type: {$params['data_type']}</li></ul>
-You can view your submission <a href='{$params['base_url']}/completed-submission?id={$params['accession']}' style='text-decoration: underline;'>here.</a><br>
-If you have any questions about your submission, please feel free to contact us <a href='{$params['base_url']}/contactform'>here</a>.<br><br>";
-
+      "<li>Study Type: {$params['study_type']}</li>
+      <li>Data Type: {$params['data_type']}</li></ul>
+      You can view your submission <a href='{$params['base_url']}/completed-submission?id={$params['accession']}' style='text-decoration: underline;'>here.</a><br>
+      If you have any questions about your submission, please feel free to contact us <a href='{$params['base_url']}/contactform'>here</a>.<br><br>";
       break;
 
     case 'admin_recieved':
-      $message['body'][] = "
-Attention:<br><br>
-
-User {$params['user_mail']} has completed a TPPS Submission, titled {$params['title']}.<br>
-Click <a href='{$params['base_url']}/tpps-admin-panel?accession={$params['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
-
+      $message['body'][] = "Attention:<br><br>
+      User {$params['user_mail']} has completed a TPPS Submission, titled {$params['title']}.<br>
+      Click <a href='{$params['base_url']}/tpps-admin-panel?accession={$params['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
       break;
 
     case 'user_rejected':
       $message['body'][] =
       "To whom it may concern:<br><br>
-
-Unfortunately, your submission to TPPS has been rejected. If you would like, you can log into the TreeGenes website and edit your submission <a href='{$params['base_url']}/user/{$params['uid']}/TPPS'>here</a><br><br>
-
-The administrator who rejected your submission provided the following reason:<br>
-<blockquote>
-{$params['reject-reason']}
-</blockquote>";
+      Unfortunately, your submission to TPPS has been rejected. If you would like, you can log into the TreeGenes website and edit your submission <a href='{$params['base_url']}/user/{$params['uid']}/TPPS'>here</a><br><br>
+      The administrator who rejected your submission provided the following reason:<br>
+      <blockquote>
+      {$params['reject-reason']}
+      </blockquote>";
       break;
 
     case 'user_approved':
       $message['body'][] =
       "Congratulations! Your submission to TPPS has been approved!<br><br>
-
-You may now refer to your submitted data with accession number {$params['accession']}.<br><br>
-
-You can still view your submission from your <a href=\"{$params['base_url']}/completed-submission?id={$params['accession']}\">TPPS Completed Submissions</a> tab.<br>
-Your submission should be public on the <a href=\"{$params['base_url']}/tpps_details/main\">TPPS/TGDR Landing Page</a> within the next 24 hours.";
-
+      You may now refer to your submitted data with accession number {$params['accession']}.<br><br>
+      You can still view your submission from your <a href=\"{$params['base_url']}/completed-submission?id={$params['accession']}\">TPPS Completed Submissions</a> tab.<br>
+      Your submission should be public on the <a href=\"{$params['base_url']}/tpps_details/main\">TPPS/TGDR Landing Page</a> within the next 24 hours.<br>
+      To generate a DOI for your submission, please click <a href=\"{$params['base_url']}/tpps/doi/{$params['accession']}\">here</a>.";
       break;
 
     default:
