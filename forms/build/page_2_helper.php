@@ -235,13 +235,14 @@ function study_location(array &$form, array $values, array &$form_state) {
       }
     }
 
-    if (!empty($query)) {
+    $map_api_key = variable_get('tpps_maps_api_key', NULL);
+    if (!empty($query) and !empty($map_api_key)) {
       $form['study_location']['map-button']['#suffix'] = "
       <br><iframe
         width=\"100%\"
         height=\"450\"
         frameborder=\"0\" style=\"border:0\"
-        src=\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\" allowfullscreen>
+        src=\"https://www.google.com/maps?q=$query&output=embed&key=$map_api_key&z=5\" allowfullscreen>
       </iframe></div>";
     }
   }

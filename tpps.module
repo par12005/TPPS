@@ -900,6 +900,7 @@ function tpps_block_view_alter(&$data, $block) {
       $ok = "<img src='$base_url/misc/message-16-ok.png'>";
       $flat = tpps_flatten($form_state);
 
+      $map_api_key = variable_get('tpps_maps_api_key', NULL);
       foreach ($flat as $item => $val) {
         if ($item[0] !== '#') {
           $item_str = filter_xss(check_plain($item));
@@ -948,8 +949,8 @@ function tpps_block_view_alter(&$data, $block) {
               $query = $standard;
             }
             $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
-            if (isset($query)) {
-              $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
+            if (isset($query) and !empty($map_api_key)) {
+              $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=$map_api_key&z=5\\\" allowfullscreen> </iframe></div>";
               $js = "jQuery(document).ready(function ($) {
                 jQuery(\"#sidebar_map\").click(function() {
                   jQuery(\"#sidebar_map_wrapper\").remove();
@@ -987,8 +988,8 @@ function tpps_block_view_alter(&$data, $block) {
           $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
         }
       }
-      if (!empty($flat['#page_3_cleared'])) {
-        $content .= "<script src=\"https://maps.googleapis.com/maps/api/js?key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&callback=initMap\"
+      if (!empty($flat['#page_3_cleared']) and !empty($map_api_key)) {
+        $content .= "<script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
         async defer></script>";
       }
       $content .= "</div>";

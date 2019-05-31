@@ -24,6 +24,12 @@ function tpps_admin_settings(array $form, array &$form_state) {
   $phenotype = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
   $cartogratree_env = variable_get('tpps_cartogratree_env', FALSE);
 
+  $form['tpps_maps_api_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('TPPS Google Maps API Key'),
+    '#default_value' => variable_get('tpps_maps_api_key', NULL),
+  );
+
   $form['tpps_zenodo_api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('TPPS Zenodo API Key'),

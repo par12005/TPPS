@@ -124,14 +124,17 @@ function page_3_create_form(array &$form, array &$form_state) {
   );
 
   // Add the google maps api call after the map button.
-  $form['tree-accession']['coord-format']['#suffix'] .= '
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&callback=initMap"
-  async defer></script>
-  <style>
-    #map_wrapper {
-    height: 450px;
-    }
-  </style>';
+  $map_api_key = variable_get('tpps_maps_api_key', NULL);
+  if (!empty($map_api_key)) {
+    $form['tree-accession']['coord-format']['#suffix'] .= '
+    <script src="https://maps.googleapis.com/maps/api/js?key=' . $map_api_key . '&callback=initMap"
+    async defer></script>
+    <style>
+      #map_wrapper {
+      height: 450px;
+      }
+    </style>';
+  }
 
   $pop_group_show = FALSE;
   if (isset($form_state['complete form']['tree-accession']['file']['columns'])) {
