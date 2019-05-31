@@ -19,7 +19,7 @@ require_once 'includes/table_display.inc';
 require_once 'includes/compare_files.inc';
 require_once 'includes/standard_coord.inc';
 require_once 'includes/validate_columns.inc';
-require_once 'includes/refresh_landing_page.inc';
+require_once 'includes/cron.inc';
 require_once 'includes/parse_xlsx.inc';
 require_once 'includes/content_no_header.inc';
 require_once 'includes/submit_email.inc';
@@ -184,6 +184,17 @@ function tpps_cronapi() {
       'name' => 'crontab',
       'crontab' => array(
         'rules' => array('0 0 * * *'),
+      ),
+    ),
+  );
+
+  $items['tpps_delayed_submissions'] = array(
+    'title' => t('Check to see if any of the delayed TPPS submissions should be published yet'),
+    'callback' => 'tpps_delayed_submissions',
+    'scheduler' => array(
+      'name' => 'crontab',
+      'crontab' => array(
+        'rules' => array('0 */6 * * *'),
       ),
     ),
   );

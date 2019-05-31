@@ -251,15 +251,25 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     $params['subject'] = "TPPS Submission Approved: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
     $params['accession'] = $state['accession'];
-
-    $state['status'] = 'Approved';
-    tpps_submit_all($state);
-    tpps_update_submission($state, array('status' => 'Approved'));
-    $args = array($state['accession']);
-    $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
-    $state['job_id'] = $jid;
-
     drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
     drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
+
+    $state['status'] = 'Approved';
+    if ($state['saved_values']['summarypage']['release']){
+      tpps_submit_all($accession);
+    }
+    else {
+      $date = $form_state['saved_values']['summarypage']['release-date'];
+      $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
+      if (time() > $time){
+        tpps_submit_all($accession);
+      }
+      else {
+        $delayed_submissions = variable_get('tpps_delayed_submissions', array());
+        $delayed_submissions[$accession] = $accession;
+        variable_set('tpps_delayed_submissions', $delayed_submissions);
+        tpps_update_submission($state);
+      }
+    }
   }
 }

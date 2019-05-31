@@ -15,8 +15,9 @@
  * @param array $form_state
  *   The state of the form being submitted.
  */
-function tpps_submit_all(array &$form_state) {
+function tpps_submit_all($accession) {
 
+  $form_state = tpps_load_submission($accession);
   $values = $form_state['saved_values'];
   $firstpage = $values[TPPS_PAGE_1];
   $file_rank = 0;
@@ -34,8 +35,14 @@ function tpps_submit_all(array &$form_state) {
 
   tpps_submit_page_4($form_state, $project_id, $file_rank, $organism_ids);
 
+  tpps_update_submission($state, array('status' => 'Approved'));
+
   // For simplicity and efficiency, all fourth page submissions take place in
   // the TPPS File Parsing Tripal Job.
+  $args = array($state['accession']);
+  $jid = tripal_add_job("TPPS File Parsing - {$state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
+  $state['job_id'] = $jid;
+  tpps_update_submission($state);
 }
 
 /**

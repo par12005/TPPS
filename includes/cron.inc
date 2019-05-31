@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Defines the callback for the 'tpps_refresh_landing_page' callback.
+ * Defines the callback functions for TPPS Ultimate Cron jobs.
  */
 
 /**
@@ -31,4 +31,21 @@ function tpps_refresh_landing_page() {
   }
 
   db_query('refresh materialized view concurrently chado.plusgeno_view');
+}
+
+/**
+ * Submits delayed TPPS submissions if they are past their release date.
+ */
+function tpps_delayed_submissions(){
+  $submissions = variable_get('tpps_delayed_submissions', array());
+  foreach ($submissions as $accession){
+    $state = tpps_load_submission($accession);
+    $date = $state['saved_values']['summarypage']['release-date'];
+    $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
+    if (time() > $time){
+      tpps_submit_all($accession);
+      unset($submissions[$accession]);
+    }
+  }
+  variable_set('tpps_delayed_submissions');
 }
