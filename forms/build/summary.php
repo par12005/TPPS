@@ -70,6 +70,23 @@ function tpps_summary_create_form(array &$form, array $form_state) {
     );
   }
 
+  $form['release'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Release this data through the database immediately.'),
+    '#default_value' => isset($form_state['saved_values']['summarypage']['release']) ? $form_state['saved_values']['summarypage']['release'] : TRUE,
+  );
+
+  $form['release-date'] = array(
+    '#type' => 'date',
+    '#title' => t('Please select the release date for the dataset.'),
+    '#default_value' => isset($form_state['saved_values']['summarypage']['release-date']) ? $form_state['saved_values']['summarypage']['release-date'] : NULL,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="release"]' => array('checked' => FALSE),
+      )
+    )
+  );
+
   $form['Back'] = array(
     '#type' => 'submit',
     '#value' => t('Back'),
