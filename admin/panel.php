@@ -246,8 +246,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     module_load_include('php', 'tpps', 'forms/submit/submit_all');
     global $user;
     $uid = $user->uid;
-    $includes = array();
-    $includes[] = module_load_include('module', 'tpps');
+    $state['submitting_uid'] = $uid;
 
     $params['subject'] = "TPPS Submission Approved: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
     $params['accession'] = $state['accession'];
@@ -255,11 +254,12 @@ function tpps_admin_panel_submit($form, &$form_state) {
     drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
 
     $state['status'] = 'Approved';
+    tpps_update_submission($state);
     if ($state['saved_values']['summarypage']['release']){
       tpps_submit_all($accession);
     }
     else {
-      $date = $form_state['saved_values']['summarypage']['release-date'];
+      $date = $state['saved_values']['summarypage']['release-date'];
       $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
       if (time() > $time){
         tpps_submit_all($accession);
@@ -268,7 +268,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
         $delayed_submissions = variable_get('tpps_delayed_submissions', array());
         $delayed_submissions[$accession] = $accession;
         variable_set('tpps_delayed_submissions', $delayed_submissions);
-        tpps_update_submission($state);
       }
     }
   }
