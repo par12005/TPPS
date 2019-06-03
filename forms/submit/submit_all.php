@@ -12,8 +12,8 @@
 /**
  * Creates a record for the project and calls the submission helper functions.
  *
- * @param array $form_state
- *   The state of the form being submitted.
+ * @param string $accession
+ *   The accession number of the form being submitted.
  */
 function tpps_submit_all($accession) {
 

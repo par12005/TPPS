@@ -83,8 +83,8 @@ function tpps_summary_create_form(array &$form, array $form_state) {
     '#states' => array(
       'visible' => array(
         ':input[name="release"]' => array('checked' => FALSE),
-      )
-    )
+      ),
+    ),
   );
 
   $form['Back'] = array(

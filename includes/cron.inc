@@ -36,13 +36,13 @@ function tpps_refresh_landing_page() {
 /**
  * Submits delayed TPPS submissions if they are past their release date.
  */
-function tpps_delayed_submissions(){
+function tpps_delayed_submissions() {
   $submissions = variable_get('tpps_delayed_submissions', array());
-  foreach ($submissions as $accession){
+  foreach ($submissions as $accession) {
     $state = tpps_load_submission($accession);
     $date = $state['saved_values']['summarypage']['release-date'];
     $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
-    if (time() > $time){
+    if (time() > $time) {
       tpps_submit_all($accession);
       unset($submissions[$accession]);
     }

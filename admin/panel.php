@@ -255,13 +255,13 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     $state['status'] = 'Approved';
     tpps_update_submission($state);
-    if ($state['saved_values']['summarypage']['release']){
+    if ($state['saved_values']['summarypage']['release']) {
       tpps_submit_all($accession);
     }
     else {
       $date = $state['saved_values']['summarypage']['release-date'];
       $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
-      if (time() > $time){
+      if (time() > $time) {
         tpps_submit_all($accession);
       }
       else {
