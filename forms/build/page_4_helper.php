@@ -108,7 +108,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id, $phenot
         'data-placement' => array('left'),
         'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
-      '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your @link below.', array('@link' => "<a href=\"#edit-$id-phenotype-file-ajax-wrapper\">Phenotype file</a>")),
+      '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your <a href="@url">Phenotype file</a> below.', array('@url' => url('/tpps', array('fragment' => "edit-$id-phenotype-file-ajax-wrapper")))),
     );
 
     $fields['phenotypes-meta']["$i"]['attribute'] = array(
