@@ -34,6 +34,12 @@ function update_old_submissions($form, $form_state){
     $state['saved_values'][3]['step'] = 3;
     $state['saved_values'][4]['step'] = 4;
 
+    for ($i = 1; $i <= $state['saved_values'][1]['organism']['number']; $i++){
+      if (!empty($state['saved_values'][1]['organism'][$i]['species'])){
+        $state['saved_values'][1]['organism'][$i] = $state['saved_values'][1]['organism'][$i]['species'];
+      }
+    }
+
     $page_2 = &$state['saved_values'][2];
     $page_2['study_location'] = $page_2['studyLocation'];
     unset($page_2['studyLocation']);
