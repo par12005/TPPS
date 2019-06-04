@@ -164,6 +164,16 @@ function tpps_menu() {
       'file' => 'test.php'
     );
 
+    $items['tpps/update'] = array(
+      'title' => 'Update old tpps submissions',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('update_old_submissions'),
+      'access callback' => 'user_access',
+      'access arguments' => array('access content'),
+      'type' => MENU_NORMAL_ITEM,
+      'file' => 'update_old_submissions.php',
+    );
+
     return $items;
 }
 
@@ -481,7 +491,12 @@ function tpps_page_build(&$page){
 function tpps_main($form, &$form_state){
     
     require_once 'forms/build/front.php';
-    
+
+    //$file = file_get_contents('/var/www/Drupal/sites/all/modules/TGDR/b.txt');
+    //dpm(unserialize($file));
+    //variable_set('tpps_complete_lauracuervoa@gmail.comTGDR073', unserialize($file));
+    dpm(variable_get('tpps_complete_lauracuervoa@gmail.comTGDR073'));
+
     global $user;
     $params = drupal_get_query_parameters();
     
