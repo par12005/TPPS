@@ -124,6 +124,13 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$phenotype"))),
   );
 
+  $form['tpps_update_old_submissions'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Update Old TPPS Submissions'),
+    '#description' => t('If you save configuration with this option enabled, TPPS will search for all older TPPS Submissions that are no longer compatible with newer versions of TPPS, and will make them compatible again. This works best after using the "tpps/update" tool from the "update_old_submissions" branch on the TPPS gitlab.'),
+    '#default_value' => variable_get('tpps_update_old_submissions', NULL),
+  );
+
   return system_settings_form($form);
 }
 
@@ -158,5 +165,41 @@ function tpps_admin_settings_validate($form, &$form_state) {
         form_set_error("$key", "Error: Zenodo Prefix must either be empty or 'sandbox.'");
       }
     }
+    elseif ($key == 'tpps_update_old_submissions' and !empty($value) ){
+      $update = TRUE;
+    }
+  }
+
+  if ($update and !form_get_errors()){
+    tpps_update_old_submissions();
+  }
+}
+
+function tpps_update_old_submissions(){
+  $query = db_select('variable', 'v')
+    ->fields('v')
+    ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
+    ->execute();
+
+  while (($result = $query->fetchObject())){
+    $mail = substr($result->name, 14, -7);
+    $user = user_load_by_mail($mail);
+    $state = unserialize($result->value);
+    if (!empty($user))
+      $uid = $user->uid;
+    else
+      $uid = 21;
+    $accession = $state['accession'];
+    $dbxref_id = $state['dbxref_id'];
+    $status = $state['status'];
+    db_insert('tpps_submission')
+      ->fields(array(
+        'uid' => $uid,
+        'status' => $status,
+        'accession' => $accession,
+        'dbxref_id' => $dbxref_id,
+        'submission_state' => serialize($state),
+      ))
+      ->execute();
   }
 }
