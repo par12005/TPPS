@@ -201,5 +201,6 @@ function tpps_update_old_submissions(){
         'submission_state' => serialize($state),
       ))
       ->execute();
+    variable_del($result->name);
   }
 }
