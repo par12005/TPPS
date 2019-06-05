@@ -12,6 +12,7 @@ env:
 
 before_script:
   - docker pull statonlab/tripal3
+  - docker exec -it tripal bash -c "cd /libraries && git clone https://github.com/shaneharter/PHP-Daemon.git && mv PHP-Daemon/ PHP-Daemon-2.0/ && cd .."
 
 script:
   - docker run -it -d --rm --name tripal -v "$(pwd)":/modules/tpps statonlab/tripal3
