@@ -194,3 +194,32 @@ Factory::define('chado.pub', function (Faker\Generator $faker) {
         'type_id' => factory('chado.cvterm')->create()->cvterm_id,
     ];
 });
+
+/** @see StatonLab\TripalTestSuite\Database\Factory::define() */
+Factory::define('tpps_submission', function(Faker\Generator $faker) {
+  $db_id = chado_get_db(array('name' => 'local'))->db_id;
+  $accession = 'TGDR000';
+  $dbxref = factory('chado.dbxref')->create([
+    'db_id' => $db_id,
+    'accession' => $accession,
+  ]);
+  $status = 'Incomplete';
+  $state = array(
+    'accession' => $accession,
+    'dbxref_id' => $dbxref->dbxref_id,
+    'status' => $status,
+    'saved_values' => array(
+      'frontpage' => array(
+        'accession' => $accession,
+      ),
+    ),
+  );
+  return [
+    'dbxref_id' => $dbxref->dbxref_id,
+    'accession' => $accession,
+    'uid' => 1,
+    'status' => $status,
+    'submission_state' => serialize($state),
+  ];
+}, 'tpps_submission_id');
+
