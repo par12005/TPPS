@@ -16,6 +16,6 @@ before_script:
 script:
   - docker run -it -d --rm --name tripal -v "$(pwd)":/modules/tpps statonlab/tripal3
   - sleep 30 # We pause here so postgres and apache complete booting up
-  - docker exec -it tripal bash -c "mkdir /libraries && cd /libraries && git clone https://github.com/shaneharter/PHP-Daemon.git && mv PHP-Daemon/ PHP-Daemon-2.0/ && cd .."
+  - docker exec -it tripal bash -c "mkdir /libraries && cd /libraries && git clone https://github.com/shaneharter/PHP-Daemon.git && cd .."
   - docker exec -it tripal drush pm-enable -y tpps --resolve-dependencies
   - docker exec -it tripal bash -c "cd /modules/tpps && composer install && DRUPAL_ROOT=/var/www/html ./vendor/bin/phpunit"
