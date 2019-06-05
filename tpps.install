@@ -290,11 +290,11 @@ function tpps_alter_genotype_call() {
     . "FROM pg_catalog.pg_constraint con JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid "
     . "WHERE rel.relname = 'genotype_call' AND contype like 'f';");
   if (!$results->rowCount()) {
-    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_genotype_id_fkey FOREIGN KEY (genotype_id) REFERENCES genotype(genotype_id) ON DELETE CASCADE;');
-    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_marker_id_fkey FOREIGN KEY (marker_id) REFERENCES feature(marker_id) ON DELETE CASCADE;');
-    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_variant_id_fkey FOREIGN KEY (variant_id) REFERENCES feature(variant_id) ON DELETE CASCADE;');
-    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_project_id_fkey FOREIGN KEY (project_id) REFERENCES project(project_id) ON DELETE CASCADE;');
-    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_stock_id_fkey FOREIGN KEY (stock_id) REFERENCES stock(stock_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_genotype_id_fkey FOREIGN KEY (genotype_id) REFERENCES chado.genotype(genotype_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_marker_id_fkey FOREIGN KEY (marker_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_variant_id_fkey FOREIGN KEY (variant_id) REFERENCES chado.feature(feature_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_project_id_fkey FOREIGN KEY (project_id) REFERENCES chado.project(project_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE chado.genotype_call ADD CONSTRAINT genotype_call_stock_id_fkey FOREIGN KEY (stock_id) REFERENCES chado.stock(stock_id) ON DELETE CASCADE;');
   }
 
   $and = db_and()
