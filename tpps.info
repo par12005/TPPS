@@ -5,4 +5,3 @@ package = Tripal Extensions
 configure = admin/config/content/tpps
 dependencies[] = tripal
 dependencies[] = ultimate_cron
-dependencies[] = tripal_daemon

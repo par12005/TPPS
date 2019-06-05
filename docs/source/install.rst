@@ -5,8 +5,6 @@ Installation
 
   - Tripal (v3.x)
   - Tripal Chado
-  - Tripal Jobs
-  - Tripal Jobs Daemon
   - Ultimate Cron
 
 2. Inside your /sites/all/modules directory, download TPPS by running:
