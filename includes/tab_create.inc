@@ -20,8 +20,6 @@
 function tpps_tab_create($user) {
 
   global $base_url;
-  $email = $user->mail;
-  $state_name = 'tpps_incomplete_' . $email;
   $params = drupal_get_query_parameters();
   $final = "";
   $t1 = $t2 = FALSE;
@@ -121,7 +119,6 @@ function tpps_tab_create($user) {
   }
 
   $final .= $display;
-  $state_name = 'tpps_complete_' . $email;
   $item = NULL;
 
   $or = db_or()
