@@ -56,29 +56,29 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#description' => t("If CartograTree is installed, TPPS can add an optional field to the environment section for environment layers, using the data pulled in through CartograTree."),
   );
 
-  $form['layer_groups'] = array(
-    '#type' => 'fieldset',
-    '#title' => 'CartograTree Environmental Layer Groups:',
-    '#description' => 'Please select which layer groups will contain environmental data that is relevant to TPPS. TPPS will use the selected groups to decide which layers to present as environmental options to the users.',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="tpps_cartogratree_env"]' => array('checked' => TRUE),
+  if (module_exists('cartogratree') and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers')) {
+    $form['layer_groups'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'CartograTree Environmental Layer Groups:',
+      '#description' => 'Please select which layer groups will contain environmental data that is relevant to TPPS. TPPS will use the selected groups to decide which layers to present as environmental options to the users.',
+      '#states' => array(
+        'visible' => array(
+          ':input[name="tpps_cartogratree_env"]' => array('checked' => TRUE),
+        ),
       ),
-    ),
-  );
-
-  $query = db_select('cartogratree_groups', 'g')
-    ->fields('g', array('group_name', 'group_id'));
-
-  $results = $query->execute();
-
-  while (($result = $results->fetchObject())) {
-
-    $form['layer_groups']["tpps_layer_group_{$result->group_id}"] = array(
-      '#type' => 'checkbox',
-      '#title' => $result->group_name,
-      '#default_value' => variable_get("tpps_layer_group_{$result->group_id}", FALSE),
     );
+
+    $results = db_select('cartogratree_groups', 'g')
+      ->fields('g', array('group_name', 'group_id'))
+      ->execute();
+
+    while (($result = $results->fetchObject())) {
+      $form['layer_groups']["tpps_layer_group_{$result->group_id}"] = array(
+        '#type' => 'checkbox',
+        '#title' => $result->group_name,
+        '#default_value' => variable_get("tpps_layer_group_{$result->group_id}", FALSE),
+      );
+    }
   }
 
   $form['tpps_genotype_group'] = array(
