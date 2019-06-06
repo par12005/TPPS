@@ -752,56 +752,58 @@ function tpps_file_parsing($accession) {
 
           $long = $gps_query->fetchObject()->value;
 
-          foreach ($layers_params as $layer_id => $params) {
-            $layer_query = db_select('cartogratree_layers', 'l')
-              ->fields('l', array('title'))
-              ->condition('layer_id', $layer_id)
-              ->execute();
-
-            $layer_name = $layer_query->fetchObject()->title;
-
-            foreach ($params as $param_id => $param) {
-              $param_query = db_select('cartogratree_fields', 'f')
-                ->fields('f', array('field_name'))
-                ->condition('field_id', $param_id)
+          if (db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
+            foreach ($layers_params as $layer_id => $params) {
+              $layer_query = db_select('cartogratree_layers', 'l')
+                ->fields('l', array('title'))
+                ->condition('layer_id', $layer_id)
                 ->execute();
 
-              $param_name = $param_query->fetchObject()->field_name;
+              $layer_name = $layer_query->fetchObject()->title;
 
-              $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
-              $type = variable_get("tpps_param_{$param_id}_type");
+              foreach ($params as $param_id => $param) {
+                $param_query = db_select('cartogratree_fields', 'f')
+                  ->fields('f', array('field_name'))
+                  ->condition('field_id', $param_id)
+                  ->execute();
 
-              if ($type == 'attr_id') {
-                tpps_chado_insert_record('phenotype', array(
-                  'uniquename' => "$tree_id-$layer_name-$param_name-$j",
-                  'name' => "$param_name",
-                  'attr_id' => array(
-                    'cv_id' => array(
-                      'name' => 'biomaterial_property',
+                $param_name = $param_query->fetchObject()->field_name;
+
+                $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
+                $type = variable_get("tpps_param_{$param_id}_type");
+
+                if ($type == 'attr_id') {
+                  tpps_chado_insert_record('phenotype', array(
+                    'uniquename' => "$tree_id-$layer_name-$param_name-$j",
+                    'name' => "$param_name",
+                    'attr_id' => array(
+                      'cv_id' => array(
+                        'name' => 'biomaterial_property',
+                      ),
+                      'name' => 'climate_environment',
+                      'is_obsolete' => 0,
                     ),
-                    'name' => 'climate_environment',
-                    'is_obsolete' => 0,
-                  ),
-                  'value' => "$value",
-                ));
-              }
-              else {
-                $phenotype_id = tpps_chado_insert_record('phenotype', array(
-                  'uniquename' => "$tree_id-$layer_name-$param_name-$j",
-                  'name' => "$param_name",
-                  'value' => "$value",
-                ));
+                    'value' => "$value",
+                  ));
+                }
+                else {
+                  $phenotype_id = tpps_chado_insert_record('phenotype', array(
+                    'uniquename' => "$tree_id-$layer_name-$param_name-$j",
+                    'name' => "$param_name",
+                    'value' => "$value",
+                  ));
 
-                tpps_chado_insert_record('phenotype_cvterm', array(
-                  'phenotype_id' => $phenotype_id,
-                  'cvterm_id' => array(
-                    'cv_id' => array(
-                      'name' => 'biomaterial_property',
+                  tpps_chado_insert_record('phenotype_cvterm', array(
+                    'phenotype_id' => $phenotype_id,
+                    'cvterm_id' => array(
+                      'cv_id' => array(
+                        'name' => 'biomaterial_property',
+                      ),
+                      'name' => 'climate_environment',
+                      'is_obsolete' => 0,
                     ),
-                    'name' => 'climate_environment',
-                    'is_obsolete' => 0,
-                  ),
-                ));
+                  ));
+                }
               }
             }
           }

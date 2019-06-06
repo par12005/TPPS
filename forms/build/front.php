@@ -78,7 +78,11 @@ function tpps_front_create_form(array &$form, array $form_state) {
   $prefix_text =
     "<div>
 Welcome to TPPS!<br><br>
-The Tripal PopGen Submit (TPPS) workflow provides researchers with a streamlined submission interface for studies resulting from any combination of genotype, phenotype, and environmental data for georeferenced forest trees.  TPPS will guide users through questions about their study design and data in order to collect information on trees, genotypes, and phenotypes if applicable.  Phenotypic, genotypic, and environmental descriptors will be mapped to ontologies where possible and the collected metadata will enable this information to be displayed in <a href='$base_url/cartogratree' target='blank'>CartograTree</a>.  An accession number will be provided to the user following successful completion that uniquely identifies this study in the database.  This number should be used in the manuscript describing this work.  Specific flat-files and metadata associated with this identifier can be accessed by the public with this information.<br><br>
+The Tripal PopGen Submit (TPPS) workflow provides researchers with a streamlined submission interface for studies resulting from any combination of genotype, phenotype, and environmental data for georeferenced forest trees.  TPPS will guide users through questions about their study design and data in order to collect information on trees, genotypes, and phenotypes if applicable. Phenotypic, genotypic, and environmental descriptors will be mapped to ontologies where possible";
+  if (module_exists('cartogratree')){
+    $prefix_text .= " and the collected metadata will enable this information to be displayed in <a href='$base_url/cartogratree' target='blank'>CartograTree</a>";
+  }
+  $prefix_text .= ". An accession number will be provided to the user following successful completion that uniquely identifies this study in the database.  This number should be used in the manuscript describing this work.  Specific flat-files and metadata associated with this identifier can be accessed by the public with this information.<br><br>
 To get started, you will need to have a few things handy:<br>
 <ul>
   <li>An enabled and approved TreeGenes account - you can create one <a href='$base_url/user/register'>here</a>. There may be a waiting period to have your account approved by a TreeGenes administrator.</li>

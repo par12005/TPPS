@@ -156,7 +156,7 @@ function tpps_admin_settings_validate($form, &$form_state) {
       if (!empty($value) and !module_exists('cartogratree')) {
         form_set_error("$key", "Error: The CartograTree module is not installed.");
       }
-      elseif (!empty($value) and (!db_table_exists('cartogratree_groups') or !db_table_exists('cartogratree_layers'))) {
+      elseif (!empty($value) and (!db_table_exists('cartogratree_groups') or !db_table_exists('cartogratree_layers') or !db_table_exists('cartogratree_fields'))) {
         form_set_error("$key", "Error: TPPS was unable to find the required CartograTree tables for environmental layers.");
       }
     }

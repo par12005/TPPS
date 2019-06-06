@@ -416,7 +416,7 @@ function environment(array &$form, array &$form_state, array $values, $id) {
     '#suffix' => '</div>',
   );
 
-  if ($cartogratree_env) {
+  if ($cartogratree_env and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
 
     $query = db_select('variable', 'v')
       ->fields('v')
