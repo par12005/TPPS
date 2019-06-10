@@ -17,7 +17,12 @@
 function tpps_completed_display() {
 
   global $base_url;
+  $display = "";
   $params = drupal_get_query_parameters();
+  if (empty($params['id'])) {
+    global $user;
+    drupal_goto("user/{$user->uid}/tpps");
+  }
   $accession = $params['id'];
   $link = "$base_url/tpps_details/accession/$accession";
 
@@ -34,7 +39,7 @@ function tpps_completed_display() {
   ";
   drupal_add_css($css, 'inline');
 
-  $display = "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
+  $display .= "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
 
   $display .= tpps_table_display($old_form_state);
 
