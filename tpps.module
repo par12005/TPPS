@@ -590,6 +590,9 @@ function tpps_main(array $form, array &$form_state) {
   elseif (isset($params['accession']) and !isset($form_state['stage'])) {
     // Logged in, and with accession in link.
     $old_form_state = tpps_load_submission($params['accession']);
+    if (empty($old_form_state)) {
+      drupal_goto('tpps');
+    }
     $form_state['saved_values'] = $old_form_state['saved_values'];
     $form_state['stage'] = $old_form_state['stage'];
     $form_state['accession'] = $old_form_state['accession'];
