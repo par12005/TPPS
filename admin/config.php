@@ -165,30 +165,41 @@ function tpps_admin_settings_validate($form, &$form_state) {
         form_set_error("$key", "Error: Zenodo Prefix must either be empty or 'sandbox.'");
       }
     }
-    elseif ($key == 'tpps_update_old_submissions' and !empty($value) ){
+    elseif ($key == 'tpps_update_old_submissions' and !empty($value)) {
       $update = TRUE;
     }
   }
 
-  if ($update and !form_get_errors()){
+  if ($update and !form_get_errors()) {
     tpps_update_old_submissions();
   }
 }
 
-function tpps_update_old_submissions(){
+/**
+ * Used to move old submissions to the new TPPS submission table.
+ *
+ * Older versions of TPPS stored submissions in the public.variable table, but
+ * newer versions use the public.tpps_submission table. This function moves
+ * previously completed submissions to the new table. It works best if the
+ * form_states of the old submissions are already correctly formatted within the
+ * public.variable table.
+ */
+function tpps_update_old_submissions() {
   $query = db_select('variable', 'v')
     ->fields('v')
     ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
     ->execute();
 
-  while (($result = $query->fetchObject())){
+  while (($result = $query->fetchObject())) {
     $mail = substr($result->name, 14, -7);
     $user = user_load_by_mail($mail);
     $state = unserialize($result->value);
-    if (!empty($user))
+    if (!empty($user)) {
       $uid = $user->uid;
-    else
+    }
+    else {
       $uid = 21;
+    }
     $accession = $state['accession'];
     $dbxref_id = $state['dbxref_id'];
     $status = $state['status'];

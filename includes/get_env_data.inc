@@ -52,7 +52,7 @@ function tpps_get_environmental_layer_data($layer_id, $lat, $long, $param) {
  *   The environmental data for that layer at that lat/long coordinate.
  */
 function tpps_get_env_response($layer_id, $lat, $long) {
-  if (db_table_exists('cartogratree_layers')){
+  if (db_table_exists('cartogratree_layers')) {
     $query = db_select('cartogratree_layers', 'l')
       ->fields('l', array('name'))
       ->condition('layer_id', $layer_id)

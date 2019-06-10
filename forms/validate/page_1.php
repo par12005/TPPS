@@ -14,7 +14,7 @@
  *   The state of the form that is being validated.
  */
 function page_1_validate_form(array &$form, array &$form_state) {
-  // for testing only.
+  // For testing only.
   /*foreach($form_state['values'] as $key => $value){
   print_r($key . " => " . $value . ";<br>");
   }*/

@@ -79,7 +79,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
     "<div>
 Welcome to TPPS!<br><br>
 The Tripal PopGen Submit (TPPS) workflow provides researchers with a streamlined submission interface for studies resulting from any combination of genotype, phenotype, and environmental data for georeferenced forest trees.  TPPS will guide users through questions about their study design and data in order to collect information on trees, genotypes, and phenotypes if applicable. Phenotypic, genotypic, and environmental descriptors will be mapped to ontologies where possible";
-  if (module_exists('cartogratree')){
+  if (module_exists('cartogratree')) {
     $prefix_text .= " and the collected metadata will enable this information to be displayed in <a href='$base_url/cartogratree' target='blank'>CartograTree</a>";
   }
   $prefix_text .= ". An accession number will be provided to the user following successful completion that uniquely identifies this study in the database.  This number should be used in the manuscript describing this work.  Specific flat-files and metadata associated with this identifier can be accessed by the public with this information.<br><br>
