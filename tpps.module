@@ -643,33 +643,17 @@ function tpps_main(array $form, array &$form_state) {
   status_bar($form, $form_state);
 
   if (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization'])) {
-    if (tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'))) {
-      $and = db_and();
-      $and->condition('value', $user->mail);
-      $and->condition('type_id', chado_get_cvterm(array('name' => 'Email address', 'cv_id' => array('name' => 'identifier')))->cvterm_id);
-      $contact_id = db_select('chado.contactprop', 'contactprop')
-        ->fields('contactprop', array('contact_id'))
-        ->condition($and)
-        ->execute()
-        ->fetchAssoc();
-      $contact_id = $contact_id['contact_id'];
-      $name = db_select('chado.contact', 'contact')
-        ->fields('contact', array('name'))
-        ->condition('contact_id', $contact_id)
-        ->execute()
-        ->fetchAssoc();
-      $name = $name['name'];
-      $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = $name;
-      $and = db_and();
-      $and->condition('contact_id', $contact_id);
-      $and->condition('type_id', chado_get_cvterm(array('name' => 'Organization', 'cv_id' => array('name' => 'tripal_contact')))->cvterm_id);
-      $org = db_select('chado.contactprop', 'contactprop')
-        ->fields('contactprop', array('value'))
-        ->condition($and)
-        ->execute()
-        ->fetchAssoc();
-      $org = $org['value'];
-      $form_state['saved_values'][TPPS_PAGE_1]['organization'] = $org;
+    $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
+    if ($contact_bundle) {
+      $query = new EntityFieldQuery();
+      $results = $query->entityCondition('entity_type', 'TripalEntity')
+        ->entityCondition('bundle', $contact_bundle->name)
+        ->fieldCondition('local__email', 'value', $user->mail)
+        ->range(0, 1)
+        ->execute();
+      $entity = array_pop(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
+      $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = $entity->title;
+      $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = $entity->tcontact__organization['und'][0]['value'];
     }
   }
 
