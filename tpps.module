@@ -653,7 +653,7 @@ function tpps_main(array $form, array &$form_state) {
         ->execute();
       $entity = array_pop(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
       $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = $entity->title;
-      $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = $entity->tcontact__organization['und'][0]['value'];
+      $form_state['saved_values'][TPPS_PAGE_1]['organization'] = $entity->tcontact__organization['und'][0]['value'];
     }
   }
 
