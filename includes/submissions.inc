@@ -53,6 +53,50 @@ function tpps_load_submission($accession, $state = TRUE) {
 }
 
 /**
+ * This function loads multiple TPPS submissions based on conditions.
+ *
+ * Collects accessions based on conditions, then makes multiple calls to
+ * tpps_load_submission() to load all of the submissions that meet the
+ * conditions.
+ *
+ * @param array $conditions
+ *   The conditions that each TPPS submission must meet.
+ * @param bool $state
+ *   An option to return only the state of the TPPS Submissions, default True.
+ *
+ * @return array
+ *   An array of loaded TPPS submissions or their form_states.
+ */
+function tpps_load_submission_multiple(array $conditions = array(), $state = TRUE) {
+  $submissions = array();
+  $query = db_select('tpps_submission', 's')
+    ->fields('s', array('accession'));
+
+  if (!empty($conditions)) {
+    foreach ($conditions as $key => $cond) {
+      if (!empty($cond)) {
+        if (!is_array($cond)) {
+          $query->condition($key, $cond);
+        }
+        else {
+          $or = db_or();
+          foreach ($cond as $item) {
+            $or->condition($key, $item);
+          }
+          $query->condition($or);
+        }
+      }
+    }
+  }
+
+  $results = $query->execute()->fetchAll();
+  foreach ($results as $result) {
+    $submissions[] = tpps_load_submission($result->accession, $state);
+  }
+  return $submissions;
+}
+
+/**
  * This function creates a TPPS submission entry in the tpps_submission table.
  *
  * @param array $state
