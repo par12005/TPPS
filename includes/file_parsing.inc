@@ -57,7 +57,7 @@ function tpps_file_parsing($accession) {
       $phenotypeprop_ids = array();
       $phenotypes_meta = array();
       $local_cv = chado_get_cv(array('name' => 'local'));
-      $local_db = chado_get_db(array('name' => 'local'));
+      $local_db = variable_get('tpps_local_db');
 
       $phenotype_file_id = tpps_chado_insert_record('projectprop', array(
         'project_id' => $project_id,

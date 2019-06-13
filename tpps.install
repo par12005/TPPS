@@ -13,13 +13,14 @@
  */
 function tpps_install() {
 
-  tpps_install_cvterms();
-
   tpps_alter_tpps_submissions();
 
   tpps_alter_genotype_call();
 
   tpps_create_plusgeno_view();
+
+  tpps_install_cvterms();
+
 }
 
 /**
@@ -230,7 +231,7 @@ function tpps_schema() {
  */
 function tpps_install_cvterms() {
   $local_cv = chado_get_cv(array('name' => 'local'));
-  $local_db = chado_get_db(array('name' => 'local'));
+  $local_db = variable_get('tpps_local_db');
 
   $terms = array(
     'study_start' => 'The month and year that the study began.',
@@ -371,5 +372,16 @@ function tpps_create_plusgeno_view() {
        count(genotype_call.genotype_call_id) OVER (PARTITION BY genotype_call.project_id) AS gen_count
       FROM chado.genotype_call) g ON p.project_id = g.project_id
    WHERE d.db_id = ' . $local_db->db_id . ';');
+    variable_set('tpps_local_db', $local_db);
+  }
+  else {
+    $matches = array();
+    $definition = db_select('pg_matviews', 'p')
+      ->fields('p', array('definition'))
+      ->condition('matviewname', 'plusgeno_view')
+      ->execute()
+      ->fetchObject()->definition;
+    preg_match('/d\.db_id ?= ?(\d+)\);/', $definition, $matches);
+    variable_set('tpps_local_db', chado_get_db(array('db_id' => (int)$matches[1])));
   }
 }

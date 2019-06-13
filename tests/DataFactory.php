@@ -197,7 +197,7 @@ Factory::define('chado.pub', function (Faker\Generator $faker) {
 
 /** @see StatonLab\TripalTestSuite\Database\Factory::define() */
 Factory::define('tpps_submission', function(Faker\Generator $faker) {
-  $db_id = chado_get_db(array('name' => 'local'))->db_id;
+  $db_id = variable_get('tpps_local_db')->db_id;
   $accession = 'TGDR000';
   $dbxref = factory('chado.dbxref')->create([
     'db_id' => $db_id,
