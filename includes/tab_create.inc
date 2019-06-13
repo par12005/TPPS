@@ -28,13 +28,7 @@ function tpps_tab_create($user) {
     tpps_delete_submission($params['accession']);
   }
 
-  $and = db_and()
-    ->condition('uid', $user->uid)
-    ->condition('status', 'Incomplete');
-  $results = db_select('tpps_submission', 's')
-    ->fields('s')
-    ->condition($and)
-    ->execute();
+  $states = tpps_load_submission_multiple(array('status' => 'Incomplete', 'uid' => $user->uid));
 
   $style =
   '<style>
@@ -49,9 +43,7 @@ function tpps_tab_create($user) {
   $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th></th></tr>";
   $display .= "</thead><tbody>";
 
-  foreach ($results as $item) {
-    $state = unserialize($item->submission_state);
-
+  foreach ($states as $state) {
     $display .= "<tr>";
 
     if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
@@ -110,7 +102,7 @@ function tpps_tab_create($user) {
     $display .= "</tr>";
   }
 
-  if (!isset($item)) {
+  if (!isset($state)) {
     $display = $style;
   }
   else {
@@ -119,26 +111,15 @@ function tpps_tab_create($user) {
   }
 
   $final .= $display;
-  $item = NULL;
+  $state = NULL;
 
-  $or = db_or()
-    ->condition('status', 'Pending Approval')
-    ->condition('status', 'Approved');
-  $and = db_and()
-    ->condition('uid', $user->uid)
-    ->condition($or);
-  $results = db_select('tpps_submission', 's')
-    ->fields('s')
-    ->condition($and)
-    ->execute();
+  $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Approved'), 'uid' => $user->uid));
 
   $display = "<label for='tpps_complete_table'>Complete Submissions</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
   $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th>Status</th></tr>";
   $display .= "</thead><tbody>";
 
-  foreach ($results as $item) {
-    $state = unserialize($item->submission_state);
-
+  foreach ($states as $state) {
     $display .= "<tr>";
 
     if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
@@ -187,7 +168,7 @@ function tpps_tab_create($user) {
     $display .= "<td>{$state['status']}</td></tr>";
   }
 
-  if (!isset($item)) {
+  if (!isset($state)) {
     $display = "";
   }
   else {

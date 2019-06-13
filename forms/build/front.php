@@ -34,14 +34,9 @@ function tpps_front_create_form(array &$form, array $form_state) {
     $options_arr = array();
     $options_arr['new'] = 'Create new TPPS Submission';
 
-    $results = db_select('tpps_submission', 's')
-      ->fields('s')
-      ->condition('status', 'Incomplete')
-      ->execute();
+    $states = tpps_load_submission_multiple(array('status' => 'Incomplete'));
 
-    foreach ($results as $item) {
-      $state = tpps_load_submission($item->accession);
-
+    foreach ($states as $state) {
       if ($state != NULL and isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
         $title = ($state['saved_values'][TPPS_PAGE_1]['publication']['title'] != NULL) ? $state['saved_values'][TPPS_PAGE_1]['publication']['title'] : "No Title";
         $tgdr_id = $state['accession'];

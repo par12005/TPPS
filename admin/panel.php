@@ -46,20 +46,13 @@ function tpps_admin_panel(array $form, array &$form_state) {
   }
   elseif (empty($accession)) {
 
-    $or = db_or()
-      ->condition('status', 'Pending Approval')
-      ->condition('status', 'Approved');
-    $query = db_select('tpps_submission', 's')
-      ->fields('s')
-      ->condition($or)
-      ->execute();
+    $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Approved')));
 
     $display = "<table style='width:-webkit-fill-available' border='1'><thead>";
     $display .= "<tr><th>Accession Number</th><th>Title</th><th>Status</th></tr>";
     $display .= "</thead><tbody>";
     $data = array();
-    while (($result = $query->fetchObject())) {
-      $state = tpps_load_submission($result->accession);
+    foreach ($states as $state) {
       if (!empty($state)) {
 
         $item = array(
