@@ -170,7 +170,7 @@ function tpps_admin_settings_validate($form, &$form_state) {
     }
   }
 
-  if ($update and !form_get_errors()) {
+  if (!empty($update) and !form_get_errors()) {
     tpps_update_old_submissions();
   }
 }
