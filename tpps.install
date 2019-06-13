@@ -382,6 +382,6 @@ function tpps_create_plusgeno_view() {
       ->execute()
       ->fetchObject()->definition;
     preg_match('/d\.db_id ?= ?(\d+)\);/', $definition, $matches);
-    variable_set('tpps_local_db', chado_get_db(array('db_id' => (int)$matches[1])));
+    variable_set('tpps_local_db', chado_get_db(array('db_id' => (int) $matches[1])));
   }
 }
