@@ -21,20 +21,21 @@ function tpps_submit_all($accession) {
   $uid = $form_state['submitting_uid'];
   $values = $form_state['saved_values'];
   $firstpage = $values[TPPS_PAGE_1];
-  $file_rank = 0;
+  $form_state['file_rank'] = 0;
+  $form_state['ids'] = array();
 
   $project_id = tpps_chado_insert_record('project', array(
     'name' => $firstpage['publication']['title'],
     'description' => $firstpage['publication']['abstract'],
   ));
 
-  $organism_ids = tpps_submit_page_1($form_state, $project_id, $file_rank);
+  $organism_ids = tpps_submit_page_1($form_state, $project_id);
 
-  tpps_submit_page_2($form_state, $project_id, $file_rank);
+  tpps_submit_page_2($form_state, $project_id);
 
-  tpps_submit_page_3($form_state, $project_id, $file_rank, $organism_ids);
+  tpps_submit_page_3($form_state, $project_id, $organism_ids);
 
-  tpps_submit_page_4($form_state, $project_id, $file_rank, $organism_ids);
+  tpps_submit_page_4($form_state, $project_id, $organism_ids);
 
   tpps_update_submission($form_state, array('status' => 'Approved'));
 
@@ -55,13 +56,11 @@ function tpps_submit_all($accession) {
  *   The state of the form being submitted.
  * @param int $project_id
  *   The project_id of the project that the data will reference in the database.
- * @param int $file_rank
- *   The rank number for files associated with the project.
  *
  * @return array
  *   An array of the organism_ids associated with the project.
  */
-function tpps_submit_page_1(array &$form_state, $project_id, &$file_rank) {
+function tpps_submit_page_1(array &$form_state, $project_id) {
 
   $dbxref_id = $form_state['dbxref_id'];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
@@ -110,7 +109,7 @@ function tpps_submit_page_1(array &$form_state, $project_id, &$file_rank) {
         'is_obsolete' => 0,
       ),
       'value' => file_create_url(file_load($firstpage['publication']['secondaryAuthors']['file'])->uri),
-      'rank' => $file_rank,
+      'rank' => $form_state['file_rank'],
     ));
 
     $file = file_load($firstpage['publication']['secondaryAuthors']['file']);
@@ -145,7 +144,7 @@ function tpps_submit_page_1(array &$form_state, $project_id, &$file_rank) {
     }
     $file->status = FILE_STATUS_PERMANENT;
     $file = file_save($file);
-    $file_rank++;
+    $form_state['file_rank']++;
   }
 
   $publication_id = tpps_chado_insert_record('pub', array(
@@ -268,10 +267,8 @@ function tpps_submit_page_1(array &$form_state, $project_id, &$file_rank) {
  *   The state of the form being submitted.
  * @param int $project_id
  *   The project_id of the project that the data will reference in the database.
- * @param int $file_rank
- *   The rank number for files associated with the project.
  */
-function tpps_submit_page_2(array &$form_state, $project_id, &$file_rank) {
+function tpps_submit_page_2(array &$form_state, $project_id) {
 
   $secondpage = $form_state['saved_values'][TPPS_PAGE_2];
 
@@ -673,12 +670,10 @@ function tpps_submit_page_2(array &$form_state, $project_id, &$file_rank) {
  *   The state of the form being submitted.
  * @param int $project_id
  *   The project_id of the project that the data will reference in the database.
- * @param int $file_rank
- *   The rank number for files associated with the project.
  * @param array $organism_ids
  *   The array of organism_ids associated with the project.
  */
-function tpps_submit_page_3(array &$form_state, $project_id, &$file_rank, array $organism_ids) {
+function tpps_submit_page_3(array &$form_state, $project_id, array $organism_ids) {
 
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
@@ -698,7 +693,7 @@ function tpps_submit_page_3(array &$form_state, $project_id, &$file_rank, array 
         'is_obsolete' => 0,
       ),
       'value' => file_create_url(file_load($thirdpage['tree-accession']['file'])->uri),
-      'rank' => $file_rank,
+      'rank' => $form_state['file_rank'],
     ));
 
     $file = file_load($thirdpage['tree-accession']['file']);
@@ -928,7 +923,7 @@ function tpps_submit_page_3(array &$form_state, $project_id, &$file_rank, array 
 
     $file->status = FILE_STATUS_PERMANENT;
     $file = file_save($file);
-    $file_rank++;
+    $form_state['file_rank']++;
   }
   else {
     // Multiple files, sorted by species.
@@ -943,7 +938,7 @@ function tpps_submit_page_3(array &$form_state, $project_id, &$file_rank, array 
           'is_obsolete' => 0,
         ),
         'value' => drupal_realpath(file_load($thirdpage['tree-accession']["species-$i"]['file'])->uri),
-        'rank' => $file_rank,
+        'rank' => $form_state['file_rank'],
       ));
 
       $file = file_load($thirdpage['tree-accession']["species-$i"]['file']);
@@ -1111,7 +1106,7 @@ function tpps_submit_page_3(array &$form_state, $project_id, &$file_rank, array 
 
       $file->status = FILE_STATUS_PERMANENT;
       $file = file_save($file);
-      $file_rank++;
+      $form_state['file_rank']++;
     }
   }
 
@@ -1121,9 +1116,6 @@ function tpps_submit_page_3(array &$form_state, $project_id, &$file_rank, array 
       'project_id' => $project_id,
     ));
   }
-
-  $form_state['file_rank'] = $file_rank;
-
 }
 
 /**
@@ -1136,12 +1128,10 @@ function tpps_submit_page_3(array &$form_state, $project_id, &$file_rank, array 
  *   The state of the form being submitted.
  * @param int $project_id
  *   The project_id of the project that the data will reference in the database.
- * @param int $file_rank
- *   The rank number for files associated with the project.
  * @param array $organism_ids
  *   The array of organism_ids associated with the project.
  */
-function tpps_submit_page_4(array &$form_state, $project_id, &$file_rank, array $organism_ids) {
+function tpps_submit_page_4(array &$form_state, $project_id, array $organism_ids) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
 
