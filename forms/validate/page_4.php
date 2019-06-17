@@ -186,7 +186,7 @@ function validate_phenotype(array $phenotype, $id, array $form, array &$form_sta
 
     $file_element = $form[$id]['phenotype']['file'];
     $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-    dpm($groups);
+    //dpm($groups);
 
     if (!form_get_errors()) {
       // Get column names.
