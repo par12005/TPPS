@@ -25,11 +25,7 @@ function tpps_file_parsing($accession) {
   $organism_number = $firstpage['organism']['number'];
   $file_rank = &$form_state['file_rank'];
   $genotype_group = variable_get('tpps_genotype_group', 10000);
-
-  $project_id = tpps_chado_insert_record('project', array(
-    'name' => $firstpage['publication']['title'],
-    'description' => $firstpage['publication']['abstract'],
-  ));
+  $project_id = $form_state['ids']['project_id'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
     $parts = explode(" ", $firstpage['organism'][$i]);
@@ -527,6 +523,9 @@ function tpps_file_parsing($accession) {
         // Inserts are WAY faster when done as a group.
         $genotype_vals = array();
         $genotypeprop_vals = array();
+        $genotype_call_vals = array();
+        $feature_ids = array();
+        $stocks = array();
         $format = "";
         $first = TRUE;
 
@@ -537,11 +536,53 @@ function tpps_file_parsing($accession) {
             $vcf_line = explode("\t", $vcf_line);
             $scaffold_id = &$vcf_line[0];
             $position = &$vcf_line[1];
+            $marker_name = &$vcf_line[2];
             $ref = &$vcf_line[3];
             $alt = &$vcf_line[4];
             $qual = &$vcf_line[5];
             $filter = &$vcf_line[6];
             $info = &$vcf_line[7];
+
+            if (empty($marker_name) or $marker_name == '.') {
+              $marker_name = "{$scaffold_id}{$position}$ref:$alt";
+            }
+            $variant_name = $marker_name . $marker;
+
+            if (!array_key_exists($marker_name, $feature_ids)) {
+              $marker_id = tpps_chado_insert_record('feature', array(
+                'organism_id' => $current_id,
+                'uniquename' => $marker_name,
+                'type_id' => array(
+                  'cv_id' => array(
+                    'name' => 'sequence',
+                  ),
+                  'name' => 'sequence_variant',
+                  'is_obsolete' => 0,
+                )
+              ));
+              $feature_ids[$marker_name] = $marker_id;
+            }
+            else {
+              $marker_id = $feature_ids[$marker_name];
+            }
+            
+            if (!array_key_exists($variant_name, $feature_ids)) {
+              $variant_id = tpps_chado_insert_record('feature', array(
+                'organism_id' => $current_id,
+                'uniquename' => $variant_name,
+                'type_id' => array(
+                  'cv_id' => array(
+                    'name' => 'sequence',
+                  ),
+                  'name' => 'sequence_variant',
+                  'is_obsolete' => 0,
+                )
+              ));
+              $feature_ids[$variant_name] = $variant_id;
+            }
+            else {
+              $variant_id = $feature_ids[$variant_name];
+            }
 
             $description = "$ref:$alt";
 
@@ -550,9 +591,11 @@ function tpps_file_parsing($accession) {
             // their relevant genotypeprops.
             if ($genotype_count > $genotype_group) {
               $genotype_count = 0;
-              tpps_chado_insert_record('genotype', $genotype_vals);
+              tpps_chado_insert_record('genotype', $genotype_vals, array('multi' => TRUE));
               $genotype_vals = array();
-              tpps_chado_insert_record('genotypeprop', $genotypeprop_vals);
+              tpps_chado_insert_record('genotype_call', $genotype_call_vals, array('multi' => TRUE));
+              $genotype_call_vals = array();
+              tpps_chado_insert_record('genotypeprop', $genotypeprop_vals, array('multi' => TRUE));
               $genotypeprop_vals = array();
             }
 
@@ -586,6 +629,16 @@ function tpps_file_parsing($accession) {
                   'is_obsolete' => 0,
                 ),
                 'value' => $format,
+              );
+            }
+            
+            for ($j = 9; $j < count($vcf_line); $j++) {
+              $genotype_call_vals[] = array(
+                'variant_id' => $variant_id,
+                'marker_id' => $marker_id,
+                'genotype_id' => $genotype_id,
+                'project_id' => $project_id,
+                'stock_id' => $stocks[$j - 9],
               );
             }
 
@@ -675,10 +728,30 @@ function tpps_file_parsing($accession) {
           elseif (preg_match('/##FORMAT=/', $vcf_line)) {
             $format .= substr($vcf_line, 9, -1);
           }
+          elseif (preg_match('/#CHROM/', $vcf_line)) {
+            $vcf_line = explode("\t", $vcf_line);
+            for ($j = 9; $j < count($vcf_line); $j++) {
+              $stock_name = $vcf_line[$j];
+              $values = array(
+                'organism_id' => $current_id,
+                'uniquename' => $stock_name,
+                'type_id' => array(
+                  'cv_id' => array(
+                    'name' => 'obi',
+                  ),
+                  'name' => 'organism',
+                  'is_obsolete' => 0,
+                ),
+              );
+              $results = chado_select_record('stock', array('stock_id'), $values);
+              $stocks[] = $form_state['ids']['stock_ids'][trim($vcf_line[$j])];
+            }
+          }
         }
         // Insert the last set of values.
-        tpps_chado_insert_record('genotype', $genotype_vals);
-        tpps_chado_insert_record('genotypeprop', $genotypeprop_vals);
+        tpps_chado_insert_record('genotype', $genotype_vals, array('multi' => TRUE));
+        tpps_chado_insert_record('genotype_call', $genotype_call_vals, array('multi' => TRUE));
+        tpps_chado_insert_record('genotypeprop', $genotypeprop_vals, array('multi' => TRUE));
         unset($genotype_vals);
         unset($genotypeprop_vals);
         // dpm('done: ' . date('r'));.
