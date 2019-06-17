@@ -54,9 +54,6 @@ function tpps_submit_all($accession) {
  *
  * @param array $form_state
  *   The state of the form being submitted.
- *
- * @return array
- *   An array of the organism_ids associated with the project.
  */
 function tpps_submit_page_1(array &$form_state) {
 
@@ -670,7 +667,7 @@ function tpps_submit_page_3(array &$form_state) {
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   $organism_number = $firstpage['organism']['number'];
 
-  $stock_ids = array();
+  $form_state['ids']['stock_ids'] = array();
 
   if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0) {
     // Single file.
@@ -708,7 +705,7 @@ function tpps_submit_page_3(array &$form_state) {
       // Only one species.
       for ($i = 0; $i < count($content) - 1; $i++) {
         $tree_id = $content[$i][$id_col_accession_name];
-        $stock_ids[$tree_id] = tpps_chado_insert_record('stock', array(
+        $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
           'uniquename' => $tree_id,
           'type_id' => array(
             'cv_id' => array(
@@ -752,7 +749,7 @@ function tpps_submit_page_3(array &$form_state) {
         }
 
         // Create record with the new id.
-        $stock_ids[$tree_id] = tpps_chado_insert_record('stock', array(
+        $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
           'uniquename' => $tree_id,
           'type_id' => array(
             'cv_id' => array(
@@ -772,7 +769,7 @@ function tpps_submit_page_3(array &$form_state) {
 
       for ($i = 0; $i < count($content) - 1; $i++) {
         $tree_id = $content[$i][$id_col_accession_name];
-        $stock_id = $stock_ids[$tree_id];
+        $stock_id = $form_state['ids']['stock_ids'][$tree_id];
 
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
@@ -805,7 +802,7 @@ function tpps_submit_page_3(array &$form_state) {
 
       for ($i = 0; $i < count($content) - 1; $i++) {
         $tree_id = $content[$i][$id_col_accession_name];
-        $stock_id = $stock_ids[$tree_id];
+        $stock_id = $form_state['ids']['stock_ids'][$tree_id];
 
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
@@ -865,7 +862,7 @@ function tpps_submit_page_3(array &$form_state) {
 
       for ($i = 0; $i < count($content) - 1; $i++) {
         $tree_id = $content[$i][$id_col_accession_name];
-        $stock_id = $stock_ids[$tree_id];
+        $stock_id = $form_state['ids']['stock_ids'][$tree_id];
 
         $loc = $thirdpage['tree-accession']['pop-group'][$content[$i][$pop_group_name]];
         $coord = tpps_standard_coord($loc);
@@ -951,7 +948,7 @@ function tpps_submit_page_3(array &$form_state) {
 
       for ($j = 0; $j < count($content) - 1; $j++) {
         $tree_id = $content[$j][$id_col_accession_name];
-        $stock_ids[$tree_id] = tpps_chado_insert_record('stock', array(
+        $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
           'uniquename' => $tree_id,
           'type_id' => array(
             'cv_id' => array(
@@ -968,7 +965,7 @@ function tpps_submit_page_3(array &$form_state) {
           $long_name = $groups['Location (latitude/longitude or country/state or population group)']['5'];
 
           tpps_chado_insert_record('stockprop', array(
-            'stock_id' => $stock_ids[$tree_id],
+            'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
             'type_id' => array(
               'cv_id' => array(
                 'name' => 'local',
@@ -980,7 +977,7 @@ function tpps_submit_page_3(array &$form_state) {
           ));
 
           tpps_chado_insert_record('stockprop', array(
-            'stock_id' => $stock_ids[$tree_id],
+            'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
             'type_id' => array(
               'cv_id' => array(
                 'name' => 'local',
@@ -1101,7 +1098,7 @@ function tpps_submit_page_3(array &$form_state) {
     }
   }
 
-  foreach ($stock_ids as $tree_id => $stock_id) {
+  foreach ($form_state['ids']['stock_ids'] as $tree_id => $stock_id) {
     tpps_chado_insert_record('project_stock', array(
       'stock_id' => $stock_id,
       'project_id' => $form_state['ids']['project_id'],
