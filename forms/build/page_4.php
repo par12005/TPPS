@@ -64,6 +64,8 @@ function page_4_create_form(array &$form, array &$form_state) {
           ),
         );
       }
+      
+      $file_format = 1;
 
       $form["organism-$i"]['phenotype']['file'] = array(
         '#type' => 'managed_file',
@@ -83,12 +85,21 @@ function page_4_create_form(array &$form, array &$form_state) {
         '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)',
       );
 
-      $column_options = array(
-        'N/A',
-        'Tree Identifier',
-        'Phenotype Name/Identifier',
-        'Value(s)',
-      );
+      if ($file_format == 1) {
+        $column_options = array(
+          'N/A',
+          'Tree Identifier',
+          'Phenotype Name/Identifier',
+          'Value(s)',
+        );
+      }
+      else {
+        $column_options = array(
+          'Phenotype Data',
+          'Tree Identifier',
+          'N/A',
+        );
+      }
 
       $form["organism-$i"]['phenotype']['file']['columns-options'] = array(
         '#type' => 'hidden',
