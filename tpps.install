@@ -17,10 +17,26 @@ function tpps_install() {
 
   tpps_alter_genotype_call();
 
+  chado_create_custom_table('stock_phenotype', array(
+    'description' => '',
+    'fields' => array(
+      'stock_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+      'phenotype_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'normal',
+      ),
+    ),
+  ), TRUE, NULL, FALSE);
+
   tpps_create_plusgeno_view();
 
   tpps_install_cvterms();
-
+  
 }
 
 /**
@@ -118,24 +134,6 @@ function tpps_schema() {
     ),
   );
 
-  if (!db_table_exists('chado.stock_phenotype')) {
-    $schema['chado.stock_phenotype'] = array(
-      'description' => '',
-      'fields' => array(
-        'stock_id' => array(
-          'description' => '',
-          'type' => 'int',
-          'size' => 'normal',
-        ),
-        'phenotype_id' => array(
-          'description' => '',
-          'type' => 'int',
-          'size' => 'normal',
-        ),
-      ),
-    );
-  }
-
   if (!db_table_exists('chado.genotype_call')) {
     $schema['chado.genotype_call'] = array(
       'description' => '',
@@ -222,7 +220,7 @@ function tpps_schema() {
       ),
     );
   }
-
+  
   return $schema;
 }
 

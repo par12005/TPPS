@@ -23,7 +23,6 @@ function tpps_file_parsing($accession) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $organism_number = $firstpage['organism']['number'];
-  $organism_ids = array();
   $file_rank = &$form_state['file_rank'];
   $genotype_group = variable_get('tpps_genotype_group', 10000);
 
@@ -43,12 +42,6 @@ function tpps_file_parsing($accession) {
     else {
       $infra = NULL;
     }
-
-    $organism_ids[$i] = tpps_chado_insert_record('organism', array(
-      'genus' => $genus,
-      'species' => $species,
-      'infraspecific_name' => $infra,
-    ));
 
     if (isset($fourthpage["organism-$i"]['phenotype'])) {
       $phenotype = $fourthpage["organism-$i"]['phenotype'];
@@ -202,6 +195,11 @@ function tpps_file_parsing($accession) {
           'attr_id' => $attr_id,
           'observable_id' => $observable_id,
           'value' => $value,
+        ));
+
+        tpps_chado_insert_record('stock_phenotype', array(
+          'stock_id' => $form_state['ids']['stock_ids'][$stock_unique],
+          'phenotype_id' => end($phenotype_ids),
         ));
 
         $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
@@ -510,7 +508,7 @@ function tpps_file_parsing($accession) {
         ));
         $file_rank++;
 
-        $current_id = $organism_ids[$i];
+        $current_id = $form_state['ids']['organism_ids'][$i];
         $and = db_and()
           ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local')))->cvterm_id)
           ->condition('organism_id', "$current_id");
