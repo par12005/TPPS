@@ -86,7 +86,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
       }
     }
   }
-  dpm($groups);
+  //dpm($groups);
 
   foreach ($required_groups as $group => $combinations) {
     $group_valid = FALSE;
