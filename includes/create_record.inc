@@ -109,7 +109,12 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
         return $results[0]->{$primary};
       }
       $new_record = chado_insert_record($table, $insert_values, $options);
-      return $new_record[$primary];
+      if (!empty($new_record[$primary])) {
+        return $new_record[$primary];
+      }
+      else {
+        return;
+      }
     }
   }
   if ($options['multi'] and $has_fields) {
