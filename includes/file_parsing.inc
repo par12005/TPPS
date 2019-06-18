@@ -413,7 +413,7 @@ function tpps_file_parsing($accession) {
               // this one, get a new species code. otherwise, keep the last one
               // to avoid some redundant queries.
               $and = db_and()
-                ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local')))->cvterm_id)
+                ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
                 ->condition('organism_id', "$organism_id");
               $species_code = db_select('chado.organismprop', 'o')
                 ->fields('o', array('value'))
@@ -439,10 +439,10 @@ function tpps_file_parsing($accession) {
               }
               elseif ($genotype['marker-type']['SSRs/cpSSRs']) {
                 if ($genotype['SSRs/cpSSRs'] == 'cpSSR') {
-                  $marker_type_id = chado_get_cvterm(array('name' => 'cpSSR', 'cv_id' => array('name' => 'local')))->cvterm_id;
+                  $marker_type_id = chado_get_cvterm(array('name' => 'cpSSR'))->cvterm_id;
                 }
                 else {
-                  $marker_type_id = chado_get_cvterm(array('name' => 'SSR', 'cv_id' => array('name' => 'local')))->cvterm_id;
+                  $marker_type_id = chado_get_cvterm(array('name' => 'SSR'))->cvterm_id;
                 }
               }
               else {
@@ -506,7 +506,7 @@ function tpps_file_parsing($accession) {
 
         $current_id = $form_state['ids']['organism_ids'][$i];
         $and = db_and()
-          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code', 'cv_id' => array('name' => 'local')))->cvterm_id)
+          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
           ->condition('organism_id', "$current_id");
         $species_code = db_select('chado.organismprop', 'o')
           ->fields('o', array('value'))
@@ -714,9 +714,6 @@ function tpps_file_parsing($accession) {
               $genotypeprop_vals[] = array(
                 'genotype_id' => $genotype_id,
                 'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'local',
-                  ),
                   'name' => 'number_samples',
                   'is_obsolete' => 0,
                 ),
@@ -734,7 +731,7 @@ function tpps_file_parsing($accession) {
               $stock_name = $vcf_line[$j];
               $values = array(
                 'organism_id' => $current_id,
-                'uniquename' => $stock_name,
+                'uniquename' => $form_state['accession'] . '-' . $stock_name,
                 'type_id' => array(
                   'cv_id' => array(
                     'name' => 'obi',
@@ -805,7 +802,7 @@ function tpps_file_parsing($accession) {
 
           $and = db_and()
             ->condition('stock_id', $stock_id)
-            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_latitude', 'cv_id' => array('name' => 'local')))->cvterm_id);
+            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_latitude'))->cvterm_id);
           $gps_query = db_select('chado.stockprop', 's')
             ->fields('s', array('value'))
             ->condition($and)
@@ -815,7 +812,7 @@ function tpps_file_parsing($accession) {
 
           $and = db_and()
             ->condition('stock_id', $stock_id)
-            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_longitude', 'cv_id' => array('name' => 'local')))->cvterm_id);
+            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_longitude'))->cvterm_id);
           $gps_query = db_select('chado.stockprop', 's')
             ->fields('s', array('value'))
             ->condition($and)
