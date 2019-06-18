@@ -353,13 +353,15 @@ function tpps_install_cvterms() {
   );
 
   foreach ($terms as $term_name => $term_definition) {
-    $term = array(
-      'id' => "{$local_db->name}:$term_name",
-      'name' => $term_name,
-      'definition' => $term_definition,
-      'cv_name' => $local_cv->name,
-    );
-    chado_insert_cvterm($term);
+    if (!chado_get_cvterm(array('name' => $term_name))){
+      $term = array(
+        'id' => "{$local_db->name}:$term_name",
+        'name' => $term_name,
+        'definition' => $term_definition,
+        'cv_name' => $local_cv->name,
+      );
+      chado_insert_cvterm($term);
+    }
   }
 }
 

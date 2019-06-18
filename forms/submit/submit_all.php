@@ -267,9 +267,6 @@ function tpps_submit_page_2(array &$form_state) {
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $form_state['ids']['project_id'],
     'type_id' => array(
-      'cv_id' => array(
-        'name' => 'local',
-      ),
       'name' => 'study_start',
       'is_obsolete' => 0,
     ),
@@ -279,9 +276,6 @@ function tpps_submit_page_2(array &$form_state) {
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $form_state['ids']['project_id'],
     'type_id' => array(
-      'cv_id' => array(
-        'name' => 'local',
-      ),
       'name' => 'study_end',
       'is_obsolete' => 0,
     ),
@@ -296,9 +290,6 @@ function tpps_submit_page_2(array &$form_state) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
-        'cv_id' => array(
-          'name' => 'local',
-        ),
         'name' => 'gps_latitude',
         'is_obsolete' => 0,
       ),
@@ -308,9 +299,6 @@ function tpps_submit_page_2(array &$form_state) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
-        'cv_id' => array(
-          'name' => 'local',
-        ),
         'name' => 'gps_longitude',
         'is_obsolete' => 0,
       ),
@@ -323,9 +311,6 @@ function tpps_submit_page_2(array &$form_state) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
-        'cv_id' => array(
-          'name' => 'local',
-        ),
         'name' => 'experiment_location',
         'is_obsolete' => 0,
       ),
@@ -336,9 +321,6 @@ function tpps_submit_page_2(array &$form_state) {
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $form_state['ids']['project_id'],
     'type_id' => array(
-      'cv_id' => array(
-        'name' => 'local',
-      ),
       'name' => 'association_results_type',
       'is_obsolete' => 0,
     ),
@@ -357,9 +339,6 @@ function tpps_submit_page_2(array &$form_state) {
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $form_state['ids']['project_id'],
     'type_id' => array(
-      'cv_id' => array(
-        'name' => 'local',
-      ),
       'name' => 'study_type',
       'is_obsolete' => 0,
     ),
@@ -372,9 +351,6 @@ function tpps_submit_page_2(array &$form_state) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
-        'cv_id' => array(
-          'name' => 'local',
-        ),
         'name' => 'assession_season',
         'is_obsolete' => 0,
       ),
@@ -386,9 +362,6 @@ function tpps_submit_page_2(array &$form_state) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
-        'cv_id' => array(
-          'name' => 'local',
-        ),
         'name' => 'assession_number',
         'is_obsolete' => 0,
       ),
@@ -400,9 +373,6 @@ function tpps_submit_page_2(array &$form_state) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
-        'cv_id' => array(
-          'name' => 'local',
-        ),
         'name' => 'temperature_high',
         'is_obsolete' => 0,
       ),
@@ -412,9 +382,6 @@ function tpps_submit_page_2(array &$form_state) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
-        'cv_id' => array(
-          'name' => 'local',
-        ),
         'name' => 'temperature_low',
         'is_obsolete' => 0,
       ),
@@ -436,9 +403,6 @@ function tpps_submit_page_2(array &$form_state) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
         'type_id' => array(
-          'cv_id' => array(
-            'name' => 'local',
-          ),
           'name' => "{$type}_control",
           'is_obsolete' => 0,
         ),
@@ -449,9 +413,6 @@ function tpps_submit_page_2(array &$form_state) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
           'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
             'name' => "{$type}_level",
             'is_obsolete' => 0,
           ),
@@ -462,9 +423,6 @@ function tpps_submit_page_2(array &$form_state) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
           'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
             'name' => "{$type}_level",
             'is_obsolete' => 0,
           ),
@@ -480,9 +438,6 @@ function tpps_submit_page_2(array &$form_state) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
-        'cv_id' => array(
-          'name' => 'local',
-        ),
         'name' => 'rooting_type',
         'is_obsolete' => 0,
       ),
@@ -493,9 +448,6 @@ function tpps_submit_page_2(array &$form_state) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
         'type_id' => array(
-          'cv_id' => array(
-            'name' => 'local',
-          ),
           'name' => 'soil_type',
           'is_obsolete' => 0,
         ),
@@ -505,9 +457,6 @@ function tpps_submit_page_2(array &$form_state) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
         'type_id' => array(
-          'cv_id' => array(
-            'name' => 'local',
-          ),
           'name' => 'soil_container',
           'is_obsolete' => 0,
         ),
@@ -521,9 +470,6 @@ function tpps_submit_page_2(array &$form_state) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
         'type_id' => array(
-          'cv_id' => array(
-            'name' => 'local',
-          ),
           'name' => "pH_control",
           'is_obsolete' => 0,
         ),
@@ -534,9 +480,6 @@ function tpps_submit_page_2(array &$form_state) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
           'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
             'name' => "pH_level",
             'is_obsolete' => 0,
           ),
@@ -547,9 +490,6 @@ function tpps_submit_page_2(array &$form_state) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
           'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
             'name' => "pH_level",
             'is_obsolete' => 0,
           ),
@@ -575,9 +515,6 @@ function tpps_submit_page_2(array &$form_state) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
           'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
             'name' => 'treatment',
             'is_obsolete' => 0,
           ),
@@ -595,9 +532,6 @@ function tpps_submit_page_2(array &$form_state) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
-        'cv_id' => array(
-          'name' => 'local',
-        ),
         'name' => 'irrigation_type',
         'is_obsolete' => 0,
       ),
@@ -611,9 +545,6 @@ function tpps_submit_page_2(array &$form_state) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
           'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
             'name' => 'biotic_environment',
             'is_obsolete' => 0,
           ),
@@ -638,9 +569,6 @@ function tpps_submit_page_2(array &$form_state) {
           tpps_chado_insert_record('projectprop', array(
             'project_id' => $form_state['ids']['project_id'],
             'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
               'name' => 'treatment',
               'is_obsolete' => 0,
             ),
@@ -706,7 +634,7 @@ function tpps_submit_page_3(array &$form_state) {
       for ($i = 0; $i < count($content) - 1; $i++) {
         $tree_id = $content[$i][$id_col_accession_name];
         $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
-          'uniquename' => $tree_id,
+          'uniquename' => $form_state['accession'] . '-' . $tree_id,
           'type_id' => array(
             'cv_id' => array(
               'name' => 'obi',
@@ -750,7 +678,7 @@ function tpps_submit_page_3(array &$form_state) {
 
         // Create record with the new id.
         $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
-          'uniquename' => $tree_id,
+          'uniquename' => $form_state['accession'] . '-' . $tree_id,
           'type_id' => array(
             'cv_id' => array(
               'name' => 'obi',
@@ -774,9 +702,6 @@ function tpps_submit_page_3(array &$form_state) {
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
           'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
             'name' => 'gps_latitude',
             'is_obsolete' => 0,
           ),
@@ -786,9 +711,6 @@ function tpps_submit_page_3(array &$form_state) {
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
           'type_id' => array(
-            'cv_id' => array(
-              'name' => 'local',
-            ),
             'name' => 'gps_longitude',
             'is_obsolete' => 0,
           ),
@@ -832,9 +754,6 @@ function tpps_submit_page_3(array &$form_state) {
           tpps_chado_insert_record('stockprop', array(
             'stock_id' => $stock_id,
             'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
               'name' => 'county',
               'is_obsolete' => 0,
             ),
@@ -846,9 +765,6 @@ function tpps_submit_page_3(array &$form_state) {
           tpps_chado_insert_record('stockprop', array(
             'stock_id' => $stock_id,
             'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
               'name' => 'district',
               'is_obsolete' => 0,
             ),
@@ -872,9 +788,6 @@ function tpps_submit_page_3(array &$form_state) {
           tpps_chado_insert_record('stockprop', array(
             'stock_id' => $stock_id,
             'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
               'name' => 'gps_latitude',
               'is_obsolete' => 0,
             ),
@@ -884,9 +797,6 @@ function tpps_submit_page_3(array &$form_state) {
           tpps_chado_insert_record('stockprop', array(
             'stock_id' => $stock_id,
             'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
               'name' => 'gps_longitude',
               'is_obsolete' => 0,
             ),
@@ -949,7 +859,7 @@ function tpps_submit_page_3(array &$form_state) {
       for ($j = 0; $j < count($content) - 1; $j++) {
         $tree_id = $content[$j][$id_col_accession_name];
         $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
-          'uniquename' => $tree_id,
+          'uniquename' => $form_state['accession'] . '-' . $tree_id,
           'type_id' => array(
             'cv_id' => array(
               'name' => 'obi',
@@ -967,9 +877,6 @@ function tpps_submit_page_3(array &$form_state) {
           tpps_chado_insert_record('stockprop', array(
             'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
             'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
               'name' => 'gps_latitude',
               'is_obsolete' => 0,
             ),
@@ -979,9 +886,6 @@ function tpps_submit_page_3(array &$form_state) {
           tpps_chado_insert_record('stockprop', array(
             'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
             'type_id' => array(
-              'cv_id' => array(
-                'name' => 'local',
-              ),
               'name' => 'gps_longitude',
               'is_obsolete' => 0,
             ),
@@ -1020,9 +924,6 @@ function tpps_submit_page_3(array &$form_state) {
             tpps_chado_insert_record('stockprop', array(
               'stock_id' => $stock_id,
               'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'local',
-                ),
                 'name' => 'county',
                 'is_obsolete' => 0,
               ),
@@ -1034,9 +935,6 @@ function tpps_submit_page_3(array &$form_state) {
             tpps_chado_insert_record('stockprop', array(
               'stock_id' => $stock_id,
               'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'local',
-                ),
                 'name' => 'district',
                 'is_obsolete' => 0,
               ),
@@ -1055,9 +953,6 @@ function tpps_submit_page_3(array &$form_state) {
             tpps_chado_insert_record('stockprop', array(
               'stock_id' => $stock_id,
               'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'local',
-                ),
                 'name' => 'gps_latitude',
                 'is_obsolete' => 0,
               ),
@@ -1067,9 +962,6 @@ function tpps_submit_page_3(array &$form_state) {
             tpps_chado_insert_record('stockprop', array(
               'stock_id' => $stock_id,
               'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'local',
-                ),
                 'name' => 'gps_longitude',
                 'is_obsolete' => 0,
               ),
