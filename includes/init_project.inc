@@ -45,9 +45,7 @@ function tpps_init_project(array &$form_state) {
   }
 
   $dbxref_id = chado_insert_record('dbxref', array(
-    'db_id' => array(
-      'name' => 'local',
-    ),
+    'db_id' => variable_get('tpps_local_db')->db_id,
     'accession' => $accession,
   ));
 
