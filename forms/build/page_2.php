@@ -112,6 +112,7 @@ function page_2_create_form(array &$form, array $form_state) {
       break;
 
     default:
+      $form['study_info']['#prefix'] = '<div id="study_info" style="display:none;">';
       break;
   }
 
