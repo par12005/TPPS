@@ -113,7 +113,10 @@ function tpps_tab_create($user) {
   $final .= $display;
   $state = NULL;
 
-  $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Approved'), 'uid' => $user->uid));
+  $states = tpps_load_submission_multiple(array(
+    'status' => array('Pending Approval', 'Approved'),
+    'uid' => $user->uid,
+  ));
 
   $display = "<label for='tpps_complete_table'>Complete Submissions</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
   $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th>Status</th></tr>";

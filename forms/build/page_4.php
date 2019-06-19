@@ -64,7 +64,7 @@ function page_4_create_form(array &$form, array &$form_state) {
           ),
         );
       }
-      
+
       $file_format = 1;
 
       $form["organism-$i"]['phenotype']['file'] = array(

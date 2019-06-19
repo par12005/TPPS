@@ -558,14 +558,14 @@ function tpps_file_parsing($accession) {
                   ),
                   'name' => 'sequence_variant',
                   'is_obsolete' => 0,
-                )
+                ),
               ));
               $feature_ids[$marker_name] = $marker_id;
             }
             else {
               $marker_id = $feature_ids[$marker_name];
             }
-            
+
             if (!array_key_exists($variant_name, $feature_ids)) {
               $variant_id = tpps_chado_insert_record('feature', array(
                 'organism_id' => $current_id,
@@ -576,7 +576,7 @@ function tpps_file_parsing($accession) {
                   ),
                   'name' => 'sequence_variant',
                   'is_obsolete' => 0,
-                )
+                ),
               ));
               $feature_ids[$variant_name] = $variant_id;
             }
@@ -631,7 +631,7 @@ function tpps_file_parsing($accession) {
                 'value' => $format,
               );
             }
-            
+
             for ($j = 9; $j < count($vcf_line); $j++) {
               $genotype_call_vals[] = array(
                 'variant_id' => $variant_id,

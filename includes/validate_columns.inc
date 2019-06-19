@@ -69,9 +69,9 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
   }
 
-  //dpm($required_groups_flat);
-  //dpm($cols);
-  //dpm($state_column_values);
+  // dpm($required_groups_flat);
+  // dpm($cols);
+  // dpm($state_column_values);
   foreach ($cols as $name => $type) {
     $state_column_values[$name] = $type;
     foreach ($required_groups_flat as $group => $types) {
@@ -86,8 +86,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
       }
     }
   }
-  //dpm($groups);
-
+  // dpm($groups);
   foreach ($required_groups as $group => $combinations) {
     $group_valid = FALSE;
     foreach ($combinations as $name => $combination) {
