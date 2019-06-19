@@ -23,10 +23,8 @@
 function study_date($type, array &$form, array $values, array &$form_state) {
 
   $form[$type . 'Date'] = array(
-    '#prefix' => "<div class='container-inline'>",
     '#type' => 'fieldset',
     '#tree' => TRUE,
-    '#suffix' => '</div>',
   );
 
   if ($type == "Ending") {
@@ -161,7 +159,7 @@ function study_location(array &$form, array $values, array &$form_state) {
     ),
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
-      'data-placement' => array('left'),
+      'data-placement' => array('right'),
       'title' => array('Please select a Coordinate Projection, or select "Custom Location", to enter a custom study location'),
     ),
   );
