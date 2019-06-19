@@ -341,7 +341,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
       $location = drupal_realpath("$file_name");
-      $content = tpps_parse_xlsx($location);
+      $content = tpps_parse_xlsx($location, 3);
 
       if (!empty($no_header)) {
         tpps_content_no_header($content);

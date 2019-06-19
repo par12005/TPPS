@@ -10,11 +10,13 @@
  *
  * @param string $location
  *   The path on the server to the file being parsed.
+ * @param int $max_rows
+ *   The maximum number of rows to read from the file.
  *
  * @return array
  *   An array containing the content headers and content body.
  */
-function tpps_parse_xlsx($location) {
+function tpps_parse_xlsx($location, $max_rows = 0) {
 
   // Modified from https://gist.github.com/searbe/3284011
   $content = array();
@@ -29,6 +31,7 @@ function tpps_parse_xlsx($location) {
 
   $xlrows = $sheet->sheetData->row;
 
+  $count = 0;
   foreach ($xlrows as $xlrow) {
     $arr = array();
 
@@ -55,9 +58,13 @@ function tpps_parse_xlsx($location) {
       $content['headers'] = $headers;
     }
     else {
+      $count++;
       $values = array_pad($arr, count($headers), '');
       $row = array_combine($headers, $values);
       $content[] = $row;
+      if ($max_rows > 0 and $count >= $max_rows) {
+        break;
+      }
     }
   }
 
