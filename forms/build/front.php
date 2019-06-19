@@ -65,42 +65,10 @@ function tpps_front_create_form(array &$form, array $form_state) {
     '#value' => t('Continue to TPPS'),
   );
 
-  $prefix_text =
-    "<div>
-Welcome to TPPS!<br><br>
-The Tripal PopGen Submit (TPPS) workflow provides researchers with a streamlined submission interface for studies resulting from any combination of genotype, phenotype, and environmental data for georeferenced forest trees.  TPPS will guide users through questions about their study design and data in order to collect information on trees, genotypes, and phenotypes if applicable. Phenotypic, genotypic, and environmental descriptors will be mapped to ontologies where possible";
-  if (module_exists('cartogratree')) {
-    $prefix_text .= " and the collected metadata will enable this information to be displayed in <a href='$base_url/cartogratree' target='blank'>CartograTree</a>";
-  }
-  $prefix_text .= ". An accession number will be provided to the user following successful completion that uniquely identifies this study in the database.  This number should be used in the manuscript describing this work.  Specific flat-files and metadata associated with this identifier can be accessed by the public with this information.<br><br>
-To get started, you will need to have a few things handy:<br>
-<ul>
-  <li>An enabled and approved TreeGenes account - you can create one <a href='$base_url/user/register'>here</a>. There may be a waiting period to have your account approved by a TreeGenes administrator.</li>
-  <li>Information about the paper connected to your study, and the organisms being studied. This must include at least the following:
-    <ul>
-      <li>Primary author of the publication</li>
-      <li>Organization of the Primary Author</li>
-      <li>Publication year</li>
-      <li>Publication title</li>
-      <li>Publication abstract</li>
-      <li>Journal the publication can be found in</li>
-      <li>Genus and species of the organism(s) being studied</li>
-    </ul>
-  </li>
-  <li>Metadata about the study itself. This must include at least the following:
-    <ul>
-      <li>Dates when the study took place (month, year)</li>
-      <li>The location of the study (coordinates or country/region)</li>
-      <li>Type of study (natural population, growth chamber, common garden, etc.)</li>
-      <li>Type of data collected (some combination of genotype, phenotype, and environmental)</li>
-      <li>Relevant quantitative information based on the type of study, such as the seasons of a natural population study, or the soil pH of a growth chamber study</li>
-    </ul>
-  </li>
-  <li>Geographic locations of the trees (for common garden studies, this would be the location of the source tree). This should be a spreadsheet with a column for tree identifiers and column(s) for the location of each tree.</li>
-  <li>Genotypic and/or phenotypic data and metadata (depending on the type(s) of data collected).</li>
-</ul>
-If you would like to submit your data, you can click the button 'Continue to TPPS' below!<br><br>
-</div>";
+  $image_path = drupal_get_path('module', 'tpps') . '/images/';
+  $prefix_text = "<div>Welcome to TPPS!<br><br>The Tripal PopGen Submit (TPPS) workflow provides researchers with a streamlined submission interface for studies resulting from any combination of genotype, phenotype, and environmental data for georeferenced forest trees.<br>";
+  $prefix_text .= "<figure><img style=\"max-height:100%;max-width:100%;\" src=\"{$image_path}TPPS_front_diagram.png\"></figure>";
+  $prefix_text .= "TPPS has documentation to assist users with the process of creating a submission, which can be accessed <a target=\"blank\" href=\"https://tpps.readthedocs.io/en/latest/user.html\">here</a>.<br><br></div>";
 
   if (isset($form['accession'])) {
     $form['accession']['#prefix'] = $prefix_text;
