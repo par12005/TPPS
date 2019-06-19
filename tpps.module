@@ -368,7 +368,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
           '#suffix' => "</td>",
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
-            'data-placement' => array('left'),
+            'data-placement' => array('right'),
             'title' => array("Select the type of data the '$item' column holds"),
           ),
         );
@@ -693,7 +693,19 @@ function tpps_main(array $form, array &$form_state) {
     jQuery(document).ready(function(){
       jQuery(\'[data-toggle="tooltip"]\').tooltip();   
     });
-    </script>';
+    </script>
+    <style>
+    .form-type-textfield > input, .form-type-select > select {
+      float: right;
+    }
+    .form-item {
+      margin-bottom: 5px;
+    }
+    .form-managed-file > fieldset {
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    </style>';
 
   if (isset($form['#suffix'])) {
     $form['#suffix'] .= $suffix;

@@ -54,7 +54,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id, $phenot
     '#title' => t('I would like to upload a phenotype metadata file'),
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
-      'data-placement' => array('left'),
+      'data-placement' => array('right'),
       'title' => array('Upload a file'),
     ),
   );
@@ -105,7 +105,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id, $phenot
       '#prefix' => "<label><b>Phenotype $i:</b></label>",
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
-        'data-placement' => array('left'),
+        'data-placement' => array('right'),
         'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your <a href="@url">Phenotype file</a> below.', array('@url' => url('/tpps', array('fragment' => "edit-$id-phenotype-file-ajax-wrapper")))),
@@ -117,7 +117,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id, $phenot
       '#autocomplete_path' => 'attribute/autocomplete',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
-        'data-placement' => array('left'),
+        'data-placement' => array('right'),
         'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
@@ -135,7 +135,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id, $phenot
       '#autocomplete_path' => 'units/autocomplete',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
-        'data-placement' => array('left'),
+        'data-placement' => array('right'),
         'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
@@ -152,7 +152,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id, $phenot
       '#autocomplete_path' => 'structure/autocomplete',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
-        'data-placement' => array('left'),
+        'data-placement' => array('right'),
         'title' => array('If your structure is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),

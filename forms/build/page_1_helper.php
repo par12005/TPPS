@@ -24,7 +24,7 @@ function user_info(array &$form, array $values) {
     '#autocomplete_path' => 'author/autocomplete',
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
-      'data-placement' => array('left'),
+      'data-placement' => array('right'),
       'title' => array('First Author of the publication'),
     ),
   );
@@ -35,7 +35,7 @@ function user_info(array &$form, array $values) {
     '#autocomplete_path' => 'organization/autocomplete',
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
-      'data-placement' => array('left'),
+      'data-placement' => array('right'),
       'title' => array('Organization of the Primary Author'),
     ),
   );
@@ -154,7 +154,7 @@ function organism(array &$form, array $values) {
       '#autocomplete_path' => "species/autocomplete",
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
-        'data-placement' => array('left'),
+        'data-placement' => array('right'),
         'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
       ),
     );
@@ -274,7 +274,7 @@ function secondary_authors(array &$form, array $values, array $form_state) {
     '#title' => t('I have >30 Secondary Authors'),
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
-      'data-placement' => array('left'),
+      'data-placement' => array('right'),
       'title' => array('Upload a file instead'),
     ),
   );
