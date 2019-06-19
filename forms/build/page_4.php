@@ -65,6 +65,7 @@ function page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
+      $image_path = drupal_get_path('module', 'tpps') . '/images/';
       $form["organism-$i"]['phenotype']['format'] = array(
         '#type' => 'radios',
         '#title' => t('Phenotype file format: *'),
@@ -77,6 +78,8 @@ function page_4_create_form(array &$form, array &$form_state) {
           'wrapper' => "edit-organism-$i-phenotype-file-ajax-wrapper",
         ),
         '#default_value' => (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) ? $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] : 0,
+        '#description' => t('Please select a file format type from the listed options. Below please see examples of each format type.'),
+        '#suffix' => "<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>Type 1</figcaption></figure><figure><img src=\"{$image_path}phenotype_format_2.png\"><figcaption>Type 2</figcaption></figure><style>figure {display: inline-block;}</style>"
       );
 
       $form["organism-$i"]['phenotype']['file'] = array(
