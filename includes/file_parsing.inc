@@ -141,113 +141,132 @@ function tpps_file_parsing($accession) {
       $groups = $phenotype['file-groups'];
 
       $tree_id_col = $groups['Tree Identifier']['1'];
-      $phenotype_name = $groups['Phenotype Name/Identifier']['2'];
-      $phenotype_val = $groups['Phenotype Value(s)']['3'];
+      if ($phenotype['format'] != 0) {
+        $phenotype_name = $groups['Phenotype Name/Identifier']['2'];
+        $phenotype_val = $groups['Phenotype Value(s)']['3'];
+      }
 
       for ($j = 0; $j < count($content) - 1; $j++) {
-        $name = strtolower($content[$j][$phenotype_name]);
-        $value = $content[$j][$phenotype_val];
+        if ($phenotype['format'] == 0) {
+          $values = array();
+          foreach ($groups['Phenotype Data']['0'] as $name_raw) {
+            $name = strtolower($name_raw);
+            foreach ($content[$j] as $column_name => $val) {
+              if (strtolower($name) == strtolower($column_name)) {
+                $values[$name] = $val;
+                break;
+              }
+            }
+          }
+        }
+        else {
+          $phenotypes = array(strtolower($content[$j][$phenotype_name]));
+          $name = strtolower($content[$j][$phenotype_name]);
+          $values = array(strtolower($content[$j][$phenotype_name]) => $content[$j][$phenotype_val]);
+        }
         $stock_unique = $content[$j][$tree_id_col];
 
-        $attr = db_select('chado.cvterm', 'c')
-          ->fields('c', array('cvterm_id'))
-          ->condition('c.name', db_like($phenotypes_meta[$name]['attr']), 'LIKE')
-          ->execute()
-          ->fetchAssoc();
-        $attr_id = $attr['cvterm_id'];
-        if (!isset($attr_id) or $attr_id == '') {
-          $attr_id = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$phenotypes_meta[$name]['attr']}",
-            'name' => $phenotypes_meta[$name]['attr'],
-            'definition' => '',
-            'cv_name' => $local_cv->name,
-          ));
-        }
-
-        if (isset($phenotypes_meta[$name]['struct'])) {
-          $obs = db_select('chado.cvterm', 'c')
+        foreach ($values as $name => $value) {
+          $attr = db_select('chado.cvterm', 'c')
             ->fields('c', array('cvterm_id'))
-            ->condition('c.name', db_like($phenotypes_meta[$name]['struct']), 'LIKE')
+            ->condition('c.name', db_like($phenotypes_meta[$name]['attr']), 'LIKE')
             ->execute()
             ->fetchAssoc();
-          $observable_id = $obs['cvterm_id'];
-
-          if (!isset($observable_id) or $observable_id == '') {
-            $observable_id = chado_insert_cvterm(array(
-              'id' => "{$local_db->name}:{$phenotypes_meta[$name]['struct']}",
-              'name' => $phenotypes_meta[$name]['struct'],
+          $attr_id = $attr['cvterm_id'];
+          if (!isset($attr_id) or $attr_id == '') {
+            $attr_id = chado_insert_cvterm(array(
+              'id' => "{$local_db->name}:{$phenotypes_meta[$name]['attr']}",
+              'name' => $phenotypes_meta[$name]['attr'],
               'definition' => '',
               'cv_name' => $local_cv->name,
             ));
           }
-        }
-        else {
-          $observable_id = NULL;
-        }
 
-        $phenotype_ids[] = tpps_chado_insert_record('phenotype', array(
-          'uniquename' => "$stock_unique-$name-$j",
-          'name' => $name,
-          'attr_id' => $attr_id,
-          'observable_id' => $observable_id,
-          'value' => $value,
-        ));
+          if (isset($phenotypes_meta[$name]['struct'])) {
+            $obs = db_select('chado.cvterm', 'c')
+              ->fields('c', array('cvterm_id'))
+              ->condition('c.name', db_like($phenotypes_meta[$name]['struct']), 'LIKE')
+              ->execute()
+              ->fetchAssoc();
+            $observable_id = $obs['cvterm_id'];
 
-        tpps_chado_insert_record('stock_phenotype', array(
-          'stock_id' => $form_state['ids']['stock_ids'][$stock_unique],
-          'phenotype_id' => end($phenotype_ids),
-        ));
+            if (!isset($observable_id) or $observable_id == '') {
+              $observable_id = chado_insert_cvterm(array(
+                'id' => "{$local_db->name}:{$phenotypes_meta[$name]['struct']}",
+                'name' => $phenotypes_meta[$name]['struct'],
+                'definition' => '',
+                'cv_name' => $local_cv->name,
+              ));
+            }
+          }
+          else {
+            $observable_id = NULL;
+          }
 
-        $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
-          'phenotype_id' => end($phenotype_ids),
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'description',
-            'is_obsolete' => 0,
-          ),
-          'value' => $phenotypes_meta[$name]['desc'],
-        ));
+          $phenotype_ids[] = tpps_chado_insert_record('phenotype', array(
+            'uniquename' => "$stock_unique-$name-$j",
+            'name' => $name,
+            'attr_id' => $attr_id,
+            'observable_id' => $observable_id,
+            'value' => $value,
+          ));
 
-        $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
-          'phenotype_id' => end($phenotype_ids),
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'uo',
-            ),
-            'name' => 'unit',
-            'is_obsolete' => 0,
-          ),
-          'value' => $phenotypes_meta[$name]['unit'],
-        ));
+          tpps_chado_insert_record('stock_phenotype', array(
+            'stock_id' => $form_state['ids']['stock_ids'][$stock_unique],
+            'phenotype_id' => end($phenotype_ids),
+          ));
 
-        if (isset($phenotypes_meta[$name]['min'])) {
           $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
             'phenotype_id' => end($phenotype_ids),
             'type_id' => array(
               'cv_id' => array(
-                'name' => 'default_namespace',
+                'name' => 'schema',
               ),
-              'name' => 'minimum parameter',
+              'name' => 'description',
               'is_obsolete' => 0,
             ),
-            'value' => $phenotypes_meta[$name]['min'],
+            'value' => $phenotypes_meta[$name]['desc'],
           ));
-        }
 
-        if (isset($phenotypes_meta[$name]['max'])) {
           $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
             'phenotype_id' => end($phenotype_ids),
             'type_id' => array(
               'cv_id' => array(
-                'name' => 'default_namespace',
+                'name' => 'uo',
               ),
-              'name' => 'maximum parameter',
+              'name' => 'unit',
               'is_obsolete' => 0,
             ),
-            'value' => $phenotypes_meta[$name]['max'],
+            'value' => $phenotypes_meta[$name]['unit'],
           ));
+
+          if (isset($phenotypes_meta[$name]['min'])) {
+            $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
+              'phenotype_id' => end($phenotype_ids),
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'default_namespace',
+                ),
+                'name' => 'minimum parameter',
+                'is_obsolete' => 0,
+              ),
+              'value' => $phenotypes_meta[$name]['min'],
+            ));
+          }
+
+          if (isset($phenotypes_meta[$name]['max'])) {
+            $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
+              'phenotype_id' => end($phenotype_ids),
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'default_namespace',
+                ),
+                'name' => 'maximum parameter',
+                'is_obsolete' => 0,
+              ),
+              'value' => $phenotypes_meta[$name]['max'],
+            ));
+          }
         }
       }
 
