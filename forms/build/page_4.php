@@ -65,7 +65,19 @@ function page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
-      $file_format = 1;
+      $form["organism-$i"]['phenotype']['format'] = array(
+        '#type' => 'radios',
+        '#title' => t('Phenotype file format: *'),
+        '#options' => array(
+          'Type 1',
+          'Type 2',
+        ),
+        '#ajax' => array(
+          'callback' => 'phenotype_file_format_callback',
+          'wrapper' => "edit-organism-$i-phenotype-file-ajax-wrapper",
+        ),
+        '#default_value' => (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) ? $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] : 0,
+      );
 
       $form["organism-$i"]['phenotype']['file'] = array(
         '#type' => 'managed_file',
@@ -85,19 +97,29 @@ function page_4_create_form(array &$form, array &$form_state) {
         '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)',
       );
 
-      if ($file_format == 1) {
+      if (isset($form_state['values']["organism-$i"]['phenotype']['format'])) {
+        $format = $form_state['values']["organism-$i"]['phenotype']['format'];
+      }
+      if (!isset($format) and isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) {
+        $format = $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'];
+      }
+      if (!isset($format)) {
+        $format = 0;
+      }
+
+      if ($format == 0) {
+        $column_options = array(
+          'Phenotype Data',
+          'Tree Identifier',
+          'N/A',
+        );
+      }
+      else {
         $column_options = array(
           'N/A',
           'Tree Identifier',
           'Phenotype Name/Identifier',
           'Value(s)',
-        );
-      }
-      else {
-        $column_options = array(
-          'Phenotype Data',
-          'Tree Identifier',
-          'N/A',
         );
       }
 

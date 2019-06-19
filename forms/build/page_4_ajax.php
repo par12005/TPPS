@@ -47,6 +47,26 @@ function update_phenotype(array $form, array &$form_state) {
 }
 
 /**
+ * Ajax callback for phenotype file format.
+ *
+ * Indicates the element to be updated when the format option of the phenotype
+ * file has been changed.
+ *
+ * @param array $form
+ *   The form to be updated.
+ * @param array $form_state
+ *   The state of the form to be updated.
+ *
+ * @return array
+ *   The element in the form to be updated.
+ */
+function phenotype_file_format_callback(array $form, array &$form_state) {
+  $id = $form_state['triggering_element']['#parents'][0];
+
+  return $form[$id]['phenotype']['file'];
+}
+
+/**
  * Ajax callback for environment fieldset.
  *
  * Indicates the element to be updated when the add or remove environmental data
