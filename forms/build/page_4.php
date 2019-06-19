@@ -79,7 +79,7 @@ function page_4_create_form(array &$form, array &$form_state) {
         ),
         '#default_value' => (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) ? $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] : 0,
         '#description' => t('Please select a file format type from the listed options. Below please see examples of each format type.'),
-        '#suffix' => "<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>Type 1</figcaption></figure><figure><img src=\"{$image_path}phenotype_format_2.png\"><figcaption>Type 2</figcaption></figure><style>figure {display: inline-block;}</style>"
+        '#suffix' => "<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>Type 1</figcaption></figure><figure><img src=\"{$image_path}phenotype_format_2.png\"><figcaption>Type 2</figcaption></figure><style>figure {display: inline-block;width: 50%; padding-left: 10%; padding-right: 10%; margin-top: 20px; text-align: center;}</style>"
       );
 
       $form["organism-$i"]['phenotype']['file'] = array(
