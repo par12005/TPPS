@@ -155,7 +155,7 @@ function study_location(array &$form, array $values, array &$form_state) {
       1 => 'WGS 84',
       3 => 'NAD 83',
       4 => 'ETRS 89',
-      2 => 'Custom Location (street address)',
+      2 => 'Custom Location (brief description)',
     ),
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
