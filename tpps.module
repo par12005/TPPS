@@ -364,8 +364,8 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
           '#title' => $item,
           '#options' => $options,
           '#default_value' => $default,
-          '#prefix' => "<td>",
-          '#suffix' => "</td>",
+          '#prefix' => "<th>",
+          '#suffix' => "</th>",
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
             'data-placement' => array('right'),
@@ -375,7 +375,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
         if ($first) {
           $first = FALSE;
-          $element['columns'][$item]['#prefix'] = "<div style='overflow-x:auto'><table border='1'><tbody><tr>" . $element['columns'][$item]['#prefix'];
+          $first_col = $item;
         }
 
         if (!empty($no_header)) {
@@ -399,20 +399,26 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         }
       }
 
-      // Display sample data.
-      $display = "</tr>";
-      for ($j = 0; $j < 3; $j++) {
-        if (isset($content[$j])) {
-          $display .= "<tr>";
-          foreach ($content['headers'] as $item) {
-            $display .= "<th>{$content[$j][$item]}</th>";
-          }
-          $display .= "</tr>";
-        }
+      $rows = $content;
+      unset($rows['headers']);
+      $headers = array();
+      foreach ($content['headers'] as $col_name) {
+        $headers[] = $col_name;
       }
-      $display .= "</tbody></table></div>";
-
-      $element['columns'][$item]['#suffix'] .= $display;
+      $vars = array(
+        'header' => $headers,
+        'rows' => $rows,
+        'attributes' => array(),
+        'caption' => '',
+        'colgroups' => NULL,
+        'sticky' => FALSE,
+        'empty' => '',
+      );
+      $table = theme_table($vars);
+      preg_match('/\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/s', $table, $matches);
+      
+      $element['columns'][$first_col]['#prefix'] = "<tr>" . $matches[1] . $element['columns'][$first_col]['#prefix'];
+      $element['columns'][$item]['#suffix'] = "</tr>" . $matches[2] . "";
     }
   }
 
