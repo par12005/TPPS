@@ -333,7 +333,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
       $saved_vals = $form_state['saved_values'][$form_state['stage']];
       $element['columns']['#type'] = 'fieldset';
-      $element['columns']['#title'] = t('<div class="fieldset-title">Define Data</div>');
+      $element['columns']['#title'] = t('<div class="fieldset-title" style="font-size:.8em">Define Data</div>');
       $element['columns']['#collapsible'] = TRUE;
 
       $file_name = $file->uri;
@@ -723,11 +723,19 @@ function tpps_main(array $form, array &$form_state) {
     .form-item > label {
       display: inline-block;
     }
-    .form-type-textfield, .form-type-select {
+    .form-type-textfield, .form-type-select, .form-managed-file, .form-type-checkbox, .form-type-radios {
       text-align: right;
     }
     .form-item {
       margin-bottom: 5px;
+    }
+    .form-type-managed-file {
+      border-top: 1px solid #b5e0ba;
+      border-bottom: 1px solid #b5e0ba;
+      padding: 10px 20px 0px;
+    }
+    .form-managed-file {
+      text-align: right;
     }
     .form-managed-file > fieldset {
       margin-top: 20px;
