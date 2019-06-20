@@ -31,6 +31,7 @@ function page_3_create_form(array &$form, array &$form_state) {
 
   $form['tree-accession'] = array(
     '#type' => 'fieldset',
+    '#title' => t('Tree Accession Information'),
     '#tree' => TRUE,
   );
 
