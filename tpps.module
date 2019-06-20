@@ -302,6 +302,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     return $element;
   }
   if (isset($element['columns'])) {
+    require_once 'ajax/tpps_ajax.php';
     $fid = $element['#value']['fid'];
     $wrapper = substr($element['#id'], 0, -7) . '-ajax-wrapper';
 
