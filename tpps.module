@@ -701,8 +701,14 @@ function tpps_main(array $form, array &$form_state) {
     });
     </script>
     <style>
-    .form-type-textfield > input, .form-type-select > select {
-      float: right;
+    th > div.form-type-select > .ajax-progress {
+      display: none;
+    }
+    .form-item > label {
+      display: inline-block;
+    }
+    .form-type-textfield, .form-type-select {
+      text-align: right;
     }
     .form-item {
       margin-bottom: 5px;
