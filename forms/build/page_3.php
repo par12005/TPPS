@@ -55,6 +55,9 @@ function page_3_create_form(array &$form, array &$form_state) {
   if ($species_number > 1) {
     $file_description .= " If you are uploading a single file with multiple species, your file must also specify the genus and species of each tree.";
   }
+  
+  $image_path = drupal_get_path('module', 'tpps') . '/images/';
+  $file_description .= "Please find an example of an accession file below.<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>Type 1</figcaption></figure>";
 
   $form['tree-accession']['file'] = array(
     '#type' => 'managed_file',
