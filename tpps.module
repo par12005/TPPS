@@ -38,7 +38,7 @@ function tpps_menu() {
   $items = array();
 
   $items['tpps'] = array(
-    'title' => 'Tripal Plant PopGen Submit pipeline',
+    'title' => 'Tripal Plant PopGen Submit',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_main'),
     'access callback' => 'user_access',
