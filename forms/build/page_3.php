@@ -51,24 +51,23 @@ function page_3_create_form(array &$form, array &$form_state) {
     $file_description .= ' Location columns should describe the location of the source tree for the Common Garden.';
   }
 
+  if ($species_number > 1) {
+    $file_description .= " If you are uploading a single file with multiple species, your file must also specify the genus and species of each tree.";
+  }
+
   $form['tree-accession']['file'] = array(
     '#type' => 'managed_file',
-    '#title' => t("Tree Accession File: please provide a spreadsheet with columns for the Tree ID and location of trees used in this study: *"),
+    '#title' => t("Tree Accession File: *<br>$file_description"),
     '#upload_location' => "$file_upload_location",
     '#upload_validators' => array(
       'file_validate_extensions' => array('txt csv xlsx'),
     ),
-    '#description' => $file_description,
     '#states' => ($species_number > 1) ? (array(
       'visible' => array(
         ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
       ),
     )) : NULL,
   );
-
-  if ($species_number > 1) {
-    $form['tree-accession']['file']['#description'] .= " If you are uploading a single file with multiple species, your file must also specify the genus and species of each tree.";
-  }
 
   $form['tree-accession']['file']['empty'] = array(
     '#default_value' => isset($values['tree-accession']['file']['empty']) ? $values['tree-accession']['file']['empty'] : 'NA',
@@ -204,12 +203,11 @@ function page_3_create_form(array &$form, array &$form_state) {
 
       $form['tree-accession']["species-$i"]['file'] = array(
         '#type' => 'managed_file',
-        '#title' => t("@name Accession File: please provide a spreadsheet with columns for the Tree ID and location of the @name trees used in this study: *", array('@name' => $name)),
+        '#title' => t("@name Accession File: *", array('@name' => $name)) . "<br>$file_description",
         '#upload_location' => "$file_upload_location",
         '#upload_validators' => array(
           'file_validate_extensions' => array('txt csv xlsx'),
         ),
-        '#description' => $file_description,
         '#tree' => TRUE,
       );
 
