@@ -410,6 +410,10 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         'header' => $headers,
         'rows' => $rows,
         'attributes' => array('class' => array('view')),
+        'caption' => '',
+        'colgroups' => NULL,
+        'sticky' => FALSE,
+        'empty' => ''
       );
       $table = theme_table($vars);
       preg_match('/\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/s', $table, $matches);
