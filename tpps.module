@@ -368,7 +368,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
           '#suffix' => "</th>",
           '#attributes' => array(
             'data-toggle' => array('tooltip'),
-            'data-placement' => array('right'),
+            'data-placement' => array('top'),
             'title' => array("Select the type of data the '$item' column holds"),
           ),
         );
@@ -408,17 +408,13 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       $vars = array(
         'header' => $headers,
         'rows' => $rows,
-        'attributes' => array(),
-        'caption' => '',
-        'colgroups' => NULL,
-        'sticky' => FALSE,
-        'empty' => '',
+        'attributes' => array('class' => array('view')),
       );
       $table = theme_table($vars);
       preg_match('/\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/s', $table, $matches);
       
-      $element['columns'][$first_col]['#prefix'] = "<tr>" . $matches[1] . $element['columns'][$first_col]['#prefix'];
-      $element['columns'][$item]['#suffix'] = "</tr>" . $matches[2] . "";
+      $element['columns'][$first_col]['#prefix'] = "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>" . $element['columns'][$first_col]['#prefix'];
+      $element['columns'][$item]['#suffix'] = "</tr>" . $matches[2] . "</div>";
     }
   }
 
@@ -701,6 +697,25 @@ function tpps_main(array $form, array &$form_state) {
     });
     </script>
     <style>
+    table {
+      border: 1px solid #b5e0ba;
+      background: #ffffff;
+      width: 100%;
+    }
+    thead th {
+      background: #FFFFFF;
+      border-top: 0px solid #000000 !important;
+      padding: 10px;
+    }
+    thead {
+      display: table-header-group;
+      vertical-align: middle;
+      border-color: inherit;
+    }
+    tbody tr td {
+      padding: 3px; 
+      border-top: 1px solid #dedede;
+    }
     th > div.form-type-select > .ajax-progress {
       display: none;
     }
