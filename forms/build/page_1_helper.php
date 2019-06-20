@@ -190,13 +190,13 @@ function year(array &$form, array $values, array $form_state) {
 
   if (isset($pub_status) and $pub_status != 'Published') {
     $yearArr = array(0 => '- Select -');
-    for ($i = 2015; $i <= 2018; $i++) {
+    for ($i = 2017; $i <= 2019; $i++) {
       $yearArr[$i] = "$i";
     }
   }
   elseif (isset($pub_status)) {
     $yearArr = array(0 => '- Select -');
-    for ($i = 1990; $i <= 2018; $i++) {
+    for ($i = 1990; $i <= 2019; $i++) {
       $yearArr[$i] = "$i";
     }
   }
