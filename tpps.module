@@ -957,7 +957,10 @@ function tpps_block_view_alter(&$data, $block) {
         if ($item[0] !== '#') {
           $item_str = filter_xss(check_plain($item));
           $val_str = filter_xss(check_plain($val));
-          if (preg_match('/File/', $item) and ($file_name = file_load($val)->filename)) {
+          if (preg_match('/Abstract/', $item) and strlen($val) > 50) {
+            $val_str = filter_xss(check_plain(substr($val, 0, 50) . "..."));
+          }
+          elseif (preg_match('/File/', $item) and ($file_name = file_load($val)->filename)) {
             // Create links to files.
             $file_url = check_plain(file_create_url(file_load($val)->uri));
             $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
