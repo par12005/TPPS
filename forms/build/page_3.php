@@ -120,7 +120,7 @@ function page_3_create_form(array &$form, array &$form_state) {
     '#states' => $form['tree-accession']['file']['#states'],
     // Add map button after coordinate format option.
     '#suffix' => "<div id=\"map_wrapper\"></div>"
-    . "<input id=\"map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>",
+    . "<input id=\"map_button\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>",
   );
 
   // Add the google maps api call after the map button.
