@@ -242,15 +242,11 @@ function tpps_flatten(array $state) {
       if (isset($page_3["species-$i"]['file']) and $page_3["species-$i"]['file']) {
         $organism_name = $data["Species $i"];
         $data["$organism_name Accession File"] = $page_3["species-$i"]['file'];
-        $data["#{$organism_name}_accession_no_header"] = isset($page_3["species-$i"]['file-no-header']) ? $page_3["species-$i"]['file-no-header'] : '0';
         if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
+          $data["#{$organism_name}_accession_no_header"] = isset($page_3["species-$i"]['file-no-header']) ? $page_3["species-$i"]['file-no-header'] : '0';
           $data["#{$organism_name}_accession_id_col"] = $page_3["species-$i"]['file-groups']['Tree Id'][1];
           $data["#{$organism_name}_accession_lat_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
           $data["#{$organism_name}_accession_long_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
-        }
-        if (($file = file_load($page_3["species-$i"]['file']))) {
-          $trees = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + $data["#{$organism_name}_accession_no_header"];
-          $data["Number of $organism_name Trees"] = $trees;
         }
       }
     }
@@ -263,11 +259,8 @@ function tpps_flatten(array $state) {
       $data["#accession_lat_col"] = $page_3['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
       $data["#accession_long_col"] = $page_3['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
     }
-    if (($file = file_load($page_3['file']))) {
-      $trees = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + $data["#accession_no_header"];
-      $data["Number of Trees"] = $trees;
-    }
   }
+  $data["Total number of trees"] = isset($page_3['tree_count']) ? $page_3['tree_count'] : NULL;
   unset($data[TPPS_PAGE_3]);
 
   $page_4 = &$data[TPPS_PAGE_4];
@@ -318,6 +311,7 @@ function tpps_flatten(array $state) {
         if (isset($pheno['file']) and $pheno['file']) {
           $data["$org_name Phenotype File"] = $pheno['file'];
         }
+        $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
       }
 
       if (isset($org['genotype'])) {
@@ -415,6 +409,7 @@ function tpps_flatten(array $state) {
 
         if (isset($file_type['Genotype Assay']) and $file_type['Genotype Assay'] and isset($geno['file']) and $geno['file']) {
           $data["$org_name Genotype Assay File"] = $geno['file'];
+          $data["$org_name Assay Genotypes"] = isset($geno['assay_genotype_count']) ? $geno['assay_genotype_count'] : NULL;
         }
 
         if (isset($file_type['Assay Design']) and $file_type['Assay Design'] and isset($geno['assay-design']) and $geno['assay-design']) {
@@ -423,6 +418,7 @@ function tpps_flatten(array $state) {
 
         if (isset($file_type['VCF']) and $file_type['VCF'] and isset($geno['vcf']) and $geno['vcf']) {
           $data["$org_name Genotype VCF File"] = $geno['vcf'];
+          $data["$org_name VCF Genotypes"] = isset($geno['vcf_genotype_count']) ? $geno['vcf_genotype_count'] : NULL;
         }
       }
 

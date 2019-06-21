@@ -64,6 +64,10 @@ function page_3_validate_form(array &$form, array &$form_state) {
               }
             }
           }
+
+          if (!form_get_errors()) {
+            $form_state['values']['tree-accession']['tree_count'] = count($content) - 1;
+          }
         }
 
         if (!form_get_errors()) {
@@ -85,6 +89,7 @@ function page_3_validate_form(array &$form, array &$form_state) {
       }
     }
     else {
+      $form_state['values']['tree-accession']['tree_count'] = 0;
       for ($i = 1; $i <= $species_number; $i++) {
         if ($form_state['values']['tree-accession']["species-$i"]['file'] != "") {
 
@@ -125,6 +130,10 @@ function page_3_validate_form(array &$form, array &$form_state) {
                   }
                 }
               }
+            }
+
+            if (!form_get_errors()) {
+              $form_state['values']['tree-accession']['tree_count'] += count($content) - 1;
             }
           }
 

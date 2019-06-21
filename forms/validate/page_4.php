@@ -336,6 +336,16 @@ function validate_phenotype(array $phenotype, $id, array $form, array &$form_sta
           form_set_error("$id][phenotype][file", "Phenotype file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Phenotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
         }
       }
+
+      if (!form_get_errors()) {
+        $rows = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + $phenotype['file-no-header'];
+        if ($phenotype['format'] == 0) {
+          $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows * count($phenotype_file_name_cols);
+        }
+        else {
+          $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows;
+        }
+      }
     }
   }
 }
@@ -525,6 +535,17 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
         }
       }
 
+    }
+
+    if (!form_get_errors()) {
+      $vcf_content = fopen(file_load($vcf)->uri, 'r');
+      $count = 0;
+      while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+        if ($vcf_line[0] != '#') {
+          $count++;
+        }
+      }
+      $form_state['values'][$id]['genotype']['vcf_genotype_count'] = $count;
     }
 
     if (!form_get_errors()) {
