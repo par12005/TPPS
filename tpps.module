@@ -964,6 +964,7 @@ function tpps_block_view_alter(&$data, $block) {
         break;
       }
       $ok = "<img src='$base_url/misc/message-16-ok.png'>";
+      $form_state['saved_values'][TPPS_PAGE_2]['study_info'] = NULL;
       $flat = tpps_flatten($form_state);
 
       $map_api_key = variable_get('tpps_maps_api_key', NULL);
@@ -971,8 +972,8 @@ function tpps_block_view_alter(&$data, $block) {
         if ($item[0] !== '#') {
           $item_str = filter_xss(check_plain($item));
           $val_str = filter_xss(check_plain($val));
-          if (preg_match('/Abstract/', $item) and strlen($val) > 50) {
-            $val_str = filter_xss(check_plain(substr($val, 0, 50) . "..."));
+          if (preg_match('/(Abstract|Organization)/', $item)) {
+            continue;
           }
           elseif (preg_match('/File/', $item) and ($file_name = file_load($val)->filename)) {
             // Create links to files.
@@ -987,12 +988,15 @@ function tpps_block_view_alter(&$data, $block) {
                 $val_str .= "<div id=\"{$name}map_wrapper\"></div>"
                 . "<input id=\"{$name}map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
                 . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>";
+                $trees = count(tpps_parse_xlsx(drupal_realpath(file_load($val)->uri))) - 1 + $flat["{$name}no_header"];
               }
               else {
                 $val_str .= "<div id=\"map_wrapper\"></div>"
                 . "<input id=\"map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
                 . "<div id=\"accession_fid\" style=\"display:none;\">$val</div>";
+                $trees = count(tpps_parse_xlsx(drupal_realpath(file_load($val)->uri))) - 1 + $flat["accession_no_header"];
               }
+              $val_str .= "<br>Number of Trees: $trees";
             }
           }
           elseif (preg_match('/Month/', $item)) {
