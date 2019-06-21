@@ -713,6 +713,9 @@ function tpps_main(array $form, array &$form_state) {
     #edit-tree-accession figure {
       width: 100%;
     }
+    div#autocomplete {
+      width: max-content !important;
+    }
     table {
       border: 1px solid #b5e0ba;
       background: #ffffff;
