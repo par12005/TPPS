@@ -15,36 +15,20 @@
 function tpps_refresh_views() {
   if (module_exists('cartogratree')) {
     $indexes = array(
-      'plusgeno_view' => array('chado', 'project_id'),
-      'coordinates_view' => array('chado', 'project_id'),
-      'new_pheno_view' => array('chado', 'uniquename'),
-      'new_geno_view' => array('chado', 'tree_acc'),
-      'ct_view' => array('chado', 'uniquename'),
-      'ct_geno_view' => array('public', 'tree_acc'),
-      'ct_pub_view' => array('public', 'project_id'),
-      'ct_view_distinct' => array('public', 'uniquename'),
-      'ct_view_complete' => array('public', 'uniquename'),
+      'plusgeno_view' => 'chado',
+      'coordinates_view' => 'chado',
+      'new_pheno_view' => 'chado',
+      'new_geno_view' => 'chado',
+      'ct_view' => 'chado',
+      'ct_geno_view' => 'public',
+      'ct_pub_view' => 'public',
+      'ct_view_distinct' => 'public',
+      'ct_view_complete' => 'public',
     );
   }
 
-  foreach ($indexes as $table => $info) {
-    $schema = $info[0];
-    $col_name = $info[1];
-    $and = db_and()
-      ->condition('schemaname', $schema)
-      ->condition('tablename', $table)
-      ->condition('indexname', 'tpps_' . $table . '_cron');
-    
-    $query = db_select('pg_indexes', 'i')
-      ->fields('i')
-      ->condition($and)
-      ->execute();
-
-    $result = $query->fetchObject();
-    if (!$result) {
-      db_query("create unique index tpps_{$table}_cron on {$schema}.{$table} ($col_name})");
-    }
-    db_query("refresh materialized view concurrently $schema.$table");
+  foreach ($indexes as $table => $schema) {
+    db_query("refresh materialized view $schema.$table");
   }
 }
 
