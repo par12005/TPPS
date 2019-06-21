@@ -78,8 +78,13 @@ function page_4_create_form(array &$form, array &$form_state) {
           'wrapper' => "edit-organism-$i-phenotype-file-ajax-wrapper",
         ),
         '#default_value' => (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) ? $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] : 0,
-        '#description' => t('Please select a file format type from the listed options. Below please see examples of each format type.'),
-        '#suffix' => "<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>Type 1</figcaption></figure><figure><img src=\"{$image_path}phenotype_format_2.png\"><figcaption>Type 2</figcaption></figure>"
+        '#description' => t('Please select a file format type from the listed options. Below please see examples of each format type.') . "<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>Type 1</figcaption></figure><figure><img src=\"{$image_path}phenotype_format_2.png\"><figcaption>Type 2</figcaption></figure>",
+        '#states' => array(
+          'invisible' => array(
+            ":input[name=\"organism-{$i}[phenotype][number]\"]" => array('value' => '0'),
+            ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
+          ),
+        ),
       );
 
       $form["organism-$i"]['phenotype']['file'] = array(
@@ -90,6 +95,12 @@ function page_4_create_form(array &$form, array &$form_state) {
           'file_validate_extensions' => array('csv tsv xlsx'),
         ),
         '#tree' => TRUE,
+        '#states' => array(
+          'invisible' => array(
+            ":input[name=\"organism-{$i}[phenotype][number]\"]" => array('value' => '0'),
+            ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
+          ),
+        ),
       );
 
       $form["organism-$i"]['phenotype']['file']['empty'] = array(
