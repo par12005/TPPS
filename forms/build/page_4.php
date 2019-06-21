@@ -89,7 +89,7 @@ function page_4_create_form(array &$form, array &$form_state) {
 
       $form["organism-$i"]['phenotype']['file'] = array(
         '#type' => 'managed_file',
-        '#title' => t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Name, and value for all of your phenotypic data: *'),
+        '#title' => t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Data: *'),
         '#upload_location' => "$phenotype_upload_location",
         '#upload_validators' => array(
           'file_validate_extensions' => array('csv tsv xlsx'),
@@ -135,6 +135,7 @@ function page_4_create_form(array &$form, array &$form_state) {
           'Phenotype Name/Identifier',
           'Value(s)',
         );
+        $form["organism-$i"]['phenotype']['file']['#title'] = t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Name, and value for all of your phenotypic data: *');
       }
 
       $form["organism-$i"]['phenotype']['file']['columns-options'] = array(
