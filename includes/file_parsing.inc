@@ -139,11 +139,26 @@ function tpps_file_parsing($accession) {
       $location = drupal_realpath($phenotype_file->uri);
       $content = tpps_parse_xlsx($location);
       $groups = $phenotype['file-groups'];
+      $column_vals = $phenotype['file-columns'];
 
       $tree_id_col = $groups['Tree Identifier']['1'];
       if ($phenotype['format'] != 0) {
         $phenotype_name = $groups['Phenotype Name/Identifier']['2'];
         $phenotype_val = $groups['Phenotype Value(s)']['3'];
+        foreach ($column_vals as $col => $val) {
+          if ($val == '4') {
+            $time_col_name = $col;
+            break;
+          }
+        }
+      }
+      else {
+        foreach ($column_vals as $col => $val) {
+          if ($val == '3') {
+            $time_col_name = $col;
+            break;
+          }
+        }
       }
 
       for ($j = 0; $j < count($content) - 1; $j++) {
@@ -214,6 +229,15 @@ function tpps_file_parsing($accession) {
           tpps_chado_insert_record('stock_phenotype', array(
             'stock_id' => $form_state['ids']['stock_ids'][$stock_unique],
             'phenotype_id' => end($phenotype_ids),
+          ));
+
+          $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
+            'phenotype_id' => end($phenotype_ids),
+            'type_id' => array(
+              'name' => 'time',
+              'is_obsolete' => 0,
+            ),
+            'value' => $content[$j][$time_col_name],
           ));
 
           $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(

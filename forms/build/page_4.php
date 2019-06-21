@@ -125,6 +125,7 @@ function page_4_create_form(array &$form, array &$form_state) {
         $column_options = array(
           'Phenotype Data',
           'Tree Identifier',
+          'Timepoint',
           'N/A',
         );
       }
@@ -134,6 +135,7 @@ function page_4_create_form(array &$form, array &$form_state) {
           'Tree Identifier',
           'Phenotype Name/Identifier',
           'Value(s)',
+          'Timepoint',
         );
         $form["organism-$i"]['phenotype']['file']['#title'] = t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Name, and value for all of your phenotypic data: *');
       }
