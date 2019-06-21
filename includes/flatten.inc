@@ -242,11 +242,15 @@ function tpps_flatten(array $state) {
       if (isset($page_3["species-$i"]['file']) and $page_3["species-$i"]['file']) {
         $organism_name = $data["Species $i"];
         $data["$organism_name Accession File"] = $page_3["species-$i"]['file'];
+        $data["#{$organism_name}_accession_no_header"] = isset($page_3["species-$i"]['file-no-header']) ? $page_3["species-$i"]['file-no-header'] : '0';
         if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
-          $data["#{$organism_name}_accession_no_header"] = isset($page_3["species-$i"]['file-no-header']) ? $page_3["species-$i"]['file-no-header'] : '0';
           $data["#{$organism_name}_accession_id_col"] = $page_3["species-$i"]['file-groups']['Tree Id'][1];
           $data["#{$organism_name}_accession_lat_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
           $data["#{$organism_name}_accession_long_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
+        }
+        if (($file = file_load($page_3["species-$i"]['file']))) {
+          $trees = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + $data["#{$organism_name}_accession_no_header"];
+          $data["Number of $organism_name Trees"] = $trees;
         }
       }
     }
@@ -258,6 +262,10 @@ function tpps_flatten(array $state) {
       $data["#accession_id_col"] = $page_3['file-groups']['Tree Id'][1];
       $data["#accession_lat_col"] = $page_3['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
       $data["#accession_long_col"] = $page_3['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
+    }
+    if (($file = file_load($page_3['file']))) {
+      $trees = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + $data["#accession_no_header"];
+      $data["Number of Trees"] = $trees;
     }
   }
   unset($data[TPPS_PAGE_3]);

@@ -988,15 +988,12 @@ function tpps_block_view_alter(&$data, $block) {
                 $val_str .= "<div id=\"{$name}map_wrapper\"></div>"
                 . "<input id=\"{$name}map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
                 . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>";
-                $trees = count(tpps_parse_xlsx(drupal_realpath(file_load($val)->uri))) - 1 + $flat["{$name}no_header"];
               }
               else {
                 $val_str .= "<div id=\"map_wrapper\"></div>"
                 . "<input id=\"map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
                 . "<div id=\"accession_fid\" style=\"display:none;\">$val</div>";
-                $trees = count(tpps_parse_xlsx(drupal_realpath(file_load($val)->uri))) - 1 + $flat["accession_no_header"];
               }
-              $val_str .= "<br>Number of Trees: $trees";
             }
           }
           elseif (preg_match('/Month/', $item)) {
