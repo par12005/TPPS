@@ -57,7 +57,7 @@ function page_3_create_form(array &$form, array &$form_state) {
   }
   
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
-  $file_description .= "Please find an example of an accession file below.<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>Type 1</figcaption></figure>";
+  $file_description .= "Please find an example of an accession file below.<figure><img src=\"{$image_path}accession_example.png\"><figcaption>Example Accession File</figcaption></figure>";
 
   $form['tree-accession']['file'] = array(
     '#type' => 'managed_file',
@@ -71,6 +71,7 @@ function page_3_create_form(array &$form, array &$form_state) {
         ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
       ),
     )) : NULL,
+    '#suffix' => '<style>figure {}</style>'
   );
 
   $form['tree-accession']['file']['empty'] = array(
