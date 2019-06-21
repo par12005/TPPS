@@ -6,31 +6,46 @@
  */
 
 /**
- * Refreshes the chado.plusgeno_view materialized view.
+ * Refreshes TPPS and CartograTree views.
  *
- * The chado.plusgeno_view is the materialized view that the tpps_details module
- * uses to retrieve information about TPPS submissions on the landing page. It
- * should be refreshed periodically as part of a cron job.
+ * CartograTree and the TPPS landing page both depend heavily on large
+ * materialized views that need to be refreshed periodically. This is a
+ * resource-heavy process, so it is best if it is done in a cron job.
  */
-function tpps_refresh_landing_page() {
-
-  $and = db_and()
-    ->condition('schemaname', 'chado')
-    ->condition('tablename', 'plusgeno_view')
-    ->condition('indexname', 'tpps_cron');
-
-  $query = db_select('pg_indexes', 'i')
-    ->fields('i')
-    ->condition($and)
-    ->execute();
-
-  $result = $query->fetchAssoc();
-
-  if (!$result) {
-    db_query('create unique index tpps_cron on chado.plusgeno_view (project_id)');
+function tpps_refresh_views() {
+  if (module_exists('cartogratree')) {
+    $indexes = array(
+      'plusgeno_view' => array('chado', 'project_id'),
+      'coordinates_view' => array('chado', 'project_id'),
+      'new_pheno_view' => array('chado', 'uniquename'),
+      'new_geno_view' => array('chado', 'tree_acc'),
+      'ct_view' => array('chado', 'uniquename'),
+      'ct_geno_view' => array('public', 'tree_acc'),
+      'ct_pub_view' => array('public', 'project_id'),
+      'ct_view_distinct' => array('public', 'uniquename'),
+      'ct_view_complete' => array('public', 'uniquename'),
+    );
   }
 
-  db_query('refresh materialized view concurrently chado.plusgeno_view');
+  foreach ($indexes as $table => $info) {
+    $schema = $info[0];
+    $col_name = $info[1];
+    $and = db_and()
+      ->condition('schemaname', $schema)
+      ->condition('tablename', $table)
+      ->condition('indexname', 'tpps_' . $table . '_cron');
+    
+    $query = db_select('pg_indexes', 'i')
+      ->fields('i')
+      ->condition($and)
+      ->execute();
+
+    $result = $query->fetchObject();
+    if (!$result) {
+      db_query("create unique index tpps_{$table}_cron on {$schema}.{$table} ($col_name})");
+    }
+    db_query("refresh materialized view concurrently $schema.$table");
+  }
 }
 
 /**
@@ -47,5 +62,5 @@ function tpps_delayed_submissions() {
       unset($submissions[$accession]);
     }
   }
-  variable_set('tpps_delayed_submissions');
+  variable_set('tpps_delayed_submissions', $submissions);
 }

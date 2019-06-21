@@ -178,13 +178,13 @@ function tpps_menu() {
 function tpps_cronapi() {
   $items = array();
 
-  $items['tpps_refresh_landing_page'] = array(
-    'title' => t('Refresh TPPS landing page view'),
-    'callback' => 'tpps_refresh_landing_page',
+  $items['tpps_refresh_views'] = array(
+    'title' => t('Refresh TPPS and CartograTree views'),
+    'callback' => 'tpps_refresh_views',
     'scheduler' => array(
       'name' => 'crontab',
       'crontab' => array(
-        'rules' => array('0 0 * * *'),
+        'rules' => array('0 */12 * * *'),
       ),
     ),
   );
