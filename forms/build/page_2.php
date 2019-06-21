@@ -50,6 +50,7 @@ function page_2_create_form(array &$form, array $form_state) {
       'Phenotype x Environment' => 'Phenotype x Environment',
       'Genotype x Phenotype x Environment' => 'Genotype x Phenotype x Environment',
     ),
+    '#prefix' => '<legend><span class="fieldset-legend"><div class="fieldset-title">Study Design</div></span></legend>',
   );
 
   $form['study_type'] = array(
