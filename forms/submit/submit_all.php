@@ -37,6 +37,8 @@ function tpps_submit_all($accession) {
 
   tpps_submit_page_4($form_state);
 
+  tpps_submit_summary($form_state);
+
   tpps_update_submission($form_state, array('status' => 'Approved'));
 
   // For simplicity and efficiency, all fourth page submissions take place in
@@ -1077,3 +1079,55 @@ function tpps_submit_page_4(array &$form_state) {
     }
   }
 }
+
+function tpps_submit_summary(&$form_state) {
+  $analysis_options = array(
+    'diversity' => 'Diversity',
+    'population_structure' => 'Population Structure',
+    'association_genetics' => 'Association Genetics',
+    'landscape_genomics' => 'Landscape Genomics',
+    'phenotype_environment' => 'Phenotype-Environment',
+  );
+
+  foreach ($analysis_options as $option => $label) {
+    if (!empty($form_state['saved_values']['summarypage']['analysis']["{$option}_check"])) {
+      tpps_chado_insert_record('projectprop', array(
+        'project_id' => $form_state['ids']['project_id'],
+        'type_id' => array(
+          'cv_id' => array(
+            'name' => 'analysis_property',
+          );
+          'name' => 'Analysis Type',
+          'is_obsolete' => 0,
+        ),
+        'value' => $label,
+      ));
+
+      if (!empty($form_state['saved_values']['summarypage']['analysis']["{$option}_file"]) and file_load($form_state['saved_values']['summarypage']['analysis']["{$option}_file"])) {
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $form_state['ids']['project_id'],
+          'type_id' => array(
+            'cv_id' => array(
+              'name' => 'schema',
+            ),
+            'name' => 'url',
+            'is_obsolete' => 0,
+          ),
+          'value' => file_create_url(file_load($form_state['saved_values']['summarypage']['analysis']["{$option}_file"])->uri),
+          'rank' => $form_state['file_rank'],
+        ));
+        $form_state['file_rank']++;
+
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $form_state['ids']['project_id'],
+          'type_id' => array(
+            'name' => 'source_description',
+            'is_obsolete' => 0,
+          ),
+          'value' => file_create_url(file_load($form_state['saved_values']['summarypage']['analysis']["{$option}_file_description"])->uri),
+        ));
+      }
+    }
+  }
+}
+

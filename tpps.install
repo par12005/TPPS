@@ -351,6 +351,7 @@ function tpps_install_cvterms() {
     'cpSSR' => 'Chloroplast simple sequence repeats.',
     'SSR' => 'Simple sequence repeats. Microsatellite.',
     'time' => 'A quality in which events occur in sequence.',
+    'source_description' => 'A textual description of study type and comments for a source.',
   );
 
   foreach ($terms as $term_name => $term_definition) {
