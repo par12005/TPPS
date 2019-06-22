@@ -87,6 +87,49 @@ function tpps_summary_create_form(array &$form, array $form_state) {
     ),
   );
 
+  $analysis_options = array(
+    'diversity' => 'Diversity',
+    'population_structure' => 'Population Structure',
+    'association_genetics' => 'Association Genetics',
+    'landscape_genomics' => 'Landscape Genomics',
+    'phenotype_environment' => 'Phenotype-Environment',
+  );
+
+  $form['analysis'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Analysis'),
+    '#tree' => TRUE,
+  );
+
+  foreach ($analysis_options as $option => $label) {
+    $form['analysis']["{$option}_check"] = array(
+      '#type' => 'checkbox',
+      '#title' => $label,
+    );
+
+    $form['analysis']["{$option}_file"] = array(
+      '#type' => 'managed_file',
+      '#title' => $label . " file:",
+      '#description' => t('Please upload the file associated with this analysis type'),
+      '#upload_location' => 'public://' . variable_get('tpps_analysis_dir', 'tpps_analysis'),
+      '#states' => array(
+        'visible' => array(
+          ":input[name=\"analysis[{$option}_check]\"]" => array('checked' => TRUE),
+        ),
+      ),
+    );
+
+    $form['analysis']["{$option}_file_description"] = array(
+      '#type' => 'textfield',
+      '#title' => $label . " file description:",
+      '#states' => array(
+        'visible' => array(
+          ":input[name=\"analysis[{$option}_check]\"]" => array('checked' => TRUE),
+        ),
+      ),
+    );
+  }
+
   $form['Back'] = array(
     '#type' => 'submit',
     '#value' => t('Back'),
