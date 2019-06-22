@@ -805,6 +805,20 @@ function page_4_ref(array &$fields, array &$form_state, array $values, $id) {
 
   $fasta['file']['file_upload'] = $upload;
   $fasta['analysis_id']['#required'] = $fasta['seqtype']['#required'] = FALSE;
+  $fasta['file']['file_upload']['#states'] = $fasta['file']['file_upload_existing']['#states'] = array(
+    'visible' => array(
+    array(
+      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')),
+      'or',
+      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual2')),
+    ),
+    ),
+  );
+  $fasta['file']['file_remote']['#states'] = array(
+    'visible' => array(
+      ':input[name="]' . $id . '[genotype][ref-genome]"]' => array('value' => 'url'),
+    ),
+  );
 
   $fields['tripal_fasta'] = $fasta;
 }
