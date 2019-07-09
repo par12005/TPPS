@@ -258,7 +258,7 @@ function genotype(array &$form, array &$form_state, array $values, $id, $genotyp
     '#collapsible' => TRUE,
   );
 
-  page_4_marker_info($fields, $values, $id);
+  page_4_marker_info($fields, $values, $id, $genotype_upload_location);
 
   $fields['marker-type']['SNPs']['#ajax'] = array(
     'callback' => 'snps_file_callback',
@@ -293,6 +293,7 @@ function genotype(array &$form, array &$form_state, array $values, $id, $genotyp
     '#states' => array(
       'visible' => array(
         ':input[name="' . $id . '[genotype][file-type][Genotype Assay]"]' => array('checked' => TRUE),
+		    ':input[name="' . $id . '[genotype][file-type][VCF]"]' => array('checked' => FALSE),
       ),
     ),
     '#description' => 0,
@@ -833,7 +834,7 @@ function page_4_ref(array &$fields, array &$form_state, array $values, $id) {
  * @param string $id
  *   The id of the organism fieldset being populated.
  */
-function page_4_marker_info(array &$fields, array $values, $id) {
+function page_4_marker_info(array &$fields, array $values, $id, $genotype_upload_location) {
 
   $fields['marker-type'] = array(
     '#type' => 'checkboxes',
@@ -932,6 +933,21 @@ function page_4_marker_info(array &$fields, array $values, $id) {
     ),
   );
 
+  $fields['SSRs/cpSSRs']['file'] = array(
+    '#type' => 'managed_file',
+    '#title' => t('SSR File: *'),
+    '#upload_location' => "$genotype_upload_location",
+    '#upload_validators' => array(
+      'file_validate_extensions' => array('xlsx'),
+    ),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="' . $id . '[genotype][marker-type][SSRs/cpSSRs]"]' => array('checked' => TRUE),
+      ),
+    ),
+    '#tree' => TRUE,
+  );  
+  
   $fields['other-marker'] = array(
     '#type' => 'textfield',
     '#title' => t('Define Other Marker Type: *'),
