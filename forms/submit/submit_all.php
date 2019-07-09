@@ -1096,7 +1096,7 @@ function tpps_submit_summary(&$form_state) {
         'type_id' => array(
           'cv_id' => array(
             'name' => 'analysis_property',
-          );
+          ),
           'name' => 'Analysis Type',
           'is_obsolete' => 0,
         ),
