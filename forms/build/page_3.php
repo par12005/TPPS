@@ -71,6 +71,7 @@ function page_3_create_form(array &$form, array &$form_state) {
         ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
       ),
     )) : NULL,
+	'#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv xlsx</span>',
     '#suffix' => '<style>figure {}</style>'
   );
 
