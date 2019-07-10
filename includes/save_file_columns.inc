@@ -54,17 +54,29 @@ function save_file_columns(array &$form, array &$form_state) {
     if (isset($form['organism-1']['genotype'])) {
       for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
 
-        if ($form_state['values']["organism-$i"]['genotype']['marker-type']['Other'] != '0' or $form_state['values']["organism-$i"]['genotype']['marker-type']['SSRs/cpSSRs'] != '0') {
-          if (($file = file_load($form_state['values']["organism-$i"]['genotype']['file'])) and $form_state['values']["organism-$i"]['genotype']['file'] != 0) {
-            file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          }
+        if (!empty($form_state['values']["organism-$i"]['genotype']['files']['snps-assay']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['snps-assay']))) {
+          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
-          $form_state['values']["organism-$i"]['genotype']['file-columns'] = array();
+          $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'] = array();
 
-          if (isset($form["organism-$i"]['genotype']['file']['#value']['columns'])) {
-            foreach ($form["organism-$i"]['genotype']['file']['#value']['columns'] as $col => $val) {
+          if (isset($form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'])) {
+            foreach ($form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'] as $col => $val) {
               if ($col[0] != '#') {
-                $form_state['values']["organism-$i"]['genotype']['file-columns'][$col] = $form["organism-$i"]['genotype']['file']['#value']['columns'][$col];
+                $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'][$col] = $form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'][$col];
+              }
+            }
+          }
+        }
+
+        if (!empty($form_state['values']["organism-$i"]['genotype']['files']['other']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['other']))) {
+          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+
+          $form_state['values']["organism-$i"]['genotype']['files']['other-columns'] = array();
+
+          if (isset($form["organism-$i"]['genotype']['files']['other']['#value']['columns'])) {
+            foreach ($form["organism-$i"]['genotype']['files']['other']['#value']['columns'] as $col => $val) {
+              if ($col[0] != '#') {
+                $form_state['values']["organism-$i"]['genotype']['files']['other-columns'][$col] = $form["organism-$i"]['genotype']['files']['other']['#value']['columns'][$col];
               }
             }
           }

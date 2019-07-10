@@ -87,10 +87,10 @@ function update_environment(array $form, array &$form_state) {
 }
 
 /**
- * Ajax callback for SNPs marker type field.
+ * Ajax callback for genotype files fieldset.
  *
- * Returns the ajax commands to be executed when the SNPs marker type option is
- * changed.
+ * Indicates the element to be updated when the genotype marker types checkboxes
+ * or the genotype file types checkboxes are updated.
  *
  * @param array $form
  *   The form to be updated.
@@ -98,18 +98,10 @@ function update_environment(array $form, array &$form_state) {
  *   The state of the form to be updated.
  *
  * @return array
- *   Ajax commands to be executed when the SNPs marker type option is changed.
+ *   The element in the form to be updated.
  */
-function snps_file_callback(array $form, array $form_state) {
+function genotype_files_callback(array $form, array &$form_state) {
   $id = $form_state['triggering_element']['#parents'][0];
-  $commands = array();
-  $commands[] = ajax_command_replace("#edit-$id-genotype-file-ajax-wrapper", drupal_render($form[$id]['genotype']['file']));
-  if (!$form_state['complete form'][$id]['genotype']['file-type']['Genotype Assay']['#value']) {
-    $commands[] = ajax_command_invoke(".form-item-$id-genotype-file", 'hide');
-  }
-  else {
-    $commands[] = ajax_command_invoke(".form-item-$id-genotype-file", 'show');
-  }
-
-  return array('#type' => 'ajax', '#commands' => $commands);
+  
+  return $form[$id]['genotype']['files'];
 }

@@ -16,7 +16,7 @@
  * @return array
  *   An array containing the content headers and content body.
  */
-function tpps_parse_xlsx($location, $max_rows = 0) {
+function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
 
   // Modified from https://gist.github.com/searbe/3284011
   $content = array();
@@ -61,7 +61,7 @@ function tpps_parse_xlsx($location, $max_rows = 0) {
       $count++;
       $values = array_pad($arr, count($headers), '');
       $row = array_combine($headers, $values);
-      $content[] = $row;
+      $content[] = $sequence ? $values : $row;
       if ($max_rows > 0 and $count >= $max_rows) {
         break;
       }

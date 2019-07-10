@@ -28,9 +28,6 @@ function page_4_create_form(array &$form, array &$form_state) {
     $values = array();
   }
 
-  $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
-  $phenotype_upload_location = 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
-
   $form['#tree'] = TRUE;
 
   $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
@@ -43,7 +40,7 @@ function page_4_create_form(array &$form, array &$form_state) {
       '#type' => 'fieldset',
       '#title' => "<div class=\"fieldset-title\">$name:</div>",
       '#tree' => TRUE,
-      // '#collapsible' => TRUE.
+      '#collapsible' => TRUE,
     );
 
     if (preg_match('/P/', $data_type)) {
@@ -55,7 +52,7 @@ function page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
-      $form["organism-$i"]['phenotype'] = phenotype($form, $form_state, $values, "organism-$i", $phenotype_upload_location);
+      $form["organism-$i"]['phenotype'] = phenotype($form, $form_state, $values, "organism-$i");
 
       if ($i > 1) {
         $form["organism-$i"]['phenotype']['#states'] = array(
@@ -93,7 +90,7 @@ function page_4_create_form(array &$form, array &$form_state) {
       $form["organism-$i"]['phenotype']['file'] = array(
         '#type' => 'managed_file',
         '#title' => t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Data: *'),
-        '#upload_location' => "$phenotype_upload_location",
+        '#upload_location' => 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype'),
         '#upload_validators' => array(
           'file_validate_extensions' => array('csv tsv xlsx'),
         ),
@@ -160,7 +157,7 @@ function page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
-      $form["organism-$i"]['genotype'] = genotype($form, $form_state, $values, "organism-$i", $genotype_upload_location);
+      $form["organism-$i"]['genotype'] = genotype($form, $form_state, $values, "organism-$i");
 
       if ($i > 1) {
         $form["organism-$i"]['genotype']['#states'] = array(
@@ -181,7 +178,7 @@ function page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
-      $form["organism-$i"]['environment'] = environment($form, $form_state, $values, "organism-$i");
+      $form["organism-$i"]['environment'] = environment($form, $form_state, "organism-$i");
 
       if ($i > 1) {
         $form["organism-$i"]['environment']['#states'] = array(
