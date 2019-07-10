@@ -408,7 +408,7 @@ function tpps_file_parsing($accession) {
         ));
       }
 
-      if ($genotype['file-type']['Genotype Assay']) {
+      if ($genotype['files']['file-type']['SNPs Genotype Assay']) {
         $genotype_file_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -418,13 +418,13 @@ function tpps_file_parsing($accession) {
             'name' => 'url',
             'is_obsolete' => 0,
           ),
-          'value' => file_create_url(file_load($genotype['file'])->uri),
+          'value' => file_create_url(file_load($genotype['files']['snps-assay'])->uri),
           'rank' => $file_rank,
         ));
         $file_rank++;
 
-        $file = file_load($genotype['file']);
-        $location = drupal_realpath($file->uri);
+        $file = file_load($genotype['files']['snps-assay']);
+        /*$location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location);
         $groups = $genotype['file-groups'];
         $tree_id_col = $groups['Tree Id']['1'];
@@ -507,13 +507,13 @@ function tpps_file_parsing($accession) {
         }
         tpps_chado_insert_record('genotype', $genotype_vals);
         unset($genotype_vals);
-        $genotype_count = 0;
+        $genotype_count = 0;*/
 
         $file->status = FILE_STATUS_PERMANENT;
         $file = file_save($file);
       }
 
-      if ($genotype['file-type']['Assay Design'] and $genotype['marker-type']['SNPs']) {
+      if ($genotype['files']['file-type']['Assay Design'] and $genotype['marker-type']['SNPs']) {
         $genotype_file_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -523,16 +523,30 @@ function tpps_file_parsing($accession) {
             'name' => 'url',
             'is_obsolete' => 0,
           ),
-          'value' => file_create_url(file_load($genotype['assay-design'])->uri),
+          'value' => file_create_url(file_load($genotype['files']['assay-design'])->uri),
           'rank' => $file_rank,
         ));
-        $file = file_load($genotype['assay-design']);
+        $file = file_load($genotype['files']['assay-design']);
         $file->status = FILE_STATUS_PERMANENT;
         $file = file_save($file);
         $file_rank++;
       }
+      
+      if ($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet']) {
+        $file = file_load($genotype['files']['ssrs']);
+        $location = drupal_realpath($ssrs_file->uri);
+        $content = tpps_parse_xlsx($location, 0, TRUE);
+        
+        
+        // TODO
+      }
+      
+      if ($genotype['files']['file-type']['Other Marker Genotype Spreadsheet']) {
+        $file = $genotype['files']['other'];
+        // TODO
+      }
 
-      if ($genotype['file-type']['VCF']) {
+      if ($genotype['files']['file-type']['VCF']) {
         $genotype_vcf_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -542,7 +556,7 @@ function tpps_file_parsing($accession) {
             'name' => 'url',
             'is_obsolete' => 0,
           ),
-          'value' => file_create_url(file_load($genotype['vcf'])->uri),
+          'value' => file_create_url(file_load($genotype['files']['vcf'])->uri),
           'rank' => $file_rank,
         ));
         $file_rank++;
@@ -559,7 +573,7 @@ function tpps_file_parsing($accession) {
         $species_code = $species_code['value'];
         $marker = 'SNP';
 
-        $vcf_file = file_load($genotype['vcf']);
+        $vcf_file = file_load($genotype['files']['vcf']);
         $location = drupal_realpath($vcf_file->uri);
         $vcf_content = fopen($location, 'r');
 

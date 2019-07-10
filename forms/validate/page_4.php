@@ -642,7 +642,7 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
 
       if (!form_get_errors()) {
         // Preserve file if it is valid.
-        $file = file_load($snps_assay);
+        $file = file_load($genotype['files']['ssrs']);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
       }
     }
