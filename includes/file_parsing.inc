@@ -534,11 +534,25 @@ function tpps_file_parsing($accession) {
       
       if ($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet']) {
         $file = file_load($genotype['files']['ssrs']);
-        $location = drupal_realpath($ssrs_file->uri);
+        $location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location, 0, TRUE);
         
-        
-        // TODO
+        switch ($genotype['files']['ploidy']) {
+          case 'Haploid':
+            // TODO
+            break;
+          
+          case 'Diploid':
+            // TODO
+            break;
+          
+          case 'Polyploid':
+            // TODO
+            break;
+
+          default:
+            break;
+        }
       }
       
       if ($genotype['files']['file-type']['Other Marker Genotype Spreadsheet']) {

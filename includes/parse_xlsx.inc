@@ -57,18 +57,12 @@ function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
     else {
       $count++;
       $values = array_pad($arr, count($headers), '');
-      if (count($content) == 1 and count($headers) < count($values)) {
+      if (!$sequence and count($content) == 1 and count($headers) < count($values)) {
         $i = 0;
         foreach ($vals as $key => $val) {
-          if ($sequence) {
-            $headers[$key] = isset($header_vals[$key]) ? $header_vals[$key] : $key;
-          }
-          else {
             $headers[$i] = isset($header_vals[$key]) ? $header_vals[$key] : $key;
-          }
           $i++;
         }
-        ksort($headers);
         $content['headers'] = $headers;
       }
       $content[] = $sequence ? $vals : array_combine($headers, $values);
