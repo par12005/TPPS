@@ -37,31 +37,41 @@ function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
 
     foreach ($xlrow->c as $cell) {
 
-      $v = (string) $cell->v;
-
+      $v = (int) $cell->v;
+      
       if (isset($cell['t']) && $cell['t'] == 's') {
-        $s = array();
-        $si = $strings->si[(int) $v];
-        $si->registerXPathNamespace('n', 'http://schemas.openxmlformats.org/spreadsheetml/2006/main');
-
-        foreach ($si->xpath('.//n:t') as $t) {
-          $s[] = (string) $t;
-        }
-
-        $v = implode($s);
+        $v = (string) $strings->si[(int) $v]->t;
       }
+      
+      preg_match('/([A-Z]+)([0-9]+)/', (string) $cell['r'], $matches);
+      $vals[$matches[1]] = $v;
       $arr[] = $v;
     }
+    ksort($vals);
 
     if (!isset($headers)) {
-      $headers = $arr;
+      $headers = $sequence ? $vals : $arr;
+      $header_vals = $vals;
       $content['headers'] = $headers;
     }
     else {
       $count++;
       $values = array_pad($arr, count($headers), '');
-      $row = array_combine($headers, $values);
-      $content[] = $sequence ? $values : $row;
+      if (count($content) == 1 and count($headers) < count($values)) {
+        $i = 0;
+        foreach ($vals as $key => $val) {
+          if ($sequence) {
+            $headers[$key] = isset($header_vals[$key]) ? $header_vals[$key] : $key;
+          }
+          else {
+            $headers[$i] = isset($header_vals[$key]) ? $header_vals[$key] : $key;
+          }
+          $i++;
+        }
+        ksort($headers);
+        $content['headers'] = $headers;
+      }
+      $content[] = $sequence ? $vals : array_combine($headers, $values);
       if ($max_rows > 0 and $count >= $max_rows) {
         break;
       }
