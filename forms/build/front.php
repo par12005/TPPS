@@ -70,8 +70,8 @@ function tpps_front_create_form(array &$form, array $form_state) {
   $prefix_text .= "You can <a href='/tpps_details/main'><b>view completed studies here</b></a> or pick up where you left off by using the dropdown box found <a href='#tpps_begin_options'><b>here</b></a> (below). Visit the <a href='https://tpps.readthedocs.io/en/latest/index.html'><b>full manual</b></a> for more details and help.<br />";
   $prefix_text .= "<figure><img style=\"max-height:100%;max-width:100%;\" src=\"{$image_path}TPPS_front_diagram.png\"></figure>";
   $prefix_text .= "TPPS has documentation to assist users with the process of creating a submission, which can be accessed <a target=\"blank\" href=\"https://tpps.readthedocs.io/en/latest/user.html\">here</a>.<br><br></div>";
-  $prefix_text .= "<a name='tpps_begin_options'>";
-  $suffix_text .= "</a>";
+  $prefix_text .= "<div id='tpps_begin_options'>";
+  $suffix_text = "</div>";
   if (isset($form['accession'])) {
     $form['accession']['#prefix'] = $prefix_text;
     $form['accession']['#suffix'] = $suffix_text;
