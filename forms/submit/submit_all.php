@@ -44,7 +44,7 @@ function tpps_submit_all($accession) {
   // For simplicity and efficiency, all fourth page submissions take place in
   // the TPPS File Parsing Tripal Job.
   $includes = array();
-  $includes[] = module_load_include('module', 'tpps');
+  $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
   $args = array($form_state['accession']);
   $jid = tripal_add_job("TPPS File Parsing - {$form_state['accession']}", 'tpps', 'tpps_file_parsing', $args, $uid, 10, $includes, TRUE);
   $form_state['job_id'] = $jid;

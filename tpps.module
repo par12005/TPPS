@@ -26,7 +26,6 @@ require_once 'includes/content_no_header.inc';
 require_once 'includes/submit_email.inc';
 require_once 'includes/status_bar.inc';
 require_once 'includes/save_file_columns.inc';
-require_once 'includes/file_parsing.inc';
 require_once 'includes/accession_coordinates.inc';
 require_once 'includes/submissions.inc';
 require_once 'includes/zenodo.inc';

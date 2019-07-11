@@ -408,7 +408,7 @@ function tpps_file_parsing($accession) {
         ));
       }
 
-      if ($genotype['files']['file-type']['SNPs Genotype Assay']) {
+      if (!empty($genotype['files']['file-type']['SNPs Genotype Assay'])) {
         $genotype_file_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -513,7 +513,7 @@ function tpps_file_parsing($accession) {
         $file = file_save($file);
       }
 
-      if ($genotype['files']['file-type']['Assay Design'] and $genotype['marker-type']['SNPs']) {
+      if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
         $genotype_file_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -532,35 +532,153 @@ function tpps_file_parsing($accession) {
         $file_rank++;
       }
       
-      if ($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet']) {
+      if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $project_id,
+          'type_id' => array(
+            'cv_id' => array(
+              'name' => 'schema',
+            ),
+            'name' => 'url',
+            'is_obsolete' => 0,
+          ),
+          'value' => file_create_url(file_load($genotype['files']['ssrs'])->uri),
+          'rank' => $file_rank,
+        ));
+        $file_rank++;
+        
         $file = file_load($genotype['files']['ssrs']);
         $location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location, 0, TRUE);
-        
-        switch ($genotype['files']['ploidy']) {
-          case 'Haploid':
-            // TODO
-            break;
-          
-          case 'Diploid':
-            // TODO
-            break;
-          
-          case 'Polyploid':
-            // TODO
-            break;
+        $current_id = $form_state['ids']['organism_ids'][$i];
+        $and = db_and()
+          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
+          ->condition('organism_id', "$current_id");
+        $species_code = db_select('chado.organismprop', 'o')
+          ->fields('o', array('value'))
+          ->condition($and)
+          ->range(0, 1)
+          ->execute()
+          ->fetchObject()->value;
 
-          default:
-            break;
+        for ($j = 0; $j < count($content) - 1; $j++) {
+          $stock_id = NULL;
+          $row = $content[$j];
+          reset($row);
+          foreach ($content[$j] as $key => $val) {
+            next($row);
+            $next_key = key($row);
+            if (!isset($stock_id)) {
+              $stock_id = $form_state['ids']['stock_ids'][trim($val)];
+            }
+            else {
+              $genotype_count++;
+              $marker = $genotype['SSRs/cpSSRs'];
+              
+              if ($val === 0 or $val === "0") {
+                $val = "NA";
+              }
+              
+              switch($genotype['files']['ploidy']) {
+                case 'Haploid':
+                  $variant_name = $content['headers'][$key];
+                  $marker_name = $variant_name . $marker;
+                  break;
+
+                case 'Diploid':
+                  if (count($content['headers']) == (count($content[$j]) + 1) / 2) {
+                    // Every other marker column name is left blank.
+                    if (array_key_exists($key, $content['headers'])) {
+                      $last = $content['headers'][$key];
+                      $variant_name = $content['headers'][$key] . "_A";
+                    }
+                    else {
+                      $variant_name = $last . "_B";
+                    }
+                  }
+                  elseif (count($content['headers']) == count($content[$j])) {
+                    // All of the marker column names are filled out.
+                    $variant_name = $content['headers'][$key];
+                    if (count(array_unique($content['headers'])) != count($content['headers'])) {
+                      // The marker column names are duplicates, need to append
+                      // _A and _B.
+                      if ($content['headers'][$key] == $content['headers'][$next_key]) {
+                        $variant_name .= "_A";
+                      }
+                      else {
+                        $variant_name .= "_B";
+                      }
+                    }
+                  }
+                  break;
+
+                case 'Polyploid':
+                  // TODO
+                  break;
+
+                default:
+                  break;
+              }
+              $marker_name = $variant_name . $marker;
+              
+              $marker_id = tpps_chado_insert_record('feature', array(
+                'organism_id' => $current_id,
+                'uniquename' => $marker_name,
+                'type_id' => array(
+                  'cv_id' => array(
+                    'name' => 'sequence',
+                  ),
+                  'name' => 'sequence_variant',
+                  'is_obsolete' => 0,
+                ),
+              ));
+
+              $variant_id = tpps_chado_insert_record('feature', array(
+                'organism_id' => $current_id,
+                'uniquename' => $variant_name,
+                'type_id' => array(
+                  'cv_id' => array(
+                    'name' => 'sequence',
+                  ),
+                  'name' => 'sequence_variant',
+                  'is_obsolete' => 0,
+                ),
+              ));
+
+              $genotype_id = tpps_chado_insert_record('genotype', array(
+                'name' => "$marker-$variant_name-$species_code-$val",
+                'uniquename' => "$marker-$variant_name-$species_code-$val",
+                'description' => $val,
+                'type_id' => array(
+                  'cv_id' => array(
+                    'name' => 'sequence',
+                  ),
+                  'name' => 'microsatellite',
+                  'is_obsolete' => 0,
+                ),
+              ));
+              
+              tpps_chado_insert_record('genotype_call', array(
+                'variant_id' => $variant_id,
+                'marker_id' => $marker_id,
+                'genotype_id' => $genotype_id,
+                'project_id' => $project_id,
+                'stock_id' => $stock_id,
+              ));
+            }
+          }
         }
+
+        $file->status = FILE_STATUS_PERMANENT;
+        $file = file_save($file);
       }
       
-      if ($genotype['files']['file-type']['Other Marker Genotype Spreadsheet']) {
+      if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
         $file = $genotype['files']['other'];
         // TODO
       }
 
-      if ($genotype['files']['file-type']['VCF']) {
+      if (!empty($genotype['files']['file-type']['VCF'])) {
         $genotype_vcf_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -582,8 +700,9 @@ function tpps_file_parsing($accession) {
         $species_code = db_select('chado.organismprop', 'o')
           ->fields('o', array('value'))
           ->condition($and)
+          ->range(0, 1)
           ->execute()
-          ->fetchAssoc();
+          ->fetchObject()->value;
         $species_code = $species_code['value'];
         $marker = 'SNP';
 
@@ -614,10 +733,10 @@ function tpps_file_parsing($accession) {
             $filter = &$vcf_line[6];
             $info = &$vcf_line[7];
 
-            if (empty($marker_name) or $marker_name == '.') {
-              $marker_name = "{$scaffold_id}{$position}$ref:$alt";
+            if (empty($variant_name) or $variant_name == '.') {
+              $variant_name = "{$scaffold_id}{$position}$ref:$alt";
             }
-            $variant_name = $marker_name . $marker;
+            $marker_name = $variant_name . $marker;
 
             if (!array_key_exists($marker_name, $feature_ids)) {
               $marker_id = tpps_chado_insert_record('feature', array(
@@ -821,6 +940,7 @@ function tpps_file_parsing($accession) {
         tpps_chado_insert_record('genotype_call', $genotype_call_vals, array('multi' => TRUE));
         tpps_chado_insert_record('genotypeprop', $genotypeprop_vals, array('multi' => TRUE));
         unset($genotype_vals);
+        unset($genotype_call_vals);
         unset($genotypeprop_vals);
         // dpm('done: ' . date('r'));.
         $vcf_file->status = FILE_STATUS_PERMANENT;
