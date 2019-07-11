@@ -564,6 +564,7 @@ function tpps_file_parsing($accession) {
         for ($j = 0; $j < count($content) - 1; $j++) {
           $stock_id = NULL;
           $row = $content[$j];
+          $marker_num = 0;
           reset($row);
           foreach ($content[$j] as $key => $val) {
             next($row);
@@ -613,7 +614,33 @@ function tpps_file_parsing($accession) {
                   break;
 
                 case 'Polyploid':
-                  // TODO
+                  if (count($content['headers']) == count($content[$j])) {
+                    // All of the marker column names are filled out.
+                    $variant_name = $content['headers'][$key];
+                    $num_headers = count($content['headers']) - 1;
+                    $num_unique_headers = count(array_unique($content['headers'])) - 1;
+                    if ($num_unique_headers != $num_headers) {
+                      // The marker column names are duplicates, need to append
+                      // _1, _2, up to X ploidy.
+                      // The total number of headers divided by the number of
+                      // unique headers should be equal to the ploidy.
+                      $ploidy_suffix = ($marker_num % ($num_headers / $num_unique_headers)) + 1;
+                      $variant_name .= "_$ploidy_suffix";
+                    }
+                  }
+                  else {
+                    $num_headers = count($content['headers']) - 1;
+                    $num_items = count($content[$j]) - 1;
+                    $ploidy_suffix = ($marker_num % ($num_items / $num_headers)) + 1;
+                    if (array_key_exists($key, $content['headers'])) {
+                      $last = $variant_name = $content['headers'][$key];
+                      $variant_name .= "_$ploidy_suffix";
+                    }
+                    else {
+                      $variant_name = "{$last}_$ploidy_suffix";
+                    }
+                  }
+                  $marker_num++;
                   break;
 
                 default:
