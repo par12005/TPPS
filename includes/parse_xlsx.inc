@@ -37,7 +37,10 @@ function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
 
     foreach ($xlrow->c as $cell) {
 
-      $v = (int) $cell->v;
+      $v = isset($cell->v) ? (int) $cell->v : NULL;
+      if (!isset($v)) {
+        continue;
+      }
       
       if (isset($cell['t']) && $cell['t'] == 's') {
         $v = (string) $strings->si[(int) $v]->t;
