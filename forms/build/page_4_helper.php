@@ -48,16 +48,6 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
     $phenotype_number = 0;
   }
 
-  $fields['check'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('I would like to upload a phenotype metadata file'),
-    '#attributes' => array(
-      'data-toggle' => array('tooltip'),
-      'data-placement' => array('right'),
-      'title' => array('Upload a file'),
-    ),
-  );
-
   $fields['add'] = array(
     '#type' => 'button',
     '#name' => t("Add Phenotype-@i", array('@i' => $id)),
@@ -187,6 +177,17 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
       ),
     );
   }
+
+  $fields['check'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('I would like to upload a phenotype metadata file'),
+    '#attributes' => array(
+      'data-toggle' => array('tooltip'),
+      'data-placement' => array('right'),
+      'title' => array('Upload a file'),
+    ),
+    '#description' => t('We encourage that you only upload a phenotype metadata file if you have > 20 phenotypes. Using the fields above instead of uploading a metadata file allows you to select from standardized controlled vocabulary terms, which makes your data more findable, interoperable, and reusable.'),
+  );
 
   $fields['metadata'] = array(
     '#type' => 'managed_file',
