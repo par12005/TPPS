@@ -47,11 +47,7 @@ function page_3_validate_form(array &$form, array &$form_state) {
           $file = file_load($fid);
           $file_name = $file->uri;
           $location = drupal_realpath($file_name);
-          $content = tpps_parse_xlsx($location);
-
-          if (!empty($form_state['values']['tree-accession']['file-no-header'])) {
-            tpps_content_no_header($content);
-          }
+          $content = tpps_parse_xlsx($location, 0, !empty($form_state['values']['tree-accession']['file-no-header']));
 
           $empty = $form_state['values']['tree-accession']['file-empty'];
           foreach ($content as $row => $vals) {
@@ -114,11 +110,7 @@ function page_3_validate_form(array &$form, array &$form_state) {
             $file = file_load($fid);
             $file_name = $file->uri;
             $location = drupal_realpath($file_name);
-            $content = tpps_parse_xlsx($location);
-
-            if (isset($form_state['values']['tree-accession']["species-$i"]['file-no-header']) and $form_state['values']['tree-accession']["species-$i"]['file-no-header'] === 1) {
-              tpps_content_no_header($content);
-            }
+            $content = tpps_parse_xlsx($location, 0, !empty($form_state['values']['tree-accession']["species-$i"]['file-no-header']));
 
             $empty = $form_state['values']['tree-accession']["species-$i"]['file-empty'];
             foreach ($content as $row => $vals) {

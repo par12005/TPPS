@@ -202,13 +202,9 @@ function tpps_submit_page_1(array &$form_state) {
 
     $file = file_load($firstpage['publication']['secondaryAuthors']['file']);
     $location = drupal_realpath($file->uri);
-    $content = tpps_parse_xlsx($location);
+    $content = tpps_parse_xlsx($location, 0, !empty($firstpage['publication']['secondaryAuthors']['file-no-header']));
     $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
     $groups = $firstpage['publication']['secondaryAuthors']['file-groups'];
-
-    if (!empty($firstpage['publication']['secondaryAuthors']['file-no-header'])) {
-      tpps_content_no_header($content);
-    }
 
     $first_name = $groups['First Name']['1'];
     $last_name = $groups['Last Name']['2'];

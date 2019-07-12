@@ -37,20 +37,10 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name) {
   $file_2_content = tpps_parse_xlsx($file_2_location);
 
   if (gettype($file_1_id_name) == 'integer') {
-    $file_1_id_name = $file_1_content['headers'][$file_1_id_name];
-    $last_row = array();
-    foreach ($file_1_content['headers'] as $num => $val) {
-      $last_row[$val] = $val;
-    }
-    $file_1_content[] = $last_row;
+    $file_1_content[] = $file_1_content['headers'];
   }
   if (gettype($file_2_id_name) == 'integer') {
-    $file_2_id_name = $file_2_content['headers'][$file_2_id_name];
-    $last_row = array();
-    foreach ($file_2_content['headers'] as $num => $val) {
-      $last_row[$val] = $val;
-    }
-    $file_2_content[] = $last_row;
+    $file_2_content[] = $file_2_content['headers'];
   }
 
   $missing_ids = array();

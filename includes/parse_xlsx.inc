@@ -16,7 +16,7 @@
  * @return array
  *   An array containing the content headers and content body.
  */
-function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
+function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
 
   // Modified from https://gist.github.com/searbe/3284011
   $content = array();
@@ -38,9 +38,16 @@ function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
   $right_hex = unpack('H*', $matches[2]);
   $right = base_convert($right_hex[1], 16, 10);
   
+  if ($no_header) {
+    for ($i = $left; $i <= $right; $i++) {
+      $key = pack('H*', base_convert($i, 10, 16));
+      $content['headers'][$key] = $i - $left;
+    }
+  }
+  
   $count = 0;
   foreach ($xlrows as $xlrow) {
-    $vals = $arr = array();
+    $vals = array();
 
     foreach ($xlrow->c as $cell) {
 
@@ -55,21 +62,13 @@ function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
       
       preg_match('/([A-Z]+)([0-9]+)/', (string) $cell['r'], $matches);
       $vals[$matches[1]] = $v;
-      $arr[] = $v;
     }
 
     ksort($vals);
     $values = array();
     for ($i = $left; $i <= $right; $i++) {
       $key = pack('H*', base_convert($i, 10, 16));
-      if (isset($content['headers'])) {
-        $index = $sequence ? $key : $content['headers'][$i - $left];
-        $values[$index] = isset($vals[$key]) ? $vals[$key] : '';
-      }
-      else {
-        $index = $sequence ? $key : $i - $left;
-        $values[$index] = isset($vals[$key]) ? $vals[$key] : $key;
-      }
+      $values[$key] = isset($vals[$key]) ? $vals[$key] : NULL;
     }
 
     if (!isset($content['headers'])) {

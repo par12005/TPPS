@@ -549,7 +549,10 @@ function tpps_file_parsing($accession) {
         
         $file = file_load($genotype['files']['ssrs']);
         $location = drupal_realpath($file->uri);
-        $content = tpps_parse_xlsx($location, 0, TRUE);
+        $content = tpps_parse_xlsx($location);
+        while (($k = array_search(NULL, $content['headers']))){
+          unset($content['headers'][$k]);
+        }
         $current_id = $form_state['ids']['organism_ids'][$i];
         $and = db_and()
           ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)

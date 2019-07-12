@@ -22,7 +22,6 @@ require_once 'includes/standard_coord.inc';
 require_once 'includes/validate_columns.inc';
 require_once 'includes/cron.inc';
 require_once 'includes/parse_xlsx.inc';
-require_once 'includes/content_no_header.inc';
 require_once 'includes/submit_email.inc';
 require_once 'includes/status_bar.inc';
 require_once 'includes/save_file_columns.inc';
@@ -342,25 +341,21 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
       $location = drupal_realpath("$file_name");
-      $content = tpps_parse_xlsx($location, 3);
-
-      if (!empty($no_header)) {
-        tpps_content_no_header($content);
-      }
+      $content = tpps_parse_xlsx($location, 3, !empty($no_header));
 
       $options = $element['columns-options']['#value'];
 
       $first = TRUE;
 
-      foreach ($content['headers'] as $item) {
+      foreach ($content['headers'] as $key => $item) {
         $item_parents = $element['#parents'];
         array_pop($item_parents);
         $item_parents[] = end($element['#parents']) . '-columns';
-        $item_parents[] = $item;
+        $item_parents[] = $key;
 
         $default = drupal_array_get_nested_value($saved_vals, $item_parents);
         // dpm($item_parents);
-        $element['columns'][$item] = array(
+        $element['columns'][$key] = array(
           '#type' => 'select',
           '#title' => $item,
           '#options' => $options,
@@ -376,12 +371,12 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
         if ($first) {
           $first = FALSE;
-          $first_col = $item;
+          $first_col = $key;
         }
 
         if (!empty($no_header)) {
-          $element['columns'][$item]['#title'] = '';
-          $element['columns'][$item]['#attributes']['title'] = array("Select the type of data column $item holds");
+          $element['columns'][$key]['#title'] = '';
+          $element['columns'][$key]['#attributes']['title'] = array("Select the type of data column $item holds");
         }
 
         if ($form_state['stage'] == TPPS_PAGE_3) {
@@ -393,7 +388,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
           else {
             $species_num = "";
           }
-          $element['columns'][$item]['#ajax'] = array(
+          $element['columns'][$key]['#ajax'] = array(
             'callback' => 'tpps_accession_pop_group',
             'wrapper' => "population-mapping$species_num",
           );
@@ -419,7 +414,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       preg_match('/\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/s', $table, $matches);
       
       $element['columns'][$first_col]['#prefix'] = "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>" . $element['columns'][$first_col]['#prefix'];
-      $element['columns'][$item]['#suffix'] = "</tr>" . $matches[2] . "</div>";
+      $element['columns'][$key]['#suffix'] = "</tr>" . $matches[2] . "</div>";
     }
   }
 

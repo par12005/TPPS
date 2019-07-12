@@ -620,7 +620,7 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
         $ssrs_file = file_load($genotype['files']['ssrs']);
         $location = drupal_realpath($ssrs_file->uri);
         $content = tpps_parse_xlsx($location, 1);
-        $id_col_name = $content['headers'][0];
+        $id_col_name = key($content['headers']);
 
         if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
           $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
