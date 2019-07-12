@@ -30,7 +30,14 @@ function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
   $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
 
   $xlrows = $sheet->sheetData->row;
-
+  
+  // Get width of the data in the file.
+  preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $sheet->dimension['ref'], $matches);
+  $left_hex = unpack('H*', $matches[1]);
+  $left = base_convert($left_hex[1], 16, 10);
+  $right_hex = unpack('H*', $matches[2]);
+  $right = base_convert($right_hex[1], 16, 10);
+  
   $count = 0;
   foreach ($xlrows as $xlrow) {
     $vals = $arr = array();
@@ -50,25 +57,27 @@ function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
       $vals[$matches[1]] = $v;
       $arr[] = $v;
     }
-    ksort($vals);
 
-    if (!isset($headers)) {
-      $headers = $sequence ? $vals : $arr;
-      $header_vals = $vals;
-      $content['headers'] = $headers;
+    ksort($vals);
+    $values = array();
+    for ($i = $left; $i <= $right; $i++) {
+      $key = pack('H*', base_convert($i, 10, 16));
+      if (isset($content['headers'])) {
+        $index = $sequence ? $key : $content['headers'][$i - $left];
+        $values[$index] = isset($vals[$key]) ? $vals[$key] : '';
+      }
+      else {
+        $index = $sequence ? $key : $i - $left;
+        $values[$index] = isset($vals[$key]) ? $vals[$key] : $key;
+      }
+    }
+
+    if (!isset($content['headers'])) {
+      $content['headers'] = $values;
     }
     else {
       $count++;
-      $values = array_pad($arr, count($headers), '');
-      if (!$sequence and count($content) == 1 and count($headers) < count($values)) {
-        $i = 0;
-        foreach ($vals as $key => $val) {
-            $headers[$i] = isset($header_vals[$key]) ? $header_vals[$key] : $key;
-          $i++;
-        }
-        $content['headers'] = $headers;
-      }
-      $content[] = $sequence ? $vals : array_combine($headers, $values);
+      $content[] = $values;
       if ($max_rows > 0 and $count >= $max_rows) {
         break;
       }
