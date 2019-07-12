@@ -616,12 +616,40 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
       form_set_error("$id][genotype][files][ssrs]", "SSRs/cpSSRs Spreadsheet: field is required.");
     }
     elseif (!empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and !empty($genotype['files']['ploidy'])) {
-      if (!form_get_errors()) {
-        $ssrs_file = file_load($genotype['files']['ssrs']);
-        $location = drupal_realpath($ssrs_file->uri);
-        $content = tpps_parse_xlsx($location, 1);
-        $id_col_name = key($content['headers']);
+      $ssrs_file = file_load($genotype['files']['ssrs']);
+      $location = drupal_realpath($ssrs_file->uri);
+      $content = tpps_parse_xlsx($location, 1);
+      $id_col_name = key($content['headers']);
+      while (($k = array_search(NULL, $content['headers']))){
+        unset($content['headers'][$k]);
+      }
+      $num_columns = count($content[0]) - 1;
+      $num_unique_columns = count(array_unique($content['headers'])) - 1;
+      
+      if ($num_unique_columns != $num_columns) {
+        switch ($genotype['files']['ploidy']) {
+          case 'Haploid':
+            form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter header values for those columns or remove those columns, then reupload your file.");
+            break;
+          
+          case 'Diploid':
+            if ($num_columns / $num_unique_columns !== 2) {
+              form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file.");
+            }
+            break;
 
+          case 'Polyploid':
+            if ($num_columns % $num_unique_columns !== 0) {
+              form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file.");
+            }
+            break;
+
+          default:
+            break;
+        }
+      }
+      
+      if (!form_get_errors()) {
         if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
           $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
           $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-groups']['Tree Id']['1'];
