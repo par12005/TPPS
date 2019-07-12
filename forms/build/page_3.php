@@ -6,6 +6,7 @@
  */
 
 require_once 'page_3_ajax.php';
+require_once 'page_3_helper.php';
 
 /**
  * Creates the Accession file form page.
@@ -27,6 +28,10 @@ function page_3_create_form(array &$form, array &$form_state) {
   }
   else {
     $values = array();
+  }
+  
+  if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != 1){
+    study_location($form, $form_state);
   }
 
   $form['tree-accession'] = array(

@@ -35,8 +35,6 @@ function page_2_create_form(array &$form, array $form_state) {
 
   study_date('Ending', $form, $values, $form_state);
 
-  study_location($form, $values, $form_state);
-
   $form['data_type'] = array(
     '#type' => 'select',
     '#title' => t('Data Type: *'),

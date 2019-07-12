@@ -28,3 +28,22 @@ function tpps_accession_pop_group(array &$form, array $form_state) {
     return $form['tree-accession']['pop-group'];
   }
 }
+
+/**
+ * Ajax callback for the map button field.
+ *
+ * This function indicates that the map button field needs to be updated. This
+ * happens when the user selects a coordinate projection or custom option from
+ * the coordinate projection field.
+ *
+ * @param array $form
+ *   The form to be updated.
+ * @param array $form_state
+ *   The state of the form to be updated.
+ *
+ * @return array
+ *   The element in the form to be updated.
+ */
+function study_location_map_ajax(array $form, array $form_state) {
+  return $form['study_location']['map-button'];
+}

@@ -68,7 +68,6 @@ function tpps_flatten(array $state) {
   unset($data[TPPS_PAGE_1]);
 
   $page_2 = &$data[TPPS_PAGE_2];
-  $loc = &$page_2['study_location'];
 
   if (isset($page_2['#cleared']) and $page_2['#cleared']) {
     $data['#page_2_cleared'] = TRUE;
@@ -80,13 +79,17 @@ function tpps_flatten(array $state) {
   $data['Experiment Starting Year'] = isset($page_2['StartingDate']['year']) ? $page_2['StartingDate']['year'] : NULL;
   $data['Experiment Ending Month'] = isset($page_2['EndingDate']['month']) ? $page_2['EndingDate']['month'] : NULL;
   $data['Experiment Ending Year'] = isset($page_2['EndingDate']['year']) ? $page_2['EndingDate']['year'] : NULL;
-  $data['#location_type'] = (isset($loc['type']) and $loc['type']) ? $loc['type'] : NULL;
+  if (!empty($page_2['study_location'])) {
+    // Legacy support for old TPPS submissions.
+    $legacy_loc = &$page_2['study_location'];
+    $data['#location_type'] = (isset($legacy_loc['type']) and $legacy_loc['type']) ? $legacy_loc['type'] : NULL;
 
-  if ($data['#location_type'] == '2' and isset($loc['custom'])) {
-    $data['Study Location'] = $loc['custom'];
-  }
-  elseif ($data['#location_type'] and isset($loc['coordinates'])) {
-    $data['Study Location'] = $loc['coordinates'];
+    if ($data['#location_type'] == '2' and isset($legacy_loc['custom'])) {
+      $data['Study Location'] = $legacy_loc['custom'];
+    }
+    elseif ($data['#location_type'] and isset($legacy_loc['coordinates'])) {
+      $data['Study Location'] = $legacy_loc['coordinates'];
+    }
   }
 
   if (isset($page_2['data_type']) and $page_2['data_type']) {
@@ -236,7 +239,18 @@ function tpps_flatten(array $state) {
   else {
     $data['#page_3_cleared'] = FALSE;
   }
+  
+  $loc = &$page_3['study_location'];
+  $data['#location_type'] = (isset($loc['type']) and $loc['type']) ? $loc['type'] : NULL;
+
+  if ($data['#location_type'] == '2' and isset($loc['custom'])) {
+    $data['Study Location'] = $loc['custom'];
+  }
+  elseif ($data['#location_type'] and isset($loc['coordinates'])) {
+    $data['Study Location'] = $loc['coordinates'];
+  }
   $page_3 = &$data[TPPS_PAGE_3]['tree-accession'];
+
   if (isset($page_3['check']) and $page_3['check']) {
     for ($i = 1; $i <= $data['#number_organisms']; $i++) {
       if (isset($page_3["species-$i"]['file']) and $page_3["species-$i"]['file']) {

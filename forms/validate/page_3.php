@@ -15,6 +15,21 @@
  */
 function page_3_validate_form(array &$form, array &$form_state) {
   if ($form_state['submitted'] == '1') {
+    
+    if (!$form_state['values']['study_location']['type']) {
+      form_set_error('study_location][type', 'Location Format: field is required.');
+    }
+    elseif ($form_state['values']['study_location']['type'] != '2') {
+      if (!$form_state['values']['study_location']['coordinates']) {
+        form_set_error('study_location][coordinates', 'Coordinates: field is required.');
+      }
+    }
+    else {
+      if (!$form_state['values']['study_location']['custom']) {
+        form_set_error('study_location][custom', 'Custom Location: field is required.');
+      }
+    }
+
     $species_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     if ($species_number == 1 or $form_state['values']['tree-accession']['check'] == '0') {
       if ($form_state['values']['tree-accession']['file'] != "") {
