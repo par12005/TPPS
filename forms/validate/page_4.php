@@ -593,7 +593,7 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][snps-assay", "SNPS Assay file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
         }
       }
 
@@ -665,7 +665,7 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][snps-assay", "SNPS Assay file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
         }
       }
 
