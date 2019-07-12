@@ -33,7 +33,7 @@ function tpps_parse_xlsx($location, $max_rows = 0, $sequence = FALSE) {
 
   $count = 0;
   foreach ($xlrows as $xlrow) {
-    $arr = array();
+    $vals = $arr = array();
 
     foreach ($xlrow->c as $cell) {
 
