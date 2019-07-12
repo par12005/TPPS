@@ -148,15 +148,19 @@ function tpps_file_parsing($accession) {
         foreach ($column_vals as $col => $val) {
           if ($val == '4') {
             $time_col_name = $col;
-            break;
+          }
+          if ($val == '5') {
+            $replicate_col_name = $col;
           }
         }
       }
       else {
         foreach ($column_vals as $col => $val) {
-          if ($val == '3') {
+          if ($val == '2') {
             $time_col_name = $col;
-            break;
+          }
+          if ($val == '3') {
+            $replicate_col_name = $col;
           }
         }
       }
@@ -168,20 +172,20 @@ function tpps_file_parsing($accession) {
             $name = strtolower($name_raw);
             foreach ($content[$j] as $column_name => $val) {
               if (strtolower($name) == strtolower($column_name)) {
-                $values[$name] = $val;
+                $values[$name_raw] = $val;
                 break;
               }
             }
           }
         }
         else {
-          $phenotypes = array(strtolower($content[$j][$phenotype_name]));
           $name = strtolower($content[$j][$phenotype_name]);
-          $values = array(strtolower($content[$j][$phenotype_name]) => $content[$j][$phenotype_val]);
+          $values = array($phenotype_name => $content[$j][$phenotype_val]);
         }
         $stock_unique = $content[$j][$tree_id_col];
 
         foreach ($values as $name => $value) {
+          $name = $content['headers'][$name];
           $attr = db_select('chado.cvterm', 'c')
             ->fields('c', array('cvterm_id'))
             ->condition('c.name', db_like($phenotypes_meta[$name]['attr']), 'LIKE')
@@ -217,9 +221,42 @@ function tpps_file_parsing($accession) {
           else {
             $observable_id = NULL;
           }
+          
+          $phenotype_prefix = $stock_unique;
+          if (isset($replicate_col_name)) {
+            $phenotype_prefix .= "-" . $content[$j][$replicate_col_name];
+            $stock_id = $form_state['ids']['stock_ids'][$phenotype_prefix] = tpps_chado_insert_record('stock', array(
+              'uniquename' => $form_state['accession'] . '-' . $phenotype_prefix,
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'sequence',
+                ),
+                'name' => 'clone',
+                'is_obsolete' => 0,
+              ),
+              'organism_id' => $form_state['ids']['organism_ids'][$i],
+            ));
+            
+            tpps_chado_insert_record('stock_relationship', array(
+              'subject_id' => $form_state['ids']['stock_ids'][$stock_unique],
+              'object_id' => $stock_id,
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'sequence',
+                ),
+                'name' => 'has_part',
+                'is_obsolete' => 0,
+              ),
+            ));
+            
+            tpps_chado_insert_record('project_stock', array(
+              'stock_id' => $stock_id,
+              'project_id' => $form_state['ids']['project_id'],
+            ));
+          }
 
           $phenotype_ids[] = tpps_chado_insert_record('phenotype', array(
-            'uniquename' => "$stock_unique-$name-$j",
+            'uniquename' => "$phenotype_prefix-$name-$j",
             'name' => $name,
             'attr_id' => $attr_id,
             'observable_id' => $observable_id,
@@ -227,18 +264,20 @@ function tpps_file_parsing($accession) {
           ));
 
           tpps_chado_insert_record('stock_phenotype', array(
-            'stock_id' => $form_state['ids']['stock_ids'][$stock_unique],
+            'stock_id' => $form_state['ids']['stock_ids'][$phenotype_prefix],
             'phenotype_id' => end($phenotype_ids),
           ));
 
-          $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
-            'phenotype_id' => end($phenotype_ids),
-            'type_id' => array(
-              'name' => 'time',
-              'is_obsolete' => 0,
-            ),
-            'value' => $content[$j][$time_col_name],
-          ));
+          if (isset($time_col_name)) {
+            $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
+              'phenotype_id' => end($phenotype_ids),
+              'type_id' => array(
+                'name' => 'time',
+                'is_obsolete' => 0,
+              ),
+              'value' => $content[$j][$time_col_name],
+            ));
+          }
 
           $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
             'phenotype_id' => end($phenotype_ids),

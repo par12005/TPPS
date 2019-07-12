@@ -211,16 +211,19 @@ function validate_phenotype(array $phenotype, $id, array $form, array &$form_sta
     if (!form_get_errors()) {
       // Preserve file if it is valid.
       $file = file_load($form_state['values'][$id]['phenotype']['file']);
+      $phenotype_file_location = drupal_realpath($file->uri);
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
 
       if ($phenotype['format'] == 0) {
         $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
         $phenotype_file_name_cols = $groups['Phenotype Data']['0'];
+        $content = tpps_parse_xlsx($phenotype_file_location, 1);
 
         if (isset($phenotype_file_name_cols) and isset($phenotype_name_col)) {
           $meta_content = tpps_parse_xlsx(drupal_realpath(file_load($phenotype_meta)->uri));
           $missing_phenotypes = array();
-          foreach ($phenotype_file_name_cols as $name) {
+          foreach ($phenotype_file_name_cols as $key) {
+            $name = $content['headers'][$key];
             $exists = FALSE;
             for ($i = 0; $i < count($meta_content) - 1; $i++) {
               if (strtolower($meta_content[$i][$phenotype_name_col]) == strtolower($name)) {
@@ -250,7 +253,8 @@ function validate_phenotype(array $phenotype, $id, array $form, array &$form_sta
         }
         elseif (isset($phenotype_file_name_cols)) {
           $missing_phenotypes = array();
-          foreach ($phenotype_file_name_cols as $name) {
+          foreach ($phenotype_file_name_cols as $key) {
+            $name = $content['headers'][$key];
             $exists = FALSE;
             for ($i = 1; $i <= $phenotype_number; $i++) {
               if (strtolower($phenotype['phenotypes-meta'][$i]['name']) == strtolower($name)) {
@@ -293,10 +297,7 @@ function validate_phenotype(array $phenotype, $id, array $form, array &$form_sta
           }
         }
         elseif (isset($phenotype_file_name_col)) {
-          $phenotype_file = file_load($phenotype_file);
-          $phenotype_file_name = $phenotype_file->uri;
-          $location = drupal_realpath("$phenotype_file_name");
-          $content = tpps_parse_xlsx($location);
+          $content = tpps_parse_xlsx($phenotype_file_location);
 
           $missing_phenotypes = array();
           for ($i = 0; $i < count($content) - 1; $i++) {
@@ -347,7 +348,7 @@ function validate_phenotype(array $phenotype, $id, array $form, array &$form_sta
       }
 
       if (!form_get_errors()) {
-        $rows = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + $phenotype['file-no-header'];
+        $rows = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + !empty($phenotype['file-no-header']);
         if ($phenotype['format'] == 0) {
           $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows * count($phenotype_file_name_cols);
         }
