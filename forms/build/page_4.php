@@ -84,8 +84,10 @@ function page_4_create_form(array &$form, array &$form_state) {
         ),
       );
 
-      $form["organism-$i"]['phenotype']['format'][0]['#suffix'] = "<figure><img src=\"{$image_path}phenotype_format_1.png\"></figure>";
-      $form["organism-$i"]['phenotype']['format'][1]['#suffix'] = "<figure><img src=\"{$image_path}phenotype_format_2.png\"></figure>";
+      $form["organism-$i"]['phenotype']['format'][0]['#prefix'] = "<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>";
+      $form["organism-$i"]['phenotype']['format'][0]['#suffix'] = "</figcaption></figure>";
+      $form["organism-$i"]['phenotype']['format'][1]['#prefix'] = "<figure><img src=\"{$image_path}phenotype_format_2.png\"><figcaption>";
+      $form["organism-$i"]['phenotype']['format'][1]['#suffix'] = "</figcaption></figure>";
 
       $form["organism-$i"]['phenotype']['file'] = array(
         '#type' => 'managed_file',

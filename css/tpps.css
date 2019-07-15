@@ -1,6 +1,9 @@
-.form-type-radio figure {
+.form-type-radios figure {
   display: inline-block;
   margin-top: 20px;
+}
+figcaption {
+  text-align: center;
 }
 label figure {
   display: inline-block;
@@ -47,9 +50,11 @@ th > div.form-type-select > .ajax-progress {
 .form-item {
   margin-bottom: 5px;
 }
-.form-type-managed-file {
+.form-type-managed-file, .form-type-radios {
   border-top: 1px solid #b5e0ba;
   border-bottom: 1px solid #b5e0ba;
+}
+.form-type-managed-file {
   padding: 10px 20px 0px;
 }
 .form-managed-file {
