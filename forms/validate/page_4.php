@@ -41,7 +41,8 @@ function page_4_validate_form(array &$form, array &$form_state) {
         unset($form_state['values']["organism-$i"]['environment']);
       }
       if (isset($form_state['values']["organism-$i"]['environment'])) {
-        validate_environment($form_state['values']["organism-$i"]['environment'], "organism-$i");
+        $env = &$form_state['values']["organism-$i"]['environment'];
+        validate_environment($env, "organism-$i");
       }
     }
 
@@ -731,20 +732,34 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
  * @param string $id
  *   The id of the organism fieldset being validated.
  */
-function validate_environment(array $environment, $id) {
+function validate_environment(array &$environment, $id) {
   if ($environment['use_layers']) {
     // Using cartogratree environment layers.
-    $layer_check = '';
-    foreach ($environment['env_layers'] as $layer) {
-      if (gettype($layer) == 'array') {
-        $layer_check .= "1";
+    $group_check = '';
+    $new_layers = array();
+    foreach ($environment['env_layers_groups'] as $group_id) {
+      if (!empty($group_id)) {
+        $group_check .= "1";
+        $layer_query = db_select('cartogratree_layers', 'l')
+          ->fields('l', array('title'))
+          ->condition('group_id', $group_id)
+          ->execute();
+        while (($layer = $layer_query->fetchObject())) {
+          if (!empty($environment['env_layers'][$layer->title])) {
+            $new_layers[$layer->title] = $environment['env_layers'][$layer->title];
+          }
+        }
       }
       else {
-        $layer_check .= $layer;
+        $group_check .= "0";
       }
     }
+    $environment['env_layers'] = $new_layers;
 
-    if (preg_match('/^0+$/', $layer_check)) {
+    if (preg_match('/^0+$/', $group_check)) {
+      form_set_error("$id][environment][env_layers_groups", 'Cartogratree environmental layers groups: field is required.');
+    }
+    elseif (empty($new_layers)) {
       form_set_error("$id][environment][env_layers", 'CartograTree environmental layers: field is required.');
     }
   }

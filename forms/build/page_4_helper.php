@@ -621,6 +621,17 @@ function environment(array &$form, array &$form_state, $id) {
       '#description' => 'If the layer you used is not in the list below, then the administrator for this site might not have enabled the layer group you used. Please contact them for more information.',
     );
 
+    $fields['env_layers_groups'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Cartogratree Environmental Layers: *',
+      '#collapsible' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+
     $fields['env_layers'] = array(
       '#type' => 'fieldset',
       '#title' => 'Cartogratree Environmental Layers: *',
@@ -647,9 +658,21 @@ function environment(array &$form, array &$form_state, $id) {
       $layer_title = $layer_info['title'];
       $layer_group = $layer_info['group'];
       $layer_params = $layer_info['params'];
+
+      $fields['env_layers_groups'][$layer_group] = array(
+        '#type' => 'checkbox',
+        '#title' => $layer_group,
+        '#return_value' => $layer_info['group_id'],
+      );
+
       $fields['env_layers'][$layer_title] = array(
         '#type' => 'checkbox',
         '#title' => "<strong>$layer_title</strong> - $layer_group",
+        '#states' => array(
+          'visible' => array(
+            ':input[name="' . $id . '[environment][env_layers_groups][' . $layer_group . ']"]' => array('checked' => TRUE),
+          ),
+        ),
         '#return_value' => $layer_id,
       );
 
@@ -660,6 +683,7 @@ function environment(array &$form, array &$form_state, $id) {
           '#description' => "Please select the parameters you used from the $layer_title layer.",
           '#states' => array(
             'visible' => array(
+              ':input[name="' . $id . '[environment][env_layers_groups][' . $layer_group . ']"]' => array('checked' => TRUE),
               ':input[name="' . $id . '[environment][env_layers][' . $layer_title . ']"]' => array('checked' => TRUE),
             ),
           ),
