@@ -557,40 +557,42 @@ function tpps_submit_page_3(array &$form_state) {
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   $organism_number = $firstpage['organism']['number'];
 
-  if ($thirdpage['study_location']['type'] !== '2') {
-    $standard_coordinate = explode(',', tpps_standard_coord($thirdpage['study_location']['coordinates']));
-    $latitude = $standard_coordinate[0];
-    $longitude = $standard_coordinate[1];
+  if (!empty($thirdpage['study_location'])) {
+    if ($thirdpage['study_location']['type'] !== '2') {
+      $standard_coordinate = explode(',', tpps_standard_coord($thirdpage['study_location']['coordinates']));
+      $latitude = $standard_coordinate[0];
+      $longitude = $standard_coordinate[1];
 
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'gps_latitude',
-        'is_obsolete' => 0,
-      ),
-      'value' => $latitude,
-    ));
+      tpps_chado_insert_record('projectprop', array(
+        'project_id' => $form_state['ids']['project_id'],
+        'type_id' => array(
+          'name' => 'gps_latitude',
+          'is_obsolete' => 0,
+        ),
+        'value' => $latitude,
+      ));
 
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'gps_longitude',
-        'is_obsolete' => 0,
-      ),
-      'value' => $longitude,
-    ));
-  }
-  else {
-    $location = $thirdpage['study_location']['custom'];
+      tpps_chado_insert_record('projectprop', array(
+        'project_id' => $form_state['ids']['project_id'],
+        'type_id' => array(
+          'name' => 'gps_longitude',
+          'is_obsolete' => 0,
+        ),
+        'value' => $longitude,
+      ));
+    }
+    else {
+      $location = $thirdpage['study_location']['custom'];
 
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'experiment_location',
-        'is_obsolete' => 0,
-      ),
-      'value' => $location,
-    ));
+      tpps_chado_insert_record('projectprop', array(
+        'project_id' => $form_state['ids']['project_id'],
+        'type_id' => array(
+          'name' => 'experiment_location',
+          'is_obsolete' => 0,
+        ),
+        'value' => $location,
+      ));
+    }
   }
 
   $form_state['ids']['stock_ids'] = array();
