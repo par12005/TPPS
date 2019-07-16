@@ -30,6 +30,12 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_maps_api_key', NULL),
   );
 
+  $form['tpps_geocode_api_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('TPPS OpenCage Geocoding API Key'),
+    '#default_value' => variable_get('tpps_geocode_api_key', NULL),
+  );
+
   $form['tpps_zenodo_api_key'] = array(
     '#type' => 'textfield',
     '#title' => t('TPPS Zenodo API Key'),
