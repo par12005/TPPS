@@ -98,6 +98,7 @@ function page_3_create_form(array &$form, array &$form_state) {
     '8' => 'County',
     '9' => 'District',
     '12' => 'Population Group',
+    '13' => 'Clone Number',
   );
 
   if ($species_number > 1) {
@@ -240,6 +241,7 @@ function page_3_create_form(array &$form, array &$form_state) {
         '8' => 'County',
         '9' => 'District',
         '12' => 'Population Group',
+        '13' => 'Clone Number',
       );
 
       if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != '1') {

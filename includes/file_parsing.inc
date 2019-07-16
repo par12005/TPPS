@@ -150,7 +150,7 @@ function tpps_file_parsing($accession) {
             $time_col_name = $col;
           }
           if ($val == '5') {
-            $replicate_col_name = $col;
+            $clone_col_name = $col;
           }
         }
       }
@@ -160,7 +160,7 @@ function tpps_file_parsing($accession) {
             $time_col_name = $col;
           }
           if ($val == '3') {
-            $replicate_col_name = $col;
+            $clone_col_name = $col;
           }
         }
       }
@@ -223,36 +223,8 @@ function tpps_file_parsing($accession) {
           }
           
           $phenotype_prefix = $stock_unique;
-          if (isset($replicate_col_name)) {
-            $phenotype_prefix .= "-" . $content[$j][$replicate_col_name];
-            $stock_id = $form_state['ids']['stock_ids'][$phenotype_prefix] = tpps_chado_insert_record('stock', array(
-              'uniquename' => $form_state['accession'] . '-' . $phenotype_prefix,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
-                ),
-                'name' => 'clone',
-                'is_obsolete' => 0,
-              ),
-              'organism_id' => $form_state['ids']['organism_ids'][$i],
-            ));
-            
-            tpps_chado_insert_record('stock_relationship', array(
-              'subject_id' => $form_state['ids']['stock_ids'][$stock_unique],
-              'object_id' => $stock_id,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
-                ),
-                'name' => 'has_part',
-                'is_obsolete' => 0,
-              ),
-            ));
-            
-            tpps_chado_insert_record('project_stock', array(
-              'stock_id' => $stock_id,
-              'project_id' => $form_state['ids']['project_id'],
-            ));
+          if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $phenotype['file-empty']) {
+            $phenotype_prefix .= "-" . $content[$j][$clone_col_name];
           }
 
           $phenotype_ids[] = tpps_chado_insert_record('phenotype', array(
