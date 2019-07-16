@@ -13,8 +13,7 @@
 function tpps_refresh_views() {
   global $base_url;
   if (module_exists('cartogratree')) {
-    $response = file_get_contents("https://$base_url/cartogratree/api/v2/trees/reload");
-    dpm($response);
+    $response = file_get_contents("$base_url/cartogratree/api/v2/trees/reload");
   }
 }
 
