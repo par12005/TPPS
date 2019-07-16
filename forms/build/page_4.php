@@ -27,7 +27,6 @@ function page_4_create_form(array &$form, array &$form_state) {
   else {
     $values = array();
   }
-  dpm($form_state['saved_values']);
 
   $form['#tree'] = TRUE;
 
