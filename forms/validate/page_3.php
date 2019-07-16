@@ -60,20 +60,32 @@ function page_3_validate_form(array &$form, array &$form_state) {
         if (!form_get_errors()) {
           $id_name = $groups['Tree Id']['1'];
           $col_names = $form_state['values']['tree-accession']['file-columns'];
-          $fid = $form_state['values']['tree-accession']['file'];
-          $file = file_load($fid);
-          $file_name = $file->uri;
-          $location = drupal_realpath($file_name);
-          $content = tpps_parse_xlsx($location, 0, !empty($form_state['values']['tree-accession']['file-no-header']));
-
+          $file_name = file_load($form_state['values']['tree-accession']['file'])->uri;
+          $content = tpps_parse_xlsx(drupal_realpath($file_name), 0, !empty($form_state['values']['tree-accession']['file-no-header']));
           $empty = $form_state['values']['tree-accession']['file-empty'];
+          $location_options = $required_groups['Location (latitude/longitude or country/state or population group)'];
+          $location_columns = $groups['Location (latitude/longitude or country/state or population group)'];
+          $location_types = $location_columns['#type'];
+          if (gettype($location_types) !== 'array') {
+            $location_types = array($location_types);
+          }
           foreach ($content as $row => $vals) {
-            if ($row !== 'headers' and isset($vals[$id_name]) and $vals[$id_name] !== "") {
-              foreach ($col_names as $item => $val) {
-                if ((!isset($vals[$item]) or $vals[$item] === $empty) and $val) {
-                  $field = $file_element['columns'][$item]['#options'][$val];
-                  form_set_error("tree-accession][file][columns][{$vals[$id_name]}", "Tree Accession file: the required field $field is empty for tree \"{$vals[$id_name]}\".");
+            if ($row !== 'headers' and !empty($vals[$id_name])) {
+              $valid_row = FALSE;
+              foreach ($location_types as $type) {
+                $valid_combination = TRUE;
+                foreach ($location_options[$type] as $column) {
+                  if (empty($vals[$location_columns[$column]]) or $vals[$location_columns[$column]] == $empty) {
+                    $valid_combination = FALSE;
+                  }
                 }
+                if ($valid_combination) {
+                  $valid_row = TRUE;
+                  break;
+                }
+              }
+              if (!$valid_row) {
+                form_set_error("tree-accession][file", "Tree Accession file: Some location information is missing for tree \"{$vals[$id_name]}\".");
               }
             }
           }

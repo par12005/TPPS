@@ -89,6 +89,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   // dpm($groups);
   foreach ($required_groups as $group => $combinations) {
     $group_valid = FALSE;
+    $groups[$group]['#type'] = array();
     foreach ($combinations as $name => $combination) {
       $combination_valid = TRUE;
       foreach ($combination as $type) {
@@ -98,9 +99,8 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
         }
       }
       if ($combination_valid) {
-        $groups[$group]['#type'] = $name;
+        $groups[$group]['#type'][] = $name;
         $group_valid = TRUE;
-        break;
       }
     }
 
@@ -111,7 +111,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
 
   foreach ($groups as $key => $group) {
     foreach ($group as $opt_num => $col_names) {
-      if ($opt_num != '#type' and count($col_names) == 1) {
+      if (count($col_names) == 1) {
         $groups[$key][$opt_num] = $col_names[0];
       }
     }
