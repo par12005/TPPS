@@ -629,9 +629,30 @@ function tpps_submit_page_3(array &$form_state) {
   }
 
   $form_state['ids']['stock_ids'] = array();
-
-  if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0) {
-    // Single file.
+  
+  for ($i = 1; $i <= $organism_number; $i++) {
+    if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0) {
+      $tree_accession = $thirdpage['tree-accession'];
+    }
+    else {
+      $tree_accession = $thirdpage['tree-accession']["species-$i"];
+    }
+    $fid = $tree_accession['file'];
+    $column_vals = $tree_accession['file-columns'];
+    $groups = $tree_accession['file-groups'];
+    $loc_group = $groups['Location (latitude/longitude or country/state or population group)'];
+    $loc_type = $loc_group['#type'];
+    
+    if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
+      if ($groups['Genus and Species']['#type'] == 'separate') {
+        $genus_col_name = $groups['Genus and Species']['6'];
+        $species_col_name = $groups['Genus and Species']['7'];
+      }
+      else {
+        $org_col_name = $groups['Genus and Species']['10'];
+      }
+    }
+    
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
@@ -641,15 +662,13 @@ function tpps_submit_page_3(array &$form_state) {
         'name' => 'url',
         'is_obsolete' => 0,
       ),
-      'value' => file_create_url(file_load($thirdpage['tree-accession']['file'])->uri),
+      'value' => file_create_url(file_load($fid)->uri),
       'rank' => $form_state['file_rank'],
     ));
-
-    $file = file_load($thirdpage['tree-accession']['file']);
+    
+    $file = file_load($fid);
     $location = drupal_realpath($file->uri);
     $content = tpps_parse_xlsx($location);
-    $column_vals = $thirdpage['tree-accession']['file-columns'];
-    $groups = $thirdpage['tree-accession']['file-groups'];
 
     foreach ($column_vals as $col => $val) {
       if ($val == '8') {
@@ -665,165 +684,93 @@ function tpps_submit_page_3(array &$form_state) {
 
     $id_col_accession_name = $groups['Tree Id']['1'];
 
-    if ($organism_number == '1') {
-      // Only one species.
-      for ($i = 0; $i < count($content) - 1; $i++) {
-        $tree_id = $content[$i][$id_col_accession_name];
-        $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
-          'uniquename' => $form_state['accession'] . '-' . $tree_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'obi',
-            ),
-            'name' => 'organism',
-            'is_obsolete' => 0,
-          ),
-          'organism_id' => $form_state['ids']['organism_ids'][1],
-        ));
-
-        if (isset($clone_col_name) and !empty($content[$i][$clone_col_name]) and $content[$i][$clone_col_name] !== $thirdpage['tree-accession']['file-empty']) {
-          $clone_name = $tree_id . '-' . $content[$i][$clone_col_name];
-
-          $clone_id = $form_state['ids']['stock_ids'][$clone_name] = tpps_chado_insert_record('stock', array(
-            'uniquename' => $form_state['accession'] . '-' . $clone_name,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'sequence',
-              ),
-              'name' => 'clone',
-              'is_obsolete' => 0,
-            ),
-            'organism_id' => $form_state['ids']['organism_ids'][1],
-          ));
-
-          tpps_chado_insert_record('stock_relationship', array(
-            'subject_id' => $form_state['ids']['stock_ids'][$tree_id],
-            'object_id' => $clone_id,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'sequence',
-              ),
-              'name' => 'has_part',
-              'is_obsolete' => 0,
-            ),
-          ));
+    for ($j = 0; $j < count($content) - 1; $j++) {
+      $tree_id = $content[$j][$id_col_accession_name];
+      if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
+        if ($groups['Genus and Species']['#type'] == 'separate') {
+          $genus_full_name = "{$content[$j][$genus_col_name]} {$content[$j][$species_col_name]}";
         }
-      }
-    }
-    else {
-      // Multiple species in one tree accession file -> users must define
-      // species and genus columns get genus/species column.
-      if ($groups['Genus and Species']['#type'] == 'separate') {
-        $genus_col_name = $groups['Genus and Species']['6'];
-        $species_col_name = $groups['Genus and Species']['7'];
+        else {
+          $genus_full_name = "{$content[$j][$org_col_name]}";
+        }
+        $id = $form_state['ids']['organism_ids'][array_search($genus_full_name, $firstpage['organism'])];
       }
       else {
-        $org_col_name = $groups['Genus and Species']['10'];
+        $id = $form_state['ids']['organism_ids'][$i];
       }
+      
+      $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
+        'uniquename' => $form_state['accession'] . '-' . $tree_id,
+        'type_id' => array(
+          'cv_id' => array(
+            'name' => 'obi',
+          ),
+          'name' => 'organism',
+          'is_obsolete' => 0,
+        ),
+        'organism_id' => $id,
+      ));
 
-      // Parse file.
-      for ($i = 0; $i < count($content) - 1; $i++) {
-        $tree_id = $content[$i][$id_col_accession_name];
-        for ($j = 1; $j <= $organism_number; $j++) {
-          // Match genus and species to genus and species given on page 1.
-          if ($groups['Genus and Species']['#type'] == 'separate') {
-            $genus_full_name = "{$content[$i][$genus_col_name]} {$content[$i][$species_col_name]}";
-          }
-          else {
-            $genus_full_name = "{$content[$i][$org_col_name]}";
-          }
+      if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $tree_accession['file-empty']) {
+        $clone_name = $tree_id . '-' . $content[$j][$clone_col_name];
 
-          if ($firstpage['organism'][$j] == $genus_full_name) {
-            // Obtain organism id from matching species.
-            $id = $form_state['ids']['organism_ids'][$j];
-            break;
-          }
-        }
-
-        // Create record with the new id.
-        $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
-          'uniquename' => $form_state['accession'] . '-' . $tree_id,
+        $clone_id = $form_state['ids']['stock_ids'][$clone_name] = tpps_chado_insert_record('stock', array(
+          'uniquename' => $form_state['accession'] . '-' . $clone_name,
           'type_id' => array(
             'cv_id' => array(
-              'name' => 'obi',
+              'name' => 'sequence',
             ),
-            'name' => 'organism',
+            'name' => 'clone',
             'is_obsolete' => 0,
           ),
           'organism_id' => $id,
         ));
 
-        if (isset($clone_col_name) and !empty($content[$i][$clone_col_name]) and $content[$i][$clone_col_name] !== $thirdpage['tree-accession']['file-empty']) {
-          $clone_name = $tree_id . '-' . $content[$i][$clone_col_name];
-
-          $clone_id = $form_state['ids']['stock_ids'][$clone_name] = tpps_chado_insert_record('stock', array(
-            'uniquename' => $form_state['accession'] . '-' . $clone_name,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'sequence',
-              ),
-              'name' => 'clone',
-              'is_obsolete' => 0,
+        tpps_chado_insert_record('stock_relationship', array(
+          'subject_id' => $form_state['ids']['stock_ids'][$tree_id],
+          'object_id' => $clone_id,
+          'type_id' => array(
+            'cv_id' => array(
+              'name' => 'sequence',
             ),
-            'organism_id' => $id,
-          ));
-
-          tpps_chado_insert_record('stock_relationship', array(
-            'subject_id' => $form_state['ids']['stock_ids'][$tree_id],
-            'object_id' => $clone_id,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'sequence',
-              ),
-              'name' => 'has_part',
-              'is_obsolete' => 0,
-            ),
-          ));
-        }
+            'name' => 'has_part',
+            'is_obsolete' => 0,
+          ),
+        ));
       }
-    }
 
-    if ($groups['Location (latitude/longitude or country/state or population group)']['#type'] == 'gps') {
-      $lat_name = $groups['Location (latitude/longitude or country/state or population group)']['4'];
-      $long_name = $groups['Location (latitude/longitude or country/state or population group)']['5'];
+      $stockprops = array();
+      if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $tree_accession['file-empty']) {
+        $tree_id .= '-' . $content[$i][$clone_col_name];
+      }
+      $stock_id = $form_state['ids']['stock_ids'][$tree_id];
 
-      for ($i = 0; $i < count($content) - 1; $i++) {
-        $tree_id = $content[$i][$id_col_accession_name];
-        if (isset($clone_col_name) and !empty($content[$i][$clone_col_name]) and $content[$i][$clone_col_name] !== $thirdpage['tree-accession']['file-empty']) {
-          $tree_id .= '-' . $content[$i][$clone_col_name];
-        }
-        $stock_id = $form_state['ids']['stock_ids'][$tree_id];
-
+      if (!empty($loc_group['4']) and !empty($content[$j][$loc_group['4']]) and !empty($loc_group['5']) and !empty($content[$j][$loc_group['5']])) {
+        $lat_name = $loc_group['4'];
+        $lng_name = $loc_group['5'];
+        
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
           'type_id' => array(
             'name' => 'gps_latitude',
             'is_obsolete' => 0,
           ),
-          'value' => $content[$i][$lat_name],
+          'value' => $content[$j][$lat_name],
         ));
-
+        
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
           'type_id' => array(
             'name' => 'gps_longitude',
             'is_obsolete' => 0,
           ),
-          'value' => $content[$i][$long_name],
+          'value' => $content[$j][$lng_name],
         ));
       }
-    }
-    elseif ($groups['Location (latitude/longitude or country/state or population group)']['#type'] == 'approx') {
-      $country_col_name = $groups['Location (latitude/longitude or country/state or population group)']['2'];
-      $state_col_name = $groups['Location (latitude/longitude or country/state or population group)']['3'];
-
-      for ($i = 0; $i < count($content) - 1; $i++) {
-        $tree_id = $content[$i][$id_col_accession_name];
-        if (isset($clone_col_name) and !empty($content[$i][$clone_col_name]) and $content[$i][$clone_col_name] !== $thirdpage['tree-accession']['file-empty']) {
-          $tree_id .= '-' . $content[$i][$clone_col_name];
-        }
-        $stock_id = $form_state['ids']['stock_ids'][$tree_id];
-
+      elseif (!empty($loc_group['2']) and !empty($content[$j][$loc_group['2']]) and !empty($loc_group['3']) and !empty($content[$j][$loc_group['3']])) {
+        $country_col_name = $loc_group['2'];
+        $state_col_name = $loc_group['3'];
+        
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
           'type_id' => array(
@@ -833,7 +780,7 @@ function tpps_submit_page_3(array &$form_state) {
             'name' => 'Country',
             'is_obsolete' => 0,
           ),
-          'value' => $content[$i][$country_col_name],
+          'value' => $content[$j][$country_col_name],
         ));
 
         tpps_chado_insert_record('stockprop', array(
@@ -845,10 +792,10 @@ function tpps_submit_page_3(array &$form_state) {
             'name' => 'State',
             'is_obsolete' => 0,
           ),
-          'value' => $content[$i][$state_col_name],
+          'value' => $content[$j][$state_col_name],
         ));
-
-        $location = "{$content[$i][$state_col_name]}, {$content[$i][$country_col_name]}";
+        
+        $location = "{$content[$j][$state_col_name]}, {$content[$j][$country_col_name]}";
 
         if (isset($county_col_name)) {
           tpps_chado_insert_record('stockprop', array(
@@ -857,9 +804,9 @@ function tpps_submit_page_3(array &$form_state) {
               'name' => 'county',
               'is_obsolete' => 0,
             ),
-            'value' => $content[$i][$county_col_name],
+            'value' => $content[$j][$county_col_name],
           ));
-          $location = "{$content[$i][$county_col_name]}, $location";
+          $location = "{$content[$j][$county_col_name]}, $location";
         }
 
         if (isset($district_col_name)) {
@@ -869,11 +816,11 @@ function tpps_submit_page_3(array &$form_state) {
               'name' => 'district',
               'is_obsolete' => 0,
             ),
-            'value' => $content[$i][$district_col_name],
+            'value' => $content[$j][$district_col_name],
           ));
-          $location = "{$content[$i][$district_col_name]}, $location";
+          $location = "{$content[$j][$district_col_name]}, $location";
         }
-
+        
         if (isset($geo_api_key)) {
           if (!array_key_exists($location, $form_state['locations'])) {
             $query = urlencode($location);
@@ -924,18 +871,10 @@ function tpps_submit_page_3(array &$form_state) {
           }
         }
       }
-    }
-    else {
-      $pop_group_name = $groups['Location (latitude/longitude or country/state or population group)']['12'];
-
-      for ($i = 0; $i < count($content) - 1; $i++) {
-        $tree_id = $content[$i][$id_col_accession_name];
-        if (isset($clone_col_name) and !empty($content[$i][$clone_col_name]) and $content[$i][$clone_col_name] !== $thirdpage['tree-accession']['file-empty']) {
-          $tree_id .= '-' . $content[$i][$clone_col_name];
-        }
-        $stock_id = $form_state['ids']['stock_ids'][$tree_id];
-
-        $loc = $thirdpage['tree-accession']['pop-group'][$content[$i][$pop_group_name]];
+      else {
+        $pop_group_name = $loc_group['12'];
+        
+        $loc = $thirdpage['tree-accession']['pop-group'][$content[$j][$pop_group_name]];
         $coord = tpps_standard_coord($loc);
 
         if ($coord) {
@@ -1010,297 +949,6 @@ function tpps_submit_page_3(array &$form_state) {
     $file->status = FILE_STATUS_PERMANENT;
     $file = file_save($file);
     $form_state['file_rank']++;
-  }
-  else {
-    // Multiple files, sorted by species.
-    for ($i = 1; $i <= $organism_number; $i++) {
-      tpps_chado_insert_record('projectprop', array(
-        'project_id' => $form_state['ids']['project_id'],
-        'type_id' => array(
-          'cv_id' => array(
-            'name' => 'schema',
-          ),
-          'name' => 'url',
-          'is_obsolete' => 0,
-        ),
-        'value' => drupal_realpath(file_load($thirdpage['tree-accession']["species-$i"]['file'])->uri),
-        'rank' => $form_state['file_rank'],
-      ));
-
-      $file = file_load($thirdpage['tree-accession']["species-$i"]['file']);
-      $location = drupal_realpath($file->uri);
-      $content = tpps_parse_xlsx($location);
-      $column_vals = $thirdpage['tree-accession']["species-$i"]['file-columns'];
-      $groups = $thirdpage['tree-accession']["species-$i"]['file-groups'];
-
-      $id_col_accession_name = $groups['Tree Id']['1'];
-
-      foreach ($column_vals as $col => $val) {
-        if ($val == '8') {
-          $county_col_name = $col;
-        }
-        if ($val == '9') {
-          $district_col_name = $col;
-        }
-        if ($val == '13') {
-          $clone_col_name = $col;
-        }
-      }
-
-      for ($j = 0; $j < count($content) - 1; $j++) {
-        $tree_id = $content[$j][$id_col_accession_name];
-        $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
-          'uniquename' => $form_state['accession'] . '-' . $tree_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'obi',
-            ),
-            'name' => 'organism',
-            'is_obsolete' => 0,
-          ),
-          'organism_id' => $form_state['ids']['organism_ids'][$i],
-        ));
-
-        if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $thirdpage['tree-accession']['file-empty']) {
-          $clone_name = $tree_id . '-' . $content[$j][$clone_col_name];
-
-          $clone_id = $form_state['ids']['stock_ids'][$clone_name] = tpps_chado_insert_record('stock', array(
-            'uniquename' => $form_state['accession'] . '-' . $clone_name,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'sequence',
-              ),
-              'name' => 'clone',
-              'is_obsolete' => 0,
-            ),
-            'organism_id' => $form_state['ids']['organism_ids'][$i],
-          ));
-
-          tpps_chado_insert_record('stock_relationship', array(
-            'subject_id' => $form_state['ids']['stock_ids'][$tree_id],
-            'object_id' => $clone_id,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'sequence',
-              ),
-              'name' => 'has_part',
-              'is_obsolete' => 0,
-            ),
-          ));
-        }
-
-        if ($groups['Location (latitude/longitude or country/state or population group)']['#type'] == 'gps') {
-          $lat_name = $groups['Location (latitude/longitude or country/state or population group)']['4'];
-          $long_name = $groups['Location (latitude/longitude or country/state or population group)']['5'];
-          if (isset($clone_col_name) and !empty($content[$i][$clone_col_name]) and $content[$i][$clone_col_name] !== $thirdpage['tree-accession']['file-empty']) {
-            $tree_id .= '-' . $content[$i][$clone_col_name];
-          }
-
-          tpps_chado_insert_record('stockprop', array(
-            'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-            'type_id' => array(
-              'name' => 'gps_latitude',
-              'is_obsolete' => 0,
-            ),
-            'value' => $content[$j][$lat_name],
-          ));
-
-          tpps_chado_insert_record('stockprop', array(
-            'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-            'type_id' => array(
-              'name' => 'gps_longitude',
-              'is_obsolete' => 0,
-            ),
-            'value' => $content[$j][$long_name],
-          ));
-        }
-        elseif ($groups['Location (latitude/longitude or country/state or population group)']['#type'] == 'approx') {
-          $country_col_name = $groups['Location (latitude/longitude or country/state or population group)']['2'];
-          $state_col_name = $groups['Location (latitude/longitude or country/state or population group)']['3'];
-          if (isset($clone_col_name) and !empty($content[$i][$clone_col_name]) and $content[$i][$clone_col_name] !== $thirdpage['tree-accession']['file-empty']) {
-            $tree_id .= '-' . $content[$i][$clone_col_name];
-          }
-
-          tpps_chado_insert_record('stockprop', array(
-            'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'tripal_contact',
-              ),
-              'name' => 'Country',
-              'is_obsolete' => 0,
-            ),
-            'value' => $content[$j][$country_col_name],
-          ));
-
-          tpps_chado_insert_record('stockprop', array(
-            'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'tripal_contact',
-              ),
-              'name' => 'State',
-              'is_obsolete' => 0,
-            ),
-            'value' => $content[$j][$state_col_name],
-          ));
-
-          $location = "{$content[$i][$state_col_name]}, {$content[$i][$country_col_name]}";
-
-          if (isset($county_col_name)) {
-            tpps_chado_insert_record('stockprop', array(
-              'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-              'type_id' => array(
-                'name' => 'county',
-                'is_obsolete' => 0,
-              ),
-              'value' => $content[$j][$county_col_name],
-            ));
-            $location = "{$content[$i][$county_col_name]}, $location";
-          }
-
-          if (isset($district_col_name)) {
-            tpps_chado_insert_record('stockprop', array(
-              'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-              'type_id' => array(
-                'name' => 'district',
-                'is_obsolete' => 0,
-              ),
-              'value' => $content[$j][$district_col_name],
-            ));
-            $location = "{$content[$i][$district_col_name]}, $location";
-          }
-          
-          if (isset($geo_api_key)) {
-            if (!array_key_exists($location, $form_state['locations'])) {
-              $query = urlencode($location);
-              $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-              $response = json_decode(file_get_contents($url));
-  
-              if ($response->total_results) {
-                $results = $response->results;
-                if ($response->total_results > 1 and !isset($district_col_name) and !isset($country_col_name)) {
-                  foreach ($results as $item) {
-                    if ($item->components->_type == 'state') {
-                      $result = $item->geometry;
-                      break;
-                    }
-                  }
-                  if (!isset($result)) {
-                    $result = $results[0]->geometry;
-                  }
-                }
-                else {
-                  $result = $results[0]->geometry;
-                }
-              }
-              $form_state['locations'][$location] = isset($result) ? $result : NULL;
-            }
-            else {
-              $result = $form_state['locations'][$location];
-            }
-  
-            if (!empty($result)) {
-              tpps_chado_insert_record('stockprop', array(
-                'stock_id' => $stock_id,
-                'type_id' => array(
-                  'name' => 'gps_latitude',
-                  'is_obsolete' => 0,
-                ),
-                'value' => $result->lat,
-              ));
-        
-              tpps_chado_insert_record('stockprop', array(
-                'stock_id' => $stock_id,
-                'type_id' => array(
-                  'name' => 'gps_longitude',
-                  'is_obsolete' => 0,
-                ),
-                'value' => $result->lng,
-              ));
-            }
-          }
-        }
-        else {
-          $pop_group_name = $groups['Location (latitude/longitude or country/state or population group)']['12'];
-
-          $loc = $thirdpage['tree-accession']['pop-group'][$content[$i][$pop_group_name]];
-          $coord = tpps_standard_coord($loc);
-
-          if ($coord) {
-            $parts = explode(',', $coord);
-            tpps_chado_insert_record('stockprop', array(
-              'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-              'type_id' => array(
-                'name' => 'gps_latitude',
-                'is_obsolete' => 0,
-              ),
-              'value' => $parts[0],
-            ));
-
-            tpps_chado_insert_record('stockprop', array(
-              'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-              'type_id' => array(
-                'name' => 'gps_longitude',
-                'is_obsolete' => 0,
-              ),
-              'value' => $parts[1],
-            ));
-          }
-          else {
-            tpps_chado_insert_record('stockprop', array(
-              'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'nd_geolocation_property',
-                ),
-                'name' => 'Location',
-                'is_obsolete' => 0,
-              ),
-              'value' => $loc,
-            ));
-
-            if (isset($geo_api_key)) {
-              if (!array_key_exists($location, $form_state['locations'])) {
-                $query = urlencode($loc);
-                $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-                $response = json_decode(file_get_contents($url));
-    
-                $result = ($response->total_results) ? $response->results[0]->geometry : NULL;
-                $form_state['locations'][$location] = $result;
-              }
-              else {
-                $result = $form_state['locations'][$location];
-              }
-
-              if (!empty($result)) {
-                tpps_chado_insert_record('stockprop', array(
-                  'stock_id' => $stock_id,
-                  'type_id' => array(
-                    'name' => 'gps_latitude',
-                    'is_obsolete' => 0,
-                  ),
-                  'value' => $result->lat,
-                ));
-          
-                tpps_chado_insert_record('stockprop', array(
-                  'stock_id' => $stock_id,
-                  'type_id' => array(
-                    'name' => 'gps_longitude',
-                    'is_obsolete' => 0,
-                  ),
-                  'value' => $result->lng,
-                ));
-              }
-            }
-          }
-        }
-      }
-
-      $file->status = FILE_STATUS_PERMANENT;
-      $file = file_save($file);
-      $form_state['file_rank']++;
-    }
   }
 
   foreach ($form_state['ids']['stock_ids'] as $tree_id => $stock_id) {
