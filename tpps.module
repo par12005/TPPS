@@ -28,6 +28,7 @@ require_once 'includes/save_file_columns.inc';
 require_once 'includes/accession_coordinates.inc';
 require_once 'includes/submissions.inc';
 require_once 'includes/zenodo.inc';
+require_once 'includes/match_trees.inc';
 
 /**
  * Implements hook_menu().

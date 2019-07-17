@@ -34,6 +34,12 @@ function page_3_create_form(array &$form, array &$form_state) {
     study_location($form, $form_state);
   }
 
+  $form['existing_trees'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('These trees may have been studied in the past'),
+    '#description' => t('If this box is checked, TPPS will try to find trees with matching ids around the same location as the ones you are providing. If it finds them successfully, it will mark them as the same tree in the database.'),
+  );
+
   $form['tree-accession'] = array(
     '#type' => 'fieldset',
     '#title' => t('Tree Accession Information'),
