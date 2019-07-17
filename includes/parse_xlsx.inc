@@ -30,21 +30,21 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
   $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
 
   $xlrows = $sheet->sheetData->row;
-  
+
   // Get width of the data in the file.
   preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $sheet->dimension['ref'], $matches);
   $left_hex = unpack('H*', $matches[1]);
   $left = base_convert($left_hex[1], 16, 10);
   $right_hex = unpack('H*', $matches[2]);
   $right = base_convert($right_hex[1], 16, 10);
-  
+
   if ($no_header) {
     for ($i = $left; $i <= $right; $i++) {
       $key = pack('H*', base_convert($i, 10, 16));
       $content['headers'][$key] = $i - $left;
     }
   }
-  
+
   $count = 0;
   foreach ($xlrows as $xlrow) {
     $vals = array();
@@ -55,11 +55,11 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
       if (!isset($v)) {
         continue;
       }
-      
+
       if (isset($cell['t']) && $cell['t'] == 's') {
         $v = (string) $strings->si[(int) $v]->t;
       }
-      
+
       preg_match('/([A-Z]+)([0-9]+)/', (string) $cell['r'], $matches);
       $vals[$matches[1]] = $v;
     }

@@ -18,7 +18,7 @@
 function tpps_submit_all($accession) {
 
   $transaction = db_transaction();
-  
+
   try {
     $form_state = tpps_load_submission($accession);
     $values = $form_state['saved_values'];
@@ -560,7 +560,7 @@ function tpps_submit_page_3(array &$form_state) {
   $organism_number = $firstpage['organism']['number'];
   $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
   $form_state['locations'] = array();
-  
+
   if (!empty($thirdpage['study_location'])) {
     if ($thirdpage['study_location']['type'] !== '2') {
       $standard_coordinate = explode(',', tpps_standard_coord($thirdpage['study_location']['coordinates']));
@@ -614,7 +614,7 @@ function tpps_submit_page_3(array &$form_state) {
             ),
             'value' => $result->lat,
           ));
-    
+
           tpps_chado_insert_record('projectprop', array(
             'project_id' => $form_state['ids']['project_id'],
             'type_id' => array(
@@ -629,7 +629,7 @@ function tpps_submit_page_3(array &$form_state) {
   }
 
   $form_state['ids']['stock_ids'] = array();
-  
+
   for ($i = 1; $i <= $organism_number; $i++) {
     if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0) {
       $tree_accession = $thirdpage['tree-accession'];
@@ -642,7 +642,7 @@ function tpps_submit_page_3(array &$form_state) {
     $groups = $tree_accession['file-groups'];
     $loc_group = $groups['Location (latitude/longitude or country/state or population group)'];
     $loc_type = $loc_group['#type'];
-    
+
     if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
       if ($groups['Genus and Species']['#type'] == 'separate') {
         $genus_col_name = $groups['Genus and Species']['6'];
@@ -652,7 +652,7 @@ function tpps_submit_page_3(array &$form_state) {
         $org_col_name = $groups['Genus and Species']['10'];
       }
     }
-    
+
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
@@ -665,7 +665,7 @@ function tpps_submit_page_3(array &$form_state) {
       'value' => file_create_url(file_load($fid)->uri),
       'rank' => $form_state['file_rank'],
     ));
-    
+
     $file = file_load($fid);
     $location = drupal_realpath($file->uri);
     $content = tpps_parse_xlsx($location);
@@ -698,7 +698,7 @@ function tpps_submit_page_3(array &$form_state) {
       else {
         $id = $form_state['ids']['organism_ids'][$i];
       }
-      
+
       $form_state['ids']['stock_ids'][$tree_id] = tpps_chado_insert_record('stock', array(
         'uniquename' => $form_state['accession'] . '-' . $tree_id,
         'type_id' => array(
@@ -748,7 +748,7 @@ function tpps_submit_page_3(array &$form_state) {
       if (!empty($loc_group['4']) and !empty($content[$j][$loc_group['4']]) and !empty($loc_group['5']) and !empty($content[$j][$loc_group['5']])) {
         $lat_name = $loc_group['4'];
         $lng_name = $loc_group['5'];
-        
+
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
           'type_id' => array(
@@ -757,7 +757,7 @@ function tpps_submit_page_3(array &$form_state) {
           ),
           'value' => $content[$j][$lat_name],
         ));
-        
+
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
           'type_id' => array(
@@ -770,7 +770,7 @@ function tpps_submit_page_3(array &$form_state) {
       elseif (!empty($loc_group['2']) and !empty($content[$j][$loc_group['2']]) and !empty($loc_group['3']) and !empty($content[$j][$loc_group['3']])) {
         $country_col_name = $loc_group['2'];
         $state_col_name = $loc_group['3'];
-        
+
         tpps_chado_insert_record('stockprop', array(
           'stock_id' => $stock_id,
           'type_id' => array(
@@ -794,7 +794,7 @@ function tpps_submit_page_3(array &$form_state) {
           ),
           'value' => $content[$j][$state_col_name],
         ));
-        
+
         $location = "{$content[$j][$state_col_name]}, {$content[$j][$country_col_name]}";
 
         if (isset($county_col_name)) {
@@ -820,7 +820,7 @@ function tpps_submit_page_3(array &$form_state) {
           ));
           $location = "{$content[$j][$district_col_name]}, $location";
         }
-        
+
         if (isset($geo_api_key)) {
           if (!array_key_exists($location, $form_state['locations'])) {
             $query = urlencode($location);
@@ -859,7 +859,7 @@ function tpps_submit_page_3(array &$form_state) {
               ),
               'value' => $result->lat,
             ));
-      
+
             tpps_chado_insert_record('stockprop', array(
               'stock_id' => $stock_id,
               'type_id' => array(
@@ -873,7 +873,7 @@ function tpps_submit_page_3(array &$form_state) {
       }
       else {
         $pop_group_name = $loc_group['12'];
-        
+
         $loc = $thirdpage['tree-accession']['pop-group'][$content[$j][$pop_group_name]];
         $coord = tpps_standard_coord($loc);
 
@@ -931,7 +931,7 @@ function tpps_submit_page_3(array &$form_state) {
                 ),
                 'value' => $result->lat,
               ));
-        
+
               tpps_chado_insert_record('stockprop', array(
                 'stock_id' => $stock_id,
                 'type_id' => array(
@@ -957,7 +957,7 @@ function tpps_submit_page_3(array &$form_state) {
       'project_id' => $form_state['ids']['project_id'],
     ));
   }
-  
+
   if (!empty($thirdpage['existing_trees'])) {
     tpps_matching_trees($form_state['ids']['project_id']);
   }
@@ -1043,7 +1043,13 @@ function tpps_submit_page_4(array &$form_state) {
   }
 }
 
-function tpps_submit_summary(&$form_state) {
+/**
+ * Submits additional data provided in the summary page to the database.
+ *
+ * @param array $form_state
+ *   The state of the form being submitted.
+ */
+function tpps_submit_summary(array &$form_state) {
   $analysis_options = array(
     'diversity' => 'Diversity',
     'population_structure' => 'Population Structure',
@@ -1093,4 +1099,3 @@ function tpps_submit_summary(&$form_state) {
     }
   }
 }
-

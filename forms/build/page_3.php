@@ -29,8 +29,8 @@ function page_3_create_form(array &$form, array &$form_state) {
   else {
     $values = array();
   }
-  
-  if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != 1){
+
+  if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != 1) {
     study_location($form, $form_state);
   }
 
@@ -66,13 +66,13 @@ function page_3_create_form(array &$form, array &$form_state) {
   if ($species_number > 1) {
     $file_description .= " If you are uploading a single file with multiple species, your file must also specify the genus and species of each tree.";
   }
-  
+
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
   $file_description .= "Please find an example of an accession file below.<figure><img src=\"{$image_path}accession_example.png\"><figcaption>Example Accession File</figcaption></figure>";
 
   $form['tree-accession']['file'] = array(
     '#type' => 'managed_file',
-    '#title' => t("Tree Accession File: *<br>$file_description"),
+    '#title' => t("Tree Accession File: *") . "<br>" . $file_description,
     '#upload_location' => "$file_upload_location",
     '#upload_validators' => array(
       'file_validate_extensions' => array('txt csv xlsx'),
@@ -82,8 +82,8 @@ function page_3_create_form(array &$form, array &$form_state) {
         ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
       ),
     )) : NULL,
-	'#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv xlsx</span>',
-    '#suffix' => '<style>figure {}</style>'
+    '#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv xlsx</span>',
+    '#suffix' => '<style>figure {}</style>',
   );
 
   $form['tree-accession']['file']['empty'] = array(

@@ -275,7 +275,7 @@ function genotype(array &$form, array &$form_state, array $values, $id) {
   elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SSRs/cpSSRs'])) {
     $ssrs_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SSRs/cpSSRs'];
   }
-  
+
   if (isset($form_state['complete form'][$id]['genotype']['marker-type']['Other']['#value'])) {
     $other_marker_check = $form_state['complete form'][$id]['genotype']['marker-type']['Other']['#value'];
   }
@@ -478,7 +478,7 @@ function genotype(array &$form, array &$form_state, array $values, $id) {
       '#access' => FALSE,
     );
   }
-  
+
   if (!empty($other_file_check)) {
     $fields['files']['other'] = array(
       '#type' => 'managed_file',

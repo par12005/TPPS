@@ -622,18 +622,18 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
       $location = drupal_realpath($ssrs_file->uri);
       $content = tpps_parse_xlsx($location, 1);
       $id_col_name = key($content['headers']);
-      while (($k = array_search(NULL, $content['headers']))){
+      while (($k = array_search(NULL, $content['headers']))) {
         unset($content['headers'][$k]);
       }
       $num_columns = count($content[0]) - 1;
       $num_unique_columns = count(array_unique($content['headers'])) - 1;
-      
+
       if ($num_unique_columns != $num_columns) {
         switch ($genotype['files']['ploidy']) {
           case 'Haploid':
             form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter header values for those columns or remove those columns, then reupload your file.");
             break;
-          
+
           case 'Diploid':
             if ($num_columns / $num_unique_columns !== 2) {
               form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file.");
@@ -650,7 +650,7 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
             break;
         }
       }
-      
+
       if (!form_get_errors()) {
         if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
           $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
@@ -689,10 +689,10 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
           'data' => array(2),
         ),
       );
-      
+
       $file_element = $form[$id]['genotype']['files']['other'];
       $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-      
+
       if (!form_get_errors()) {
         // Get Tree Id column name.
         $id_col_genotype_name = $groups['Tree Id']['1'];

@@ -239,7 +239,7 @@ function tpps_flatten(array $state) {
   else {
     $data['#page_3_cleared'] = FALSE;
   }
-  
+
   $loc = &$page_3['study_location'];
   $data['#location_type'] = (isset($loc['type']) and $loc['type']) ? $loc['type'] : NULL;
 

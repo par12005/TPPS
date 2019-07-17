@@ -5,7 +5,6 @@
  * Define the helper functions for the Tree Accession page.
  */
 
-
 /**
  * This function creates fields describing the study location.
  *
@@ -127,4 +126,3 @@ function study_location(array &$form, array &$form_state) {
 
   return $form;
 }
-

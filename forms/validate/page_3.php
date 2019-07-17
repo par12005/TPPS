@@ -15,7 +15,7 @@
  */
 function page_3_validate_form(array &$form, array &$form_state) {
   if ($form_state['submitted'] == '1') {
-    
+
     if (!empty($form_state['values']['study_location'])) {
       if (!$form_state['values']['study_location']['type']) {
         form_set_error('study_location][type', 'Location Format: field is required.');

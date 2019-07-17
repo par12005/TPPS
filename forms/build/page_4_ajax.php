@@ -102,6 +102,6 @@ function update_environment(array $form, array &$form_state) {
  */
 function genotype_files_callback(array $form, array &$form_state) {
   $id = $form_state['triggering_element']['#parents'][0];
-  
+
   return $form[$id]['genotype']['files'];
 }

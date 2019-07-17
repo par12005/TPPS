@@ -40,7 +40,7 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#type' => 'textfield',
     '#title' => t('TPPS GPS Epsilon'),
     '#default_value' => variable_get('tpps_gps_epsilon', .001),
-    '#description' => t('This is the amount of error TPPS should allow for when trying to match trees. An epsilon value of 1 is around 100km, and an epsilon value of .001 is around 100 m. '),
+    '#description' => t('This is the amount of error TPPS should allow for when trying to match trees. An epsilon value of 1 is around 100km, and an epsilon value of .001 is around 100 m.'),
   );
 
   $form['tpps_zenodo_api_key'] = array(
