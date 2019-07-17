@@ -598,7 +598,7 @@ function tpps_submit_page_3(array &$form_state) {
       if (isset($geo_api_key)) {
         $query = urlencode($location);
         $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-        $response = file_get_contents($url);
+        $response = json_decode(file_get_contents($url));
 
         if ($response->total_results) {
           $result = $response->results[0]->geometry;
@@ -876,7 +876,7 @@ function tpps_submit_page_3(array &$form_state) {
           if (!array_key_exists($location, $form_state['locations'])) {
             $query = urlencode($location);
             $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-            $response = file_get_contents($url);
+            $response = json_decode(file_get_contents($url));
 
             if ($response->total_results) {
               $results = $response->results;
@@ -914,10 +914,10 @@ function tpps_submit_page_3(array &$form_state) {
             tpps_chado_insert_record('stockprop', array(
               'stock_id' => $stock_id,
               'type_id' => array(
-                'name' => 'gps_latitude',
+                'name' => 'gps_longitude',
                 'is_obsolete' => 0,
               ),
-              'value' => $result->lat,
+              'value' => $result->lng,
             ));
           }
         }
@@ -973,7 +973,7 @@ function tpps_submit_page_3(array &$form_state) {
             if (!array_key_exists($location, $form_state['locations'])) {
               $query = urlencode($loc);
               $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-              $response = file_get_contents($url);
+              $response = json_decode(file_get_contents($url));
               $result = ($response->total_results) ? $response->results[0]->geometry : NULL;
               $form_state['locations'][$location] = $result;
             }
@@ -994,10 +994,10 @@ function tpps_submit_page_3(array &$form_state) {
               tpps_chado_insert_record('stockprop', array(
                 'stock_id' => $stock_id,
                 'type_id' => array(
-                  'name' => 'gps_latitude',
+                  'name' => 'gps_longitude',
                   'is_obsolete' => 0,
                 ),
-                'value' => $result->lat,
+                'value' => $result->lng,
               ));
             }
           }
@@ -1173,7 +1173,7 @@ function tpps_submit_page_3(array &$form_state) {
             if (!array_key_exists($location, $form_state['locations'])) {
               $query = urlencode($location);
               $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-              $response = file_get_contents($url);
+              $response = json_decode(file_get_contents($url));
   
               if ($response->total_results) {
                 $results = $response->results;
@@ -1211,10 +1211,10 @@ function tpps_submit_page_3(array &$form_state) {
               tpps_chado_insert_record('stockprop', array(
                 'stock_id' => $stock_id,
                 'type_id' => array(
-                  'name' => 'gps_latitude',
+                  'name' => 'gps_longitude',
                   'is_obsolete' => 0,
                 ),
-                'value' => $result->lat,
+                'value' => $result->lng,
               ));
             }
           }
@@ -1262,7 +1262,7 @@ function tpps_submit_page_3(array &$form_state) {
               if (!array_key_exists($location, $form_state['locations'])) {
                 $query = urlencode($loc);
                 $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-                $response = file_get_contents($url);
+                $response = json_decode(file_get_contents($url));
     
                 $result = ($response->total_results) ? $response->results[0]->geometry : NULL;
                 $form_state['locations'][$location] = $result;
@@ -1284,10 +1284,10 @@ function tpps_submit_page_3(array &$form_state) {
                 tpps_chado_insert_record('stockprop', array(
                   'stock_id' => $stock_id,
                   'type_id' => array(
-                    'name' => 'gps_latitude',
+                    'name' => 'gps_longitude',
                     'is_obsolete' => 0,
                   ),
-                  'value' => $result->lat,
+                  'value' => $result->lng,
                 ));
               }
             }
