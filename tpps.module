@@ -645,7 +645,7 @@ function tpps_main(array $form, array &$form_state) {
 
   status_bar($form, $form_state);
 
-  if (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization'])) {
+  if ((!isset($form_state['tpps_type']) or $form_state['tpps_type'] != 'tppsc') and (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization']))) {
     $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
     if ($contact_bundle) {
       $query = new EntityFieldQuery();
