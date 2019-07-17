@@ -27,7 +27,14 @@ function tpps_delayed_submissions() {
     $date = $state['saved_values']['summarypage']['release-date'];
     $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
     if (time() > $time) {
-      tpps_submit_all($accession);
+      $state = tpps_load_submission($accession);
+      $includes = array();
+      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+      $args = array($accession);
+      $jid = tripal_add_job("TPPS Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+      $state['job_id'] = $jid;
+      tpps_update_submission($state);
       unset($submissions[$accession]);
     }
   }

@@ -246,16 +246,22 @@ function tpps_admin_panel_submit($form, &$form_state) {
     drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
     drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
 
-    $state['status'] = 'Approved';
-    tpps_update_submission($state);
+    $includes = array();
+    $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+    $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+    $args = array($accession);
     if ($state['saved_values']['summarypage']['release']) {
-      tpps_submit_all($accession);
+      $jid = tripal_add_job("TPPS Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+      $state['job_id'] = $jid;
+      tpps_update_submission($state);
     }
     else {
       $date = $state['saved_values']['summarypage']['release-date'];
       $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
       if (time() > $time) {
-        tpps_submit_all($accession);
+        $jid = tripal_add_job("TPPS Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+        $state['job_id'] = $jid;
+        tpps_update_submission($state);
       }
       else {
         $delayed_submissions = variable_get('tpps_delayed_submissions', array());
