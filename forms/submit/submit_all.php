@@ -560,7 +560,7 @@ function tpps_submit_page_3(array &$form_state) {
   $organism_number = $firstpage['organism']['number'];
   $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
   $form_state['locations'] = array();
-
+  
   if (!empty($thirdpage['study_location'])) {
     if ($thirdpage['study_location']['type'] !== '2') {
       $standard_coordinate = explode(',', tpps_standard_coord($thirdpage['study_location']['coordinates']));
@@ -956,6 +956,10 @@ function tpps_submit_page_3(array &$form_state) {
       'stock_id' => $stock_id,
       'project_id' => $form_state['ids']['project_id'],
     ));
+  }
+  
+  if (!empty($thirdpage['existing_trees'])) {
+    tpps_matching_trees($form_state['ids']['project_id']);
   }
 }
 

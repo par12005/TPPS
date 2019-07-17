@@ -7,11 +7,9 @@
 /**
  * 
  *
- * @param type $accession
+ * @param type $project_id
  */
-function tpps_matching_trees($accession) {
-  $state = tpps_load_submission($accession);
-  $project_id = $state['ids']['project_id'];
+function tpps_matching_trees($project_id) {
   $eps = variable_get('tpps_gps_epsilon', .001);
 
   $lat_id = chado_get_cvterm(array('name' => 'gps_latitude', 'is_obsolete' => 0))->cvterm_id;
@@ -45,11 +43,9 @@ function tpps_matching_trees($accession) {
       'subject_id' => $record->stock_id1,
       'object_id' => $record->stock_id2,
       'type_id' => array(
-        // TODO
-        'name' => '',
+        'name' => 'synonymous',
         'cv_id' => array(
-          // TODO
-          'name' => '',
+          'name' => 'sequence',
         ),
         'is_obsolete' => 0,
       )
