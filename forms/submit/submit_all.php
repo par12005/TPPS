@@ -17,32 +17,40 @@
  */
 function tpps_submit_all($accession) {
 
-  $form_state = tpps_load_submission($accession);
-  $values = $form_state['saved_values'];
-  $firstpage = $values[TPPS_PAGE_1];
-  $form_state['file_rank'] = 0;
-  $form_state['ids'] = array();
+  $transaction = db_transaction();
+  
+  try {
+    $form_state = tpps_load_submission($accession);
+    $values = $form_state['saved_values'];
+    $firstpage = $values[TPPS_PAGE_1];
+    $form_state['file_rank'] = 0;
+    $form_state['ids'] = array();
 
-  $form_state['ids']['project_id'] = tpps_chado_insert_record('project', array(
-    'name' => $firstpage['publication']['title'],
-    'description' => $firstpage['publication']['abstract'],
-  ));
+    $form_state['ids']['project_id'] = tpps_chado_insert_record('project', array(
+      'name' => $firstpage['publication']['title'],
+      'description' => $firstpage['publication']['abstract'],
+    ));
 
-  tpps_submit_page_1($form_state);
+    tpps_submit_page_1($form_state);
 
-  tpps_submit_page_2($form_state);
+    tpps_submit_page_2($form_state);
 
-  tpps_submit_page_3($form_state);
+    tpps_submit_page_3($form_state);
 
-  tpps_submit_page_4($form_state);
+    tpps_submit_page_4($form_state);
 
-  tpps_submit_summary($form_state);
+    tpps_submit_summary($form_state);
 
-  tpps_update_submission($form_state);
+    tpps_update_submission($form_state);
 
-  tpps_file_parsing($accession);
-  $form_state['status'] = 'Approved';
-  tpps_update_submission($form_state, array('status' => 'Approved'));
+    tpps_file_parsing($accession);
+    $form_state['status'] = 'Approved';
+    tpps_update_submission($form_state, array('status' => 'Approved'));
+  }
+  catch (Exception $e) {
+    $transaction->rollback();
+    watchdog_exception('tpps', $e);
+  }
 }
 
 /**
@@ -58,7 +66,7 @@ function tpps_submit_page_1(array &$form_state) {
 
   tpps_chado_insert_record('project_dbxref', array(
     'project_id' => $form_state['ids']['project_id'],
-    'dbxref_id' => $dbxref_id,
+    'dbxref_id' => NULL,//$dbxref_id,
   ));
 
   tpps_chado_insert_record('contact', array(
