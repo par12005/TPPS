@@ -28,7 +28,7 @@ table {
   width: 100%;
 }
 thead th {
-  background: #FFFFFF;
+  background: #ffffff;
   border-top: 0px solid #000000 !important;
   padding: 10px;
 }
@@ -38,7 +38,7 @@ thead {
   border-color: inherit;
 }
 tbody tr td {
-  padding: 3px; 
+  padding: 3px;
   border-top: 1px solid #dedede;
 }
 th > div.form-type-select > .ajax-progress {
@@ -47,13 +47,18 @@ th > div.form-type-select > .ajax-progress {
 .form-item > label {
   display: inline-block;
 }
-.form-type-textfield, .form-type-select, .form-managed-file, .form-type-checkbox, .form-type-radios {
+.form-type-textfield,
+.form-type-select,
+.form-managed-file,
+.form-type-checkbox,
+.form-type-radios {
   text-align: right;
 }
 .form-item {
   margin-bottom: 5px;
 }
-.form-type-managed-file, .form-type-radios {
+.form-type-managed-file,
+.form-type-radios {
   border-top: 1px solid #b5e0ba;
   border-bottom: 1px solid #b5e0ba;
 }
