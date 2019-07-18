@@ -389,9 +389,9 @@ function genotype(array &$form, array &$form_state, array $values, $id) {
     $fields['files']['snps-assay']['columns-options'] = array(
       '#type' => 'hidden',
       '#value' => array(
-        'N/A',
-        'Tree Identifier',
         'SNP Data',
+        'Tree Identifier',
+        'N/A',
       ),
     );
 

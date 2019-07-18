@@ -569,7 +569,7 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
           'id' => array(1),
         ),
         'SNP Data' => array(
-          'data' => array(2),
+          'data' => array(0),
         ),
       );
 
