@@ -750,10 +750,10 @@ function tpps_tab_create($user) {
     $title = $abstract = NULL;
 
     if (isset($page_1['publication']['title'])) {
-      $title = "<a href='$base_url/completed_submission?id={$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
+      $title = "<a href='$base_url/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
     }
     else {
-      $title = "<a href='$base_url/completed_submission?id={$state['accession']}' style='text-decoration: underline;'>No Title</a>";
+      $title = "<a href='$base_url/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>No Title</a>";
     }
 
     if (isset($page_1['publication']['abstract'])) {
