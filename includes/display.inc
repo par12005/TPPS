@@ -747,9 +747,13 @@ function tpps_tab_create($user) {
   $rows = array();
   foreach ($states as $state) {
     $page_1 = &$state['saved_values'][TPPS_PAGE_1];
+    $title = $abstract = NULL;
 
     if (isset($page_1['publication']['title'])) {
-      $title = "<a href='$base_url/$prefix?accession={$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
+      $title = "<a href='$base_url/completed_submission?id={$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
+    }
+    else {
+      $title = "<a href='$base_url/completed_submission?id={$state['accession']}' style='text-decoration: underline;'>No Title</a>";
     }
 
     if (isset($page_1['publication']['abstract'])) {
