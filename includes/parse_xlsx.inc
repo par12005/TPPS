@@ -51,7 +51,7 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
 
     foreach ($xlrow->c as $cell) {
 
-      $v = isset($cell->v) ? (int) $cell->v : NULL;
+      $v = isset($cell->v) ? (float) $cell->v : NULL;
       if (!isset($v)) {
         continue;
       }
