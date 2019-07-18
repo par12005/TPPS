@@ -781,5 +781,6 @@ function tpps_tab_create($user) {
     $final .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/tpps>here.</a></p>";
   }
 
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   return $final;
 }
