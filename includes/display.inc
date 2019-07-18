@@ -603,7 +603,7 @@ function tpps_table_display(array &$state) {
   $vars = array(
     'header' => $headers,
     'rows' => $rows,
-    'attributes' => array('class' => array('view')),
+    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
