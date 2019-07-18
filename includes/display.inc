@@ -736,7 +736,7 @@ function tpps_tab_create($user) {
     'empty' => '',
   );
 
-  $final = isset($state) ? "<label for='tpps_incomplete_table'>Incomplete Submissions</label>" . theme_table($vars) : "";
+  $final = isset($state) ? "<div class='tpps_profile_tab'><label for='tpps_incomplete_table'>Incomplete Submissions</label>" . theme_table($vars) . '</div>' : "";
   $state = NULL;
 
   $states = tpps_load_submission_multiple(array(
@@ -774,7 +774,7 @@ function tpps_tab_create($user) {
   $vars['rows'] = $rows;
   $vars['attributes']['id'] = 'tpps_complete_table';
 
-  $final .= isset($state) ? "<label for='tpps_complete_table'>Complete Submissions</label>" . theme_table($vars) : "";
+  $final .= isset($state) ? "<div class='tpps_profile_tab'><label for='tpps_complete_table'>Complete Submissions</label>" . theme_table($vars) . '</div>' : "";
 
   if (empty($final)) {
     $final .= "<h2>Could not find any Submissions</h2>";
