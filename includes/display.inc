@@ -654,6 +654,7 @@ function tpps_completed_display() {
   $display .= tpps_table_display($old_form_state);
 
   drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
   return render($display);
 }
