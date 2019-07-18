@@ -165,6 +165,77 @@ function tpps_file_parsing($accession) {
         }
       }
 
+      foreach ($phenotypes_meta as $name => $data) {
+        $attr = db_select('chado.cvterm', 'c')
+          ->fields('c', array('cvterm_id'))
+          ->condition('c.name', db_like($data['attr']), 'LIKE')
+          ->range(0, 1)
+          ->execute();
+        if (($result = $attr->fetchObject())) {
+          $phenotypes_meta[$name]['attr_id'] = $result->cvterm_id;
+        }
+        else {
+          $phenotypes_meta[$name]['attr_id'] = chado_insert_cvterm(array(
+            'id' => "{$local_db->name}:{$data['attr']}",
+            'name' => $data['attr'],
+            'definition' => '',
+            'cv_name' => $local_cv->name,
+          ))->cvterm_id;
+        }
+        
+        if (isset($data['struct'])) {
+          $obs = db_select('chado.cvterm', 'c')
+            ->fields('c', array('cvterm_id'))
+            ->condition('c.name', db_like($phenotypes_meta[strtolower($name)]['struct']), 'LIKE')
+            ->range(0, 1)
+            ->execute();
+          if (($result = $obs->fetchObject())) {
+            $phenotypes_meta[$name]['struct_id'] = $result->cvterm_id;
+          }
+          else {
+            $phenotypes_meta[$name]['struct_id'] = chado_insert_cvterm(array(
+              'id' => "{$local_db->name}:{$data['struct']}",
+              'name' => $data['struct'],
+              'definition' => '',
+              'cv_name' => $local_cv->name,
+            ))->cvterm_id;
+          }
+        }
+        else {
+          $phenotypes_meta[$name]['struct_id'] = NULL;
+        }
+      }
+
+      $time_id = chado_get_cvterm(array('name' => 'time', 'is_obsolete' => 0))->cvterm_id;
+      $description_id = chado_get_cvterm(array(
+        'cv_id' => array(
+          'name' => 'schema',
+        ),
+        'name' => 'description',
+        'is_obsolete' => 0,
+      ))->cvterm_id;
+      $unit_id = chado_get_cvterm(array(
+        'cv_id' => array(
+          'name' => 'uo',
+        ),
+        'name' => 'unit',
+        'is_obsolete' => 0,
+      ))->cvterm_id;
+      $min_id = chado_get_cvterm(array(
+        'cv_id' => array(
+          'name' => 'default_namespace',
+        ),
+        'name' => 'minimum parameter',
+        'is_obsolete' => 0,
+      ))->cvterm_id;
+      $max_id = chado_get_cvterm(array(
+        'cv_id' => array(
+          'name' => 'default_namespace',
+        ),
+        'name' => 'maximum parameter',
+        'is_obsolete' => 0,
+      ))->cvterm_id;
+
       for ($j = 0; $j < count($content) - 1; $j++) {
         if ($phenotype['format'] == 0) {
           $values = array();
@@ -186,41 +257,7 @@ function tpps_file_parsing($accession) {
 
         foreach ($values as $name => $value) {
           $name = $content['headers'][$name];
-          $attr = db_select('chado.cvterm', 'c')
-            ->fields('c', array('cvterm_id'))
-            ->condition('c.name', db_like($phenotypes_meta[strtolower($name)]['attr']), 'LIKE')
-            ->execute()
-            ->fetchAssoc();
-          $attr_id = $attr['cvterm_id'];
-          if (!isset($attr_id) or $attr_id == '') {
-            $attr_id = chado_insert_cvterm(array(
-              'id' => "{$local_db->name}:{$phenotypes_meta[strtolower($name)]['attr']}",
-              'name' => $phenotypes_meta[$name]['attr'],
-              'definition' => '',
-              'cv_name' => $local_cv->name,
-            ))->cvterm_id;
-          }
-
-          if (isset($phenotypes_meta[strtolower($name)]['struct'])) {
-            $obs = db_select('chado.cvterm', 'c')
-              ->fields('c', array('cvterm_id'))
-              ->condition('c.name', db_like($phenotypes_meta[strtolower($name)]['struct']), 'LIKE')
-              ->execute()
-              ->fetchAssoc();
-            $observable_id = $obs['cvterm_id'];
-
-            if (!isset($observable_id) or $observable_id == '') {
-              $observable_id = chado_insert_cvterm(array(
-                'id' => "{$local_db->name}:{$phenotypes_meta[strtolower($name)]['struct']}",
-                'name' => $phenotypes_meta[strtolower($name)]['struct'],
-                'definition' => '',
-                'cv_name' => $local_cv->name,
-              ))->cvterm_id;
-            }
-          }
-          else {
-            $observable_id = NULL;
-          }
+          $attr_id = $phenotypes_meta[strtolower($name)]['attr_id'];
 
           $phenotype_prefix = $stock_unique;
           if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $phenotype['file-empty']) {
@@ -231,7 +268,7 @@ function tpps_file_parsing($accession) {
             'uniquename' => "$phenotype_prefix-$name-$j",
             'name' => $name,
             'attr_id' => $attr_id,
-            'observable_id' => $observable_id,
+            'observable_id' => $phenotypes_meta[strtolower($name)]['struct_id'],
             'value' => $value,
           ));
 
@@ -243,48 +280,27 @@ function tpps_file_parsing($accession) {
           if (isset($time_col_name)) {
             $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
               'phenotype_id' => end($phenotype_ids),
-              'type_id' => array(
-                'name' => 'time',
-                'is_obsolete' => 0,
-              ),
+              'type_id' => $time_id,
               'value' => $content[$j][$time_col_name],
             ));
           }
 
           $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
             'phenotype_id' => end($phenotype_ids),
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'schema',
-              ),
-              'name' => 'description',
-              'is_obsolete' => 0,
-            ),
+            'type_id' => $description_id,
             'value' => $phenotypes_meta[strtolower($name)]['desc'],
           ));
 
           $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
             'phenotype_id' => end($phenotype_ids),
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'uo',
-              ),
-              'name' => 'unit',
-              'is_obsolete' => 0,
-            ),
+            'type_id' => $unit_id,
             'value' => $phenotypes_meta[strtolower($name)]['unit'],
           ));
 
           if (isset($phenotypes_meta[strtolower($name)]['min'])) {
             $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
               'phenotype_id' => end($phenotype_ids),
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'default_namespace',
-                ),
-                'name' => 'minimum parameter',
-                'is_obsolete' => 0,
-              ),
+              'type_id' => $min_id,
               'value' => $phenotypes_meta[strtolower($name)]['min'],
             ));
           }
@@ -292,13 +308,7 @@ function tpps_file_parsing($accession) {
           if (isset($phenotypes_meta[strtolower($name)]['max'])) {
             $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
               'phenotype_id' => end($phenotype_ids),
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'default_namespace',
-                ),
-                'name' => 'maximum parameter',
-                'is_obsolete' => 0,
-              ),
+              'type_id' => $max_id,
               'value' => $phenotypes_meta[strtolower($name)]['max'],
             ));
           }
