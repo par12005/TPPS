@@ -502,9 +502,9 @@ function genotype(array &$form, array &$form_state, array $values, $id) {
     $fields['files']['other']['columns-options'] = array(
       '#type' => 'hidden',
       '#value' => array(
-        'N/A',
-        'Tree Identifier',
         'Genotype Data',
+        'Tree Identifier',
+        'N/A',
       ),
     );
 

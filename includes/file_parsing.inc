@@ -700,8 +700,94 @@ function tpps_file_parsing($accession) {
       }
 
       if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
-        $file = $genotype['files']['other'];
-        // TODO.
+        $genotype_file_id = tpps_chado_insert_record('projectprop', array(
+          'project_id' => $project_id,
+          'type_id' => array(
+            'cv_id' => array(
+              'name' => 'schema',
+            ),
+            'name' => 'url',
+            'is_obsolete' => 0,
+          ),
+          'value' => file_create_url(file_load($genotype['files']['other'])->uri),
+          'rank' => $file_rank,
+        ));
+        $file_rank++;
+
+        $file = file_load($genotype['files']['other']);
+        $location = drupal_realpath($file->uri);
+        $content = tpps_parse_xlsx($location);
+        $groups = $genotype['files']['other-groups'];
+        $marker = $genotype['other-marker'];
+
+        $current_id = $form_state['ids']['organism_ids'][$i];
+        $and = db_and()
+          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
+          ->condition('organism_id', "$current_id");
+        $species_code = db_select('chado.organismprop', 'o')
+          ->fields('o', array('value'))
+          ->condition($and)
+          ->range(0, 1)
+          ->execute()
+          ->fetchObject()->value;
+
+        for ($j = 0; $j < count($content) - 1; $j++) {
+          $tree_id = $content[$j][$groups['Tree Id'][1]];
+          foreach ($groups['Genotype Data'][0] as $geno_data_col) {
+            $stock_id = $form_state['ids']['stock_ids'][trim($tree_id)];
+            $value = $content[$j][$geno_data_col];
+            $variant_name = $content['headers'][$geno_data_col];
+            $marker_name = $variant_name . $marker;
+
+            $marker_id = tpps_chado_insert_record('feature', array(
+              'organism_id' => $current_id,
+              'uniquename' => $marker_name,
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'sequence',
+                ),
+                'name' => 'sequence_variant',
+                'is_obsolete' => 0,
+              ),
+            ));
+
+            $variant_id = tpps_chado_insert_record('feature', array(
+              'organism_id' => $current_id,
+              'uniquename' => $variant_name,
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'sequence',
+                ),
+                'name' => 'sequence_variant',
+                'is_obsolete' => 0,
+              ),
+            ));
+
+            $genotype_id = tpps_chado_insert_record('genotype', array(
+              'name' => "$marker-$variant_name-$species_code",
+              'uniquename' => "$marker-$variant_name-$species_code",
+              'description' => $value,
+              'type_id' => array(
+                'cv_id' => array(
+                  'name' => 'sequence',
+                ),
+                'name' => 'genetic_marker',
+                'is_obsolete' => 0,
+              ),
+            ));
+
+            tpps_chado_insert_record('genotype_call', array(
+              'variant_id' => $variant_id,
+              'marker_id' => $marker_id,
+              'genotype_id' => $genotype_id,
+              'project_id' => $project_id,
+              'stock_id' => $stock_id,
+            ));
+          }
+        }
+
+        $file->status = FILE_STATUS_PERMANENT;
+        $file = file_save($file);
       }
 
       if (!empty($genotype['files']['file-type']['VCF'])) {
