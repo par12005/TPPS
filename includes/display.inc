@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Defines a function to flatten a form state array.
+ * Defines functions used to display complete and incomplete TPPS submissions.
  */
 
 /**
@@ -499,4 +499,352 @@ function tpps_flatten(array $state) {
   }
 
   return $data;
+}
+
+/**
+ * Returns a formatted HTML table based on a TPPS Submission form state.
+ *
+ * @param array $state
+ *   The form_state of the TPPS Submission form.
+ *
+ * @return string
+ *   The TPPS Submission formatted in an HTML table.
+ */
+function tpps_table_display(array &$state) {
+
+  $accession = $state['saved_values'][TPPS_PAGE_4]['accession'];
+  $flat = tpps_flatten($state);
+  $map_api_key = variable_get('tpps_maps_api_key', NULL);
+
+  $rows = array();
+  $content = "";
+  foreach ($flat as $key => $val) {
+    if ($key[0] != '#') {
+      $key_str = filter_xss(check_plain($key));
+      $val_str = filter_xss(check_plain($val));
+
+      if (preg_match('/File/', $key) and ($file_name = file_load($val)->filename)) {
+        // Create links to files.
+        $file_url = check_plain(file_create_url(file_load($val)->uri));
+        $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
+        if (preg_match('/^(.*)Accession File/', $key, $matches)) {
+          if ($matches[1] != "Tree ") {
+            $parts = explode(" ", $matches[1]);
+            $name = implode("_", $parts);
+
+            $val_str .= "<div id=\"{$name}map_wrapper\"></div><br>"
+            . "<input id=\"{$name}map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
+            . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>";
+          }
+          else {
+            $val_str .= "<div id=\"map_wrapper\"></div><br>"
+            . "<input id=\"map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
+            . "<div id=\"accession_fid\" style=\"display:none;\">$val</div>";
+          }
+        }
+      }
+      elseif (preg_match('/Month/', $key)) {
+        // Skip experiment start/end month.
+        continue;
+      }
+      elseif (preg_match('/^(.*)Year/', $key, $matches)) {
+        // Combine experiment start/end month + year.
+        if (isset($flat[$matches[1] . 'Month'])) {
+          $key_str = $matches[1] . 'Date';
+          $val_str = "{$flat[$matches[1] . 'Month']} $val_str";
+        }
+        else {
+          continue;
+        }
+      }
+      elseif (preg_match('/Study Location/', $key) and isset($flat['#location_type']) and $flat['#location_type']) {
+        // Add map capability to location.
+        if ($flat['#location_type'] == '2') {
+          $query = $val_str;
+        }
+        elseif ($flat['#location_type'] != '2' and ($standard = tpps_standard_coord($val_str))) {
+          $query = $standard;
+        }
+        $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
+        if (isset($query)) {
+          $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
+          $js = "jQuery(document).ready(function ($) {
+            jQuery(\"#sidebar_map\").click(function() {
+              jQuery(\"#sidebar_map_wrapper\").remove();
+              jQuery(\"#sidebar_map\").after( \"<br><div id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
+            });
+          });";
+          drupal_add_js($js, 'inline');
+        }
+      }
+      elseif ($key == 'Publication Abstract' and strlen($val_str) > 50) {
+        $val_str = substr($val_str, 0, 47) . '...';
+      }
+
+      $rows[] = array($key_str, $val_str);
+    }
+    elseif (preg_match('/^#(.*)accession_(.*)/', $key, $matches)) {
+      $val_str = filter_xss(check_plain($val));
+      $parts = explode(" ", substr($matches[0], 1));
+      $item_id = implode("_", $parts);
+      $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
+    }
+  }
+  if (!empty($map_api_key)) {
+    $content .= "<script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
+    async defer></script>";
+  }
+
+  $headers = array(
+    array(
+      'data' => 'Field',
+      'field' => 'key',
+    ),
+    array(
+      'data' => 'Value',
+      'field' => 'value',
+    ),
+  );
+
+  $vars = array(
+    'header' => $headers,
+    'rows' => $rows,
+    'attributes' => array('class' => array('view')),
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  );
+
+  $display = theme_table($vars) . $content;
+
+  return $display;
+}
+
+/**
+ * Creates a details page for a completed TPPS Submission.
+ *
+ * @global string $base_url
+ *   The base url of the site.
+ *
+ * @return string
+ *   The rendered page.
+ */
+function tpps_completed_display() {
+
+  global $base_url;
+  $display = "";
+  $params = drupal_get_query_parameters();
+  if (empty($params['id'])) {
+    global $user;
+    drupal_goto("user/{$user->uid}/tpps");
+  }
+  $accession = $params['id'];
+  $link = "$base_url/tpps_details/accession/$accession";
+
+  $old_form_state = tpps_load_submission($accession);
+  $values = $old_form_state['saved_values'];
+
+  $css = "
+  .tgdr_complete_submission {
+    background: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    padding: 0px 10px;
+  }		
+  ";
+  drupal_add_css($css, 'inline');
+
+  $display .= "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
+
+  $display .= tpps_table_display($old_form_state);
+
+  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+
+  return render($display);
+}
+
+/**
+ * This function populates the TPPS Submissions user tab.
+ *
+ * @param int $user
+ *   The id of the user.
+ *
+ * @global string $base_url
+ *   The base URL of the site.
+ *
+ * @return string
+ *   The HTML of the TPPS user tab.
+ */
+function tpps_tab_create($user) {
+
+  global $base_url;
+  $params = drupal_get_query_parameters();
+  $final = "";
+  $t1 = $t2 = FALSE;
+
+  if (isset($params['accession']) and isset($params['action']) and $params['action'] === 'DELETE') {
+    tpps_delete_submission($params['accession']);
+  }
+
+  $states = tpps_load_submission_multiple(array('status' => 'Incomplete', 'uid' => $user->uid));
+
+  $style =
+  '<style>
+    .tpps_profile_tab {
+      background: #ffffff;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      padding: 0px 10px;
+    }
+  </style>';
+  $display = "<label for='tpps_incomplete_table'>Incomplete Submissions</label><div class='tpps_profile_tab'><table id='tpps_incomplete_table' style='width:-webkit-fill-available' border='1'><thead>";
+  $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th></th></tr>";
+  $display .= "</thead><tbody>";
+
+  foreach ($states as $state) {
+    $display .= "<tr>";
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
+      $title = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['title']);
+      $display .= "<td><a href='$base_url/tpps?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])) {
+      $author = check_plain($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']);
+      $display .= "<td>$author</td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['organism']['number'])) {
+      $species_number = check_plain($state['saved_values'][TPPS_PAGE_1]['organism']['number']);
+      $display .= "<td>$species_number</td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['abstract'])) {
+      $abstract = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['abstract']);
+      if (strlen($abstract) > 103) {
+        $abstract = check_plain(substr($abstract, 0, 100) . "...");
+      }
+      $display .= "<td>$abstract</td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['journal'])) {
+      $journal = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['journal']);
+      $display .= "<td>$journal</td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    if (isset($state['accession'])) {
+      $display .= "<td style='text-align:center'><input type='submit' id='delete-{$state['accession']}' onclick='";
+      $title = (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) ? ' titled ' . $state['saved_values'][TPPS_PAGE_1]['publication']['title'] : '';
+      $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/user/{$user->uid}/tpps?accession={$state['accession']}&action=DELETE\"}";
+      $display .= "' name='op' class='form-button' value='Delete'></td>";
+    }
+    else {
+      $display .= '<td></td>';
+    }
+
+    $display .= "</tr>";
+  }
+
+  if (!isset($state)) {
+    $display = $style;
+  }
+  else {
+    $display .= "</tbody></table></div><br>";
+    $t1 = TRUE;
+  }
+
+  $final .= $display;
+  $state = NULL;
+
+  $states = tpps_load_submission_multiple(array(
+    'status' => array('Pending Approval', 'Approved'),
+    'uid' => $user->uid,
+  ));
+
+  $display = "<label for='tpps_complete_table'>Complete Submissions</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
+  $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th>Status</th></tr>";
+  $display .= "</thead><tbody>";
+
+  foreach ($states as $state) {
+    $display .= "<tr>";
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
+      $title = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['title']);
+      $display .= "<td><a href='$base_url/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])) {
+      $author = check_plain($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']);
+      $display .= "<td>$author</td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['organism']['number'])) {
+      $species_number = check_plain($state['saved_values'][TPPS_PAGE_1]['organism']['number']);
+      $display .= "<td>$species_number</td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['abstract'])) {
+      $abstract = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['abstract']);
+      if (strlen($abstract) > 103) {
+        $abstract = check_plain(substr($abstract, 0, 100) . "...");
+      }
+      $display .= "<td>$abstract</td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['journal'])) {
+      $journal = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['journal']);
+      $display .= "<td>$journal</td>";
+    }
+    else {
+      $display .= "<td></td>";
+    }
+
+    $display .= "<td>{$state['status']}</td></tr>";
+  }
+
+  if (!isset($state)) {
+    $display = "";
+  }
+  else {
+    $display .= "</tbody></table></div><br>";
+    $t2 = TRUE;
+  }
+
+  if (!$t1 and !$t2) {
+    $display = $style;
+    $display .= "<h2>Could not find any Submissions</h2>";
+    $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/tpps>here.</a></p>";
+  }
+
+  $final .= $display;
+
+  return $final;
 }

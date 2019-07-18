@@ -293,7 +293,7 @@ function getCoordinates(){
   
   var fid, no_header, id_col, lat_col, long_col;
   try{
-    if (jQuery("#edit-step")[0].value == 3){
+    if (jQuery("#edit-step").length > 0 && jQuery("#edit-step")[0].value == 3){
       var species_number;
       if (species_name !== ""){
         species_number = 'species-' + jQuery('div').filter(function() { return this.id.match(new RegExp(species_name + 'species_number')); })[0].innerHTML;
@@ -351,7 +351,7 @@ function getCoordinates(){
 
 jQuery.fn.updateMap = function(locations, prefix = "") {
   jQuery("#" + prefix + "map_wrapper").show();
-  if (jQuery("#edit-step")[0].value == 3){
+  if (jQuery("#edit-step").length > 0 && jQuery("#edit-step")[0].value == 3){
     jQuery("#" + prefix + "map_wrapper").css({"height": "450px"});
     jQuery("#" + prefix + "map_wrapper").css({"max-width": "800px"});
   }
