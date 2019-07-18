@@ -596,14 +596,8 @@ function tpps_table_display(array &$state) {
   }
 
   $headers = array(
-    array(
-      'data' => 'Field',
-      'field' => 'key',
-    ),
-    array(
-      'data' => 'Value',
-      'field' => 'value',
-    ),
+    'Field',
+    'Value',
   );
 
   $vars = array(
@@ -680,8 +674,6 @@ function tpps_tab_create($user) {
 
   global $base_url;
   $params = drupal_get_query_parameters();
-  $final = "";
-  $t1 = $t2 = FALSE;
 
   if (isset($params['accession']) and isset($params['action']) and $params['action'] === 'DELETE') {
     tpps_delete_submission($params['accession']);
@@ -689,87 +681,62 @@ function tpps_tab_create($user) {
 
   $states = tpps_load_submission_multiple(array('status' => 'Incomplete', 'uid' => $user->uid));
 
-  $style =
-  '<style>
-    .tpps_profile_tab {
-      background: #ffffff;
-      border: 1px solid #cccccc;
-      border-radius: 4px;
-      padding: 0px 10px;
-    }
-  </style>';
-  $display = "<label for='tpps_incomplete_table'>Incomplete Submissions</label><div class='tpps_profile_tab'><table id='tpps_incomplete_table' style='width:-webkit-fill-available' border='1'><thead>";
-  $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th></th></tr>";
-  $display .= "</thead><tbody>";
-
+  $rows = array();
   foreach ($states as $state) {
-    $display .= "<tr>";
+    $prefix = !empty($state['tpps_type']) ? $state['tpps_type'] : 'tpps';
+    $page_1 = &$state['saved_values'][TPPS_PAGE_1];
+    $title = $abstract = $accession_cell = NULL;
 
-    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
-      $title = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['title']);
-      $display .= "<td><a href='$base_url/tpps?accession={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
+    if (isset($page_1['publication']['title'])) {
+      $title = "<a href='$base_url/$prefix?accession={$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
     }
     else {
-      $display .= "<td></td>";
+      $title = "<a href='$base_url/$prefix?accession={$state['accession']}' style='text-decoration: underline;'>No Title</a>";
     }
 
-    if (isset($state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])) {
-      $author = check_plain($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']);
-      $display .= "<td>$author</td>";
-    }
-    else {
-      $display .= "<td></td>";
-    }
-
-    if (isset($state['saved_values'][TPPS_PAGE_1]['organism']['number'])) {
-      $species_number = check_plain($state['saved_values'][TPPS_PAGE_1]['organism']['number']);
-      $display .= "<td>$species_number</td>";
-    }
-    else {
-      $display .= "<td></td>";
-    }
-
-    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['abstract'])) {
-      $abstract = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['abstract']);
-      if (strlen($abstract) > 103) {
-        $abstract = check_plain(substr($abstract, 0, 100) . "...");
+    if (isset($page_1['publication']['abstract'])) {
+      $abstract = check_plain($page_1['publication']['abstract']);
+      if (strlen($abstract) > 53) {
+        $abstract = substr($abstract, 0, 50) . "...";
       }
-      $display .= "<td>$abstract</td>";
-    }
-    else {
-      $display .= "<td></td>";
-    }
-
-    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['journal'])) {
-      $journal = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['journal']);
-      $display .= "<td>$journal</td>";
-    }
-    else {
-      $display .= "<td></td>";
     }
 
     if (isset($state['accession'])) {
-      $display .= "<td style='text-align:center'><input type='submit' id='delete-{$state['accession']}' onclick='";
-      $title = (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) ? ' titled ' . $state['saved_values'][TPPS_PAGE_1]['publication']['title'] : '';
-      $display .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$title}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/user/{$user->uid}/tpps?accession={$state['accession']}&action=DELETE\"}";
-      $display .= "' name='op' class='form-button' value='Delete'></td>";
-    }
-    else {
-      $display .= '<td></td>';
+      $accession_cell = "<input type='submit' id='delete-{$state['accession']}' onclick='";
+      $name = isset($page_1['publication']['title']) ? ' titled ' . $page_1['publication']['title'] : '';
+      $accession_cell .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$name}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/user/{$user->uid}/tpps?accession={$state['accession']}&action=DELETE\"}";
+      $accession_cell .= "' name='op' class='form-button' value='Delete'>";
     }
 
-    $display .= "</tr>";
+    $rows[] = array(
+      $title,
+      isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : "",
+      isset($page_1['organism']['number']) ? $page_1['organism']['number'] : "",
+      isset($abstract) ? $abstract : "",
+      isset($page_1['publication']['journal']) ? $page_1['publication']['journal'] : "",
+      isset($accession_cell) ? $accession_cell : "",
+    );
   }
 
-  if (!isset($state)) {
-    $display = $style;
-  }
-  else {
-    $display .= "</tbody></table></div><br>";
-    $t1 = TRUE;
-  }
+  $headers = array(
+    'Title',
+    'Primary Author',
+    'Number of Species',
+    'Abstract',
+    'Journal',
+  );
 
-  $final .= $display;
+  $vars = array(
+    'header' => $headers,
+    'rows' => $rows,
+    'attributes' => array('class' => array('view'), 'id' => 'tpps_incomplete_table'),
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  );
+
+  $final = isset($state) ? "<label for='tpps_incomplete_table'>Incomplete Submissions</label>" . theme_table($vars) : "";
   $state = NULL;
 
   $states = tpps_load_submission_multiple(array(
@@ -777,74 +744,42 @@ function tpps_tab_create($user) {
     'uid' => $user->uid,
   ));
 
-  $display = "<label for='tpps_complete_table'>Complete Submissions</label><div class='tpps_profile_tab'><table id='tpps_complete_table' style='width:-webkit-fill-available' border='1'><thead>";
-  $display .= "<tr><th>Title</th><th>Primary Author</th><th>Number of Species</th><th>Abstract</th><th>Journal</th><th>Status</th></tr>";
-  $display .= "</thead><tbody>";
-
+  $rows = array();
   foreach ($states as $state) {
-    $display .= "<tr>";
+    $page_1 = &$state['saved_values'][TPPS_PAGE_1];
 
-    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
-      $title = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['title']);
-      $display .= "<td><a href='$base_url/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>$title</a></td>";
-    }
-    else {
-      $display .= "<td></td>";
+    if (isset($page_1['publication']['title'])) {
+      $title = "<a href='$base_url/$prefix?accession={$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
     }
 
-    if (isset($state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])) {
-      $author = check_plain($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']);
-      $display .= "<td>$author</td>";
-    }
-    else {
-      $display .= "<td></td>";
-    }
-
-    if (isset($state['saved_values'][TPPS_PAGE_1]['organism']['number'])) {
-      $species_number = check_plain($state['saved_values'][TPPS_PAGE_1]['organism']['number']);
-      $display .= "<td>$species_number</td>";
-    }
-    else {
-      $display .= "<td></td>";
-    }
-
-    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['abstract'])) {
-      $abstract = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['abstract']);
+    if (isset($page_1['publication']['abstract'])) {
+      $abstract = check_plain($page_1['publication']['abstract']);
       if (strlen($abstract) > 103) {
-        $abstract = check_plain(substr($abstract, 0, 100) . "...");
+        $abstract = substr($abstract, 0, 100) . "...";
       }
-      $display .= "<td>$abstract</td>";
-    }
-    else {
-      $display .= "<td></td>";
     }
 
-    if (isset($state['saved_values'][TPPS_PAGE_1]['publication']['journal'])) {
-      $journal = check_plain($state['saved_values'][TPPS_PAGE_1]['publication']['journal']);
-      $display .= "<td>$journal</td>";
-    }
-    else {
-      $display .= "<td></td>";
-    }
-
-    $display .= "<td>{$state['status']}</td></tr>";
+    $rows[] = array(
+      isset($title) ? $title : "",
+      isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : "",
+      isset($page_1['organism']['number']) ? $page_1['organism']['number'] : "",
+      isset($abstract) ? $abstract : "",
+      isset($page_1['publication']['journal']) ? $page_1['publication']['journal'] : "",
+      isset($state['status']) ? $state['status'] : "",
+    );
   }
 
-  if (!isset($state)) {
-    $display = "";
-  }
-  else {
-    $display .= "</tbody></table></div><br>";
-    $t2 = TRUE;
-  }
+  $headers[] = 'Status';
+  $vars['header'] = $headers;
+  $vars['rows'] = $rows;
+  $vars['attributes']['id'] = 'tpps_complete_table';
 
-  if (!$t1 and !$t2) {
-    $display = $style;
-    $display .= "<h2>Could not find any Submissions</h2>";
-    $display .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/tpps>here.</a></p>";
-  }
+  $final .= isset($state) ? "<label for='tpps_complete_table'>Complete Submissions</label>" . theme_table($vars) : "";
 
-  $final .= $display;
+  if (empty($final)) {
+    $final .= "<h2>Could not find any Submissions</h2>";
+    $final .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/tpps>here.</a></p>";
+  }
 
   return $final;
 }
