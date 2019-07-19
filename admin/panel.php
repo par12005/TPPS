@@ -48,35 +48,42 @@ function tpps_admin_panel(array $form, array &$form_state) {
 
     $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Approved')));
 
-    $display = "<table style='width:-webkit-fill-available' border='1'><thead>";
-    $display .= "<tr><th>Accession Number</th><th>Title</th><th>Status</th></tr>";
-    $display .= "</thead><tbody>";
-    $data = array();
+    $rows = array();
     foreach ($states as $state) {
       if (!empty($state)) {
-
-        $item = array(
-          'link' => l($state['accession'], "$base_url/tpps-admin-panel?accession={$state['accession']}"),
-          'title' => $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
-          'status' => $state['status'],
+        $row = array(
+          l($state['accession'], "$base_url/tpps-admin-panel?accession={$state['accession']}"),
+          $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
+          $state['status'],
         );
-        if ($state['status'] == "Pending Approval") {
-          array_unshift($data, $item);
+        if ($state['status'] == 'Pending Approval') {
+          array_unshift($rows, $row);
         }
         else {
-          $data[] = $item;
+          $rows[] = $row;
         }
       }
     }
 
-    foreach ($data as $item) {
-      $display .= "<tr><td>{$item['link']}</td><td>{$item['title']}</td><td>{$item['status']}</td></tr>";
-    }
-    $display .= "</tbody></table>";
+    $headers = array(
+      'Accession Number',
+      'Title',
+      'Status',
+    );
+
+    $vars = array(
+      'header' => $headers,
+      'rows' => $rows,
+      'attributes' => array('class' => array('view')),
+      'caption' => '',
+      'colgroups' => NULL,
+      'sticky' => FALSE,
+      'empty' => '',
+    );
 
     $form['a'] = array(
       '#type' => 'hidden',
-      '#suffix' => $display,
+      '#suffix' => theme_table($vars),
     );
   }
   else {
@@ -175,6 +182,9 @@ function tpps_admin_panel(array $form, array &$form_state) {
       );
     }
   }
+
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+
   return $form;
 }
 
