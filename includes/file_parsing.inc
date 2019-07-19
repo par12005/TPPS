@@ -24,7 +24,7 @@ function tpps_file_parsing($accession) {
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $organism_number = $firstpage['organism']['number'];
   $file_rank = &$form_state['file_rank'];
-  $genotype_group = variable_get('tpps_genotype_group', 10000);
+  $record_group = variable_get('tpps_record_group', 10000);
   $project_id = $form_state['ids']['project_id'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
@@ -42,9 +42,11 @@ function tpps_file_parsing($accession) {
     if (isset($fourthpage["organism-$i"]['phenotype'])) {
       $phenotype = $fourthpage["organism-$i"]['phenotype'];
       $phenotype_number = $phenotype['number'];
-      $phenotype_ids = array();
-      $phenotypeprop_ids = array();
       $phenotypes_meta = array();
+      $phenotype_count = 0;
+      $phenotype_vals = array();
+      $stock_phenotype_vals = array();
+      $phenotypeprop_vals = array();
       $local_cv = chado_get_cv(array('name' => 'local'));
       $local_db = variable_get('tpps_local_db');
 
@@ -264,56 +266,81 @@ function tpps_file_parsing($accession) {
             $phenotype_prefix .= "-" . $content[$j][$clone_col_name];
           }
 
-          $phenotype_ids[] = tpps_chado_insert_record('phenotype', array(
+          $phenotype_vals[] = array(
             'uniquename' => "$phenotype_prefix-$name-$j",
             'name' => $name,
             'attr_id' => $attr_id,
             'observable_id' => $phenotypes_meta[strtolower($name)]['struct_id'],
             'value' => $value,
-          ));
+          );
 
-          tpps_chado_insert_record('stock_phenotype', array(
-            'stock_id' => $form_state['ids']['stock_ids'][$phenotype_prefix],
-            'phenotype_id' => end($phenotype_ids),
-          ));
-
-          if (isset($time_col_name)) {
-            $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
-              'phenotype_id' => end($phenotype_ids),
-              'type_id' => $time_id,
-              'value' => $content[$j][$time_col_name],
-            ));
+          if (!isset($phenotype_id)) {
+            $phenotype_id = tpps_chado_insert_record('phenotype', $phenotype_vals[0]);
+            $phenotype_vals = array();
           }
 
-          $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
-            'phenotype_id' => end($phenotype_ids),
+          $stock_phenotype_vals[] = array(
+            'stock_id' => $form_state['ids']['stock_ids'][$phenotype_prefix],
+            'phenotype_id' => $phenotype_id,
+          );
+
+          if (isset($time_col_name)) {
+            $phenotypeprop_vals[] = array(
+              'phenotype_id' => $phenotype_id,
+              'type_id' => $time_id,
+              'value' => $content[$j][$time_col_name],
+            );
+          }
+
+          $phenotypeprop_vals[] = array(
+            'phenotype_id' => $phenotype_id,
             'type_id' => $description_id,
             'value' => $phenotypes_meta[strtolower($name)]['desc'],
-          ));
+          );
 
-          $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
-            'phenotype_id' => end($phenotype_ids),
+          $phenotypeprop_vals[] = array(
+            'phenotype_id' => $phenotype_id,
             'type_id' => $unit_id,
             'value' => $phenotypes_meta[strtolower($name)]['unit'],
-          ));
+          );
 
           if (isset($phenotypes_meta[strtolower($name)]['min'])) {
-            $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
-              'phenotype_id' => end($phenotype_ids),
+            $phenotypeprop_vals[] = array(
+              'phenotype_id' => $phenotype_id,
               'type_id' => $min_id,
               'value' => $phenotypes_meta[strtolower($name)]['min'],
-            ));
+            );
           }
 
           if (isset($phenotypes_meta[strtolower($name)]['max'])) {
-            $phenotypeprop_ids[] = tpps_chado_insert_record('phenotypeprop', array(
-              'phenotype_id' => end($phenotype_ids),
+            $phenotypeprop_vals[] = array(
+              'phenotype_id' => $phenotype_id,
               'type_id' => $max_id,
               'value' => $phenotypes_meta[strtolower($name)]['max'],
-            ));
+            );
           }
+
+          if ($phenotype_count > $record_group) {
+            tpps_chado_insert_record('phenotype', $phenotype_vals, array('multi' => TRUE));
+            $phenotype_vals = array();
+            tpps_chado_insert_record('phenotypeprop', $phenotypeprop_vals, array('multi' => TRUE));
+            $phenotypeprop_vals = array();
+            tpps_chado_insert_record('stock_phenotype', $stock_phenotype_vals, array('multi' => TRUE));
+            $stock_phenotype_vals = array();
+            $phenotype_count = 0;
+          }
+
+          $phenotype_count++;
+          $phenotype_id++;
         }
       }
+
+      tpps_chado_insert_record('phenotype', $phenotype_vals, array('multi' => TRUE));
+      tpps_chado_insert_record('phenotypeprop', $phenotypeprop_vals, array('multi' => TRUE));
+      tpps_chado_insert_record('stock_phenotype', $stock_phenotype_vals, array('multi' => TRUE));
+      unset($phenotype_vals);
+      unset($phenotypeprop_vals);
+      unset($stock_phenotype_vals);
 
       $phenotype_file->status = FILE_STATUS_PERMANENT;
       $phenotype_file = file_save($phenotype_file);
@@ -901,7 +928,7 @@ function tpps_file_parsing($accession) {
             // Tripal Job has issues when all submissions are made at the same
             // time, so break them up into groups of 10,000 genotypes along with
             // their relevant genotypeprops.
-            if ($genotype_count > $genotype_group) {
+            if ($genotype_count > $record_group) {
               $genotype_count = 0;
               tpps_chado_insert_record('genotype', $genotype_vals, array('multi' => TRUE));
               $genotype_vals = array();

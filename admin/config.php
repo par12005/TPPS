@@ -94,11 +94,11 @@ function tpps_admin_settings(array $form, array &$form_state) {
     }
   }
 
-  $form['tpps_genotype_group'] = array(
+  $form['tpps_record_group'] = array(
     '#type' => 'textfield',
-    '#title' => t('TPPS Genotype max group'),
-    '#default_value' => variable_get('tpps_genotype_group', 10000),
-    '#description' => 'Some genotype files are very large. TPPS tries to submit as many genotype entries together as possible, in order to speed up the process of writing genotype data to the database. However, very large size entries can cause errors within the Tripal Job daemon. This number is the maximum number of genotype entries that may be submitted at once. Larger numbers will make the process faster, but are more likely to cause errors. Defaults to 10,000.',
+    '#title' => t('TPPS Record max group'),
+    '#default_value' => variable_get('tpps_record_group', 10000),
+    '#description' => 'Some files are very large. TPPS tries to submit as many entries together as possible, in order to speed up the process of writing data to the database. However, very large size entries can cause errors within the Tripal Job daemon. This number is the maximum number of entries that may be submitted at once. Larger numbers will make the process faster, but are more likely to cause errors. Defaults to 10,000.',
   );
 
   $form['tpps_local_genome_dir'] = array(
