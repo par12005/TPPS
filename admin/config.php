@@ -70,6 +70,12 @@ function tpps_admin_settings(array $form, array &$form_state) {
   );
 
   if (module_exists('cartogratree') and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers')) {
+    $form['tpps_ct_api_key'] = array(
+      '#type' => 'textfield',
+      '#title' => t('TPPS CartograTree API Key'),
+      '#default_value' => variable_get('tpps_ct_api_key', NULL),
+    );
+
     $form['layer_groups'] = array(
       '#type' => 'fieldset',
       '#title' => 'CartograTree Environmental Layer Groups:',
