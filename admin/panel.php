@@ -183,6 +183,7 @@ function tpps_admin_panel(array $form, array &$form_state) {
     }
   }
 
+  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
   return $form;
