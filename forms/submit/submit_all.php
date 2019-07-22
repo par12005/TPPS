@@ -247,6 +247,49 @@ function tpps_submit_page_1(array &$form_state) {
       'species' => $species,
       'infraspecific_name' => $infra,
     ));
+    
+    $and = db_and()
+      ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
+      ->condition('organism_id', $form_state['ids']['organism_ids'][$i]);
+    $code_query = db_select('chado.organismprop', 'o')
+      ->fields('o', array('value'))
+      ->condition($and)
+      ->execute();
+    
+    if (!($code = $code_query->fetchObject())) {
+      $g_offset = 0;
+      $s_offset = 0;
+      do {
+        if (isset($trial_code)) {
+          if ($s_offset < strlen($species) - 2) {
+            $s_offset++;
+          }
+          elseif ($g_offset < strlen($genus) - 2) {
+            $s_offset = 0;
+            $g_offset++;
+          }
+          else {
+            throw new Exception("TPPS was unable to create a 4 letter species code for the species '$genus $species'.");
+          }
+        }
+        $trial_code = substr($genus, $g_offset, 2) . substr($species, $s_offset, 2);
+        $and = db_and()
+          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
+          ->condition('value', $trial_code);
+        $new_code_query = db_select('chado.organismprop', 'o')
+          ->fields('o', array('value'))
+          ->condition($and)
+          ->execute();
+      }
+      while (($new_code = $new_code_query->fetchObject()));
+
+      tpps_chado_insert_record('organismprop', array(
+        'organism_id' => $form_state['ids']['organism_ids'][$i],
+        'type_id' => chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id,
+        'value' => $trial_code,
+      ));
+    }
+
     tpps_chado_insert_record('project_organism', array(
       'organism_id' => $form_state['ids']['organism_ids'][$i],
       'project_id' => $form_state['ids']['project_id'],
