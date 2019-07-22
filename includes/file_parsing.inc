@@ -1099,9 +1099,9 @@ function tpps_file_parsing($accession) {
 
     if (isset($fourthpage["organism-$i"]['environment'])) {
       $environment = $fourthpage["organism-$i"]['environment'];
-      $env_layers_check = $environment['use_layers'];
-      $env_layers = $environment['env_layers'];
-      $env_params = $environment['env_params'];
+      $env_layers_check = isset($environment['use_layers']) ? $environment['use_layers'] : FALSE;
+      $env_layers = isset($environment['env_layers']) ? $environment['env_layers'] : FALSE;
+      $env_params = isset($environment['env_params']) ? $environment['env_params'] : FALSE;
       $env_number = $environment['number'];
 
       if ($organism_number == 1 or !$form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check']) {
