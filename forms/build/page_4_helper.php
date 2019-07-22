@@ -592,25 +592,47 @@ function environment(array &$form, array &$form_state, $id) {
       $group_is_enabled = variable_get("tpps_layer_group_$group_id", FALSE);
 
       if ($group_is_enabled) {
-        $layers_query = db_select('cartogratree_layers', 'c')
-          ->fields('c', array('title', 'group_id', 'layer_id'))
-          ->condition('c.group_id', $group_id);
-        $layers_results = $layers_query->execute();
-        while (($layer = $layers_results->fetchObject())) {
-          $params_query = db_select('cartogratree_fields', 'f')
-            ->fields('f', array('display_name', 'field_id'))
-            ->condition('f.layer_id', $layer->layer_id);
-          $params_results = $params_query->execute();
-          $params = array();
-          while (($param = $params_results->fetchObject())) {
-            $params[$param->field_id] = $param->display_name;
+        if ($group->group_name == 'WorldClim v.2 (WorldClim)') {
+          $subgroups_query = db_select('cartogratree_layers', 'c')
+            ->distinct()
+            ->fields('c', array('subgroup_id'))
+            ->condition('c.group_id', $group_id)
+            ->execute();
+          while (($subgroup = $subgroups_query->fetchObject())) {
+            $subgroup_title = db_select('cartogratree_subgroups', 's')
+              ->fields('s', array('subgroup_name'))
+              ->condition('subgroup_id', $subgroup->subgroup_id)
+              ->execute()
+              ->fetchObject()->subgroup_name;
+            $options["worldclim_subgroup_{$subgroup->subgroup_id}"] = array(
+              'group_id' => $group_id,
+              'group' => $group->group_name,
+              'title' => $subgroup_title,
+              'params' => NULL,
+            );
           }
-          $options[$layer->layer_id] = array(
-            'group_id' => $layer->group_id,
-            'group' => $group->group_name,
-            'title' => $layer->title,
-            'params' => $params,
-          );
+        }
+        else {
+          $layers_query = db_select('cartogratree_layers', 'c')
+            ->fields('c', array('title', 'group_id', 'layer_id'))
+            ->condition('c.group_id', $group_id);
+          $layers_results = $layers_query->execute();
+          while (($layer = $layers_results->fetchObject())) {
+            $params_query = db_select('cartogratree_fields', 'f')
+              ->fields('f', array('display_name', 'field_id'))
+              ->condition('f.layer_id', $layer->layer_id);
+            $params_results = $params_query->execute();
+            $params = array();
+            while (($param = $params_results->fetchObject())) {
+              $params[$param->field_id] = $param->display_name;
+            }
+            $options[$layer->layer_id] = array(
+              'group_id' => $layer->group_id,
+              'group' => $group->group_name,
+              'title' => $layer->title,
+              'params' => $params,
+            );
+          }
         }
       }
     }

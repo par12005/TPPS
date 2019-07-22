@@ -1129,13 +1129,29 @@ function tpps_file_parsing($accession) {
               }
             }
           }
+          elseif (!empty($layer_id) and preg_match('/worldclim_subgroup_(.+)/', $layer_id, $matches)) {
+            $subgroup_id = $matches[1];
+            $layers = db_select('cartogratree_layers', 'l')
+              ->fields('l', array('layer_id'))
+              ->condition('subgroup_id', $subgroup_id)
+              ->execute();
+            while (($layer = $layers->fetchObject())) {
+              $params = db_select('cartogratree_fields', 'f')
+                ->fields('f', array('field_id', 'display_name'))
+                ->condition('layer_id', $layer->layer_id)
+                ->execute();
+              while (($param = $params->fetchObject())) {
+                $layers_params[$layer->layer_id][$param->field_id] = $param->display_name;
+              }
+            }
+          }
         }
 
         for ($j = 0; $j < count($content) - 1; $j++) {
           $tree_id = $content[$j][$id_col];
           $stock_query = db_select('chado.stock', 's')
             ->fields('s', array('stock_id'))
-            ->condition('uniquename', $tree_id)
+            ->condition('uniquename', "$accession-$tree_id")
             ->execute();
 
           $stock_id = $stock_query->fetchObject()->stock_id;
@@ -1178,10 +1194,10 @@ function tpps_file_parsing($accession) {
                 $param_name = $param_query->fetchObject()->field_name;
 
                 $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
-                $type = variable_get("tpps_param_{$param_id}_type");
+                $type = variable_get("tpps_param_{$param_id}_type", 'attr_id');
 
                 if ($type == 'attr_id') {
-                  tpps_chado_insert_record('phenotype', array(
+                  $phenotype_id = tpps_chado_insert_record('phenotype', array(
                     'uniquename' => "$tree_id-$layer_name-$param_name-$j",
                     'name' => "$param_name",
                     'attr_id' => array(
@@ -1192,6 +1208,11 @@ function tpps_file_parsing($accession) {
                       'is_obsolete' => 0,
                     ),
                     'value' => "$value",
+                  ));
+
+                  tpps_chado_insert_record('stock_phenotype', array(
+                    'stock_id' => $stock_id,
+                    'phenotype_id' => $phenotype_id,
                   ));
                 }
                 else {
@@ -1210,6 +1231,11 @@ function tpps_file_parsing($accession) {
                       'name' => 'climate_environment',
                       'is_obsolete' => 0,
                     ),
+                  ));
+
+                  tpps_chado_insert_record('stock_phenotype', array(
+                    'stock_id' => $stock_id,
+                    'phenotype_id' => $phenotype_id,
                   ));
                 }
               }

@@ -737,16 +737,35 @@ function validate_environment(array &$environment, $id) {
     // Using cartogratree environment layers.
     $group_check = '';
     $new_layers = array();
-    foreach ($environment['env_layers_groups'] as $group_id) {
+    foreach ($environment['env_layers_groups'] as $group_name => $group_id) {
       if (!empty($group_id)) {
         $group_check .= "1";
-        $layer_query = db_select('cartogratree_layers', 'l')
-          ->fields('l', array('title'))
-          ->condition('group_id', $group_id)
-          ->execute();
-        while (($layer = $layer_query->fetchObject())) {
-          if (!empty($environment['env_layers'][$layer->title])) {
-            $new_layers[$layer->title] = $environment['env_layers'][$layer->title];
+        if ($group_name == 'WorldClim v.2 (WorldClim)') {
+          $subgroups_query = db_select('cartogratree_layers', 'l')
+            ->distinct()
+            ->fields('l', array('subgroup_id'))
+            ->condition('group_id', $group_id)
+            ->execute();
+          while (($subgroup = $subgroups_query->fetchObject())) {
+            $subgroup_title = db_select('cartogratree_subgroups', 's')
+              ->fields('s', array('subgroup_name'))
+              ->condition('subgroup_id', $subgroup->subgroup_id)
+              ->execute()
+              ->fetchObject()->subgroup_name;
+            if (!empty($environment['env_layers'][$subgroup_title])) {
+              $new_layers[$subgroup_title] = $environment['env_layers'][$subgroup_title];
+            }
+          }
+        }
+        else {
+          $layer_query = db_select('cartogratree_layers', 'l')
+            ->fields('l', array('title'))
+            ->condition('group_id', $group_id)
+            ->execute();
+          while (($layer = $layer_query->fetchObject())) {
+            if (!empty($environment['env_layers'][$layer->title])) {
+              $new_layers[$layer->title] = $environment['env_layers'][$layer->title];
+            }
           }
         }
       }
