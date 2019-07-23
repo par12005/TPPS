@@ -40,11 +40,7 @@ function tpps_admin_panel(array $form, array &$form_state) {
   $params = drupal_get_query_parameters();
   $accession = isset($params['accession']) ? $params['accession'] : NULL;
 
-  if (!isset($user->roles[3]) or $user->roles[3] !== 'administrator') {
-    drupal_access_denied();
-    return $form;
-  }
-  elseif (empty($accession)) {
+  if (empty($accession)) {
 
     $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Approved')));
 
@@ -74,17 +70,19 @@ function tpps_admin_panel(array $form, array &$form_state) {
     $vars = array(
       'header' => $headers,
       'rows' => $rows,
-      'attributes' => array('class' => array('view')),
+      'attributes' => array('class' => array('view', 'tpps_profile_tab'), 'id' => 'tpps_table_display'),
       'caption' => '',
       'colgroups' => NULL,
       'sticky' => FALSE,
       'empty' => '',
     );
 
-    $form['a'] = array(
+    /*$form['a'] = array(
       '#type' => 'hidden',
       '#suffix' => theme_table($vars),
-    );
+    );*/
+    $form['#attributes'] = array('class' => array('hide-me'));
+    $form['#suffix'] = "<div class='tpps_profile_tab'><label for='tpps_table_display'>Completed TPPS Submissions</label>" . theme_table($vars) . "</div>";
   }
   else {
     $submission_state = tpps_load_submission($accession);
