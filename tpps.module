@@ -201,10 +201,19 @@ function tpps_access($permission, $args = array()) {
   if ($user->uid == 1) {
     return TRUE;
   }
-  $params = drupal_get_query_parameters();
+  $params = drupal_get_query_parameters(NULL, array());
 
-  if ($permission == 'access tpps form' and empty($params['accession'])) {
+  if ($params['q'] == 'tpps' and empty($params['accession'])) {
     return TRUE;
+  }
+
+  if (!$user->uid) {
+    if ($params['q'] == 'tpps-admin-panel') {
+      drupal_goto('user/login', array('query' => drupal_get_destination()));
+    }
+    elseif ($params['q'] == 'tpps' and !empty($params['accession'])) {
+      drupal_goto('user/login', array('query' => drupal_get_destination()));
+    }
   }
 
   if (user_access($permission)) {
@@ -239,9 +248,6 @@ function tpps_access($permission, $args = array()) {
       default:
         return TRUE;
     }
-  }
-  elseif (!$user->uid) {
-    drupal_goto('user/login', array('query' => drupal_get_destination()));
   }
   else {
     return FALSE;
@@ -654,36 +660,9 @@ function tpps_main(array $form, array &$form_state) {
   global $user;
   $params = drupal_get_query_parameters();
 
-  if (!isset($user->mail) and !isset($form_state['stage'])) {
-    // First access, not logged in.
-    $form_state['stage'] = 'frontpage';
-
-    tpps_front_create_form($form, $form_state);
-
-    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-
-    return $form;
-  }
-  elseif (!isset($user->mail)) {
-    // Not first access, but not logged in.
-    $destination = drupal_get_destination();
-    drupal_goto('user/login', array('query' => $destination));
-  }
-  elseif (isset($params['accession']) and !isset($form_state['stage'])) {
-    // Logged in, and with accession in link.
-    $old_form_state = tpps_load_submission($params['accession']);
-    if (empty($old_form_state)) {
-      drupal_goto('tpps');
-    }
-    $form_state['saved_values'] = $old_form_state['saved_values'];
-    $form_state['stage'] = $old_form_state['stage'];
-    $form_state['accession'] = $old_form_state['accession'];
-    $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
-  }
-  else {
-    // Logged in, with plain link.
-    if (!isset($form_state['stage'])) {
-      // First access.
+  if (!isset($form_state['stage'])) {
+    if (!isset($params['accession'])) {
+      // First access, no accession in link.
       $form_state['stage'] = 'frontpage';
 
       tpps_front_create_form($form, $form_state);
@@ -693,18 +672,29 @@ function tpps_main(array $form, array &$form_state) {
       return $form;
     }
     else {
-      // Not first access.
-      if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')) {
-        // No submissions, or selected to create new submission.
-        tpps_init_project($form_state);
-        tpps_create_submission($form_state, $user->uid);
+      // First access, and with accession in link.
+      $old_form_state = tpps_load_submission($params['accession']);
+      if (empty($old_form_state)) {
+        drupal_goto('tpps');
       }
-      $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
       $form_state['saved_values'] = $old_form_state['saved_values'];
       $form_state['stage'] = $old_form_state['stage'];
       $form_state['accession'] = $old_form_state['accession'];
       $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
     }
+  }
+  else {
+    // Not first access.
+    if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')) {
+      // No submissions, or selected to create new submission.
+      tpps_init_project($form_state);
+      tpps_create_submission($form_state, $user->uid);
+    }
+    $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
+    $form_state['saved_values'] = $old_form_state['saved_values'];
+    $form_state['stage'] = $old_form_state['stage'];
+    $form_state['accession'] = $old_form_state['accession'];
+    $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
   }
 
   $form['step'] = array(
