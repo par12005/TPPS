@@ -178,6 +178,11 @@ function tpps_menu() {
   return $items;
 }
 
+/**
+ * Implements hook_permission().
+ *
+ * Defines custom TPPS permissions.
+ */
 function tpps_permission() {
   $perms = array();
 
@@ -209,7 +214,21 @@ function tpps_permission() {
   return $perms;
 }
 
-function tpps_access($permission, $args = array()) {
+/**
+ * Determine whether the current user has a specific permission.
+ *
+ * @param string $permission
+ *   The permission in question.
+ * @param array $args
+ *   Additional arguments to be used to determine if the user has permission.
+ *
+ * @global stdClass $user
+ *   The user in question.
+ *
+ * @return bool
+ *   Whether or not the user has the permission.
+ */
+function tpps_access($permission, array $args = array()) {
   global $user;
 
   if ($user->uid == 1) {
