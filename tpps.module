@@ -38,8 +38,8 @@ function tpps_menu() {
     'title' => 'Tripal Plant PopGen Submit',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_main'),
-    'access callback' => 'user_access',
-    'access arguments' => array('access content'),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access tpps form'),
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -47,15 +47,15 @@ function tpps_menu() {
     'title' => 'TPPS Submissions',
     'page callback' => 'tpps_tab_create',
     'page arguments' => array(1),
-    'access callback' => 'user_access',
-    'access arguments' => array('access content'),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('user tpps submissions', array(1)),
     'type' => MENU_LOCAL_TASK,
   );
 
   $items['completed-submission'] = array(
     'title' => 'TPPS Completed Submission',
     'page callback' => 'tpps_completed_display',
-    'access callback' => 'user_access',
+    'access callback' => 'tpps_access',
     'access arguments' => array('access content'),
     'type' => MENU_NORMAL_ITEM,
   );
@@ -64,8 +64,8 @@ function tpps_menu() {
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_admin_panel'),
-    'access callback' => 'user_access',
-    'access arguments' => array('access administration pages'),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/panel.php',
   );
@@ -74,6 +74,7 @@ function tpps_menu() {
     'title' => 'TPPS DOI',
     'page callback' => 'tpps_manage_doi',
     'page arguments' => array(2),
+    'access callback' => 'tpps_access',
     'access arguments' => array('access content'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/manage_doi.inc',
@@ -84,7 +85,8 @@ function tpps_menu() {
     'description' => 'Configuration for TPPS module',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_admin_settings'),
-    'access arguments' => array('access administration pages'),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('administer tpps module'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/config.php',
   );
@@ -159,11 +161,91 @@ function tpps_menu() {
   $items['tpps-accession'] = array(
     'title' => 'TPPS Accession coordinates',
     'page callback' => 'tpps_accession_coordinates',
+    'access callback' => 'tpps_access',
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
 
   return $items;
+}
+
+function tpps_permission() {
+  $perms = array();
+
+  $perms['access tpps form'] = array(
+    'title' => t('Access TPPS Form'),
+    'description' => t('Access TPPS Submission form and create submissions.'),
+  );
+
+  $perms['administer tpps module'] = array(
+    'title' => t('Administer TPPS module'),
+    'description' => t('Make changes to TPPS configuration.'),
+  );
+
+  $perms['user tpps submissions'] = array(
+    'title' => t('User TPPS Submissions'),
+    'description' => t('View all TPPS Submissions for a particular user.'),
+  );
+
+  $perms['approve tpps submissions'] = array(
+    'title' => t('Approve/Reject TPPS submissions'),
+    'description' => t('Approve or reject pending TPPS submissions.'),
+  );
+
+  return $perms;
+}
+
+function tpps_access($permission, $args = array()) {
+  global $user;
+
+  if ($user->uid == 1) {
+    return TRUE;
+  }
+  $params = drupal_get_query_parameters();
+
+  if ($permission == 'access tpps form' and empty($params['accession'])) {
+    return TRUE;
+  }
+
+  if (user_access($permission)) {
+    switch ($permission) {
+      case 'access tpps form':
+        if (tpps_access('administer tpps module')) {
+          return TRUE;
+        }
+
+        if ($params['accession'] == 'new') {
+          return TRUE;
+        }
+
+        if (($state = tpps_load_submission($params['accession'], FALSE))) {
+          if ($state->status == "Incomplete" and $state->uid == $user->uid) {
+            return TRUE;
+          }
+        }
+        return FALSE;
+
+      case 'user tpps submissions':
+        if (tpps_access('administer tpps module')) {
+          return TRUE;
+        }
+
+        if (!empty($args[0]) and $args[0] == $user->uid) {
+          return TRUE;
+        }
+
+        return FALSE;
+
+      default:
+        return TRUE;
+    }
+  }
+  elseif (!$user->uid) {
+    drupal_goto('user/login', array('query' => drupal_get_destination()));
+  }
+  else {
+    return FALSE;
+  }
 }
 
 /**
