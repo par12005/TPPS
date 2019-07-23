@@ -44,7 +44,8 @@ function tpps_admin_panel(array $form, array &$form_state) {
 
     $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Approved')));
 
-    $rows = array();
+    $pending = array();
+    $approved = array();
     foreach ($states as $state) {
       if (!empty($state)) {
         $row = array(
@@ -53,13 +54,16 @@ function tpps_admin_panel(array $form, array &$form_state) {
           $state['status'],
         );
         if ($state['status'] == 'Pending Approval') {
-          array_unshift($rows, $row);
+          $pending[(int)substr($state['accession'], 4)] = $row;
         }
         else {
-          $rows[] = $row;
+          $approved[(int)substr($state['accession'], 4)] = $row;
         }
       }
     }
+    ksort($pending);
+    ksort($approved);
+    $rows = array_merge($pending, $approved);
 
     $headers = array(
       'Accession Number',
