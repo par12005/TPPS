@@ -52,6 +52,15 @@ function tpps_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
+  $items['tpps-submission/%/delete'] = array(
+    'title' => 'TPPS Delete Submission',
+    'page callback' => 'tpps_delete_submission',
+    'page arguments' => array(1),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('tpps delete submission', array(1)),
+    'type' => MENU_CALLBACK,
+  );
+
   $items['completed-submission'] = array(
     'title' => 'TPPS Completed Submission',
     'page callback' => 'tpps_completed_display',
@@ -192,6 +201,11 @@ function tpps_permission() {
     'description' => t('Approve or reject pending TPPS submissions.'),
   );
 
+  $perms['tpps delete submission'] = array(
+    'title' => t('Delete TPPS submissions'),
+    'description' => t('Delete incomplete TPPS submissions.'),
+  );
+
   return $perms;
 }
 
@@ -243,6 +257,20 @@ function tpps_access($permission, $args = array()) {
           return TRUE;
         }
 
+        return FALSE;
+
+      case 'tpps delete submission':
+        if (tpps_access('administer tpps module')) {
+          return TRUE;
+        }
+
+        if (preg_match('/tpps-submission\/(.*)\/delete/', $params['q'], $matches)) {
+          if (($state = tpps_load_submission($matches[1], FALSE))) {
+            if ($state->status == 'Pending Approval' and $user->uid == $state->uid) {
+              return TRUE;
+            }
+          }
+        }
         return FALSE;
 
       default:

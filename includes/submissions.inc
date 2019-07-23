@@ -147,6 +147,7 @@ function tpps_update_submission(array $state, array $options = array()) {
  *   The accession number of the submission to delete.
  */
 function tpps_delete_submission($accession) {
+  global $user;
   $dbxref_id = tpps_load_submission($accession, FALSE)->dbxref_id;
   db_delete('tpps_submission')
     ->condition('accession', $accession)
@@ -154,4 +155,5 @@ function tpps_delete_submission($accession) {
   db_delete('chado.dbxref')
     ->condition('dbxref_id', $dbxref_id)
     ->execute();
+  drupal_goto("user/{$user->uid}/tpps");
 }
