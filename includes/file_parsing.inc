@@ -474,7 +474,6 @@ function tpps_file_parsing($accession) {
         $file = file_load($genotype['files']['snps-assay']);
         $location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location);
-        $groups = $genotype['files']['snps-assay-groups'];
         $marker = 'SNP';
 
         $current_id = $form_state['ids']['organism_ids'][$i];
@@ -489,57 +488,61 @@ function tpps_file_parsing($accession) {
           ->fetchObject()->value;
 
         for ($j = 0; $j < count($content) - 1; $j++) {
-          $tree_id = $content[$j][$groups['Tree Id'][1]];
-          foreach ($groups['SNP Data'][0] as $snp_data_col) {
-            $stock_id = $form_state['ids']['stock_ids'][trim($tree_id)];
-            $value = $content[$j][$snp_data_col];
-            $variant_name = $content['headers'][$snp_data_col];
-            $marker_name = $variant_name . $marker;
-
-            $marker_id = tpps_chado_insert_record('feature', array(
-              'organism_id' => $current_id,
-              'uniquename' => $marker_name,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
+          $stock_id = NULL;
+          foreach ($content[$j] as $key => $val) {
+            if (!isset($stock_id)) {
+              $stock_id = $form_state['ids']['stock_ids'][trim($val)];
+            }
+            else {
+              $genotype_count++;
+              $variant_name = $content['headers'][$key];
+              $marker_name = $variant_name . $marker;
+              
+              $marker_id = tpps_chado_insert_record('feature', array(
+                'organism_id' => $current_id,
+                'uniquename' => $marker_name,
+                'type_id' => array(
+                  'cv_id' => array(
+                    'name' => 'sequence',
+                  ),
+                  'name' => 'sequence_variant',
+                  'is_obsolete' => 0,
                 ),
-                'name' => 'sequence_variant',
-                'is_obsolete' => 0,
-              ),
-            ));
+              ));
 
-            $variant_id = tpps_chado_insert_record('feature', array(
-              'organism_id' => $current_id,
-              'uniquename' => $variant_name,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
+              $variant_id = tpps_chado_insert_record('feature', array(
+                'organism_id' => $current_id,
+                'uniquename' => $variant_name,
+                'type_id' => array(
+                  'cv_id' => array(
+                    'name' => 'sequence',
+                  ),
+                  'name' => 'sequence_variant',
+                  'is_obsolete' => 0,
                 ),
-                'name' => 'sequence_variant',
-                'is_obsolete' => 0,
-              ),
-            ));
+              ));
 
-            $genotype_id = tpps_chado_insert_record('genotype', array(
-              'name' => "$marker-$variant_name-$species_code",
-              'uniquename' => "$marker-$variant_name-$species_code",
-              'description' => $value,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
+              $genotype_id = tpps_chado_insert_record('genotype', array(
+                'name' => "$marker-$variant_name-$species_code-$val",
+                'uniquename' => "$marker-$variant_name-$species_code-$val",
+                'description' => $val,
+                'type_id' => array(
+                  'cv_id' => array(
+                    'name' => 'sequence',
+                  ),
+                  'name' => 'SNP',
+                  'is_obsolete' => 0,
                 ),
-                'name' => 'SNP',
-                'is_obsolete' => 0,
-              ),
-            ));
+              ));
 
-            tpps_chado_insert_record('genotype_call', array(
-              'variant_id' => $variant_id,
-              'marker_id' => $marker_id,
-              'genotype_id' => $genotype_id,
-              'project_id' => $project_id,
-              'stock_id' => $stock_id,
-            ));
+              tpps_chado_insert_record('genotype_call', array(
+                'variant_id' => $variant_id,
+                'marker_id' => $marker_id,
+                'genotype_id' => $genotype_id,
+                'project_id' => $project_id,
+                'stock_id' => $stock_id,
+              ));
+            }
           }
         }
 
