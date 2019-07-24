@@ -34,14 +34,30 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
   // Get width of the data in the file.
   preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $sheet->dimension['ref'], $matches);
   $left_hex = unpack('H*', $matches[1]);
-  $left = base_convert($left_hex[1], 16, 10);
+  $hex = $left_hex[1];
   $right_hex = unpack('H*', $matches[2]);
-  $right = base_convert($right_hex[1], 16, 10);
 
   if ($no_header) {
-    for ($i = $left; $i <= $right; $i++) {
-      $key = pack('H*', base_convert($i, 10, 16));
-      $content['headers'][$key] = $i - $left;
+    while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
+      $key = pack('H*', $hex);
+      $content['headers'][$key] = base_convert($hex, 16, 10) - base_convert($left_hex[1], 16, 10);
+
+      $add = 1;
+      $new = "";
+      for ($i = strlen($key) - 1; $i >= 0; $i--) {
+        $num = base_convert(substr($hex, (2 * $i), 2), 16, 10) + $add;
+        if ($num > 90) {
+          $num = 65;
+        }
+        else {
+          $add = 0;
+        }
+        $new = base_convert($num, 10, 16) . $new;
+        if ($i == 0 and $add) {
+          $new = '41' . $new;
+        }
+      }
+      $hex = $new;
     }
   }
 
@@ -66,9 +82,27 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
 
     ksort($vals);
     $values = array();
-    for ($i = $left; $i <= $right; $i++) {
-      $key = pack('H*', base_convert($i, 10, 16));
+    $hex = $left_hex[1];
+    while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
+      $key = pack('H*', $hex);
       $values[$key] = isset($vals[$key]) ? $vals[$key] : NULL;
+
+      $add = 1;
+      $new = "";
+      for ($i = strlen($key) - 1; $i >= 0; $i--) {
+        $num = base_convert(substr($hex, (2 * $i), 2), 16, 10) + $add;
+        if ($num > 90) {
+          $num = 65;
+        }
+        else {
+          $add = 0;
+        }
+        $new = base_convert($num, 10, 16) . $new;
+        if ($i == 0 and $add) {
+          $new = '41' . $new;
+        }
+      }
+      $hex = $new;
     }
 
     if (!isset($content['headers'])) {
