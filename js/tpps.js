@@ -334,6 +334,9 @@ jQuery.fn.updateMap = function(locations, prefix = "") {
     jQuery("#" + prefix + "map_wrapper").css({"height": "450px"});
     jQuery("#" + prefix + "map_wrapper").css({"max-width": "800px"});
   }
+  else if(jQuery("#tpps_table_display").length > 0) {
+    jQuery("#" + prefix + "map_wrapper").css({"height": "450px"});
+  }
   else {
     jQuery("#" + prefix + "map_wrapper").css({"height": "100px"});
   }
