@@ -484,7 +484,7 @@ function tpps_default_permissions() {
     ->fields('r', array('rid'))
     ->condition('name', 'authenticated user')
     ->execute();
-  
+
   if (($admin = $admin_query->fetchObject()) and ($auth = $auth_query->fetchObject())) {
     $perms = tpps_permission();
     foreach ($perms as $name => $info) {

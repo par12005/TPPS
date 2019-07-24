@@ -184,7 +184,7 @@ function tpps_file_parsing($accession) {
             'cv_name' => $local_cv->name,
           ))->cvterm_id;
         }
-        
+
         if (isset($data['struct'])) {
           $obs = db_select('chado.cvterm', 'c')
             ->fields('c', array('cvterm_id'))
@@ -497,7 +497,7 @@ function tpps_file_parsing($accession) {
               $genotype_count++;
               $variant_name = $content['headers'][$key];
               $marker_name = $variant_name . $marker;
-              
+
               $marker_id = tpps_chado_insert_record('feature', array(
                 'organism_id' => $current_id,
                 'uniquename' => $marker_name,
