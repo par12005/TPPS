@@ -261,27 +261,6 @@ function clearMarkers(prefix) {
   maps[prefix + 'markers'] = [];
 }
 
-function addMarkerWithTimeout(location, time, prefix) {
-  window.setTimeout(function() {
-    var index = maps[prefix + 'markers'].push(new google.maps.Marker({
-      position: new google.maps.LatLng(location[1], location[2]),
-      map: maps[prefix],
-      animation: google.maps.Animation.DROP,
-      title: location[0],
-    })) - 1;
-    maps[prefix + 'markers'][index].addListener('click', toggleBounce);
-  }, time);
-}
-
-function toggleBounce(){
-  if (this.getAnimation() !== null){
-    this.setAnimation(null);
-  }
-  else {
-    this.setAnimation(google.maps.Animation.BOUNCE);
-  }
-}
-
 function getCoordinates(){
   var species_name;
   if (this.id.match(/(.*)map_button/) !== null){
@@ -363,12 +342,25 @@ jQuery.fn.updateMap = function(locations, prefix = "") {
   maps[prefix + 'total_lat'] = 0;
   maps[prefix + 'total_long'] = 0;
   timeout = 2000/locations.length;
+  
+  maps[prefix + 'markers'] = locations.map(function (location, i) {
+    maps[prefix + 'total_lat'] += parseInt(location[1]);
+    maps[prefix + 'total_long'] += parseInt(location[2]);
+    var marker = new google.maps.Marker({
+      position: new google.maps.LatLng(location[1], location[2])
+    });
+    
+    var infowindow = new google.maps.InfoWindow({
+      content: location[0] + '<br>Location: ' + location[1] + ', ' + location[2]
+    });
+    
+    marker.addListener('click', function() {
+      infowindow.open(maps[prefix], maps[prefix + 'markers'][i]);
+    });
+    return marker;
+  });
+  var markerCluster = new MarkerClusterer(maps[prefix], maps[prefix + 'markers'], {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
 
-  for (var i = 0; i < locations.length; i++) {
-    maps[prefix + 'total_lat'] += parseInt(locations[i][1]);
-    maps[prefix + 'total_long'] += parseInt(locations[i][2]);
-    addMarkerWithTimeout(locations[i], timeout*i, prefix);
-  }
   var center = new google.maps.LatLng(maps[prefix + 'total_lat']/locations.length, maps[prefix + 'total_long']/locations.length);
   maps[prefix].panTo(center);
 };
