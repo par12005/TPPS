@@ -487,6 +487,16 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         $item_parents[] = $key;
 
         $default = drupal_array_get_nested_value($saved_vals, $item_parents);
+
+        if (!isset($default)) {
+          foreach ($options as $k => $val) {
+            similar_text(strtolower($val), strtolower($item), $percent);
+            if ($percent > 85) {
+              $default = $k;
+              break;
+            }
+          }
+        }
         // dpm($item_parents);
         $element['columns'][$key] = array(
           '#type' => 'select',
