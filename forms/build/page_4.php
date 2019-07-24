@@ -62,94 +62,96 @@ function page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
-      $image_path = drupal_get_path('module', 'tpps') . '/images/';
-      $form["organism-$i"]['phenotype']['format'] = array(
-        '#type' => 'radios',
-        '#title' => t('Phenotype file format: *'),
-        '#options' => array(
-          'Type 1',
-          'Type 2',
-        ),
-        '#ajax' => array(
-          'callback' => 'phenotype_file_format_callback',
-          'wrapper' => "edit-organism-$i-phenotype-file-ajax-wrapper",
-        ),
-        '#default_value' => (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) ? $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] : 0,
-        '#description' => t('Please select a file format type from the listed options. Below please see examples of each format type.'),
-        '#states' => array(
-          'invisible' => array(
-            ":input[name=\"organism-{$i}[phenotype][number]\"]" => array('value' => '0'),
-            ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
+      if (!isset($form["organism-$i"]['phenotype']['iso'])) {
+        $image_path = drupal_get_path('module', 'tpps') . '/images/';
+        $form["organism-$i"]['phenotype']['format'] = array(
+          '#type' => 'radios',
+          '#title' => t('Phenotype file format: *'),
+          '#options' => array(
+            'Type 1',
+            'Type 2',
           ),
-        ),
-      );
-
-      $form["organism-$i"]['phenotype']['format'][0]['#prefix'] = "<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>";
-      $form["organism-$i"]['phenotype']['format'][0]['#suffix'] = "</figcaption></figure>";
-      $form["organism-$i"]['phenotype']['format'][1]['#prefix'] = "<figure><img src=\"{$image_path}phenotype_format_2.png\"><figcaption>";
-      $form["organism-$i"]['phenotype']['format'][1]['#suffix'] = "</figcaption></figure>";
-
-      $form["organism-$i"]['phenotype']['file'] = array(
-        '#type' => 'managed_file',
-        '#title' => t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Data: *'),
-        '#upload_location' => 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype'),
-        '#upload_validators' => array(
-          'file_validate_extensions' => array('csv tsv xlsx'),
-        ),
-        '#tree' => TRUE,
-        '#states' => array(
-          'invisible' => array(
-            ":input[name=\"organism-{$i}[phenotype][number]\"]" => array('value' => '0'),
-            ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
+          '#ajax' => array(
+            'callback' => 'phenotype_file_format_callback',
+            'wrapper' => "edit-organism-$i-phenotype-file-ajax-wrapper",
           ),
-        ),
-      );
-
-      $form["organism-$i"]['phenotype']['file']['empty'] = array(
-        '#default_value' => isset($values["organism-$i"]['phenotype']['file']['empty']) ? $values["organism-$i"]['phenotype']['file']['empty'] : 'NA',
-      );
-
-      $form["organism-$i"]['phenotype']['file']['columns'] = array(
-        '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)',
-      );
-
-      if (isset($form_state['values']["organism-$i"]['phenotype']['format'])) {
-        $format = $form_state['values']["organism-$i"]['phenotype']['format'];
-      }
-      if (!isset($format) and isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) {
-        $format = $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'];
-      }
-      if (!isset($format)) {
-        $format = 0;
-      }
-
-      if ($format == 0) {
-        $column_options = array(
-          'Phenotype Data',
-          'Tree Identifier',
-          'Timepoint',
-          'Clone Number',
-          'N/A',
+          '#default_value' => (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) ? $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] : 0,
+          '#description' => t('Please select a file format type from the listed options. Below please see examples of each format type.'),
+          '#states' => array(
+            'invisible' => array(
+              ":input[name=\"organism-{$i}[phenotype][number]\"]" => array('value' => '0'),
+              ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
+            ),
+          ),
         );
-      }
-      else {
-        $column_options = array(
-          'N/A',
-          'Tree Identifier',
-          'Phenotype Name/Identifier',
-          'Value(s)',
-          'Timepoint',
-          'Clone Number',
+
+        $form["organism-$i"]['phenotype']['format'][0]['#prefix'] = "<figure><img src=\"{$image_path}phenotype_format_1.png\"><figcaption>";
+        $form["organism-$i"]['phenotype']['format'][0]['#suffix'] = "</figcaption></figure>";
+        $form["organism-$i"]['phenotype']['format'][1]['#prefix'] = "<figure><img src=\"{$image_path}phenotype_format_2.png\"><figcaption>";
+        $form["organism-$i"]['phenotype']['format'][1]['#suffix'] = "</figcaption></figure>";
+
+        $form["organism-$i"]['phenotype']['file'] = array(
+          '#type' => 'managed_file',
+          '#title' => t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Data: *'),
+          '#upload_location' => 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype'),
+          '#upload_validators' => array(
+            'file_validate_extensions' => array('csv tsv xlsx'),
+          ),
+          '#tree' => TRUE,
+          '#states' => array(
+            'invisible' => array(
+              ":input[name=\"organism-{$i}[phenotype][number]\"]" => array('value' => '0'),
+              ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
+            ),
+          ),
         );
-        $form["organism-$i"]['phenotype']['file']['#title'] = t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Name, and value for all of your phenotypic data: *');
+
+        $form["organism-$i"]['phenotype']['file']['empty'] = array(
+          '#default_value' => isset($values["organism-$i"]['phenotype']['file']['empty']) ? $values["organism-$i"]['phenotype']['file']['empty'] : 'NA',
+        );
+
+        $form["organism-$i"]['phenotype']['file']['columns'] = array(
+          '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)',
+        );
+
+        if (isset($form_state['values']["organism-$i"]['phenotype']['format'])) {
+          $format = $form_state['values']["organism-$i"]['phenotype']['format'];
+        }
+        if (!isset($format) and isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) {
+          $format = $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'];
+        }
+        if (!isset($format)) {
+          $format = 0;
+        }
+
+        if ($format == 0) {
+          $column_options = array(
+            'Phenotype Data',
+            'Tree Identifier',
+            'Timepoint',
+            'Clone Number',
+            'N/A',
+          );
+        }
+        else {
+          $column_options = array(
+            'N/A',
+            'Tree Identifier',
+            'Phenotype Name/Identifier',
+            'Value(s)',
+            'Timepoint',
+            'Clone Number',
+          );
+          $form["organism-$i"]['phenotype']['file']['#title'] = t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Name, and value for all of your phenotypic data: *');
+        }
+
+        $form["organism-$i"]['phenotype']['file']['columns-options'] = array(
+          '#type' => 'hidden',
+          '#value' => $column_options,
+        );
+
+        $form["organism-$i"]['phenotype']['file']['no-header'] = array();
       }
-
-      $form["organism-$i"]['phenotype']['file']['columns-options'] = array(
-        '#type' => 'hidden',
-        '#value' => $column_options,
-      );
-
-      $form["organism-$i"]['phenotype']['file']['no-header'] = array();
     }
 
     if (preg_match('/G/', $data_type)) {
