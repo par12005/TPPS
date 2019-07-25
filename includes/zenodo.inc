@@ -150,9 +150,14 @@ function tpps_doi_upload_files($id, array &$state) {
   for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
     if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'])) {
       $phenotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
-      $files[] = $phenotype['file'];
-      if ($phenotype['check']) {
-        $files[] = $phenotype['metadata'];
+      if (empty($phenotype['iso-check'])){
+        $files[] = $phenotype['file'];
+        if ($phenotype['check']) {
+          $files[] = $phenotype['metadata'];
+        }
+      }
+      else {
+        $files[] = $phenotype['iso'];
       }
     }
 
@@ -168,32 +173,44 @@ function tpps_doi_upload_files($id, array &$state) {
         }
       }
 
-      if ($genotype['file-type']['Genotype Assay']) {
-        $files[] = $genotype['file'];
+      if (!empty($genotype['files']['file-type']['SNPs Genotype Assay'])) {
+        $files[] = $genotype['files']['snps-assay'];
       }
-      if ($genotype['file-type']['Assay Design'] and $genotype['marker-type']['SNPs']) {
-        $files[] = $genotype['assay-design'];
+
+      if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
+        $files[] = $genotype['files']['assay-design'];
       }
-      if ($genotype['file-type']['VCF']) {
-        $files[] = $genotype['vcf'];
+
+      if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
+        $files[] = $genotype['files']['ssrs'];
+      }
+
+      if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
+        $files[] = $genotype['files']['other'];
+      }
+
+      if (!empty($genotype['files']['file-type']['VCF'])) {
+        $files[] = $genotype['files']['vcf'];
       }
     }
   }
 
   foreach ($files as $file) {
     $file = file_load($file);
-    $path = drupal_realpath($file->uri);
-    $data = array(
-      'file' => curl_file_create($path, $file->filemime, $file->filename),
-    );
+    if ($file->filesize < 20000000000) {
+      $path = drupal_realpath($file->uri);
+      $data = array(
+        'file' => curl_file_create($path, $file->filemime, $file->filename),
+      );
 
-    $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id/files?" . http_build_query(array('access_token' => $token)));
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data'));
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-    curl_exec($ch);
-    curl_close($ch);
+      $ch = curl_init("https://{$prefix}zenodo.org/api/deposit/depositions/$id/files?" . http_build_query(array('access_token' => $token)));
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: multipart/form-data'));
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+      curl_exec($ch);
+      curl_close($ch);
+    }
   }
 }
 
