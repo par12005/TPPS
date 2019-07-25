@@ -372,9 +372,8 @@ function tpps_file_parsing($accession) {
         
         $location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location);
-        
-        //TODO
-        $desc = "desc";
+
+        $desc = "Mass Spectrometry";
         $description_id = chado_get_cvterm(array(
           'cv_id' => array(
             'name' => 'schema',
@@ -382,9 +381,8 @@ function tpps_file_parsing($accession) {
           'name' => 'description',
           'is_obsolete' => 0,
         ))->cvterm_id;
-        
-        //TODO
-        $unit = "unit";
+
+        $unit = "intensity (arbitrary units)";
         $unit_id = chado_get_cvterm(array(
           'cv_id' => array(
             'name' => 'uo',
@@ -392,7 +390,12 @@ function tpps_file_parsing($accession) {
           'name' => 'unit',
           'is_obsolete' => 0,
         ))->cvterm_id;
-        
+
+        $attr_id = chado_get_cvterm(array(
+          'name' => 'intensity',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+
         for ($j = 0; $j < count($content) - 1; $j++) {
           $stock_id = NULL;
           foreach ($content[$j] as $key => $val) {
@@ -406,8 +409,7 @@ function tpps_file_parsing($accession) {
               $phenotype_vals[] = array(
                 'uniquename' => "$stock_name-$name-$j",
                 'name' => $name,
-                //TODO
-                'attr_id' => NULL,
+                'attr_id' => $attr_id,
                 'value' => $val,
               );
               
