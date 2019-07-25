@@ -591,7 +591,7 @@ function tpps_table_display(array &$state) {
     }
   }
   if (!empty($map_api_key)) {
-    $content .= "<script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
+    $content .= "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
     async defer></script>";
   }
 

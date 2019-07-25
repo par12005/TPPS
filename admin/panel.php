@@ -54,10 +54,10 @@ function tpps_admin_panel(array $form, array &$form_state) {
           $state['status'],
         );
         if ($state['status'] == 'Pending Approval') {
-          $pending[(int)substr($state['accession'], 4)] = $row;
+          $pending[(int) substr($state['accession'], 4)] = $row;
         }
         else {
-          $approved[(int)substr($state['accession'], 4)] = $row;
+          $approved[(int) substr($state['accession'], 4)] = $row;
         }
       }
     }
@@ -74,7 +74,10 @@ function tpps_admin_panel(array $form, array &$form_state) {
     $vars = array(
       'header' => $headers,
       'rows' => $rows,
-      'attributes' => array('class' => array('view', 'tpps_profile_tab'), 'id' => 'tpps_table_display'),
+      'attributes' => array(
+        'class' => array('view', 'tpps_profile_tab'),
+        'id' => 'tpps_table_display',
+      ),
       'caption' => '',
       'colgroups' => NULL,
       'sticky' => FALSE,
@@ -82,8 +85,8 @@ function tpps_admin_panel(array $form, array &$form_state) {
     );
 
     /*$form['a'] = array(
-      '#type' => 'hidden',
-      '#suffix' => theme_table($vars),
+    '#type' => 'hidden',
+    '#suffix' => theme_table($vars),
     );*/
     $form['#attributes'] = array('class' => array('hide-me'));
     $form['#suffix'] = "<div class='tpps_profile_tab'><label for='tpps_table_display'>Completed TPPS Submissions</label>" . theme_table($vars) . "</div>";

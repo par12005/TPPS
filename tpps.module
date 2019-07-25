@@ -487,6 +487,16 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         $item_parents[] = $key;
 
         $default = drupal_array_get_nested_value($saved_vals, $item_parents);
+
+        if (!isset($default)) {
+          foreach ($options as $k => $val) {
+            similar_text(strtolower($val), strtolower($item), $percent);
+            if ($percent > 85) {
+              $default = $k;
+              break;
+            }
+          }
+        }
         // dpm($item_parents);
         $element['columns'][$key] = array(
           '#type' => 'select',
@@ -1113,7 +1123,7 @@ function tpps_block_view_alter(&$data, $block) {
         }
       }
       if (!empty($flat['#page_3_cleared']) and !empty($map_api_key)) {
-        $content .= "<script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
+        $content .= "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
         async defer></script>";
       }
       $content .= "</div>";

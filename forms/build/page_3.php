@@ -144,6 +144,7 @@ function page_3_create_form(array &$form, array &$form_state) {
   $map_api_key = variable_get('tpps_maps_api_key', NULL);
   if (!empty($map_api_key)) {
     $form['tree-accession']['coord-format']['#suffix'] .= '
+    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=' . $map_api_key . '&callback=initMap"
     async defer></script>
     <style>

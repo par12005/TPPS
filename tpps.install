@@ -119,6 +119,7 @@ function tpps_install() {
 
   tpps_install_cvterms();
 
+  tpps_default_permissions();
 }
 
 /**
@@ -467,5 +468,59 @@ function tpps_create_plusgeno_view() {
       ->fetchObject()->definition;
     preg_match('/d\.db_id ?= ?(\d+)\);/', $definition, $matches);
     variable_set('tpps_local_db', chado_get_db(array('db_id' => (int) $matches[1])));
+  }
+}
+
+/**
+ * Sets default TPPS module permissions.
+ */
+function tpps_default_permissions() {
+  $admin_query = db_select('role', 'r')
+    ->fields('r', array('rid'))
+    ->condition('name', 'administrator')
+    ->execute();
+
+  $auth_query = db_select('role', 'r')
+    ->fields('r', array('rid'))
+    ->condition('name', 'authenticated user')
+    ->execute();
+
+  if (($admin = $admin_query->fetchObject()) and ($auth = $auth_query->fetchObject())) {
+    $perms = tpps_permission();
+    foreach ($perms as $name => $info) {
+      db_insert('role_permission')
+        ->fields(array(
+          'rid' => $admin->rid,
+          'permission' => $name,
+          'module' => 'tpps',
+        ))
+        ->execute();
+    }
+
+    db_insert('role_permission')
+      ->fields(array(
+        'rid' => $auth->rid,
+        'permission' => 'access tpps form',
+        'module' => 'tpps',
+      ))
+      ->execute();
+
+    db_insert('role_permission')
+      ->fields(array(
+        'rid' => $auth->rid,
+        'permission' => 'user tpps submissions',
+        'module' => 'tpps',
+      ))
+      ->execute();
+
+    db_insert('role_permission')
+      ->fields(array(
+        'rid' => $auth->rid,
+        'permission' => 'tpps delete submission',
+        'module' => 'tpps',
+      ))
+      ->execute();
+
+    drupal_set_message(t('Attention: @t default permissions have been set. Go to @p to manage and customize @t permissions.', array('@t' => 'TPPS', '@p' => 'admin/people/permissions')), 'status');
   }
 }

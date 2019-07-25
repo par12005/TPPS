@@ -247,7 +247,7 @@ function tpps_submit_page_1(array &$form_state) {
       'species' => $species,
       'infraspecific_name' => $infra,
     ));
-    
+
     $and = db_and()
       ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
       ->condition('organism_id', $form_state['ids']['organism_ids'][$i]);
@@ -255,7 +255,7 @@ function tpps_submit_page_1(array &$form_state) {
       ->fields('o', array('value'))
       ->condition($and)
       ->execute();
-    
+
     if (!($code = $code_query->fetchObject())) {
       $g_offset = 0;
       $s_offset = 0;
@@ -280,8 +280,7 @@ function tpps_submit_page_1(array &$form_state) {
           ->fields('o', array('value'))
           ->condition($and)
           ->execute();
-      }
-      while (($new_code = $new_code_query->fetchObject()));
+      } while (($new_code = $new_code_query->fetchObject()));
 
       tpps_chado_insert_record('organismprop', array(
         'organism_id' => $form_state['ids']['organism_ids'][$i],

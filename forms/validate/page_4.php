@@ -564,22 +564,20 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
       form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: field is required.");
     }
     elseif (!empty($file_type['SNPs Genotype Assay'])) {
-      $required_groups = array(
-        'Tree Id' => array(
-          'id' => array(1),
-        ),
-        'SNP Data' => array(
-          'data' => array(0),
-        ),
-      );
+      $location = drupal_realpath(file_load($snps_assay)->uri);
+      $content = tpps_parse_xlsx($location, 1);
+      $id_col_name = key($content['headers']);
+      while (($k = array_search(NULL, $content['headers']))) {
+        unset($content['headers'][$k]);
+      }
+      $num_columns = count($content[0]) - 1;
+      $num_unique_columns = count(array_unique($content['headers'])) - 1;
 
-      $file_element = $form[$id]['genotype']['files']['snps-assay'];
-      $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+      if ($num_unique_columns != $num_columns) {
+        form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file.");
+      }
 
       if (!form_get_errors()) {
-        // Get Tree Id column name.
-        $id_col_genotype_name = $groups['Tree Id']['1'];
-
         if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
           $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
           $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-groups']['Tree Id']['1'];
@@ -590,7 +588,7 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
           $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
         }
 
-        $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_genotype_name, $id_col_accession_name);
+        $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name);
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);

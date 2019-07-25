@@ -75,7 +75,8 @@ th > div.form-type-select > .ajax-progress {
 .hide-me {
   display: none !important;
 }
-#tpps_table_display, .tpps_profile_tab {
+#tpps_table_display,
+.tpps_profile_tab {
   background: #ffffff;
   border: 1px solid #b5e0ba;
   border-radius: 4px;
