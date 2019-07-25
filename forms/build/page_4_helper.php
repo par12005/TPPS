@@ -33,6 +33,34 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
     '#collapsible' => TRUE,
   );
 
+  $fields['iso-check'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('My phenotypes are results from a mass spectrometry or isotope analysis'),
+    '#ajax' => array(
+      'callback' => 'update_phenotype',
+      'wrapper' => "phenotypes-$id",
+    ),
+  );
+
+  $iso_check = isset($form_state['values'][$id]['phenotype']['iso-check']) ? $form_state['values'][$id]['phenotype']['iso-check'] : NULL;
+  if (!isset($iso_check)) {
+    $iso_check = isset($form_state['saved_values'][TPPS_PAGE_4][$id]['phenotype']['iso-check']) ? $form_state['saved_values'][TPPS_PAGE_4][$id]['phenotype']['iso-check'] : NULL;
+  }
+
+  if (!empty($iso_check)) {
+    $fields['iso'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Phenotype Isotope/Mass Spectrometry file: *'),
+      '#upload_location' => $phenotype_upload_location,
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#description' => 'Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain isotope or mass spectrometry data.'
+    );
+
+    return $fields;
+  }
+
   if (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Add Phenotype-$id") {
     $form_state['values'][$id]['phenotype']['number']++;
   }

@@ -103,260 +103,303 @@ function page_4_validate_form(array &$form, array &$form_state) {
  *   The state of the form being validated.
  */
 function validate_phenotype(array $phenotype, $id, array $form, array &$form_state) {
-  $phenotype_number = $phenotype['number'];
-  $phenotype_check = $phenotype['check'];
-  $phenotype_meta = $phenotype['metadata'];
-  $phenotype_file = $phenotype['file'];
+  $iso_check = $phenotype['iso-check'];
 
-  if ($phenotype_check == '1') {
-    if ($phenotype_meta == '') {
-      form_set_error("$id][phenotype][metadata", "Phenotype Metadata File: field is required.");
+  if (empty($iso_check)) {
+    $phenotype_number = $phenotype['number'];
+    $phenotype_check = $phenotype['check'];
+    $phenotype_meta = $phenotype['metadata'];
+    $phenotype_file = $phenotype['file'];
+
+    if ($phenotype_check == '1') {
+      if ($phenotype_meta == '') {
+        form_set_error("$id][phenotype][metadata", "Phenotype Metadata File: field is required.");
+      }
+      else {
+        $required_groups = array(
+          'Phenotype Id' => array(
+            'id' => array(1),
+          ),
+          'Attribute' => array(
+            'attr' => array(2),
+          ),
+          'Description' => array(
+            'desc' => array(3),
+          ),
+          'Units' => array(
+            'units' => array(4),
+          ),
+        );
+
+        $file_element = $form[$id]['phenotype']['metadata'];
+        $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+
+        if (!form_get_errors()) {
+          // Get phenotype name column.
+          $phenotype_name_col = $groups['Phenotype Id']['1'];
+
+          // Preserve file if it is valid.
+          $file = file_load($form_state['values'][$id]['phenotype']['metadata']);
+          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        }
+      }
+    }
+
+    for ($i = 1; $i <= $phenotype_number; $i++) {
+      $current_phenotype = $phenotype['phenotypes-meta']["$i"];
+      $name = $current_phenotype['name'];
+      $attribute = $current_phenotype['attribute'];
+      $description = $current_phenotype['description'];
+      $units = $current_phenotype['units'];
+
+      if ($name == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][name", "Phenotype $i Name: field is required.");
+      }
+
+      if ($attribute == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][attribute", "Phenotype $i Attribute: field is required.");
+      }
+
+      if ($description == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][description", "Phenotype $i Description: field is required.");
+      }
+
+      if ($units == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][units", "Phenotype $i Units: field is required.");
+      }
+
+      if ($current_phenotype['struct-check'] == '1' and $current_phenotype['structure'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][structure", "Phenotype $i Structure: field is required.");
+      }
+
+      if ($current_phenotype['val-check'] == '1' and $current_phenotype['min'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][min", "Phenotype $i Minimum Value: field is required.");
+      }
+
+      if ($current_phenotype['val-check'] == '1' and $current_phenotype['max'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
+      }
+    }
+
+    if ($phenotype_file == '') {
+      form_set_error("$id][phenotype][file", "Phenotypes: field is required.");
     }
     else {
-      $required_groups = array(
-        'Phenotype Id' => array(
-          'id' => array(1),
-        ),
-        'Attribute' => array(
-          'attr' => array(2),
-        ),
-        'Description' => array(
-          'desc' => array(3),
-        ),
-        'Units' => array(
-          'units' => array(4),
-        ),
-      );
+      if ($phenotype['format'] == 0) {
+        $required_groups = array(
+          'Tree Identifier' => array(
+            'id' => array(1),
+          ),
+          'Phenotype Data' => array(
+            'phenotype-data' => array(0),
+          ),
+        );
+      }
+      else {
+        $required_groups = array(
+          'Tree Identifier' => array(
+            'id' => array(1),
+          ),
+          'Phenotype Name/Identifier' => array(
+            'phenotype-name' => array(2),
+          ),
+          'Phenotype Value(s)' => array(
+            'val' => array(3),
+          ),
+        );
+      }
 
-      $file_element = $form[$id]['phenotype']['metadata'];
+      $file_element = $form[$id]['phenotype']['file'];
       $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
 
       if (!form_get_errors()) {
-        // Get phenotype name column.
-        $phenotype_name_col = $groups['Phenotype Id']['1'];
-
         // Preserve file if it is valid.
-        $file = file_load($form_state['values'][$id]['phenotype']['metadata']);
+        $file = file_load($form_state['values'][$id]['phenotype']['file']);
+        $phenotype_file_location = drupal_realpath($file->uri);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      }
-    }
-  }
 
-  for ($i = 1; $i <= $phenotype_number; $i++) {
-    $current_phenotype = $phenotype['phenotypes-meta']["$i"];
-    $name = $current_phenotype['name'];
-    $attribute = $current_phenotype['attribute'];
-    $description = $current_phenotype['description'];
-    $units = $current_phenotype['units'];
+        if ($phenotype['format'] == 0) {
+          $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
+          $phenotype_file_name_cols = $groups['Phenotype Data']['0'];
+          $content = tpps_parse_xlsx($phenotype_file_location, 1);
 
-    if ($name == '') {
-      form_set_error("$id][phenotype][phenotypes-meta][$i][name", "Phenotype $i Name: field is required.");
-    }
+          if (isset($phenotype_file_name_cols) and isset($phenotype_name_col)) {
+            $meta_content = tpps_parse_xlsx(drupal_realpath(file_load($phenotype_meta)->uri));
+            $missing_phenotypes = array();
+            foreach ($phenotype_file_name_cols as $key) {
+              $name = $content['headers'][$key];
+              $exists = FALSE;
+              for ($i = 0; $i < count($meta_content) - 1; $i++) {
+                if (strtolower($meta_content[$i][$phenotype_name_col]) == strtolower($name)) {
+                  $exists = TRUE;
+                  break;
+                }
+              }
 
-    if ($attribute == '') {
-      form_set_error("$id][phenotype][phenotypes-meta][$i][attribute", "Phenotype $i Attribute: field is required.");
-    }
+              if (!$exists) {
+                for ($i = 1; $i <= $phenotype_number; $i++) {
+                  if (strtolower($phenotype['phenotypes-meta'][$i]['name']) == strtolower($name)) {
+                    $exists = TRUE;
+                    break;
+                  }
+                }
+              }
 
-    if ($description == '') {
-      form_set_error("$id][phenotype][phenotypes-meta][$i][description", "Phenotype $i Description: field is required.");
-    }
-
-    if ($units == '') {
-      form_set_error("$id][phenotype][phenotypes-meta][$i][units", "Phenotype $i Units: field is required.");
-    }
-
-    if ($current_phenotype['struct-check'] == '1' and $current_phenotype['structure'] == '') {
-      form_set_error("$id][phenotype][phenotypes-meta][$i][structure", "Phenotype $i Structure: field is required.");
-    }
-
-    if ($current_phenotype['val-check'] == '1' and $current_phenotype['min'] == '') {
-      form_set_error("$id][phenotype][phenotypes-meta][$i][min", "Phenotype $i Minimum Value: field is required.");
-    }
-
-    if ($current_phenotype['val-check'] == '1' and $current_phenotype['max'] == '') {
-      form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
-    }
-  }
-
-  if ($phenotype_file == '') {
-    form_set_error("$id][phenotype][file", "Phenotypes: field is required.");
-  }
-  else {
-    if ($phenotype['format'] == 0) {
-      $required_groups = array(
-        'Tree Identifier' => array(
-          'id' => array(1),
-        ),
-        'Phenotype Data' => array(
-          'phenotype-data' => array(0),
-        ),
-      );
-    }
-    else {
-      $required_groups = array(
-        'Tree Identifier' => array(
-          'id' => array(1),
-        ),
-        'Phenotype Name/Identifier' => array(
-          'phenotype-name' => array(2),
-        ),
-        'Phenotype Value(s)' => array(
-          'val' => array(3),
-        ),
-      );
-    }
-
-    $file_element = $form[$id]['phenotype']['file'];
-    $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-
-    if (!form_get_errors()) {
-      // Preserve file if it is valid.
-      $file = file_load($form_state['values'][$id]['phenotype']['file']);
-      $phenotype_file_location = drupal_realpath($file->uri);
-      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
-      if ($phenotype['format'] == 0) {
-        $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
-        $phenotype_file_name_cols = $groups['Phenotype Data']['0'];
-        $content = tpps_parse_xlsx($phenotype_file_location, 1);
-
-        if (isset($phenotype_file_name_cols) and isset($phenotype_name_col)) {
-          $meta_content = tpps_parse_xlsx(drupal_realpath(file_load($phenotype_meta)->uri));
-          $missing_phenotypes = array();
-          foreach ($phenotype_file_name_cols as $key) {
-            $name = $content['headers'][$key];
-            $exists = FALSE;
-            for ($i = 0; $i < count($meta_content) - 1; $i++) {
-              if (strtolower($meta_content[$i][$phenotype_name_col]) == strtolower($name)) {
-                $exists = TRUE;
-                break;
+              if (!$exists) {
+                $missing_phenotypes[] = $name;
               }
             }
-
-            if (!$exists) {
+            if ($missing_phenotypes !== array()) {
+              $phenotype_id_str = implode(', ', $missing_phenotypes);
+              form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype Metadata file. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype Metadata file. The phenotypes we detected with missing definitions were: $phenotype_id_str");
+            }
+            // dpm($meta_content[0][$phenotype_name_col]);.
+          }
+          elseif (isset($phenotype_file_name_cols)) {
+            $missing_phenotypes = array();
+            foreach ($phenotype_file_name_cols as $key) {
+              $name = $content['headers'][$key];
+              $exists = FALSE;
               for ($i = 1; $i <= $phenotype_number; $i++) {
                 if (strtolower($phenotype['phenotypes-meta'][$i]['name']) == strtolower($name)) {
                   $exists = TRUE;
                   break;
                 }
               }
-            }
 
-            if (!$exists) {
-              $missing_phenotypes[] = $name;
+              if (!$exists) {
+                $missing_phenotypes[] = $name;
+              }
+            }
+            if ($missing_phenotypes !== array()) {
+              $phenotype_id_str = implode(', ', $missing_phenotypes);
+              form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype Metadata file. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype Metadata file. The phenotypes we detected with missing definitions were: $phenotype_id_str");
             }
           }
-          if ($missing_phenotypes !== array()) {
-            $phenotype_id_str = implode(', ', $missing_phenotypes);
-            form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype Metadata file. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype Metadata file. The phenotypes we detected with missing definitions were: $phenotype_id_str");
-          }
-          // dpm($meta_content[0][$phenotype_name_col]);.
         }
-        elseif (isset($phenotype_file_name_cols)) {
-          $missing_phenotypes = array();
-          foreach ($phenotype_file_name_cols as $key) {
-            $name = $content['headers'][$key];
-            $exists = FALSE;
-            for ($i = 1; $i <= $phenotype_number; $i++) {
-              if (strtolower($phenotype['phenotypes-meta'][$i]['name']) == strtolower($name)) {
-                $exists = TRUE;
-                break;
+        else {
+          // Get column names.
+          $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
+          $phenotype_file_name_col = $groups['Phenotype Name/Identifier']['2'];
+
+          if (isset($phenotype_file_name_col) and isset($phenotype_name_col)) {
+            $missing_phenotypes = tpps_compare_files($phenotype_file, $phenotype_meta, $phenotype_file_name_col, $phenotype_name_col);
+
+            for ($i = 0; $i < count($missing_phenotypes); $i++) {
+              $missing_phenotypes[$i];
+              for ($j = 1; $j <= $phenotype_number; $j++) {
+                if (strtolower($phenotype['phenotypes-meta'][$j]['name']) == strtolower($missing_phenotypes[$i])) {
+                  unset($missing_phenotypes[$i]);
+                  break;
+                }
               }
             }
 
-            if (!$exists) {
-              $missing_phenotypes[] = $name;
+            if ($missing_phenotypes !== array()) {
+              $phenotype_id_str = implode(', ', $missing_phenotypes);
+              form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype Metadata file. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype Metadata file. The phenotypes we detected with missing definitions were: $phenotype_id_str");
             }
           }
-          if ($missing_phenotypes !== array()) {
-            $phenotype_id_str = implode(', ', $missing_phenotypes);
-            form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype Metadata file. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype Metadata file. The phenotypes we detected with missing definitions were: $phenotype_id_str");
+          elseif (isset($phenotype_file_name_col)) {
+            $content = tpps_parse_xlsx($phenotype_file_location);
+
+            $missing_phenotypes = array();
+            for ($i = 0; $i < count($content) - 1; $i++) {
+              $used_phenotype = $content[$i][$phenotype_file_name_col];
+              $defined = FALSE;
+              for ($j = 1; $j <= $phenotype_number; $j++) {
+                if (strtolower($phenotype['phenotypes-meta'][$j]['name']) == strtolower($used_phenotype)) {
+                  $defined = TRUE;
+                  break;
+                }
+              }
+              if (!$defined) {
+                array_push($missing_phenotypes, $used_phenotype);
+              }
+            }
+
+            if ($missing_phenotypes !== array()) {
+              $phenotype_id_str = implode(', ', $missing_phenotypes);
+              form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype definitions. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype definitions. The phenotypes we detected with missing definitions were: $phenotype_id_str");
+            }
           }
         }
+
+        if (isset($phenotype_file_tree_col)) {
+          if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
+            $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
+            $column_vals = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-columns'];
+          }
+          else {
+            $num = substr($id, 9);
+            $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file'];
+            $column_vals = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-columns'];
+          }
+
+          foreach ($column_vals as $col => $val) {
+            if ($val == '1') {
+              $id_col_accession_name = $col;
+              break;
+            }
+          }
+
+          $missing_trees = tpps_compare_files($form_state['values'][$id]['phenotype']['file'], $tree_accession_file, $phenotype_file_tree_col, $id_col_accession_name);
+
+          if ($missing_trees !== array()) {
+            $tree_id_str = implode(', ', $missing_trees);
+            form_set_error("$id][phenotype][file", "Phenotype file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Phenotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
+          }
+        }
+
+        if (!form_get_errors()) {
+          $rows = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + !empty($phenotype['file-no-header']);
+          if ($phenotype['format'] == 0) {
+            $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows * count($phenotype_file_name_cols);
+          }
+          else {
+            $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows;
+          }
+        }
+      }
+    }
+  }
+  else {
+    $file = file_load($phenotype['iso']);
+    $location = drupal_realpath($file->uri);
+    $content = tpps_parse_xlsx($location, 1);
+    $id_col_name = key($content['headers']);
+    while (($k = array_search(NULL, $content['headers']))) {
+      unset($content['headers'][$k]);
+    }
+    $num_columns = count($content[0]) - 1;
+    $num_unique_columns = count(array_unique($content['headers'])) - 1;
+
+    if ($num_unique_columns != $num_columns) {
+      form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file.");
+    }
+
+    if (!form_get_errors()) {
+      if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
+        $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
+        $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-groups']['Tree Id']['1'];
       }
       else {
-        // Get column names.
-        $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
-        $phenotype_file_name_col = $groups['Phenotype Name/Identifier']['2'];
-
-        if (isset($phenotype_file_name_col) and isset($phenotype_name_col)) {
-          $missing_phenotypes = tpps_compare_files($phenotype_file, $phenotype_meta, $phenotype_file_name_col, $phenotype_name_col);
-
-          for ($i = 0; $i < count($missing_phenotypes); $i++) {
-            $missing_phenotypes[$i];
-            for ($j = 1; $j <= $phenotype_number; $j++) {
-              if (strtolower($phenotype['phenotypes-meta'][$j]['name']) == strtolower($missing_phenotypes[$i])) {
-                unset($missing_phenotypes[$i]);
-                break;
-              }
-            }
-          }
-
-          if ($missing_phenotypes !== array()) {
-            $phenotype_id_str = implode(', ', $missing_phenotypes);
-            form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype Metadata file. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype Metadata file. The phenotypes we detected with missing definitions were: $phenotype_id_str");
-          }
-        }
-        elseif (isset($phenotype_file_name_col)) {
-          $content = tpps_parse_xlsx($phenotype_file_location);
-
-          $missing_phenotypes = array();
-          for ($i = 0; $i < count($content) - 1; $i++) {
-            $used_phenotype = $content[$i][$phenotype_file_name_col];
-            $defined = FALSE;
-            for ($j = 1; $j <= $phenotype_number; $j++) {
-              if (strtolower($phenotype['phenotypes-meta'][$j]['name']) == strtolower($used_phenotype)) {
-                $defined = TRUE;
-                break;
-              }
-            }
-            if (!$defined) {
-              array_push($missing_phenotypes, $used_phenotype);
-            }
-          }
-
-          if ($missing_phenotypes !== array()) {
-            $phenotype_id_str = implode(', ', $missing_phenotypes);
-            form_set_error("$id][phenotype][file", "Phenotype file: We detected Phenotypes that were not in your Phenotype definitions. Please either remove these phenotypes from your Phenotype file, or add them to your Phenotype definitions. The phenotypes we detected with missing definitions were: $phenotype_id_str");
-          }
-        }
+        $num = substr($id, 9);
+        $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file'];
+        $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
       }
 
-      if (isset($phenotype_file_tree_col)) {
-        if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
-          $column_vals = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-columns'];
-        }
-        else {
-          $num = substr($id, 9);
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file'];
-          $column_vals = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-columns'];
-        }
+      $missing_trees = tpps_compare_files($file->fid, $tree_accession_file, $id_col_name, $id_col_accession_name);
 
-        foreach ($column_vals as $col => $val) {
-          if ($val == '1') {
-            $id_col_accession_name = $col;
-            break;
-          }
-        }
-
-        $missing_trees = tpps_compare_files($form_state['values'][$id]['phenotype']['file'], $tree_accession_file, $phenotype_file_tree_col, $id_col_accession_name);
-
-        if ($missing_trees !== array()) {
-          $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][phenotype][file", "Phenotype file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Phenotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
-        }
+      if ($missing_trees !== array()) {
+        $tree_id_str = implode(', ', $missing_trees);
+        form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
       }
+    }
 
-      if (!form_get_errors()) {
-        $rows = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + !empty($phenotype['file-no-header']);
-        if ($phenotype['format'] == 0) {
-          $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows * count($phenotype_file_name_cols);
-        }
-        else {
-          $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows;
-        }
-      }
+    if (!form_get_errors()) {
+      // Preserve file if it is valid.
+      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
   }
 }
