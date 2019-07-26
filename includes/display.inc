@@ -624,16 +624,10 @@ function tpps_table_display(array &$state) {
  * @return string
  *   The rendered page.
  */
-function tpps_completed_display() {
+function tpps_completed_display($accession = NULL) {
 
   global $base_url;
   $display = "";
-  $params = drupal_get_query_parameters();
-  if (empty($params['id'])) {
-    global $user;
-    drupal_goto("user/{$user->uid}/tpps");
-  }
-  $accession = $params['id'];
   $link = "$base_url/tpps_details/accession/$accession";
 
   $old_form_state = tpps_load_submission($accession);
@@ -689,10 +683,10 @@ function tpps_tab_create($user) {
     $title = $abstract = $accession_cell = NULL;
 
     if (isset($page_1['publication']['title'])) {
-      $title = "<a href='$base_url/$prefix?accession={$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
+      $title = "<a href='$base_url/$prefix/{$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
     }
     else {
-      $title = "<a href='$base_url/$prefix?accession={$state['accession']}' style='text-decoration: underline;'>No Title</a>";
+      $title = "<a href='$base_url/$prefix/{$state['accession']}' style='text-decoration: underline;'>No Title</a>";
     }
 
     if (isset($page_1['publication']['abstract'])) {
@@ -751,10 +745,10 @@ function tpps_tab_create($user) {
     $title = $abstract = NULL;
 
     if (isset($page_1['publication']['title'])) {
-      $title = "<a href='$base_url/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
+      $title = "<a href='$base_url/completed-submission/{$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
     }
     else {
-      $title = "<a href='$base_url/completed-submission?id={$state['accession']}' style='text-decoration: underline;'>No Title</a>";
+      $title = "<a href='$base_url/completed-submission/{$state['accession']}' style='text-decoration: underline;'>No Title</a>";
     }
 
     if (isset($page_1['publication']['abstract'])) {

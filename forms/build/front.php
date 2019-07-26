@@ -44,7 +44,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
       }
       else {
         if (isset($state) and !isset($state['saved_values'][TPPS_PAGE_1])) {
-          tpps_delete_submission($state['accession']);
+          tpps_delete_submission($state['accession'], FALSE);
         }
       }
     }

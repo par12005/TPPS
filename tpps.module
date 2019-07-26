@@ -43,6 +43,15 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
+  $items['tpps/%'] = array(
+    'title' => 'Tripal Plant PopGen Submit',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tpps_main', 1),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access tpps form'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
   $items['user/%user/tpps'] = array(
     'title' => 'TPPS Submissions',
     'page callback' => 'tpps_tab_create',
@@ -61,9 +70,10 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $items['completed-submission'] = array(
+  $items['completed-submission/%'] = array(
     'title' => 'TPPS Completed Submission',
     'page callback' => 'tpps_completed_display',
+    'page arguments' => array(1),
     'access callback' => 'tpps_access',
     'access arguments' => array('access content'),
     'type' => MENU_NORMAL_ITEM,
@@ -73,6 +83,16 @@ function tpps_menu() {
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_admin_panel'),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('approve tpps submissions'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'admin/panel.php',
+  );
+
+  $items['tpps-admin-panel/%'] = array(
+    'title' => 'TPPS Admin Panel',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tpps_admin_panel', 1),
     'access callback' => 'tpps_access',
     'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,
@@ -235,8 +255,14 @@ function tpps_access($permission, array $args = array()) {
     return TRUE;
   }
   $params = drupal_get_query_parameters(NULL, array());
+  if (preg_match('/tpps\/(TGDR.*)/', $params['q'], $matches)) {
+    $accession = $matches[1];
+  }
+  elseif ($params['q'] == 'tpps' and !empty($params['accession'])) {
+    $accession = $params['accession'];
+  }
 
-  if ($params['q'] == 'tpps' and empty($params['accession'])) {
+  if ($params['q'] == 'tpps' and empty($accession)) {
     return TRUE;
   }
 
@@ -244,7 +270,7 @@ function tpps_access($permission, array $args = array()) {
     if ($params['q'] == 'tpps-admin-panel') {
       drupal_goto('user/login', array('query' => drupal_get_destination()));
     }
-    elseif ($params['q'] == 'tpps' and !empty($params['accession'])) {
+    elseif ($params['q'] == 'tpps' and !empty($accession)) {
       drupal_goto('user/login', array('query' => drupal_get_destination()));
     }
   }
@@ -256,11 +282,11 @@ function tpps_access($permission, array $args = array()) {
           return TRUE;
         }
 
-        if ($params['accession'] == 'new') {
+        if ($accession == 'new') {
           return TRUE;
         }
 
-        if (($state = tpps_load_submission($params['accession'], FALSE))) {
+        if (($state = tpps_load_submission($accession, FALSE))) {
           if ($state->status == "Incomplete" and $state->uid == $user->uid) {
             return TRUE;
           }
@@ -366,14 +392,14 @@ function tpps_mail($key, array &$message, array $params) {
       $message['body'][] =
       "<li>Study Type: {$params['study_type']}</li>
       <li>Data Type: {$params['data_type']}</li></ul>
-      You can view your submission <a href='{$params['base_url']}/completed-submission?id={$params['accession']}' style='text-decoration: underline;'>here.</a><br>
+      You can view your submission <a href='{$params['base_url']}/completed-submission/{$params['accession']}' style='text-decoration: underline;'>here.</a><br>
       If you have any questions about your submission, please feel free to contact us <a href='{$params['base_url']}/contactform'>here</a>.<br><br>";
       break;
 
     case 'admin_recieved':
       $message['body'][] = "Attention:<br><br>
       User {$params['user_mail']} has completed a TPPS Submission, titled {$params['title']}.<br>
-      Click <a href='{$params['base_url']}/tpps-admin-panel?accession={$params['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
+      Click <a href='{$params['base_url']}/tpps-admin-panel/{$params['accession']}' style='text-decoration: underline;'>here</a> to manage or approve this submission.";
       break;
 
     case 'user_rejected':
@@ -390,7 +416,7 @@ function tpps_mail($key, array &$message, array $params) {
       $message['body'][] =
       "Congratulations! Your submission to TPPS has been approved!<br><br>
       You may now refer to your submitted data with accession number {$params['accession']}.<br><br>
-      You can still view your submission from your <a href=\"{$params['base_url']}/completed-submission?id={$params['accession']}\">TPPS Completed Submissions</a> tab.<br>
+      You can still view your submission from your <a href=\"{$params['base_url']}/completed-submission/{$params['accession']}\">TPPS Completed Submissions</a> tab.<br>
       Your submission should be public on the <a href=\"{$params['base_url']}/tpps_details/main\">TPPS/TGDR Landing Page</a> within the next 24 hours.<br>
       To generate a DOI for your submission, please click <a href=\"{$params['base_url']}/tpps/doi/{$params['accession']}\">here</a>.";
       break;
@@ -711,14 +737,13 @@ function tpps_page_build(&$page) {
  * @return array
  *   The created form.
  */
-function tpps_main(array $form, array &$form_state) {
+function tpps_main(array $form, array &$form_state, $accession = NULL) {
 
   require_once 'forms/build/front.php';
   global $user;
-  $params = drupal_get_query_parameters();
 
   if (!isset($form_state['stage'])) {
-    if (!isset($params['accession'])) {
+    if (!isset($accession)) {
       // First access, no accession in link.
       $form_state['stage'] = 'frontpage';
 
@@ -730,7 +755,7 @@ function tpps_main(array $form, array &$form_state) {
     }
     else {
       // First access, and with accession in link.
-      $old_form_state = tpps_load_submission($params['accession']);
+      $old_form_state = tpps_load_submission($accession);
       if (empty($old_form_state)) {
         drupal_goto('tpps');
       }
@@ -960,7 +985,7 @@ function tpps_main_submit($form, &$form_state) {
         $form_state['status'] = 'Pending Approval';
         tpps_update_submission($form_state, array('status' => 'Pending Approval'));
         tpps_submit_email($form_state);
-        drupal_goto('completed-submission', array('query' => array('id' => $form_state['accession'])));
+        drupal_goto("completed-submission/{$form_state['accession']}");
         return;
       }
       break;
@@ -1018,7 +1043,12 @@ function tpps_block_view_alter(&$data, $block) {
       $data['subject'] = t('TPPS Status');
       $content = "<div class='tgdr_status_block'>";
       global $user;
-      if (isset($_REQUEST['accession'])) {
+      $params = drupal_get_query_parameters(NULL, array());
+      if (preg_match('/tpps\/(TGDR.*)/', $params['q'], $matches)) {
+        $accession = $matches[1];
+        $form_state = tpps_load_submission($accession);
+      }
+      elseif (isset($_REQUEST['accession'])) {
         $accession = $_REQUEST['accession'];
         $form_state = tpps_load_submission($accession);
       }

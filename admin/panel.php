@@ -32,13 +32,10 @@
  * @return array
  *   The administrative panel form.
  */
-function tpps_admin_panel(array $form, array &$form_state) {
+function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 
   global $user;
   global $base_url;
-
-  $params = drupal_get_query_parameters();
-  $accession = isset($params['accession']) ? $params['accession'] : NULL;
 
   if (empty($accession)) {
 
@@ -49,7 +46,7 @@ function tpps_admin_panel(array $form, array &$form_state) {
     foreach ($states as $state) {
       if (!empty($state)) {
         $row = array(
-          l($state['accession'], "$base_url/tpps-admin-panel?accession={$state['accession']}"),
+          l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
           $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
           $state['status'],
         );
