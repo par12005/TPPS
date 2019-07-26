@@ -37,14 +37,16 @@ function tpps_front_create_form(array &$form, array $form_state) {
     $states = tpps_load_submission_multiple(array('status' => 'Incomplete', 'uid' => $user->uid));
 
     foreach ($states as $state) {
-      if ($state != NULL and isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
-        $title = ($state['saved_values'][TPPS_PAGE_1]['publication']['title'] != NULL) ? $state['saved_values'][TPPS_PAGE_1]['publication']['title'] : "No Title";
-        $tgdr_id = $state['accession'];
-        $options_arr["$tgdr_id"] = "$title";
-      }
-      else {
-        if (isset($state) and !isset($state['saved_values'][TPPS_PAGE_1])) {
-          tpps_delete_submission($state['accession'], FALSE);
+      if (empty($state['tpps_type']) or $state['tpps_type'] != 'tppsc') {
+        if ($state != NULL and isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
+          $title = ($state['saved_values'][TPPS_PAGE_1]['publication']['title'] != NULL) ? $state['saved_values'][TPPS_PAGE_1]['publication']['title'] : "No Title";
+          $tgdr_id = $state['accession'];
+          $options_arr["$tgdr_id"] = "$title";
+        }
+        else {
+          if (isset($state) and !isset($state['saved_values'][TPPS_PAGE_1])) {
+            tpps_delete_submission($state['accession'], FALSE);
+          }
         }
       }
     }
