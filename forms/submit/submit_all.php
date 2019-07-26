@@ -17,6 +17,9 @@
  */
 function tpps_submit_all($accession) {
 
+  $form_state = tpps_load_submission($accession);
+  $form_state['status'] = 'Submission Job Running';
+  tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
   $transaction = db_transaction();
 
   try {
@@ -49,6 +52,9 @@ function tpps_submit_all($accession) {
   }
   catch (Exception $e) {
     $transaction->rollback();
+    $form_state = tpps_load_submission($accession);
+    $form_state['status'] = 'Pending Approval';
+    tpps_update_submission($form_state, array('status' => 'Pending Approval'));
     watchdog_exception('tpps', $e);
   }
 }

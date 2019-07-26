@@ -174,7 +174,7 @@ function tpps_schema() {
         'not null' => TRUE,
       ),
       'status' => array(
-        'description' => 'Status of the submission - Incomplete, Pending Approval, or Approved.',
+        'description' => 'Status of the submission - Incomplete, Pending Approval, Submission Job Running or Approved.',
         'type' => 'varchar',
         'size' => 'normal',
         'not null' => TRUE,

@@ -39,7 +39,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 
   if (empty($accession)) {
 
-    $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Approved')));
+    $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Submission Job Running', 'Approved')));
 
     $pending = array();
     $approved = array();
