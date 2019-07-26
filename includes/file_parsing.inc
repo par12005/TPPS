@@ -1407,6 +1407,11 @@ function tpps_file_parsing($accession) {
             'value' => "$val",
           ));
 
+          tpps_chado_insert_record('stock_phenotype', array(
+            'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
+            'phenotype_id' => $env_id,
+          ));
+
           tpps_chado_insert_record('phenotypeprop', array(
             'phenotype_id' => $env_id,
             'type_id' => array(
