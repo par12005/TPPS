@@ -72,7 +72,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
       'header' => $headers,
       'rows' => $rows,
       'attributes' => array(
-        'class' => array('view', 'tpps_profile_tab'),
+        'class' => array('view', 'tpps_table'),
         'id' => 'tpps_table_display',
       ),
       'caption' => '',
@@ -81,12 +81,49 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
       'empty' => '',
     );
 
-    /*$form['a'] = array(
-    '#type' => 'hidden',
-    '#suffix' => theme_table($vars),
-    );*/
     $form['#attributes'] = array('class' => array('hide-me'));
-    $form['#suffix'] = "<div class='tpps_profile_tab'><label for='tpps_table_display'>Completed TPPS Submissions</label>" . theme_table($vars) . "</div>";
+    $form['#suffix'] = "<div class='tpps_table'><label for='tpps_table_display'>Completed TPPS Submissions</label>" . theme_table($vars) . "</div>";
+
+    $tpps_new_orgs = variable_get('tpps_new_organisms', NULL);
+    $db = chado_get_db(array('name' => 'NCBI Taxonomy'));
+    if (!empty($db)) {
+      $rows = array();
+      $query = db_select('chado.organism', 'o');
+      $query->fields('o', array('genus', 'species'));
+
+      $query_e = db_select('chado.organism_dbxref', 'odb');
+      $query_e->join('chado.dbxref', 'd', 'd.dbxref_id = odb.dbxref_id');
+      $query_e->condition('d.db_id', $db->db_id)
+        ->where('odb.organism_id = o.organism_id');
+      $query->notExists($query_e);
+      $query = $query->execute();
+
+      while (($org = $query->fetchObject())) {
+        $rows[] = array(
+          "$org->genus $org->species",
+        );
+      }
+      
+      if (!empty($rows)) {
+        $headers = array();
+
+        $vars = array(
+          'header' => $headers,
+          'rows' => $rows,
+          'attributes' => array(
+            'class' => array('view', 'tpps_table'),
+            'id' => 'new_species',
+          ),
+          'caption' => '',
+          'colgroups' => NULL,
+          'sticky' => FALSE,
+          'empty' => '',
+        );
+
+        $form['#suffix'] .= "<div class='tpps_table'><label for='new_species'>New Species: the species listed below likely need to be updated, because they do not have NCBI Taxonomy identifiers in the database.</label>" . theme_table($vars) . "</div>";
+      }
+      variable_set('tpps_new_organisms', $tpps_new_orgs);
+    }
   }
   else {
     $submission_state = tpps_load_submission($accession);
