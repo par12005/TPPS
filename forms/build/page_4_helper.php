@@ -204,6 +204,21 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
         ),
       ),
     );
+
+    $fields['phenotypes-meta']["$i"]['time-check'] = array(
+      '#type' => 'checkbox',
+      '#title' => t("Phenotype @i has a time point/range", array('@i' => $i)),
+    );
+
+    $fields['phenotypes-meta']["$i"]['time'] = array(
+      '#type' => 'textfield',
+      '#title' => t("Phenotype @i Time: *", array('@i' => $i)),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][time-check]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
   }
 
   $fields['check'] = array(

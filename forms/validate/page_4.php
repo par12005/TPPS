@@ -179,6 +179,10 @@ function validate_phenotype(array $phenotype, $id, array $form, array &$form_sta
       if ($current_phenotype['val-check'] == '1' and $current_phenotype['max'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
       }
+
+      if ($current_phenotype['time-check'] == '1' and $current_phenotype['time'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][time", "Phenotype $i Time: field is required.");
+      }
     }
 
     if ($phenotype_file == '') {

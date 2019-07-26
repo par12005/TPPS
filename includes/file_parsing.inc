@@ -80,6 +80,9 @@ function tpps_file_parsing($accession) {
             $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
             $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
           }
+          if ($phenotype['phenotypes-meta'][$j]['time-check'] == '1') {
+            $phenotypes_meta[$name]['time'] = $phenotype['phenotypes-meta'][$j]['time'];
+          }
         }
 
         if ($phenotype['check'] == '1') {
@@ -286,7 +289,14 @@ function tpps_file_parsing($accession) {
               'phenotype_id' => $phenotype_id,
             );
 
-            if (isset($time_col_name)) {
+            if (isset($phenotypes_meta[strtolower($name)]['time'])) {
+              $phenotypeprop_vals[] = array(
+                'phenotype_id' => $phenotype_id,
+                'type_id' => $time_id,
+                'value' => $phenotypes_meta[strtolower($name)]['time'],
+              );
+            }
+            elseif (isset($time_col_name)) {
               $phenotypeprop_vals[] = array(
                 'phenotype_id' => $phenotype_id,
                 'type_id' => $time_id,
