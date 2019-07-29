@@ -33,6 +33,8 @@ function tpps_submit_all($accession) {
       'name' => $firstpage['publication']['title'],
       'description' => $firstpage['publication']['abstract'],
     ));
+    
+    tpps_tripal_entity_publish('Project', $firstpage['publication']['title'], $form_state['ids']['project_id']);
 
     tpps_submit_page_1($form_state);
 
@@ -165,6 +167,7 @@ function tpps_submit_page_1(array &$form_state) {
     'pyear' => $firstpage['publication']['year'],
     'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
   ));
+  tpps_tripal_entity_publish('Publication', $firstpage['publication']['title'], $publication_id);
 
   tpps_chado_insert_record('project_pub', array(
     'project_id' => $form_state['ids']['project_id'],
@@ -299,6 +302,8 @@ function tpps_submit_page_1(array &$form_state) {
       'organism_id' => $form_state['ids']['organism_ids'][$i],
       'project_id' => $form_state['ids']['project_id'],
     ));
+
+    tpps_tripal_entity_publish('Organism', "$genus $species", $form_state['ids']['organism_ids'][$i]);
   }
 }
 
@@ -1147,5 +1152,43 @@ function tpps_submit_summary(array &$form_state) {
         ));
       }
     }
+  }
+}
+
+function tpps_tripal_entity_publish($bundle_name, $title, $record_id) {
+  $bundles = tripal_get_content_types();
+  foreach ($bundles as $bundle_info) {
+    if ($bundle_info->label == $bundle_name) {
+      $bundle_id = $bundle_info->id;
+      $term_id = $bundle_info->term_id;
+      break;
+    }
+  }
+
+  if (!isset($bundle_id) or !isset($term_id)) {
+    return;
+  }
+  
+  $bundle = new TripalBundle(array('name' => 'bio_data_' . $bundle_id, 'term_id' => $term_id), 'TripalEntity');
+  $entity_id = chado_get_record_entity_by_bundle($bundle, $record_id);
+
+  if (empty($entity_id)) {
+    $entity_id = db_insert('tripal_entity')
+      ->fields(array(
+        'type' => 'TripalEntity',
+        'bundle' => 'bio_data_' . $bundle_id,
+        'term_id' => $term_id,
+        'title' => $title,
+        'created' => time(),
+        'changed' => time(),
+      ))
+      ->execute();
+
+    db_insert('chado_bio_data_' . $bundle_id)
+      ->fields(array(
+        'entity_id' => $entity_id,
+        'record_id' => $record_id,
+      ))
+      ->execute();
   }
 }
