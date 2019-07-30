@@ -1155,6 +1155,16 @@ function tpps_submit_summary(array &$form_state) {
   }
 }
 
+/**
+ * Publish a Tripal Entity based on the bundle name, title, and record id.
+ *
+ * @param string $bundle_name
+ *   The name of the bundle, for example, "Organism", "Gene", "Project", etc.
+ * @param string $title
+ *   The title of the entity.
+ * @param int $record_id
+ *   The id of the record for the entity in chado.
+ */
 function tpps_tripal_entity_publish($bundle_name, $title, $record_id) {
   $bundles = tripal_get_content_types();
   foreach ($bundles as $bundle_info) {
