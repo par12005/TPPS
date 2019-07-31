@@ -216,30 +216,30 @@ function tpps_file_parsing($accession) {
         $time_id = chado_get_cvterm(array('name' => 'time', 'is_obsolete' => 0))->cvterm_id;
         $description_id = chado_get_cvterm(array(
           'cv_id' => array(
-            'name' => 'schema',
+            'name' => $local_cv->name,
           ),
           'name' => 'description',
           'is_obsolete' => 0,
         ))->cvterm_id;
         $unit_id = chado_get_cvterm(array(
           'cv_id' => array(
-            'name' => 'uo',
+            'name' => $local_cv->name,
           ),
           'name' => 'unit',
           'is_obsolete' => 0,
         ))->cvterm_id;
         $min_id = chado_get_cvterm(array(
           'cv_id' => array(
-            'name' => 'default_namespace',
+            'name' => $local_cv->name,
           ),
-          'name' => 'minimum parameter',
+          'name' => 'minimum',
           'is_obsolete' => 0,
         ))->cvterm_id;
         $max_id = chado_get_cvterm(array(
           'cv_id' => array(
-            'name' => 'default_namespace',
+            'name' => $local_cv->name,
           ),
-          'name' => 'maximum parameter',
+          'name' => 'maximum',
           'is_obsolete' => 0,
         ))->cvterm_id;
 
@@ -280,7 +280,7 @@ function tpps_file_parsing($accession) {
             );
 
             if (!isset($phenotype_id)) {
-              $phenotype_id = tpps_chado_insert_record('phenotype', $phenotype_vals[0]);
+              $first_id = $phenotype_id = tpps_chado_insert_record('phenotype', $phenotype_vals[0]);
               $phenotype_vals = array();
             }
 
@@ -353,6 +353,15 @@ function tpps_file_parsing($accession) {
         unset($phenotype_vals);
         unset($phenotypeprop_vals);
         unset($stock_phenotype_vals);
+
+        for ($j = $first_id; $j < $phenotype_id; $j++) {
+          $record = db_select('chado.phenotype', 'p')
+            ->fields('p', array('uniquename'))
+            ->condition('phenotype_id', $j)
+            ->execute()
+            ->fetchObject();
+          tpps_tripal_entity_publish('Phenotype', $record->uniquename, $j);
+        }
 
         $phenotype_file->status = FILE_STATUS_PERMANENT;
         $phenotype_file = file_save($phenotype_file);

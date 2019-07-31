@@ -1166,35 +1166,25 @@ function tpps_submit_summary(array &$form_state) {
  *   The id of the record for the entity in chado.
  */
 function tpps_tripal_entity_publish($bundle_name, $title, $record_id) {
-  $bundles = tripal_get_content_types();
-  foreach ($bundles as $bundle_info) {
-    if ($bundle_info->label == $bundle_name) {
-      $bundle_id = $bundle_info->id;
-      $term_id = $bundle_info->term_id;
-      break;
-    }
-  }
+  $bundle = tripal_load_bundle_entity(array('label' => $bundle_name));
 
-  if (!isset($bundle_id) or !isset($term_id)) {
+  if (!isset($bundle)) {
     return;
   }
-  
-  $bundle = new TripalBundle(array('name' => 'bio_data_' . $bundle_id, 'term_id' => $term_id), 'TripalEntity');
-  $entity_id = chado_get_record_entity_by_bundle($bundle, $record_id);
 
-  if (empty($entity_id)) {
+  if (empty(chado_get_record_entity_by_bundle($bundle, $record_id))) {
     $entity_id = db_insert('tripal_entity')
       ->fields(array(
         'type' => 'TripalEntity',
-        'bundle' => 'bio_data_' . $bundle_id,
-        'term_id' => $term_id,
+        'bundle' => 'bio_data_' . $bundle->id,
+        'term_id' => $bundle->term_id,
         'title' => $title,
         'created' => time(),
         'changed' => time(),
       ))
       ->execute();
 
-    db_insert('chado_bio_data_' . $bundle_id)
+    db_insert('chado_bio_data_' . $bundle->id)
       ->fields(array(
         'entity_id' => $entity_id,
         'record_id' => $record_id,
