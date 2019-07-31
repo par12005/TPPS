@@ -46,7 +46,7 @@ function tpps_flatten(array $state) {
 
   if (isset($pub['secondaryAuthors']['number'])) {
     $data['#number_secondary_authors'] = $pub['secondaryAuthors']['number'];
-    for ($i = 1; $i < $data['#number_secondary_authors']; $i++) {
+    for ($i = 1; $i <= $data['#number_secondary_authors']; $i++) {
       if (isset($pub['secondaryAuthors']["$i"]) and $pub['secondaryAuthors']["$i"] != '') {
         $data["Secondary Author $i"] = $pub['secondaryAuthors']["$i"];
       }
