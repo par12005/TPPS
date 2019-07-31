@@ -665,7 +665,43 @@ function tpps_create_phenotype_entity() {
 }
 
 function tpps_create_genotype_entity() {
+  $local_db = variable_get('tpps_local_db');
+  $local_cv = chado_get_cv(array('name' => 'local'));
+  $genotype_term = chado_insert_cvterm(array(
+    'id' => "{$local_db->name}:genotype",
+    'name' => 'genotype',
+    'definition' => 'Genotype bundle',
+    'cv_name' => $local_cv->name,
+  ));
+
+  $args = array(
+    'vocabulary' => $local_cv->name,
+    'accession' => $genotype_term->name,
+    'term_name' => $genotype_term->name,
+    'storage_args' => array(
+      'data_table' => 'genotype',
+    ),
+  );
+
+  tripal_create_bundle($args);
+
+  $genotype_id = tpps_chado_insert_record('genotype', array(
+    'uniquename' => 'tpps_genotype_entity_template',
+    'type_id' => 1,
+  ));
+  $genotype_record = array(
+    'table' => 'genotype',
+    'id' => $genotype_id,
+  );
   
+  //TODO: Genotype props.
+
+  $bundle = tripal_load_bundle_entity(array('label' => 'Genotype'));
+  $term = tripal_load_term_entity(array('term_id' => $bundle->term_id));
+  tripal_create_bundle_fields($bundle, $term);
+
+  chado_delete_record('genotype', array('genotype_id' => $genotype_id));
+  tripal_unpublish_orphans($bundle->id);
 }
 
 function tpps_create_stock_entity() {
