@@ -553,11 +553,16 @@ function tpps_create_entities() {
 function tpps_create_phenotype_entity() {
   $local_db = variable_get('tpps_local_db');
   $local_cv = chado_get_cv(array('name' => 'local'));
-  $phenotype_term = chado_insert_cvterm(array(
-    'id' => "{$local_db->name}:phenotype",
-    'name' => 'phenotype',
-    'definition' => 'Phenotype bundle',
-    'cv_name' => $local_cv->name,
+  
+  $phenotype_term = chado_get_cvterm(array(
+    'name' => 'Phenotype',
+    'cv_id' => array(
+      'name' => 'ncit',
+    ),
+  ), array(
+    'include_fk' => array(
+      'dbxref_id' => 1,
+    ),
   ));
 
   $obs_term = chado_insert_cvterm(array(
@@ -586,8 +591,8 @@ function tpps_create_phenotype_entity() {
   chado_associate_semweb_term('phenotype', 'cvalue_id', $cval_term);
 
   $args = array(
-    'vocabulary' => $local_cv->name,
-    'accession' => $phenotype_term->name,
+    'vocabulary' => $phenotype_term->dbxref_id->db_id->name,
+    'accession' => $phenotype_term->dbxref_id->accession,
     'term_name' => $phenotype_term->name,
     'storage_args' => array(
       'data_table' => 'phenotype',
@@ -595,6 +600,7 @@ function tpps_create_phenotype_entity() {
   );
 
   tripal_create_bundle($args);
+  $bundle = tripal_load_bundle_entity(array('label' => 'Phenotype'));
 
   $phenotype_id = tpps_chado_insert_record('phenotype', array(
     'uniquename' => 'tpps_phenotype_entity_template',
@@ -604,37 +610,97 @@ function tpps_create_phenotype_entity() {
     'id' => $phenotype_id,
   );
 
-  $unit_term = chado_insert_cvterm(array(
-    'id' => "{$local_db->name}:unit",
+  $unit_term = chado_get_cvterm(array(
     'name' => 'unit',
-    'definition' => 'Phenotype unit',
-    'cv_name' => $local_cv->name,
+    'cv_id' => array(
+      'name' => 'uo',
+    ),
+  ), array(
+    'include_fk' => array(
+      'dbxref_id' => 1,
+    ),
   ));
 
-  chado_insert_property($phenotype_record, array(
-    'type_name' => $unit_term->name,
-    'cv_name' => $unit_term->cvname,
-    'value' => 'null',
+  field_create_field(array(
+    'field_name' => 'phenotype__unit',
+    'type' => 'chado_linker__prop',
+    'settings' => array(
+      'storage' => 'field_chado_storage',
+    ),
+    'storage' => array(
+      'type' => 'field_chado_storage',
+      'module' => 'tripal_chado',
+      'active' => 1,
+    ),
   ));
 
-  $desc_term = chado_insert_cvterm(array(
-    'id' => "{$local_db->name}:description",
+  field_create_instance(array(
+    'field_name' => 'phenotype__unit',
+    'entity_type' => 'TripalEntity',
+    'label' => 'Unit',
+    'bundle' => $bundle->name,
+    'required' => FALSE,
+    'settings' => array(
+      'user_register_form' => 0,
+      'term_vocabulary' => $unit_term->dbxref_id->db_id->name,
+      'term_name' => $unit_term->name,
+      'term_accession' => $unit_term->dbxref_id->accession,
+      'base_table' => 'phenotype',
+      'chado_table' => 'phenotypeprop',
+      'auto_attach' => 1,
+      'rows' => 1,
+      'term_fixed' => 0,
+    ),
+  ));
+
+  $desc_term = chado_get_cvterm(array(
     'name' => 'description',
-    'definition' => 'Phenotype description',
-    'cv_name' => $local_cv->name,
+    'cv_id' => array(
+      'name' => 'schema',
+    ),
+  ), array(
+    'include_fk' => array(
+      'dbxref_id' => 1,
+    ),
   ));
 
-  chado_insert_property($phenotype_record, array(
-    'type_name' => $desc_term->name,
-    'cv_name' => $desc_term->cvname,
-    'value' => 'null',
+  field_create_field(array(
+    'field_name' => 'phenotype__description',
+    'type' => 'chado_linker__prop',
+    'settings' => array(
+      'storage' => 'field_chado_storage',
+    ),
+    'storage' => array(
+      'type' => 'field_chado_storage',
+      'module' => 'tripal_chado',
+      'active' => 1,
+    ),
+  ));
+
+  field_create_instance(array(
+    'field_name' => 'phenotype__description',
+    'entity_type' => 'TripalEntity',
+    'label' => 'Description',
+    'bundle' => $bundle->name,
+    'required' => FALSE,
+    'settings' => array(
+      'user_register_form' => 0,
+      'term_vocabulary' => $desc_term->dbxref_id->db_id->name,
+      'term_name' => $desc_term->name,
+      'term_accession' => $desc_term->dbxref_id->accession,
+      'base_table' => 'phenotype',
+      'chado_table' => 'phenotypeprop',
+      'auto_attach' => 1,
+      'rows' => 1,
+      'term_fixed' => 0,
+    ),
   ));
 
   $min_term = chado_insert_cvterm(array(
-    'id' => "{$local_db->name}:minimum",
-    'name' => 'minimum',
-    'definition' => 'Phenotype minimum value',
-    'cv_name' => $local_cv->name,
+    'id' => "NCIT:minimum",
+    'name' => 'Minimum',
+    'definition' => 'The smallest possible quantity. [ NCI ]',
+    'cv_name' => 'ncit',
   ));
 
   chado_insert_property($phenotype_record, array(
@@ -644,10 +710,10 @@ function tpps_create_phenotype_entity() {
   ));
 
   $max_term = chado_insert_cvterm(array(
-    'id' => "{$local_db->name}:maximum",
-    'name' => 'maximum',
-    'definition' => 'Phenotype maximum value',
-    'cv_name' => $local_cv->name,
+    'id' => "NCIT:maximum",
+    'name' => 'Maximum',
+    'definition' => 'The largest possible quantity or degree. [ NCI ]',
+    'cv_name' => 'ncit',
   ));
 
   chado_insert_property($phenotype_record, array(
@@ -658,10 +724,14 @@ function tpps_create_phenotype_entity() {
 
   $bundle = tripal_load_bundle_entity(array('label' => 'Phenotype'));
   $term = tripal_load_term_entity(array('term_id' => $bundle->term_id));
-  tripal_create_bundle_fields($bundle, $term);
-
-  chado_delete_record('phenotype', array('phenotype_id' => $phenotype_id));
-  tripal_unpublish_orphans($bundle->id);
+  $fields = tripal_create_bundle_fields($bundle, $term);
+  if (empty($fields)) {
+    throw new Exception('TPPS was unable to create new fields for the Phenotype Tripal Entity type. This was most likely caused by existing records in the chado.phenotype table.');
+  }
+  else {
+    chado_delete_record('phenotype', array('phenotype_id' => $phenotype_id));
+    tripal_unpublish_orphans($bundle->id);
+  }
 }
 
 function tpps_create_genotype_entity() {

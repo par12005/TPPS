@@ -215,31 +215,31 @@ function tpps_file_parsing($accession) {
 
         $time_id = chado_get_cvterm(array('name' => 'time', 'is_obsolete' => 0))->cvterm_id;
         $description_id = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => $local_cv->name,
-          ),
           'name' => 'description',
+          'cv_id' => array(
+            'name' => 'schema',
+          ),
           'is_obsolete' => 0,
         ))->cvterm_id;
         $unit_id = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => $local_cv->name,
-          ),
           'name' => 'unit',
+          'cv_id' => array(
+            'name' => 'uo',
+          ),
           'is_obsolete' => 0,
         ))->cvterm_id;
         $min_id = chado_get_cvterm(array(
           'cv_id' => array(
-            'name' => $local_cv->name,
+            'name' => 'ncit',
           ),
-          'name' => 'minimum',
+          'name' => 'Minimum',
           'is_obsolete' => 0,
         ))->cvterm_id;
         $max_id = chado_get_cvterm(array(
           'cv_id' => array(
-            'name' => $local_cv->name,
+            'name' => 'ncit',
           ),
-          'name' => 'maximum',
+          'name' => 'Maximum',
           'is_obsolete' => 0,
         ))->cvterm_id;
 
