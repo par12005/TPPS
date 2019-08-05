@@ -1011,6 +1011,13 @@ function tpps_submit_page_3(array &$form_state) {
       'stock_id' => $stock_id,
       'project_id' => $form_state['ids']['project_id'],
     ));
+
+    $record = db_select('chado.stock', 's')
+      ->fields('s', array('uniquename'))
+      ->condition('stock_id', $stock_id)
+      ->execute()
+      ->fetchObject();
+    tpps_tripal_entity_publish('Stock', $record->uniquename, $stock_id);
   }
 
   if (!empty($thirdpage['existing_trees'])) {

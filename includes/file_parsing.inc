@@ -354,15 +354,6 @@ function tpps_file_parsing($accession) {
         unset($phenotypeprop_vals);
         unset($stock_phenotype_vals);
 
-        for ($j = $first_id; $j < $phenotype_id; $j++) {
-          $record = db_select('chado.phenotype', 'p')
-            ->fields('p', array('uniquename'))
-            ->condition('phenotype_id', $j)
-            ->execute()
-            ->fetchObject();
-          tpps_tripal_entity_publish('Phenotype', $record->uniquename, $j);
-        }
-
         $phenotype_file->status = FILE_STATUS_PERMANENT;
         $phenotype_file = file_save($phenotype_file);
       }
@@ -678,6 +669,11 @@ function tpps_file_parsing($accession) {
                 'project_id' => $project_id,
                 'stock_id' => $stock_id,
               ));
+
+              tpps_chado_insert_record('stock_genotype', array(
+                'stock_id' => $stock_id,
+                'genotype_id' => $genotype_id,
+              ));
             }
           }
         }
@@ -867,6 +863,11 @@ function tpps_file_parsing($accession) {
                 'project_id' => $project_id,
                 'stock_id' => $stock_id,
               ));
+
+              tpps_chado_insert_record('stock_genotype', array(
+                'stock_id' => $stock_id,
+                'genotype_id' => $genotype_id,
+              ));
             }
           }
         }
@@ -959,6 +960,11 @@ function tpps_file_parsing($accession) {
               'project_id' => $project_id,
               'stock_id' => $stock_id,
             ));
+            
+            tpps_chado_insert_record('stock_genotype', array(
+              'stock_id' => $stock_id,
+              'genotype_id' => $genotype_id,
+            ));
           }
         }
 
@@ -1002,6 +1008,7 @@ function tpps_file_parsing($accession) {
         $genotype_vals = array();
         $genotypeprop_vals = array();
         $genotype_call_vals = array();
+        $stock_genotype_vals = array();
         $feature_ids = array();
         $stocks = array();
         $format = "";
@@ -1075,6 +1082,8 @@ function tpps_file_parsing($accession) {
               $genotype_call_vals = array();
               tpps_chado_insert_record('genotypeprop', $genotypeprop_vals, array('multi' => TRUE));
               $genotypeprop_vals = array();
+              tpps_chado_insert_record('stock_genotype', $stock_genotype_vals, array('multi' => TRUE));
+              $stock_genotype_vals = array();
             }
 
             $genotype_vals[] = array(
@@ -1117,6 +1126,11 @@ function tpps_file_parsing($accession) {
                 'genotype_id' => $genotype_id,
                 'project_id' => $project_id,
                 'stock_id' => $stocks[$j - 9],
+              );
+
+              $stock_genotype_vals[] = array(
+                'stock_id' => $stocks[$j],
+                'genotype_id' => $genotype_id,
               );
             }
 
@@ -1227,9 +1241,11 @@ function tpps_file_parsing($accession) {
         tpps_chado_insert_record('genotype', $genotype_vals, array('multi' => TRUE));
         tpps_chado_insert_record('genotype_call', $genotype_call_vals, array('multi' => TRUE));
         tpps_chado_insert_record('genotypeprop', $genotypeprop_vals, array('multi' => TRUE));
+        tpps_chado_insert_record('stock_genotype', $stock_genotype_vals, array('multi' => TRUE));
         unset($genotype_vals);
         unset($genotype_call_vals);
         unset($genotypeprop_vals);
+        unset($stock_genotype_vals);
         // dpm('done: ' . date('r'));.
         $vcf_file->status = FILE_STATUS_PERMANENT;
         $vcf_file = file_save($vcf_file);
