@@ -562,7 +562,7 @@ function tpps_create_entities() {
   $transaction = db_transaction();
   try {
     if (empty(tripal_load_bundle_entity(array('label' => 'Genotype')))){
-      //tpps_create_genotype_entity();
+      tpps_create_genotype_entity();
     }
 
     if (empty(tripal_load_bundle_entity(array('label' => 'Stock')))){
@@ -579,16 +579,20 @@ function tpps_create_entities() {
 function tpps_create_genotype_entity() {
   $local_db = variable_get('tpps_local_db');
   $local_cv = chado_get_cv(array('name' => 'local'));
-  $genotype_term = chado_insert_cvterm(array(
-    'id' => "{$local_db->name}:genotype",
+  $genotype_term = chado_get_cvterm(array(
     'name' => 'genotype',
-    'definition' => 'Genotype bundle',
-    'cv_name' => $local_cv->name,
+    'cv_id' => array(
+      'name' => 'sequence',
+    ),
+  ), array(
+    'include_fk' => array(
+      'dbxref_id' => 1,
+    ),
   ));
 
   $args = array(
-    'vocabulary' => $local_cv->name,
-    'accession' => $genotype_term->name,
+    'vocabulary' => $genotype_term->dbxref_id->db_id->name,
+    'accession' => $genotype_term->dbxref_id->accession,
     'term_name' => $genotype_term->name,
     'storage_args' => array(
       'data_table' => 'genotype',
@@ -596,17 +600,6 @@ function tpps_create_genotype_entity() {
   );
 
   tripal_create_bundle($args);
-
-  $genotype_id = tpps_chado_insert_record('genotype', array(
-    'uniquename' => 'tpps_genotype_entity_template',
-    'type_id' => 1,
-  ));
-  $genotype_record = array(
-    'table' => 'genotype',
-    'id' => $genotype_id,
-  );
-  
-  //TODO: Genotype props.
 
   $bundle = tripal_load_bundle_entity(array('label' => 'Genotype'));
   $term = tripal_load_term_entity(array('term_id' => $bundle->term_id));
@@ -648,9 +641,7 @@ function tpps_create_stock_entity() {
       'data_table' => 'stock',
     ),
   );
-  print_r("test\n");
   tripal_create_bundle($args);
-  print_r("test2\n");
 
   db_update('tripal_bundle')
     ->fields(array(
