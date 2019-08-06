@@ -801,7 +801,7 @@ function tpps_submit_page_3(array &$form_state) {
       if (!empty($loc_group['4']) and !empty($content[$j][$loc_group['4']]) and !empty($loc_group['5']) and !empty($content[$j][$loc_group['5']])) {
         $lat_name = $loc_group['4'];
         $lng_name = $loc_group['5'];
-        $raw_coord = $content[$j][$lat_name] . $content[$j][$lng_name];
+        $raw_coord = $content[$j][$lat_name] . ',' . $content[$j][$lng_name];
         $standard_coord = explode(',', tpps_standard_coord($raw_coord));
 
         tpps_chado_insert_record('stockprop', array(
