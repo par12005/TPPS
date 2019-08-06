@@ -621,13 +621,15 @@ function tpps_create_stock_entity() {
     'id' => 'PO:0000003',
     'name' => 'whole plant',
     'definition' => 'A plant structure (PO:0005679) which is a whole organism. [ POC:curators ]',
-    'cv_name' => 'plant_ontology',
+    'db_name' => 'PO',
   ));
 
   $stock_term = chado_get_cvterm(array(
     'name' => 'whole plant',
-    'cv_id' => array(
-      'name' => 'plant_ontology',
+    'dbxref_id' => array(
+      'db_id' => array(
+        'name' => 'PO',
+      ),
     ),
   ), array(
     'include_fk' => array(
@@ -646,7 +648,9 @@ function tpps_create_stock_entity() {
       'data_table' => 'stock',
     ),
   );
+  print_r("test\n");
   tripal_create_bundle($args);
+  print_r("test2\n");
 
   db_update('tripal_bundle')
     ->fields(array(
@@ -668,18 +672,21 @@ function tpps_create_stock_entity() {
     ),
   ));
 
-  field_create_field(array(
-    'field_name' => 'sbo__phenotype',
-    'type' => 'sbo__phenotype',
-    'settings' => array(
-      'storage' => 'field_chado_storage',
-    ),
-    'storage' => array(
-      'type' => 'field_chado_storage',
-      'module' => 'tripal_chado',
-      'active' => 1,
-    ),
-  ));
+  $info = field_info_field('sbo__phenotype');
+  if (empty($info['bundles']['TripalEntity'])){
+    field_create_field(array(
+      'field_name' => 'sbo__phenotype',
+      'type' => 'sbo__phenotype',
+      'settings' => array(
+        'storage' => 'field_chado_storage',
+      ),
+      'storage' => array(
+        'type' => 'field_chado_storage',
+        'module' => 'tripal_chado',
+        'active' => 1,
+      ),
+    ));
+  }
 
   field_create_instance(array(
     'field_name' => 'sbo__phenotype',
@@ -711,18 +718,21 @@ function tpps_create_stock_entity() {
     ),
   ));
   
-  field_create_field(array(
-    'field_name' => 'so__genotype',
-    'type' => 'so__genotype',
-    'settings' => array(
-      'storage' => 'field_chado_storage',
-    ),
-    'storage' => array(
-      'type' => 'field_chado_storage',
-      'module' => 'tripal_chado',
-      'active' => 1,
-    ),
-  ));
+  $info = field_info_field('so__genotype');
+  if (empty($info['bundles']['TripalEntity'])){
+    field_create_field(array(
+      'field_name' => 'so__genotype',
+      'type' => 'so__genotype',
+      'settings' => array(
+        'storage' => 'field_chado_storage',
+      ),
+      'storage' => array(
+        'type' => 'field_chado_storage',
+        'module' => 'tripal_chado',
+        'active' => 1,
+      ),
+    ));
+  }
 
   field_create_instance(array(
     'field_name' => 'so__genotype',
