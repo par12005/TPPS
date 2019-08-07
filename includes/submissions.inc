@@ -130,6 +130,9 @@ function tpps_create_submission(array $state, $uid) {
  *   Additional submission attributes to update.
  */
 function tpps_update_submission(array $state, array $options = array()) {
+  if (empty($options['status']) and !empty($state['status'])) {
+    $options['status'] = $state['status'];
+  }
   $options['submission_state'] = serialize($state);
 
   db_update('tpps_submission')
