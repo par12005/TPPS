@@ -476,6 +476,8 @@ function tpps_file_parsing($accession) {
     if (isset($fourthpage["organism-$i"]['genotype'])) {
       $genotype = $fourthpage["organism-$i"]['genotype'];
       $genotype_count = 0;
+      $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
+      $genotype_publish_vals = array();
 
       if ($genotype['ref-genome'] == 'bio') {
 
@@ -649,7 +651,8 @@ function tpps_file_parsing($accession) {
                 ),
               ));
 
-              $genotype_id = tpps_chado_insert_record('genotype', array(
+              tpps_chado_insert_record('genotype', array(
+                'genotype_id' => $genotype_id,
                 'name' => "$marker-$variant_name-$species_code-$val",
                 'uniquename' => "$marker-$variant_name-$species_code-$val",
                 'description' => $val,
@@ -661,6 +664,7 @@ function tpps_file_parsing($accession) {
                   'is_obsolete' => 0,
                 ),
               ));
+              $genotype_publish_vals[] = array("$marker-$variant_name-$species_code-$val", $genotype_id);
 
               tpps_chado_insert_record('genotype_call', array(
                 'variant_id' => $variant_id,
@@ -674,6 +678,7 @@ function tpps_file_parsing($accession) {
                 'stock_id' => $stock_id,
                 'genotype_id' => $genotype_id,
               ));
+              $genotype_id++;
             }
           }
         }
@@ -843,7 +848,8 @@ function tpps_file_parsing($accession) {
                 ),
               ));
 
-              $genotype_id = tpps_chado_insert_record('genotype', array(
+              tpps_chado_insert_record('genotype', array(
+                'genotype_id' => $genotype_id,
                 'name' => "$marker-$variant_name-$species_code-$val",
                 'uniquename' => "$marker-$variant_name-$species_code-$val",
                 'description' => $val,
@@ -855,6 +861,7 @@ function tpps_file_parsing($accession) {
                   'is_obsolete' => 0,
                 ),
               ));
+              $genotype_publish_vals[] = array("$marker-$variant_name-$species_code-$val", $genotype_id);
 
               tpps_chado_insert_record('genotype_call', array(
                 'variant_id' => $variant_id,
@@ -868,6 +875,7 @@ function tpps_file_parsing($accession) {
                 'stock_id' => $stock_id,
                 'genotype_id' => $genotype_id,
               ));
+              $genotype_id++;
             }
           }
         }
@@ -940,9 +948,10 @@ function tpps_file_parsing($accession) {
               ),
             ));
 
-            $genotype_id = tpps_chado_insert_record('genotype', array(
-              'name' => "$marker-$variant_name-$species_code",
-              'uniquename' => "$marker-$variant_name-$species_code",
+            tpps_chado_insert_record('genotype', array(
+              'genotype_id' => $genotype_id,
+              'name' => "$marker-$variant_name-$species_code-$value",
+              'uniquename' => "$marker-$variant_name-$species_code-$value",
               'description' => $value,
               'type_id' => array(
                 'cv_id' => array(
@@ -952,6 +961,7 @@ function tpps_file_parsing($accession) {
                 'is_obsolete' => 0,
               ),
             ));
+            $genotype_publish_vals[] = array("$marker-$variant_name-$species_code-$value", $genotype_id);
 
             tpps_chado_insert_record('genotype_call', array(
               'variant_id' => $variant_id,
@@ -965,6 +975,8 @@ function tpps_file_parsing($accession) {
               'stock_id' => $stock_id,
               'genotype_id' => $genotype_id,
             ));
+
+            $genotype_id++;
           }
         }
 
@@ -1012,7 +1024,6 @@ function tpps_file_parsing($accession) {
         $feature_ids = array();
         $stocks = array();
         $format = "";
-        $first = TRUE;
 
         // dpm('start: ' . date('r'));.
         while (($vcf_line = fgets($vcf_content)) !== FALSE) {
@@ -1087,6 +1098,7 @@ function tpps_file_parsing($accession) {
             }
 
             $genotype_vals[] = array(
+              'genotype_id' => $genotype_id,
               'name' => "$marker-$species_code-$scaffold_id-$position",
               'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
               'description' => $description,
@@ -1098,12 +1110,7 @@ function tpps_file_parsing($accession) {
                 'is_obsolete' => 0,
               ),
             );
-
-            if ($first) {
-              $first = FALSE;
-              $genotype_id = tpps_chado_insert_record('genotype', $genotype_vals[0]);
-              $genotype_vals = array();
-            }
+            $genotype_publish_vals[] = array("$marker-$species_code-$scaffold_id-$position-$description", $genotype_id);
 
             if ($format != "") {
               $genotypeprop_vals[] = array(
@@ -1250,6 +1257,8 @@ function tpps_file_parsing($accession) {
         $vcf_file->status = FILE_STATUS_PERMANENT;
         $vcf_file = file_save($vcf_file);
       }
+      
+      tpps_tripal_entity_publish('Genotype', $genotype_publish_vals, array('multi' => TRUE));
     }
 
     if (isset($fourthpage["organism-$i"]['environment'])) {

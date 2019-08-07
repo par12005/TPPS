@@ -34,7 +34,7 @@ function tpps_submit_all($accession) {
       'description' => $firstpage['publication']['abstract'],
     ));
     
-    tpps_tripal_entity_publish('Project', $firstpage['publication']['title'], $form_state['ids']['project_id']);
+    tpps_tripal_entity_publish('Project', array($firstpage['publication']['title'], $form_state['ids']['project_id']));
 
     tpps_submit_page_1($form_state);
 
@@ -167,7 +167,7 @@ function tpps_submit_page_1(array &$form_state) {
     'pyear' => $firstpage['publication']['year'],
     'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
   ));
-  tpps_tripal_entity_publish('Publication', $firstpage['publication']['title'], $publication_id);
+  tpps_tripal_entity_publish('Publication', array($firstpage['publication']['title'], $publication_id));
 
   tpps_chado_insert_record('project_pub', array(
     'project_id' => $form_state['ids']['project_id'],
@@ -303,7 +303,7 @@ function tpps_submit_page_1(array &$form_state) {
       'project_id' => $form_state['ids']['project_id'],
     ));
 
-    tpps_tripal_entity_publish('Organism', "$genus $species", $form_state['ids']['organism_ids'][$i]);
+    tpps_tripal_entity_publish('Organism', array("$genus $species", $form_state['ids']['organism_ids'][$i]));
   }
 }
 
@@ -682,6 +682,7 @@ function tpps_submit_page_3(array &$form_state) {
   }
 
   $form_state['ids']['stock_ids'] = array();
+  $stock_publish_vals = array();
 
   for ($i = 1; $i <= $organism_number; $i++) {
     if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0) {
@@ -763,6 +764,7 @@ function tpps_submit_page_3(array &$form_state) {
         ),
         'organism_id' => $id,
       ));
+      $stock_publish_vals[] = array($form_state['accession'] . '-' . $tree_id, $form_state['ids']['stock_ids'][$tree_id]);
 
       if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $tree_accession['file-empty']) {
         $clone_name = $tree_id . '-' . $content[$j][$clone_col_name];
@@ -778,6 +780,7 @@ function tpps_submit_page_3(array &$form_state) {
           ),
           'organism_id' => $id,
         ));
+        $stock_publish_vals[] = array($form_state['accession'] . '-' . $clone_name, $clone_id);
 
         tpps_chado_insert_record('stock_relationship', array(
           'subject_id' => $form_state['ids']['stock_ids'][$tree_id],
@@ -1011,14 +1014,8 @@ function tpps_submit_page_3(array &$form_state) {
       'stock_id' => $stock_id,
       'project_id' => $form_state['ids']['project_id'],
     ));
-
-    $record = db_select('chado.stock', 's')
-      ->fields('s', array('uniquename'))
-      ->condition('stock_id', $stock_id)
-      ->execute()
-      ->fetchObject();
-    tpps_tripal_entity_publish('Stock', $record->uniquename, $stock_id);
   }
+  tpps_tripal_entity_publish('Stock', $stock_publish_vals, array('multi' => TRUE));
 
   if (!empty($thirdpage['existing_trees'])) {
     tpps_matching_trees($form_state['ids']['project_id']);
@@ -1172,30 +1169,68 @@ function tpps_submit_summary(array &$form_state) {
  * @param int $record_id
  *   The id of the record for the entity in chado.
  */
-function tpps_tripal_entity_publish($bundle_name, $title, $record_id) {
-  $bundle = tripal_load_bundle_entity(array('label' => $bundle_name));
+function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = array()) {
+  if (!empty($options['multi'])) {
+    $bundle = tripal_load_bundle_entity(array('label' => $bundle_name));
+    if (!isset($bundle)) {
+      return;
+    }
 
-  if (!isset($bundle)) {
-    return;
+    $time = time();
+    $entity_insert = db_insert('tripal_entity')
+      ->fields(array('type', 'bundle', 'term_id', 'title', 'created', 'changed'));
+    foreach ($vals as $record) {
+      if (empty(chado_get_record_entity_by_bundle($bundle, $record[1]))) {
+        $entity_insert->values(array(
+          'type' => 'TripalEntity',
+          'bundle' => 'bio_data_' . $bundle->id,
+          'term_id' => $bundle->term_id,
+          'title' => $record[0],
+          'created' => $time,
+          'changed' => $time,
+        ));
+      }
+    }
+
+    $entity_id = $entity_insert->execute();
+    $bio_data_insert = db_insert('chado_bio_data_' . $bundle->id)
+      ->fields(array('entity_id', 'record_id'));
+    foreach ($vals as $record) {
+      if (empty(chado_get_record_entity_by_bundle($bundle, $record[1]))) {
+        $bio_data_insert->values(array(
+          'entity_id' => $entity_id,
+          'record_id' => $record[1],
+        ));
+        $entity_id--;
+      }
+    }
+    $bio_data_insert->execute();
   }
+  else {
+    $bundle = tripal_load_bundle_entity(array('label' => $bundle_name));
 
-  if (empty(chado_get_record_entity_by_bundle($bundle, $record_id))) {
-    $entity_id = db_insert('tripal_entity')
-      ->fields(array(
-        'type' => 'TripalEntity',
-        'bundle' => 'bio_data_' . $bundle->id,
-        'term_id' => $bundle->term_id,
-        'title' => $title,
-        'created' => time(),
-        'changed' => time(),
-      ))
-      ->execute();
+    if (!isset($bundle)) {
+      return;
+    }
 
-    db_insert('chado_bio_data_' . $bundle->id)
-      ->fields(array(
-        'entity_id' => $entity_id,
-        'record_id' => $record_id,
-      ))
-      ->execute();
+    if (empty(chado_get_record_entity_by_bundle($bundle, $vals[1]))) {
+      $entity_id = db_insert('tripal_entity')
+        ->fields(array(
+          'type' => 'TripalEntity',
+          'bundle' => 'bio_data_' . $bundle->id,
+          'term_id' => $bundle->term_id,
+          'title' => $vals[0],
+          'created' => time(),
+          'changed' => time(),
+        ))
+        ->execute();
+
+      db_insert('chado_bio_data_' . $bundle->id)
+        ->fields(array(
+          'entity_id' => $entity_id,
+          'record_id' => $vals[1],
+        ))
+        ->execute();
+    }
   }
 }
