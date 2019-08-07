@@ -374,7 +374,6 @@ function tpps_install_cvterms() {
     'phenotype_binary_type' => 'Describes one type of a binary phenotype.',
     'file_path' => 'Specifies the path to a file',
     'contact photo' => 'A profile photo for a contact record',
-    'number_samples' => 'Number of samples',
     'gps_latitude' => 'Coordinate that specifies north-south position on Earth\'s surface',
     'gps_longitude' => 'Coordinate that specifies east-west position on Earth\'s surface',
     'association_results_type' => 'The type of the association results.',
@@ -557,8 +556,10 @@ function tpps_default_permissions() {
   }
 }
 
+/**
+ * Creates Tripal Entity types if they do not already exist.
+ */
 function tpps_create_entities() {
-  // Create Tripal Entity types.
   $transaction = db_transaction();
   try {
     if (empty(tripal_load_bundle_entity(array('label' => 'Genotype')))){
@@ -576,6 +577,9 @@ function tpps_create_entities() {
 
 }
 
+/**
+ * Creates the Genotype Tripal Entity type.
+ */
 function tpps_create_genotype_entity() {
   $local_db = variable_get('tpps_local_db');
   $local_cv = chado_get_cv(array('name' => 'local'));
@@ -600,15 +604,127 @@ function tpps_create_genotype_entity() {
   );
 
   tripal_create_bundle($args);
-
   $bundle = tripal_load_bundle_entity(array('label' => 'Genotype'));
-  $term = tripal_load_term_entity(array('term_id' => $bundle->term_id));
-  tripal_create_bundle_fields($bundle, $term);
 
-  chado_delete_record('genotype', array('genotype_id' => $genotype_id));
-  tripal_unpublish_orphans($bundle->id);
+  $prop_terms = array(
+    array(
+      'id' => 'sep:00007',
+      'name' => 'format',
+      'cvname' => 'sep',
+      'field' => 'sep__format',
+      'label' => 'Genotype Format',
+      'dbname' => 'sep',
+      'def' => 'A format is a quality that is a specificiation or arrangement of a specified form. The structure, layout, or the digital manifestation of an entity. [ PSI:GEL ]',
+    ),
+    array(
+      'id' => 'SO:0001686',
+      'name' => 'quality_value',
+      'cvname' => 'sequence',
+      'field' => 'so__quality_value',
+      'label' => 'Genotype Quality Score',
+      'dbname' => 'SO',
+      'def' => 'An experimental feature attribute that defines the quality of the feature in a quantitative way, such as a phred quality score. [ http://www.sequenceontology.org/browser/current_svn/term/SO:ke ]',
+    ),
+    array(
+      'id' => 'operation:3187',
+      'name' => 'Sequence contamination filtering',
+      'cvname' => 'operation',
+      'field' => 'edam__filter',
+      'label' => 'Genotype Contamination Filter',
+      'dbname' => 'EDAM_operation',
+      'def' => 'Identify and filter a (typically large) sequence data set to remove sequences from contaminants in the sample that was sequenced.',
+    ),
+    array(
+      'id' => 'SO:0002119',
+      'name' => 'allelic_frequency',
+      'cvname' => 'sequence',
+      'field' => 'so__allelic_frequency',
+      'label' => 'Genotype Allelic Frequency',
+      'dbname' => 'SO',
+      'def' => 'A physical quality which inheres to the allele by virtue of the number instances of the allele within a population. This is the relative frequency of the allele at a given locus in a population. [ http://www.sequenceontology.org/browser/current_svn/term/SO:ke ]',
+    ),
+    array(
+      'id' => 'NCIT:C155320',
+      'name' => 'Read Depth',
+      'cvname' => 'ncit',
+      'field' => 'ncit__read_depth',
+      'label' => 'Genotype Read Depth',
+      'dbname' => 'NCIT',
+      'def' => 'The number of times a particular locus (site, nucleotide, amplicon, region) was sequenced. [ NCI ]',
+    ),
+    array(
+      'id' => "{$local_db->name}:number_samples",
+      'name' => 'number_samples',
+      'cvname' => $local_cv->name,
+      'field' => "{$local_cv->name}__number_samples",
+      'label' => 'Genotype Number of Samples',
+      'dbname' => $local_db->name,
+      'def' => 'Number of samples',
+    ),
+  );
+  
+  foreach ($prop_terms as $prop_term) {
+    $term = chado_insert_cvterm(array(
+      'id' => $prop_term['id'],
+      'name' => $prop_term['name'],
+      'definition' => $prop_term['def'],
+      'db_name' => $prop_term['dbname'],
+      'cv_name' => $prop_term['cvname'],
+    ));
+
+    if ($prop_term['cvname'] != $term->cvname) {
+      db_update('chado.cvterm')
+        ->fields(array(
+          'cv_id' => chado_get_cv(array('name' => $prop_term['cvname']))->cv_id,
+        ))
+        ->condition('cvterm_id', $term->cvterm_id)
+        ->execute();
+    }
+    $term->cvname = $prop_term['cvname'];
+
+    $info = field_info_field($prop_term['field']);
+    if (empty($info['bundles']['TripalEntity'])){
+      field_create_field(array(
+        'field_name' => $prop_term['field'],
+        'type' => 'chado_linker__prop',
+        'settings' => array(
+          'storage' => 'field_chado_storage',
+        ),
+        'storage' => array(
+          'type' => 'field_chado_storage',
+          'module' => 'tripal_chado',
+          'active' => 1,
+        ),
+      ));
+    }
+    elseif (array_search($bundle->name, $info['bundles']['TripalEntity']) !== FALSE) {
+      continue;
+    }
+
+    field_create_instance(array(
+      'field_name' => $prop_term['field'],
+      'entity_type' => 'TripalEntity',
+      'label' => $prop_term['label'],
+      'bundle' => $bundle->name,
+      'required' => FALSE,
+      'settings' => array(
+        'user_register_form' => 0,
+        'term_vocabulary' => $term->dbname,
+        'term_name' => $term->name,
+        'term_accession' => $term->accession,
+        'base_table' => 'genotype',
+        'chado_table' => 'genotypeprop',
+        'chado_column' => 'genotype_id',
+        'auto_attach' => 1,
+        'term_fixed' => 0,
+      ),
+    ));
+  }
 }
 
+/**
+ * Creates the Stock Tripal Entity type.
+ */
 function tpps_create_stock_entity() {
   chado_insert_cvterm(array(
     'id' => 'PO:0000003',

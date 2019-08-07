@@ -1110,7 +1110,7 @@ function tpps_file_parsing($accession) {
                 'genotype_id' => $genotype_id,
                 'type_id' => array(
                   'cv_id' => array(
-                    'name' => 'default_namespace',
+                    'name' => 'sep',
                   ),
                   'name' => 'format',
                   'is_obsolete' => 0,
@@ -1191,9 +1191,9 @@ function tpps_file_parsing($accession) {
                 'genotype_id' => $genotype_id,
                 'type_id' => array(
                   'cv_id' => array(
-                    'name' => 'operation',
+                    'name' => 'ncit',
                   ),
-                  'name' => 'Read depth analysis',
+                  'name' => 'Read Depth',
                   'is_obsolete' => 0,
                 ),
                 'value' => $info_vals['DP'],
