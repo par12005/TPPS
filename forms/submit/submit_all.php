@@ -613,6 +613,8 @@ function tpps_submit_page_3(array &$form_state) {
   $organism_number = $firstpage['organism']['number'];
   $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
   $form_state['locations'] = array();
+  $record_group = variable_get('tpps_record_group', 10000);
+  $stock_count = 0;
 
   if (!empty($thirdpage['study_location'])) {
     if ($thirdpage['study_location']['type'] !== '2') {
@@ -683,6 +685,8 @@ function tpps_submit_page_3(array &$form_state) {
 
   $form_state['ids']['stock_ids'] = array();
   $stock_publish_vals = array();
+  $stockprop_vals = array();
+  $stock_relation_vals = array();
 
   for ($i = 1; $i <= $organism_number; $i++) {
     if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0) {
@@ -764,7 +768,6 @@ function tpps_submit_page_3(array &$form_state) {
         ),
         'organism_id' => $id,
       ));
-      $stock_publish_vals[] = array($form_state['accession'] . '-' . $tree_id, $form_state['ids']['stock_ids'][$tree_id]);
 
       if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $tree_accession['file-empty']) {
         $clone_name = $tree_id . '-' . $content[$j][$clone_col_name];
@@ -782,7 +785,7 @@ function tpps_submit_page_3(array &$form_state) {
         ));
         $stock_publish_vals[] = array($form_state['accession'] . '-' . $clone_name, $clone_id);
 
-        tpps_chado_insert_record('stock_relationship', array(
+        $stock_relation_vals[] = array(
           'subject_id' => $form_state['ids']['stock_ids'][$tree_id],
           'object_id' => $clone_id,
           'type_id' => array(
@@ -792,12 +795,14 @@ function tpps_submit_page_3(array &$form_state) {
             'name' => 'has_part',
             'is_obsolete' => 0,
           ),
-        ));
+        );
+      }
+      else {
+        $stock_publish_vals[] = array($form_state['accession'] . '-' . $tree_id, $form_state['ids']['stock_ids'][$tree_id]);
       }
 
-      $stockprops = array();
       if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $tree_accession['file-empty']) {
-        $tree_id .= '-' . $content[$i][$clone_col_name];
+        $tree_id .= '-' . $content[$j][$clone_col_name];
       }
       $stock_id = $form_state['ids']['stock_ids'][$tree_id];
 
@@ -807,29 +812,29 @@ function tpps_submit_page_3(array &$form_state) {
         $raw_coord = $content[$j][$lat_name] . ',' . $content[$j][$lng_name];
         $standard_coord = explode(',', tpps_standard_coord($raw_coord));
 
-        tpps_chado_insert_record('stockprop', array(
+        $stockprop_vals[] = array(
           'stock_id' => $stock_id,
           'type_id' => array(
             'name' => 'gps_latitude',
             'is_obsolete' => 0,
           ),
           'value' => $standard_coord[0],
-        ));
+        );
 
-        tpps_chado_insert_record('stockprop', array(
+        $stockprop_vals[] = array(
           'stock_id' => $stock_id,
           'type_id' => array(
             'name' => 'gps_longitude',
             'is_obsolete' => 0,
           ),
-          'value' => $standard_coord[0],
-        ));
+          'value' => $standard_coord[1],
+        );
       }
       elseif (!empty($loc_group['2']) and !empty($content[$j][$loc_group['2']]) and !empty($loc_group['3']) and !empty($content[$j][$loc_group['3']])) {
         $country_col_name = $loc_group['2'];
         $state_col_name = $loc_group['3'];
 
-        tpps_chado_insert_record('stockprop', array(
+        $stockprop_vals[] = array(
           'stock_id' => $stock_id,
           'type_id' => array(
             'cv_id' => array(
@@ -839,9 +844,9 @@ function tpps_submit_page_3(array &$form_state) {
             'is_obsolete' => 0,
           ),
           'value' => $content[$j][$country_col_name],
-        ));
+        );
 
-        tpps_chado_insert_record('stockprop', array(
+        $stockprop_vals[] = array(
           'stock_id' => $stock_id,
           'type_id' => array(
             'cv_id' => array(
@@ -851,31 +856,31 @@ function tpps_submit_page_3(array &$form_state) {
             'is_obsolete' => 0,
           ),
           'value' => $content[$j][$state_col_name],
-        ));
+        );
 
         $location = "{$content[$j][$state_col_name]}, {$content[$j][$country_col_name]}";
 
         if (isset($county_col_name)) {
-          tpps_chado_insert_record('stockprop', array(
+          $stockprop_vals[] = array(
             'stock_id' => $stock_id,
             'type_id' => array(
               'name' => 'county',
               'is_obsolete' => 0,
             ),
             'value' => $content[$j][$county_col_name],
-          ));
+          );
           $location = "{$content[$j][$county_col_name]}, $location";
         }
 
         if (isset($district_col_name)) {
-          tpps_chado_insert_record('stockprop', array(
+          $stockprop_vals[] = array(
             'stock_id' => $stock_id,
             'type_id' => array(
               'name' => 'district',
               'is_obsolete' => 0,
             ),
             'value' => $content[$j][$district_col_name],
-          ));
+          );
           $location = "{$content[$j][$district_col_name]}, $location";
         }
 
@@ -909,23 +914,23 @@ function tpps_submit_page_3(array &$form_state) {
           }
 
           if (!empty($result)) {
-            tpps_chado_insert_record('stockprop', array(
+            $stockprop_vals[] = array(
               'stock_id' => $stock_id,
               'type_id' => array(
                 'name' => 'gps_latitude',
                 'is_obsolete' => 0,
               ),
               'value' => $result->lat,
-            ));
+            );
 
-            tpps_chado_insert_record('stockprop', array(
+            $stockprop_vals[] = array(
               'stock_id' => $stock_id,
               'type_id' => array(
                 'name' => 'gps_longitude',
                 'is_obsolete' => 0,
               ),
               'value' => $result->lng,
-            ));
+            );
           }
         }
       }
@@ -937,26 +942,26 @@ function tpps_submit_page_3(array &$form_state) {
 
         if ($coord) {
           $parts = explode(',', $coord);
-          tpps_chado_insert_record('stockprop', array(
+          $stockprop_vals[] = array(
             'stock_id' => $stock_id,
             'type_id' => array(
               'name' => 'gps_latitude',
               'is_obsolete' => 0,
             ),
             'value' => $parts[0],
-          ));
+          );
 
-          tpps_chado_insert_record('stockprop', array(
+          $stockprop_vals[] = array(
             'stock_id' => $stock_id,
             'type_id' => array(
               'name' => 'gps_longitude',
               'is_obsolete' => 0,
             ),
             'value' => $parts[1],
-          ));
+          );
         }
         else {
-          tpps_chado_insert_record('stockprop', array(
+          $stockprop_vals[] = array(
             'stock_id' => $stock_id,
             'type_id' => array(
               'cv_id' => array(
@@ -966,7 +971,7 @@ function tpps_submit_page_3(array &$form_state) {
               'is_obsolete' => 0,
             ),
             'value' => $loc,
-          ));
+          );
 
           if (isset($geo_api_key)) {
             if (!array_key_exists($location, $form_state['locations'])) {
@@ -981,29 +986,40 @@ function tpps_submit_page_3(array &$form_state) {
             }
 
             if (!empty($result)) {
-              tpps_chado_insert_record('stockprop', array(
+              $stockprop_vals[] = array(
                 'stock_id' => $stock_id,
                 'type_id' => array(
                   'name' => 'gps_latitude',
                   'is_obsolete' => 0,
                 ),
                 'value' => $result->lat,
-              ));
+              );
 
-              tpps_chado_insert_record('stockprop', array(
+              $stockprop_vals[] = array(
                 'stock_id' => $stock_id,
                 'type_id' => array(
                   'name' => 'gps_longitude',
                   'is_obsolete' => 0,
                 ),
                 'value' => $result->lng,
-              ));
+              );
             }
           }
         }
       }
+      $stock_count++;
+      if ($stock_count >= $record_group) {
+        tpps_chado_insert_record('stockprop', $stockprop_vals, array('multi' => TRUE));
+        $stockprop_vals = array();
+        tpps_chado_insert_record('stock_relationship', $stock_relation_vals, array('multi' => TRUE));
+        $stock_relation_vals = array();
+      }
     }
 
+    tpps_chado_insert_record('stockprop', $stockprop_vals, array('multi' => TRUE));
+    tpps_chado_insert_record('stock_relationship', $stock_relation_vals, array('multi' => TRUE));
+    unset($stockprop_vals);
+    unset($stock_relation_vals);
     $file->status = FILE_STATUS_PERMANENT;
     $file = file_save($file);
     $form_state['file_rank']++;
