@@ -678,7 +678,7 @@ function tpps_file_parsing($accession) {
                 'stock_id' => $stock_id,
                 'genotype_id' => $genotype_id,
               ));
-              $genotype_id++;
+              $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
             }
           }
         }
@@ -875,7 +875,7 @@ function tpps_file_parsing($accession) {
                 'stock_id' => $stock_id,
                 'genotype_id' => $genotype_id,
               ));
-              $genotype_id++;
+              $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
             }
           }
         }
@@ -976,7 +976,7 @@ function tpps_file_parsing($accession) {
               'genotype_id' => $genotype_id,
             ));
 
-            $genotype_id++;
+            $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
           }
         }
 
@@ -1219,7 +1219,7 @@ function tpps_file_parsing($accession) {
                 'value' => $info_vals['NS'],
               );
             }
-            $genotype_id++;
+            $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
           }
           elseif (preg_match('/##FORMAT=/', $vcf_line)) {
             $format .= substr($vcf_line, 9, -1);
