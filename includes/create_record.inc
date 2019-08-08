@@ -121,3 +121,124 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
     $insert->execute();
   }
 }
+
+function tpps_chado_insert_multi($record_groups, array $options = array()) {
+  // Initialize insert statements, schemas, foreign keys, and primary keys.
+  $inserts = array();
+  $schemas = array();
+  $primarys = array();
+  $fks = array();
+  foreach (array_keys($record_groups) as $table) {
+    $current_records = &$record_groups[$table];
+    if (empty($current_records)) {
+      unset($record_groups[$table]);
+      continue;
+    }
+    $schemas[$table] = chado_get_schema($table);
+    if (!$schemas[$table]) {
+      return FALSE;
+    }
+
+    if (!empty($options['fk_overrides'][$table])) {
+      foreach ($options['fk_overrides'][$table] as $fk_type => $props) {
+        $schemas[$table]['foreign keys'][$fk_type] = $props;
+      }
+    }
+
+    $inserts[$table] = db_insert("chado.$table");
+    $fields_arr = array();
+    foreach (current($current_records) as $field => $val) {
+      if ($field != '#fk') {
+        $fields_arr[] = $field;
+      }
+      else {
+        foreach ($val as $fk_type => $fk_val) {
+          $fields_arr[] = key($schemas[$table]['foreign keys'][$fk_type]['columns']);
+        }
+      }
+    }
+    $inserts[$table]->fields($fields_arr);
+    $primarys[$table] = !empty($schemas[$table]['primary key'][0]) ? $schemas[$table]['primary key'][0] : NULL;
+    $fks[$table] = array();
+  }
+
+  foreach ($record_groups as $table => $records) {
+    $schema = &$schemas[$table];
+    $primary = &$primarys[$table];
+    $fks_to_populate = array();
+    $has_fields = FALSE;
+    
+    foreach ($records as $id => $values) {
+      $unique = !empty($schema['unique keys']) ? $schema['unique keys'] : array();
+      
+      $u_cols = array('*');
+      $u_vals = array();
+      $exists = FALSE;
+      foreach ($unique as $fields) {
+        foreach ($fields as $field) {
+          if (!array_key_exists($field, $values)) {
+            if (array_key_exists('default', $schema['fields'][$field])) {
+              $u_vals[$field] = $schema['fields'][$field]['default'];
+            }
+          }
+          else {
+            $u_vals[$field] = $values[$field];
+          }
+        }
+
+        if (($results = chado_select_record($table, $u_cols, $u_vals)) and isset($primary)) {
+          $exists = TRUE;
+          if (count($results) == 1) {
+            if (!empty($values['#fk'])) {
+              foreach ($values['#fk'] as $fk_type => $foreign_record_id) {
+                $fk_table = $schema['foreign keys'][$fk_type]['table'];
+                $col_name = key($schema['foreign keys'][$fk_type]['columns']);
+                $values[$col_name] = $fks[$fk_table][$foreign_record_id];
+              }
+              unset($values['#fk']);
+            }
+            if (!empty($values[$primary])) {
+              unset($values[$primary]);
+            }
+            foreach ($values as $field => $val) {
+              if ($val == current($results)->{$field}) {
+                unset($values[$field]);
+              }
+            }
+            if (!empty($values)) {
+              chado_update_record($table, $u_vals, $values);
+            }
+          }
+          $fks[$table][$id] = current($results)->{$primary};
+          break;
+        }
+      }
+
+      if (!empty($values['#fk'])) {
+        foreach ($values['#fk'] as $fk_type => $foreign_record_id) {
+          $fk_table = $schema['foreign keys'][$fk_type]['table'];
+          $col_name = key($schema['foreign keys'][$fk_type]['columns']);
+          $values[$col_name] = $fks[$fk_table][$foreign_record_id];
+        }
+        unset($values['#fk']);
+      }
+      
+      if (!$exists) {
+        $inserts[$table]->values($values);
+        $has_fields = TRUE;
+        $fks_to_populate[] = $id;
+      }
+    }
+
+    if ($has_fields) {
+      $last_id = $inserts[$table]->execute();
+      $fks[$table] += array_combine($fks_to_populate, range($last_id - count($fks_to_populate) + 1, $last_id));
+    }
+  }
+  if (!empty($options['fks'])) {
+    return $fks[$options['fks']];
+  }
+  else {
+    return $fks;
+  }
+}

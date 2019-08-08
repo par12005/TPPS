@@ -476,8 +476,14 @@ function tpps_file_parsing($accession) {
     if (isset($fourthpage["organism-$i"]['genotype'])) {
       $genotype = $fourthpage["organism-$i"]['genotype'];
       $genotype_count = 0;
-      $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
-      $genotype_publish_vals = array();
+      $fks = array();
+      $seq_var_cvterm = chado_get_cvterm(array(
+        'cv_id' => array(
+          'name' => 'sequence',
+        ),
+        'name' => 'sequence_variant',
+        'is_obsolete' => 0,
+      ))->cvterm_id;
 
       if ($genotype['ref-genome'] == 'bio') {
 
@@ -605,6 +611,20 @@ function tpps_file_parsing($accession) {
         $content = tpps_parse_xlsx($location);
         $marker = 'SNP';
 
+        $records = array(
+          'feature' => array(),
+          'genotype' => array(),
+          'genotype_call' => array(),
+          'stock_genotype' => array(),
+        );
+        $snp_cvterm = chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'sequence',
+          ),
+          'name' => 'SNP',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+
         $current_id = $form_state['ids']['organism_ids'][$i];
         $and = db_and()
           ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
@@ -626,62 +646,58 @@ function tpps_file_parsing($accession) {
               $genotype_count++;
               $variant_name = $content['headers'][$key];
               $marker_name = $variant_name . $marker;
+              $genotype_name = "$marker-$variant_name-$species_code-$val";
 
-              $marker_id = tpps_chado_insert_record('feature', array(
+              $records['feature'][$marker_name] = array(
                 'organism_id' => $current_id,
                 'uniquename' => $marker_name,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sequence',
-                  ),
-                  'name' => 'sequence_variant',
-                  'is_obsolete' => 0,
-                ),
-              ));
+                'type_id' => $seq_var_cvterm,
+              );
 
-              $variant_id = tpps_chado_insert_record('feature', array(
+              $records['feature'][$variant_name] = array(
                 'organism_id' => $current_id,
                 'uniquename' => $variant_name,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sequence',
-                  ),
-                  'name' => 'sequence_variant',
-                  'is_obsolete' => 0,
-                ),
-              ));
+                'type_id' => $seq_var_cvterm,
+              );
 
-              tpps_chado_insert_record('genotype', array(
-                'genotype_id' => $genotype_id,
-                'name' => "$marker-$variant_name-$species_code-$val",
-                'uniquename' => "$marker-$variant_name-$species_code-$val",
+              $records['genotype'][$genotype_name] = array(
+                'name' => $genotype_name,
+                'uniquename' => $genotype_name,
                 'description' => $val,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sequence',
-                  ),
-                  'name' => 'SNP',
-                  'is_obsolete' => 0,
-                ),
-              ));
-              $genotype_publish_vals[] = array("$marker-$variant_name-$species_code-$val", $genotype_id);
+                'type_id' => $snp_cvterm,
+              );
 
-              tpps_chado_insert_record('genotype_call', array(
-                'variant_id' => $variant_id,
-                'marker_id' => $marker_id,
-                'genotype_id' => $genotype_id,
+              $records['genotype_call'][] = array(
                 'project_id' => $project_id,
                 'stock_id' => $stock_id,
-              ));
+                '#fk' => array(
+                  'genotype' => $genotype_name,
+                  'variant' => $variant_name,
+                  'marker' => $marker_name,
+                ),
+              );
 
-              tpps_chado_insert_record('stock_genotype', array(
+              $records['stock_genotype'][] = array(
                 'stock_id' => $stock_id,
-                'genotype_id' => $genotype_id,
-              ));
-              $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
+                '#fk' => array(
+                  'genotype' => $genotype_name,
+                ),
+              );
+
+              if ($genotype_count >= $record_group) {
+                $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype'));
+                $records = array(
+                  'feature' => array(),
+                  'genotype' => array(),
+                  'genotype_call' => array(),
+                  'stock_genotype' => array(),
+                );
+              }
             }
           }
         }
+        tpps_chado_insert_multi($records);
+        unset($records);
 
         $file->status = FILE_STATUS_PERMANENT;
         $file = file_save($file);
@@ -737,7 +753,20 @@ function tpps_file_parsing($accession) {
           ->range(0, 1)
           ->execute()
           ->fetchObject()->value;
+        $microsat_cvterm = chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'sequence',
+          ),
+          'name' => 'microsatellite',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
 
+        $records = array(
+          'feature' => array(),
+          'genotype' => array(),
+          'genotype_call' => array(),
+          'stock_genotype' => array(),
+        );
         for ($j = 0; $j < count($content) - 1; $j++) {
           $stock_id = NULL;
           $row = $content[$j];
@@ -823,62 +852,58 @@ function tpps_file_parsing($accession) {
                   break;
               }
               $marker_name = $variant_name . $marker;
+              $genotype_name = "$marker-$variant_name-$species_code-$val";
 
-              $marker_id = tpps_chado_insert_record('feature', array(
+              $records['feature'][$marker_name] = array(
                 'organism_id' => $current_id,
                 'uniquename' => $marker_name,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sequence',
-                  ),
-                  'name' => 'sequence_variant',
-                  'is_obsolete' => 0,
-                ),
-              ));
+                'type_id' => $seq_var_cvterm,
+              );
 
-              $variant_id = tpps_chado_insert_record('feature', array(
+              $records['feature'][$variant_name] = array(
                 'organism_id' => $current_id,
                 'uniquename' => $variant_name,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sequence',
-                  ),
-                  'name' => 'sequence_variant',
-                  'is_obsolete' => 0,
-                ),
-              ));
+                'type_id' => $seq_var_cvterm,
+              );
 
-              tpps_chado_insert_record('genotype', array(
-                'genotype_id' => $genotype_id,
-                'name' => "$marker-$variant_name-$species_code-$val",
-                'uniquename' => "$marker-$variant_name-$species_code-$val",
+              $records['genotype'][$genotype_name] = array(
+                'name' => $genotype_name,
+                'uniquename' => $genotype_name,
                 'description' => $val,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sequence',
-                  ),
-                  'name' => 'microsatellite',
-                  'is_obsolete' => 0,
-                ),
-              ));
-              $genotype_publish_vals[] = array("$marker-$variant_name-$species_code-$val", $genotype_id);
+                'type_id' => $microsat_cvterm,
+              );
 
-              tpps_chado_insert_record('genotype_call', array(
-                'variant_id' => $variant_id,
-                'marker_id' => $marker_id,
-                'genotype_id' => $genotype_id,
+              $records['genotype_call'][] = array(
                 'project_id' => $project_id,
                 'stock_id' => $stock_id,
-              ));
+                '#fk' => array(
+                  'genotype' => $genotype_name,
+                  'variant' => $variant_name,
+                  'marker' => $marker_name,
+                ),
+              );
 
-              tpps_chado_insert_record('stock_genotype', array(
+              $records['stock_genotype'][] = array(
                 'stock_id' => $stock_id,
-                'genotype_id' => $genotype_id,
-              ));
-              $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
+                '#fk' => array(
+                  'genotype' => $genotype_name,
+                ),
+              );
+
+              if ($genotype_count >= $record_group) {
+                $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype'));
+                $records = array(
+                  'feature' => array(),
+                  'genotype' => array(),
+                  'genotype_call' => array(),
+                  'stock_genotype' => array(),
+                );
+              }
             }
           }
         }
+        tpps_chado_insert_multi($records);
+        unset($records);
 
         $file->status = FILE_STATUS_PERMANENT;
         $file = file_save($file);
@@ -905,6 +930,20 @@ function tpps_file_parsing($accession) {
         $groups = $genotype['files']['other-groups'];
         $marker = $genotype['other-marker'];
 
+        $records = array(
+          'feature' => array(),
+          'genotype' => array(),
+          'genotype_call' => array(),
+          'stock_genotype' => array(),
+        );
+        $gen_mark_cvterm = chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'sequence',
+          ),
+          'name' => 'genetic_marker',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+
         $current_id = $form_state['ids']['organism_ids'][$i];
         $and = db_and()
           ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
@@ -918,67 +957,62 @@ function tpps_file_parsing($accession) {
 
         for ($j = 0; $j < count($content) - 1; $j++) {
           $tree_id = $content[$j][$groups['Tree Id'][1]];
+          $stock_id = $form_state['ids']['stock_ids'][trim($tree_id)];
           foreach ($groups['Genotype Data'][0] as $geno_data_col) {
-            $stock_id = $form_state['ids']['stock_ids'][trim($tree_id)];
             $value = $content[$j][$geno_data_col];
             $variant_name = $content['headers'][$geno_data_col];
             $marker_name = $variant_name . $marker;
+            $genotype_name = "$marker-$variant_name-$species_code-$value";
 
-            $marker_id = tpps_chado_insert_record('feature', array(
+            $records['feature'][$marker_name] = array(
               'organism_id' => $current_id,
               'uniquename' => $marker_name,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
-                ),
-                'name' => 'sequence_variant',
-                'is_obsolete' => 0,
-              ),
-            ));
+              'type_id' => $seq_var_cvterm,
+            );
 
-            $variant_id = tpps_chado_insert_record('feature', array(
+            $records['feature'][$variant_name] = array(
               'organism_id' => $current_id,
               'uniquename' => $variant_name,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
-                ),
-                'name' => 'sequence_variant',
-                'is_obsolete' => 0,
-              ),
-            ));
+              'type_id' => $seq_var_cvterm,
+            );
 
-            tpps_chado_insert_record('genotype', array(
-              'genotype_id' => $genotype_id,
-              'name' => "$marker-$variant_name-$species_code-$value",
-              'uniquename' => "$marker-$variant_name-$species_code-$value",
+            $records['genotype'][$genotype_name] = array(
+              'name' => $genotype_name,
+              'uniquename' => $genotype_name,
               'description' => $value,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
-                ),
-                'name' => 'genetic_marker',
-                'is_obsolete' => 0,
-              ),
-            ));
-            $genotype_publish_vals[] = array("$marker-$variant_name-$species_code-$value", $genotype_id);
+              'type_id' => $gen_mark_cvterm,
+            );
 
-            tpps_chado_insert_record('genotype_call', array(
-              'variant_id' => $variant_id,
-              'marker_id' => $marker_id,
-              'genotype_id' => $genotype_id,
+            $records['genotype_call'][] = array(
               'project_id' => $project_id,
               'stock_id' => $stock_id,
-            ));
-            
-            tpps_chado_insert_record('stock_genotype', array(
-              'stock_id' => $stock_id,
-              'genotype_id' => $genotype_id,
-            ));
+              '#fk' => array(
+                'genotype' => $genotype_name,
+                'variant' => $variant_name,
+                'marker' => $marker_name,
+              ),
+            );
 
-            $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
+            $records['stock_genotype'][] = array(
+              'stock_id' => $stock_id,
+              '#fk' => array(
+                'genotype' => $genotype_name,
+              ),
+            );
+
+            if ($genotype_count >= $record_group) {
+              $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype'));
+              $records = array(
+                'feature' => array(),
+                'genotype' => array(),
+                'genotype_call' => array(),
+                'stock_genotype' => array(),
+              );
+            }
           }
         }
+        tpps_chado_insert_multi($records);
+        unset($records);
 
         $file->status = FILE_STATUS_PERMANENT;
         $file = file_save($file);
@@ -1012,16 +1046,63 @@ function tpps_file_parsing($accession) {
         $species_code = $species_code['value'];
         $marker = 'SNP';
 
+        $records = array(
+          'feature' => array(),
+          'genotype' => array(),
+          'genotype_call' => array(),
+          'genotypeprop' => array(),
+          'stock_genotype' => array(),
+        );
+        $snp_cvterm = chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'sequence',
+          ),
+          'name' => 'SNP',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+        $format_cvterm = chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'sep',
+          ),
+          'name' => 'format',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+        $qual_cvterm = chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'sequence',
+          ),
+          'name' => 'quality_value',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+        $filter_cvterm = chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'operation',
+          ),
+          'name' => 'Sequence contamination filtering',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+        $freq_cvterm = chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'sequence',
+          ),
+          'name' => 'allelic_frequency',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+        $depth_cvterm = chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'ncit',
+          ),
+          'name' => 'Read Depth',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+        $n_sample_cvterm = chado_get_cvterm(array(
+          'name' => 'number_samples',
+          'is_obsolete' => 0,
+        ))->cvterm_id;
+
         $vcf_file = file_load($genotype['files']['vcf']);
         $location = drupal_realpath($vcf_file->uri);
         $vcf_content = fopen($location, 'r');
-
-        // Inserts are WAY faster when done as a group.
-        $genotype_vals = array();
-        $genotypeprop_vals = array();
-        $genotype_call_vals = array();
-        $stock_genotype_vals = array();
-        $feature_ids = array();
         $stocks = array();
         $format = "";
 
@@ -1043,128 +1124,74 @@ function tpps_file_parsing($accession) {
               $variant_name = "{$scaffold_id}{$position}$ref:$alt";
             }
             $marker_name = $variant_name . $marker;
-
-            if (!array_key_exists($marker_name, $feature_ids)) {
-              $marker_id = tpps_chado_insert_record('feature', array(
-                'organism_id' => $current_id,
-                'uniquename' => $marker_name,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sequence',
-                  ),
-                  'name' => 'sequence_variant',
-                  'is_obsolete' => 0,
-                ),
-              ));
-              $feature_ids[$marker_name] = $marker_id;
-            }
-            else {
-              $marker_id = $feature_ids[$marker_name];
-            }
-
-            if (!array_key_exists($variant_name, $feature_ids)) {
-              $variant_id = tpps_chado_insert_record('feature', array(
-                'organism_id' => $current_id,
-                'uniquename' => $variant_name,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sequence',
-                  ),
-                  'name' => 'sequence_variant',
-                  'is_obsolete' => 0,
-                ),
-              ));
-              $feature_ids[$variant_name] = $variant_id;
-            }
-            else {
-              $variant_id = $feature_ids[$variant_name];
-            }
-
             $description = "$ref:$alt";
+            $genotype_name = "$marker-$species_code-$scaffold_id-$position";
+            $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description";
 
-            // Tripal Job has issues when all submissions are made at the same
-            // time, so break them up into groups of 10,000 genotypes along with
-            // their relevant genotypeprops.
-            if ($genotype_count > $record_group) {
-              $genotype_count = 0;
-              tpps_chado_insert_record('genotype', $genotype_vals, array('multi' => TRUE));
-              $genotype_vals = array();
-              tpps_chado_insert_record('genotype_call', $genotype_call_vals, array('multi' => TRUE));
-              $genotype_call_vals = array();
-              tpps_chado_insert_record('genotypeprop', $genotypeprop_vals, array('multi' => TRUE));
-              $genotypeprop_vals = array();
-              tpps_chado_insert_record('stock_genotype', $stock_genotype_vals, array('multi' => TRUE));
-              $stock_genotype_vals = array();
-            }
-
-            $genotype_vals[] = array(
-              'genotype_id' => $genotype_id,
-              'name' => "$marker-$species_code-$scaffold_id-$position",
-              'uniquename' => "$marker-$species_code-$scaffold_id-$position-$description",
-              'description' => $description,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
-                ),
-                'name' => 'SNP',
-                'is_obsolete' => 0,
-              ),
+            $records['feature'][$marker_name] = array(
+              'organism_id' => $current_id,
+              'uniquename' => $marker_name,
+              'type_id' => $seq_var_cvterm,
             );
-            $genotype_publish_vals[] = array("$marker-$species_code-$scaffold_id-$position-$description", $genotype_id);
+
+            $records['feature'][$variant_name] = array(
+              'organism_id' => $current_id,
+              'uniquename' => $variant_name,
+              'type_id' => $seq_var_cvterm,
+            );
+
+            $records['genotype'][$genotype_desc] = array(
+              'name' => $genotype_name,
+              'uniquename' => $genotype_desc,
+              'description' => $description,
+              'type_id' => $snp_cvterm,
+            );
 
             if ($format != "") {
-              $genotypeprop_vals[] = array(
-                'genotype_id' => $genotype_id,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sep',
-                  ),
-                  'name' => 'format',
-                  'is_obsolete' => 0,
-                ),
+              $records['genotypeprop'][] = array(
+                'type_id' => $format_cvterm,
                 'value' => $format,
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
               );
             }
 
             for ($j = 9; $j < count($vcf_line); $j++) {
-              $genotype_call_vals[] = array(
-                'variant_id' => $variant_id,
-                'marker_id' => $marker_id,
-                'genotype_id' => $genotype_id,
+              $records['genotype_call'][] = array(
                 'project_id' => $project_id,
-                'stock_id' => $stocks[$j - 9],
+                'stock_id' => $stocks[$j],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                  'variant' => $variant_name,
+                  'marker' => $marker_name,
+                ),
               );
 
-              $stock_genotype_vals[] = array(
+              $records['stock_genotype'][] = array(
                 'stock_id' => $stocks[$j],
-                'genotype_id' => $genotype_id,
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
               );
             }
 
             // Quality score.
-            $genotypeprop_vals[] = array(
-              'genotype_id' => $genotype_id,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'sequence',
-                ),
-                'name' => 'quality_value',
-                'is_obsolete' => 0,
-              ),
+            $records['genotypeprop'][] = array(
+              'type_id' => $qual_cvterm,
               'value' => $qual,
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
             );
 
             // filter: pass/fail.
-            $genotypeprop_vals[] = array(
-              'genotype_id' => $genotype_id,
-              'type_id' => array(
-                'cv_id' => array(
-                  'name' => 'operation',
-                ),
-                'name' => 'Sequence contamination filtering',
-                'is_obsolete' => 0,
-              ),
+            $records['genotypeprop'][] = array(
+              'type_id' => $filter_cvterm,
               'value' => ($filter == '.') ? "P" : "NP",
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
             );
 
             // Break up info column.
@@ -1178,48 +1205,52 @@ function tpps_file_parsing($accession) {
             // Allele frequency, assuming that the info code for allele
             // frequency is 'AF'.
             if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
-              $genotypeprop_vals[] = array(
-                'genotype_id' => $genotype_id,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'sequence',
-                  ),
-                  'name' => 'allelic_frequency',
-                  'is_obsolete' => 0,
-                ),
+              $records['genotypeprop'][] = array(
+                'type_id' => $freq_cvterm,
                 'value' => $info_vals['AF'],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
               );
             }
 
             // Depth coverage, assuming that the info code for depth coverage is
             // 'DP'.
             if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
-              $genotypeprop_vals[] = array(
-                'genotype_id' => $genotype_id,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'ncit',
-                  ),
-                  'name' => 'Read Depth',
-                  'is_obsolete' => 0,
-                ),
+              $records['genotypeprop'][] = array(
+                'type_id' => $depth_cvterm,
                 'value' => $info_vals['DP'],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
               );
             }
 
             // Number of samples, assuming that the info code for number of
             // samples is 'NS'.
             if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
-              $genotypeprop_vals[] = array(
-                'genotype_id' => $genotype_id,
-                'type_id' => array(
-                  'name' => 'number_samples',
-                  'is_obsolete' => 0,
-                ),
+              $records['genotypeprop'][] = array(
+                'type_id' => $n_sample_cvterm,
                 'value' => $info_vals['NS'],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
               );
             }
-            $genotype_id = db_query('select nextval(\'chado.genotype_genotype_id_seq\')')->fetchField();
+            // Tripal Job has issues when all submissions are made at the same
+            // time, so break them up into groups of 10,000 genotypes along with
+            // their relevant genotypeprops.
+            if ($genotype_count > $record_group) {
+              $genotype_count = 0;
+              $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype'));
+              $records = array(
+                'feature' => array(),
+                'genotype' => array(),
+                'genotype_call' => array(),
+                'genotypeprop' => array(),
+                'stock_genotype' => array(),
+              );
+            }
           }
           elseif (preg_match('/##FORMAT=/', $vcf_line)) {
             $format .= substr($vcf_line, 9, -1);
@@ -1227,37 +1258,22 @@ function tpps_file_parsing($accession) {
           elseif (preg_match('/#CHROM/', $vcf_line)) {
             $vcf_line = explode("\t", $vcf_line);
             for ($j = 9; $j < count($vcf_line); $j++) {
-              $stock_name = $vcf_line[$j];
-              $values = array(
-                'organism_id' => $current_id,
-                'uniquename' => $form_state['accession'] . '-' . $stock_name,
-                'type_id' => array(
-                  'cv_id' => array(
-                    'name' => 'obi',
-                  ),
-                  'name' => 'organism',
-                  'is_obsolete' => 0,
-                ),
-              );
-              $results = chado_select_record('stock', array('stock_id'), $values);
               $stocks[] = $form_state['ids']['stock_ids'][trim($vcf_line[$j])];
             }
           }
         }
         // Insert the last set of values.
-        tpps_chado_insert_record('genotype', $genotype_vals, array('multi' => TRUE));
-        tpps_chado_insert_record('genotype_call', $genotype_call_vals, array('multi' => TRUE));
-        tpps_chado_insert_record('genotypeprop', $genotypeprop_vals, array('multi' => TRUE));
-        tpps_chado_insert_record('stock_genotype', $stock_genotype_vals, array('multi' => TRUE));
-        unset($genotype_vals);
-        unset($genotype_call_vals);
-        unset($genotypeprop_vals);
-        unset($stock_genotype_vals);
+        $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype'));
+        unset($records);
         // dpm('done: ' . date('r'));.
         $vcf_file->status = FILE_STATUS_PERMANENT;
         $vcf_file = file_save($vcf_file);
       }
-      
+
+      $genotype_publish_vals = array();
+      foreach ($fks as $name => $record_id) {
+        $genotype_publish_vals[] = array($name, $record_id);
+      }
       tpps_tripal_entity_publish('Genotype', $genotype_publish_vals, array('multi' => TRUE));
     }
 
