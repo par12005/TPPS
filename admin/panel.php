@@ -220,6 +220,29 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
         ),
       );
     }
+    
+    $form['state-status'] = array(
+      '#type' => 'select',
+      '#title' => t('Change state status'),
+      '#description' => t('Warning: This feature is experimental and may cause unforseen issues. Please do not change the status of this submission unless you are willing to risk the loss of existing data. The current status of the submission is @status.', array('@status' => $status)),
+      '#options' => array(
+        'Incomplete' => 'Incomplete',
+        'Pending Approval' => 'Pending Approval',
+        'Submission Job Running' => 'Submission Job Running',
+        'Approved' => 'Approved',
+      ),
+      '#default_value' => $status,
+    );
+
+    $form['CHANGE_STATUS'] = array(
+      '#type' => 'submit',
+      '#value' => t('Change Status'),
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="state-status"]' => array('value' => $status),
+        ),
+      ),
+    );
   }
 
   drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
@@ -236,7 +259,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
  */
 function tpps_admin_panel_validate($form, &$form_state) {
   if ($form_state['submitted'] == '1') {
-    if ($form_state['values']['reject-reason'] == '' and $form_state['triggering_element']['#value'] == 'Reject') {
+    if (isset($form_state['values']['reject-reason']) and $form_state['values']['reject-reason'] == '' and $form_state['triggering_element']['#value'] == 'Reject') {
       form_set_error('reject-reason', 'Please explain why the submission was rejected.');
     }
   }
@@ -263,7 +286,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $from = variable_get('site_mail', '');
   $params['subject'] = "TPPS Submission Rejected: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
   $params['uid'] = $user->uid;
-  $params['reject-reason'] = $form_state['values']['reject-reason'];
+  $params['reject-reason'] = isset($form_state['values']['reject-reason']) ? $form_state['values']['reject-reason'] : NULL;
   $params['base_url'] = $base_url;
   $params['title'] = $state['saved_values'][TPPS_PAGE_1]['publication']['title'];
   $params['body'] = '';
@@ -278,14 +301,13 @@ function tpps_admin_panel_submit($form, &$form_state) {
   }
 
   if ($form_state['triggering_element']['#value'] == 'Reject') {
-
     drupal_mail('tpps', 'user_rejected', $to, user_preferred_language($user), $params, $from, TRUE);
     unset($state['status']);
     tpps_update_submission($state, array('status' => 'Incomplete'));
     drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
     drupal_goto('<front>');
   }
-  else {
+  elseif ($form_state['triggering_element']['#value'] == 'Approve') {
     module_load_include('php', 'tpps', 'forms/submit/submit_all');
     global $user;
     $uid = $user->uid;
@@ -319,5 +341,9 @@ function tpps_admin_panel_submit($form, &$form_state) {
         variable_set('tpps_delayed_submissions', $delayed_submissions);
       }
     }
+  }
+  else {
+    $state['status'] = $form_state['values']['state-status'];
+    tpps_update_submission($state);
   }
 }
