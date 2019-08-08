@@ -1043,7 +1043,6 @@ function tpps_file_parsing($accession) {
           ->range(0, 1)
           ->execute()
           ->fetchObject()->value;
-        $species_code = $species_code['value'];
         $marker = 'SNP';
 
         $records = array(
@@ -1160,7 +1159,7 @@ function tpps_file_parsing($accession) {
             for ($j = 9; $j < count($vcf_line); $j++) {
               $records['genotype_call'][] = array(
                 'project_id' => $project_id,
-                'stock_id' => $stocks[$j],
+                'stock_id' => $stocks[$j - 9],
                 '#fk' => array(
                   'genotype' => $genotype_desc,
                   'variant' => $variant_name,
@@ -1169,7 +1168,7 @@ function tpps_file_parsing($accession) {
               );
 
               $records['stock_genotype'][] = array(
-                'stock_id' => $stocks[$j],
+                'stock_id' => $stocks[$j - 9],
                 '#fk' => array(
                   'genotype' => $genotype_desc,
                 ),
