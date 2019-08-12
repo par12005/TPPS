@@ -13,13 +13,20 @@
  */
 function tpps_author_autocomplete($string) {
   $matches = array();
-  $result = db_select('chado.contact', 'contact')
-    ->fields('contact', array('name', 'type_id'))
-    ->condition('name', db_like($string) . '%', 'LIKE')
-    ->condition('type_id', chado_get_cvterm(array('name' => 'Person', 'cv_id' => array('name' => 'tripal_contact')))->cvterm_id, 'LIKE')
-    ->execute();
 
-  foreach ($result as $row) {
+  $results = chado_select_record('contact', array('name'), array(
+    'name' => $string,
+    'type_id' => array(
+      'name' => 'Person',
+      'cv_id' => array(
+        'name' => 'tripal_contact',
+      ),
+    ),
+  ), array(
+    'regex_columns' => array('name'),
+  ));
+
+  foreach ($results as $row) {
     $matches[$row->name] = check_plain($row->name);
   }
 
@@ -34,13 +41,20 @@ function tpps_author_autocomplete($string) {
  */
 function tpps_organization_autocomplete($string) {
   $matches = array();
-  $result = db_select('chado.contact', 'contact')
-    ->fields('contact', array('name', 'type_id'))
-    ->condition('name', db_like($string) . '%', 'LIKE')
-    ->condition('type_id', chado_get_cvterm(array('name' => 'Organization', 'cv_id' => array('name' => 'tripal_contact')))->cvterm_id, 'LIKE')
-    ->execute();
 
-  foreach ($result as $row) {
+  $results = chado_select_record('contact', array('name'), array(
+    'name' => $string,
+    'type_id' => array(
+      'name' => 'Organization',
+      'cv_id' => array(
+        'name' => 'tripal_contact',
+      ),
+    ),
+  ), array(
+    'regex_columns' => array('name'),
+  ));
+
+  foreach ($results as $row) {
     $matches[$row->name] = check_plain($row->name);
   }
 
@@ -55,12 +69,14 @@ function tpps_organization_autocomplete($string) {
  */
 function tpps_journal_autocomplete($string) {
   $matches = array();
-  $result = db_select('chado.pub', 'pub')
-    ->fields('pub', array('series_name'))
-    ->condition('series_name', db_like($string) . '%', 'LIKE')
-    ->execute();
 
-  foreach ($result as $row) {
+  $results = chado_select_record('pub', array('series_name'), array(
+    'series_name' => $string,
+  ), array(
+    'regex_columns' => array('series_name'),
+  ));
+
+  foreach ($results as $row) {
     $matches[$row->series_name] = check_plain($row->series_name);
   }
 
