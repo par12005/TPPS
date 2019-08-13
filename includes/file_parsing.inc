@@ -288,7 +288,7 @@ function tpps_file_parsing($accession) {
             if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $phenotype['file-empty']) {
               $phenotype_prefix .= "-" . $content[$j][$clone_col_name];
             }
-            $phenotype_name = "$phenotype_prefix-$name-$j";
+            $phenotype_name = "{$form_state['accession']}-$phenotype_prefix-$name-$j";
 
             $records['phenotype'][$phenotype_name] = array(
               'uniquename' => $phenotype_name,
@@ -1428,7 +1428,7 @@ function tpps_file_parsing($accession) {
                   ->execute();
 
                 $param_name = $param_query->fetchObject()->field_name;
-                $phenotype_name = "$tree_id-$layer_name-$param_name-$j";
+                $phenotype_name = "{$form_state['accession']}-$tree_id-$layer_name-$param_name-$j";
 
                 $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
                 $type = variable_get("tpps_param_{$param_id}_type", 'attr_id');
@@ -1530,7 +1530,7 @@ function tpps_file_parsing($accession) {
           $desc = $current_env['desc'];
           $unit = $current_env['unit'];
           $val = $current_env['val'];
-          $phenotype_name = "$tree_id-$name-$j";
+          $phenotype_name = "{$form_state['accession']}-$tree_id-$name-$j";
 
           $records['phenotype'][$phenotype_name] = array(
             'uniquename' => $phenotype_name,
