@@ -688,6 +688,7 @@ function tpps_submit_page_3(array &$form_state) {
     'stock' => array(),
     'stockprop' => array(),
     'stock_relationship' => array(),
+    'project_stock' => array(),
   );
   $overrides = array(
     'stock_relationship' => array(
@@ -839,6 +840,13 @@ function tpps_submit_page_3(array &$form_state) {
         'organism_id' => $id,
       );
 
+      $records['project_stock'][] = array(
+        'project_id' => $form_state['ids']['project_id'],
+        '#fk' => array(
+          'stock' => $tree_id,
+        ),
+      );
+
       if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $tree_accession['file-empty']) {
         $clone_name = $tree_id . '-' . $content[$j][$clone_col_name];
 
@@ -846,6 +854,13 @@ function tpps_submit_page_3(array &$form_state) {
           'uniquename' => $form_state['accession'] . '-' . $clone_name,
           'type_id' => $clone_cvterm,
           'organism_id' => $id,
+        );
+
+        $records['project_stock'][] = array(
+          'project_id' => $form_state['ids']['project_id'],
+          '#fk' => array(
+            'stock' => $clone_name,
+          ),
         );
 
         $records['stock_relationship'][] = array(
@@ -1048,6 +1063,7 @@ function tpps_submit_page_3(array &$form_state) {
           'stockprop' => array(),
           'stock_relationship' => array(),
         );
+        $stock_count = 0;
       }
     }
 
@@ -1056,14 +1072,13 @@ function tpps_submit_page_3(array &$form_state) {
     $file->status = FILE_STATUS_PERMANENT;
     $file = file_save($file);
     $form_state['file_rank']++;
+    if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
+      break;
+    }
   }
 
   $stock_publish_vals = array();
   foreach ($form_state['ids']['stock_ids'] as $tree_id => $stock_id) {
-    tpps_chado_insert_record('project_stock', array(
-      'stock_id' => $stock_id,
-      'project_id' => $form_state['ids']['project_id'],
-    ));
     $stock_publish_vals[] = array($form_state['accession'] . '-' . $tree_id, $stock_id);
   }
   tpps_tripal_entity_publish('Stock', $stock_publish_vals, array('multi' => TRUE));

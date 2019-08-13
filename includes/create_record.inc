@@ -123,6 +123,11 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
 }
 
 function tpps_chado_insert_multi($record_groups, array $options = array()) {
+
+  if (!isset($options['devel'])) {
+    $options['devel'] = FALSE;
+  }
+
   // Initialize insert statements, schemas, foreign keys, and primary keys.
   $inserts = array();
   $schemas = array();
@@ -162,18 +167,43 @@ function tpps_chado_insert_multi($record_groups, array $options = array()) {
     $fks[$table] = array();
   }
 
+  if ($options['devel']) {
+    $start_time = microtime(TRUE);
+    print_r("\nstart time: " . date('r') . "\n");
+    $times = array(
+      'total' => 0,
+      'unique' => 0,
+      'unique_query' => 0,
+      'unique_other' => 0,
+      'insert' => 0,
+      'other' => 0,
+    );
+  }
   foreach ($record_groups as $table => $records) {
     $schema = &$schemas[$table];
     $primary = &$primarys[$table];
     $fks_to_populate = array();
     $has_fields = FALSE;
-    
+
+    if ($options['devel']) {
+      $start_unique = microtime(TRUE);
+    }
     foreach ($records as $id => $values) {
       $unique = !empty($schema['unique keys']) ? $schema['unique keys'] : array();
       
       $u_cols = array('*');
       $u_vals = array();
       $exists = FALSE;
+
+      if (!empty($values['#fk'])) {
+        foreach ($values['#fk'] as $fk_type => $foreign_record_id) {
+          $fk_table = $schema['foreign keys'][$fk_type]['table'];
+          $col_name = key($schema['foreign keys'][$fk_type]['columns']);
+          $values[$col_name] = $fks[$fk_table][$foreign_record_id];
+        }
+        unset($values['#fk']);
+      }
+
       foreach ($unique as $fields) {
         foreach ($fields as $field) {
           if (!array_key_exists($field, $values)) {
@@ -186,17 +216,12 @@ function tpps_chado_insert_multi($record_groups, array $options = array()) {
           }
         }
 
-        if (($results = chado_select_record($table, $u_cols, $u_vals)) and isset($primary)) {
+        $start_query = microtime(TRUE);
+        $results = chado_select_record($table, $u_cols, $u_vals);
+        $times['unique_query'] += (microtime(TRUE) - $start_query);
+        if ($results and isset($primary)) {
           $exists = TRUE;
           if (count($results) == 1) {
-            if (!empty($values['#fk'])) {
-              foreach ($values['#fk'] as $fk_type => $foreign_record_id) {
-                $fk_table = $schema['foreign keys'][$fk_type]['table'];
-                $col_name = key($schema['foreign keys'][$fk_type]['columns']);
-                $values[$col_name] = $fks[$fk_table][$foreign_record_id];
-              }
-              unset($values['#fk']);
-            }
             if (!empty($values[$primary])) {
               unset($values[$primary]);
             }
@@ -206,7 +231,8 @@ function tpps_chado_insert_multi($record_groups, array $options = array()) {
               }
             }
             if (!empty($values)) {
-              chado_update_record($table, $u_vals, $values);
+              $fks[$table][$id] = chado_update_record($table, $u_vals, $values, array('return_record' => TRUE))->{$primary};
+              break;
             }
           }
           $fks[$table][$id] = current($results)->{$primary};
@@ -214,15 +240,6 @@ function tpps_chado_insert_multi($record_groups, array $options = array()) {
         }
       }
 
-      if (!empty($values['#fk'])) {
-        foreach ($values['#fk'] as $fk_type => $foreign_record_id) {
-          $fk_table = $schema['foreign keys'][$fk_type]['table'];
-          $col_name = key($schema['foreign keys'][$fk_type]['columns']);
-          $values[$col_name] = $fks[$fk_table][$foreign_record_id];
-        }
-        unset($values['#fk']);
-      }
-      
       if (!$exists) {
         $inserts[$table]->values($values);
         $has_fields = TRUE;
@@ -230,11 +247,30 @@ function tpps_chado_insert_multi($record_groups, array $options = array()) {
       }
     }
 
+    if ($options['devel']) {
+      $times['unique'] += (microtime(TRUE) - $start_unique);
+      $start_insert = microtime(TRUE);
+    }
+
     if ($has_fields) {
       $last_id = $inserts[$table]->execute();
       $fks[$table] += array_combine($fks_to_populate, range($last_id - count($fks_to_populate) + 1, $last_id));
     }
+
+    if ($options['devel']) {
+      $times['insert'] += (microtime(TRUE) - $start_insert);
+    }
   }
+
+  if ($options['devel']) {
+    $times['total'] = microtime(TRUE) - $start_time;
+    print_r("\nend time: " . date('r') . "\n");
+    $times['other'] = $times['total'] - $times['unique'] - $times['insert'];
+    $times['unique_other'] = $times['unique'] - $times['unique_query'];
+    print_r("timing breakdown:\n");
+    print_r($times);
+  }
+
   if (!empty($options['fks'])) {
     return $fks[$options['fks']];
   }

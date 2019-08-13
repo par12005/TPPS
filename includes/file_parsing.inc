@@ -42,7 +42,6 @@ function tpps_file_parsing($accession) {
     if (isset($fourthpage["organism-$i"]['phenotype'])) {
       $phenotype = $fourthpage["organism-$i"]['phenotype'];
       $iso_check = $phenotype['iso-check'];
-      $fks = array();
       if (empty($iso_check)) {
         $phenotype_number = $phenotype['number'];
         $phenotypes_meta = array();
@@ -362,7 +361,7 @@ function tpps_file_parsing($accession) {
             }
 
             if ($phenotype_count > $record_group) {
-              $fks += tpps_chado_insert_multi($records);
+              tpps_chado_insert_multi($records);
               $records = array(
                 'phenotype' => array(),
                 'phenotypeprop' => array(),
@@ -375,7 +374,7 @@ function tpps_file_parsing($accession) {
           }
         }
 
-        $fks += tpps_chado_insert_multi($records);
+        tpps_chado_insert_multi($records);
         unset($records);
 
         $phenotype_file->status = FILE_STATUS_PERMANENT;
@@ -478,7 +477,7 @@ function tpps_file_parsing($accession) {
               );
               
               if ($phenotype_count > $record_group) {
-                $fks += tpps_chado_insert_multi($records);
+                tpps_chado_insert_multi($records);
                 $records = array(
                   'phenotype' => array(),
                   'phenotypeprop' => array(),
@@ -493,7 +492,7 @@ function tpps_file_parsing($accession) {
           }
         }
         
-        $fks += tpps_chado_insert_multi($records);
+        tpps_chado_insert_multi($records);
         unset($records);
 
         $file->status = FILE_STATUS_PERMANENT;
