@@ -330,7 +330,7 @@ function tpps_flatten(array $state) {
 
       if (isset($org['genotype'])) {
         $geno = &$org['genotype'];
-        $file_type = &$geno['file-type'];
+        $files = &$geno['files'];
 
         $marker_types = array();
         foreach ($geno['marker-type'] as $key => $val) {
@@ -421,18 +421,24 @@ function tpps_flatten(array $state) {
           $data["$org_name Reference Genome"] = $geno['ref-genome'];
         }
 
-        if (isset($file_type['Genotype Assay']) and $file_type['Genotype Assay'] and isset($geno['file']) and $geno['file']) {
-          $data["$org_name Genotype Assay File"] = $geno['file'];
-          $data["$org_name Assay Genotypes"] = isset($geno['assay_genotype_count']) ? $geno['assay_genotype_count'] : NULL;
+        if (!empty($geno['files']['snps-assay'])) {
+          $data["$org_name SNPs Genotype Assay File"] = $geno['files']['snps-assay'];
         }
 
-        if (isset($file_type['Assay Design']) and $file_type['Assay Design'] and isset($geno['assay-design']) and $geno['assay-design']) {
-          $data["$org_name Genotype Assay Design File"] = $geno['assay-design'];
+        if (!empty($geno['files']['assay-design'])) {
+          $data["$org_name Assay Design File"] = $geno['files']['assay-design'];
         }
 
-        if (isset($file_type['VCF']) and $file_type['VCF'] and isset($geno['vcf']) and $geno['vcf']) {
-          $data["$org_name Genotype VCF File"] = $geno['vcf'];
-          $data["$org_name VCF Genotypes"] = isset($geno['vcf_genotype_count']) ? $geno['vcf_genotype_count'] : NULL;
+        if (!empty($geno['files']['ssrs'])) {
+          $data["$org_name SSRs/cpSSRs Genotype File"] = $geno['files']['ssrs'];
+        }
+
+        if (!empty($geno['files']['other'])) {
+          $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
+        }
+
+        if (!empty($geno['files']['vcf'])) {
+          $data["$org_name VCF File"] = $geno['files']['vcf'];
         }
       }
 
