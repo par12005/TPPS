@@ -218,7 +218,9 @@ function tpps_chado_insert_multi($record_groups, array $options = array()) {
 
         $start_query = microtime(TRUE);
         $results = chado_select_record($table, $u_cols, $u_vals);
-        $times['unique_query'] += (microtime(TRUE) - $start_query);
+        if ($options['devel']) {
+          $times['unique_query'] += (microtime(TRUE) - $start_query);
+        }
         if ($results and isset($primary)) {
           $exists = TRUE;
           if (count($results) == 1) {
