@@ -172,11 +172,11 @@ function validate_phenotype(array $phenotype, $id, array $form, array &$form_sta
         form_set_error("$id][phenotype][phenotypes-meta][$i][structure", "Phenotype $i Structure: field is required.");
       }
 
-      if ($current_phenotype['val-check'] == '1' and $current_phenotype['min'] == '') {
+      if (($current_phenotype['val-check'] or $current_phenotype['bin-check']) and $current_phenotype['min'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][min", "Phenotype $i Minimum Value: field is required.");
       }
 
-      if ($current_phenotype['val-check'] == '1' and $current_phenotype['max'] == '') {
+      if (($current_phenotype['val-check'] or $current_phenotype['bin-check']) and $current_phenotype['max'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
       }
 

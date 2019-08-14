@@ -183,14 +183,30 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
     $fields['phenotypes-meta']["$i"]['val-check'] = array(
       '#type' => 'checkbox',
       '#title' => t("Phenotype @i has a value range", array('@i' => $i)),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][bin-check]"]' => array('checked' => FALSE),
+        ),
+      ),
+    );
+
+    $fields['phenotypes-meta']["$i"]['bin-check'] = array(
+      '#type' => 'checkbox',
+      '#title' => t("Phenotype @i is a binary phenotype", array('@i' => $i)),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => FALSE),
+        ),
+      ),
     );
 
     $fields['phenotypes-meta']["$i"]['min'] = array(
       '#type' => 'textfield',
       '#title' => t("Phenotype @i Minimum Value (type 1 for binary): *", array('@i' => $i)),
       '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE),
+        'invisible' => array(
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => FALSE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][bin-check]"]' => array('checked' => FALSE),
         ),
       ),
     );
@@ -199,8 +215,9 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'textfield',
       '#title' => t("Phenotype @i Maximum Value (type 2 for binary): *", array('@i' => $i)),
       '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => TRUE),
+        'invisible' => array(
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => FALSE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][bin-check]"]' => array('checked' => FALSE),
         ),
       ),
     );
