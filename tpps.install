@@ -614,8 +614,54 @@ function tpps_create_genotype_entity() {
   tripal_create_bundle($args);
   $bundle = tripal_load_bundle_entity(array('label' => 'Genotype'));
 
+  /*$format_term = chado_get_cvterm(array(
+    'name' => 'format',
+    'cv_id' => array(
+      'name' => 'sep',
+    ),
+  ), array(
+    'include_fk' => array(
+      'dbxref_id' => 1,
+    ),
+  ));
+
+  $info = field_info_field('sep__format');
+  if (empty($info['bundles']['TripalEntity'])) {
+    field_create_field(array(
+      'field_name' => 'sep__format',
+      'type' => 'sep__format',
+      'settings' => array(
+        'storage' => 'field_chado_storage',
+      ),
+      'storage' => array(
+        'type' => 'field_chado_storage',
+        'module' => 'tripal_chado',
+        'active' => 1,
+      ),
+    ));
+  }
+
+  field_create_instance(array(
+    'field_name' => 'sep__format',
+    'entity_type' => 'TripalEntity',
+    'label' => 'Genotype Format',
+    'bundle' => $bundle->name,
+    'required' => FALSE,
+    'settings' => array(
+      'user_register_form' => 0,
+      'term_vocabulary' => $format_term->dbxref_id->db_id->name,
+      'term_name' => $format_term->name,
+      'term_accession' => $format_term->dbxref_id->accession,
+      'base_table' => 'genotype',
+      'chado_table' => 'genotypeprop',
+      'chado_column' => 'genotype_id',
+      'auto_attach' => 1,
+      'term_fixed' => 0,
+    ),
+  ));*/
+
   $prop_terms = array(
-    array(
+    /*array(
       'id' => 'sep:00007',
       'name' => 'format',
       'cvname' => 'sep',
@@ -623,7 +669,7 @@ function tpps_create_genotype_entity() {
       'label' => 'Genotype Format',
       'dbname' => 'sep',
       'def' => 'A format is a quality that is a specificiation or arrangement of a specified form. The structure, layout, or the digital manifestation of an entity. [ PSI:GEL ]',
-    ),
+    ),*/
     array(
       'id' => 'SO:0001686',
       'name' => 'quality_value',

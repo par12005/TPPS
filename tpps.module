@@ -5,6 +5,8 @@
  * Core of the TPPS module.
  */
 
+module_load_include('module', 'tripal', 'tripal');
+tripal_import_api();
 define("TPPS_JS_PATH", '/js/tpps.js');
 define("TPPS_CSS_PATH", '/css/tpps.css');
 define("TPPS_PAGE_1", 1);
@@ -26,6 +28,14 @@ require_once 'includes/accession_coordinates.inc';
 require_once 'includes/submissions.inc';
 require_once 'includes/zenodo.inc';
 require_once 'includes/match_trees.inc';
+require_once 'includes/tpps.fields.inc';
+module_load_include('inc', 'tripal_chado', 'includes/TripalFields/ChadoField');
+module_load_include('inc', 'tripal_chado', 'includes/TripalFields/ChadoFieldFormatter');
+module_load_include('inc', 'tripal_chado', 'includes/TripalFields/ChadoFieldWidget');
+require_once 'includes/TripalFields/sep__format/sep__format.inc';
+require_once 'includes/TripalFields/sep__format/sep__format_formatter.inc';
+require_once 'includes/TripalFields/sep__format/sep__format_widget.inc';
+module_load_include('inc', 'tripal_chado', 'includes/TripalFields/ChadoField');
 
 /**
  * Implements hook_menu().
