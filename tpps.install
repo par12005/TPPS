@@ -552,6 +552,14 @@ function tpps_default_permissions() {
       ))
       ->execute();
 
+    db_insert('role_permission')
+      ->fields(array(
+        'rid' => $auth->rid,
+        'permission' => 'view own tpps submission',
+        'module' => 'tpps',
+      ))
+      ->execute();
+
     drupal_set_message(t('Attention: @t default permissions have been set. Go to @p to manage and customize @t permissions.', array('@t' => 'TPPS', '@p' => 'admin/people/permissions')), 'status');
   }
 }

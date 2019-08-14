@@ -75,7 +75,7 @@ function tpps_menu() {
     'page callback' => 'tpps_completed_display',
     'page arguments' => array(1),
     'access callback' => 'tpps_access',
-    'access arguments' => array('access content'),
+    'access arguments' => array('view own tpps submission'),
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -231,6 +231,11 @@ function tpps_permission() {
     'description' => t('Delete incomplete TPPS submissions.'),
   );
 
+  $perms['view own tpps submission'] = array(
+    'title' => t('View own TPPS submissions'),
+    'description' => t('View TPPS submissions as a particular user.'),
+  );
+
   return $perms;
 }
 
@@ -260,6 +265,9 @@ function tpps_access($permission, array $args = array()) {
   }
   elseif ($params['q'] == 'tpps' and !empty($params['accession'])) {
     $accession = $params['accession'];
+  }
+  elseif (preg_match('/completed-submission\/(TGDR.*)/', $params['q'], $matches)) {
+    $accession = $matches[1];
   }
 
   if ($params['q'] == 'tpps' and empty($accession)) {
@@ -302,6 +310,18 @@ function tpps_access($permission, array $args = array()) {
           return TRUE;
         }
 
+        return FALSE;
+
+      case 'view own tpps submission':
+        if (tpps_access('administer tpps module')) {
+          return TRUE;
+        }
+
+        if (($state = tpps_load_submission($accession, FALSE))) {
+          if ($state->uid == $user->uid) {
+            return TRUE;
+          }
+        }
         return FALSE;
 
       case 'tpps delete submission':
