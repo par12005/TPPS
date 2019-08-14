@@ -281,14 +281,13 @@ function tpps_submit_page_1(array &$form_state) {
           }
         }
         $trial_code = substr($genus, $g_offset, 2) . substr($species, $s_offset, 2);
-        $and = db_and()
-          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
-          ->condition('value', $trial_code);
-        $new_code_query = db_select('chado.organismprop', 'o')
-          ->fields('o', array('value'))
-          ->condition($and)
-          ->execute();
-      } while (($new_code = $new_code_query->fetchObject()));
+        $new_code_query = chado_select_record('organismprop', array('value'), array(
+          'type_id' => array(
+            'name' => 'organism 4 letter code',
+          ),
+          'value' => $trial_code,
+        ));
+      } while (!empty($new_code_query));
 
       tpps_chado_insert_record('organismprop', array(
         'organism_id' => $form_state['ids']['organism_ids'][$i],
