@@ -178,13 +178,16 @@ function tpps_file_parsing($accession) {
             $phenotypes_meta[$name]['attr_id'] = $cvt_cache[$data['attr']];
           }
           else {
-            $attr = db_select('chado.cvterm', 'c')
-              ->fields('c', array('cvterm_id'))
-              ->condition('c.name', db_like($data['attr']), 'LIKE')
-              ->range(0, 1)
-              ->execute();
-            if (($result = $attr->fetchObject())) {
-              $phenotypes_meta[$name]['attr_id'] = $result->cvterm_id;
+            $attr = chado_select_record('cvterm', array('cvterm_id'), array(
+              'name' => array(
+                'data' => $data['attr'],
+                'op' => 'LIKE',
+              ),
+            ), array(
+              'limit' => 1,
+            ));
+            if (!empty($attr)) {
+              $phenotypes_meta[$name]['attr_id'] = current($attr)->cvterm_id;
             }
             else {
               $phenotypes_meta[$name]['attr_id'] = chado_insert_cvterm(array(
@@ -202,13 +205,16 @@ function tpps_file_parsing($accession) {
               $phenotypes_meta[$name]['struct_id'] = $cvt_cache[$data['struct']];
             }
             else {
-              $obs = db_select('chado.cvterm', 'c')
-                ->fields('c', array('cvterm_id'))
-                ->condition('c.name', db_like($phenotypes_meta[strtolower($name)]['struct']), 'LIKE')
-                ->range(0, 1)
-                ->execute();
-              if (($result = $obs->fetchObject())) {
-                $phenotypes_meta[$name]['struct_id'] = $result->cvterm_id;
+              $obs = chado_select_record('cvterm', array('cvterm_id'), array(
+                'name' => array(
+                  'data' => $data['struct'],
+                  'op' => 'LIKE',
+                ),
+              ), array(
+                'limit' => 1,
+              ));
+              if (!empty($obs)) {
+                $phenotypes_meta[$name]['struct_id'] = current($obs)->cvterm_id;
               }
               else {
                 $phenotypes_meta[$name]['struct_id'] = chado_insert_cvterm(array(
@@ -634,6 +640,16 @@ function tpps_file_parsing($accession) {
         ));
       }
 
+      $current_id = $form_state['ids']['organism_ids'][$i];
+      $species_code = current(chado_select_record('organismprop', array('value'), array(
+        'type_id' => array(
+          'name' => 'organism 4 letter code',
+        ),
+        'organism_id' => $current_id,
+      ), array(
+        'limit' => 1,
+      )))->value;
+
       if (!empty($genotype['files']['file-type']['SNPs Genotype Assay'])) {
         $genotype_file_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
@@ -667,17 +683,6 @@ function tpps_file_parsing($accession) {
           'name' => 'SNP',
           'is_obsolete' => 0,
         ))->cvterm_id;
-
-        $current_id = $form_state['ids']['organism_ids'][$i];
-        $and = db_and()
-          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
-          ->condition('organism_id', "$current_id");
-        $species_code = db_select('chado.organismprop', 'o')
-          ->fields('o', array('value'))
-          ->condition($and)
-          ->range(0, 1)
-          ->execute()
-          ->fetchObject()->value;
 
         for ($j = 0; $j < count($content) - 1; $j++) {
           $stock_id = NULL;
@@ -786,16 +791,7 @@ function tpps_file_parsing($accession) {
         while (($k = array_search(NULL, $content['headers']))) {
           unset($content['headers'][$k]);
         }
-        $current_id = $form_state['ids']['organism_ids'][$i];
-        $and = db_and()
-          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
-          ->condition('organism_id', "$current_id");
-        $species_code = db_select('chado.organismprop', 'o')
-          ->fields('o', array('value'))
-          ->condition($and)
-          ->range(0, 1)
-          ->execute()
-          ->fetchObject()->value;
+
         $microsat_cvterm = chado_get_cvterm(array(
           'cv_id' => array(
             'name' => 'sequence',
@@ -987,17 +983,6 @@ function tpps_file_parsing($accession) {
           'is_obsolete' => 0,
         ))->cvterm_id;
 
-        $current_id = $form_state['ids']['organism_ids'][$i];
-        $and = db_and()
-          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
-          ->condition('organism_id', "$current_id");
-        $species_code = db_select('chado.organismprop', 'o')
-          ->fields('o', array('value'))
-          ->condition($and)
-          ->range(0, 1)
-          ->execute()
-          ->fetchObject()->value;
-
         for ($j = 0; $j < count($content) - 1; $j++) {
           $tree_id = $content[$j][$groups['Tree Id'][1]];
           $stock_id = $form_state['ids']['stock_ids'][trim($tree_id)];
@@ -1076,16 +1061,6 @@ function tpps_file_parsing($accession) {
         ));
         $file_rank++;
 
-        $current_id = $form_state['ids']['organism_ids'][$i];
-        $and = db_and()
-          ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
-          ->condition('organism_id', "$current_id");
-        $species_code = db_select('chado.organismprop', 'o')
-          ->fields('o', array('value'))
-          ->condition($and)
-          ->range(0, 1)
-          ->execute()
-          ->fetchObject()->value;
         $marker = 'SNP';
 
         $records = array(
@@ -1384,32 +1359,27 @@ function tpps_file_parsing($accession) {
 
         for ($j = 0; $j < count($content) - 1; $j++) {
           $tree_id = $content[$j][$id_col];
-          $stock_query = db_select('chado.stock', 's')
-            ->fields('s', array('stock_id'))
-            ->condition('uniquename', "$accession-$tree_id")
-            ->execute();
+          $stock_id = $form_state['ids']['stock_ids'][$tree_id];
 
-          $stock_id = $stock_query->fetchObject()->stock_id;
+          $gps_query = chado_select_record('stockprop', array('value'), array(
+            'stock_id' => $stock_id,
+            'type_id' => array(
+              'name' => 'gps_latitude',
+            ),
+          ), array(
+            'limit' => 1,
+          ));
+          $lat = current($gps_query)->value;
 
-          $and = db_and()
-            ->condition('stock_id', $stock_id)
-            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_latitude'))->cvterm_id);
-          $gps_query = db_select('chado.stockprop', 's')
-            ->fields('s', array('value'))
-            ->condition($and)
-            ->execute();
-
-          $lat = $gps_query->fetchObject()->value;
-
-          $and = db_and()
-            ->condition('stock_id', $stock_id)
-            ->condition('type_id', chado_get_cvterm(array('name' => 'gps_longitude'))->cvterm_id);
-          $gps_query = db_select('chado.stockprop', 's')
-            ->fields('s', array('value'))
-            ->condition($and)
-            ->execute();
-
-          $long = $gps_query->fetchObject()->value;
+          $gps_query = chado_select_record('stockprop', array('value'), array(
+            'stock_id' => $stock_id,
+            'type_id' => array(
+              'name' => 'gps_longitude',
+            ),
+          ), array(
+            'limit' => 1,
+          ));
+          $long = current($gps_query)->value;
 
           if (db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
             foreach ($layers_params as $layer_id => $params) {
