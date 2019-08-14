@@ -570,11 +570,11 @@ function tpps_default_permissions() {
 function tpps_create_entities() {
   $transaction = db_transaction();
   try {
-    if (empty(tripal_load_bundle_entity(array('label' => 'Genotype')))){
+    if (empty(tripal_load_bundle_entity(array('label' => 'Genotype')))) {
       tpps_create_genotype_entity();
     }
 
-    if (empty(tripal_load_bundle_entity(array('label' => 'Stock')))){
+    if (empty(tripal_load_bundle_entity(array('label' => 'Stock')))) {
       tpps_create_stock_entity();
     }
   }
@@ -670,7 +670,7 @@ function tpps_create_genotype_entity() {
       'def' => 'Number of samples',
     ),
   );
-  
+
   foreach ($prop_terms as $prop_term) {
     $term = chado_insert_cvterm(array(
       'id' => $prop_term['id'],
@@ -691,7 +691,7 @@ function tpps_create_genotype_entity() {
     $term->cvname = $prop_term['cvname'];
 
     $info = field_info_field($prop_term['field']);
-    if (empty($info['bundles']['TripalEntity'])){
+    if (empty($info['bundles']['TripalEntity'])) {
       field_create_field(array(
         'field_name' => $prop_term['field'],
         'type' => 'chado_linker__prop',
@@ -788,7 +788,7 @@ function tpps_create_stock_entity() {
   ));
 
   $info = field_info_field('sbo__phenotype');
-  if (empty($info['bundles']['TripalEntity'])){
+  if (empty($info['bundles']['TripalEntity'])) {
     field_create_field(array(
       'field_name' => 'sbo__phenotype',
       'type' => 'sbo__phenotype',
@@ -832,9 +832,9 @@ function tpps_create_stock_entity() {
       'dbxref_id' => 1,
     ),
   ));
-  
+
   $info = field_info_field('so__genotype');
-  if (empty($info['bundles']['TripalEntity'])){
+  if (empty($info['bundles']['TripalEntity'])) {
     field_create_field(array(
       'field_name' => 'so__genotype',
       'type' => 'so__genotype',

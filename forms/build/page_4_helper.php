@@ -55,7 +55,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => 'Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain isotope or mass spectrometry data.'
+      '#description' => 'Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain isotope or mass spectrometry data.',
     );
 
     return $fields;

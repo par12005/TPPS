@@ -394,7 +394,7 @@ function tpps_file_parsing($accession) {
         $local_cv = chado_get_cv(array('name' => 'local'));
         $local_db = variable_get('tpps_local_db');
         $file = file_load($phenotype['iso']);
-        
+
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -408,7 +408,7 @@ function tpps_file_parsing($accession) {
           'rank' => $file_rank,
         ));
         $file_rank++;
-        
+
         $location = drupal_realpath($file->uri);
         $content = tpps_parse_xlsx($location);
 
@@ -465,7 +465,7 @@ function tpps_file_parsing($accession) {
                   'phenotype' => $phenotype_name,
                 ),
               );
-              
+
               $records['phenotypeprop'][] = array(
                 'type_id' => $description_id,
                 'value' => $desc,
@@ -481,7 +481,7 @@ function tpps_file_parsing($accession) {
                   'phenotype' => $phenotype_name,
                 ),
               );
-              
+
               if ($phenotype_count > $record_group) {
                 tpps_chado_insert_multi($records);
                 $records = array(
@@ -497,7 +497,7 @@ function tpps_file_parsing($accession) {
             }
           }
         }
-        
+
         tpps_chado_insert_multi($records);
         unset($records);
 

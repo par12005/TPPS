@@ -39,7 +39,14 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 
   if (empty($accession)) {
 
-    $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Submission Job Running', 'Approved', 'Approved - Delayed Submission Release')));
+    $states = tpps_load_submission_multiple(array(
+      'status' => array(
+        'Pending Approval',
+        'Submission Job Running',
+        'Approved',
+        'Approved - Delayed Submission Release',
+      ),
+    ));
 
     $pending = array();
     $approved = array();
@@ -103,7 +110,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
           "$org->genus $org->species",
         );
       }
-      
+
       if (!empty($rows)) {
         $headers = array();
 
@@ -220,7 +227,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
         ),
       );
     }
-    
+
     $form['state-status'] = array(
       '#type' => 'select',
       '#title' => t('Change state status'),

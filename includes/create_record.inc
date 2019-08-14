@@ -122,7 +122,22 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
   }
 }
 
-function tpps_chado_insert_multi($record_groups, array $options = array()) {
+/**
+ * Inserts multiple records into the chado database.
+ *
+ * This function will insert multiple records into multiple tables in the chado
+ * database. This function is much faster than the tpps_chado_insert_record()
+ * function with the 'multi' option set to true, because .
+ *
+ * @param array $record_groups
+ *   An array of tables and the records that will be going into each table.
+ * @param array $options
+ *   Additional options.
+ *
+ * @return mixed
+ *   An array of primary key ids on success. On failure, return FALSE.
+ */
+function tpps_chado_insert_multi(array $record_groups, array $options = array()) {
 
   if (!isset($options['devel'])) {
     $options['devel'] = FALSE;
@@ -190,7 +205,7 @@ function tpps_chado_insert_multi($record_groups, array $options = array()) {
     }
     foreach ($records as $id => $values) {
       $unique = !empty($schema['unique keys']) ? $schema['unique keys'] : array();
-      
+
       $u_cols = array('*');
       $u_vals = array();
       $exists = FALSE;

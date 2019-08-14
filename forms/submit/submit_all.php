@@ -33,7 +33,7 @@ function tpps_submit_all($accession) {
       'name' => $firstpage['publication']['title'],
       'description' => $firstpage['publication']['abstract'],
     ));
-    
+
     tpps_tripal_entity_publish('Project', array($firstpage['publication']['title'], $form_state['ids']['project_id']));
 
     tpps_submit_page_1($form_state);
@@ -1228,10 +1228,10 @@ function tpps_submit_summary(array &$form_state) {
  *
  * @param string $bundle_name
  *   The name of the bundle, for example, "Organism", "Gene", "Project", etc.
- * @param string $title
- *   The title of the entity.
- * @param int $record_id
- *   The id of the record for the entity in chado.
+ * @param array $vals
+ *   The an array of entity values to be published.
+ * @param array $options
+ *   Additional options for publishing.
  */
 function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = array()) {
   if (!empty($options['multi'])) {
