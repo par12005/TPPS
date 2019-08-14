@@ -257,15 +257,14 @@ function tpps_submit_page_1(array &$form_state) {
       'infraspecific_name' => $infra,
     ));
 
-    $and = db_and()
-      ->condition('type_id', chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id)
-      ->condition('organism_id', $form_state['ids']['organism_ids'][$i]);
-    $code_query = db_select('chado.organismprop', 'o')
-      ->fields('o', array('value'))
-      ->condition($and)
-      ->execute();
+    $code_query = chado_select_record('organismprop', array('value'), array(
+      'type_id' => array(
+        'name' => 'organism 4 letter code',
+      ),
+      'organism_id' => $form_state['ids']['organism_ids'][$i],
+    ));
 
-    if (!($code = $code_query->fetchObject())) {
+    if (empty($code_query)) {
       $g_offset = 0;
       $s_offset = 0;
       do {
