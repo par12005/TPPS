@@ -877,20 +877,20 @@ function page_4_ref(array &$fields, array &$form_state, $id) {
   if ($genome_dir) {
     $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
     foreach ($results as $key => $value) {
-      $query = db_select('chado.organismprop', 'organismprop')
-        ->fields('organismprop', array('organism_id'))
-        ->condition('value', $key)
-        ->execute()
-        ->fetchAssoc();
-      $query = db_select('chado.organism', 'organism')
-        ->fields('organism', array('genus', 'species'))
-        ->condition('organism_id', $query['organism_id'])
-        ->execute()
-        ->fetchAssoc();
+      $org_id_query = chado_select_record('organismprop', array('organism_id'), array(
+        'value' => $key,
+        'type_id' => array(
+          'name' => 'organism 4 letter code',
+        ),
+      ));
+      $org_query = chado_select_record('organism', array('genus', 'species'), array(
+        'organism_id' => current($org_id_query)->organism_id,
+      ));
+      $result = current($org_query);
 
       $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
       foreach ($versions as $item) {
-        $opt_string = $query['genus'] . " " . $query['species'] . " " . $item->filename;
+        $opt_string = $result->genus . " " . $result->species . " " . $item->filename;
         $ref_genome_arr[$opt_string] = $opt_string;
       }
     }
