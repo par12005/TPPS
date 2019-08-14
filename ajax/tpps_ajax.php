@@ -13,6 +13,7 @@
  */
 function tpps_author_autocomplete($string) {
   $matches = array();
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $results = chado_select_record('contact', array('name'), array(
     'name' => $string,
@@ -41,6 +42,7 @@ function tpps_author_autocomplete($string) {
  */
 function tpps_organization_autocomplete($string) {
   $matches = array();
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $results = chado_select_record('contact', array('name'), array(
     'name' => $string,
@@ -69,6 +71,7 @@ function tpps_organization_autocomplete($string) {
  */
 function tpps_journal_autocomplete($string) {
   $matches = array();
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $results = chado_select_record('pub', array('series_name'), array(
     'series_name' => $string,
@@ -91,21 +94,25 @@ function tpps_journal_autocomplete($string) {
  */
 function tpps_species_autocomplete($string) {
   $matches = array();
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $parts = explode(" ", $string);
   if (!isset($parts[1])) {
-    $parts[1] = "";
+    $parts[1] = ".";
   }
-  // var_dump($parts);
-  $result = db_select('chado.organism', 'organism')
-    ->fields('organism', array('genus', 'species'))
-    ->condition('genus', db_like($parts[0]) . '%', 'LIKE')
-    ->condition('species', db_like($parts[1]) . '%', 'LIKE')
-    ->orderBy('genus')
-    ->orderBy('species')
-    ->execute();
 
-  foreach ($result as $row) {
+  $results = chado_select_record('organism', array('genus', 'species'), array(
+    'genus' => array(
+      'data' => $parts[0],
+      'op' => '~*',
+    ),
+    'species' => array(
+      'data' => $parts[1],
+      'op' => '~*',
+    ),
+  ));
+
+  foreach ($results as $row) {
     $matches[$row->genus . " " . $row->species] = check_plain($row->genus . " " . $row->species);
   }
 
@@ -120,13 +127,16 @@ function tpps_species_autocomplete($string) {
  */
 function tpps_phenotype_autocomplete($string) {
   $matches = array();
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
-  $result = db_select('chado.phenotype', 'phenotype')
-    ->fields('phenotype', array('name'))
-    ->condition('name', db_like($string) . '%', 'LIKE')
-    ->execute();
+  $results = chado_select_record('phenotype', array('name'), array(
+    'name' => array(
+      'data' => $string,
+      'op' => '~*',
+    ),
+  ));
 
-  foreach ($result as $row) {
+  foreach ($results as $row) {
     $matches[$row->name] = check_plain($row->name);
   }
 
@@ -141,21 +151,23 @@ function tpps_phenotype_autocomplete($string) {
  */
 function tpps_attribute_autocomplete($string) {
   $matches = array();
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
+  $attributes = array();
+  $attr_results = chado_select_record('phenotype', array('distinct attr_id'), array());
 
-  $attributes = db_select('chado.phenotype', 'p')
-    ->distinct()
-    ->fields('p', array('attr_id'));
+  foreach ($attr_results as $result) {
+    $attributes[] = $result->attr_id;
+  }
 
-  $and = db_and()
-    ->condition('c.cvterm_id', $attributes, 'IN')
-    ->condition('c.name', db_like($string) . '%', 'LIKE');
+  $results = chado_select_record('cvterm', array('name'), array(
+    'name' => array(
+      'data' => $string,
+      'op' => '~*',
+    ),
+    'cvterm_id' => $attributes,
+  ));
 
-  $result = db_select('chado.cvterm', 'c')
-    ->fields('c', array('name'))
-    ->condition($and)
-    ->execute();
-
-  foreach ($result as $row) {
+  foreach ($results as $row) {
     $matches[$row->name] = check_plain($row->name);
   }
 
@@ -170,18 +182,22 @@ function tpps_attribute_autocomplete($string) {
  */
 function tpps_units_autocomplete($string) {
   $matches = array();
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
-  $and = db_and()
-    ->condition('type_id', chado_get_cvterm(array('name' => 'unit', 'cv_id' => array('name' => 'uo')))->cvterm_id)
-    ->condition('value', db_like($string) . '%', 'LIKE');
+  $results = chado_select_record('phenotypeprop', array('value'), array(
+    'value' => array(
+      'data' => $string,
+      'op' => '~*',
+    ),
+    'type_id' => array(
+      'name' => 'unit',
+      'cv_id' => array(
+        'name' => 'uo',
+      ),
+    ),
+  ));
 
-  $result = db_select('chado.phenotypeprop', 'p')
-    ->distinct()
-    ->fields('p', array('value'))
-    ->condition($and)
-    ->execute();
-
-  foreach ($result as $row) {
+  foreach ($results as $row) {
     $matches[$row->value] = check_plain($row->value);
   }
 
@@ -196,21 +212,23 @@ function tpps_units_autocomplete($string) {
  */
 function tpps_structure_autocomplete($string) {
   $matches = array();
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
+  $structures = array();
+  $struct_results = chado_select_record('phenotype', array('distinct observable_id'), array());
 
-  $structures = db_select('chado.phenotype', 'p')
-    ->distinct()
-    ->fields('p', array('observable_id'));
+  foreach ($struct_results as $result) {
+    $structures[] = $result->observable_id;
+  }
 
-  $and = db_and()
-    ->condition('c.cvterm_id', $structures, 'IN')
-    ->condition('c.name', db_like($string) . '%', 'LIKE');
+  $results = chado_select_record('cvterm', array('name'), array(
+    'name' => array(
+      'data' => $string,
+      'op' => '~*',
+    ),
+    'cvterm_id' => $structures,
+  ));
 
-  $result = db_select('chado.cvterm', 'c')
-    ->fields('c', array('name', 'definition'))
-    ->condition($and)
-    ->execute();
-
-  foreach ($result as $row) {
+  foreach ($results as $row) {
     $matches[$row->name] = check_plain($row->name . ': ' . $row->definition);
   }
 
