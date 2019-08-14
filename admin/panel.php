@@ -39,7 +39,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 
   if (empty($accession)) {
 
-    $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Submission Job Running', 'Approved')));
+    $states = tpps_load_submission_multiple(array('status' => array('Pending Approval', 'Submission Job Running', 'Approved', 'Approved - Delayed Submission Release')));
 
     $pending = array();
     $approved = array();
@@ -230,6 +230,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
         'Pending Approval' => 'Pending Approval',
         'Submission Job Running' => 'Submission Job Running',
         'Approved' => 'Approved',
+        'Approved - Delayed Submission Release' => 'Approved - Delayed Submission Release',
       ),
       '#default_value' => $status,
     );
@@ -339,6 +340,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
         $delayed_submissions = variable_get('tpps_delayed_submissions', array());
         $delayed_submissions[$accession] = $accession;
         variable_set('tpps_delayed_submissions', $delayed_submissions);
+        $state['status'] = 'Approved - Delayed Submission Release';
+        tpps_update_submission($state);
       }
     }
   }
