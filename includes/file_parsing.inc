@@ -691,6 +691,7 @@ function tpps_file_parsing($accession) {
             if (!isset($stock_id)) {
               $stock_id = $form_state['ids']['stock_ids'][trim($val)];
               $species_code = $species_codes[$form_state['ids']['stock_species'][trim($val)]];
+              $current_id = $form_state['ids']['stock_species'][trim($val)];
             }
             else {
               $genotype_count++;
@@ -699,13 +700,13 @@ function tpps_file_parsing($accession) {
               $genotype_name = "$marker-$variant_name-$species_code-$val";
 
               $records['feature'][$marker_name] = array(
-                'organism_id' => $form_state['ids']['stock_species'][trim($val)],
+                'organism_id' => $current_id,
                 'uniquename' => $marker_name,
                 'type_id' => $seq_var_cvterm,
               );
 
               $records['feature'][$variant_name] = array(
-                'organism_id' => $form_state['ids']['stock_species'][trim($val)],
+                'organism_id' => $current_id,
                 'uniquename' => $variant_name,
                 'type_id' => $seq_var_cvterm,
               );
@@ -819,6 +820,7 @@ function tpps_file_parsing($accession) {
             if (!isset($stock_id)) {
               $stock_id = $form_state['ids']['stock_ids'][trim($val)];
               $species_code = $species_codes[$form_state['ids']['stock_species'][trim($val)]];
+              $current_id = $form_state['ids']['stock_species'][trim($val)];
             }
             else {
               $genotype_count++;
@@ -897,13 +899,13 @@ function tpps_file_parsing($accession) {
               $genotype_name = "$marker-$variant_name-$species_code-$val";
 
               $records['feature'][$marker_name] = array(
-                'organism_id' => $form_state['ids']['stock_species'][trim($val)],
+                'organism_id' => $current_id,
                 'uniquename' => $marker_name,
                 'type_id' => $seq_var_cvterm,
               );
 
               $records['feature'][$variant_name] = array(
-                'organism_id' => $form_state['ids']['stock_species'][trim($val)],
+                'organism_id' => $current_id,
                 'uniquename' => $variant_name,
                 'type_id' => $seq_var_cvterm,
               );
@@ -990,6 +992,7 @@ function tpps_file_parsing($accession) {
           $tree_id = $content[$j][$groups['Tree Id'][1]];
           $stock_id = $form_state['ids']['stock_ids'][trim($tree_id)];
           $species_code = $species_codes[$form_state['ids']['stock_species'][trim($tree_id)]];
+          $current_id = $form_state['ids']['stock_species'][trim($tree_id)];
           foreach ($groups['Genotype Data'][0] as $geno_data_col) {
             $value = $content[$j][$geno_data_col];
             $variant_name = $content['headers'][$geno_data_col];
@@ -997,13 +1000,13 @@ function tpps_file_parsing($accession) {
             $genotype_name = "$marker-$variant_name-$species_code-$value";
 
             $records['feature'][$marker_name] = array(
-              'organism_id' => $form_state['ids']['stock_species'][trim($tree_id)],
+              'organism_id' => $current_id,
               'uniquename' => $marker_name,
               'type_id' => $seq_var_cvterm,
             );
 
             $records['feature'][$variant_name] = array(
-              'organism_id' => $form_state['ids']['stock_species'][trim($tree_id)],
+              'organism_id' => $current_id,
               'uniquename' => $variant_name,
               'type_id' => $seq_var_cvterm,
             );
