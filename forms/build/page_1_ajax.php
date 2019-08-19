@@ -22,3 +22,7 @@
 function page_1_pub_status(array $form, array $form_state) {
   return $form['publication']['year'];
 }
+
+function tpps_organism_callback($form, &$form_state) {
+  return $form['organism'];
+}

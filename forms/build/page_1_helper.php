@@ -111,13 +111,28 @@ function publication(array &$form, array $values, array $form_state) {
  *
  * @param array $form
  *   The form to be populated.
- * @param array $values
- *   The form_state values of the form to be populated.
+ * @param array $form_state
+ *   The form_state of the form to be populated.
  *
  * @return array
  *   The populated form.
  */
-function organism(array &$form, array $values) {
+function organism(array &$form, array &$form_state) {
+
+  if (isset($form_state['values']['organism']['number']) and $form_state['triggering_element']['#name'] == "Add Organism") {
+    $form_state['values']['organism']['number']++;
+  }
+  elseif (isset($form_state['values']['organism']['number']) and $form_state['triggering_element']['#name'] == "Remove Organism" and $form_state['values']['organism']['number'] > 1) {
+    $form_state['values']['organism']['number']--;
+  }
+  $org_number = isset($form_state['values']['organism']['number']) ? $form_state['values']['organism']['number'] : NULL;
+
+  if (!isset($org_number) and isset($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'])) {
+    $org_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+  }
+  if (!isset($org_number)) {
+    $org_number = 1;
+  }
 
   $form['organism'] = array(
     '#type' => 'fieldset',
@@ -125,28 +140,38 @@ function organism(array &$form, array $values) {
     '#title' => t('<div class="fieldset-title">Organism information:</div>'),
     '#description' => t('Up to 5 organisms per submission.'),
     '#collapsible' => TRUE,
+    '#prefix' => '<div id="organism-wrapper">',
+    '#suffix' => '</div>',
   );
 
   $form['organism']['add'] = array(
     '#type' => 'button',
-    '#title' => t('Add Organism'),
     '#button_type' => 'button',
     '#value' => t('Add Organism'),
+    '#name' => t('Add Organism'),
+    '#ajax' => array(
+      'wrapper' => 'organism-wrapper',
+      'callback' => 'tpps_organism_callback',
+    ),
   );
 
   $form['organism']['remove'] = array(
     '#type' => 'button',
-    '#title' => t('Remove Organism'),
     '#button_type' => 'button',
     '#value' => t('Remove Organism'),
+    '#name' => t('Remove Organism'),
+    '#ajax' => array(
+      'wrapper' => 'organism-wrapper',
+      'callback' => 'tpps_organism_callback',
+    ),
   );
 
   $form['organism']['number'] = array(
     '#type' => 'hidden',
-    '#default_value' => isset($values['organism']['number']) ? $values['organism']['number'] : '1',
+    '#value' => $org_number,
   );
 
-  for ($i = 1; $i <= 5; $i++) {
+  for ($i = 1; $i <= $org_number; $i++) {
 
     $form['organism']["$i"] = array(
       '#type' => 'textfield',

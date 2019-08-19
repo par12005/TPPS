@@ -74,62 +74,7 @@ jQuery(document).ready(function ($) {
       }
     });
   }
-  
-  function Organism(){
-    var organism_add = jQuery('#edit-organism-add');
-    var organism_remove = jQuery('#edit-organism-remove');
-    var number_object = jQuery('#edit-organism div input:hidden');
-    var organism_number = number_object[0].value;
-    var organisms = jQuery('#edit-organism div div.form-type-textfield');
-    
-    jQuery('#edit-organism-number').hide();
-    organisms.hide();
-    
-    if (organism_number > 0){
-      for (var i = 0; i < organism_number; i++){
-        jQuery(organisms[i]).show();
-      }
 
-      for (var i = organism_number; i < 5; i++){
-        jQuery(organisms[i]).hide();
-      }
-    }
-    
-    organism_add.attr('type', 'button');
-    organism_remove.attr('type', 'button');
-
-    organism_add.on('click', function(){
-      if (organism_number < 5){
-        organism_number++;
-        number_object[0].value = organism_number;
-        
-        for (var i = 0; i < organism_number; i++){
-          jQuery(organisms[i]).show();
-        }
-
-        for (var i = organism_number; i < 5; i++){
-          jQuery(organisms[i]).hide();
-        }
-      }
-    });
-    
-    organism_remove.on('click', function(){
-      if (organism_number > 1){
-        organism_number--;
-        number_object[0].value = organism_number;
-        
-        for (var i = 0; i < organism_number; i++){
-          jQuery(organisms[i]).show();
-        }
-
-        for (var i = organism_number; i < 5; i++){
-          jQuery(organisms[i]).hide();
-        }
-      }
-    });
-    
-  }
-  
   function Supplemental_Files(){
     var files_add = jQuery('#edit-files-add');
     var files_remove = jQuery('#edit-files-remove');
@@ -196,7 +141,6 @@ jQuery(document).ready(function ($) {
     
     if (jQuery("#edit-step")[0].value == 1){
       Secondary_Authors();
-      Organism();
     }
     
     if (jQuery("#edit-step")[0].value == 3){
