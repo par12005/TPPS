@@ -219,7 +219,32 @@ jQuery(document).ready(function ($) {
     jQuery(this).click(getCoordinates);
   });
   jQuery("#map_wrapper").hide();
+
+  var preview_buttons = jQuery('input.preview_button');
+  jQuery.each(preview_buttons, function() {
+    jQuery(this).attr('type', 'button');
+    jQuery(this).click(previewFile);
+  });
 });
+
+function previewFile() {
+  var fid;
+  if (this.id.match(/fid_(.*)/) !== null) {
+    fid = this.id.match(/fid_(.*)/)[1];
+    var request = jQuery.post('/tpps-preview-file', {
+      fid: fid
+    });
+
+    request.done(function (data) {
+      if (jQuery('.preview_' + fid).length === 0) {
+        jQuery('#fid_' + fid).after(data);
+      }
+    });
+  }
+  else {
+    return;
+  }
+}
 
 var maps = {};
 

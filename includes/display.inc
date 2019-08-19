@@ -533,6 +533,7 @@ function tpps_table_display(array &$state) {
         // Create links to files.
         $file_url = check_plain(file_create_url(file_load($val)->uri));
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
+        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button\" type=\"button\" value=\"Preview file\"></input>";
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if ($matches[1] != "Tree ") {
             $parts = explode(" ", $matches[1]);
@@ -788,4 +789,42 @@ function tpps_tab_create($user) {
 
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   return $final;
+}
+
+/**
+ * Creates and prints an HTML table of the first 3 lines of a file.
+ *
+ * @return string
+ *   An HTML string for the table with the file preview.
+ */
+function tpps_preview_file() {
+  $params = drupal_get_query_parameters($_POST);
+  if (!empty($params['fid'])) {
+    $fid = $params['fid'];
+    $no_header = FALSE;
+  }
+  else {
+    return;
+  }
+
+  if (($file = file_load($fid))) {
+    $location = drupal_realpath($file->uri);
+    $content = tpps_parse_xlsx($location, 3, !empty($no_header));
+    $rows = array();
+    for ($i = 0; $i < count($content) - 1; $i++) {
+      $rows[] = $content[$i];
+    }
+    $vars = array(
+      'header' => $content['headers'],
+      'rows' => $rows,
+      'attributes' => array('class' => array('view', "preview_$fid"), 'id' => 'tpps_table_display'),
+      'caption' => '',
+      'colgroups' => NULL,
+      'sticky' => FALSE,
+      'empty' => '',
+    );
+    $display = render(theme_table($vars));
+    print($display);
+    return;
+  }
 }

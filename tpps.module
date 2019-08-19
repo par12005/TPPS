@@ -195,6 +195,14 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['tpps-preview-file'] = array(
+    'title' => 'TPPS Preview File',
+    'page callback' => 'tpps_preview_file',
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
   return $items;
 }
 
