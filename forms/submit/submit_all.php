@@ -1236,6 +1236,23 @@ function tpps_submit_summary(array &$form_state) {
       }
     }
   }
+
+  if (!empty($form_state['saved_values']['summarypage']['tree_pictures'])) {
+    foreach ($form_state['saved_values']['summarypage']['tree_pictures'] as $name => $fid) {
+      if (!empty($fid) and ($file = file_load($fid))) {
+        $uri = $file->uri;
+        $real_uri = drupal_realpath($uri);
+        $path = implode('/', array_slice(explode('/', $real_uri), 0, -1)) . '/';
+        $new_filename = implode('_', explode(' ', $name)) . '.jpg';
+        $new_uri = implode('/', array_slice(explode('/', $uri), 0, -1)) . '/' . $new_filename;
+        rename($real_uri, $path . $new_filename);
+        $file->filename = $new_filename;
+        $file->uri = $new_uri;
+        $file->status = FILE_STATUS_PERMANENT;
+        $file = file_save($file);
+      }
+    }
+  }
 }
 
 /**

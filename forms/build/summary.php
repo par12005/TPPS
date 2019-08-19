@@ -130,6 +130,41 @@ function tpps_summary_create_form(array &$form, array $form_state) {
     );
   }
 
+  $org_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+  $new_species = array();
+  for ($i = 1; $i <= $org_number; $i++) {
+    $org = $form_state['saved_values'][TPPS_PAGE_1]['organism'][$i];
+    $parts = explode(" ", $org);
+
+    $org_record = chado_select_record('organism', array('organism_id'), array(
+      'genus' => $parts[0],
+      'species' => implode(" ", array_slice($parts, 1)),
+    ));
+    if (empty($org_record)) {
+      $new_species[] = $org;
+    }
+  }
+
+  if (!empty($new_species) and !empty(variable_get('tpps_tree_pics_files_dir', NULL))) {
+    $form['tree_pictures'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('The following trees are new in the database and will need pictures:'),
+      '#tree' => TRUE,
+    );
+
+    foreach ($new_species as $org) {
+      $form['tree_pictures'][$org] = array(
+        '#type' => 'managed_file',
+        '#title' => t('Picture for @org: (optional)', array('@org' => $org)),
+        '#upload_location' => 'public://' . variable_get('tpps_tree_pics_files_dir'),
+        '#upload_validators' => array(
+          'file_validate_extensions' => array('jpeg jpg'),
+        ),
+        '#description' => t('Please upload a photo of the species in either .jpeg or .jpg format')
+      );
+    }
+  }
+
   $form['Back'] = array(
     '#type' => 'submit',
     '#value' => t('Back'),
