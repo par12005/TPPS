@@ -716,6 +716,8 @@ function tpps_submit_page_3(array &$form_state) {
     ),
   );
 
+  $form_state['ids']['stock_species'] = array();
+
   for ($i = 1; $i <= $organism_number; $i++) {
     if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0) {
       $tree_accession = $thirdpage['tree-accession'];
@@ -848,6 +850,7 @@ function tpps_submit_page_3(array &$form_state) {
         'type_id' => $org_cvterm,
         'organism_id' => $id,
       );
+      $form_state['ids']['stock_species'][$tree_id] = $id;
 
       $records['project_stock'][] = array(
         'project_id' => $form_state['ids']['project_id'],
@@ -864,6 +867,7 @@ function tpps_submit_page_3(array &$form_state) {
           'type_id' => $clone_cvterm,
           'organism_id' => $id,
         );
+      $form_state['ids']['stock_species'][$clone_name] = $id;
 
         $records['project_stock'][] = array(
           'project_id' => $form_state['ids']['project_id'],
