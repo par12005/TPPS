@@ -121,6 +121,12 @@ function tpps_install() {
         'not null' => TRUE,
       ),
     ),
+    'unique keys' => array(
+      'stock_phenotype_c1' => array(
+        'stock_id',
+        'phenotype_id',
+      ),
+    ),
     'foreign keys' => array(
       'phenotype' => array(
         'table' => 'phenotype',
