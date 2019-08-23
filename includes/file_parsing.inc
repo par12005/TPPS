@@ -1430,7 +1430,7 @@ function tpps_file_parsing($accession) {
                   $records['stock_phenotype'][] = array(
                     'stock_id' => $stock_id,
                     '#fk' => array(
-                      'phenotype' => $phenotype_id,
+                      'phenotype' => $phenotype_name,
                     ),
                   );
                 }
@@ -1444,14 +1444,14 @@ function tpps_file_parsing($accession) {
                   $records['phenotype_cvterm'][] = array(
                     'cvterm_id' => $env_cvterm,
                     '#fk' => array(
-                      'phenotype' => $phenotype_id,
+                      'phenotype' => $phenotype_name,
                     ),
                   );
 
                   $records['stock_phenotype'][] = array(
                     'stock_id' => $stock_id,
                     '#fk' => array(
-                      'phenotype' => $phenotype_id,
+                      'phenotype' => $phenotype_name,
                     ),
                   );
                 }
