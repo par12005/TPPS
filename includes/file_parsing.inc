@@ -743,12 +743,14 @@ function tpps_file_parsing($accession) {
                   'genotype_call' => array(),
                   'stock_genotype' => array(),
                 );
+                $genotype_count = 0;
               }
             }
           }
         }
         $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
         unset($records);
+        $genotype_count = 0;
 
         $file->status = FILE_STATUS_PERMANENT;
         $file = file_save($file);
@@ -942,12 +944,14 @@ function tpps_file_parsing($accession) {
                   'genotype_call' => array(),
                   'stock_genotype' => array(),
                 );
+                $genotype_count = 0;
               }
             }
           }
         }
         $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
         unset($records);
+        $genotype_count = 0;
 
         $file->status = FILE_STATUS_PERMANENT;
         $file = file_save($file);
@@ -1043,11 +1047,13 @@ function tpps_file_parsing($accession) {
                 'genotype_call' => array(),
                 'stock_genotype' => array(),
               );
+              $genotype_count = 0;
             }
           }
         }
         $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
         unset($records);
+        $genotype_count = 0;
 
         $file->status = FILE_STATUS_PERMANENT;
         $file = file_save($file);
@@ -1276,6 +1282,7 @@ function tpps_file_parsing($accession) {
                 'genotypeprop' => array(),
                 'stock_genotype' => array(),
               );
+              $genotype_count = 0;
             }
           }
           elseif (preg_match('/##FORMAT=/', $vcf_line)) {
@@ -1291,6 +1298,7 @@ function tpps_file_parsing($accession) {
         // Insert the last set of values.
         $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
         unset($records);
+        $genotype_count = 0;
         // dpm('done: ' . date('r'));.
         $vcf_file->status = FILE_STATUS_PERMANENT;
         $vcf_file = file_save($vcf_file);
