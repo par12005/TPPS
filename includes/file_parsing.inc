@@ -52,8 +52,7 @@ function tpps_file_parsing($accession) {
 
     if (isset($fourthpage["organism-$i"]['phenotype'])) {
       $phenotype = $fourthpage["organism-$i"]['phenotype'];
-      $iso_check = $phenotype['iso-check'];
-      if (empty($iso_check)) {
+      if (empty($phenotype['iso-check'])) {
         $phenotype_number = $phenotype['number'];
         $phenotypes_meta = array();
         $phenotype_count = 0;
