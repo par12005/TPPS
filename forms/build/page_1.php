@@ -22,7 +22,7 @@ require_once 'page_1_ajax.php';
  * @return array
  *   The completed Publication/Species Information form.
  */
-function page_1_create_form(array &$form, array &$form_state) {
+function tpps_page_1_create_form(array &$form, array &$form_state) {
 
   if (isset($form_state['saved_values'][TPPS_PAGE_1])) {
     $values = $form_state['saved_values'][TPPS_PAGE_1];
@@ -31,11 +31,11 @@ function page_1_create_form(array &$form, array &$form_state) {
     $values = array();
   }
 
-  user_info($form, $values);
+  tpps_user_info($form, $values);
 
-  publication($form, $values, $form_state);
+  tpps_publication($form, $values, $form_state);
 
-  organism($form, $form_state);
+  tpps_organism($form, $form_state);
 
   $form['Save'] = array(
     '#type' => 'submit',

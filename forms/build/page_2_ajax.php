@@ -19,7 +19,7 @@
  * @return array
  *   The element in the form to be updated.
  */
-function ajax_date_year_callback(array &$form, array $form_state) {
+function tpps_date_year_callback(array &$form, array $form_state) {
   return $form['EndingDate']['year'];
 }
 
@@ -37,7 +37,7 @@ function ajax_date_year_callback(array &$form, array $form_state) {
  * @return array
  *   The element in the form to be updated.
  */
-function ajax_date_month_callback(array &$form, array $form_state) {
+function tpps_date_month_callback(array &$form, array $form_state) {
   return $form['EndingDate']['month'];
 }
 
@@ -55,6 +55,6 @@ function ajax_date_month_callback(array &$form, array $form_state) {
  * @return array
  *   The part of the form to be updated.
  */
-function study_type_callback(array &$form, array $form_state) {
+function tpps_study_type_callback(array &$form, array $form_state) {
   return $form['study_info'];
 }

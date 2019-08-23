@@ -44,6 +44,6 @@ function tpps_accession_pop_group(array &$form, array $form_state) {
  * @return array
  *   The element in the form to be updated.
  */
-function study_location_map_ajax(array $form, array $form_state) {
+function tpps_study_location_map_ajax(array $form, array $form_state) {
   return $form['study_location']['map-button'];
 }

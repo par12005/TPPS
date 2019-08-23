@@ -13,7 +13,7 @@
  * @param array $form_state
  *   The state of the form that is being validated.
  */
-function page_1_validate_form(array &$form, array &$form_state) {
+function tpps_page_1_validate_form(array &$form, array &$form_state) {
   // For testing only.
   /*foreach($form_state['values'] as $key => $value){
   print_r($key . " => " . $value . ";<br>");

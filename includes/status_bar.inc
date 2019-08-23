@@ -19,7 +19,7 @@
  * @global string $base_url
  *   The base URL of the site.
  */
-function status_bar(array &$form, array $form_state) {
+function tpps_status_bar(array &$form, array $form_state) {
 
   global $base_url;
 

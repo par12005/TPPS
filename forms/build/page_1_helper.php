@@ -16,7 +16,7 @@
  * @return array
  *   The populated form.
  */
-function user_info(array &$form, array $values) {
+function tpps_user_info(array &$form, array $values) {
 
   $form['primaryAuthor'] = array(
     '#type' => 'textfield',
@@ -59,7 +59,7 @@ function user_info(array &$form, array $values) {
  * @return array
  *   The populated form.
  */
-function publication(array &$form, array $values, array $form_state) {
+function tpps_publication(array &$form, array $values, array $form_state) {
 
   $form['publication'] = array(
     '#type' => 'fieldset',
@@ -68,7 +68,7 @@ function publication(array &$form, array $values, array $form_state) {
     '#collapsible' => TRUE,
   );
 
-  secondary_authors($form, $values, $form_state);
+  tpps_secondary_authors($form, $values, $form_state);
 
   $form['publication']['status'] = array(
     '#type' => 'select',
@@ -80,12 +80,12 @@ function publication(array &$form, array $values, array $form_state) {
       'Published' => t('Published'),
     ),
     '#ajax' => array(
-      'callback' => 'page_1_pub_status',
+      'callback' => 'tpps_pub_status',
       'wrapper' => 'pubyear',
     ),
   );
 
-  year($form, $values, $form_state);
+  tpps_year($form, $values, $form_state);
 
   $form['publication']['title'] = array(
     '#type' => 'textfield',
@@ -117,7 +117,7 @@ function publication(array &$form, array $values, array $form_state) {
  * @return array
  *   The populated form.
  */
-function organism(array &$form, array &$form_state) {
+function tpps_organism(array &$form, array &$form_state) {
 
   if (isset($form_state['values']['organism']['number']) and $form_state['triggering_element']['#name'] == "Add Organism") {
     $form_state['values']['organism']['number']++;
@@ -204,7 +204,7 @@ function organism(array &$form, array &$form_state) {
  * @return array
  *   The populated form.
  */
-function year(array &$form, array $values, array $form_state) {
+function tpps_year(array &$form, array $values, array $form_state) {
 
   if (isset($form_state['values']['publication']['status']) and $form_state['values']['publication']['status'] != '0') {
     $pub_status = $form_state['values']['publication']['status'];
@@ -258,7 +258,7 @@ function year(array &$form, array $values, array $form_state) {
  * @return array
  *   The populated form.
  */
-function secondary_authors(array &$form, array $values, array $form_state) {
+function tpps_secondary_authors(array &$form, array $values, array $form_state) {
 
   $file_upload_location = 'public://' . variable_get('tpps_author_files_dir', 'tpps_authors');
 

@@ -13,7 +13,7 @@
  * @param array $form_state
  *   The state of the form that is being validated.
  */
-function page_4_validate_form(array &$form, array &$form_state) {
+function tpps_page_4_validate_form(array &$form, array &$form_state) {
 
   if ($form_state['submitted'] == '1') {
 
@@ -27,14 +27,14 @@ function page_4_validate_form(array &$form, array &$form_state) {
         unset($form_state['values']["organism-$i"]['phenotype']);
       }
       if (isset($form_state['values']["organism-$i"]['phenotype'])) {
-        validate_phenotype($form_state['values']["organism-$i"]['phenotype'], "organism-$i", $form, $form_state);
+        tpps_validate_phenotype($form_state['values']["organism-$i"]['phenotype'], "organism-$i", $form, $form_state);
       }
 
       if ($i > 1 and isset($organism['genotype-repeat-check']) and $organism['genotype-repeat-check'] == '1') {
         unset($form_state['values']["organism-$i"]['genotype']);
       }
       if (isset($form_state['values']["organism-$i"]['genotype'])) {
-        validate_genotype($form_state['values']["organism-$i"]['genotype'], "organism-$i", $form, $form_state);
+        tpps_validate_genotype($form_state['values']["organism-$i"]['genotype'], "organism-$i", $form, $form_state);
       }
 
       if ($i > 1 and isset($organism['environment-repeat-check']) and $organism['environment-repeat-check'] == '1') {
@@ -42,7 +42,7 @@ function page_4_validate_form(array &$form, array &$form_state) {
       }
       if (isset($form_state['values']["organism-$i"]['environment'])) {
         $env = &$form_state['values']["organism-$i"]['environment'];
-        validate_environment($env, "organism-$i");
+        tpps_validate_environment($env, "organism-$i");
       }
     }
 
@@ -102,7 +102,7 @@ function page_4_validate_form(array &$form, array &$form_state) {
  * @param array $form_state
  *   The state of the form being validated.
  */
-function validate_phenotype(array $phenotype, $id, array $form, array &$form_state) {
+function tpps_validate_phenotype(array $phenotype, $id, array $form, array &$form_state) {
   $iso_check = $phenotype['iso-check'];
 
   if (empty($iso_check)) {
@@ -420,7 +420,7 @@ function validate_phenotype(array $phenotype, $id, array $form, array &$form_sta
  * @param array $form_state
  *   The state of the form being validated.
  */
-function validate_genotype(array $genotype, $id, array $form, array &$form_state) {
+function tpps_validate_genotype(array $genotype, $id, array $form, array &$form_state) {
   $snps = $genotype['SNPs'];
   $ref_genome = $genotype['ref-genome'];
   $file_type = $genotype['files']['file-type'];
@@ -780,7 +780,7 @@ function validate_genotype(array $genotype, $id, array $form, array &$form_state
  * @param string $id
  *   The id of the organism fieldset being validated.
  */
-function validate_environment(array &$environment, $id) {
+function tpps_validate_environment(array &$environment, $id) {
   if ($environment['use_layers']) {
     // Using cartogratree environment layers.
     $group_check = '';

@@ -21,7 +21,7 @@ require_once 'page_3_helper.php';
  * @param array $form_state
  *   The state of the form to be populated.
  */
-function page_3_create_form(array &$form, array &$form_state) {
+function tpps_page_3_create_form(array &$form, array &$form_state) {
 
   if (isset($form_state['saved_values'][TPPS_PAGE_3])) {
     $values = $form_state['saved_values'][TPPS_PAGE_3];
@@ -31,7 +31,7 @@ function page_3_create_form(array &$form, array &$form_state) {
   }
 
   if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != 1) {
-    study_location($form, $form_state);
+    tpps_study_location($form, $form_state);
   }
 
   $form['existing_trees'] = array(

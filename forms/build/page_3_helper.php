@@ -16,7 +16,7 @@
  * @return array
  *   The populated form.
  */
-function study_location(array &$form, array &$form_state) {
+function tpps_study_location(array &$form, array &$form_state) {
 
   $form['study_location'] = array(
     '#type' => 'fieldset',
@@ -82,7 +82,7 @@ function study_location(array &$form, array &$form_state) {
     '#prefix' => '<div id="study_location_map">',
     '#suffix' => '</div>',
     '#ajax' => array(
-      'callback' => 'study_location_map_ajax',
+      'callback' => 'tpps_study_location_map_ajax',
       'wrapper' => 'study_location_map',
     ),
   );

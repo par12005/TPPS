@@ -20,7 +20,7 @@
  * @return array
  *   The populated form.
  */
-function study_date($type, array &$form, array $values, array &$form_state) {
+function tpps_study_date($type, array &$form, array $values, array &$form_state) {
 
   $form[$type . 'Date'] = array(
     '#type' => 'fieldset',
@@ -83,17 +83,17 @@ function study_date($type, array &$form, array $values, array &$form_state) {
 
   if ($type == "Starting") {
     $form['StartingDate']['year']['#ajax'] = array(
-      'callback' => 'ajax_date_year_callback',
+      'callback' => 'tpps_date_year_callback',
       'wrapper' => 'Endingyear',
     );
     $form['StartingDate']['month']['#ajax'] = array(
-      'callback' => 'ajax_date_month_callback',
+      'callback' => 'tpps_date_month_callback',
       'wrapper' => 'Endingmonth',
     );
   }
   else {
     $form['EndingDate']['year']['#ajax'] = array(
-      'callback' => 'ajax_date_month_callback',
+      'callback' => 'tpps_date_month_callback',
       'wrapper' => 'Endingmonth',
     );
     $form['EndingDate']['year']['#prefix'] = '<div id="Endingyear">';
@@ -131,7 +131,7 @@ function study_date($type, array &$form, array $values, array &$form_state) {
  * @param array $form
  *   The form to be populated.
  */
-function natural_population(array &$form) {
+function tpps_natural_population(array &$form) {
 
   $form['#title'] = t('<div class="fieldset-title">Natural Population/Landscape Information:</div>');
 
@@ -165,13 +165,13 @@ function natural_population(array &$form) {
  * @param array $form
  *   The form to be populated.
  */
-function growth_chamber(array &$form) {
+function tpps_growth_chamber(array &$form) {
 
   $form['#title'] = t('<div class="fieldset-title">Growth Chamber Information:</div>');
 
-  control($form, 'co2', 'CO2');
-  control($form, 'humidity', 'Air humidity');
-  control($form, 'light', 'Light Intensity');
+  tpps_control($form, 'co2', 'CO2');
+  tpps_control($form, 'humidity', 'Air humidity');
+  tpps_control($form, 'light', 'Light Intensity');
 
   $form['temp'] = array(
     '#type' => 'fieldset',
@@ -190,7 +190,7 @@ function growth_chamber(array &$form) {
     '#title' => t('Average Low Temperature: *'),
   );
 
-  rooting($form);
+  tpps_rooting($form);
 }
 
 /**
@@ -199,12 +199,12 @@ function growth_chamber(array &$form) {
  * @param array $form
  *   The form to be populated.
  */
-function greenhouse(array &$form) {
+function tpps_greenhouse(array &$form) {
 
   $form['#title'] = t('<div class="fieldset-title">Greenhouse Information:</div>');
 
-  control($form, 'humidity', 'Air humidity');
-  control($form, 'light', 'Light Intensity');
+  tpps_control($form, 'humidity', 'Air humidity');
+  tpps_control($form, 'light', 'Light Intensity');
 
   $form['temp'] = array(
     '#type' => 'fieldset',
@@ -223,7 +223,7 @@ function greenhouse(array &$form) {
     '#title' => t('Average Low Temperature: *'),
   );
 
-  rooting($form);
+  tpps_rooting($form);
 }
 
 /**
@@ -232,7 +232,7 @@ function greenhouse(array &$form) {
  * @param array $form
  *   The form to be populated.
  */
-function common_garden(array &$form) {
+function tpps_common_garden(array &$form) {
 
   $form['#title'] = t('<div class="fieldset-title">Common Garden Information:</div>');
 
@@ -263,7 +263,7 @@ function common_garden(array &$form) {
     ),
   );
 
-  control($form, 'salinity', 'Salinity');
+  tpps_control($form, 'salinity', 'Salinity');
 
   $form['biotic_env'] = array(
     '#type' => 'fieldset',
@@ -363,7 +363,7 @@ function common_garden(array &$form) {
  * @param array $form
  *   The form to be populated.
  */
-function plantation(array &$form) {
+function tpps_plantation(array &$form) {
 
   $form['#title'] = t('<div class="fieldset-title">Plantation Information:</div>');
 
@@ -449,7 +449,7 @@ function plantation(array &$form) {
  * @param array $form
  *   The form to be populated.
  */
-function rooting(array &$form) {
+function tpps_rooting(array &$form) {
 
   $form['rooting'] = array(
     '#type' => 'fieldset',
@@ -504,7 +504,7 @@ function rooting(array &$form) {
     '#title' => t('Soil Container Type: *'),
   );
 
-  control($form['rooting'], 'ph', 'pH');
+  tpps_control($form['rooting'], 'ph', 'pH');
 
   $treatment_options = drupal_map_assoc(array(
     t('Seasonal Environment'),
@@ -565,7 +565,7 @@ function rooting(array &$form) {
  * @param string $label
  *   The human-readable label for the control options.
  */
-function control(array &$form, $type, $label) {
+function tpps_control(array &$form, $type, $label) {
   $form[$type] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,

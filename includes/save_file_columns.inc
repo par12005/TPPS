@@ -16,7 +16,7 @@
  * @param array $form_state
  *   The state of the form being validated.
  */
-function save_file_columns(array &$form, array &$form_state) {
+function tpps_save_file_columns(array &$form, array &$form_state) {
 
   if ($form_state['stage'] == TPPS_PAGE_3) {
     if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == '1' or $form_state['values']['tree-accession']['check'] == '0') {

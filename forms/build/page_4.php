@@ -20,7 +20,7 @@ require_once 'page_4_helper.php';
  * @param array $form_state
  *   The state of the form to be populated.
  */
-function page_4_create_form(array &$form, array &$form_state) {
+function tpps_page_4_create_form(array &$form, array &$form_state) {
   if (isset($form_state['saved_values'][TPPS_PAGE_4])) {
     $values = $form_state['saved_values'][TPPS_PAGE_4];
   }
@@ -52,7 +52,7 @@ function page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
-      $form["organism-$i"]['phenotype'] = phenotype($form, $form_state, $values, "organism-$i");
+      $form["organism-$i"]['phenotype'] = tpps_phenotype($form, $form_state, $values, "organism-$i");
 
       if ($i > 1) {
         $form["organism-$i"]['phenotype']['#states'] = array(
@@ -72,7 +72,7 @@ function page_4_create_form(array &$form, array &$form_state) {
             'Type 2',
           ),
           '#ajax' => array(
-            'callback' => 'phenotype_file_format_callback',
+            'callback' => 'tpps_phenotype_file_format_callback',
             'wrapper' => "edit-organism-$i-phenotype-file-ajax-wrapper",
           ),
           '#default_value' => (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) ? $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] : 0,
@@ -163,7 +163,7 @@ function page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
-      $form["organism-$i"]['genotype'] = genotype($form, $form_state, $values, "organism-$i");
+      $form["organism-$i"]['genotype'] = tpps_genotype($form, $form_state, $values, "organism-$i");
 
       if ($i > 1) {
         $form["organism-$i"]['genotype']['#states'] = array(
@@ -184,7 +184,7 @@ function page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
-      $form["organism-$i"]['environment'] = environment($form, $form_state, "organism-$i");
+      $form["organism-$i"]['environment'] = tpps_environment($form, $form_state, "organism-$i");
 
       if ($i > 1) {
         $form["organism-$i"]['environment']['#states'] = array(

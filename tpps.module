@@ -822,7 +822,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     tpps_init_project($form_state);
   }
 
-  status_bar($form, $form_state);
+  tpps_status_bar($form, $form_state);
 
   if ((!isset($form_state['tpps_type']) or $form_state['tpps_type'] != 'tppsc') and (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization']))) {
     $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
@@ -842,22 +842,22 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   switch ($form_state['stage']) {
     case TPPS_PAGE_1:
       require_once 'forms/build/page_1.php';
-      page_1_create_form($form, $form_state);
+      tpps_page_1_create_form($form, $form_state);
       break;
 
     case TPPS_PAGE_2:
       require_once 'forms/build/page_2.php';
-      page_2_create_form($form, $form_state);
+      tpps_page_2_create_form($form, $form_state);
       break;
 
     case TPPS_PAGE_3:
       require_once 'forms/build/page_3.php';
-      page_3_create_form($form, $form_state);
+      tpps_page_3_create_form($form, $form_state);
       break;
 
     case TPPS_PAGE_4:
       require_once 'forms/build/page_4.php';
-      page_4_create_form($form, $form_state);
+      tpps_page_4_create_form($form, $form_state);
       break;
 
     case 'summarypage':
@@ -900,32 +900,32 @@ function tpps_main_validate(&$form, &$form_state) {
 
   if ($form_state['triggering_element']['#value'] == 'Back' or $form_state['triggering_element']['#value'] == 'Save') {
 
-    save_file_columns($form, $form_state);
+    tpps_save_file_columns($form, $form_state);
     return;
   }
 
   switch ($form_state['stage']) {
     case TPPS_PAGE_1:
       require_once 'forms/validate/page_1.php';
-      page_1_validate_form($form, $form_state);
+      tpps_page_1_validate_form($form, $form_state);
       drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     case TPPS_PAGE_2:
       require_once 'forms/validate/page_2.php';
-      page_2_validate_form($form, $form_state);
+      tpps_page_2_validate_form($form, $form_state);
       drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     case TPPS_PAGE_3:
       require_once 'forms/validate/page_3.php';
-      page_3_validate_form($form, $form_state);
+      tpps_page_3_validate_form($form, $form_state);
       drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     case TPPS_PAGE_4:
       require_once 'forms/validate/page_4.php';
-      page_4_validate_form($form, $form_state);
+      tpps_page_4_validate_form($form, $form_state);
       drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 

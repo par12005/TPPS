@@ -19,7 +19,7 @@
  * @return array
  *   The element in the form to be updated.
  */
-function page_1_pub_status(array $form, array $form_state) {
+function tpps_pub_status(array $form, array $form_state) {
   return $form['publication']['year'];
 }
 

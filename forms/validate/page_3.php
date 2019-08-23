@@ -13,7 +13,7 @@
  * @param array $form_state
  *   The state of the form that is being validated.
  */
-function page_3_validate_form(array &$form, array &$form_state) {
+function tpps_page_3_validate_form(array &$form, array &$form_state) {
   if ($form_state['submitted'] == '1') {
 
     if (!empty($form_state['values']['study_location'])) {

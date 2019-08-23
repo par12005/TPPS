@@ -20,7 +20,7 @@
  * @return array
  *   The populated form.
  */
-function phenotype(array &$form, array &$form_state, array $values, $id) {
+function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   $phenotype_upload_location = 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
 
   $fields = array(
@@ -37,7 +37,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
     '#type' => 'checkbox',
     '#title' => t('My phenotypes are results from a mass spectrometry or isotope analysis'),
     '#ajax' => array(
-      'callback' => 'update_phenotype',
+      'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotypes-$id",
     ),
   );
@@ -82,7 +82,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
     '#button_type' => 'button',
     '#value' => t('Add Phenotype'),
     '#ajax' => array(
-      'callback' => 'update_phenotype',
+      'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotypes-$id",
     ),
   );
@@ -93,7 +93,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
     '#button_type' => 'button',
     '#value' => t('Remove Phenotype'),
     '#ajax' => array(
-      'callback' => 'update_phenotype',
+      'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotypes-$id",
     ),
   );
@@ -308,7 +308,7 @@ function phenotype(array &$form, array &$form_state, array $values, $id) {
  * @return array
  *   The populated form.
  */
-function genotype(array &$form, array &$form_state, array $values, $id) {
+function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
 
@@ -318,9 +318,9 @@ function genotype(array &$form, array &$form_state, array $values, $id) {
     '#collapsible' => TRUE,
   );
 
-  page_4_marker_info($fields, $id);
+  tpps_page_4_marker_info($fields, $id);
 
-  page_4_ref($fields, $form_state, $id);
+  tpps_page_4_ref($fields, $form_state, $id);
 
   if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value'])) {
     $snps_check = $form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value'];
@@ -360,7 +360,7 @@ function genotype(array &$form, array &$form_state, array $values, $id) {
         'Polyploid' => 'Polyploid',
       ),
       '#ajax' => array(
-        'callback' => 'genotype_files_callback',
+        'callback' => 'tpps_genotype_files_callback',
         'wrapper' => "$id-genotype-files",
       ),
     );
@@ -414,7 +414,7 @@ function genotype(array &$form, array &$form_state, array $values, $id) {
     '#title' => t('Genotype File Types (select all that apply): *'),
     '#options' => $options,
     '#ajax' => array(
-      'callback' => 'genotype_files_callback',
+      'callback' => 'tpps_genotype_files_callback',
       'wrapper' => "$id-genotype-files",
     ),
   );
@@ -610,7 +610,7 @@ function genotype(array &$form, array &$form_state, array $values, $id) {
  * @return array
  *   The populated form.
  */
-function environment(array &$form, array &$form_state, $id) {
+function tpps_environment(array &$form, array &$form_state, $id) {
   $cartogratree_env = variable_get('tpps_cartogratree_env', FALSE);
 
   $fields = array(
@@ -813,7 +813,7 @@ function environment(array &$form, array &$form_state, $id) {
     '#button_type' => 'button',
     '#value' => t('Add Environment Data'),
     '#ajax' => array(
-      'callback' => 'update_environment',
+      'callback' => 'tpps_update_environment',
       'wrapper' => "environment-$id",
     ),
   );
@@ -824,7 +824,7 @@ function environment(array &$form, array &$form_state, $id) {
     '#button_type' => 'button',
     '#value' => t('Remove Environment Data'),
     '#ajax' => array(
-      'callback' => 'update_environment',
+      'callback' => 'tpps_update_environment',
       'wrapper' => "environment-$id",
     ),
   );
@@ -878,7 +878,7 @@ function environment(array &$form, array &$form_state, $id) {
  * @global stdClass $user
  *   The user accessing the form.
  */
-function page_4_ref(array &$fields, array &$form_state, $id) {
+function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   global $user;
   $uid = $user->uid;
 
@@ -929,7 +929,7 @@ function page_4_ref(array &$fields, array &$form_state, $id) {
     '#type' => 'textfield',
     '#title' => t('BioProject Accession Number: *'),
     '#ajax' => array(
-      'callback' => 'ajax_bioproject_callback',
+      'callback' => 'tpps_ajax_bioproject_callback',
       'wrapper' => "$id-assembly-auto",
     ),
     '#states' => array(
@@ -1080,7 +1080,7 @@ function page_4_ref(array &$fields, array &$form_state, $id) {
  * @param string $id
  *   The id of the organism fieldset being populated.
  */
-function page_4_marker_info(array &$fields, $id) {
+function tpps_page_4_marker_info(array &$fields, $id) {
 
   $fields['marker-type'] = array(
     '#type' => 'checkboxes',
@@ -1093,7 +1093,7 @@ function page_4_marker_info(array &$fields, $id) {
   );
 
   $fields['marker-type']['#ajax'] = array(
-    'callback' => 'genotype_files_callback',
+    'callback' => 'tpps_genotype_files_callback',
     'wrapper' => "$id-genotype-files",
   );
 

@@ -19,7 +19,7 @@
  * @return array
  *   The element in the form to be updated.
  */
-function ajax_bioproject_callback(array &$form, array $form_state) {
+function tpps_ajax_bioproject_callback(array &$form, array $form_state) {
 
   $ajax_id = $form_state['triggering_element']['#parents'][0];
 
@@ -40,7 +40,7 @@ function ajax_bioproject_callback(array &$form, array $form_state) {
  * @return array
  *   The element in the form to be updated.
  */
-function update_phenotype(array $form, array &$form_state) {
+function tpps_update_phenotype(array $form, array &$form_state) {
   $id = $form_state['triggering_element']['#parents'][0];
 
   return $form[$id]['phenotype'];
@@ -60,7 +60,7 @@ function update_phenotype(array $form, array &$form_state) {
  * @return array
  *   The element in the form to be updated.
  */
-function phenotype_file_format_callback(array $form, array &$form_state) {
+function tpps_phenotype_file_format_callback(array $form, array &$form_state) {
   $id = $form_state['triggering_element']['#parents'][0];
 
   return $form[$id]['phenotype']['file'];
@@ -80,7 +80,7 @@ function phenotype_file_format_callback(array $form, array &$form_state) {
  * @return array
  *   The element in the form to be updated.
  */
-function update_environment(array $form, array &$form_state) {
+function tpps_update_environment(array $form, array &$form_state) {
   $id = $form_state['triggering_element']['#parents'][0];
 
   return $form[$id]['environment'];
@@ -100,7 +100,7 @@ function update_environment(array $form, array &$form_state) {
  * @return array
  *   The element in the form to be updated.
  */
-function genotype_files_callback(array $form, array &$form_state) {
+function tpps_genotype_files_callback(array $form, array &$form_state) {
   $id = $form_state['triggering_element']['#parents'][0];
 
   return $form[$id]['genotype']['files'];
