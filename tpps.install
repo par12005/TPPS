@@ -149,6 +149,14 @@ function tpps_install() {
       'phenotype',
       'stock',
     ),
+    'indexes' => array(
+      'stock_phenotype_idx1' => array(
+        'phenotype_id',
+      ),
+      'stock_phenotype_idx2' => array(
+        'stock_id',
+      ),
+    ),
   ), TRUE, NULL, FALSE);
 
   tpps_create_plusgeno_view();
