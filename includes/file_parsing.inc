@@ -86,7 +86,7 @@ function tpps_file_parsing($accession) {
           if ($phenotype['phenotypes-meta'][$j]['struct-check'] == '1') {
             $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
           }
-          if ($phenotype['phenotypes-meta'][$j]['val-check'] or $phenotype['phenotypes-meta'][$j]['bin-check']) {
+          if (!empty($phenotype['phenotypes-meta'][$j]['val-check']) or !empty($phenotype['phenotypes-meta'][$j]['bin-check'])) {
             $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
             $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
           }
