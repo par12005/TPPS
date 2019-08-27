@@ -447,7 +447,11 @@ function tpps_flatten(array $state) {
         $env = &$org['environment'];
 
         if (variable_get('tpps_cartogratree_env', FALSE) and !empty($env['use_layers'])) {
+          $data["Cartogratree Layers"] = array();
           foreach ($env['env_layers'] as $layer => $layer_id) {
+            if (!empty($layer_id)) {
+              $data["Cartogratree Layers"][] = $layer;
+            }
             if (!empty($layer_id) and !empty($env['env_params'][$layer])) {
               $params = array();
               foreach ($env['env_params'][$layer] as $param => $param_id) {
@@ -457,6 +461,12 @@ function tpps_flatten(array $state) {
               }
               $data["Cartogratree Layer: $layer Parameters"] = implode(', ', $params);
             }
+          }
+          if (!empty($data["Cartogratree Layers"])) {
+            $data["Cartogratree Layers"] = implode(', ', $data["Cartogratree Layers"]);
+          }
+          else {
+            unset($data["Cartogratree Layers"]);
           }
         }
 
