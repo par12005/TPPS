@@ -49,6 +49,7 @@ function tpps_submit_all($accession) {
     tpps_update_submission($form_state);
 
     tpps_file_parsing($accession);
+    $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Approved';
     tpps_update_submission($form_state, array('status' => 'Approved'));
   }
