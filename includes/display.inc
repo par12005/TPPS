@@ -36,6 +36,7 @@ function tpps_flatten(array $state) {
   else {
     $data['#page_1_cleared'] = FALSE;
   }
+  $data['Publication DOI'] = isset($page_1['doi']) ? $page_1['doi'] : NULL;
   $data['Publication Title'] = isset($pub['title']) ? $pub['title'] : NULL;
   $data['Primary Author'] = isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : NULL;
   $data['Organization'] = isset($page_1['organization']) ? $page_1['organization'] : NULL;
@@ -586,6 +587,10 @@ function tpps_table_display(array &$state) {
       }
       elseif ($key == 'Publication Abstract' and strlen($val_str) > 50) {
         $val_str = substr($val_str, 0, 47) . '...';
+      }
+      elseif ($key == 'Publication DOI') {
+        $link = preg_match('/https?:\/\//', $val_str) ? $val_str : "https://doi.org/$val_str";
+        $val_str = "<a href=\"$link\" target=\"blank\">$val_str</a>";
       }
 
       $rows[] = array($key_str, $val_str);

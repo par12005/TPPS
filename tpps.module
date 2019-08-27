@@ -1152,6 +1152,10 @@ function tpps_block_view_alter(&$data, $block) {
               drupal_add_js($js, 'inline');
             }
           }
+          elseif (preg_match('/Publication DOI/', $item)) {
+            $link = preg_match('/https?:\/\//', $val_str) ? $val_str : "https://doi.org/$val_str";
+            $val_str = "<a href=\"$link\" target=\"blank\">$val_str</a>";
+          }
           $content .= "$ok $item_str: $val_str <br>";
         }
         elseif (preg_match('/#page_(.)_cleared/', $item, $matches)) {
