@@ -1016,7 +1016,6 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
   $class = 'EutilsImporter';
   tripal_load_include_importer_class($class);
-  $tripal_upload_location = "public://tripal/users/$user->uid";
   $eutils = tripal_get_importer_form(array(), $form_state, $class);
   $eutils['#type'] = 'fieldset';
   $eutils['#title'] = 'Tripal Eutils BioProject Loader';
