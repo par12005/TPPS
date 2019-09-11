@@ -16,6 +16,7 @@
 function tpps_page_4_validate_form(array &$form, array &$form_state) {
 
   if ($form_state['submitted'] == '1') {
+    unset($form_state['file_info'][TPPS_PAGE_4]);
 
     $form_values = $form_state['values'];
     $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
@@ -27,22 +28,21 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
         unset($form_state['values']["organism-$i"]['phenotype']);
       }
       if (isset($form_state['values']["organism-$i"]['phenotype'])) {
-        tpps_validate_phenotype($form_state['values']["organism-$i"]['phenotype'], "organism-$i", $form, $form_state);
+        tpps_validate_phenotype($form_state['values']["organism-$i"]['phenotype'], $i, $form, $form_state);
       }
 
       if ($i > 1 and isset($organism['genotype-repeat-check']) and $organism['genotype-repeat-check'] == '1') {
         unset($form_state['values']["organism-$i"]['genotype']);
       }
       if (isset($form_state['values']["organism-$i"]['genotype'])) {
-        tpps_validate_genotype($form_state['values']["organism-$i"]['genotype'], "organism-$i", $form, $form_state);
+        tpps_validate_genotype($form_state['values']["organism-$i"]['genotype'], $i, $form, $form_state);
       }
 
       if ($i > 1 and isset($organism['environment-repeat-check']) and $organism['environment-repeat-check'] == '1') {
         unset($form_state['values']["organism-$i"]['environment']);
       }
       if (isset($form_state['values']["organism-$i"]['environment'])) {
-        $env = &$form_state['values']["organism-$i"]['environment'];
-        tpps_validate_environment($env, "organism-$i");
+        tpps_validate_environment($form_state['values']["organism-$i"]['environment'], "organism-$i");
       }
     }
 
@@ -95,15 +95,16 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
  *
  * @param array $phenotype
  *   The form_state values of the phenotype fieldset for organism $id.
- * @param string $id
+ * @param string $org_num
  *   The id of the organism fieldset being validated.
  * @param array $form
  *   The form being validated.
  * @param array $form_state
  *   The state of the form being validated.
  */
-function tpps_validate_phenotype(array $phenotype, $id, array $form, array &$form_state) {
+function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array &$form_state) {
   $iso_check = $phenotype['iso-check'];
+  $id = "organism-$org_num";
 
   if (empty($iso_check)) {
     $phenotype_number = $phenotype['number'];
@@ -141,6 +142,7 @@ function tpps_validate_phenotype(array $phenotype, $id, array $form, array &$for
           // Preserve file if it is valid.
           $file = file_load($form_state['values'][$id]['phenotype']['metadata']);
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+          $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Metadata_$org_num.xlsx";
         }
       }
     }
@@ -217,11 +219,8 @@ function tpps_validate_phenotype(array $phenotype, $id, array $form, array &$for
       $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
 
       if (!form_get_errors()) {
-        // Preserve file if it is valid.
         $file = file_load($form_state['values'][$id]['phenotype']['file']);
         $phenotype_file_location = drupal_realpath($file->uri);
-        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
         if ($phenotype['format'] == 0) {
           $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
           $phenotype_file_name_cols = $groups['Phenotype Data']['0'];
@@ -354,17 +353,24 @@ function tpps_validate_phenotype(array $phenotype, $id, array $form, array &$for
             form_set_error("$id][phenotype][file", "Phenotype file: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Phenotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
           }
         }
+      }
 
-        if (!form_get_errors()) {
-          $rows = count(tpps_parse_xlsx(drupal_realpath($file->uri))) - 1 + !empty($phenotype['file-no-header']);
-          if ($phenotype['format'] == 0) {
-            $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows * count($phenotype_file_name_cols);
-          }
-          else {
-            $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows;
-          }
+      if (!form_get_errors()) {
+        // Preserve file if it is valid.
+        $file = file_load($form_state['values'][$id]['phenotype']['file']);
+        $phenotype_file_location = drupal_realpath($file->uri);
+        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num.xlsx";
+
+        $rows = count(tpps_parse_xlsx($phenotype_file_location)) - 1 + !empty($phenotype['file-no-header']);
+        if ($phenotype['format'] == 0) {
+          $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows * count($phenotype_file_name_cols);
+        }
+        else {
+          $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows;
         }
       }
+
     }
   }
   else {
@@ -404,6 +410,7 @@ function tpps_validate_phenotype(array $phenotype, $id, array $form, array &$for
     if (!form_get_errors()) {
       // Preserve file if it is valid.
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num.xlsx";
     }
   }
 }
@@ -413,14 +420,15 @@ function tpps_validate_phenotype(array $phenotype, $id, array $form, array &$for
  *
  * @param array $genotype
  *   The form_state values of the genotype fieldset for organism $id.
- * @param string $id
+ * @param string $org_num
  *   The id of the organism fieldset being validated.
  * @param array $form
  *   The form being validated.
  * @param array $form_state
  *   The state of the form being validated.
  */
-function tpps_validate_genotype(array $genotype, $id, array $form, array &$form_state) {
+function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$form_state) {
+  $id = "organism-$org_num";
   $snps = $genotype['SNPs'];
   $ref_genome = $genotype['ref-genome'];
   $file_type = $genotype['files']['file-type'];
@@ -604,6 +612,7 @@ function tpps_validate_genotype(array $genotype, $id, array $form, array &$form_
         // Preserve file if it is valid.
         $file = file_load($vcf);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_VCF_$org_num.xlsx";
       }
     }
 
@@ -647,6 +656,7 @@ function tpps_validate_genotype(array $genotype, $id, array $form, array &$form_
         // Preserve file if it is valid.
         $file = file_load($snps_assay);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SNPs_Assay_$org_num.xlsx";
       }
     }
 
@@ -657,6 +667,7 @@ function tpps_validate_genotype(array $genotype, $id, array $form, array &$form_
       // Preserve file if it is valid.
       $file = file_load($genotype['files']['assay-design']);
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Assay_Design_$org_num.xlsx";
     }
 
     if (!empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and !$genotype['files']['ssrs']) {
@@ -722,6 +733,7 @@ function tpps_validate_genotype(array $genotype, $id, array $form, array &$form_
         // Preserve file if it is valid.
         $file = file_load($genotype['files']['ssrs']);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Spreadsheet_$org_num.xlsx";
       }
     }
 
@@ -767,6 +779,7 @@ function tpps_validate_genotype(array $genotype, $id, array $form, array &$form_
         // Preserve file if it is valid.
         $file = file_load($other_file);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Other_Marker_Spreadsheet_$org_num.xlsx";
       }
     }
   }

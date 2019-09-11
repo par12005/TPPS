@@ -49,6 +49,8 @@ function tpps_submit_all($accession) {
     tpps_update_submission($form_state);
 
     tpps_file_parsing($accession);
+
+    tpps_submission_rename_files($accession);
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Approved';
     tpps_update_submission($form_state, array('status' => 'Approved'));
@@ -150,7 +152,6 @@ function tpps_submit_page_1(array &$form_state) {
       ));
       $author_string .= "; {$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
     }
-    $file->status = FILE_STATUS_PERMANENT;
     $file = file_save($file);
     $form_state['file_rank']++;
   }
@@ -1083,7 +1084,6 @@ function tpps_submit_page_3(array &$form_state) {
 
     $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($records, array('fk_overrides' => $overrides, 'fks' => 'stock'));
     unset($records);
-    $file->status = FILE_STATUS_PERMANENT;
     $file = file_save($file);
     $form_state['file_rank']++;
     if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
@@ -1241,8 +1241,7 @@ function tpps_submit_summary(array &$form_state) {
   if (!empty($form_state['saved_values']['summarypage']['tree_pictures'])) {
     foreach ($form_state['saved_values']['summarypage']['tree_pictures'] as $name => $fid) {
       if (!empty($fid)) {
-        $new_filename = implode('_', explode(' ', $name)) . '.jpg';
-        tpps_rename_file($fid, $new_filename);
+        $form_state['file_info']['summarypage'][$fid] = implode('_', explode(' ', $name)) . '.jpg';
       }
     }
   }

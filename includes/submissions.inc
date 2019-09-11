@@ -162,3 +162,20 @@ function tpps_delete_submission($accession, $redirect = TRUE) {
     drupal_goto("user/{$user->uid}/tpps");
   }
 }
+
+/**
+ * Gives all files in an accession a standardized name.
+ *
+ * @param string $accession
+ *   The accession number of the submission to change file names.
+ */
+function tpps_submission_rename_files($accession) {
+  $state = tpps_load_submission($accession);
+  foreach ($state['file_info'] as $page_files) {
+    foreach ($page_files as $fid => $name) {
+      $file = tpps_rename_file($fid, "{$accession}_{$name}");
+      $file->status = FILE_STATUS_PERMANENT;
+      file_save($file);
+    }
+  }
+}

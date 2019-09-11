@@ -140,9 +140,9 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     }
 
     if ($options['preserve']) {
-      $new_file = file_copy($file, $new_filename);
-      $new_file->status = FILE_STATUS_PERMANENT;
-      return file_save($new_file);
+      $file->status = FILE_STATUS_PERMANENT;
+      file_save($file);
+      return file_copy($file, $new_filename);
     }
     return file_move($file, $new_filename);
   }

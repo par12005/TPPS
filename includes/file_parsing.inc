@@ -147,9 +147,6 @@ function tpps_file_parsing($accession) {
               $phenotypes_meta[$name]['max'] = $content[$j][$phenotype_max];
             }
           }
-
-          $file->status = FILE_STATUS_PERMANENT;
-          $file = file_save($file);
           $file_rank++;
         }
 
@@ -392,9 +389,6 @@ function tpps_file_parsing($accession) {
 
         tpps_chado_insert_multi($records);
         unset($records);
-
-        $phenotype_file->status = FILE_STATUS_PERMANENT;
-        $phenotype_file = file_save($phenotype_file);
       }
       else {
         $phenotype_count = 0;
@@ -510,9 +504,6 @@ function tpps_file_parsing($accession) {
 
         tpps_chado_insert_multi($records);
         unset($records);
-
-        $file->status = FILE_STATUS_PERMANENT;
-        $file = file_save($file);
       }
     }
 
@@ -593,9 +584,6 @@ function tpps_file_parsing($accession) {
             'value' => file_create_url(file_load($assembly_user)->uri),
             'rank' => $file_rank,
           ));
-          $file = file_load($assembly_user);
-          $file->status = FILE_STATUS_PERMANENT;
-          $file = file_save($file);
           $file_rank++;
         }
         if ($genotype['tripal_fasta']['file_upload_existing']) {
@@ -613,9 +601,6 @@ function tpps_file_parsing($accession) {
             'value' => file_create_url(file_load($assembly_user)->uri),
             'rank' => $file_rank,
           ));
-          $file = file_load($assembly_user);
-          $file->status = FILE_STATUS_PERMANENT;
-          $file = file_save($file);
           $file_rank++;
         }
         if ($genotype['tripal_fasta']['file_remote']) {
@@ -750,9 +735,6 @@ function tpps_file_parsing($accession) {
         $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
         unset($records);
         $genotype_count = 0;
-
-        $file->status = FILE_STATUS_PERMANENT;
-        $file = file_save($file);
       }
 
       if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
@@ -769,8 +751,6 @@ function tpps_file_parsing($accession) {
           'rank' => $file_rank,
         ));
         $file = file_load($genotype['files']['assay-design']);
-        $file->status = FILE_STATUS_PERMANENT;
-        $file = file_save($file);
         $file_rank++;
       }
 
@@ -951,9 +931,6 @@ function tpps_file_parsing($accession) {
         $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
         unset($records);
         $genotype_count = 0;
-
-        $file->status = FILE_STATUS_PERMANENT;
-        $file = file_save($file);
       }
 
       if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
@@ -1053,9 +1030,6 @@ function tpps_file_parsing($accession) {
         $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
         unset($records);
         $genotype_count = 0;
-
-        $file->status = FILE_STATUS_PERMANENT;
-        $file = file_save($file);
       }
 
       if (!empty($genotype['files']['file-type']['VCF'])) {
@@ -1299,8 +1273,6 @@ function tpps_file_parsing($accession) {
         unset($records);
         $genotype_count = 0;
         // dpm('done: ' . date('r'));.
-        $vcf_file->status = FILE_STATUS_PERMANENT;
-        $vcf_file = file_save($vcf_file);
       }
 
       $genotype_publish_vals = array();

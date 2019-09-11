@@ -20,6 +20,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
   }*/
 
   if ($form_state['submitted'] == '1') {
+    unset($form_state['file_info'][TPPS_PAGE_1]);
 
     $form_values = $form_state['values'];
     $primary_author = $form_values['primaryAuthor'];
@@ -58,7 +59,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
     elseif ($secondary_authors_check) {
       $file_element = $form_values['publication']['secondaryAuthors']['file'];
 
-      if ($secondary_authors_file != "") {
+      if ($secondary_authors_file) {
         $required_groups = array(
           'First Name' => array(
             'first' => array(1),
@@ -75,6 +76,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
           // Preserve file if it is valid.
           $file = file_load($form_state['values']['publication']['secondaryAuthors']['file']);
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+          $form_state['file_info'][TPPS_PAGE_1][$file->fid] = 'Secondary_Authors.xlsx';
         }
       }
       else {
