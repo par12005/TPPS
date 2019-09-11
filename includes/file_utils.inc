@@ -133,16 +133,16 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
   }
 
   if (!empty($fid) and ($file = file_load($fid))) {
-    if (preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
-      $new_filename = $new_name;
-    }
-    else {
+    $new_filename = $new_name;
+    if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
       preg_match('/^(.*\/).*$/', $file->uri, $matches);
-      $new_filename = $matches[1] . $new_name;
+      $new_filename = $matches[1] . $new_filename;
     }
 
     if ($options['preserve']) {
-      return file_copy($file, $new_filename);
+      $new_file = file_copy($file, $new_filename);
+      $new_file->status = FILE_STATUS_PERMANENT;
+      return file_save($new_file);
     }
     return file_move($file, $new_filename);
   }
