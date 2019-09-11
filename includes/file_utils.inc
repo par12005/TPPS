@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Defines a function used to parse excel files for their content.
+ * Defines useful functions for file management
  */
 
 /**
@@ -122,4 +122,29 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
 
   return $content;
 
+}
+
+/**
+ * 
+ */
+function tpps_rename_file($fid, $new_name, array $options = array()) {
+  if (!array_key_exists('preserve', $options)) {
+    $options['preserve'] = FALSE;
+  }
+
+  if (!empty($fid) and ($file = file_load($fid))) {
+    if (preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
+      $new_filename = $new_name;
+    }
+    else {
+      preg_match('/^(.*\/).*$/', $file->uri, $matches);
+      $new_filename = $matches[1] . $new_name;
+    }
+
+    if ($options['preserve']) {
+      return file_copy($file, $new_filename);
+    }
+    return file_move($file, $new_filename);
+  }
+  throw new Exception("Error: could not open file");
 }
