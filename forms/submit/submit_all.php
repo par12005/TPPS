@@ -247,11 +247,9 @@ function tpps_submit_page_1(array &$form_state) {
     $parts = explode(" ", $firstpage['organism'][$i]);
     $genus = $parts[0];
     $species = implode(" ", array_slice($parts, 1));
+    $infra = NULL;
     if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')) {
       $infra = implode(" ", array_slice($parts, 2));
-    }
-    else {
-      $infra = NULL;
     }
 
     $record = array(
@@ -270,14 +268,9 @@ function tpps_submit_page_1(array &$form_state) {
     }
     $form_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
 
-    $code_query = chado_select_record('organismprop', array('value'), array(
-      'type_id' => array(
-        'name' => 'organism 4 letter code',
-      ),
-      'organism_id' => $form_state['ids']['organism_ids'][$i],
-    ));
+    $code_exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], 'organism 4 letter code');
 
-    if (empty($code_query)) {
+    if (!$code_exists) {
       $g_offset = 0;
       $s_offset = 0;
       do {
@@ -306,6 +299,32 @@ function tpps_submit_page_1(array &$form_state) {
         'organism_id' => $form_state['ids']['organism_ids'][$i],
         'type_id' => chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id,
         'value' => $trial_code,
+      ));
+    }
+
+    $fam_exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], 'family');
+
+    if (!$fam_exists) {
+      $family = tpps_ncbi_get_family($firstpage['organism'][$i]);
+      tpps_chado_insert_record('organismprop', array(
+        'organism_id' => $form_state['ids']['organism_ids'][$i],
+        'type_id' => array(
+          'name' => 'family',
+        ),
+        'value' => $family,
+      ));
+    }
+
+    $sub_exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], 'subkingdom');
+
+    if (!$sub_exists) {
+      $subkingdom = tpps_ncbi_get_subkingdom($firstpage['organism'][$i]);
+      tpps_chado_insert_record('organismprop', array(
+        'organism_id' => $form_state['ids']['organism_ids'][$i],
+        'type_id' => array(
+          'name' => 'subkingdom',
+        ),
+        'value' => $subkingdom,
       ));
     }
 

@@ -295,3 +295,39 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
     return $fks;
   }
 }
+
+/**
+ * Checks to see if a property of an item already exists in chado.
+ *
+ * @param string $base_table
+ *   The name of the base chado table.
+ * @param int $id
+ *   The record if of the base item.
+ * @param string $name
+ *   The name of the type_id of the property we are looking for.
+ * @param array $options
+ *   Additional options.
+ *
+ * @return bool
+ *   TRUE if a property exists, otherwise FALSE.
+ */
+function tpps_chado_prop_exists($base_table, $id, $name, array $options = array()) {
+  $prop_table = $base_table . 'prop';
+  $cvterm = array('name' => $name);
+
+  if (array_key_exists('prop_table', $options)) {
+    $prop_table = $options['prop_table'];
+  }
+
+  if (array_key_exists('cv', $options)) {
+    $cvterm['cv_id'] = array(
+      'name' => $options['cv'],
+    );
+  }
+
+  $prop_query = chado_select_record($prop_table, array($prop_table . '_id'), array(
+    'type_id' => $cvterm,
+    $base_table . '_id' => $id,
+  ));
+  return !empty($prop_query);
+}
