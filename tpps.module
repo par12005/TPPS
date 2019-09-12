@@ -11,6 +11,7 @@ define("TPPS_PAGE_1", 1);
 define("TPPS_PAGE_2", 2);
 define("TPPS_PAGE_3", 3);
 define("TPPS_PAGE_4", 4);
+define("TPPS_NCBI_EUTILS_BASE", "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/");
 require_once 'includes/display.inc';
 require_once 'includes/create_record.inc';
 require_once 'includes/init_project.inc';
@@ -23,6 +24,7 @@ require_once 'includes/accession_coordinates.inc';
 require_once 'includes/submissions.inc';
 require_once 'includes/zenodo.inc';
 require_once 'includes/match_trees.inc';
+require_once 'includes/ncbi_utils.inc';
 
 /**
  * Implements hook_menu().
