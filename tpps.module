@@ -25,6 +25,7 @@ require_once 'includes/submissions.inc';
 require_once 'includes/zenodo.inc';
 require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
+require_once 'includes/form_utils.inc';
 
 /**
  * Implements hook_menu().
