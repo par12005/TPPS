@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Defines function to create chado records using the Tripal Chado API.
+ * Defines useful functions that interact with Chado.
  */
 
 /**

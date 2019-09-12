@@ -13,7 +13,7 @@ define("TPPS_PAGE_3", 3);
 define("TPPS_PAGE_4", 4);
 define("TPPS_NCBI_EUTILS_BASE", "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/");
 require_once 'includes/display.inc';
-require_once 'includes/create_record.inc';
+require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';
 require_once 'includes/standard_coord.inc';
 require_once 'includes/cron.inc';
