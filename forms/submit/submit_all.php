@@ -20,10 +20,10 @@ function tpps_submit_all($accession) {
   $form_state = tpps_load_submission($accession);
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
+  tpps_submission_clear_db($accession);
   $transaction = db_transaction();
 
   try {
-    tpps_submission_clear_db($accession);
     $form_state = tpps_load_submission($accession);
     $values = $form_state['saved_values'];
     $firstpage = $values[TPPS_PAGE_1];
@@ -874,7 +874,7 @@ function tpps_submit_page_3(array &$form_state) {
       );
       $form_state['ids']['stock_species'][$tree_id] = $id;
 
-      $records['project_stock'][] = array(
+      $records['project_stock'][$tree_id] = array(
         'project_id' => $form_state['ids']['project_id'],
         '#fk' => array(
           'stock' => $tree_id,
@@ -889,16 +889,16 @@ function tpps_submit_page_3(array &$form_state) {
           'type_id' => $clone_cvterm,
           'organism_id' => $id,
         );
-      $form_state['ids']['stock_species'][$clone_name] = $id;
+        $form_state['ids']['stock_species'][$clone_name] = $id;
 
-        $records['project_stock'][] = array(
+        $records['project_stock'][$clone_name] = array(
           'project_id' => $form_state['ids']['project_id'],
           '#fk' => array(
             'stock' => $clone_name,
           ),
         );
 
-        $records['stock_relationship'][] = array(
+        $records['stock_relationship'][$clone_name] = array(
           'type_id' => $has_part_cvterm,
           '#fk' => array(
             'subject' => $tree_id,
@@ -1097,6 +1097,7 @@ function tpps_submit_page_3(array &$form_state) {
           'stock' => array(),
           'stockprop' => array(),
           'stock_relationship' => array(),
+          'project_stock' => array(),
         );
         $stock_count = 0;
       }
