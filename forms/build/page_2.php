@@ -88,26 +88,26 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
 
   switch ($type) {
     case '1':
-      tpps_natural_population($form['study_info']);
+      tpps_natural_population($form['study_info'], $form_state);
       break;
 
     case '2':
-      tpps_growth_chamber($form['study_info']);
+      tpps_growth_chamber($form['study_info'], $form_state);
       break;
 
     case '3':
-      tpps_greenhouse($form['study_info']);
+      tpps_greenhouse($form['study_info'], $form_state);
       unset($form['study_info']['humidity']['uncontrolled']);
       unset($form['study_info']['light']['uncontrolled']);
       unset($form['study_info']['rooting']['ph']['uncontrolled']);
       break;
 
     case '4':
-      tpps_common_garden($form['study_info']);
+      tpps_common_garden($form['study_info'], $form_state);
       break;
 
     case '5':
-      tpps_plantation($form['study_info']);
+      tpps_plantation($form['study_info'], $form_state);
       break;
 
     default:

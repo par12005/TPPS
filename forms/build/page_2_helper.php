@@ -565,10 +565,16 @@ function tpps_rooting(array &$form) {
  * @param string $label
  *   The human-readable label for the control options.
  */
-function tpps_control(array &$form, $type, $label) {
+function tpps_control(array &$form, $option, $type, $label) {
+  dpm($form);
+  if (empty($option)) {
+    $option = 0;
+  }
   $form[$type] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
+    '#prefix' => "<div id=\"tpps_control_$type\">",
+    '#suffix' => '</div>',
   );
 
   $form[$type]['option'] = array(
@@ -579,28 +585,25 @@ function tpps_control(array &$form, $type, $label) {
       1 => 'Controlled',
       2 => 'Uncontrolled',
     ),
-  );
-
-  $form[$type]['controlled'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Controlled @label Value: *', array('@label' => $label)),
-    '#states' => array(
-      'visible' => array(
-        ":input[name=\"study_info[$type][option]\"]" => array('value' => '1'),
-      ),
+    '#ajax' => array(
+      'callback' => 'tpps_control_callback',
+      'wrapper' => "tpps_control_$type",
     ),
   );
+
+  if ($option == '1') {
+    $form[$type]['controlled'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Controlled @label Value: *', array('@label' => $label)),
+    );
+    return;
+  }
 
   $form[$type]['uncontrolled'] = array(
     '#type' => 'textfield',
     '#title' => t('Average @label Value: *', array('@label' => $label)),
-    '#states' => array(
-      'visible' => array(
-        ":input[name=\"study_info[$type][option]\"]" => array('value' => '2'),
-      ),
-    ),
   );
-
+  /*
   if ($type == 'ph') {
     $form[$type]['controlled']['#states']['visible'] = array(
       ':input[name="study_info[rooting][ph][option]"]' => array('value' => '1'),
@@ -608,5 +611,5 @@ function tpps_control(array &$form, $type, $label) {
     $form[$type]['uncontrolled']['#states']['visible'] = array(
       ':input[name="study_info[rooting][ph][option]"]' => array('value' => '2'),
     );
-  }
+  }*/
 }

@@ -15,28 +15,7 @@
  */
 function tpps_page_2_validate_form(array &$form, array &$form_state) {
   if ($form_state['submitted'] == '1') {
-
-    if (!$form_state['values']['StartingDate']['year']) {
-      form_set_error('StartingDate][year', 'Year: field is required.');
-    }
-    elseif (!$form_state['values']['StartingDate']['month']) {
-      form_set_error('StartingDate][month', 'Month: field is required.');
-    }
-
-    if (!$form_state['values']['EndingDate']['year']) {
-      form_set_error('EndingDate][year', 'Year: field is required.');
-    }
-    elseif (!$form_state['values']['EndingDate']['month']) {
-      form_set_error('EndingDate][month', 'Month: field is required.');
-    }
-
-    if (!$form_state['values']['data_type']) {
-      form_set_error('data_type', 'Data Type: field is required.');
-    }
-
-    if (!$form_state['values']['study_type']) {
-      form_set_error('study_type', 'Study Type: field is required.');
-    }
+    tpps_empty_validate($form, $form_state);
 
     if (!empty($form_state['values']['study_info']['season'])) {
       foreach ($form_state['values']['study_info']['season'] as $key => $val) {
@@ -46,19 +25,6 @@ function tpps_page_2_validate_form(array &$form, array &$form_state) {
       }
       if (array_key_exists('season', $form_state['values']['study_info']) and empty($form_state['values']['study_info']['season'])) {
         form_set_error('study_info][season', 'Seasons: field is required.');
-      }
-    }
-
-    if (isset($form_state['values']['study_info']['assessions']) and !$form_state['values']['study_info']['assessions']) {
-      form_set_error('study_info][assessions', 'Number of times the populations were assessed: field is required.');
-    }
-
-    if (!empty($form_state['values']['study_info']['temp'])) {
-      if (empty($form_state['values']['study_info']['temp']['high'])) {
-        form_set_error('study_info][temp][high', 'Average High Temperature: field is required.');
-      }
-      if (empty($form_state['values']['study_info']['temp']['low'])) {
-        form_set_error('study_info][temp][low', 'Average Low Temperature: field is required.');
       }
     }
 
@@ -73,7 +39,7 @@ function tpps_page_2_validate_form(array &$form, array &$form_state) {
       if (!empty($form_state['values']['study_info'][$type])) {
         $set = $form_state['values']['study_info'][$type];
         if (!$set['option']) {
-          form_set_error("study_info][$type][option", "$label controlled or uncontrolled: field is required.");
+          //form_set_error("study_info][$type][option", "$label controlled or uncontrolled: field is required.");
         }
         elseif ($set['option'] == '1' and !$set['controlled']) {
           form_set_error("study_info][$type][controlled", "Controlled $label Value: field is required.");
@@ -91,14 +57,14 @@ function tpps_page_2_validate_form(array &$form, array &$form_state) {
       }
       elseif ($root['option'] == 'Soil') {
         if (!$root['soil']['type']) {
-          form_set_error('study_info][rooting][soil][type', 'Soil Type: field is required.');
+          //form_set_error('study_info][rooting][soil][type', 'Soil Type: field is required.');
         }
         elseif ($root['soil']['type'] == 'Other' and !$root['soil']['other']) {
           form_set_error('study_info][rooting][soil][other', 'Custom Soil Type: field is required.');
         }
 
         if (!$root['soil']['container']) {
-          form_set_error('study_info][rooting][soil][type', 'Soil Container Type: field is required.');
+          //form_set_error('study_info][rooting][soil][type', 'Soil Container Type: field is required.');
         }
       }
 

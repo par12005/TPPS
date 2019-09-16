@@ -58,3 +58,10 @@ function tpps_date_month_callback(array &$form, array $form_state) {
 function tpps_study_type_callback(array &$form, array $form_state) {
   return $form['study_info'];
 }
+
+function tpps_control_callback(array &$form, array $form_state) {
+  $parents = array_slice($form_state['triggering_element']['#parents'], 0, -1);
+  dpm($parents);
+
+  return drupal_array_get_nested_value($form, $parents);
+}

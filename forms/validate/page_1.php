@@ -21,35 +21,12 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
     $form_state['final']['authors'] = array();
     
     $num = $second['number'];
-    tpps_textfield_validate($form, $form_state, function($element) use ($num) {
-      if ($element['#type'] != 'textfield') {
-        return FALSE;
-      }
+    tpps_empty_validate($form, $form_state, function($element) use ($num) {
       if (count($element['#parents']) >= 3 and $element['#parents'][1] == 'secondaryAuthors') {
         return ($element['#parents'][2] <= $num);
       }
       return TRUE;
     });
-
-    /*if (!$vals['primaryAuthor']) {
-      form_set_error('primaryAuthor', 'Primary Author: field is required.');
-    }
-    
-    if (!$vals['organization']) {
-      form_set_error('organization', 'Organization: field is required.');
-    }
-
-    if (!$vals['publication']['status']) {
-      form_set_error('publication][status', 'Publication Status: field is required.');
-    }
-
-    if ($second['number'] and !$second['check']) {
-      for ($i = 1; $i <= $second['number']; $i++) {
-        if (!$second[$i]) {
-          form_set_error("publication][secondaryAuthors][$i", "Secondary Author $i: field is required.");
-        }
-      }
-    }*/
 
     if ($second['check']) {
       if ($second['file']) {
@@ -75,30 +52,9 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       }
     }
 
-    /*if (!$vals['publication']['year']) {
-      form_set_error('publication][year', 'Year of Publication: field is required.');
-    }
-
-    if (!$vals['publication']['title']) {
-      form_set_error('publication][title', 'Title of Publication: field is required.');
-    }
-
-    if (!$vals['publication']['abstract']) {
-      form_set_error('publication][abstract', 'Abstract: field is required.');
-    }
-
-    if (!$vals['publication']['journal']) {
-      form_set_error('publication][journal', 'Journal: field is required.');
-    }*/
-
     for ($i = 1; $i <= $vals['organism']['number']; $i++) {
-      $name = $vals['organism'][$i];
-
-      if ($name == '') {
-        form_set_error("organism[$i", "Tree Species $i: field is required.");
-      }
-      else {
-        $name = explode(" ", $name);
+      if (!empty($vals['organism'][$i])) {
+        $name = explode(" ", $vals['organism'][$i]);
         $genus = $name[0];
         $species = implode(" ", array_slice($name, 1));
         $name = implode(" ", $name);
