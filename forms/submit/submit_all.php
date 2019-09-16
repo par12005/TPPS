@@ -23,6 +23,7 @@ function tpps_submit_all($accession) {
   $transaction = db_transaction();
 
   try {
+    tpps_submission_clear_db($accession);
     $form_state = tpps_load_submission($accession);
     $values = $form_state['saved_values'];
     $firstpage = $values[TPPS_PAGE_1];
