@@ -179,3 +179,39 @@ function tpps_submission_rename_files($accession) {
     }
   }
 }
+
+/**
+ * Clears submission data from the database.
+ *
+ * This function is particularly useful when submitting a study to the database
+ * multiple times. Note that Tripal Entities should be manually un-published
+ * after this process has completed.
+ *
+ * @param string $accession
+ *   The accession number of the submission.
+ *
+ * @return bool
+ *   Returns TRUE if submission successfully cleared.
+ */
+function tpps_submission_clear_db($accession) {
+  $state = tpps_load_submission($accession);
+  $state['file_rank'] = 0;
+  $project_id = $state['ids']['project_id'] ?? NULL;
+  if (empty($project_id)) {
+    return FALSE;
+  }
+
+  $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
+  chado_query("DELETE FROM chado.project_organism WHERE project_id = $project_id");
+  chado_query("DELETE FROM chado.projectprop WHERE project_id = $project_id");
+  chado_query("DELETE FROM chado.phenotype_cvterm WHERE phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE stock_id in ($stocks_sql))");
+  chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
+  chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");
+  chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stocks_sql)");
+  chado_query("DELETE FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql)");
+  chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
+
+  $state['ids'] = array('project_id' => $project_id);
+  tpps_update_submission($state);
+  return TRUE;
+}

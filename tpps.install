@@ -159,6 +159,54 @@ function tpps_install() {
     ),
   ), TRUE, NULL, FALSE);
 
+  chado_create_custom_table('project_organism', array(
+    'description' => '',
+    'fields' => array(
+      'project_organism_id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'organism_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'project_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+    ),
+    'foreign keys' => array(
+      'organism' => array(
+        'table' => 'organism',
+        'columns' => array(
+          'organism_id' => 'organism_id',
+        ),
+      ),
+      'project' => array(
+        'table' => 'project',
+        'columns' => array(
+          'project_id' => 'project_id',
+        ),
+      ),
+    ),
+    'unique keys' => array(
+      'project_organism_c1' => array(
+        'project_id',
+        'organism_id',
+      ),
+    ),
+    'primary key' => array(
+      'project_organism_id'
+    ),
+  ), TRUE, NULL, FALSE);
+
   tpps_create_plusgeno_view();
 
   tpps_install_cvterms();
