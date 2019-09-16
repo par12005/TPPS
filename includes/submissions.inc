@@ -207,7 +207,7 @@ function tpps_submission_clear_db($accession) {
   chado_query("DELETE FROM chado.phenotype_cvterm WHERE phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE stock_id in ($stocks_sql))");
   chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
   chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");
-  chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stock_sql)");
+  chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stocks_sql)");
   chado_query("DELETE FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql)");
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
 

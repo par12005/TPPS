@@ -205,7 +205,7 @@ function tpps_install() {
     'primary key' => array(
       'project_organism_id'
     ),
-  ));
+  ), TRUE, NULL, FALSE);
 
   tpps_create_plusgeno_view();
 
