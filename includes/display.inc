@@ -296,24 +296,25 @@ function tpps_flatten(array $state) {
 
         if (isset($pheno['number'])) {
           $data['#number_phenotypes'] = $pheno['number'];
-          for ($j = 1; $j < $data['#number_phenotypes']; $j++) {
+          $pheno_meta = &$pheno['phenotypes-meta'];
+          for ($j = 1; $j <= $data['#number_phenotypes']; $j++) {
             $fields = array(
               'name' => 'Name',
               'attribute' => 'Attribute',
               'description' => 'Description',
               'units' => 'Units',
             );
-            if (isset($pheno["$j"]['struct-check']) and $pheno["$j"]['struct-check']) {
+            if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
               $fields['structure'] = 'Structure';
             }
-            if (isset($pheno["$j"]['val-check']) and $pheno["$j"]['val-check']) {
+            if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
               $fields['min'] = 'Minimum Value';
               $fields['max'] = 'Maximum Value';
             }
 
             foreach ($fields as $field => $field_string) {
-              if (isset($pheno["$j"][$field]) and $pheno["$j"][$field] != '') {
-                $data["$org_name Phenotype $j $field_string"] = $pheno[$j][$field];
+              if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
+                $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
               }
             }
           }
