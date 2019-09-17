@@ -56,9 +56,6 @@ function tpps_file_parsing($accession) {
         $phenotype_number = $phenotype['number'];
         $phenotypes_meta = array();
         $phenotype_count = 0;
-        $phenotype_vals = array();
-        $stock_phenotype_vals = array();
-        $phenotypeprop_vals = array();
         $local_cv = chado_get_cv(array('name' => 'local'));
         $local_db = variable_get('tpps_local_db');
 
@@ -311,7 +308,7 @@ function tpps_file_parsing($accession) {
               'value' => $value,
             );
 
-            $records['stock_phenotype'][] = array(
+            $records['stock_phenotype'][$phenotype_name] = array(
               'stock_id' => $form_state['ids']['stock_ids'][$phenotype_prefix],
               '#fk' => array(
                 'phenotype' => $phenotype_name,
@@ -319,7 +316,7 @@ function tpps_file_parsing($accession) {
             );
 
             if (isset($phenotypes_meta[strtolower($name)]['time'])) {
-              $records['phenotypeprop'][] = array(
+              $records['phenotypeprop']["$phenotype_name-time"] = array(
                 'type_id' => $time_id,
                 'value' => $phenotypes_meta[strtolower($name)]['time'],
                 '#fk' => array(
@@ -328,7 +325,7 @@ function tpps_file_parsing($accession) {
               );
             }
             elseif (isset($time_col_name)) {
-              $records['phenotypeprop'][] = array(
+              $records['phenotypeprop']["$phenotype_name-time"] = array(
                 'type_id' => $time_id,
                 'value' => $content[$j][$time_col_name],
                 '#fk' => array(
@@ -337,7 +334,7 @@ function tpps_file_parsing($accession) {
               );
             }
 
-            $records['phenotypeprop'][] = array(
+            $records['phenotypeprop']["$phenotype_name-desc"] = array(
               'type_id' => $description_id,
               'value' => $phenotypes_meta[strtolower($name)]['desc'],
               '#fk' => array(
@@ -345,7 +342,7 @@ function tpps_file_parsing($accession) {
               ),
             );
 
-            $records['phenotypeprop'][] = array(
+            $records['phenotypeprop']["$phenotype_name-unit"] = array(
               'type_id' => $unit_id,
               'value' => $phenotypes_meta[strtolower($name)]['unit'],
               '#fk' => array(
@@ -354,7 +351,7 @@ function tpps_file_parsing($accession) {
             );
 
             if (isset($phenotypes_meta[strtolower($name)]['min'])) {
-              $records['phenotypeprop'][] = array(
+              $records['phenotypeprop']["$phenotype_name-min"] = array(
                 'type_id' => $min_id,
                 'value' => $phenotypes_meta[strtolower($name)]['min'],
                 '#fk' => array(
@@ -364,7 +361,7 @@ function tpps_file_parsing($accession) {
             }
 
             if (isset($phenotypes_meta[strtolower($name)]['max'])) {
-              $records['phenotypeprop'][] = array(
+              $records['phenotypeprop']["$phenotype_name-max"] = array(
                 'type_id' => $max_id,
                 'value' => $phenotypes_meta[strtolower($name)]['max'],
                 '#fk' => array(
@@ -392,9 +389,6 @@ function tpps_file_parsing($accession) {
       }
       else {
         $phenotype_count = 0;
-        $phenotype_vals = array();
-        $stock_phenotype_vals = array();
-        $phenotypeprop_vals = array();
         $local_cv = chado_get_cv(array('name' => 'local'));
         $local_db = variable_get('tpps_local_db');
         $file = file_load($phenotype['iso']);
@@ -463,14 +457,14 @@ function tpps_file_parsing($accession) {
                 'value' => $val,
               );
 
-              $records['stock_phenotype'][] = array(
+              $records['stock_phenotype'][$phenotype_name] = array(
                 'stock_id' => $stock_id,
                 '#fk' => array(
                   'phenotype' => $phenotype_name,
                 ),
               );
 
-              $records['phenotypeprop'][] = array(
+              $records['phenotypeprop']["$phenotype_name-desc"] = array(
                 'type_id' => $description_id,
                 'value' => $desc,
                 '#fk' => array(
@@ -478,7 +472,7 @@ function tpps_file_parsing($accession) {
                 ),
               );
 
-              $phenotypeprop_vals[] = array(
+              $records['phenotypeprop']["$phenotype_name-unit"] = array(
                 'type_id' => $unit_id,
                 'value' => $unit,
                 '#fk' => array(
@@ -636,7 +630,7 @@ function tpps_file_parsing($accession) {
       }
 
       if (!empty($genotype['files']['file-type']['SNPs Genotype Assay'])) {
-        $genotype_file_id = tpps_chado_insert_record('projectprop', array(
+        tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
             'cv_id' => array(
@@ -702,7 +696,7 @@ function tpps_file_parsing($accession) {
                 'type_id' => $snp_cvterm,
               );
 
-              $records['genotype_call'][] = array(
+              $records['genotype_call']["$stock_id-$genotype_name"] = array(
                 'project_id' => $project_id,
                 'stock_id' => $stock_id,
                 '#fk' => array(
@@ -712,7 +706,7 @@ function tpps_file_parsing($accession) {
                 ),
               );
 
-              $records['stock_genotype'][] = array(
+              $records['stock_genotype']["$stock_id-$genotype_name"] = array(
                 'stock_id' => $stock_id,
                 '#fk' => array(
                   'genotype' => $genotype_name,
@@ -738,7 +732,7 @@ function tpps_file_parsing($accession) {
       }
 
       if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
-        $genotype_file_id = tpps_chado_insert_record('projectprop', array(
+        tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
             'cv_id' => array(
@@ -898,7 +892,7 @@ function tpps_file_parsing($accession) {
                 'type_id' => $microsat_cvterm,
               );
 
-              $records['genotype_call'][] = array(
+              $records['genotype_call']["$stock_id-$genotype_name"] = array(
                 'project_id' => $project_id,
                 'stock_id' => $stock_id,
                 '#fk' => array(
@@ -908,7 +902,7 @@ function tpps_file_parsing($accession) {
                 ),
               );
 
-              $records['stock_genotype'][] = array(
+              $records['stock_genotype']["$stock_id-$genotype_name"] = array(
                 'stock_id' => $stock_id,
                 '#fk' => array(
                   'genotype' => $genotype_name,
@@ -934,7 +928,7 @@ function tpps_file_parsing($accession) {
       }
 
       if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
-        $genotype_file_id = tpps_chado_insert_record('projectprop', array(
+        tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
             'cv_id' => array(
@@ -998,7 +992,7 @@ function tpps_file_parsing($accession) {
               'type_id' => $gen_mark_cvterm,
             );
 
-            $records['genotype_call'][] = array(
+            $records['genotype_call']["$stock_id-$genotype_name"] = array(
               'project_id' => $project_id,
               'stock_id' => $stock_id,
               '#fk' => array(
@@ -1008,7 +1002,7 @@ function tpps_file_parsing($accession) {
               ),
             );
 
-            $records['stock_genotype'][] = array(
+            $records['stock_genotype']["$stock_id-$genotype_name"] = array(
               'stock_id' => $stock_id,
               '#fk' => array(
                 'genotype' => $genotype_name,
@@ -1153,7 +1147,7 @@ function tpps_file_parsing($accession) {
             );
 
             if ($format != "") {
-              $records['genotypeprop'][] = array(
+              $records['genotypeprop']["$genotype_desc-format"] = array(
                 'type_id' => $format_cvterm,
                 'value' => $format,
                 '#fk' => array(
@@ -1163,7 +1157,7 @@ function tpps_file_parsing($accession) {
             }
 
             for ($j = 9; $j < count($vcf_line); $j++) {
-              $records['genotype_call'][] = array(
+              $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
                 'project_id' => $project_id,
                 'stock_id' => $stocks[$j - 9],
                 '#fk' => array(
@@ -1173,7 +1167,7 @@ function tpps_file_parsing($accession) {
                 ),
               );
 
-              $records['stock_genotype'][] = array(
+              $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
                 'stock_id' => $stocks[$j - 9],
                 '#fk' => array(
                   'genotype' => $genotype_desc,
@@ -1182,7 +1176,7 @@ function tpps_file_parsing($accession) {
             }
 
             // Quality score.
-            $records['genotypeprop'][] = array(
+            $records['genotypeprop']["$genotype_desc-qual"] = array(
               'type_id' => $qual_cvterm,
               'value' => $qual,
               '#fk' => array(
@@ -1191,7 +1185,7 @@ function tpps_file_parsing($accession) {
             );
 
             // filter: pass/fail.
-            $records['genotypeprop'][] = array(
+            $records['genotypeprop']["$genotype_desc-filter"] = array(
               'type_id' => $filter_cvterm,
               'value' => ($filter == '.') ? "P" : "NP",
               '#fk' => array(
@@ -1210,7 +1204,7 @@ function tpps_file_parsing($accession) {
             // Allele frequency, assuming that the info code for allele
             // frequency is 'AF'.
             if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
-              $records['genotypeprop'][] = array(
+              $records['genotypeprop']["$genotype_desc-freq"] = array(
                 'type_id' => $freq_cvterm,
                 'value' => $info_vals['AF'],
                 '#fk' => array(
@@ -1222,7 +1216,7 @@ function tpps_file_parsing($accession) {
             // Depth coverage, assuming that the info code for depth coverage is
             // 'DP'.
             if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
-              $records['genotypeprop'][] = array(
+              $records['genotypeprop']["$genotype_desc-depth"] = array(
                 'type_id' => $depth_cvterm,
                 'value' => $info_vals['DP'],
                 '#fk' => array(
@@ -1234,7 +1228,7 @@ function tpps_file_parsing($accession) {
             // Number of samples, assuming that the info code for number of
             // samples is 'NS'.
             if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
-              $records['genotypeprop'][] = array(
+              $records['genotypeprop']["$genotype_desc-n_sample"] = array(
                 'type_id' => $n_sample_cvterm,
                 'value' => $info_vals['NS'],
                 '#fk' => array(
@@ -1399,7 +1393,7 @@ function tpps_file_parsing($accession) {
                     'value' => $value,
                   );
 
-                  $records['stock_phenotype'][] = array(
+                  $records['stock_phenotype'][$phenotype_name] = array(
                     'stock_id' => $stock_id,
                     '#fk' => array(
                       'phenotype' => $phenotype_name,
@@ -1413,14 +1407,14 @@ function tpps_file_parsing($accession) {
                     'value' => "$value",
                   );
 
-                  $records['phenotype_cvterm'][] = array(
+                  $records['phenotype_cvterm'][$phenotype_name] = array(
                     'cvterm_id' => $env_cvterm,
                     '#fk' => array(
                       'phenotype' => $phenotype_name,
                     ),
                   );
 
-                  $records['stock_phenotype'][] = array(
+                  $records['stock_phenotype'][$phenotype_name] = array(
                     'stock_id' => $stock_id,
                     '#fk' => array(
                       'phenotype' => $phenotype_name,
@@ -1497,14 +1491,14 @@ function tpps_file_parsing($accession) {
             'value' => $val,
           );
 
-          $records['stock_phenotype'][] = array(
+          $records['stock_phenotype'][$phenotype_name] = array(
             'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
             '#fk' => array(
               'phenotype' => $phenotype_name,
             ),
           );
 
-          $records['phenotypeprop'][] = array(
+          $records['phenotypeprop']["$phenotype_name-desc"] = array(
             'type_id' => $desc_id,
             'value' => $desc,
             '#fk' => array(
@@ -1512,7 +1506,7 @@ function tpps_file_parsing($accession) {
             ),
           );
 
-          $records['phenotypeprop'][] = array(
+          $records['phenotypeprop']["$phenotype_name-unit"] = array(
             'type_id' => $unit_id,
             'value' => $unit,
             '#fk' => array(

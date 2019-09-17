@@ -917,7 +917,7 @@ function tpps_submit_page_3(array &$form_state) {
         $raw_coord = $content[$j][$lat_name] . ',' . $content[$j][$lng_name];
         $standard_coord = explode(',', tpps_standard_coord($raw_coord));
 
-        $records['stockprop'][] = array(
+        $records['stockprop']["$tree_id-lat"] = array(
           'type_id' => $lat_cvterm,
           'value' => $standard_coord[0],
           '#fk' => array(
@@ -925,7 +925,7 @@ function tpps_submit_page_3(array &$form_state) {
           ),
         );
 
-        $records['stockprop'][] = array(
+        $records['stockprop']["$tree_id-long"] = array(
           'type_id' => $lng_cvterm,
           'value' => $standard_coord[1],
           '#fk' => array(
@@ -937,7 +937,7 @@ function tpps_submit_page_3(array &$form_state) {
         $country_col_name = $loc_group['2'];
         $state_col_name = $loc_group['3'];
 
-        $records['stockprop'][] = array(
+        $records['stockprop']["$tree_id-country"] = array(
           'type_id' => $country_cvterm,
           'value' => $content[$j][$country_col_name],
           '#fk' => array(
@@ -945,7 +945,7 @@ function tpps_submit_page_3(array &$form_state) {
           ),
         );
 
-        $records['stockprop'][] = array(
+        $records['stockprop']["$tree_id-state"] = array(
           'type_id' => $state_cvterm,
           'value' => $content[$j][$state_col_name],
           '#fk' => array(
@@ -956,7 +956,7 @@ function tpps_submit_page_3(array &$form_state) {
         $location = "{$content[$j][$state_col_name]}, {$content[$j][$country_col_name]}";
 
         if (isset($county_col_name)) {
-          $records['stockprop'][] = array(
+          $records['stockprop']["$tree_id-county"] = array(
             'type_id' => $county_cvterm,
             'value' => $content[$j][$county_col_name],
             '#fk' => array(
@@ -967,7 +967,7 @@ function tpps_submit_page_3(array &$form_state) {
         }
 
         if (isset($district_col_name)) {
-          $records['stockprop'][] = array(
+          $records['stockprop']["$tree_id-district"] = array(
             'type_id' => $district_cvterm,
             'value' => $content[$j][$district_col_name],
             '#fk' => array(
@@ -1007,7 +1007,7 @@ function tpps_submit_page_3(array &$form_state) {
           }
 
           if (!empty($result)) {
-            $records['stockprop'][] = array(
+            $records['stockprop']["$tree_id-lat"] = array(
               'type_id' => $lat_cvterm,
               'value' => $result->lat,
               '#fk' => array(
@@ -1015,7 +1015,7 @@ function tpps_submit_page_3(array &$form_state) {
               ),
             );
 
-            $records['stockprop'][] = array(
+            $records['stockprop']["$tree_id-long"] = array(
               'type_id' => $lng_cvterm,
               'value' => $result->lng,
               '#fk' => array(
@@ -1033,7 +1033,7 @@ function tpps_submit_page_3(array &$form_state) {
 
         if ($coord) {
           $parts = explode(',', $coord);
-          $records['stockprop'][] = array(
+          $records['stockprop']["$tree_id-lat"] = array(
             'type_id' => $lat_cvterm,
             'value' => $parts[0],
             '#fk' => array(
@@ -1041,7 +1041,7 @@ function tpps_submit_page_3(array &$form_state) {
             ),
           );
 
-          $records['stockprop'][] = array(
+          $records['stockprop']["$tree_id-long"] = array(
             'type_id' => $lng_cvterm,
             'value' => $parts[1],
             '#fk' => array(
@@ -1050,7 +1050,7 @@ function tpps_submit_page_3(array &$form_state) {
           );
         }
         else {
-          $records['stockprop'][] = array(
+          $records['stockprop']["$tree_id-location"] = array(
             'type_id' => $loc_cvterm,
             'value' => $loc,
             '#fk' => array(
@@ -1071,7 +1071,7 @@ function tpps_submit_page_3(array &$form_state) {
             }
 
             if (!empty($result)) {
-              $records['stockprop'][] = array(
+              $records['stockprop']["$tree_id-lat"] = array(
                 'type_id' => $lat_cvterm,
                 'value' => $result->lat,
                 '#fk' => array(
@@ -1079,7 +1079,7 @@ function tpps_submit_page_3(array &$form_state) {
                 ),
               );
 
-              $records['stockprop'][] = array(
+              $records['stockprop']["$tree_id-long"] = array(
                 'type_id' => $lng_cvterm,
                 'value' => $result->lng,
                 '#fk' => array(
