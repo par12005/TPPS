@@ -6,6 +6,96 @@
  */
 
 /**
+ * This function parses a file and returns an arary of its content.
+ *
+ * The process of actually parsing the file is done with the use of helper
+ * functions, and this function returns the results.
+ *
+ * @param int $fid
+ *   The Drupal managed file identifier of the file to be parsed.
+ * @param int $max_rows
+ *   The maximum number of rows to read from the file.
+ * @param bool $no_header
+ *   Whether or not the file has a "no_header" flag set.
+ *
+ * @return array
+ *   An array containing the content headers and content body.
+ */
+function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
+  $file = file_load($fid);
+  $location = drupal_realpath($file->uri);
+  preg_match('/\.([a-zA-Z0-9]*)$/', $location, $matches);
+  $extension = $matches[1];
+  switch ($extension) {
+    case 'xlsx':
+      return tpps_parse_xlsx($location, $max_rows, $no_header);
+    case 'csv':
+      return tpps_parse_csv($location, $max_rows, $no_header);
+    default:
+      throw new Exception('Unrecognized file type');
+  }
+}
+
+/**
+ * This function parses a .csv file and returns an array of its content.
+ *
+ * @param string $location
+ *   The path on the server to the file being parsed.
+ * @param int $max_rows
+ *   The maximum number of rows to read from the file.
+ *
+ * @return array
+ *   An array containing the content headers and content body.
+ */
+function tpps_parse_csv($location, $max_rows = 0, $no_header = FALSE) {
+  $original = ini_get('auto_detect_line_endings');
+  if (!$original) {
+    ini_set('auto_detect_line_endings', TRUE);
+  }
+
+  $content = array();
+  $delim = ',';
+  $longest = tpps_longest_line($location, $delim);
+  $handle = fopen($location, 'r');
+  $count = 0;
+
+  if ($no_header) {
+    $hex = unpack('H*', 'A')[1];
+    for ($i = 0; $i < $longest; $i++) {
+      $key = pack('H*', $hex);
+      $content['headers'][$key] = $i;
+      $hex = tpps_increment_hex($hex);
+    }
+  }
+
+  while (($line = fgets($handle))) {
+    $hex = unpack('H*', 'A')[1];
+    $vals = explode($delim, $line);
+    $values = array();
+    for ($i = 0; $i < $longest; $i++) {
+      $key = pack('H*', $hex);
+      $values[$key] = $vals[$i] ?? NULL;
+      $hex = tpps_increment_hex($hex);
+    }
+
+    if (!isset($content['headers'])) {
+      $content['headers'] = $values;
+      continue;
+    }
+
+    $count++;
+    $content[] = $values;
+    if ($max_rows > 0 and $count >= $max_rows) {
+      break;
+    }
+  }
+
+  fclose($handle);
+  ini_set('auto_detect_line_endings', $original);
+  return $content;
+}
+
+/**
  * This function parses an .xlsx file and returns an array of its content.
  *
  * @param string $location
@@ -41,23 +131,7 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
     while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
       $key = pack('H*', $hex);
       $content['headers'][$key] = base_convert($hex, 16, 10) - base_convert($left_hex[1], 16, 10);
-
-      $add = 1;
-      $new = "";
-      for ($i = strlen($key) - 1; $i >= 0; $i--) {
-        $num = base_convert(substr($hex, (2 * $i), 2), 16, 10) + $add;
-        if ($num > 90) {
-          $num = 65;
-        }
-        else {
-          $add = 0;
-        }
-        $new = base_convert($num, 10, 16) . $new;
-        if ($i == 0 and $add) {
-          $new = '41' . $new;
-        }
-      }
-      $hex = $new;
+      $hex = tpps_increment_hex($hex);
     }
   }
 
@@ -85,24 +159,8 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
     $hex = $left_hex[1];
     while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
       $key = pack('H*', $hex);
-      $values[$key] = isset($vals[$key]) ? $vals[$key] : NULL;
-
-      $add = 1;
-      $new = "";
-      for ($i = strlen($key) - 1; $i >= 0; $i--) {
-        $num = base_convert(substr($hex, (2 * $i), 2), 16, 10) + $add;
-        if ($num > 90) {
-          $num = 65;
-        }
-        else {
-          $add = 0;
-        }
-        $new = base_convert($num, 10, 16) . $new;
-        if ($i == 0 and $add) {
-          $new = '41' . $new;
-        }
-      }
-      $hex = $new;
+      $values[$key] = $vals[$key] ?? NULL;
+      $hex = tpps_increment_hex($hex);
     }
 
     if (!isset($content['headers'])) {
@@ -122,6 +180,66 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
 
   return $content;
 
+}
+
+/**
+ * This function gets the length of the longest line of a flat file.
+ *
+ * @param string $location
+ *   The location of the file.
+ * @param string $delim
+ *   The delimeter for each line in the file. Defaults to ','.
+ *
+ * @return int
+ *   The length of the longest line.
+ */
+function tpps_longest_line($location, $delim = ',') {
+  $longest = 0;
+  $handle = fopen($location, 'r');
+
+  while (($line = fgets($handle))) {
+    $longest = max($longest, count(explode($delim, $line)));
+  }
+
+  fclose($handle);
+  return $longest;
+}
+
+/**
+ * This function increments a hexidecimal key.
+ *
+ * The function expects a hexidecimal encoding of a capital alphabetical key.
+ * For example, you might pass "$hex = unpack('H*', 'A')[1];". This function is
+ * intended to be used for parsed file keys. Here are some examples:
+ *  echo pack('H*', tpps_increment_hex(unpack('H*', 'A')[1]));    // B
+ *  echo pack('H*', tpps_increment_hex(unpack('H*', 'AA')[1]));   // AB
+ *  echo pack('H*', tpps_increment_hex(unpack('H*', 'Z')[1]));    // AA
+ *  echo pack('H*', tpps_increment_hex(unpack('H*', 'AZ')[1]));   // BA
+ *  echo pack('H*', tpps_increment_hex(unpack('H*', 'ZZZ')[1]));  // AAAA
+ *
+ * @param string $hex
+ *   The hexidecimal encoding of a capital alphabetical key.
+ *
+ * @return string
+ *   The encoding of the next capital alphabetical key.
+ */
+function tpps_increment_hex($hex) {
+  $add = 1;
+  $new = "";
+  for ($i = strlen(pack('H*', $hex)) - 1; $i >= 0; $i--) {
+    $num = base_convert(substr($hex, (2 * $i), 2), 16, 10) + $add;
+    if ($num > 90) {
+      $num = 65;
+    }
+    else {
+      $add = 0;
+    }
+    $new = base_convert($num, 10, 16) . $new;
+    if ($i == 0 and $add) {
+      $new = '41' . $new;
+    }
+  }
+  return $new;
 }
 
 /**
@@ -168,17 +286,8 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
  *   The array of items found in file 1 that were not found in file 2.
  */
 function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name) {
-
-  $file_1 = file_load($fid_1);
-  $file_2 = file_load($fid_2);
-
-  $file_1_name = $file_1->uri;
-  $file_2_name = $file_2->uri;
-
-  $file_1_location = drupal_realpath("$file_1_name");
-  $file_2_location = drupal_realpath("$file_2_name");
-  $file_1_content = tpps_parse_xlsx($file_1_location);
-  $file_2_content = tpps_parse_xlsx($file_2_location);
+  $file_1_content = tpps_parse_file($fid_1);
+  $file_2_content = tpps_parse_file($fid_2);
 
   if (gettype($file_1_id_name) == 'integer') {
     $file_1_content[] = $file_1_content['headers'];

@@ -12,12 +12,11 @@ function tpps_accession_coordinates() {
   $params = drupal_get_query_parameters($_POST);
 
   if (!empty($params['fid'])) {
-    if (($file_name = file_load($params['fid'])->uri)) {
+    if (file_load($params['fid'])) {
       $id_col = $params['id_col'];
       $lat_col = $params['lat_col'];
       $long_col = $params['long_col'];
-      $location = drupal_realpath($file_name);
-      $content = tpps_parse_xlsx($location, 0, $params['no-header']);
+      $content = tpps_parse_file($params['fid'], 0, $params['no-header']);
 
       $coordinates = array();
       for ($i = 0; $i < count($content) - 1; $i++) {

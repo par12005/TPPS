@@ -59,7 +59,7 @@ function tpps_file_parsing($accession) {
         $local_cv = chado_get_cv(array('name' => 'local'));
         $local_db = variable_get('tpps_local_db');
 
-        $phenotype_file_id = tpps_chado_insert_record('projectprop', array(
+        tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
             'cv_id' => array(
@@ -71,7 +71,6 @@ function tpps_file_parsing($accession) {
           'value' => file_create_url(file_load($phenotype['file'])->uri),
           'rank' => $file_rank,
         ));
-        $phenotype_file = file_load($phenotype['file']);
         $file_rank++;
 
         for ($j = 1; $j <= $phenotype_number; $j++) {
@@ -105,9 +104,7 @@ function tpps_file_parsing($accession) {
             'value' => file_create_url(file_load($phenotype['metadata'])->uri),
             'rank' => $file_rank,
           ));
-          $file = file_load($phenotype['metadata']);
-          $location = drupal_realpath($file->uri);
-          $content = tpps_parse_xlsx($location);
+          $content = tpps_parse_file($phenotype['metadata']);
           $groups = $phenotype['metadata-groups'];
           $column_vals = $phenotype['metadata-columns'];
 
@@ -147,8 +144,7 @@ function tpps_file_parsing($accession) {
           $file_rank++;
         }
 
-        $location = drupal_realpath($phenotype_file->uri);
-        $content = tpps_parse_xlsx($location);
+        $content = tpps_parse_file($phenotype['file']);
         $groups = $phenotype['file-groups'];
         $column_vals = $phenotype['file-columns'];
 
@@ -406,9 +402,7 @@ function tpps_file_parsing($accession) {
           'rank' => $file_rank,
         ));
         $file_rank++;
-
-        $location = drupal_realpath($file->uri);
-        $content = tpps_parse_xlsx($location);
+        $content = tpps_parse_file($phenotype['iso']);
 
         $records = array(
           'phenotype' => array(),
@@ -643,10 +637,7 @@ function tpps_file_parsing($accession) {
           'rank' => $file_rank,
         ));
         $file_rank++;
-
-        $file = file_load($genotype['files']['snps-assay']);
-        $location = drupal_realpath($file->uri);
-        $content = tpps_parse_xlsx($location);
+        $content = tpps_parse_file($genotype['files']['snps-assay']);
         $marker = 'SNP';
 
         $records = array(
@@ -744,7 +735,6 @@ function tpps_file_parsing($accession) {
           'value' => file_create_url(file_load($genotype['files']['assay-design'])->uri),
           'rank' => $file_rank,
         ));
-        $file = file_load($genotype['files']['assay-design']);
         $file_rank++;
       }
 
@@ -762,10 +752,7 @@ function tpps_file_parsing($accession) {
           'rank' => $file_rank,
         ));
         $file_rank++;
-
-        $file = file_load($genotype['files']['ssrs']);
-        $location = drupal_realpath($file->uri);
-        $content = tpps_parse_xlsx($location);
+        $content = tpps_parse_file($genotype['files']['ssrs']);
         while (($k = array_search(NULL, $content['headers']))) {
           unset($content['headers'][$k]);
         }
@@ -941,10 +928,7 @@ function tpps_file_parsing($accession) {
           'rank' => $file_rank,
         ));
         $file_rank++;
-
-        $file = file_load($genotype['files']['other']);
-        $location = drupal_realpath($file->uri);
-        $content = tpps_parse_xlsx($location);
+        $content = tpps_parse_file($genotype['files']['other']);
         $groups = $genotype['files']['other-groups'];
         $marker = $genotype['other-marker'];
 
@@ -1293,8 +1277,7 @@ function tpps_file_parsing($accession) {
         $id_col = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file-groups']['Tree Id'][1];
       }
 
-      $location = drupal_realpath($accession_file->uri);
-      $content = tpps_parse_xlsx($location);
+      $content = tpps_parse_file($accession_file->fid);
       $env_cvterm = chado_get_cvterm(array(
         'cv_id' => array(
           'name' => 'biomaterial_property',

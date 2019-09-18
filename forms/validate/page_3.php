@@ -61,8 +61,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
         if (!form_get_errors()) {
           $id_name = $groups['Tree Id']['1'];
           $col_names = $form_state['values']['tree-accession']['file-columns'];
-          $file_name = file_load($form_state['values']['tree-accession']['file'])->uri;
-          $content = tpps_parse_xlsx(drupal_realpath($file_name), 0, !empty($form_state['values']['tree-accession']['file-no-header']));
+          $content = tpps_parse_file($form_state['values']['tree-accession']['file'], 0, !empty($form_state['values']['tree-accession']['file-no-header']));
           $empty = $form_state['values']['tree-accession']['file-empty'];
           $location_options = $required_groups['Location (latitude/longitude or country/state or population group)'];
           $location_columns = $groups['Location (latitude/longitude or country/state or population group)'];
@@ -137,8 +136,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           if (!form_get_errors()) {
             $id_name = $groups['Tree Id']['1'];
             $col_names = $form_state['values']['tree-accession']["species-$i"]['file-columns'];
-            $file_name = file_load($form_state['values']['tree-accession']["species-$i"]['file'])->uri;
-            $content = tpps_parse_xlsx(drupal_realpath($file_name), 0, !empty($form_state['values']['tree-accession']["species-$i"]['file-no-header']));
+            $content = tpps_parse_file(drupal_realpath($form_state['values']['tree-accession']["species-$i"]['file']), 0, !empty($form_state['values']['tree-accession']["species-$i"]['file-no-header']));
             $empty = $form_state['values']['tree-accession']["species-$i"]['file-empty'];
             $location_options = $required_groups['Location (latitude/longitude or country/state or population group)'];
             $location_columns = $groups['Location (latitude/longitude or country/state or population group)'];

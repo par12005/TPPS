@@ -823,9 +823,8 @@ function tpps_preview_file() {
     return;
   }
 
-  if (($file = file_load($fid))) {
-    $location = drupal_realpath($file->uri);
-    $content = tpps_parse_xlsx($location, 3, !empty($no_header));
+  if ((file_load($fid))) {
+    $content = tpps_parse_file($fid, 3, !empty($no_header));
     $rows = array();
     for ($i = 0; $i < count($content) - 1; $i++) {
       $rows[] = $content[$i];

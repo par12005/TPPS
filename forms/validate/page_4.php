@@ -219,15 +219,13 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
 
       if (!form_get_errors()) {
-        $file = file_load($form_state['values'][$id]['phenotype']['file']);
-        $phenotype_file_location = drupal_realpath($file->uri);
         if ($phenotype['format'] == 0) {
           $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
           $phenotype_file_name_cols = $groups['Phenotype Data']['0'];
-          $content = tpps_parse_xlsx($phenotype_file_location, 1);
+          $content = tpps_parse_file($phenotype_file, 1);
 
           if (isset($phenotype_file_name_cols) and isset($phenotype_name_col)) {
-            $meta_content = tpps_parse_xlsx(drupal_realpath(file_load($phenotype_meta)->uri));
+            $meta_content = tpps_parse_file($phenotype_meta);
             $missing_phenotypes = array();
             foreach ($phenotype_file_name_cols as $key) {
               $name = $content['headers'][$key];
@@ -304,7 +302,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
             }
           }
           elseif (isset($phenotype_file_name_col)) {
-            $content = tpps_parse_xlsx($phenotype_file_location);
+            $content = tpps_parse_file($form_state['values'][$id]['phenotype']['file']);
 
             $missing_phenotypes = array();
             for ($i = 0; $i < count($content) - 1; $i++) {
@@ -358,11 +356,10 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       if (!form_get_errors()) {
         // Preserve file if it is valid.
         $file = file_load($form_state['values'][$id]['phenotype']['file']);
-        $phenotype_file_location = drupal_realpath($file->uri);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num.xlsx";
 
-        $rows = count(tpps_parse_xlsx($phenotype_file_location)) - 1 + !empty($phenotype['file-no-header']);
+        $rows = count(tpps_parse_file($form_state['values'][$id]['phenotype']['file'])) - 1 + !empty($phenotype['file-no-header']);
         if ($phenotype['format'] == 0) {
           $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows * count($phenotype_file_name_cols);
         }
@@ -374,9 +371,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
     }
   }
   else {
-    $file = file_load($phenotype['iso']);
-    $location = drupal_realpath($file->uri);
-    $content = tpps_parse_xlsx($location, 1);
+    $content = tpps_parse_file($phenotype['iso'], 1);
     $id_col_name = key($content['headers']);
     while (($k = array_search(NULL, $content['headers']))) {
       unset($content['headers'][$k]);
@@ -399,7 +394,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
       }
 
-      $missing_trees = tpps_compare_files($file->fid, $tree_accession_file, $id_col_name, $id_col_accession_name);
+      $missing_trees = tpps_compare_files($phenotype['iso'], $tree_accession_file, $id_col_name, $id_col_accession_name);
 
       if ($missing_trees !== array()) {
         $tree_id_str = implode(', ', $missing_trees);
@@ -409,6 +404,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
 
     if (!form_get_errors()) {
       // Preserve file if it is valid.
+      $file = file_load($phenotype['iso']);
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
       $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num.xlsx";
     }
@@ -620,8 +616,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: field is required.");
     }
     elseif (!empty($file_type['SNPs Genotype Assay'])) {
-      $location = drupal_realpath(file_load($snps_assay)->uri);
-      $content = tpps_parse_xlsx($location, 1);
+      $content = tpps_parse_file($snps_assay, 1);
       $id_col_name = key($content['headers']);
       while (($k = array_search(NULL, $content['headers']))) {
         unset($content['headers'][$k]);
@@ -674,9 +669,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][files][ssrs]", "SSRs/cpSSRs Spreadsheet: field is required.");
     }
     elseif (!empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and !empty($genotype['files']['ploidy'])) {
-      $ssrs_file = file_load($genotype['files']['ssrs']);
-      $location = drupal_realpath($ssrs_file->uri);
-      $content = tpps_parse_xlsx($location, 1);
+      $content = tpps_parse_file($genotype['files']['ssrs'], 1);
       $id_col_name = key($content['headers']);
       while (($k = array_search(NULL, $content['headers']))) {
         unset($content['headers'][$k]);
@@ -721,7 +714,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
           $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
         }
 
-        $missing_trees = tpps_compare_files($ssrs_file->fid, $tree_accession_file, $id_col_name, $id_col_accession_name);
+        $missing_trees = tpps_compare_files($genotype['files']['ssrs'], $tree_accession_file, $id_col_name, $id_col_accession_name);
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);

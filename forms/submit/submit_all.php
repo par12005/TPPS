@@ -122,10 +122,7 @@ function tpps_submit_page_1(array &$form_state) {
       'value' => file_create_url(file_load($firstpage['publication']['secondaryAuthors']['file'])->uri),
       'rank' => $form_state['file_rank'],
     ));
-
-    $file = file_load($firstpage['publication']['secondaryAuthors']['file']);
-    $location = drupal_realpath($file->uri);
-    $content = tpps_parse_xlsx($location);
+    $content = tpps_parse_file($firstpage['publication']['secondaryAuthors']['file']);
     $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
 
     foreach ($column_vals as $col => $val) {
@@ -153,7 +150,6 @@ function tpps_submit_page_1(array &$form_state) {
       ));
       $author_string .= "; {$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
     }
-    $file = file_save($file);
     $form_state['file_rank']++;
   }
 
@@ -213,10 +209,7 @@ function tpps_submit_page_1(array &$form_state) {
     }
   }
   elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0) {
-
-    $file = file_load($firstpage['publication']['secondaryAuthors']['file']);
-    $location = drupal_realpath($file->uri);
-    $content = tpps_parse_xlsx($location, 0, !empty($firstpage['publication']['secondaryAuthors']['file-no-header']));
+    $content = tpps_parse_file($firstpage['publication']['secondaryAuthors']['file'], 0, !empty($firstpage['publication']['secondaryAuthors']['file-no-header']));
     $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
     $groups = $firstpage['publication']['secondaryAuthors']['file-groups'];
 
@@ -776,9 +769,7 @@ function tpps_submit_page_3(array &$form_state) {
       'rank' => $form_state['file_rank'],
     ));
 
-    $file = file_load($fid);
-    $location = drupal_realpath($file->uri);
-    $content = tpps_parse_xlsx($location);
+    $content = tpps_parse_file($fid);
 
     foreach ($column_vals as $col => $val) {
       if ($val == '8') {
@@ -1105,7 +1096,6 @@ function tpps_submit_page_3(array &$form_state) {
 
     $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($records, array('fk_overrides' => $overrides, 'fks' => 'stock'));
     unset($records);
-    $file = file_save($file);
     $form_state['file_rank']++;
     if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
       break;

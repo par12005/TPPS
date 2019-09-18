@@ -189,10 +189,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
   if (!empty($fid) and ($file = file_load($fid)) and $pop_group_show) {
     $form['tree-accession']['pop-group']['#type'] = 'fieldset';
-
-    $file_name = $file->uri;
-    $location = drupal_realpath("$file_name");
-    $content = tpps_parse_xlsx($location);
+    $content = tpps_parse_file($fid);
 
     for ($i = 0; $i < count($content) - 1; $i++) {
       $pop_group = $content[$i][$pop_col];
@@ -291,10 +288,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
       if (!empty($form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid']) and ($file = file_load($form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid'])) and $pop_group_show) {
         $form['tree-accession']["species-$i"]['pop-group']['#type'] = 'fieldset';
-
-        $file_name = $file->uri;
-        $location = drupal_realpath("$file_name");
-        $content = tpps_parse_xlsx($location);
+        $content = tpps_parse_file($form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid']);
 
         for ($i = 0; $i < count($content) - 1; $i++) {
           $pop_group = $content[$i][$pop_col];
