@@ -28,8 +28,9 @@ function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
   switch ($extension) {
     case 'xlsx':
       return tpps_parse_xlsx($location, $max_rows, $no_header);
+    case 'txt':
     case 'csv':
-      return tpps_parse_csv($location, $max_rows, $no_header);
+      return tpps_parse_flat($location, $max_rows, $no_header);
     default:
       throw new Exception('Unrecognized file type');
   }
@@ -46,7 +47,7 @@ function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
  * @return array
  *   An array containing the content headers and content body.
  */
-function tpps_parse_csv($location, $max_rows = 0, $no_header = FALSE) {
+function tpps_parse_flat($location, $max_rows = 0, $no_header = FALSE) {
   $original = ini_get('auto_detect_line_endings');
   if (!$original) {
     ini_set('auto_detect_line_endings', TRUE);
