@@ -603,7 +603,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         'empty' => '',
       );
       $table = theme_table($vars);
-      preg_match('/\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/s', $table, $matches);
+      preg_match('/(*UTF8)\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/us', $table, $matches);
 
       $element['columns'][$first_col]['#prefix'] = "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>" . $element['columns'][$first_col]['#prefix'];
       $element['columns'][$key]['#suffix'] = "</tr>" . $matches[2] . "</div>";

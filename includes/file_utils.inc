@@ -75,6 +75,9 @@ function tpps_parse_flat($location, $max_rows = 0, $no_header = FALSE) {
     for ($i = 0; $i < $longest; $i++) {
       $key = pack('H*', $hex);
       $values[$key] = $vals[$i] ?? NULL;
+      if (!check_plain($values[$key])) {
+        $values[$key] = mb_convert_encoding($values[$key], "UTF-8", "Windows-1252");
+      }
       $hex = tpps_increment_hex($hex);
     }
 
