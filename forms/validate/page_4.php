@@ -142,7 +142,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
           // Preserve file if it is valid.
           $file = file_load($form_state['values'][$id]['phenotype']['metadata']);
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Metadata_$org_num.xlsx";
+          $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Metadata_$org_num";
         }
       }
     }
@@ -357,7 +357,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         // Preserve file if it is valid.
         $file = file_load($form_state['values'][$id]['phenotype']['file']);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num.xlsx";
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num";
 
         $rows = count(tpps_parse_file($form_state['values'][$id]['phenotype']['file'])) - 1 + !empty($phenotype['file-no-header']);
         if ($phenotype['format'] == 0) {
@@ -406,7 +406,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       // Preserve file if it is valid.
       $file = file_load($phenotype['iso']);
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num.xlsx";
+      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num";
     }
   }
 }
@@ -608,7 +608,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         // Preserve file if it is valid.
         $file = file_load($vcf);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_VCF_$org_num.xlsx";
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_VCF_$org_num";
       }
     }
 
@@ -651,7 +651,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         // Preserve file if it is valid.
         $file = file_load($snps_assay);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SNPs_Assay_$org_num.xlsx";
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SNPs_Assay_$org_num";
       }
     }
 
@@ -662,7 +662,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       // Preserve file if it is valid.
       $file = file_load($genotype['files']['assay-design']);
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Assay_Design_$org_num.xlsx";
+      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Assay_Design_$org_num";
     }
 
     if (!empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and !$genotype['files']['ssrs']) {
@@ -726,7 +726,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         // Preserve file if it is valid.
         $file = file_load($genotype['files']['ssrs']);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Spreadsheet_$org_num.xlsx";
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Spreadsheet_$org_num";
       }
     }
 
@@ -772,7 +772,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         // Preserve file if it is valid.
         $file = file_load($other_file);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Other_Marker_Spreadsheet_$org_num.xlsx";
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Other_Marker_Spreadsheet_$org_num";
       }
     }
   }

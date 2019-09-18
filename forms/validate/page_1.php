@@ -76,7 +76,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
           // Preserve file if it is valid.
           $file = file_load($form_state['values']['publication']['secondaryAuthors']['file']);
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          $form_state['file_info'][TPPS_PAGE_1][$file->fid] = 'Secondary_Authors.xlsx';
+          $form_state['file_info'][TPPS_PAGE_1][$file->fid] = 'Secondary_Authors';
         }
       }
       else {

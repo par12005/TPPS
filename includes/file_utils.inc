@@ -24,8 +24,7 @@
 function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
   $file = file_load($fid);
   $location = drupal_realpath($file->uri);
-  preg_match('/\.([a-zA-Z0-9]*)$/', $location, $matches);
-  $extension = $matches[1];
+  $extension = tpps_get_path_extension($location);
   switch ($extension) {
     case 'xlsx':
       return tpps_parse_xlsx($location, $max_rows, $no_header);
@@ -251,7 +250,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
   }
 
   if (!empty($fid) and ($file = file_load($fid))) {
-    $new_filename = $new_name;
+    $new_filename = $new_name . "." . tpps_get_path_extension($file->uri);
     if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
       preg_match('/^(.*\/).*$/', $file->uri, $matches);
       $new_filename = $matches[1] . $new_filename;
@@ -551,4 +550,18 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       }
     }
   }
+}
+
+/**
+ * Gets the file extension from a path.
+ *
+ * @param string $path
+ *   The path of the file we want the extension of.
+ *
+ * @return string
+ *   The extension of that file.
+ */
+function tpps_get_path_extension($path) {
+  preg_match('/\.([a-zA-Z0-9]*)$/', $path, $matches);
+  return $matches[1];
 }

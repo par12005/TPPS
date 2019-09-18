@@ -99,7 +99,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           // Preserve file if it is valid.
           $file = file_load($form_state['values']['tree-accession']['file']);
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          $form_state['file_info'][TPPS_PAGE_3][$file->fid] = 'Tree_Accession.xlsx';
+          $form_state['file_info'][TPPS_PAGE_3][$file->fid] = 'Tree_Accession';
         }
       }
       else {
@@ -174,7 +174,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
             // Preserve file if it is valid.
             $file = file_load($form_state['values']['tree-accession']["species-$i"]['file']);
             file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-            $form_state['file_info'][TPPS_PAGE_3][$file->fid] = "Tree_Accession_$i.xlsx";
+            $form_state['file_info'][TPPS_PAGE_3][$file->fid] = "Tree_Accession_$i";
           }
         }
         else {
