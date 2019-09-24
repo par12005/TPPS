@@ -151,13 +151,17 @@ function tpps_update_submission(array $state, array $options = array()) {
  */
 function tpps_delete_submission($accession, $redirect = TRUE) {
   global $user;
-  $dbxref_id = tpps_load_submission($accession, FALSE)->dbxref_id;
+  $submission = tpps_load_submission($accession, FALSE);
+  $dbxref_id = $submission->dbxref_id;
+  $state = unserialize($submission->submission_state);
   db_delete('tpps_submission')
     ->condition('accession', $accession)
     ->execute();
-  db_delete('chado.dbxref')
-    ->condition('dbxref_id', $dbxref_id)
-    ->execute();
+  if (empty($state['saved_values']['frontpage']['use_old_tgdr'])) {
+    db_delete('chado.dbxref')
+      ->condition('dbxref_id', $dbxref_id)
+      ->execute();
+  }
   if ($redirect) {
     drupal_goto("user/{$user->uid}/tpps");
   }
