@@ -369,7 +369,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $options = array();
   if (!empty($snps_check)) {
     $options['SNPs Genotype Assay'] = 'SNPs Genotype Assay';
-    if (!empty($form_state['values'][$id]['genotype']['files']['file-type']['SNPs Genotype Assay']) or !empty($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SNPs Genotype Assay'])) {
+    if (!empty($form_state['complete form'][$id]['genotype']['files']['file-type']['SNPs Genotype Assay']['#value']) or !empty($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SNPs Genotype Assay'])) {
       $options['Assay Design'] = 'Assay Design';
     }
 
