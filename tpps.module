@@ -25,6 +25,7 @@ require_once 'includes/submissions.inc';
 require_once 'includes/zenodo.inc';
 require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
+require_once 'api/tpps.api.inc';
 
 /**
  * Implements hook_menu().
@@ -201,6 +202,8 @@ function tpps_menu() {
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
+
+  $items = array_merge($items, tpps_api_paths());
 
   return $items;
 }
@@ -764,6 +767,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 
   require_once 'forms/build/front.php';
   global $user;
+  dpm(tpps_api_call('submission_raw', 'TGDR033'));
 
   if (!isset($form_state['stage'])) {
     if (!isset($accession)) {
