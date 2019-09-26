@@ -1,9 +1,10 @@
 <?php
 
 require_once 'tpps.submission.api.inc';
+require_once 'tpps.queries.api.inc';
 
 /**
- * 
+ * @file
  */
 
 /**
@@ -12,14 +13,26 @@ require_once 'tpps.submission.api.inc';
 function tpps_api_paths() {
   $items = array();
 
-  $items['tpps/api/submission_raw/%'] = array(
+  $items['tpps/api/submission/%'] = array(
     'title' => 'TPPS Raw Submissions',
-    'page callback' => 'tpps_api_submission',
-    'page arguments' => array(3, TRUE),
+    'page callback' => 'tpps_load_submission',
+    'page arguments' => array(3),
     'access callback' => 'tpps_access',
     'access arguments' => array('access content'),
+    'delivery callback' => 'drupal_json_output',
     'type' => MENU_CALLBACK,
   );
+
+  $items['tpps/api/submissions'] = array(
+    'title' => 'TPPS Submissions Query',
+    'page callback' => 'tpps_api_submission_query',
+    'page arguments' => array(),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access content'),
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  );
+  $items['tpps/api/submissions/q'] = $items['tpps/api/submissions'];
 
   return $items;
 }
