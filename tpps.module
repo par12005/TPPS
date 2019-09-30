@@ -767,7 +767,6 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 
   require_once 'forms/build/front.php';
   global $user;
-  dpm(tpps_api_call('submission_raw', 'TGDR033'));
 
   if (!isset($form_state['stage'])) {
     if (!isset($accession)) {
