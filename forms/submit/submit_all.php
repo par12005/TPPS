@@ -81,7 +81,7 @@ function tpps_submit_page_1(array &$form_state) {
     'dbxref_id' => $dbxref_id,
   ));
 
-  $contact_id = tpps_chado_insert_record('contact', array(
+  $primary_author_id = tpps_chado_insert_record('contact', array(
     'name' => $firstpage['primaryAuthor'],
     'type_id' => array(
       'cv_id' => array(
@@ -94,14 +94,14 @@ function tpps_submit_page_1(array &$form_state) {
 
   tpps_chado_insert_record('project_contact', array(
     'project_id' => $form_state['ids']['project_id'],
-    'contact_id' => $contact_id,
+    'contact_id' => $primary_author_id,
   ));
 
   $author_string = $firstpage['primaryAuthor'];
   if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0) {
 
     for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++) {
-      $contact_id = tpps_chado_insert_record('contact', array(
+      tpps_chado_insert_record('contact', array(
         'name' => $firstpage['publication']['secondaryAuthors'][$i],
         'type_id' => array(
           'cv_id' => array(
@@ -111,12 +111,6 @@ function tpps_submit_page_1(array &$form_state) {
           'is_obsolete' => 0,
         ),
       ));
-
-      tpps_chado_insert_record('project_contact', array(
-        'project_id' => $form_state['ids']['project_id'],
-        'contact_id' => $contact_id,
-      ));
-    
       $author_string .= "; {$firstpage['publication']['secondaryAuthors'][$i]}";
     }
   }
@@ -184,7 +178,7 @@ function tpps_submit_page_1(array &$form_state) {
     'pub_id' => $publication_id,
   ));
 
-  tpps_chado_insert_record('contact', array(
+  $organization_id = tpps_chado_insert_record('contact', array(
     'name' => $firstpage['organization'],
     'type_id' => array(
       'cv_id' => array(
@@ -193,6 +187,17 @@ function tpps_submit_page_1(array &$form_state) {
       'name' => 'Organization',
       'is_obsolete' => 0,
     ),
+  ));
+
+  tpps_chado_insert_record('contact_relationship', array(
+    'type_id' => array(
+      'name' => 'part of',
+      'cv_id' => array(
+        'name' => 'tripal_contact',
+      ),
+    ),
+    'subject_id' => $primary_author_id,
+    'object_id' => $organization_id,
   ));
 
   $names = explode(" ", $firstpage['primaryAuthor']);

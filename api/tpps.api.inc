@@ -34,6 +34,16 @@ function tpps_api_paths() {
   );
   $items['tpps/api/submissions/q'] = $items['tpps/api/submissions'];
 
+  $items['tpps/api/submission_info'] = array(
+    'title' => 'TPPS Submission Data',
+    'page callback' => 'tpps_api_submission_info',
+    'page arguments' => array(),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access content'),
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  );
+
   return $items;
 }
 
