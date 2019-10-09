@@ -69,6 +69,27 @@ function tpps_api_project_query($pids, $entities = FALSE) {
 }
 
 /**
+ *
+ */
+function tpps_api_project_publication_query($pids, $entities = FALSE) {
+  $query = db_select('chado.project_pub', 'pp')
+    ->fields('pp', array('pub_id'));
+  $or = tpps_api_query_or($pids, array(
+    'pp.project_id',
+  ), '=');
+  $query->condition($or);
+  $query = $query->execute();
+
+  $results = $query->fetchCol();
+
+  if (!$entities) {
+    return $results;
+  }
+
+  return tpps_api_record_entities('Publication', $results);
+}
+
+/**
  * 
  */
 function tpps_api_project_author_query($pids, $entities = FALSE) {
