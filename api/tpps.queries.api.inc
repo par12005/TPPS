@@ -128,11 +128,17 @@ function tpps_api_query_or($vals, $fields, $override_op = NULL) {
  */
 function tpps_api_record_entities($label, $record_ids) {
   $bundle = tripal_load_bundle_entity(array('label' => $label));
+  $details = tripal_get_bundle_details($bundle->name);
 
   $entity_ids = array();
   foreach ($record_ids as $id) {
     $entity_ids[] = chado_get_record_entity_by_bundle($bundle, $id);
   }
 
-  return entity_load('TripalEntity', $entity_ids);
+  $field_ids = array();
+  foreach ($details['fields'] as $field) {
+    $field_ids[] = field_info_field($field['name'])['id'];
+  }
+
+  return tripal_load_entity('TripalEntity', $entity_ids, FALSE, $field_ids);
 }
