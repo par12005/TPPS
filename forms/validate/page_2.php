@@ -172,5 +172,12 @@ function tpps_page_2_validate_form(array &$form, array &$form_state) {
         form_set_error("study_info][treatment", 'Treatment: field is required.');
       }
     }
+
+    if (!form_get_errors()) {
+      $start = new DateTime("{$form_state['values']['StartingDate']['year']}-{$form_state['values']['StartingDate']['month']}");
+      $end = new DateTime("{$form_state['values']['EndingDate']['year']}-{$form_state['values']['EndingDate']['month']}");
+      $dur = date_diff($start, $end);
+      $form_state['stats']['duration'] = $dur->format('%y years %m months');
+    }
   }
 }
