@@ -97,7 +97,7 @@ function tpps_submit_page_1(array &$form_state) {
     'contact_id' => $primary_author_id,
   ));
 
-  $author_string = $firstpage['primaryAuthor'];
+  $authors = array($firstpage['primaryAuthor']);
   if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0) {
 
     for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++) {
@@ -111,7 +111,7 @@ function tpps_submit_page_1(array &$form_state) {
           'is_obsolete' => 0,
         ),
       ));
-      $author_string .= "; {$firstpage['publication']['secondaryAuthors'][$i]}";
+      $authors[] = $firstpage['publication']['secondaryAuthors'][$i];
     }
   }
   elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0) {
@@ -153,7 +153,7 @@ function tpps_submit_page_1(array &$form_state) {
           'is_obsolete' => 0,
         ),
       ));
-      $author_string .= "; {$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
+      $authors[] = "{$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
     }
     $form_state['file_rank']++;
   }
@@ -169,9 +169,21 @@ function tpps_submit_page_1(array &$form_state) {
       'is_obsolete' => 0,
     ),
     'pyear' => $firstpage['publication']['year'],
-    'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
+    'uniquename' => implode('; ', $authors) . " {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
   ));
   tpps_tripal_entity_publish('Publication', array($firstpage['publication']['title'], $publication_id));
+
+  tpps_chado_insert_record('pubprop', array(
+    'pub_id' => $publication_id,
+    'type_id' => array(
+      'name' => 'Authors',
+      'cv_id' => array(
+        'tripal_pub',
+      ),
+      'is_obsolete' => 0,
+    ),
+    'value' => implode(', ', $authors),
+  ));
 
   tpps_chado_insert_record('project_pub', array(
     'project_id' => $form_state['ids']['project_id'],
