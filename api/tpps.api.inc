@@ -13,6 +13,16 @@ require_once 'tpps.queries.api.inc';
 function tpps_api_paths() {
   $items = array();
 
+  $items['tpps/api/check_accession/%'] = array(
+    'title' => 'TPPS Check Accession',
+    'page callback' => 'tpps_api_check_accession',
+    'page arguments' => array(3),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access content'),
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  );
+
   $items['tpps/api/submission/%'] = array(
     'title' => 'TPPS Raw Submissions',
     'page callback' => 'tpps_load_submission',
@@ -65,4 +75,15 @@ function tpps_api_call($type, $id = NULL, $query = array()) {
   }
   $response = file_get_contents($path);
   return json_decode($response);
+}
+
+/**
+ *
+ */
+function tpps_api_check_accession($accession = NULL) {
+  if (empty($accession)) {
+    return FALSE;
+  }
+
+  return tpps_load_submission($accession) ? TRUE : FALSE;
 }
