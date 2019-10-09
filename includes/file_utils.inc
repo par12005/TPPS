@@ -179,10 +179,66 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
   }
 
   @unlink($dir);
-  @unlink($inputFile);
 
   return $content;
 
+}
+
+/**
+ *
+ */
+function tpps_file_len($fid) {
+  $file = file_load($fid);
+  $location = drupal_realpath($file->uri);
+  $extension = tpps_get_path_extension($location);
+  switch ($extension) {
+    case 'xlsx':
+      return tpps_xlsx_len($location);
+    case 'txt':
+    case 'csv':
+      return tpps_flat_len($location);
+    default:
+      throw new Exception('Unrecognized file type');
+  }
+}
+
+/**
+ *
+ */
+function tpps_flat_len($location) {
+  $original = ini_get('auto_detect_line_endings');
+  if (!$original) {
+    ini_set('auto_detect_line_endings', TRUE);
+  }
+
+  $cont = 0;
+  $handle = fopen($location, 'r');
+  while (fgets($handle)) {
+    $count++;
+  }
+
+  fclose($handle);
+  ini_set('auto_detect_line_endings', $original);
+  return $count;
+}
+
+/**
+ *
+ */
+function tpps_xlsx_len($location) {
+  $count = 0;
+  $dir = drupal_realpath("public://tpps_xlsx");
+
+  $zip = new ZipArchive();
+  $zip->open($location);
+  $zip->extractTo($dir);
+
+  $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
+  $xlrows = $sheet->sheetData->row;
+
+  @unlink($dir);
+
+  return count($xlrows);
 }
 
 /**
