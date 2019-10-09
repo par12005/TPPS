@@ -106,13 +106,17 @@ function tpps_api_submission_info() {
   foreach ($states as $state) {
     $pids[] = $state['ids']['project_id'];
   }
-  unset($states);
   $data_types = explode(',', $params['data']);
   $results = array();
   foreach ($data_types as $type) {
     $function_name = "tpps_api_project_{$type}_query";
     if ($type == 'project') {
       $function_name = "tpps_api_project_query";
+    }
+
+    if ($type == 'stats') {
+      $results[$type] = $function_name($states);
+      continue;
     }
 
     if (!function_exists($function_name)) {

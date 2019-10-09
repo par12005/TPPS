@@ -148,6 +148,17 @@ function tpps_api_project_design_query($pids, $entities = FALSE) {
 }
 
 /**
+ *
+ */
+function tpps_api_project_stats_query($states) {
+  $results = array();
+  foreach ($states as $state) {
+    $results[] = $state['stats'];
+  }
+  return $results;
+}
+
+/**
  * 
  */
 function tpps_api_query_or($vals, $fields, $override_op = NULL) {
