@@ -126,6 +126,28 @@ function tpps_api_project_organism_query($pids, $entities = FALSE) {
 }
 
 /**
+ *
+ */
+function tpps_api_project_design_query($pids, $entities = FALSE) {
+  $query = db_select('chado.projectprop', 'pp');
+  $query->join('chado.cvterm', 'c', 'c.cvterm_id = pp.type_id');
+  $query->fields('c', array('name'))
+    ->fields('pp', array('value'));
+  $or = tpps_api_query_or($pids, array(
+    'pp.project_id',
+  ), '=');
+  $query->condition($or);
+  $query = $query->execute();
+
+  $results = array();
+  while (($result = $query->fetchObject())) {
+    $results[$result->name][] = $result->value;
+  }
+
+  return $results;
+}
+
+/**
  * 
  */
 function tpps_api_query_or($vals, $fields, $override_op = NULL) {
