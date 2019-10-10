@@ -150,6 +150,65 @@ function tpps_api_project_design_query($pids, $entities = FALSE) {
 /**
  *
  */
+function tpps_api_project_stock_query($pids, $entities = FALSE) {
+  $query = db_select('chado.project_stock', 'p')
+    ->fields('p', array('stock_id'));
+  $or = tpps_api_query_or($pids, array(
+    'p.project_id',
+  ), '=');
+  $query->condition($or);
+  $query = $query->execute();
+
+  $results = $query->fetchCol();
+
+  if (!$entities) {
+    return $results;
+  }
+
+  return tpps_api_record_entities('Stock', $results);
+}
+
+/**
+ *
+ */
+function tpps_api_project_phenotype_query($pids, $entities = FALSE) {
+  $query = db_select('chado.project_stock', 'ps');
+  $query->join('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
+  $or = tpps_api_query_or($pids, array(
+    'ps.project_id',
+  ), '=');
+  $query->fields('sp', array('phenotype_id'))
+    ->condition($or);
+  $query = $query->execute();
+
+  $results = $query->fetchCol();
+  return $results;
+}
+
+/**
+ *
+ */
+function tpps_api_project_genotype_query($pids, $entities = FALSE) {
+  $query = db_select('chado.project_stock', 'ps');
+  $query->join('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
+  $or = tpps_api_query_or($pids, array(
+    'ps.project_id',
+  ), '=');
+  $query->fields('sg', array('genotype_id'))
+    ->condition($or);
+  $query = $query->execute();
+
+  $results = $query->fetchCol();
+
+  if (!$entities) {
+    return $results;
+  }
+  return tpps_api_record_entities('Genotype', $results);
+}
+
+/**
+ *
+ */
 function tpps_api_project_stats_query($states) {
   $results = array();
   foreach ($states as $state) {
