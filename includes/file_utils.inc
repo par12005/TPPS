@@ -524,7 +524,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         }
       }
 
-      if (!$form_state['values']['tree-accession']['check']) {
+      if (empty($form_state['values']['tree-accession']['check'])) {
         break;
       }
     }
