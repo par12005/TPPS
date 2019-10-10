@@ -1268,14 +1268,12 @@ function tpps_file_parsing($accession) {
       $env_number = $environment['number'];
       $env_count = 0;
 
-      if ($organism_number == 1 or !$form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check']) {
-        $accession_file = file_load($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file']);
-        $id_col = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-groups']['Tree Id'][1];
+      $species_index = "species-$i";
+      if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+        $species_index = "species-1";
       }
-      else {
-        $accession_file = file_load($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file']);
-        $id_col = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file-groups']['Tree Id'][1];
-      }
+      $accession_file = file_load($form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file']);
+      $id_col = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id'][1];
 
       $content = tpps_parse_file($accession_file->fid);
       $env_cvterm = chado_get_cvterm(array(

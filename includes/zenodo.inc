@@ -138,12 +138,10 @@ function tpps_doi_upload_files($id, array &$state) {
     $files[] = $state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['file'];
   }
 
-  if ($state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
-    $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
-  }
-  else {
-    for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-      $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
+  for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
+    $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
+    if (empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+      break;
     }
   }
 
