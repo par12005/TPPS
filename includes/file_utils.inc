@@ -194,6 +194,10 @@ function tpps_file_len($fid) {
   switch ($extension) {
     case 'xlsx':
       return tpps_xlsx_len($location);
+    case 'vcf':
+      return tpps_flat_len($location, array(
+        'skip_prefix' => '#',
+      ));
     case 'txt':
     case 'csv':
       return tpps_flat_len($location);
@@ -205,15 +209,23 @@ function tpps_file_len($fid) {
 /**
  *
  */
-function tpps_flat_len($location) {
+function tpps_flat_len($location, array $options = array()) {
   $original = ini_get('auto_detect_line_endings');
   if (!$original) {
     ini_set('auto_detect_line_endings', TRUE);
   }
 
+  $skip = NULL;
+  if (array_key_exists('skip_prefix', $options)) {
+    $skip = $options['skip_prefix'];
+  }
+
   $cont = 0;
   $handle = fopen($location, 'r');
-  while (fgets($handle)) {
+  while (($line = fgets($handle)) !== FALSE) {
+    if (isset($skip) and (substr($line, 0, strlen($skip)) == $skip)) {
+      continue;
+    }
     $count++;
   }
 
