@@ -2,12 +2,30 @@
 
 /**
  * @file
+ * Defines queries for the TPPS API.
+ *
+ * Most queries get information based on a list of project ids, but some can
+ * produce a list of project ids based on some conditions. Query functions with
+ * names like "tpps_api_*_pid_query" will produce a list of pids based on the
+ * provided conditions. For example, the function "tpps_api_author_pid_query"
+ * will return a list of pids with authors that match at least one of the
+ * provided names. Query functions with names like "tpps_api_project_*_query"
+ * will produce a list of ids or entities based on a list of pids. For example,
+ * the function "tpps_api_project_organism_query" will return a list of
+ * organism ids or, if the entities parameter is set to true, will return a
+ * list of organism entities associated with the provided pids.
  */
 
 /**
- * 
+ * Returns array of project ids associated with provided authors.
+ *
+ * @param array $authors
+ *   An array of author names.
+ *
+ * @return array
+ *   An array of associated project ids.
  */
-function tpps_api_author_pid_query($authors) {
+function tpps_api_author_pid_query(array $authors) {
   $query = db_select('chado.pubauthor', 'pa');
   $query->join('chado.project_pub', 'pp', 'pp.pub_id = pa.pub_id');
   $query->fields('pp', array('project_id'));
@@ -20,9 +38,15 @@ function tpps_api_author_pid_query($authors) {
 }
 
 /**
- * 
+ * Returns array of project ids associated with provided species.
+ *
+ * @param array $orgs
+ *   An array of species names.
+ *
+ * @return array
+ *   An array of associated project ids.
  */
-function tpps_api_organism_pid_query($orgs) {
+function tpps_api_organism_pid_query(array $orgs) {
   $query = db_select('chado.organism', 'o');
   $query->join('chado.project_organism', 'po', 'po.organism_id = o.organism_id');
   $query->fields('po', array('project_id'));
@@ -35,9 +59,15 @@ function tpps_api_organism_pid_query($orgs) {
 }
 
 /**
- * 
+ * Returns array of project ids associated with provided organizations.
+ *
+ * @param array $orgs
+ *   An array of organization names.
+ *
+ * @return array
+ *   An array of associated project ids.
  */
-function tpps_api_organization_pid_query($orgs) {
+function tpps_api_organization_pid_query(array $orgs) {
   $query = db_select('chado.contact', 'c');
   $query->join('chado.contact_relationship', 'cr', 'c.contact_id = cr.object_id');
   $query->join('chado.project_contact', 'pc', 'pc.contact_id = cr.subject_id');
@@ -58,7 +88,17 @@ function tpps_api_organization_pid_query($orgs) {
 }
 
 /**
- * 
+ * Returns array of projects associated with provided project ids.
+ *
+ * TODO
+ *
+ * @param array $pids
+ *   An array of project ids.
+ * @param bool $entities
+ *   Whether or not to return entities.
+ *
+ * @return array
+ *   An array of project ids or entities.
  */
 function tpps_api_project_query($pids, $entities = FALSE) {
   if (!$entities) {
