@@ -762,19 +762,15 @@ function tpps_submit_page_3(array &$form_state) {
   $form_state['ids']['stock_species'] = array();
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0) {
-      $tree_accession = $thirdpage['tree-accession'];
-    }
-    else {
-      $tree_accession = $thirdpage['tree-accession']["species-$i"];
-    }
+    $tree_accession = $thirdpage['tree-accession']["species-$i"];
     $fid = $tree_accession['file'];
     $column_vals = $tree_accession['file-columns'];
     $groups = $tree_accession['file-groups'];
+    $no_header = !empty($tree_accession['file-no-header']);
     $loc_group = $groups['Location (latitude/longitude or country/state or population group)'];
     $loc_type = $loc_group['#type'];
 
-    if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
+    if ($organism_number != 1 and empty($thirdpage['tree-accession']['check'])) {
       if ($groups['Genus and Species']['#type'] == 'separate') {
         $genus_col_name = $groups['Genus and Species']['6'];
         $species_col_name = $groups['Genus and Species']['7'];
@@ -797,7 +793,7 @@ function tpps_submit_page_3(array &$form_state) {
       'rank' => $form_state['file_rank'],
     ));
 
-    $content = tpps_parse_file($fid);
+    $content = tpps_parse_file($fid, 0, $no_header);
 
     foreach ($column_vals as $col => $val) {
       if ($val == '8') {
@@ -873,6 +869,7 @@ function tpps_submit_page_3(array &$form_state) {
 
     for ($j = 0; $j < count($content) - 1; $j++) {
       $tree_id = $content[$j][$id_col_accession_name];
+      $id = $form_state['ids']['organism_ids'][$i];
       if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
         if ($groups['Genus and Species']['#type'] == 'separate') {
           $genus_full_name = "{$content[$j][$genus_col_name]} {$content[$j][$species_col_name]}";
@@ -881,9 +878,6 @@ function tpps_submit_page_3(array &$form_state) {
           $genus_full_name = "{$content[$j][$org_col_name]}";
         }
         $id = $form_state['ids']['organism_ids'][array_search($genus_full_name, $firstpage['organism'])];
-      }
-      else {
-        $id = $form_state['ids']['organism_ids'][$i];
       }
 
       $records['stock'][$tree_id] = array(
@@ -924,10 +918,8 @@ function tpps_submit_page_3(array &$form_state) {
             'object' => $clone_name,
           ),
         );
-      }
 
-      if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $tree_accession['file-empty']) {
-        $tree_id .= '-' . $content[$j][$clone_col_name];
+        $tree_id = $clone_name;
       }
 
       if (!empty($loc_group['4']) and !empty($content[$j][$loc_group['4']]) and !empty($loc_group['5']) and !empty($content[$j][$loc_group['5']])) {
@@ -1125,7 +1117,7 @@ function tpps_submit_page_3(array &$form_state) {
     $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($records, array('fk_overrides' => $overrides, 'fks' => 'stock'));
     unset($records);
     $form_state['file_rank']++;
-    if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
+    if (empty($thirdpage['tree-accession']['check'])) {
       break;
     }
   }
