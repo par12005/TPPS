@@ -44,15 +44,21 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     '#type' => 'fieldset',
     '#title' => t('Tree Accession Information'),
     '#tree' => TRUE,
+    '#prefix' => '<div id="tpps_accession">',
+    '#suffix' => '</div>',
   );
 
-  $species_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+  $species_number = $form_state['stats']['species_count'];
 
   if ($species_number > 1) {
     // Create the single/multiple file checkbox.
     $form['tree-accession']['check'] = array(
       '#type' => 'checkbox',
       '#title' => t('I would like to upload a separate tree accession file for each species.'),
+      '#ajax' => array(
+        'wrapper' => 'tpps_accession',
+        'callback' => 'tpps_accession_multi_file',
+      ),
     );
   }
 
@@ -70,228 +76,132 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
   $file_description .= "Please find an example of an accession file below.<figure><img src=\"/{$image_path}accession_example.png\"><figcaption>Example Accession File</figcaption></figure>";
 
-  $form['tree-accession']['file'] = array(
-    '#type' => 'managed_file',
-    '#title' => t("Tree Accession File: *") . "<br>" . $file_description,
-    '#upload_location' => "$file_upload_location",
-    '#upload_validators' => array(
-      'file_validate_extensions' => array('txt csv xlsx'),
-    ),
-    '#states' => ($species_number > 1) ? (array(
-      'visible' => array(
-        ':input[name="tree-accession[check]"]' => array('checked' => FALSE),
+  $check = $form_state['complete form']['tree-accession']['check']['#value'] ?? NULL;
+  if (!isset($check)) {
+    $check = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] ?? FALSE;
+  }
+
+  for ($i = 1; $i <= $species_number; $i++) {
+    $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"];
+    $id_name = implode("_", explode(" ", $name));
+
+    $column_options = array(
+      '0' => 'N/A',
+      '1' => 'Tree Identifier',
+      '2' => 'Country',
+      '3' => 'State',
+      '4' => 'Latitude',
+      '5' => 'Longitude',
+      '8' => 'County',
+      '9' => 'District',
+      '12' => 'Population Group',
+      '13' => 'Clone Number',
+    );
+
+    $title = t("@name Accession File: *", array('@name' => $name)) . "<br>$file_description";
+    if ($species_number > 1 and !$check) {
+      $title = t('Tree Accession File: *') . "<br>$file_description";
+      $column_options['6'] = 'Genus';
+      $column_options['7'] = 'Species';
+      $column_options['10'] = 'Genus + Species';
+    }
+
+    if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != '1') {
+      $column_options['11'] = 'Source Tree Identifier';
+    }
+
+    $form['tree-accession']["species-$i"] = array(
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#states' => ($i > 1) ? array(
+        'visible' => array(
+          ':input[name="tree-accession[check]"]' => array('checked' => TRUE),
+        ),
+      ) : NULL,
+    );
+
+    $form['tree-accession']["species-$i"]['file'] = array(
+      '#type' => 'managed_file',
+      '#title' => $title,
+      '#upload_location' => $file_upload_location,
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('txt csv xlsx'),
       ),
-    )) : NULL,
-    '#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv xlsx</span>',
-    '#suffix' => '<style>figure {}</style>',
-  );
-
-  $form['tree-accession']['file']['empty'] = array(
-    '#default_value' => isset($values['tree-accession']['file']['empty']) ? $values['tree-accession']['file']['empty'] : 'NA',
-  );
-
-  $form['tree-accession']['file']['columns'] = array(
-    '#description' => 'Please define which columns hold the required data: Tree Identifier and Location. If your trees are located based on a population group, you can provide the population group column and a mapping of population group to location below.',
-  );
-
-  $column_options = array(
-    '0' => 'N/A',
-    '1' => 'Tree Identifier',
-    '2' => 'Country',
-    '3' => 'State',
-    '4' => 'Latitude',
-    '5' => 'Longitude',
-    '8' => 'County',
-    '9' => 'District',
-    '12' => 'Population Group',
-    '13' => 'Clone Number',
-  );
-
-  if ($species_number > 1) {
-    $column_options['6'] = 'Genus';
-    $column_options['7'] = 'Species';
-    $column_options['10'] = 'Genus + Species';
-  }
-
-  if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != '1') {
-    $column_options['11'] = 'Source Tree Identifier';
-  }
-
-  $form['tree-accession']['file']['columns-options'] = array(
-    '#type' => 'hidden',
-    '#value' => $column_options,
-  );
-
-  $form['tree-accession']['file']['no-header'] = array();
-
-  $form['tree-accession']['coord-format'] = array(
-    '#type' => 'select',
-    '#title' => t('Coordinate Projection'),
-    '#options' => array(
-      'WGS 84',
-      'NAD 83',
-      'ETRS 89',
-      'Other Coordinate Projection',
-      'My file does not use coordinates for tree locations',
-    ),
-    '#states' => $form['tree-accession']['file']['#states'],
-    // Add map button after coordinate format option.
-    '#suffix' => "<div id=\"map_wrapper\"></div>"
-    . "<input id=\"map_button\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>",
-  );
-
-  // Add the google maps api call after the map button.
-  $map_api_key = variable_get('tpps_maps_api_key', NULL);
-  if (!empty($map_api_key)) {
-    $form['tree-accession']['coord-format']['#suffix'] .= '
-    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js"></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=' . $map_api_key . '&callback=initMap"
-    async defer></script>
-    <style>
-      #map_wrapper {
-      height: 450px;
-      }
-    </style>';
-  }
-
-  $pop_group_show = FALSE;
-  if (isset($form_state['complete form']['tree-accession']['file']['columns'])) {
-    foreach ($form_state['complete form']['tree-accession']['file']['columns'] as $col_name => $data) {
-      if ($col_name[0] == '#') {
-        continue;
-      }
-      elseif ($data['#value'] == '12') {
-        $pop_group_show = TRUE;
-        $pop_col = $col_name;
-        $fid = $form_state['complete form']['tree-accession']['file']['#value']['fid'];
-        break;
-      }
-    }
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-columns'])) {
-    foreach ($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-columns'] as $col_name => $data) {
-      if ($data == '12') {
-        $pop_group_show = TRUE;
-        $pop_col = $col_name;
-        $fid = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
-        break;
-      }
-    }
-  }
-
-  $form['tree-accession']['pop-group'] = array(
-    '#type' => 'hidden',
-    '#title' => 'Population group mapping',
-    '#prefix' => '<div id="population-mapping">',
-    '#suffix' => '</div>',
-    '#tree' => TRUE,
-  );
-
-  if (!empty($fid) and ($file = file_load($fid)) and $pop_group_show) {
-    $form['tree-accession']['pop-group']['#type'] = 'fieldset';
-    $content = tpps_parse_file($fid);
-
-    for ($i = 0; $i < count($content) - 1; $i++) {
-      $pop_group = $content[$i][$pop_col];
-      if (empty($form['tree-accession']['pop-group'][$pop_group])) {
-        $form['tree-accession']['pop-group'][$pop_group] = array(
-          '#type' => 'textfield',
-          '#title' => "Location for trees from group $pop_group:",
-        );
-      }
-    }
-  }
-
-  if ($species_number > 1) {
-    for ($i = 1; $i <= $species_number; $i++) {
-      $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"];
-
-      $form['tree-accession']["species-$i"] = array(
-        '#type' => 'fieldset',
-        '#title' => "<div class=\"fieldset-title\">" . t("Tree Accession information for @name trees:", array('@name' => $name)) . "</div>",
-        '#states' => array(
-          'visible' => array(
-            ':input[name="tree-accession[check]"]' => array('checked' => TRUE),
-          ),
-        ),
-        '#collapsible' => TRUE,
-      );
-
-      $form['tree-accession']["species-$i"]['file'] = array(
-        '#type' => 'managed_file',
-        '#title' => t("@name Accession File: *", array('@name' => $name)) . "<br>$file_description",
-        '#upload_location' => "$file_upload_location",
-        '#upload_validators' => array(
-          'file_validate_extensions' => array('txt csv xlsx'),
-        ),
-        '#tree' => TRUE,
-      );
-
-      $form['tree-accession']["species-$i"]['file']['empty'] = array(
+      '#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv xlsx</span>',
+      '#suffix' => '<style>figure {}</style>',
+      'empty' => array(
         '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
-      );
-
-      $form['tree-accession']["species-$i"]['file']['columns'] = array(
+      ),
+      'columns' => array(
         '#description' => 'Please define which columns hold the required data: Tree Identifier and Location. If your trees are located based on a population group, you can provide the population group column and a mapping of population group to location below.',
-      );
-
-      $column_options = array(
-        '0' => 'N/A',
-        '1' => 'Tree Identifier',
-        '2' => 'Country',
-        '3' => 'State',
-        '4' => 'Latitude',
-        '5' => 'Longitude',
-        '8' => 'County',
-        '9' => 'District',
-        '12' => 'Population Group',
-        '13' => 'Clone Number',
-      );
-
-      if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != '1') {
-        $column_options['11'] = 'Source Tree Identifier';
-      }
-
-      $form['tree-accession']["species-$i"]['file']['columns-options'] = array(
+      ),
+      'no-header' => array(),
+      'empty' => array(
+        '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
+      ),
+      'columns-options' => array(
         '#type' => 'hidden',
         '#value' => $column_options,
-      );
+      ),
+    );
 
-      $form['tree-accession']["species-$i"]['file']['no-header'] = array();
-      $parts = explode(" ", $name);
-      $id_name = implode("_", $parts);
-      $form['tree-accession']["species-$i"]['#suffix'] = "<div id=\"{$id_name}_map_wrapper\"></div>"
-        . "<input id=\"{$id_name}_map_button\" type=\"button\" value=\"Click here to view $name trees on map!\"></input>"
-        . "<div id=\"{$id_name}_species_number\" style=\"display:none;\">$i</div>";
+    $form['tree-accession']["species-$i"]['coord-format'] = array(
+      '#type' => 'select',
+      '#title' => t('Coordinate Projection'),
+      '#options' => array(
+        'WGS 84',
+        'NAD 83',
+        'ETRS 89',
+        'Other Coordinate Projection',
+        'My file does not use coordinates for tree locations',
+      ),
+      '#states' => $form['tree-accession']["species-$i"]['#states'] ?? NULL,
+      '#suffix' => "<div id=\"{$id_name}_map_wrapper\"></div>"
+        . "<input id=\"{$id_name}_map_button\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>"
+        . "<div id=\"{$id_name}_species_number\" style=\"display:none;\">$i</div>"
+        . "<script>jQuery('#{$id_name}_map_button').click(getCoordinates);</script>",
+    );
 
-      $pop_group_show = FALSE;
-      if (isset($form_state['complete form']['tree-accession']["species-$i"]['file']['columns'])) {
-        foreach ($form_state['complete form']['tree-accession']["species-$i"]['file']['columns'] as $col_name => $data) {
-          if ($col_name[0] == '#') {
-            continue;
-          }
-          elseif ($data['#value'] == '12') {
-            $pop_group_show = TRUE;
-            $pop_col = $col_name;
-            break;
-          }
+    $form['tree-accession']["species-$i"]['pop-group'] = array(
+      '#type' => 'hidden',
+      '#title' => 'Population group mapping',
+      '#prefix' => "<div id=\"population-mapping-species-$i\">",
+      '#suffix' => '</div>',
+      '#tree' => TRUE,
+    );
+
+    $pop_group_show = FALSE;
+
+    $cols = $form_state['complete form']['tree-accession']["species-$i"]['file']['columns'] ?? NULL;
+    if (!isset($cols)) {
+      $cols = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file-columns'] ?? NULL;
+    }
+
+    if (!empty($cols)) {
+      foreach ($cols as $col_name => $data) {
+        if ($col_name[0] == '#') {
+          continue;
+        }
+        if (!empty($data['#value']) and $data['#value'] == '12') {
+          $pop_group_show = TRUE;
+          $pop_col = $col_name;
+          $fid = $form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid'];
+          break;
+        }
+        if ($data == '12') {
+          $pop_group_show = TRUE;
+          $pop_col = $col_name;
+          $fid = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
+          break;
         }
       }
 
-      $form['tree-accession']["species-$i"]['pop-group'] = array(
-        '#type' => 'hidden',
-        '#title' => 'Population group mapping',
-        '#prefix' => '<div id="population-mapping">',
-        '#suffix' => '</div>',
-        '#tree' => TRUE,
-      );
-
-      if (!empty($form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid']) and ($file = file_load($form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid'])) and $pop_group_show) {
+      if (!empty($fid) and ($file = file_load($fid)) and $pop_group_show) {
         $form['tree-accession']["species-$i"]['pop-group']['#type'] = 'fieldset';
-        $content = tpps_parse_file($form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid']);
+        $content = tpps_parse_file($fid);
 
-        for ($i = 0; $i < count($content) - 1; $i++) {
-          $pop_group = $content[$i][$pop_col];
+        for ($j = 0; $j < count($content) - 1; $j++) {
+          $pop_group = $content[$j][$pop_col];
           if (empty($form['tree-accession']["species-$i"]['pop-group'][$pop_group])) {
             $form['tree-accession']["species-$i"]['pop-group'][$pop_group] = array(
               '#type' => 'textfield',
@@ -300,8 +210,21 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           }
         }
       }
-
     }
+
+  }
+  
+  $map_api_key = variable_get('tpps_maps_api_key', NULL);
+  if (!empty($map_api_key)) {
+    $form['tree-accession']['#suffix'] .= '
+    <script src="https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=' . $map_api_key . '&callback=initMap"
+    async defer></script>
+    <style>
+      #map_wrapper {
+      height: 450px;
+      }
+    </style>';
   }
 
   $form['Back'] = array(

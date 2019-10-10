@@ -20,13 +20,8 @@
  *   The part of the form to be updated.
  */
 function tpps_accession_pop_group(array &$form, array $form_state) {
-  if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] > 1 and !empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
-    $species_id = $form_state['triggering_element']['#parents'][1];
-    return $form['tree-accession'][$species_id]['pop-group'];
-  }
-  else {
-    return $form['tree-accession']['pop-group'];
-  }
+  $species_id = $form_state['triggering_element']['#parents'][1];
+  return $form['tree-accession'][$species_id]['pop-group'];
 }
 
 /**
@@ -46,4 +41,11 @@ function tpps_accession_pop_group(array &$form, array $form_state) {
  */
 function tpps_study_location_map_ajax(array $form, array $form_state) {
   return $form['study_location']['map-button'];
+}
+
+/**
+ *
+ */
+function tpps_accession_multi_file(array &$form, array $form_state) {
+  return $form['tree-accession'];
 }

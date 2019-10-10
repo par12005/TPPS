@@ -142,12 +142,7 @@ jQuery(document).ready(function ($) {
     if (jQuery("#edit-step")[0].value == 1){
       Secondary_Authors();
     }
-    
-    if (jQuery("#edit-step")[0].value == 3){
-      accessionButtons();
-      jQuery("#edit-tree-accession-check").on('click', accessionButtons);
-    }
-    
+
     if (jQuery("#edit-step")[0].value === 'summarypage'){
       Supplemental_Files();
       jQuery("#tpps-status").insertAfter(".tgdr_form_status");
@@ -156,11 +151,10 @@ jQuery(document).ready(function ($) {
       });
     }
   }
-  
+
   var buttons = jQuery('input').filter(function() { return (this.id.match(/map_button/) || this.id.match(/map-button/)); });
   jQuery.each(buttons, function(){
     jQuery(this).attr('type', 'button')
-    jQuery(this).click(getCoordinates);
   });
   jQuery("#map_wrapper").hide();
 
@@ -191,23 +185,6 @@ function previewFile() {
 }
 
 var maps = {};
-
-function accessionButtons(){
-  var acc_check = jQuery("#edit-tree-accession-check");
-  jQuery('div').filter(function() { return this.id.match(/map_wrapper/); }).hide();
-  if (typeof acc_check[0] !== 'undefined' && acc_check[0].checked){
-    jQuery("#map_button").hide();
-    jQuery.each(jQuery('input').filter(function() { return (this.id.match(/_map_button/)); }), function() {
-      jQuery(this).show();
-    });
-  }
-  else {
-    jQuery("#map_button").show();
-    jQuery.each(jQuery('input').filter(function() { return (this.id.match(/_map_button/)); }), function() {
-      jQuery(this).hide();
-    });
-  }
-}
 
 function initMap() {
   var mapElements = jQuery('div').filter(function() { return this.id.match(/map_wrapper/); });
@@ -331,7 +308,12 @@ jQuery.fn.updateMap = function(locations, prefix = "") {
     });
     return marker;
   });
-  var markerCluster = new MarkerClusterer(maps[prefix], maps[prefix + 'markers'], {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
+
+  if (typeof maps[prefix + 'cluster'] !== 'undefined') {
+    maps[prefix + 'cluster'].clearMarkers();
+  }
+
+  maps[prefix + 'cluster'] = new MarkerClusterer(maps[prefix], maps[prefix + 'markers'], {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
 
   var center = new google.maps.LatLng(maps[prefix + 'total_lat']/locations.length, maps[prefix + 'total_long']/locations.length);
   maps[prefix].panTo(center);
