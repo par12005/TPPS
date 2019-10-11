@@ -90,8 +90,6 @@ function tpps_api_organization_pid_query(array $orgs) {
 /**
  * Returns array of projects associated with provided project ids.
  *
- * TODO
- *
  * @param array $pids
  *   An array of project ids.
  * @param bool $entities
@@ -100,7 +98,7 @@ function tpps_api_organization_pid_query(array $orgs) {
  * @return array
  *   An array of project ids or entities.
  */
-function tpps_api_project_query($pids, $entities = FALSE) {
+function tpps_api_project_query(array $pids, $entities = FALSE) {
   if (!$entities) {
     return $pids;
   }
@@ -109,9 +107,17 @@ function tpps_api_project_query($pids, $entities = FALSE) {
 }
 
 /**
+ * Returns array of publications associated with provided project ids.
  *
+ * @param array $pids
+ *   An array of project ids.
+ * @param bool $entities
+ *   Whether or not to return entities.
+ *
+ * @return array
+ *   An array of publication ids or entities.
  */
-function tpps_api_project_publication_query($pids, $entities = FALSE) {
+function tpps_api_project_publication_query(array $pids, $entities = FALSE) {
   $query = db_select('chado.project_pub', 'pp')
     ->fields('pp', array('pub_id'));
   $or = tpps_api_query_or($pids, array(
@@ -130,9 +136,19 @@ function tpps_api_project_publication_query($pids, $entities = FALSE) {
 }
 
 /**
- * 
+ * Returns array of authors associated with provided project ids.
+ *
+ * This function currently does not support returning Tripal Entities.
+ *
+ * @param array $pids
+ *   An array of project ids.
+ * @param bool $entities
+ *   (Placeholder) Whether or not to return entities.
+ *
+ * @return array
+ *   An array of pubauthor table record ids.
  */
-function tpps_api_project_author_query($pids, $entities = FALSE) {
+function tpps_api_project_author_query(array $pids, $entities = FALSE) {
   $query = db_select('chado.project_pub', 'pp');
   $query->join('chado.pubauthor', 'pa', 'pa.pub_id = pp.pub_id');
   $query->fields('pa', array('pubauthor_id'));
@@ -145,9 +161,17 @@ function tpps_api_project_author_query($pids, $entities = FALSE) {
 }
 
 /**
- * 
+ * Returns array of species associated with provided project ids.
+ *
+ * @param array $pids
+ *   An array of project ids.
+ * @param bool $entities
+ *   Whether or not to return entities.
+ *
+ * @return array
+ *   An array of organism ids or entities.
  */
-function tpps_api_project_organism_query($pids, $entities = FALSE) {
+function tpps_api_project_organism_query(array $pids, $entities = FALSE) {
   $query = db_select('chado.project_organism', 'po')
     ->fields('po', array('organism_id'));
   $or = tpps_api_query_or($pids, array(
@@ -166,9 +190,17 @@ function tpps_api_project_organism_query($pids, $entities = FALSE) {
 }
 
 /**
+ * Returns array of design information associated with provided project ids.
  *
+ * This function does not support returning Tripal Entities.
+ *
+ * @param array $pids
+ *   An array of project ids.
+ *
+ * @return array
+ *   An array of study design information.
  */
-function tpps_api_project_design_query($pids, $entities = FALSE) {
+function tpps_api_project_design_query(array $pids) {
   $query = db_select('chado.projectprop', 'pp');
   $query->join('chado.cvterm', 'c', 'c.cvterm_id = pp.type_id');
   $query->fields('c', array('name'))
@@ -188,9 +220,17 @@ function tpps_api_project_design_query($pids, $entities = FALSE) {
 }
 
 /**
+ * Returns array of stocks associated with provided project ids.
  *
+ * @param array $pids
+ *   An array of project ids.
+ * @param bool $entities
+ *   Whether or not to return entities.
+ *
+ * @return array
+ *   An array of stock ids or entities.
  */
-function tpps_api_project_stock_query($pids, $entities = FALSE) {
+function tpps_api_project_stock_query(array $pids, $entities = FALSE) {
   $query = db_select('chado.project_stock', 'p')
     ->fields('p', array('stock_id'));
   $or = tpps_api_query_or($pids, array(
@@ -209,9 +249,19 @@ function tpps_api_project_stock_query($pids, $entities = FALSE) {
 }
 
 /**
+ * Returns array of phenotype ids associated with provided project ids.
  *
+ * This function currently does not support returning Tripal Entities.
+ *
+ * @param array $pids
+ *   An array of project ids.
+ * @param bool $entities
+ *   (Placeholder) Whether or not to return entities.
+ *
+ * @return array
+ *   An array of study design information.
  */
-function tpps_api_project_phenotype_query($pids, $entities = FALSE) {
+function tpps_api_project_phenotype_query(array $pids, $entities = FALSE) {
   $query = db_select('chado.project_stock', 'ps');
   $query->join('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
   $or = tpps_api_query_or($pids, array(
@@ -226,9 +276,17 @@ function tpps_api_project_phenotype_query($pids, $entities = FALSE) {
 }
 
 /**
+ * Returns array of genotypes associated with provided project ids.
  *
+ * @param array $pids
+ *   An array of project ids.
+ * @param bool $entities
+ *   Whether or not to return entities.
+ *
+ * @return array
+ *   An array of genotype ids or entities.
  */
-function tpps_api_project_genotype_query($pids, $entities = FALSE) {
+function tpps_api_project_genotype_query(array $pids, $entities = FALSE) {
   $query = db_select('chado.project_stock', 'ps');
   $query->join('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
   $or = tpps_api_query_or($pids, array(
@@ -247,9 +305,17 @@ function tpps_api_project_genotype_query($pids, $entities = FALSE) {
 }
 
 /**
+ * Returns array of submission statistics based on provided submission states.
  *
+ * This function does not support returning Tripal Entities.
+ *
+ * @param array $states
+ *   An array of TPPS submission states.
+ *
+ * @return array
+ *   An array of TPPS submission statistics.
  */
-function tpps_api_project_stats_query($states) {
+function tpps_api_project_stats_query(array $states) {
   $results = array();
   foreach ($states as $state) {
     $results[] = $state['stats'];
@@ -258,9 +324,24 @@ function tpps_api_project_stats_query($states) {
 }
 
 /**
- * 
+ * Constructs a db_or() condition object for use with other TPPS API functions.
+ *
+ * The default comparison operator is '~*', but this can be overriden by either
+ * specifying a different argument in square brackets following the value being
+ * compared, or by specifying a condition-wide operator in the override_op
+ * function parameter.
+ *
+ * @param array $vals
+ *   The values being compared in this condition.
+ * @param array $fields
+ *   The columns that the values should be compared against.
+ * @param string $override_op
+ *   The condition-wide overriding operator.
+ *
+ * @return object
+ *   The constructed db_or() condition object.
  */
-function tpps_api_query_or($vals, $fields, $override_op = NULL) {
+function tpps_api_query_or(array $vals, array $fields, $override_op = NULL) {
   $or = db_or();
   foreach ($vals as $val) {
     $op = '~*';
@@ -277,7 +358,19 @@ function tpps_api_query_or($vals, $fields, $override_op = NULL) {
 }
 
 /**
- * 
+ * Loads and returns entities that refer to the provided record ids.
+ *
+ * This function takes a Tripal Entity label and an array of record ids and
+ * attempts to load the associated Tripal Entities. It will also attach fields
+ * that are not automatically attached by the Tripal Entity loader.
+ *
+ * @param string $label
+ *   The label of the Tripal Entity type.
+ * @param array $record_ids
+ *   The array of database record ids referred to by the Tripal Entities.
+ *
+ * @return array
+ *   An array of associated Tripal Entities.
  */
 function tpps_api_record_entities($label, $record_ids) {
   $bundle = tripal_load_bundle_entity(array('label' => $label));

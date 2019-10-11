@@ -333,7 +333,17 @@ function tpps_chado_prop_exists($base_table, $id, $name, array $options = array(
 }
 
 /**
- * 
+ * Returns an array of field names associated with a db table.
+ *
+ * This function first checks the chado schema of the table. If there is no
+ * existing chado schema, then it will check the drupal schema. If there is no
+ * existing drupal schema, it will return an empty array.
+ *
+ * @param string $table
+ *   The name of the table.
+ *
+ * @return array
+ *   An array of field names.
  */
 function tpps_table_columns($table) {
   $schema = chado_get_schema($table);
