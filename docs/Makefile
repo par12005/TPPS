@@ -7,8 +7,6 @@ SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = TripalPlantPopGenSubmit
 SOURCEDIR     = source
 BUILDDIR      = build
-DOXYGENBUILD  = doxygen
-DOXYGENCONFIG = tpps_doxygen.config
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -20,4 +18,3 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-	@$(DOXYGENBUILD) $(DOXYGENCONFIG)

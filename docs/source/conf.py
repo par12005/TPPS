@@ -11,6 +11,8 @@ from pygments.lexers.web import PhpLexer
 lexers["php"] = PhpLexer(startinline=True, linenos=1)
 lexers["php-annotations"] = PhpLexer(startinline=True, linenos=1)
 
+import subprocess
+subprocess.call('cd .. ; doxygen tpps_doxygen.config', shell=True)
 
 # -- Path setup --------------------------------------------------------------
 

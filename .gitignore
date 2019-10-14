@@ -3,3 +3,4 @@
 vendor/
 .env
 docs/build/
+docs/source/_static
