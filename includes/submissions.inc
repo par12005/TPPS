@@ -35,9 +35,7 @@ function tpps_load_submission($accession, $state = TRUE) {
     if ($state) {
       return unserialize($result->submission_state);
     }
-    else {
-      return $result;
-    }
+    return $result;
   }
   // Provide legacy support for older TPPS submissions.
   else {

@@ -179,10 +179,78 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
   }
 
   @unlink($dir);
-  @unlink($inputFile);
 
   return $content;
 
+}
+
+/**
+ *
+ */
+function tpps_file_len($fid) {
+  $file = file_load($fid);
+  $location = drupal_realpath($file->uri);
+  $extension = tpps_get_path_extension($location);
+  switch ($extension) {
+    case 'xlsx':
+      return tpps_xlsx_len($location);
+    case 'vcf':
+      return tpps_flat_len($location, array(
+        'skip_prefix' => '#',
+      ));
+    case 'txt':
+    case 'csv':
+      return tpps_flat_len($location);
+    default:
+      throw new Exception('Unrecognized file type');
+  }
+}
+
+/**
+ *
+ */
+function tpps_flat_len($location, array $options = array()) {
+  $original = ini_get('auto_detect_line_endings');
+  if (!$original) {
+    ini_set('auto_detect_line_endings', TRUE);
+  }
+
+  $skip = NULL;
+  if (array_key_exists('skip_prefix', $options)) {
+    $skip = $options['skip_prefix'];
+  }
+
+  $cont = 0;
+  $handle = fopen($location, 'r');
+  while (($line = fgets($handle)) !== FALSE) {
+    if (isset($skip) and (substr($line, 0, strlen($skip)) == $skip)) {
+      continue;
+    }
+    $count++;
+  }
+
+  fclose($handle);
+  ini_set('auto_detect_line_endings', $original);
+  return $count;
+}
+
+/**
+ *
+ */
+function tpps_xlsx_len($location) {
+  $count = 0;
+  $dir = drupal_realpath("public://tpps_xlsx");
+
+  $zip = new ZipArchive();
+  $zip->open($location);
+  $zip->extractTo($dir);
+
+  $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
+  $xlrows = $sheet->sheetData->row;
+
+  @unlink($dir);
+
+  return count($xlrows);
 }
 
 /**
@@ -453,34 +521,23 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
 function tpps_save_file_columns(array &$form, array &$form_state) {
 
   if ($form_state['stage'] == TPPS_PAGE_3) {
-    if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == '1' or $form_state['values']['tree-accession']['check'] == '0') {
-      if (($file = file_load($form_state['values']['tree-accession']['file'])) and $form_state['values']['tree-accession']['file'] != 0) {
+    for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
+      if (($file = file_load($form_state['values']['tree-accession']["species-$i"]['file'])) and $form_state['values']['tree-accession']["species-$i"]['file'] != 0) {
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
       }
 
-      $form_state['values']['tree-accession']['file-columns'] = array();
+      $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
 
-      foreach ($form['tree-accession']['file']['columns'] as $col => $val) {
-        if (isset($form['tree-accession']['file']['columns'][$col]['#value']) and $col[0] != '#') {
-          $form_state['values']['tree-accession']['file-columns'][$col] = $form['tree-accession']['file']['columns'][$col]['#value'];
-        }
-      }
-    }
-    else {
-      for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-        if (($file = file_load($form_state['values']['tree-accession']["species-$i"]['file'])) and $form_state['values']['tree-accession']["species-$i"]['file'] != 0) {
-          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        }
-
-        $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
-
-        if (isset($form['tree-accession']["species-$i"]['file']['#value']['columns'])) {
-          foreach ($form['tree-accession']["species-$i"]['file']['#value']['columns'] as $col => $val) {
-            if ($col[0] != '#') {
-              $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col] = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$col];
-            }
+      if (isset($form['tree-accession']["species-$i"]['file']['#value']['columns'])) {
+        foreach ($form['tree-accession']["species-$i"]['file']['#value']['columns'] as $col => $val) {
+          if ($col[0] != '#') {
+            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col] = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$col];
           }
         }
+      }
+
+      if (empty($form_state['values']['tree-accession']['check'])) {
+        break;
       }
     }
   }

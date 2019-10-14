@@ -17,6 +17,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
 
   if ($form_state['submitted'] == '1') {
     unset($form_state['file_info'][TPPS_PAGE_4]);
+    $form_state['stats']['phenotype_count'] = 0;
 
     $form_values = $form_state['values'];
     $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
@@ -327,15 +328,12 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         }
 
         if (isset($phenotype_file_tree_col)) {
-          if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
-            $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
-            $column_vals = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-columns'];
+          $species_index = "species-$org_num";
+          if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+            $species_index = "species-1";
           }
-          else {
-            $num = substr($id, 9);
-            $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file'];
-            $column_vals = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-columns'];
-          }
+          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
+          $column_vals = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-columns'];
 
           foreach ($column_vals as $col => $val) {
             if ($val == '1') {
@@ -359,12 +357,12 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num";
 
-        $rows = count(tpps_parse_file($form_state['values'][$id]['phenotype']['file'])) - 1 + !empty($phenotype['file-no-header']);
+        $rows = tpps_file_len($form_state['values'][$id]['phenotype']['file']) - 1 + !empty($phenotype['file-no-header']);
         if ($phenotype['format'] == 0) {
-          $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows * count($phenotype_file_name_cols);
+          $form_state['stats']['phenotype_count'] += $rows * count($phenotype_file_name_cols);
         }
         else {
-          $form_state['values']["$id"]['phenotype']['phenotype_count'] = $rows;
+          $form_state['stats']['phenotype_count'] += $rows;
         }
       }
 
@@ -384,15 +382,12 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
     }
 
     if (!form_get_errors()) {
-      if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
-        $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
-        $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-groups']['Tree Id']['1'];
+      $species_index = "species-$org_num";
+      if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+        $species_index = "species-1";
       }
-      else {
-        $num = substr($id, 9);
-        $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file'];
-        $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
-      }
+      $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
+      $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
       $missing_trees = tpps_compare_files($phenotype['iso'], $tree_accession_file, $id_col_name, $id_col_accession_name);
 
@@ -407,6 +402,9 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       $file = file_load($phenotype['iso']);
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
       $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num";
+
+      $rows = tpps_file_len($phenotype['iso']) - 1;
+      $form_state['stats']['phenotype_count'] += $rows * $num_unique_columns;
     }
   }
 }
@@ -594,14 +592,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
 
       if (!form_get_errors()) {
-        $vcf_content = fopen(file_load($vcf)->uri, 'r');
-        $count = 0;
-        while (($vcf_line = fgets($vcf_content)) !== FALSE) {
-          if ($vcf_line[0] != '#') {
-            $count++;
-          }
-        }
-        $form_state['values'][$id]['genotype']['files']['vcf_genotype_count'] = $count;
+        $form_state['values'][$id]['genotype']['files']['vcf_genotype_count'] = tpps_file_len($vcf);
       }
 
       if (!form_get_errors()) {
@@ -704,15 +695,12 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
 
       if (!form_get_errors()) {
-        if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
-          $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-groups']['Tree Id']['1'];
+        $species_index = "species-$org_num";
+        if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+          $species_index = "species-1";
         }
-        else {
-          $num = substr($id, 9);
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file'];
-          $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
-        }
+        $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
+        $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
         $missing_trees = tpps_compare_files($genotype['files']['ssrs'], $tree_accession_file, $id_col_name, $id_col_accession_name);
 
@@ -749,16 +737,12 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       if (!form_get_errors()) {
         // Get Tree Id column name.
         $id_col_genotype_name = $groups['Tree Id']['1'];
-
-        if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
-          $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-groups']['Tree Id']['1'];
+        $species_index = "species-$org_num";
+        if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+          $species_index = "species-1";
         }
-        else {
-          $num = substr($id, 9);
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file'];
-          $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
-        }
+        $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
+        $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
         $missing_trees = tpps_compare_files($other_file, $tree_accession_file, $id_col_genotype_name, $id_col_accession_name);
 

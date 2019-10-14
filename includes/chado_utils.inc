@@ -331,3 +331,21 @@ function tpps_chado_prop_exists($base_table, $id, $name, array $options = array(
   ));
   return !empty($prop_query);
 }
+
+/**
+ * 
+ */
+function tpps_table_columns($table) {
+  $schema = chado_get_schema($table);
+  if (empty($schema)) {
+    $schema = drupal_get_schema($table);
+    if (empty($schema)) {
+      return array();
+    }
+  }
+  $cols = array();
+  foreach ($schema['fields'] as $name => $info) {
+    $cols[] = $name;
+  }
+  return $cols;
+}

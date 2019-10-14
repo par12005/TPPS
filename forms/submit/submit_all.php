@@ -81,7 +81,7 @@ function tpps_submit_page_1(array &$form_state) {
     'dbxref_id' => $dbxref_id,
   ));
 
-  tpps_chado_insert_record('contact', array(
+  $primary_author_id = tpps_chado_insert_record('contact', array(
     'name' => $firstpage['primaryAuthor'],
     'type_id' => array(
       'cv_id' => array(
@@ -92,7 +92,12 @@ function tpps_submit_page_1(array &$form_state) {
     ),
   ));
 
-  $author_string = $firstpage['primaryAuthor'];
+  tpps_chado_insert_record('project_contact', array(
+    'project_id' => $form_state['ids']['project_id'],
+    'contact_id' => $primary_author_id,
+  ));
+
+  $authors = array($firstpage['primaryAuthor']);
   if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0) {
 
     for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++) {
@@ -106,7 +111,7 @@ function tpps_submit_page_1(array &$form_state) {
           'is_obsolete' => 0,
         ),
       ));
-      $author_string .= "; {$firstpage['publication']['secondaryAuthors'][$i]}";
+      $authors[] = $firstpage['publication']['secondaryAuthors'][$i];
     }
   }
   elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0) {
@@ -148,7 +153,7 @@ function tpps_submit_page_1(array &$form_state) {
           'is_obsolete' => 0,
         ),
       ));
-      $author_string .= "; {$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
+      $authors[] = "{$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
     }
     $form_state['file_rank']++;
   }
@@ -164,16 +169,28 @@ function tpps_submit_page_1(array &$form_state) {
       'is_obsolete' => 0,
     ),
     'pyear' => $firstpage['publication']['year'],
-    'uniquename' => "$author_string {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
+    'uniquename' => implode('; ', $authors) . " {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
   ));
   tpps_tripal_entity_publish('Publication', array($firstpage['publication']['title'], $publication_id));
+
+  tpps_chado_insert_record('pubprop', array(
+    'pub_id' => $publication_id,
+    'type_id' => array(
+      'name' => 'Authors',
+      'cv_id' => array(
+        'tripal_pub',
+      ),
+      'is_obsolete' => 0,
+    ),
+    'value' => implode(', ', $authors),
+  ));
 
   tpps_chado_insert_record('project_pub', array(
     'project_id' => $form_state['ids']['project_id'],
     'pub_id' => $publication_id,
   ));
 
-  tpps_chado_insert_record('contact', array(
+  $organization_id = tpps_chado_insert_record('contact', array(
     'name' => $firstpage['organization'],
     'type_id' => array(
       'cv_id' => array(
@@ -182,6 +199,17 @@ function tpps_submit_page_1(array &$form_state) {
       'name' => 'Organization',
       'is_obsolete' => 0,
     ),
+  ));
+
+  tpps_chado_insert_record('contact_relationship', array(
+    'type_id' => array(
+      'name' => 'part of',
+      'cv_id' => array(
+        'name' => 'tripal_contact',
+      ),
+    ),
+    'subject_id' => $primary_author_id,
+    'object_id' => $organization_id,
   ));
 
   $names = explode(" ", $firstpage['primaryAuthor']);
@@ -734,19 +762,15 @@ function tpps_submit_page_3(array &$form_state) {
   $form_state['ids']['stock_species'] = array();
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    if ($organism_number == '1' or $thirdpage['tree-accession']['check'] == 0) {
-      $tree_accession = $thirdpage['tree-accession'];
-    }
-    else {
-      $tree_accession = $thirdpage['tree-accession']["species-$i"];
-    }
+    $tree_accession = $thirdpage['tree-accession']["species-$i"];
     $fid = $tree_accession['file'];
     $column_vals = $tree_accession['file-columns'];
     $groups = $tree_accession['file-groups'];
+    $no_header = !empty($tree_accession['file-no-header']);
     $loc_group = $groups['Location (latitude/longitude or country/state or population group)'];
     $loc_type = $loc_group['#type'];
 
-    if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
+    if ($organism_number != 1 and empty($thirdpage['tree-accession']['check'])) {
       if ($groups['Genus and Species']['#type'] == 'separate') {
         $genus_col_name = $groups['Genus and Species']['6'];
         $species_col_name = $groups['Genus and Species']['7'];
@@ -769,7 +793,7 @@ function tpps_submit_page_3(array &$form_state) {
       'rank' => $form_state['file_rank'],
     ));
 
-    $content = tpps_parse_file($fid);
+    $content = tpps_parse_file($fid, 0, $no_header);
 
     foreach ($column_vals as $col => $val) {
       if ($val == '8') {
@@ -845,6 +869,7 @@ function tpps_submit_page_3(array &$form_state) {
 
     for ($j = 0; $j < count($content) - 1; $j++) {
       $tree_id = $content[$j][$id_col_accession_name];
+      $id = $form_state['ids']['organism_ids'][$i];
       if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
         if ($groups['Genus and Species']['#type'] == 'separate') {
           $genus_full_name = "{$content[$j][$genus_col_name]} {$content[$j][$species_col_name]}";
@@ -853,9 +878,6 @@ function tpps_submit_page_3(array &$form_state) {
           $genus_full_name = "{$content[$j][$org_col_name]}";
         }
         $id = $form_state['ids']['organism_ids'][array_search($genus_full_name, $firstpage['organism'])];
-      }
-      else {
-        $id = $form_state['ids']['organism_ids'][$i];
       }
 
       $records['stock'][$tree_id] = array(
@@ -896,10 +918,8 @@ function tpps_submit_page_3(array &$form_state) {
             'object' => $clone_name,
           ),
         );
-      }
 
-      if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $tree_accession['file-empty']) {
-        $tree_id .= '-' . $content[$j][$clone_col_name];
+        $tree_id = $clone_name;
       }
 
       if (!empty($loc_group['4']) and !empty($content[$j][$loc_group['4']]) and !empty($loc_group['5']) and !empty($content[$j][$loc_group['5']])) {
@@ -1097,7 +1117,7 @@ function tpps_submit_page_3(array &$form_state) {
     $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($records, array('fk_overrides' => $overrides, 'fks' => 'stock'));
     unset($records);
     $form_state['file_rank']++;
-    if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
+    if (empty($thirdpage['tree-accession']['check'])) {
       break;
     }
   }

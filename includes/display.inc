@@ -252,30 +252,30 @@ function tpps_flatten(array $state) {
   }
   $page_3 = &$data[TPPS_PAGE_3]['tree-accession'];
 
-  if (isset($page_3['check']) and $page_3['check']) {
-    for ($i = 1; $i <= $data['#number_organisms']; $i++) {
-      if (isset($page_3["species-$i"]['file']) and $page_3["species-$i"]['file']) {
-        $organism_name = $data["Species $i"];
-        $data["$organism_name Accession File"] = $page_3["species-$i"]['file'];
-        if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
-          $data["#{$organism_name}_accession_no_header"] = isset($page_3["species-$i"]['file-no-header']) ? $page_3["species-$i"]['file-no-header'] : '0';
-          $data["#{$organism_name}_accession_id_col"] = $page_3["species-$i"]['file-groups']['Tree Id'][1];
-          $data["#{$organism_name}_accession_lat_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
-          $data["#{$organism_name}_accession_long_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
-        }
+  for ($i = 1; $i <= $data['#number_organisms']; $i++) {
+    if (!empty($page_3["species-$i"]['file'])) {
+      $organism_name = $data["Species $i"] . ' Accession File';
+      $organism_selector = $data["Species $i"] . '_';
+      if ($data['#number_organisms'] > 1 and empty($page_3['check'])) {
+        $organism_name = 'Tree Accession File';
+        $organism_selector = "";
+      }
+
+      $data[$organism_name] = $page_3["species-$i"]['file'];
+      if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
+        $data["#{$organism_selector}accession_no_header"] = $page_3["species-$i"]['file-no-header'] ?? '0';
+        $data["#{$organism_selector}accession_id_col"] = $page_3["species-$i"]['file-groups']['Tree Id'][1];
+        $data["#{$organism_selector}accession_lat_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
+        $data["#{$organism_selector}accession_long_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
       }
     }
-  }
-  elseif (isset($page_3['file']) and $page_3['file']) {
-    $data['Tree Accession File'] = $page_3['file'];
-    if (!empty($page_3['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
-      $data["#accession_no_header"] = isset($page_3['file-no-header']) ? $page_3['file-no-header'] : '0';
-      $data["#accession_id_col"] = $page_3['file-groups']['Tree Id'][1];
-      $data["#accession_lat_col"] = $page_3['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
-      $data["#accession_long_col"] = $page_3['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
+
+    if (empty($page_3['check'])) {
+      break;
     }
   }
-  $data["Total number of trees"] = isset($page_3['tree_count']) ? $page_3['tree_count'] : NULL;
+
+  $data["Total number of trees"] = $state['stats']['tree_count'] ?? NULL;
   unset($data[TPPS_PAGE_3]);
 
   $page_4 = &$data[TPPS_PAGE_4];
@@ -547,19 +547,16 @@ function tpps_table_display(array &$state) {
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
         $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button\" type=\"button\" value=\"Preview file\"></input>";
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
+          $name = "";
           if ($matches[1] != "Tree ") {
             $parts = explode(" ", $matches[1]);
             $name = implode("_", $parts);
+          }
 
-            $val_str .= "<div id=\"{$name}map_wrapper\"></div><br>"
+          $val_str .= "<div id=\"{$name}map_wrapper\"></div>"
             . "<input id=\"{$name}map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
-            . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>";
-          }
-          else {
-            $val_str .= "<div id=\"map_wrapper\"></div><br>"
-            . "<input id=\"map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
-            . "<div id=\"accession_fid\" style=\"display:none;\">$val</div>";
-          }
+            . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>"
+            . "<script>jQuery('#{$name}map_button').click(getCoordinates);</script>";
         }
       }
       elseif (preg_match('/Month/', $key)) {
