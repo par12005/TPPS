@@ -17,4 +17,5 @@ Welcome to the Tripal Plant PopGen Submit (TPPS) pipeline documentation!
    admin
    user
    dev
+   Doxygen Reference <doxygen/index>
 
