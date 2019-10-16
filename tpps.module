@@ -575,14 +575,9 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         }
 
         if ($form_state['stage'] == TPPS_PAGE_3) {
-          if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] > 1 and !empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
-            $species_num = $element['#parents'];
-            array_pop($species_num);
-            $species_num = "-" . end($species_num);
-          }
-          else {
-            $species_num = "";
-          }
+          $species_num = $element['#parents'];
+          array_pop($species_num);
+          $species_num = "-" . end($species_num);
           $element['columns'][$key]['#ajax'] = array(
             'callback' => 'tpps_accession_pop_group',
             'wrapper' => "population-mapping$species_num",
@@ -789,6 +784,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       $form_state['stage'] = $old_form_state['stage'];
       $form_state['accession'] = $old_form_state['accession'];
       $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
+      $form_state['stats'] = $old_form_state['stats'];
     }
   }
   else {
@@ -803,6 +799,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     $form_state['stage'] = $old_form_state['stage'];
     $form_state['accession'] = $old_form_state['accession'];
     $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
+    $form_state['stats'] = $old_form_state['stats'];
   }
 
   $form['step'] = array(
