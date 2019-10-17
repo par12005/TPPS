@@ -144,7 +144,7 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
   $reader = new XMLReader;
   $reader->open($data_location);
   $count = 0;
-  while ($count < $max_rows and ($row = tpps_xlsx_get_row($reader, $strings_location))) {
+  while (($row = tpps_xlsx_get_row($reader, $strings_location))) {
     ksort($row);
     $values = array();
     $hex = $left_hex[1];
@@ -161,6 +161,9 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
 
     $content[] = $values;
     $count++;
+    if ($max_rows > 0 and $count >= $max_rows) {
+      break;
+    }
   }
 
   $reader->close();
