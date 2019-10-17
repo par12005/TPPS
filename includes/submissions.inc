@@ -242,7 +242,7 @@ function tpps_submission_update_stats(&$form_state) {
   switch ($form_state['stage']) {
     case TPPS_PAGE_1:
       $form_state['stats']['author_count'] = $form_state['values']['publication']['secondaryAuthors']['number'] + 1;
-      if ($form_state['values']['publication']['secondaryAuthors']['check']) {
+      if (!empty($form_state['values']['publication']['secondaryAuthors']['check'])) {
         $form_state['stats']['author_count'] = tpps_file_len($form_state['values']['publication']['secondaryAuthors']['file']);
       }
 
@@ -250,10 +250,12 @@ function tpps_submission_update_stats(&$form_state) {
       break;
 
     case TPPS_PAGE_2:
-      $start = new DateTime("{$form_state['values']['StartingDate']['year']}-{$form_state['values']['StartingDate']['month']}");
-      $end = new DateTime("{$form_state['values']['EndingDate']['year']}-{$form_state['values']['EndingDate']['month']}");
-      $dur = date_diff($start, $end);
-      $form_state['stats']['duration'] = $dur->format('%y years %m months');
+      if (empty($form_state['tpps_type']) or $form_state['tpps_type'] == 'tpps') {
+        $start = new DateTime("{$form_state['values']['StartingDate']['year']}-{$form_state['values']['StartingDate']['month']}");
+        $end = new DateTime("{$form_state['values']['EndingDate']['year']}-{$form_state['values']['EndingDate']['month']}");
+        $dur = date_diff($start, $end);
+        $form_state['stats']['duration'] = $dur->format('%y years %m months');
+      }
       break;
 
     case TPPS_PAGE_3:

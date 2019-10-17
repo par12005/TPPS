@@ -960,7 +960,7 @@ function tpps_update_7100() {
     }
   }
   catch (Exception $e) {
-    drupal_set_message($e->getMessage(), 'error');
+    throw $e;
     $transaction->rollback();
   }
 }
