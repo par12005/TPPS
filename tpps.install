@@ -930,3 +930,30 @@ function tpps_create_stock_entity() {
     ),
   ));
 }
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7100() {
+
+  $transaction = db_transaction();
+  try {
+    $submissions = tpps_load_submission_multiple(array(
+      'status' => 'Approved',
+    ));
+    foreach ($submissions as $state) {
+      if (!empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['file']) and empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+        $state['saved_values'][TPPS_PAGE_3]['tree-accession']['species-1'] = $state['saved_values'][TPPS_PAGE_3]['tree-accession'];
+        unset($state['saved_values'][TPPS_PAGE_3]['tree-accession']['species-1']['check']);
+        tpps_submission_update_all_stats($state);
+        tpps_update_submission($state);
+        $new_state = tpps_load_submission($state['accession']);
+        print_r($new_state['stats']);
+      }
+    }
+  }
+  catch (Exception $e) {
+    drupal_set_message($e->getMessage(), 'error');
+    $transaction->rollback();
+  }
+}

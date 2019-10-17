@@ -17,7 +17,6 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
 
   if ($form_state['submitted'] == '1') {
     unset($form_state['file_info'][TPPS_PAGE_4]);
-    $form_state['stats']['phenotype_count'] = 0;
 
     $form_values = $form_state['values'];
     $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
@@ -278,14 +277,6 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         $file = file_load($form_state['values'][$id]['phenotype']['file']);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num";
-
-        $rows = tpps_file_len($form_state['values'][$id]['phenotype']['file']) - 1 + !empty($phenotype['file-no-header']);
-        if ($phenotype['format'] == 0) {
-          $form_state['stats']['phenotype_count'] += $rows * count($phenotype_file_name_cols);
-        }
-        else {
-          $form_state['stats']['phenotype_count'] += $rows;
-        }
       }
 
     }
@@ -324,9 +315,6 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       $file = file_load($phenotype['iso']);
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
       $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$org_num";
-
-      $rows = tpps_file_len($phenotype['iso']) - 1;
-      $form_state['stats']['phenotype_count'] += $rows * $num_unique_columns;
     }
   }
 }

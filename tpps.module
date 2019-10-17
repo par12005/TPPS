@@ -930,6 +930,7 @@ function tpps_main_validate(&$form, &$form_state) {
 
   if (!form_get_errors()) {
     $form_state['values']['#cleared'] = TRUE;
+    tpps_submission_update_stats($form_state);
     // dpm($form_state['values']['#cleared']);.
   }
   else {

@@ -118,14 +118,5 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
         }
       }
     }
-
-    if (!form_get_errors()) {
-      $form_state['stats']['author_count'] = $secondary_authors_number + 1;
-      if ($secondary_authors_check) {
-        $form_state['stats']['author_count'] = tpps_file_len($form_state['values']['publication']['secondaryAuthors']['file']);
-      }
-
-      $form_state['stats']['species_count'] = $organism_number;
-    }
   }
 }

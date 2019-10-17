@@ -217,3 +217,82 @@ function tpps_submission_clear_db($accession) {
   tpps_update_submission($state);
   return TRUE;
 }
+
+/**
+ * Updates all statistics for a TPPS Submission.
+ *
+ * @param array $form_state
+ *   The form_state of the submission being updated.
+ */
+function tpps_submission_update_all_stats(&$form_state) {
+  for ($i = 1; $i <= 4; $i++) {
+    $form_state['values'] = $form_state['saved_values'][$i];
+    $form_state['stage'] = $i;
+    tpps_submission_update_stats($form_state);
+  }
+}
+
+/**
+ * Updates statistics for a TPPS Submission for one form step.
+ *
+ * @param array $form_state
+ *   The form_state of the submission being updated.
+ */
+function tpps_submission_update_stats(&$form_state) {
+  switch ($form_state['stage']) {
+    case TPPS_PAGE_1:
+      $form_state['stats']['author_count'] = $form_state['values']['publication']['secondaryAuthors']['number'] + 1;
+      if ($form_state['values']['publication']['secondaryAuthors']['check']) {
+        $form_state['stats']['author_count'] = tpps_file_len($form_state['values']['publication']['secondaryAuthors']['file']);
+      }
+
+      $form_state['stats']['species_count'] = $form_state['values']['organism']['number'];
+      break;
+
+    case TPPS_PAGE_2:
+      $start = new DateTime("{$form_state['values']['StartingDate']['year']}-{$form_state['values']['StartingDate']['month']}");
+      $end = new DateTime("{$form_state['values']['EndingDate']['year']}-{$form_state['values']['EndingDate']['month']}");
+      $dur = date_diff($start, $end);
+      $form_state['stats']['duration'] = $dur->format('%y years %m months');
+      break;
+
+    case TPPS_PAGE_3:
+      $form_state['stats']['tree_count'] = 0;
+      for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
+        $form_state['stats']['tree_count'] += tpps_file_len($form_state['values']['tree-accession']["species-$i"]['file']) - 1;
+        $form_state['stats']['tree_count'] += $form_state['values']['tree-accession']["species-$i"]['file-no-header'];
+        if ($form_state['stats']['species_count'] == 1 or empty($form_state['values']['tree-accession']['check'])) {
+          break;
+        }
+      }
+      break;
+
+    case TPPS_PAGE_4:
+      $form_state['stats']['phenotype_count'] = 0;
+      if (empty($phenotype['iso_check'])) {
+        for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
+          $phenotype = $form_state['values']["organism-$i"]['phenotype'];
+          $rows = tpps_file_len($form_state['values']["organism-$i"]['phenotype']['file']) - 1 + !empty($phenotype['file-no-header']);
+          if ($phenotype['format'] == 0) {
+            $phenotype_file_name_cols = $phenotype['file-groups']['Phenotype Data']['0'];
+            $form_state['stats']['phenotype_count'] += $rows * count($phenotype_file_name_cols);
+          }
+          else {
+            $form_state['stats']['phenotype_count'] += $rows;
+          }
+        }
+        break;
+      }
+      $content = tpps_parse_file($phenotype['iso'], 1);
+      while (($k = array_search(NULL, $content['headers']))) {
+        unset($content['headers'][$k]);
+      }
+      $num_unique_columns = count(array_unique($content['headers'])) - 1;
+      $rows = tpps_file_len($phenotype['iso']) - 1;
+      $form_state['stats']['phenotype_count'] += $rows * $num_unique_columns;
+      break;
+
+    default:
+      break;
+  }
+}

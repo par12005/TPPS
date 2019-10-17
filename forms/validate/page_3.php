@@ -34,7 +34,6 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
     }
 
     $species_number = $form_state['stats']['species_count'];
-    $form_state['stats']['tree_count'] = 0;
     $multi_file = !empty($form_state['values']['tree-accession']['check']);
 
     for ($i = 1; $i <= $species_number; $i++) {
@@ -112,7 +111,6 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           $file = file_load($values['file']);
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
           $form_state['file_info'][TPPS_PAGE_3][$file->fid] = 'Tree_Accession';
-          $form_state['stats']['tree_count'] += count($content) - 1;
         }
       }
 
