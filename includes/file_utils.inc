@@ -43,6 +43,8 @@ function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
  *   The path on the server to the file being parsed.
  * @param int $max_rows
  *   The maximum number of rows to read from the file.
+ * @param bool $no_header
+ *   Whether or not the no_header option has been set to True for the file.
  *
  * @return array
  *   An array containing the content headers and content body.
@@ -105,6 +107,8 @@ function tpps_parse_flat($location, $max_rows = 0, $no_header = FALSE) {
  *   The path on the server to the file being parsed.
  * @param int $max_rows
  *   The maximum number of rows to read from the file.
+ * @param bool $no_header
+ *   Whether or not the no_header option has been set to True for the file.
  *
  * @return array
  *   An array containing the content headers and content body.
@@ -166,7 +170,13 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
 }
 
 /**
+ * Returns the number of lines or rows in a file.
  *
+ * @param int $fid
+ *   The Drupal managed file identifier of the file.
+ *
+ * @return int
+ *   The number of lines or rows in the file.
  */
 function tpps_file_len($fid) {
   $file = file_load($fid);
@@ -188,7 +198,15 @@ function tpps_file_len($fid) {
 }
 
 /**
+ * Returns the number of lines in a flat file.
  *
+ * @param string $location
+ *   The path on the server to the file being parsed.
+ * @param array $options
+ *   Additional options for lines to skip (useful for .vcf files).
+ *
+ * @return int
+ *   The number of lines in the file.
  */
 function tpps_flat_len($location, array $options = array()) {
   $original = ini_get('auto_detect_line_endings');
@@ -216,7 +234,13 @@ function tpps_flat_len($location, array $options = array()) {
 }
 
 /**
+ * Returns the number of rows in an xlsx file.
  *
+ * @param string $location
+ *   The path on the server to the file being parsed.
+ *
+ * @return int
+ *   The number of lines in the file.
  */
 function tpps_xlsx_len($location) {
   $count = 0;
@@ -295,7 +319,20 @@ function tpps_increment_hex($hex) {
 }
 
 /**
- * 
+ * This function will convert a hexadecimal column id to an integer.
+ *
+ * Here are a few examples of column keys and their converted integers:
+ *  echo tpps_convert_colname('A');     // 0
+ *  echo tpps_convert_colname('B');     // 1
+ *  echo tpps_convert_colname('AA');    // 26
+ *  echo tpps_convert_colname('AB');    // 27
+ *  echo tpps_convert_colname('BA');    // 52
+ *
+ * @param string $column
+ *   The capital alphabetical key for the column.
+ *
+ * @return int
+ *   The integer conversion of the column key.
  */
 function tpps_convert_colname($column) {
   $total = 0;
@@ -310,7 +347,20 @@ function tpps_convert_colname($column) {
 }
 
 /**
- * 
+ * Renames a Drupal managed file.
+ *
+ * If the "preserve" option is set to true, then the new file will be created
+ * as a copy of the old one. Otherwise, the old file will be removed.
+ *
+ * @param int $fid
+ *   The Drupal managed file identifier of the file to be renamed.
+ * @param string $new_name
+ *   The new name of the file.
+ * @param array $options
+ *   Additional options to be used when renaming the file.
+ *
+ * @return object
+ *   The new Drupal managed file object.
  */
 function tpps_rename_file($fid, $new_name, array $options = array()) {
   if (!array_key_exists('preserve', $options)) {
@@ -335,7 +385,17 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
 }
 
 /**
- * 
+ * Parses a single column from a file.
+ *
+ * @param int $fid
+ *   The Drupal managed file identifier of the file to be parsed.
+ * @param string $column
+ *   The alphabetical key of the column to be parsed.
+ * @param bool $no_header
+ *   Whether or not the no_header options has been set to true for the file.
+ *
+ * @return array
+ *   An array of values found in the parsed column.
  */
 function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
   $file = file_load($fid);
@@ -353,7 +413,17 @@ function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
 }
 
 /**
- * 
+ * Parses a single column from an xlsx file.
+ *
+ * @param string $location
+ *   The location of the file to be parsed.
+ * @param string $column
+ *   The alphabetical key of the column to be parsed.
+ * @param bool $no_header
+ *   Whether or not the no_header options has been set to true for the file.
+ *
+ * @return array
+ *   An array of values found in the parsed column.
  */
 function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
   $content = array();
@@ -382,7 +452,17 @@ function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
 }
 
 /**
- * 
+ * Parses a single column from a flat file.
+ *
+ * @param string $location
+ *   The location of the file to be parsed.
+ * @param string $column
+ *   The alphabetical key of the column to be parsed.
+ * @param bool $no_header
+ *   Whether or not the no_header options has been set to true for the file.
+ *
+ * @return array
+ *   An array of values found in the parsed column.
  */
 function tpps_parse_flat_column($location, $column, $no_header = FALSE) {
   $original = ini_get('auto_detect_line_endings');
@@ -669,7 +749,15 @@ function tpps_get_path_extension($path) {
 }
 
 /**
- * 
+ * Returns the dimension string of an xlsx file.
+ *
+ * If the dimension string cannot be found, returns NULL.
+ *
+ * @param string $location
+ *   The location of the file.
+ *
+ * @return mixed
+ *   The dimension string of the file, or NULL if it cannot be found.
  */
 function tpps_xlsx_get_dimension($location) {
   $reader = new XMLReader();
@@ -685,7 +773,23 @@ function tpps_xlsx_get_dimension($location) {
 }
 
 /**
- * 
+ * Retrieves a single "row" from an XML file.
+ *
+ * This function recieves an XMLReader object and a location for a strings XML
+ * file, and returns an array of cell values. If the $plain parameter is set to
+ * FALSE, then the function will return TRUE when the XMLReader cursor is on
+ * the next row element. If no row element can be found, the function returns
+ * FALSE.
+ *
+ * @param object $reader
+ *   The XMLReader object being used to read the XML file.
+ * @param string $strings_location
+ *   The location of the strings file associated with the current XML file.
+ * @param bool $plain
+ *   Whether or not to attempt to return an array of cell values, or just TRUE.
+ *
+ * @return mixed
+ *   If $plain is set to TRUE, an array of cell values. Otherwise TRUE.
  */
 function tpps_xlsx_get_row(&$reader, $strings_location, $plain = TRUE) {
   while ($reader->read()) {
@@ -709,7 +813,24 @@ function tpps_xlsx_get_row(&$reader, $strings_location, $plain = TRUE) {
 }
 
 /**
- * 
+ * Returns a cell value from an XML file.
+ *
+ * This function recieves an XMLReader object, a cell type attribute, and a
+ * location for a strings XML file, and returns the value of the current cell.
+ * If the cell type is a string, then the function returns the string from the
+ * strings file with the matching string id. Otherwise, it returns the inner
+ * XML from the 'v' element within the cell. If no 'v' element can be found
+ * before the end of the cell, it returns NULL.
+ *
+ * @param object $reader
+ *   The XMLReader object being used to read the XML file.
+ * @param string $cell_type
+ *   The 't' attribute of the current cell.
+ * @param string $strings_location
+ *   The location of the strings file associated with the current XML file.
+ *
+ * @return mixed
+ *   Either the value in the 'v' element of the cell or the associated string.
  */
 function tpps_xlsx_get_cell_value(&$reader, $cell_type, $strings_location) {
   while (!($reader->nodeType == XMLReader::END_ELEMENT and $reader->name == 'c') and $reader->read()) {
@@ -725,7 +846,15 @@ function tpps_xlsx_get_cell_value(&$reader, $cell_type, $strings_location) {
 }
 
 /**
- * 
+ * Retrieves a string from an excel strings XML file based on the string id.
+ *
+ * @param string $strings_location
+ *   The location of the strings XML file.
+ * @param int $string_id
+ *   The string id number we want to retrieve.
+ *
+ * @return string
+ *   The string from the strings XML file with the matching string id.
  */
 function tpps_xlsx_get_string($strings_location, $string_id) {
 
