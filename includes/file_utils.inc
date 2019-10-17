@@ -119,13 +119,12 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
   $zip->open($location);
   $zip->extractTo($dir);
 
-  $strings = simplexml_load_file($dir . '/xl/sharedStrings.xml');
-  $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
-
-  $xlrows = $sheet->sheetData->row;
+  $strings_location = $dir . '/xl/sharedStrings.xml';
+  $data_location = $dir . '/xl/worksheets/sheet1.xml';
 
   // Get width of the data in the file.
-  preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $sheet->dimension['ref'], $matches);
+  $dimension = tpps_xlsx_get_dimension($data_location);
+  preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
   $left_hex = unpack('H*', $matches[1]);
   $hex = $left_hex[1];
   $right_hex = unpack('H*', $matches[2]);
@@ -138,50 +137,32 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
     }
   }
 
+  $reader = new XMLReader;
+  $reader->open($data_location);
   $count = 0;
-  foreach ($xlrows as $xlrow) {
-    $vals = array();
-
-    foreach ($xlrow->c as $cell) {
-
-      $v = isset($cell->v) ? (float) $cell->v : NULL;
-      if (!isset($v)) {
-        continue;
-      }
-
-      if (isset($cell['t']) && $cell['t'] == 's') {
-        $v = (string) $strings->si[(int) $v]->t;
-      }
-
-      preg_match('/([A-Z]+)([0-9]+)/', (string) $cell['r'], $matches);
-      $vals[$matches[1]] = $v;
-    }
-
-    ksort($vals);
+  while ($count < $max_rows and ($row = tpps_xlsx_get_row($reader, $strings_location))) {
+    ksort($row);
     $values = array();
     $hex = $left_hex[1];
     while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
       $key = pack('H*', $hex);
-      $values[$key] = $vals[$key] ?? NULL;
+      $values[$key] = $row[$key] ?? NULL;
       $hex = tpps_increment_hex($hex);
     }
 
     if (!isset($content['headers'])) {
       $content['headers'] = $values;
+      continue;
     }
-    else {
-      $count++;
-      $content[] = $values;
-      if ($max_rows > 0 and $count >= $max_rows) {
-        break;
-      }
-    }
+
+    $content[] = $values;
+    $count++;
   }
 
+  $reader->close();
   @unlink($dir);
 
   return $content;
-
 }
 
 /**
@@ -220,7 +201,7 @@ function tpps_flat_len($location, array $options = array()) {
     $skip = $options['skip_prefix'];
   }
 
-  $cont = 0;
+  $count = 0;
   $handle = fopen($location, 'r');
   while (($line = fgets($handle)) !== FALSE) {
     if (isset($skip) and (substr($line, 0, strlen($skip)) == $skip)) {
@@ -316,6 +297,21 @@ function tpps_increment_hex($hex) {
 /**
  * 
  */
+function tpps_convert_colname($column) {
+  $total = 0;
+  $base_16 = unpack('H*', 'A')[1];
+  $base = base_convert($base_16, 16, 10) - 1;
+  for ($i = 0; $i < strlen($column); $i++) {
+    $total *= 26;
+    $num_16 = unpack('H*', $column[$i])[1];
+    $total += base_convert($num_16, 16, 10) - $base;
+  }
+  return $total - 1;
+}
+
+/**
+ * 
+ */
 function tpps_rename_file($fid, $new_name, array $options = array()) {
   if (!array_key_exists('preserve', $options)) {
     $options['preserve'] = FALSE;
@@ -339,6 +335,79 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
 }
 
 /**
+ * 
+ */
+function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
+  $file = file_load($fid);
+  $location = drupal_realpath($file->uri);
+  $extension = tpps_get_path_extension($location);
+  switch ($extension) {
+    case 'xlsx':
+      return tpps_parse_xlsx_column($location, $column, $no_header);
+    case 'txt':
+    case 'csv':
+      return tpps_parse_flat_column($location, $column, $no_header);
+    default:
+      throw new Exception('Unrecognized file type');
+  }
+}
+
+/**
+ * 
+ */
+function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
+  $content = array();
+  $dir = drupal_realpath("public://tpps_xlsx");
+
+  $zip = new ZipArchive();
+  $zip->open($location);
+  $zip->extractTo($dir);
+
+  $strings_location = $dir . '/xl/sharedStrings.xml';
+  $data_location = $dir . '/xl/worksheets/sheet1.xml';
+
+  $reader = new XMLReader;
+  $reader->open($data_location);
+  if (!$no_header) {
+    tpps_xlsx_get_row($reader, $strings_location);
+  }
+  while (($row = tpps_xlsx_get_row($reader, $strings_location))) {
+    $content[] = $row[$column] ?? NULL;
+  }
+
+  $reader->close();
+  @unlink($dir);
+
+  return $content;
+}
+
+/**
+ * 
+ */
+function tpps_parse_flat_column($location, $column, $no_header = FALSE) {
+  $original = ini_get('auto_detect_line_endings');
+  if (!$original) {
+    ini_set('auto_detect_line_endings', TRUE);
+  }
+  $delim = ',';
+  $column = tpps_convert_colname($column);
+
+  $results = array();
+  $handle = fopen($location, 'r');
+  if (!$no_header) {
+    fgets($handle);
+  }
+  while (($line = fgets($handle)) !== FALSE) {
+    $vals = explode($delim, $line);
+    $results[] = $vals[$column];
+  }
+
+  fclose($handle);
+  ini_set('auto_detect_line_endings', $original);
+  return $results;
+}
+
+/**
  * Compares two file columns.
  *
  * Returns the array of items that are found in file 1, column file_1_id_name,
@@ -356,38 +425,10 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
  * @return array
  *   The array of items found in file 1 that were not found in file 2.
  */
-function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name) {
-  $file_1_content = tpps_parse_file($fid_1);
-  $file_2_content = tpps_parse_file($fid_2);
-
-  if (gettype($file_1_id_name) == 'integer') {
-    $file_1_content[] = $file_1_content['headers'];
-  }
-  if (gettype($file_2_id_name) == 'integer') {
-    $file_2_content[] = $file_2_content['headers'];
-  }
-
-  $missing_ids = array();
-
-  for ($i = 0; $i < count($file_1_content) - 1; $i++) {
-    $row = $file_1_content[$i];
-
-    $needle_id = $row[$file_1_id_name];
-    $found = FALSE;
-
-    for ($j = 0; $j < count($file_2_content) - 1; $j++) {
-      if ($needle_id === $file_2_content[$j][$file_2_id_name]) {
-        $found = TRUE;
-        break;
-      }
-    }
-
-    if (!$found) {
-      array_push($missing_ids, $needle_id);
-    }
-  }
-
-  return $missing_ids;
+function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $file_1_no_header = FALSE, $file_2_no_header = FALSE) {
+  $file_1_content = tpps_parse_file_column($fid_1, $file_1_id_name, $file_1_no_header);
+  $file_2_content = tpps_parse_file_column($fid_2, $file_2_id_name, $file_2_no_header);
+  return array_diff($file_1_content, $file_2_content);
 }
 
 /**
@@ -625,4 +666,81 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
 function tpps_get_path_extension($path) {
   preg_match('/\.([a-zA-Z0-9]*)$/', $path, $matches);
   return $matches[1];
+}
+
+/**
+ * 
+ */
+function tpps_xlsx_get_dimension($location) {
+  $reader = new XMLReader();
+  $reader->open($location);
+  while ($reader->read()) {
+    if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'dimension') {
+      $dim = $reader->getAttribute('ref');
+      $reader->close();
+      return $dim;
+    }
+  }
+  return NULL;
+}
+
+/**
+ * 
+ */
+function tpps_xlsx_get_row(&$reader, $strings_location, $plain = TRUE) {
+  while ($reader->read()) {
+    if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'row') {
+      if ($plain) {
+        $cells = array();
+        while (!($reader->nodeType == XMLReader::END_ELEMENT and $reader->name == 'row') and $reader->read()) {
+          if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'c') {
+            $cell_type = $reader->getAttribute('t');
+            preg_match('/([A-Z]+)([0-9]+)/', $reader->getAttribute('r'), $matches);
+            $cell_location = $matches[1];
+            $cells[$cell_location] = tpps_xlsx_get_cell_value($reader, $cell_type, $strings_location);
+          }
+        }
+        return $cells;
+      }
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * 
+ */
+function tpps_xlsx_get_cell_value(&$reader, $cell_type, $strings_location) {
+  while (!($reader->nodeType == XMLReader::END_ELEMENT and $reader->name == 'c') and $reader->read()) {
+    if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'v') {
+      $value = $reader->readInnerXml();
+      if (!empty($cell_type) and $cell_type == 's') {
+        $value = tpps_xlsx_get_string($strings_location, $value);
+      }
+      return $value;
+    }
+  }
+  return NULL;
+}
+
+/**
+ * 
+ */
+function tpps_xlsx_get_string($strings_location, $string_id) {
+
+  $reader = new XMLReader;
+  $reader->open($strings_location);
+  $count = 0;
+  while ($reader->read()) {
+    if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 't') {
+      $node = $reader->readInnerXml();
+      if ($count == $string_id) {
+        $reader->close();
+        return $node;
+      }
+      $count++;
+    }
+  }
+  $reader->close();
 }
