@@ -271,10 +271,10 @@ function tpps_submission_update_stats(&$form_state) {
 
     case TPPS_PAGE_4:
       $form_state['stats']['phenotype_count'] = 0;
-      if (empty($phenotype['iso_check'])) {
-        for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
-          $phenotype = $form_state['values']["organism-$i"]['phenotype'];
-          $rows = tpps_file_len($form_state['values']["organism-$i"]['phenotype']['file']) - 1 + !empty($phenotype['file-no-header']);
+      for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
+        $phenotype = $form_state['values']["organism-$i"]['phenotype'];
+        if (empty($phenotype['iso_check']) and !empty($phenotype['file']) and file_load($phenotype['file'])) {
+          $rows = tpps_file_len($phenotype['file']) - 1 + !empty($phenotype['file-no-header']);
           if ($phenotype['format'] == 0) {
             $phenotype_file_name_cols = $phenotype['file-groups']['Phenotype Data']['0'];
             $form_state['stats']['phenotype_count'] += $rows * count($phenotype_file_name_cols);
@@ -282,16 +282,18 @@ function tpps_submission_update_stats(&$form_state) {
           else {
             $form_state['stats']['phenotype_count'] += $rows;
           }
+          continue;
         }
-        break;
+        if (!empty($phenotype['iso']) and file_load($phenotype['iso'])) {
+          $content = tpps_parse_file($phenotype['iso'], 1);
+          while (($k = array_search(NULL, $content['headers']))) {
+            unset($content['headers'][$k]);
+          }
+          $num_unique_columns = count(array_unique($content['headers'])) - 1;
+          $rows = tpps_file_len($phenotype['iso']) - 1;
+          $form_state['stats']['phenotype_count'] += $rows * $num_unique_columns;
+        }
       }
-      $content = tpps_parse_file($phenotype['iso'], 1);
-      while (($k = array_search(NULL, $content['headers']))) {
-        unset($content['headers'][$k]);
-      }
-      $num_unique_columns = count(array_unique($content['headers'])) - 1;
-      $rows = tpps_file_len($phenotype['iso']) - 1;
-      $form_state['stats']['phenotype_count'] += $rows * $num_unique_columns;
       break;
 
     default:

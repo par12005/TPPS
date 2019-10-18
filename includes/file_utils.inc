@@ -165,6 +165,7 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
   }
 
   $reader->close();
+  tpps_rmdir($dir);
 
   return $content;
 }
@@ -252,6 +253,7 @@ function tpps_xlsx_len($location) {
 
   $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
   $xlrows = $sheet->sheetData->row;
+  tpps_rmdir($dir);
 
   return count($xlrows);
 }
@@ -444,6 +446,7 @@ function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
   }
 
   $reader->close();
+  tpps_rmdir($dir);
 
   return $content;
 }
@@ -869,4 +872,31 @@ function tpps_xlsx_get_string($strings_location, $string_id) {
     }
   }
   $reader->close();
+}
+
+/**
+ * Recursively removes a directory.
+ *
+ * We want to clean out the temporary tpps_xlsx directory when we are done with
+ * an excel file, so we need to recursively remove all of the links and sub-
+ * directories. Use this function with caution.
+ *
+ * @param string $dir
+ *   The directory to be removed.
+ */
+function tpps_rmdir($dir) {
+  if (is_dir($dir)) {
+    $children = scandir($dir);
+    foreach ($children as $child) {
+      if ($child != '.' and $child != '..') {
+        if (is_dir($dir . '/' . $child) and !is_link($dir . '/' . $child)) {
+          tpps_rmdir($dir . '/' . $child);
+        }
+        else {
+          unlink($dir . '/' . $child);
+        }
+      }
+    }
+    rmdir($dir);
+  }
 }
