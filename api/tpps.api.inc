@@ -1,8 +1,5 @@
 <?php
 
-require_once 'tpps.submission.api.inc';
-require_once 'tpps.queries.api.inc';
-
 /**
  * @file
  * Main file for the TPPS API.
@@ -12,6 +9,9 @@ require_once 'tpps.queries.api.inc';
  * internally, and a function to verify that a provided accession number has a
  * valid TPPS submission associated with it.
  */
+
+require_once 'tpps.submission.api.inc';
+require_once 'tpps.queries.api.inc';
 
 /**
  * Defines TPPS API paths.
@@ -93,7 +93,7 @@ function tpps_api_paths() {
 }
 
 /**
- * Performs a TPPS API call
+ * Performs a TPPS API call.
  *
  * This function will perform an internal call to the TPPS API. It constructs a
  * TPPS API url, performs a get request, and decodes the resulting JSON object.

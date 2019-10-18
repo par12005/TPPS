@@ -160,7 +160,7 @@ function tpps_summary_create_form(array &$form, array $form_state) {
         '#upload_validators' => array(
           'file_validate_extensions' => array('jpeg jpg'),
         ),
-        '#description' => t('Please upload a photo of the species in either .jpeg or .jpg format')
+        '#description' => t('Please upload a photo of the species in either .jpeg or .jpg format'),
       );
     }
   }

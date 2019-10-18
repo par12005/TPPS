@@ -101,7 +101,7 @@ function tpps_api_submission_query() {
  * The function will also unset items in the conditions array that have already
  * been used, so that the tpps_api_submission_query function knows whether to
  * perform additional query filtering.
- * If no conditions in the conditions array match the columns of the 
+ * If no conditions in the conditions array match the columns of the
  * tpps_submission table, this function will simply return all TPPS submissions
  * found in the table.
  *
