@@ -245,7 +245,7 @@ function tpps_flat_len($location, array $options = array()) {
  */
 function tpps_xlsx_len($location) {
   $count = 0;
-  $dir = drupal_realpath(TPPS_TEMP_XSLX);
+  $dir = drupal_realpath(TPPS_TEMP_XLSX);
 
   $zip = new ZipArchive();
   $zip->open($location);
