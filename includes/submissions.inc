@@ -224,7 +224,7 @@ function tpps_submission_clear_db($accession) {
  * @param array $form_state
  *   The form_state of the submission being updated.
  */
-function tpps_submission_update_all_stats(&$form_state) {
+function tpps_submission_update_all_stats(array &$form_state) {
   for ($i = 1; $i <= 4; $i++) {
     $form_state['values'] = $form_state['saved_values'][$i];
     $form_state['stage'] = $i;
@@ -238,7 +238,7 @@ function tpps_submission_update_all_stats(&$form_state) {
  * @param array $form_state
  *   The form_state of the submission being updated.
  */
-function tpps_submission_update_stats(&$form_state) {
+function tpps_submission_update_stats(array &$form_state) {
   switch ($form_state['stage']) {
     case TPPS_PAGE_1:
       $form_state['stats']['author_count'] = $form_state['values']['publication']['secondaryAuthors']['number'] + 1;

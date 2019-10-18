@@ -203,7 +203,7 @@ function tpps_install() {
       ),
     ),
     'primary key' => array(
-      'project_organism_id'
+      'project_organism_id',
     ),
   ), TRUE, NULL, FALSE);
 
@@ -960,7 +960,7 @@ function tpps_update_7100() {
     }
   }
   catch (Exception $e) {
-    throw $e;
     $transaction->rollback();
+    throw $e;
   }
 }

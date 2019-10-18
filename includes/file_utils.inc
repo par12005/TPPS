@@ -28,9 +28,11 @@ function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
   switch ($extension) {
     case 'xlsx':
       return tpps_parse_xlsx($location, $max_rows, $no_header);
+
     case 'txt':
     case 'csv':
       return tpps_parse_flat($location, $max_rows, $no_header);
+
     default:
       throw new Exception('Unrecognized file type');
   }
@@ -139,7 +141,7 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
     }
   }
 
-  $reader = new XMLReader;
+  $reader = new XMLReader();
   $reader->open($data_location);
   $count = 0;
   while (($row = tpps_xlsx_get_row($reader, $strings_location))) {
@@ -186,13 +188,16 @@ function tpps_file_len($fid) {
   switch ($extension) {
     case 'xlsx':
       return tpps_xlsx_len($location);
+
     case 'vcf':
       return tpps_flat_len($location, array(
         'skip_prefix' => '#',
       ));
+
     case 'txt':
     case 'csv':
       return tpps_flat_len($location);
+
     default:
       throw new Exception('Unrecognized file type');
   }
@@ -291,7 +296,7 @@ function tpps_longest_line($location, $delim = ',') {
  *  echo pack('H*', tpps_increment_hex(unpack('H*', 'AA')[1]));   // AB
  *  echo pack('H*', tpps_increment_hex(unpack('H*', 'Z')[1]));    // AA
  *  echo pack('H*', tpps_increment_hex(unpack('H*', 'AZ')[1]));   // BA
- *  echo pack('H*', tpps_increment_hex(unpack('H*', 'ZZZ')[1]));  // AAAA
+ *  echo pack('H*', tpps_increment_hex(unpack('H*', 'ZZZ')[1]));  // AAAA.
  *
  * @param string $hex
  *   The hexidecimal encoding of a capital alphabetical key.
@@ -404,9 +409,11 @@ function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
   switch ($extension) {
     case 'xlsx':
       return tpps_parse_xlsx_column($location, $column, $no_header);
+
     case 'txt':
     case 'csv':
       return tpps_parse_flat_column($location, $column, $no_header);
+
     default:
       throw new Exception('Unrecognized file type');
   }
@@ -436,7 +443,7 @@ function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
   $strings_location = $dir . '/xl/sharedStrings.xml';
   $data_location = $dir . '/xl/worksheets/sheet1.xml';
 
-  $reader = new XMLReader;
+  $reader = new XMLReader();
   $reader->open($data_location);
   if (!$no_header) {
     tpps_xlsx_get_row($reader, $strings_location);
@@ -858,7 +865,7 @@ function tpps_xlsx_get_cell_value(&$reader, $cell_type, $strings_location) {
  */
 function tpps_xlsx_get_string($strings_location, $string_id) {
 
-  $reader = new XMLReader;
+  $reader = new XMLReader();
   $reader->open($strings_location);
   $count = 0;
   while ($reader->read()) {

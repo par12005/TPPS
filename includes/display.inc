@@ -807,8 +807,8 @@ function tpps_tab_create($user) {
 /**
  * Creates and prints an HTML table of the first 3 lines of a file.
  *
- * @return string
- *   An HTML string for the table with the file preview.
+ * This function techinically does not return a value, but will print() the
+ * rendered table of preview values to the page.
  */
 function tpps_preview_file() {
   $params = drupal_get_query_parameters($_POST);
@@ -829,7 +829,13 @@ function tpps_preview_file() {
     $vars = array(
       'header' => $content['headers'],
       'rows' => $rows,
-      'attributes' => array('class' => array('view', "preview_$fid"), 'id' => 'tpps_table_display'),
+      'attributes' => array(
+        'class' => array(
+          'view',
+          "preview_$fid",
+        ),
+        'id' => 'tpps_table_display',
+      ),
       'caption' => '',
       'colgroups' => NULL,
       'sticky' => FALSE,

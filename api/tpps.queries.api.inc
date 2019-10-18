@@ -372,7 +372,7 @@ function tpps_api_query_or(array $vals, array $fields, $override_op = NULL) {
  * @return array
  *   An array of associated Tripal Entities.
  */
-function tpps_api_record_entities($label, $record_ids) {
+function tpps_api_record_entities($label, array $record_ids) {
   $bundle = tripal_load_bundle_entity(array('label' => $label));
   $details = @tripal_get_bundle_details($bundle->name);
 

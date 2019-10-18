@@ -157,9 +157,9 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       ),
       '#states' => $form['tree-accession']["species-$i"]['#states'] ?? NULL,
       '#suffix' => "<div id=\"{$id_name}_map_wrapper\"></div>"
-        . "<input id=\"{$id_name}_map_button\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>"
-        . "<div id=\"{$id_name}_species_number\" style=\"display:none;\">$i</div>"
-        . "<script>jQuery('#{$id_name}_map_button').click(getCoordinates);</script>",
+      . "<input id=\"{$id_name}_map_button\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>"
+      . "<div id=\"{$id_name}_species_number\" style=\"display:none;\">$i</div>"
+      . "<script>jQuery('#{$id_name}_map_button').click(getCoordinates);</script>",
     );
 
     $form['tree-accession']["species-$i"]['pop-group'] = array(
@@ -213,7 +213,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     }
 
   }
-  
+
   $map_api_key = variable_get('tpps_maps_api_key', NULL);
   if (!empty($map_api_key)) {
     $form['tree-accession']['#suffix'] .= '

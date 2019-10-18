@@ -44,7 +44,18 @@ function tpps_study_location_map_ajax(array $form, array $form_state) {
 }
 
 /**
+ * Ajax callback for the tree-accession fieldset.
  *
+ * This function indicates the element to be updated when changes are made to
+ * the tree-accession fieldset.
+ *
+ * @param array $form
+ *   The form to be updated.
+ * @param array $form_state
+ *   The state of the form to be updated.
+ *
+ * @return array
+ *   The part of the form to be updated.
  */
 function tpps_accession_multi_file(array &$form, array $form_state) {
   return $form['tree-accession'];

@@ -1,11 +1,18 @@
 <?php
 
 /**
- * 
+ * @file
+ * Defines EUtils functions for NCBI's EUtils API.
  */
 
 /**
- * 
+ * Retrieves a family based on an organism name.
+ *
+ * @param string $organism
+ *   The name of the organism.
+ *
+ * @return mixed
+ *   The name of the family or FALSE on failure.
  */
 function tpps_ncbi_get_family($organism) {
   $id = tpps_ncbi_get_taxon_id($organism);
@@ -26,7 +33,13 @@ function tpps_ncbi_get_family($organism) {
 }
 
 /**
- * 
+ * Retrieves a subkingdom based on an organism name.
+ *
+ * @param string $organism
+ *   The name of the organism.
+ *
+ * @return mixed
+ *   The name of the subkingdom or FALSE on failure.
  */
 function tpps_ncbi_get_subkingdom($organism) {
   $id = tpps_ncbi_get_taxon_id($organism);
@@ -47,7 +60,13 @@ function tpps_ncbi_get_subkingdom($organism) {
 }
 
 /**
- * 
+ * Retrieves the NCBI Taxonomy Id of an organism based on its name.
+ *
+ * @param string $organism
+ *   The name of the organism.
+ *
+ * @return mixed
+ *   The NCBI Taxonomy Id, or FALSE on failure.
  */
 function tpps_ncbi_get_taxon_id($organism) {
   $formatted_org = implode('+', explode(' ', $organism));
@@ -71,7 +90,15 @@ function tpps_ncbi_get_taxon_id($organism) {
 }
 
 /**
- * 
+ * Performs an EUtils Fetch request to the NCBI EUtils API.
+ *
+ * @param string $id
+ *   The NCBI Taxonomy Id of the object we want to fetch.
+ * @param string $db
+ *   The Id of the NCBI DB the object resides in.
+ *
+ * @return mixed
+ *   The full results of the fetch request, or FALSE on failure.
  */
 function tpps_ncbi_fetch($id, $db) {
   $url = tpps_ncbi_url('fetch', array(
@@ -94,9 +121,17 @@ function tpps_ncbi_fetch($id, $db) {
 }
 
 /**
- * 
+ * Constructs a URL for a single request to the NCBI EUtils API.
+ *
+ * @param string $type
+ *   The type of request we want to make: fetch, info, search, etc.
+ * @param array $args
+ *   Additional arguments we want to provide via the request query.
+ *
+ * @return string
+ *   The complete URL.
  */
-function tpps_ncbi_url($type, $args) {
+function tpps_ncbi_url($type, array $args) {
   $url = TPPS_NCBI_EUTILS_BASE . "e{$type}.fcgi?";
 
   $api_key = variable_get('tpps_ncbi_api_key', NULL);

@@ -23,6 +23,20 @@ function tpps_pub_status(array $form, array $form_state) {
   return $form['publication']['year'];
 }
 
-function tpps_organism_callback($form, &$form_state) {
+/**
+ * Ajax callback for the organism fieldset.
+ *
+ * Indicates the element to be updated when the add or remove organism buttons
+ * are clicked.
+ *
+ * @param array $form
+ *   The form that needs to be updated.
+ * @param array $form_state
+ *   The state of the form that needs to be updated.
+ *
+ * @return array
+ *   The element in the form to be updated.
+ */
+function tpps_organism_callback(array $form, array &$form_state) {
   return $form['organism'];
 }
