@@ -114,10 +114,8 @@ function tpps_parse_flat($location, $max_rows = 0, $no_header = FALSE) {
  *   An array containing the content headers and content body.
  */
 function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
-
-  // Modified from https://gist.github.com/searbe/3284011
   $content = array();
-  $dir = drupal_realpath("public://tpps_xlsx");
+  $dir = drupal_realpath(TPPS_TEMP_XLSX);
 
   $zip = new ZipArchive();
   $zip->open($location);
@@ -167,7 +165,6 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
   }
 
   $reader->close();
-  @unlink($dir);
 
   return $content;
 }
@@ -247,7 +244,7 @@ function tpps_flat_len($location, array $options = array()) {
  */
 function tpps_xlsx_len($location) {
   $count = 0;
-  $dir = drupal_realpath("public://tpps_xlsx");
+  $dir = drupal_realpath(TPPS_TEMP_XSLX);
 
   $zip = new ZipArchive();
   $zip->open($location);
@@ -255,8 +252,6 @@ function tpps_xlsx_len($location) {
 
   $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
   $xlrows = $sheet->sheetData->row;
-
-  @unlink($dir);
 
   return count($xlrows);
 }
@@ -430,7 +425,7 @@ function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
  */
 function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
   $content = array();
-  $dir = drupal_realpath("public://tpps_xlsx");
+  $dir = drupal_realpath(TPPS_TEMP_XLSX);
 
   $zip = new ZipArchive();
   $zip->open($location);
@@ -449,7 +444,6 @@ function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
   }
 
   $reader->close();
-  @unlink($dir);
 
   return $content;
 }
