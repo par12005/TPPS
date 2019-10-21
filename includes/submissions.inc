@@ -272,7 +272,7 @@ function tpps_submission_update_stats(array &$form_state) {
     case TPPS_PAGE_4:
       $form_state['stats']['phenotype_count'] = 0;
       for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
-        $phenotype = $form_state['values']["organism-$i"]['phenotype'];
+        $phenotype = $form_state['values']["organism-$i"]['phenotype'] ?? NULL;
         if (empty($phenotype['iso_check']) and !empty($phenotype['file']) and file_load($phenotype['file'])) {
           $rows = tpps_file_len($phenotype['file']) - 1 + !empty($phenotype['file-no-header']);
           if ($phenotype['format'] == 0) {
