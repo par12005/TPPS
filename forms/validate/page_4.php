@@ -530,9 +530,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
 
       if (!form_get_errors()) {
-        if ($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] == 1 or $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] == '0') {
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file'];
-          $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['file-groups']['Tree Id']['1'];
+        if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['species-1']['file'];
+          $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['species-1']['file-groups']['Tree Id']['1'];
         }
         else {
           $num = substr($id, 9);
