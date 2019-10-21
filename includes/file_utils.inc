@@ -141,10 +141,11 @@ function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
     }
   }
 
+  $strings = tpps_xlsx_get_strings($strings_location);
   $reader = new XMLReader();
   $reader->open($data_location);
   $count = 0;
-  while (($row = tpps_xlsx_get_row($reader, $strings_location))) {
+  while (($row = tpps_xlsx_get_row($reader, $strings))) {
     ksort($row);
     $values = array();
     $hex = $left_hex[1];
@@ -443,12 +444,13 @@ function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
   $strings_location = $dir . '/xl/sharedStrings.xml';
   $data_location = $dir . '/xl/worksheets/sheet1.xml';
 
+  $strings = tpps_xlsx_get_strings($strings_location);
   $reader = new XMLReader();
   $reader->open($data_location);
   if (!$no_header) {
-    tpps_xlsx_get_row($reader, $strings_location);
+    tpps_xlsx_get_row($reader, $strings);
   }
-  while (($row = tpps_xlsx_get_row($reader, $strings_location))) {
+  while (($row = tpps_xlsx_get_row($reader, $strings))) {
     $content[] = $row[$column] ?? NULL;
   }
 
@@ -790,15 +792,15 @@ function tpps_xlsx_get_dimension($location) {
  *
  * @param object $reader
  *   The XMLReader object being used to read the XML file.
- * @param string $strings_location
- *   The location of the strings file associated with the current XML file.
+ * @param array $strings
+ *   The cached strings for the current XML file.
  * @param bool $plain
  *   Whether or not to attempt to return an array of cell values, or just TRUE.
  *
  * @return mixed
  *   If $plain is set to TRUE, an array of cell values. Otherwise TRUE.
  */
-function tpps_xlsx_get_row(&$reader, $strings_location, $plain = TRUE) {
+function tpps_xlsx_get_row(&$reader, &$strings = array(), $plain = TRUE) {
   while ($reader->read()) {
     if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'row') {
       if ($plain) {
@@ -808,7 +810,7 @@ function tpps_xlsx_get_row(&$reader, $strings_location, $plain = TRUE) {
             $cell_type = $reader->getAttribute('t');
             preg_match('/([A-Z]+)([0-9]+)/', $reader->getAttribute('r'), $matches);
             $cell_location = $matches[1];
-            $cells[$cell_location] = tpps_xlsx_get_cell_value($reader, $cell_type, $strings_location);
+            $cells[$cell_location] = tpps_xlsx_get_cell_value($reader, $cell_type, $strings);
           }
         }
         return $cells;
@@ -833,18 +835,19 @@ function tpps_xlsx_get_row(&$reader, $strings_location, $plain = TRUE) {
  *   The XMLReader object being used to read the XML file.
  * @param string $cell_type
  *   The 't' attribute of the current cell.
- * @param string $strings_location
- *   The location of the strings file associated with the current XML file.
+ * @param array $strings
+ *   The cached strings for the current XML file.
  *
  * @return mixed
  *   Either the value in the 'v' element of the cell or the associated string.
  */
-function tpps_xlsx_get_cell_value(&$reader, $cell_type, $strings_location) {
+function tpps_xlsx_get_cell_value(&$reader, $cell_type, array &$strings = array()) {
   while (!($reader->nodeType == XMLReader::END_ELEMENT and $reader->name == 'c') and $reader->read()) {
     if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'v') {
       $value = $reader->readInnerXml();
       if (!empty($cell_type) and $cell_type == 's') {
-        $value = tpps_xlsx_get_string($strings_location, $value);
+        //$value = tpps_xlsx_get_string($strings_location, $value, $string_cache);
+        $value = $strings[$value];
       }
       return $value;
     }
@@ -853,32 +856,26 @@ function tpps_xlsx_get_cell_value(&$reader, $cell_type, $strings_location) {
 }
 
 /**
- * Retrieves a string from an excel strings XML file based on the string id.
+ * Retrieves strings from an excel strings XML file.
  *
  * @param string $strings_location
  *   The location of the strings XML file.
- * @param int $string_id
- *   The string id number we want to retrieve.
  *
  * @return string
- *   The string from the strings XML file with the matching string id.
+ *   The strings from the strings XML file.
  */
-function tpps_xlsx_get_string($strings_location, $string_id) {
-
+function tpps_xlsx_get_strings($strings_location) {
+  $strings = array();
   $reader = new XMLReader();
   $reader->open($strings_location);
   $count = 0;
   while ($reader->read()) {
     if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 't') {
-      $node = $reader->readInnerXml();
-      if ($count == $string_id) {
-        $reader->close();
-        return $node;
-      }
-      $count++;
+      $strings[$count++] = $reader->readInnerXml();
     }
   }
   $reader->close();
+  return $strings;
 }
 
 /**
