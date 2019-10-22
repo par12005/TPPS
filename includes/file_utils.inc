@@ -904,3 +904,114 @@ function tpps_rmdir($dir) {
     rmdir($dir);
   }
 }
+
+/**
+ * 
+ */
+function tpps_file_headers($fid, $no_header = FALSE) {
+  // TODO: make this a standalone function - it should not depend on tpps_parse_file.
+  $content = tpps_parse_file($fid, 1, $no_header);
+  return $content['headers'];
+}
+
+/**
+ * 
+ */
+function tpps_file_iterator($fid, $function, &$options = array()) {
+  if (!function_exists($function)) {
+    return NULL;
+  }
+
+  foreach (tpps_file_generator($fid, $options) as $item) {
+    $function($item, $options);
+  }
+}
+
+/**
+ * 
+ */
+function tpps_file_generator($fid, $options = array()) {
+  $file = file_load($fid);
+  $location = drupal_realpath($file->uri);
+  $extension = tpps_get_path_extension($location);
+  switch ($extension) {
+    case 'xlsx':
+      return tpps_xlsx_generator($location, $options);
+
+    case 'txt':
+    case 'csv':
+      return tpps_flat_generator($location, $options);
+
+    default:
+      throw new Exception('Unrecognized file type');
+  }
+}
+
+/**
+ * 
+ */
+function tpps_xlsx_generator($location, $options = array()) {
+  $dir = drupal_realpath(TPPS_TEMP_XLSX);
+  $no_header = $options['no_header'] ?? FALSE;
+  $columns = $options['columns'] ?? NULL;
+  $max_rows = $options['max_rows'] ?? NULL;
+
+  $zip = new ZipArchive();
+  $zip->open($location);
+  $zip->extractTo($dir);
+
+  $strings_location = $dir . '/xl/sharedStrings.xml';
+  $data_location = $dir . '/xl/worksheets/sheet1.xml';
+
+  // Get width of the data in the file.
+  $dimension = tpps_xlsx_get_dimension($data_location);
+  preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
+  $left_hex = unpack('H*', $matches[1]);
+  $hex = $left_hex[1];
+  $right_hex = unpack('H*', $matches[2]);
+
+  $strings = tpps_xlsx_get_strings($strings_location);
+  $reader = new XMLReader();
+  $reader->open($data_location);
+
+  if (!$no_header) {
+    tpps_xlsx_get_row($reader, $strings);
+  }
+
+  $count = 0;
+  while (($row = tpps_xlsx_get_row($reader, $strings))) {
+    if (!empty($max_rows) and $count >= $max_rows){
+      break;
+    }
+    $count++;
+
+    $values = array();
+
+    if (empty($columns)) {
+      ksort($row);
+      $hex = $left_hex[1];
+      while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
+        $key = pack('H*', $hex);
+        $values[$key] = $row[$key] ?? NULL;
+        $hex = tpps_increment_hex($hex);
+      }
+      yield $values;
+      continue;
+    }
+
+    foreach ($columns as $column) {
+      $values[$column] = $row[$column] ?? NULL;
+    }
+    yield $values;
+  }
+
+  $reader->close();
+  tpps_rmdir($dir);
+}
+
+/**
+ * 
+ */
+function tpps_flat_generator($location, $options = array()) {
+
+}
