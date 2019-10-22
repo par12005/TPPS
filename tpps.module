@@ -785,7 +785,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       $form_state['stage'] = $old_form_state['stage'];
       $form_state['accession'] = $old_form_state['accession'];
       $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
-      $form_state['stats'] = $old_form_state['stats'];
+      $form_state['stats'] = $old_form_state['stats'] ?? NULL;
     }
   }
   else {
