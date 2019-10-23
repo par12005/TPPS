@@ -906,7 +906,15 @@ function tpps_rmdir($dir) {
 }
 
 /**
- * 
+ * Returns the headers of a TPPS file.
+ *
+ * @param int $fid
+ *   The Drupal managed file id of the file.
+ * @param bool $no_header
+ *   Whether or not the no_header option has been set for the file.
+ *
+ * @return array
+ *   An array of headers for the file.
  */
 function tpps_file_headers($fid, $no_header = FALSE) {
   // TODO: make this a standalone function - it should not depend on tpps_parse_file.
@@ -915,22 +923,47 @@ function tpps_file_headers($fid, $no_header = FALSE) {
 }
 
 /**
- * 
+ * Iterates over a file and applies a function to each generator result.
+ *
+ * This function should be used in place of the deprecated tpps_parse_file()
+ * wherever possible, as it uses much less memory and is much faster.
+ *
+ * @param int $fid
+ *   The Drupal managed file id of the file.
+ * @param callable $function
+ *   The funciton to be applied to each item returned by the generator.
+ * @param array $options
+ *   Options that will be passed to both $function and the generator.
+ *
+ * @return bool
+ *   Returns TRUE on success, otherwise FALSE.
  */
-function tpps_file_iterator($fid, $function, &$options = array()) {
+function tpps_file_iterator($fid, $function, array &$options = array()) {
   if (!function_exists($function)) {
-    return NULL;
+    return FALSE;
   }
 
   foreach (tpps_file_generator($fid, $options) as $item) {
     $function($item, $options);
   }
+  return TRUE;
 }
 
 /**
- * 
+ * This function selects the appropriate generator for a file.
+ *
+ * The generator is selected based on the file extension. If the extension is
+ * not recognized, throws an exception.
+ *
+ * @param int $fid
+ *   The Drupal managed file id for the file.
+ * @param array $options
+ *   Additional options to be passed to the generator.
+ *
+ * @return Generator|array
+ *   The generator for the file.
  */
-function tpps_file_generator($fid, $options = array()) {
+function tpps_file_generator($fid, array $options = array()) {
   $file = file_load($fid);
   $location = drupal_realpath($file->uri);
   $extension = tpps_get_path_extension($location);
@@ -948,9 +981,21 @@ function tpps_file_generator($fid, $options = array()) {
 }
 
 /**
- * 
+ * This function is a generator for xlsx files.
+ *
+ * If the 'max_rows' option is set, the generator stop after max_rows items are
+ * yielded. If the 'columns' option is set, then each item yielded by the
+ * generator will contain only the specified columns from the row.
+ *
+ * @param string $location
+ *   The location of the file on the server.
+ * @param array $options
+ *   Additional options detailing how to parse the file.
+ *
+ * @return Generator|array
+ *   Yields each row of the file (or columns of a row, if applicable).
  */
-function tpps_xlsx_generator($location, $options = array()) {
+function tpps_xlsx_generator($location, array $options = array()) {
   $dir = drupal_realpath(TPPS_TEMP_XLSX);
   $no_header = $options['no_header'] ?? FALSE;
   $columns = $options['columns'] ?? NULL;
@@ -1010,9 +1055,21 @@ function tpps_xlsx_generator($location, $options = array()) {
 }
 
 /**
- * 
+ * This function is s generator for flat files.
+ *
+ * If the 'max_rows' option is set, the generator stop after max_rows items are
+ * yielded. If the 'columns' option is set, then each item yielded by the
+ * generator will contain only the specified columns from the row.
+ *
+ * @param string $location
+ *   The location of the file on the server.
+ * @param array $options
+ *   Additional options detailing how to parse the file.
+ *
+ * @return Generator|array
+ *   Yields each row of the file (or columns of a row, if applicable).
  */
-function tpps_flat_generator($location, $options = array()) {
+function tpps_flat_generator($location, array $options = array()) {
   $original = ini_get('auto_detect_line_endings');
   if (!$original) {
     ini_set('auto_detect_line_endings', TRUE);
