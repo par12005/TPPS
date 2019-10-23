@@ -297,6 +297,7 @@ function tpps_file_parsing($accession) {
         'project_id' => $project_id,
         'seq_var_cvterm' => $seq_var_cvterm,
         'fks' => &$fks,
+        'overrides' => $overrides,
       );
 
       if ($genotype['ref-genome'] == 'bio') {
@@ -1354,7 +1355,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     );
 
     if ($genotype_count >= $record_group) {
-      $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
+      $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $options['overrides']));
       $records = array(
         'feature' => array(),
         'genotype' => array(),
