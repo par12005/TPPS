@@ -75,6 +75,7 @@ function tpps_submit_page_1(array &$form_state) {
 
   $dbxref_id = $form_state['dbxref_id'];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
+  $seconds = $firstpage['publication']['secondaryAuthors'];
 
   tpps_chado_insert_record('project_dbxref', array(
     'project_id' => $form_state['ids']['project_id'],
@@ -98,11 +99,10 @@ function tpps_submit_page_1(array &$form_state) {
   ));
 
   $authors = array($firstpage['primaryAuthor']);
-  if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0) {
-
-    for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++) {
+  if (empty($seconds['check']) and $seconds['number'] != 0) {
+    for ($i = 1; $i <= $seconds['number']; $i++) {
       tpps_chado_insert_record('contact', array(
-        'name' => $firstpage['publication']['secondaryAuthors'][$i],
+        'name' => $seconds[$i],
         'type_id' => array(
           'cv_id' => array(
             'name' => 'tripal_contact',
@@ -111,10 +111,20 @@ function tpps_submit_page_1(array &$form_state) {
           'is_obsolete' => 0,
         ),
       ));
-      $authors[] = $firstpage['publication']['secondaryAuthors'][$i];
+
+      $names = explode(" ", $seconds[$i]);
+      $first_name = $names[0];
+      $last_name = implode(" ", array_slice($names, 1));
+
+      $pubauthors[] = array(
+        'rank' => "$i",
+        'surname' => $last_name,
+        'givennames' => $first_name,
+      );
+      $authors[] = $seconds[$i];
     }
   }
-  elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0) {
+  elseif (!empty($seconds['check'])) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
@@ -124,38 +134,27 @@ function tpps_submit_page_1(array &$form_state) {
         'name' => 'url',
         'is_obsolete' => 0,
       ),
-      'value' => file_create_url(file_load($firstpage['publication']['secondaryAuthors']['file'])->uri),
+      'value' => file_create_url(file_load($seconds['file'])->uri),
       'rank' => $form_state['file_rank'],
     ));
-    $content = tpps_parse_file($firstpage['publication']['secondaryAuthors']['file']);
-    $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
-
-    foreach ($column_vals as $col => $val) {
-      if ($val == '1') {
-        $first_name = $col;
-      }
-      if ($val == '2') {
-        $last_name = $col;
-      }
-      if ($val == '3') {
-        $middle_initial = $col;
-      }
-    }
-
-    for ($i = 0; $i < count($content) - 1; $i++) {
-      tpps_chado_insert_record('contact', array(
-        'name' => "{$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}",
-        'type_id' => array(
-          'cv_id' => array(
-            'name' => 'tripal_contact',
-          ),
-          'name' => 'Person',
-          'is_obsolete' => 0,
-        ),
-      ));
-      $authors[] = "{$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
-    }
     $form_state['file_rank']++;
+
+    $column_vals = $seconds['file-columns'];
+    $pubauthors = array();
+    $rank = 0;
+
+    $options = array(
+      'column_ids' => array(
+        'first' => array_search('1', $column_vals),
+        'last' => array_search('2', $column_vals),
+        'mid' => array_search('3', $column_vals),
+      ),
+      'pubauthors' => &$pubauthors,
+      'pubauthor_rank' => &$rank,
+      'authors' => &$authors,
+    );
+
+    tpps_iterate_file($seconds['file'], 'tpps_process_secondary_authors', $options);
   }
 
   $publication_id = tpps_chado_insert_record('pub', array(
@@ -190,27 +189,29 @@ function tpps_submit_page_1(array &$form_state) {
     'pub_id' => $publication_id,
   ));
 
-  $organization_id = tpps_chado_insert_record('contact', array(
-    'name' => $firstpage['organization'],
-    'type_id' => array(
-      'cv_id' => array(
-        'name' => 'tripal_contact',
+  if (!empty($firstpage['organization'])) {
+    $organization_id = tpps_chado_insert_record('contact', array(
+      'name' => $firstpage['organization'],
+      'type_id' => array(
+        'cv_id' => array(
+          'name' => 'tripal_contact',
+        ),
+        'name' => 'Organization',
+        'is_obsolete' => 0,
       ),
-      'name' => 'Organization',
-      'is_obsolete' => 0,
-    ),
-  ));
+    ));
 
-  tpps_chado_insert_record('contact_relationship', array(
-    'type_id' => array(
-      'name' => 'part of',
-      'cv_id' => array(
-        'name' => 'tripal_contact',
+    tpps_chado_insert_record('contact_relationship', array(
+      'type_id' => array(
+        'name' => 'part of',
+        'cv_id' => array(
+          'name' => 'tripal_contact',
+        ),
       ),
-    ),
-    'subject_id' => $primary_author_id,
-    'object_id' => $organization_id,
-  ));
+      'subject_id' => $primary_author_id,
+      'object_id' => $organization_id,
+    ));
+  }
 
   $names = explode(" ", $firstpage['primaryAuthor']);
   $first_name = $names[0];
@@ -223,42 +224,10 @@ function tpps_submit_page_1(array &$form_state) {
     'givennames' => $first_name,
   ));
 
-  if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0) {
-    for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++) {
-      $names = explode(" ", $firstpage['publication']['secondaryAuthors'][$i]);
-      $first_name = $names[0];
-      $last_name = implode(" ", array_slice($names, 1));
-      tpps_chado_insert_record('pubauthor', array(
-        'pub_id' => $publication_id,
-        'rank' => "$i",
-        'surname' => $last_name,
-        'givennames' => $first_name,
-      ));
-    }
-  }
-  elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0) {
-    $content = tpps_parse_file($firstpage['publication']['secondaryAuthors']['file'], 0, !empty($firstpage['publication']['secondaryAuthors']['file-no-header']));
-    $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
-    $groups = $firstpage['publication']['secondaryAuthors']['file-groups'];
-
-    $first_name = $groups['First Name']['1'];
-    $last_name = $groups['Last Name']['2'];
-
-    foreach ($column_vals as $col => $val) {
-      if ($val == '3') {
-        $middle_initial = $col;
-        break;
-      }
-    }
-
-    for ($i = 0; $i < count($content) - 1; $i++) {
-      $rank = $i + 1;
-      tpps_chado_insert_record('pubauthor', array(
-        'pub_id' => $publication_id,
-        'rank' => "$rank",
-        'surname' => $content[$i][$last_name],
-        'givennames' => $content[$i][$first_name] . " " . $content[$i][$middle_initial],
-      ));
+  if (!empty($pubauthors)) {
+    foreach ($pubauthors as $info) {
+      $info['pub_id'] = $publication_id;
+      tpps_chado_insert_record('pubauthor', $info);
     }
   }
 
@@ -1123,6 +1092,42 @@ function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = 
         ->execute();
     }
   }
+}
+
+/**
+ * This function processes a single row of a secondary authors file.
+ *
+ * This function is meant to be used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_secondary_authors($row, array &$options) {
+  $cols = $options['column_ids'];
+  $authors = &$options['authors'];
+  $pubauthors = &$options['pubauthors'];
+  $rank = &$options['pubauthor_rank'];
+
+  $author_name = "{$row[$cols['last']]}, {$row[$cols['first']]} {$row[$cols['mid']]}";
+  tpps_chado_insert_record('contact', array(
+    'name' => $author_name,
+    'type_id' => array(
+      'cv_id' => array(
+        'name' => 'tripal_contact',
+      ),
+      'name' => 'Person',
+      'is_obsolete' => 0,
+    ),
+  ));
+  $pubauthors[] = array(
+    'rank' => "$rank",
+    'surname' => $row[$cols['last']],
+    'givennames' => $row[$cols['first']] . " " . $row[$cols['mid']],
+  );
+  $authors[] = $author_name;
+  $rank++;
 }
 
 /**
