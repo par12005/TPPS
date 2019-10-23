@@ -369,23 +369,25 @@ function tpps_submit_page_2(array &$form_state) {
 
   $secondpage = $form_state['saved_values'][TPPS_PAGE_2];
 
-  tpps_chado_insert_record('projectprop', array(
-    'project_id' => $form_state['ids']['project_id'],
-    'type_id' => array(
-      'name' => 'study_start',
-      'is_obsolete' => 0,
-    ),
-    'value' => $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'],
-  ));
+  if (!empty($secondpage['StartingDate'])) {
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $form_state['ids']['project_id'],
+      'type_id' => array(
+        'name' => 'study_start',
+        'is_obsolete' => 0,
+      ),
+      'value' => $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'],
+    ));
 
-  tpps_chado_insert_record('projectprop', array(
-    'project_id' => $form_state['ids']['project_id'],
-    'type_id' => array(
-      'name' => 'study_end',
-      'is_obsolete' => 0,
-    ),
-    'value' => $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'],
-  ));
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $form_state['ids']['project_id'],
+      'type_id' => array(
+        'name' => 'study_end',
+        'is_obsolete' => 0,
+      ),
+      'value' => $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'],
+    ));
+  }
 
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $form_state['ids']['project_id'],
@@ -1146,7 +1148,7 @@ function tpps_process_accession($row, array &$options) {
 
   $tree_id = $row[$cols['id']];
   $id = $saved_ids['organism_ids'][$options['org_num']];
-  if ($options['org_count'] != 1 and $options['single_file']) {
+  if ($options['org_names']['number'] != 1 and $options['single_file']) {
     $org_full_name = $row[$cols['org']] ?? "{$row[$cols['genus']]} {$row[$cols['species']]}";
     $id = $saved_ids['organism_ids'][array_search($org_full_name, $options['org_names'])];
   }
