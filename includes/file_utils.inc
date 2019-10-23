@@ -992,7 +992,7 @@ function tpps_xlsx_generator($location, $options = array()) {
       $hex = $left_hex[1];
       while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
         $key = pack('H*', $hex);
-        $values[$key] = $row[$key] ?? NULL;
+        $values[$key] = trim($row[$key]) ?? NULL;
         $hex = tpps_increment_hex($hex);
       }
       yield $values;
@@ -1000,7 +1000,7 @@ function tpps_xlsx_generator($location, $options = array()) {
     }
 
     foreach ($columns as $column) {
-      $values[$column] = $row[$column] ?? NULL;
+      $values[$column] = trim($row[$column]) ?? NULL;
     }
     yield $values;
   }
@@ -1013,5 +1013,54 @@ function tpps_xlsx_generator($location, $options = array()) {
  * 
  */
 function tpps_flat_generator($location, $options = array()) {
+  $original = ini_get('auto_detect_line_endings');
+  if (!$original) {
+    ini_set('auto_detect_line_endings', TRUE);
+  }
 
+  $no_header = $options['no_header'] ?? FALSE;
+  $columns = $options['columns'] ?? NULL;
+  $max_rows = $options['max_rows'] ?? NULL;
+
+  $delim = ',';
+  $longest = tpps_longest_line($location, $delim);
+  $handle = fopen($location, 'r');
+
+  if (!$no_header) {
+    fgets($handle);
+  }
+  $count = 0;
+
+  while (($line = fgets($handle))) {
+    if (!empty($max_rows) and $count >= $max_rows) {
+      break;
+    }
+    $count++;
+
+    $values = array();
+    $vals = explode($delim, $line);
+
+    if (empty($columns)) {
+      $hex = unpack('H*', 'A')[1];
+      for ($i = 0; $i < $longest; $i++) {
+        $key = pack('H*', $hex);
+        $values[$key] = trim($vals[$i]) ?? NULL;
+        if (!check_plain($values[$key])) {
+          $values[$key] = trim(mb_convert_encoding($values[$key], "UTF-8", "Windows-1252"));
+        }
+        $hex = tpps_increment_hex($hex);
+      }
+      yield $values;
+      continue;
+    }
+
+    foreach ($columns as $column) {
+      $values[$column] = $vals[tpps_convert_colname($column)] ?? NULL;
+    }
+
+    yield $values;
+  }
+
+  fclose($handle);
+  ini_set('auto_detect_line_endings', $original);
 }
