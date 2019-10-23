@@ -1263,9 +1263,19 @@ function tpps_file_parsing($accession) {
 }
 
 /**
- * 
+ * This function processes a single row of a genotype spreadsheet.
+ *
+ * This function is used for SNP assay files, SSR spreadsheets, and other
+ * marker type spreadsheets. The functionality is slightly different based on
+ * the type of marker being processed (this is set in the options array). This
+ * function is meant to be used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_process_genotype_spreadsheet($row, &$options = array()) {
+function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $type = $options['type'];
   $records = &$options['records'];
   $fks = &$options['fks'];
@@ -1359,7 +1369,20 @@ function tpps_process_genotype_spreadsheet($row, &$options = array()) {
 }
 
 /**
- * 
+ * This function formats headers for a microsatellite spreadsheet.
+ *
+ * SSR/cpSSR spreadsheets will often have blank or duplicate headers, depending
+ * on the ploidy of the organism they are meant for. This file standardizes the
+ * headers for the spreadsheet so that they can be used with the
+ * tpps_process_genotype_spreadsheet() function.
+ *
+ * @param int $fid
+ *   The Drupal managed file id of the file.
+ * @param string $ploidy
+ *   The ploidy of the organism, as indicated by the user.
+ *
+ * @return array
+ *   The array of standardized headers for the spreadsheet.
  */
 function tpps_ssrs_headers($fid, $ploidy) {
   $headers = tpps_file_headers($fid);
@@ -1448,9 +1471,21 @@ function tpps_ssrs_headers($fid, $ploidy) {
 }
 
 /**
- * 
+ * This function formats headers for the "other" type genotype markers.
+ *
+ * The headers for the "other" genotype marker types are set by the users, so
+ * we need to return the names of the headers they have indicated, rather than
+ * the values provided in the file-groups array.
+ *
+ * @param int $fid
+ *   The Drupal managed file id of the file.
+ * @param array $cols
+ *   An array of columns indicating which of the columns contain genotype data.
+ *
+ * @return array
+ *   The array of standardized headers for the spreadsheet.
  */
-function tpps_other_marker_headers($fid, $cols) {
+function tpps_other_marker_headers($fid, array $cols) {
   $headers = tpps_file_headers($fid);
   $results = array();
   foreach ($cols as $col) {
