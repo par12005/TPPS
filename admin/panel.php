@@ -283,6 +283,8 @@ function tpps_admin_panel_validate($form, &$form_state) {
 function tpps_admin_panel_submit($form, &$form_state) {
 
   global $base_url;
+  $type = $form_state['tpps_type'] ?? 'tpps';
+  $type_label = ($type == 'tpps') ? 'TPPS' : 'TPPSC';
 
   $accession = $form_state['values']['form_table'];
   $submission = tpps_load_submission($accession, FALSE);
@@ -292,9 +294,9 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $params = array();
 
   $from = variable_get('site_mail', '');
-  $params['subject'] = "TPPS Submission Rejected: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+  $params['subject'] = "$type_label Submission Rejected: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
   $params['uid'] = $user->uid;
-  $params['reject-reason'] = isset($form_state['values']['reject-reason']) ? $form_state['values']['reject-reason'] : NULL;
+  $params['reject-reason'] = $form_state['values']['reject-reason'] ?? NULL;
   $params['base_url'] = $base_url;
   $params['title'] = $state['saved_values'][TPPS_PAGE_1]['publication']['title'];
   $params['body'] = '';
@@ -309,7 +311,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
   }
 
   if ($form_state['triggering_element']['#value'] == 'Reject') {
-    drupal_mail('tpps', 'user_rejected', $to, user_preferred_language($user), $params, $from, TRUE);
+    drupal_mail($type, 'user_rejected', $to, user_preferred_language($user), $params, $from, TRUE);
     unset($state['status']);
     tpps_update_submission($state, array('status' => 'Incomplete'));
     drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
@@ -321,17 +323,17 @@ function tpps_admin_panel_submit($form, &$form_state) {
     $uid = $user->uid;
     $state['submitting_uid'] = $uid;
 
-    $params['subject'] = "TPPS Submission Approved: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+    $params['subject'] = "$type_label Submission Approved: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
     $params['accession'] = $state['accession'];
     drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
-    drupal_mail('tpps', 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
+    drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
 
     $includes = array();
     $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
     $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
     $args = array($accession);
     if ($state['saved_values']['summarypage']['release']) {
-      $jid = tripal_add_job("TPPS Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+      $jid = tripal_add_job("$type_label Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
       $state['job_id'] = $jid;
       tpps_update_submission($state);
     }
@@ -339,7 +341,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $date = $state['saved_values']['summarypage']['release-date'];
       $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
       if (time() > $time) {
-        $jid = tripal_add_job("TPPS Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+        $jid = tripal_add_job("$type_label Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
         $state['job_id'] = $jid;
         tpps_update_submission($state);
       }

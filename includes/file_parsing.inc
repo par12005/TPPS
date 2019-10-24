@@ -52,12 +52,62 @@ function tpps_file_parsing($accession) {
 
     if (isset($fourthpage["organism-$i"]['phenotype'])) {
       $phenotype = $fourthpage["organism-$i"]['phenotype'];
+
+      // Get appropriate cvterms.
+      $phenotype_cvterms = array(
+        'time' => chado_get_cvterm(array(
+          'name' => 'time',
+          'is_obsolete' => 0,
+        ))->cvterm_id,
+        'desc' => chado_get_cvterm(array(
+          'name' => 'description',
+          'cv_id' => array(
+            'name' => 'schema',
+          ),
+          'is_obsolete' => 0,
+        ))->cvterm_id,
+        'unit' => chado_get_cvterm(array(
+          'name' => 'unit',
+          'cv_id' => array(
+            'name' => 'uo',
+          ),
+          'is_obsolete' => 0,
+        ))->cvterm_id,
+        'min' => chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'ncit',
+          ),
+          'name' => 'Minimum',
+          'is_obsolete' => 0,
+        ))->cvterm_id,
+        'max' => chado_get_cvterm(array(
+          'cv_id' => array(
+            'name' => 'ncit',
+          ),
+          'name' => 'Maximum',
+          'is_obsolete' => 0,
+        ))->cvterm_id,
+      );
+
+      $records = array(
+        'phenotype' => array(),
+        'phenotypeprop' => array(),
+        'stock_phenotype' => array(),
+      );
+      $phenotype_count = 0;
+
+      $options = array(
+        'records' => $records,
+        'cvterms' => $phenotype_cvterms,
+        'accession' => $form_state['accession'],
+        'stock_ids' => $form_state['ids']['stock_ids'],
+        'suffix' => 0,
+        'phenotype_count' => $phenotype_count,
+      );
+
       if (empty($phenotype['iso-check'])) {
         $phenotype_number = $phenotype['number'];
         $phenotypes_meta = array();
-        $phenotype_count = 0;
-        $local_cv = chado_get_cv(array('name' => 'local'));
-        $local_db = variable_get('tpps_local_db');
 
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
@@ -73,6 +123,7 @@ function tpps_file_parsing($accession) {
         ));
         $file_rank++;
 
+        // Populate $phenotypes_meta with manually entered metadata.
         for ($j = 1; $j <= $phenotype_number; $j++) {
           $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
           $phenotypes_meta[$name] = array();
@@ -104,291 +155,69 @@ function tpps_file_parsing($accession) {
             'value' => file_create_url(file_load($phenotype['metadata'])->uri),
             'rank' => $file_rank,
           ));
-          $content = tpps_parse_file($phenotype['metadata']);
+          $file_rank++;
+
+          // Get metadata column values.
           $groups = $phenotype['metadata-groups'];
           $column_vals = $phenotype['metadata-columns'];
+          $struct = array_search('5', $column_vals);
+          $min = array_search('6', $column_vals);
+          $max = array_search('7', $column_vals);
+          $columns = array(
+            'name' => $groups['Phenotype Id']['1'],
+            'attr' => $groups['Attribute']['2'],
+            'desc' => $groups['Description']['3'],
+            'unit' => $groups['Units']['4'],
+            'struct' => !empty($struct) ? $struct : NULL,
+            'min' => !empty($min) ? $min : NULL,
+            'max' => !empty($max) ? $max : NULL,
+          );
 
-          $phenotype_name = $groups['Phenotype Id']['1'];
-          $phenotype_attr = $groups['Attribute']['2'];
-          $phenotype_desc = $groups['Description']['3'];
-          $phenotype_unit = $groups['Units']['4'];
+          $meta_options = array(
+            'no_header' => $phenotype['metadata-no-header'],
+            'meta_columns' => $columns,
+            'meta' => &$phenotypes_meta,
+          );
 
-          foreach ($column_vals as $col => $val) {
-            if ($val == '5') {
-              $phenotype_struct = $col;
-            }
-            if ($val == '6') {
-              $phenotype_min = $col;
-            }
-            if ($val == '7') {
-              $phenotype_max = $col;
-            }
-          }
-
-          for ($j = 0; $j < count($content) - 1; $j++) {
-            $name = strtolower($content[$j][$phenotype_name]);
-            $phenotypes_meta[$name] = array();
-            $phenotypes_meta[$name]['attr'] = $content[$j][$phenotype_attr];
-            $phenotypes_meta[$name]['desc'] = $content[$j][$phenotype_desc];
-            $phenotypes_meta[$name]['unit'] = $content[$j][$phenotype_unit];
-            if (isset($phenotype_struct) and isset($content[$j][$phenotype_struct]) and $content[$j][$phenotype_struct] != '') {
-              $phenotypes_meta[$name]['struct'] = $content[$j][$phenotype_struct];
-            }
-            if (isset($phenotype_min) and isset($content[$j][$phenotype_min]) and $content[$j][$phenotype_min] != '') {
-              $phenotypes_meta[$name]['min'] = $content[$j][$phenotype_min];
-            }
-            if (isset($phenotype_max) and isset($content[$j][$phenotype_max]) and $content[$j][$phenotype_max] != '') {
-              $phenotypes_meta[$name]['max'] = $content[$j][$phenotype_max];
-            }
-          }
-          $file_rank++;
+          tpps_file_iterator($phenotype['metadata'], 'tpps_process_phenotype_meta', $meta_options);
         }
 
-        $content = tpps_parse_file($phenotype['file']);
+        tpps_refine_phenotype_meta($phenotypes_meta);
+
+        // Get metadata header values.
         $groups = $phenotype['file-groups'];
         $column_vals = $phenotype['file-columns'];
-
-        $tree_id_col = $groups['Tree Identifier']['1'];
-        if ($phenotype['format'] != 0) {
-          $phenotype_name = $groups['Phenotype Name/Identifier']['2'];
-          $phenotype_val = $groups['Phenotype Value(s)']['3'];
-          foreach ($column_vals as $col => $val) {
-            if ($val == '4') {
-              $time_col_name = $col;
-            }
-            if ($val == '5') {
-              $clone_col_name = $col;
-            }
-          }
-        }
-        else {
-          foreach ($column_vals as $col => $val) {
-            if ($val == '2') {
-              $time_col_name = $col;
-            }
-            if ($val == '3') {
-              $clone_col_name = $col;
-            }
-          }
-        }
-
-        $cvt_cache = array();
-        foreach ($phenotypes_meta as $name => $data) {
-          if (!empty($cvt_cache[$data['attr']])) {
-            $phenotypes_meta[$name]['attr_id'] = $cvt_cache[$data['attr']];
-          }
-          else {
-            $attr = chado_select_record('cvterm', array('cvterm_id'), array(
-              'name' => array(
-                'data' => $data['attr'],
-                'op' => 'LIKE',
-              ),
-            ), array(
-              'limit' => 1,
-            ));
-            if (!empty($attr)) {
-              $phenotypes_meta[$name]['attr_id'] = current($attr)->cvterm_id;
-            }
-            else {
-              $phenotypes_meta[$name]['attr_id'] = chado_insert_cvterm(array(
-                'id' => "{$local_db->name}:{$data['attr']}",
-                'name' => $data['attr'],
-                'definition' => '',
-                'cv_name' => $local_cv->name,
-              ))->cvterm_id;
-            }
-            $cvt_cache[$data['attr']] = $phenotypes_meta[$name]['attr_id'];
-          }
-
-          if (isset($data['struct'])) {
-            if (!empty($cvt_cache[$data['struct']])) {
-              $phenotypes_meta[$name]['struct_id'] = $cvt_cache[$data['struct']];
-            }
-            else {
-              $obs = chado_select_record('cvterm', array('cvterm_id'), array(
-                'name' => array(
-                  'data' => $data['struct'],
-                  'op' => 'LIKE',
-                ),
-              ), array(
-                'limit' => 1,
-              ));
-              if (!empty($obs)) {
-                $phenotypes_meta[$name]['struct_id'] = current($obs)->cvterm_id;
-              }
-              else {
-                $phenotypes_meta[$name]['struct_id'] = chado_insert_cvterm(array(
-                  'id' => "{$local_db->name}:{$data['struct']}",
-                  'name' => $data['struct'],
-                  'definition' => '',
-                  'cv_name' => $local_cv->name,
-                ))->cvterm_id;
-              }
-              $cvt_cache[$data['struct']] = $phenotypes_meta[$name]['struct_id'];
-            }
-          }
-          else {
-            $phenotypes_meta[$name]['struct_id'] = NULL;
-          }
-        }
-
-        $records = array(
-          'phenotype' => array(),
-          'phenotypeprop' => array(),
-          'stock_phenotype' => array(),
+        $time_index = ($phenotype['format'] == 0) ? '2' : '4';
+        $clone_index = ($phenotype['format'] == 0) ? '3' : '5';
+        $time = array_search($time_index, $column_vals);
+        $clone = array_search($clone_index, $column_vals);
+        $meta_headers = array(
+          'name' => $groups['Phenotype Name/Identifier']['2'] ?? NULL,
+          'value' => $groups['Phenotype Value(s)']['3'] ?? NULL,
+          'time' => !empty($time) ? $time : NULL,
+          'clone' => !empty($clone) ? $clone : NULL,
         );
-        $time_id = chado_get_cvterm(array('name' => 'time', 'is_obsolete' => 0))->cvterm_id;
-        $description_id = chado_get_cvterm(array(
-          'name' => 'description',
-          'cv_id' => array(
-            'name' => 'schema',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $unit_id = chado_get_cvterm(array(
-          'name' => 'unit',
-          'cv_id' => array(
-            'name' => 'uo',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $min_id = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'ncit',
-          ),
-          'name' => 'Minimum',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $max_id = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'ncit',
-          ),
-          'name' => 'Maximum',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
 
-        for ($j = 0; $j < count($content) - 1; $j++) {
-          if ($phenotype['format'] == 0) {
-            $values = array();
-            foreach ($groups['Phenotype Data']['0'] as $name_raw) {
-              $name = strtolower($name_raw);
-              foreach ($content[$j] as $column_name => $val) {
-                if (strtolower($name) == strtolower($column_name)) {
-                  $values[$name_raw] = $val;
-                  break;
-                }
-              }
-            }
+        // Get data header values.
+        if ($phenotype['format'] == 0) {
+          $file_headers = tpps_file_headers($phenotype['file'], $phenotype['file-no-header']);
+          $data_columns = array();
+          foreach ($groups['Phenotype Data']['0'] as $col) {
+            $data_columns[$col] = $file_headers[$col];
           }
-          else {
-            $name = strtolower($content[$j][$phenotype_name]);
-            $values = array($phenotype_name => $content[$j][$phenotype_val]);
-          }
-          $stock_unique = $content[$j][$tree_id_col];
-
-          foreach ($values as $name => $value) {
-            $name = $content['headers'][$name];
-            $attr_id = $phenotypes_meta[strtolower($name)]['attr_id'];
-
-            $phenotype_prefix = $stock_unique;
-            if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $phenotype['file-empty']) {
-              $phenotype_prefix .= "-" . $content[$j][$clone_col_name];
-            }
-            $phenotype_name = "{$form_state['accession']}-$phenotype_prefix-$name-$j";
-
-            $records['phenotype'][$phenotype_name] = array(
-              'uniquename' => $phenotype_name,
-              'name' => $name,
-              'attr_id' => $attr_id,
-              'observable_id' => $phenotypes_meta[strtolower($name)]['struct_id'],
-              'value' => $value,
-            );
-
-            $records['stock_phenotype'][$phenotype_name] = array(
-              'stock_id' => $form_state['ids']['stock_ids'][$phenotype_prefix],
-              '#fk' => array(
-                'phenotype' => $phenotype_name,
-              ),
-            );
-
-            if (isset($phenotypes_meta[strtolower($name)]['time'])) {
-              $records['phenotypeprop']["$phenotype_name-time"] = array(
-                'type_id' => $time_id,
-                'value' => $phenotypes_meta[strtolower($name)]['time'],
-                '#fk' => array(
-                  'phenotype' => $phenotype_name,
-                ),
-              );
-            }
-            elseif (isset($time_col_name)) {
-              $records['phenotypeprop']["$phenotype_name-time"] = array(
-                'type_id' => $time_id,
-                'value' => $content[$j][$time_col_name],
-                '#fk' => array(
-                  'phenotype' => $phenotype_name,
-                ),
-              );
-            }
-
-            $records['phenotypeprop']["$phenotype_name-desc"] = array(
-              'type_id' => $description_id,
-              'value' => $phenotypes_meta[strtolower($name)]['desc'],
-              '#fk' => array(
-                'phenotype' => $phenotype_name,
-              ),
-            );
-
-            $records['phenotypeprop']["$phenotype_name-unit"] = array(
-              'type_id' => $unit_id,
-              'value' => $phenotypes_meta[strtolower($name)]['unit'],
-              '#fk' => array(
-                'phenotype' => $phenotype_name,
-              ),
-            );
-
-            if (isset($phenotypes_meta[strtolower($name)]['min'])) {
-              $records['phenotypeprop']["$phenotype_name-min"] = array(
-                'type_id' => $min_id,
-                'value' => $phenotypes_meta[strtolower($name)]['min'],
-                '#fk' => array(
-                  'phenotype' => $phenotype_name,
-                ),
-              );
-            }
-
-            if (isset($phenotypes_meta[strtolower($name)]['max'])) {
-              $records['phenotypeprop']["$phenotype_name-max"] = array(
-                'type_id' => $max_id,
-                'value' => $phenotypes_meta[strtolower($name)]['max'],
-                '#fk' => array(
-                  'phenotype' => $phenotype_name,
-                ),
-              );
-            }
-
-            if ($phenotype_count > $record_group) {
-              tpps_chado_insert_multi($records);
-              $records = array(
-                'phenotype' => array(),
-                'phenotypeprop' => array(),
-                'stock_phenotype' => array(),
-              );
-              $phenotype_count = 0;
-            }
-
-            $phenotype_count++;
-          }
+          unset($file_headers);
         }
 
-        tpps_chado_insert_multi($records);
-        unset($records);
+        $options['no_header'] = $phenotype['file-no-header'];
+        $options['tree_id'] = $groups['Tree Identifier']['1'];
+        $options['meta_headers'] = $meta_headers;
+        $options['data_columns'] = $data_columns ?? NULL;
+        $options['meta'] = $phenotypes_meta;
+        $options['file_empty'] = $phenotype['file-empty'];
+
+        tpps_file_iterator($phenotype['file'], 'tpps_process_phenotype_data', $options);
       }
       else {
-        $phenotype_count = 0;
-        $local_cv = chado_get_cv(array('name' => 'local'));
-        $local_db = variable_get('tpps_local_db');
-        $file = file_load($phenotype['iso']);
-
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -398,106 +227,34 @@ function tpps_file_parsing($accession) {
             'name' => 'url',
             'is_obsolete' => 0,
           ),
-          'value' => file_create_url($file->uri),
+          'value' => file_create_url(file_load($phenotype['iso'])->uri),
           'rank' => $file_rank,
         ));
         $file_rank++;
-        $content = tpps_parse_file($phenotype['iso']);
 
-        $records = array(
-          'phenotype' => array(),
-          'phenotypeprop' => array(),
-          'stock_phenotype' => array(),
+        $options['iso'] = TRUE;
+        $options['records'] = $records;
+        $options['cvterms'] = $phenotype_cvterms;
+        $options['file_headers'] = tpps_file_headers($phenotype['iso']);
+        $options['meta'] = array(
+          'desc' => "Mass Spectrometry",
+          'unit' => "intensity (arbitrary units)",
+          'attr_id' => chado_get_cvterm(array(
+            'name' => 'intensity',
+            'is_obsolete' => 0,
+          ))->cvterm_id,
         );
 
-        $desc = "Mass Spectrometry";
-        $description_id = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'schema',
-          ),
-          'name' => 'description',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-
-        $unit = "intensity (arbitrary units)";
-        $unit_id = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'uo',
-          ),
-          'name' => 'unit',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-
-        $attr_id = chado_get_cvterm(array(
-          'name' => 'intensity',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-
-        for ($j = 0; $j < count($content) - 1; $j++) {
-          $stock_id = NULL;
-          foreach ($content[$j] as $key => $val) {
-            if (!isset($stock_id)) {
-              $stock_id = $form_state['ids']['stock_ids'][trim($val)];
-              $stock_name = $val;
-            }
-            else {
-              $name = $content['headers'][$key];
-              $phenotype_name = "$stock_name-$name-$j";
-
-              $records['phenotype'][$phenotype_name] = array(
-                'uniquename' => $phenotype_name,
-                'name' => $name,
-                'attr_id' => $attr_id,
-                'value' => $val,
-              );
-
-              $records['stock_phenotype'][$phenotype_name] = array(
-                'stock_id' => $stock_id,
-                '#fk' => array(
-                  'phenotype' => $phenotype_name,
-                ),
-              );
-
-              $records['phenotypeprop']["$phenotype_name-desc"] = array(
-                'type_id' => $description_id,
-                'value' => $desc,
-                '#fk' => array(
-                  'phenotype' => $phenotype_name,
-                ),
-              );
-
-              $records['phenotypeprop']["$phenotype_name-unit"] = array(
-                'type_id' => $unit_id,
-                'value' => $unit,
-                '#fk' => array(
-                  'phenotype' => $phenotype_name,
-                ),
-              );
-
-              if ($phenotype_count > $record_group) {
-                tpps_chado_insert_multi($records);
-                $records = array(
-                  'phenotype' => array(),
-                  'phenotypeprop' => array(),
-                  'stock_phenotype' => array(),
-                );
-                $phenotype_count = 0;
-              }
-
-              $phenotype_count++;
-              $phenotype_id++;
-            }
-          }
-        }
-
-        tpps_chado_insert_multi($records);
-        unset($records);
+        tpps_file_iterator($phenotype['iso'], 'tpps_process_phenotype_data', $options);
       }
+      tpps_chado_insert_multi($options['records']);
+      unset($options['records']);
     }
 
     if (isset($fourthpage["organism-$i"]['genotype'])) {
       $genotype = $fourthpage["organism-$i"]['genotype'];
       $genotype_count = 0;
+      $genotype_total = 0;
       $fks = array();
       $seq_var_cvterm = chado_get_cvterm(array(
         'cv_id' => array(
@@ -521,6 +278,26 @@ function tpps_file_parsing($accession) {
             ),
           ),
         ),
+      );
+
+      $records = array(
+        'feature' => array(),
+        'genotype' => array(),
+        'genotype_call' => array(),
+        'stock_genotype' => array(),
+      );
+
+      $options = array(
+        'records' => $records,
+        'stock_ids' => $form_state['ids']['stock_ids'],
+        'species_codes' => $species_codes,
+        'stock_species' => $form_state['ids']['stock_species'],
+        'genotype_count' => $genotype_count,
+        'genotype_total' => &$genotype_total,
+        'project_id' => $project_id,
+        'seq_var_cvterm' => $seq_var_cvterm,
+        'fks' => &$fks,
+        'overrides' => $overrides,
       );
 
       if ($genotype['ref-genome'] == 'bio') {
@@ -637,16 +414,11 @@ function tpps_file_parsing($accession) {
           'rank' => $file_rank,
         ));
         $file_rank++;
-        $content = tpps_parse_file($genotype['files']['snps-assay']);
-        $marker = 'SNP';
 
-        $records = array(
-          'feature' => array(),
-          'genotype' => array(),
-          'genotype_call' => array(),
-          'stock_genotype' => array(),
-        );
-        $snp_cvterm = chado_get_cvterm(array(
+        $options['type'] = 'snp';
+        $options['headers'] = tpps_file_headers($genotype['files']['snps-assay']);
+        $options['marker'] = 'SNP';
+        $options['type_cvterm'] = chado_get_cvterm(array(
           'cv_id' => array(
             'name' => 'sequence',
           ),
@@ -654,71 +426,11 @@ function tpps_file_parsing($accession) {
           'is_obsolete' => 0,
         ))->cvterm_id;
 
-        for ($j = 0; $j < count($content) - 1; $j++) {
-          $stock_id = NULL;
-          foreach ($content[$j] as $key => $val) {
-            if (!isset($stock_id)) {
-              $stock_id = $form_state['ids']['stock_ids'][trim($val)];
-              $species_code = $species_codes[$form_state['ids']['stock_species'][trim($val)]];
-              $current_id = $form_state['ids']['stock_species'][trim($val)];
-            }
-            else {
-              $genotype_count++;
-              $variant_name = $content['headers'][$key];
-              $marker_name = $variant_name . $marker;
-              $genotype_name = "$marker-$variant_name-$species_code-$val";
+        tpps_file_iterator($genotype['files']['snps-assay'], 'tpps_process_genotype_spreadsheet', $options);
 
-              $records['feature'][$marker_name] = array(
-                'organism_id' => $current_id,
-                'uniquename' => $marker_name,
-                'type_id' => $seq_var_cvterm,
-              );
-
-              $records['feature'][$variant_name] = array(
-                'organism_id' => $current_id,
-                'uniquename' => $variant_name,
-                'type_id' => $seq_var_cvterm,
-              );
-
-              $records['genotype'][$genotype_name] = array(
-                'name' => $genotype_name,
-                'uniquename' => $genotype_name,
-                'description' => $val,
-                'type_id' => $snp_cvterm,
-              );
-
-              $records['genotype_call']["$stock_id-$genotype_name"] = array(
-                'project_id' => $project_id,
-                'stock_id' => $stock_id,
-                '#fk' => array(
-                  'genotype' => $genotype_name,
-                  'variant' => $variant_name,
-                  'marker' => $marker_name,
-                ),
-              );
-
-              $records['stock_genotype']["$stock_id-$genotype_name"] = array(
-                'stock_id' => $stock_id,
-                '#fk' => array(
-                  'genotype' => $genotype_name,
-                ),
-              );
-
-              if ($genotype_count >= $record_group) {
-                $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
-                $records = array(
-                  'feature' => array(),
-                  'genotype' => array(),
-                  'genotype_call' => array(),
-                  'stock_genotype' => array(),
-                );
-                $genotype_count = 0;
-              }
-            }
-          }
-        }
-        $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
-        unset($records);
+        $fks += tpps_chado_insert_multi($options['records'], array('fks' => 'genotype', 'fk_overrides' => $overrides));
+        unset($options['records']);
+        $genotype_total += $genotype_count;
         $genotype_count = 0;
       }
 
@@ -752,12 +464,11 @@ function tpps_file_parsing($accession) {
           'rank' => $file_rank,
         ));
         $file_rank++;
-        $content = tpps_parse_file($genotype['files']['ssrs']);
-        while (($k = array_search(NULL, $content['headers']))) {
-          unset($content['headers'][$k]);
-        }
 
-        $microsat_cvterm = chado_get_cvterm(array(
+        $options['type'] = 'ssrs';
+        $options['headers'] = tpps_ssrs_headers($genotype['files']['ssrs'], $genotype['files']['ploidy']);
+        $options['marker'] = $genotype['SSRs/cpSSRs'];
+        $options['type_cvterm'] = chado_get_cvterm(array(
           'cv_id' => array(
             'name' => 'sequence',
           ),
@@ -765,152 +476,10 @@ function tpps_file_parsing($accession) {
           'is_obsolete' => 0,
         ))->cvterm_id;
 
-        $records = array(
-          'feature' => array(),
-          'genotype' => array(),
-          'genotype_call' => array(),
-          'stock_genotype' => array(),
-        );
-        for ($j = 0; $j < count($content) - 1; $j++) {
-          $stock_id = NULL;
-          $row = $content[$j];
-          $marker_num = 0;
-          reset($row);
-          foreach ($content[$j] as $key => $val) {
-            next($row);
-            $next_key = key($row);
-            if (!isset($stock_id)) {
-              $stock_id = $form_state['ids']['stock_ids'][trim($val)];
-              $species_code = $species_codes[$form_state['ids']['stock_species'][trim($val)]];
-              $current_id = $form_state['ids']['stock_species'][trim($val)];
-            }
-            else {
-              $genotype_count++;
-              $marker = $genotype['SSRs/cpSSRs'];
+        tpps_file_iterator($genotype['files']['ssrs'], 'tpps_process_genotype_spreadsheet', $options);
 
-              if ($val === 0 or $val === "0") {
-                $val = "NA";
-              }
-
-              switch ($genotype['files']['ploidy']) {
-                case 'Haploid':
-                  $variant_name = $content['headers'][$key];
-                  break;
-
-                case 'Diploid':
-                  if (count($content['headers']) == (count($content[$j]) + 1) / 2) {
-                    // Every other marker column name is left blank.
-                    if (array_key_exists($key, $content['headers'])) {
-                      $last = $content['headers'][$key];
-                      $variant_name = $content['headers'][$key] . "_A";
-                    }
-                    else {
-                      $variant_name = $last . "_B";
-                    }
-                  }
-                  elseif (count($content['headers']) == count($content[$j])) {
-                    // All of the marker column names are filled out.
-                    $variant_name = $content['headers'][$key];
-                    if (count(array_unique($content['headers'])) != count($content['headers'])) {
-                      // The marker column names are duplicates, need to append
-                      // _A and _B.
-                      if ($content['headers'][$key] == $content['headers'][$next_key]) {
-                        $variant_name .= "_A";
-                      }
-                      else {
-                        $variant_name .= "_B";
-                      }
-                    }
-                  }
-                  break;
-
-                case 'Polyploid':
-                  if (count($content['headers']) == count($content[$j])) {
-                    // All of the marker column names are filled out.
-                    $variant_name = $content['headers'][$key];
-                    $num_headers = count($content['headers']) - 1;
-                    $num_unique_headers = count(array_unique($content['headers'])) - 1;
-                    if ($num_unique_headers != $num_headers) {
-                      // The marker column names are duplicates, need to append
-                      // _1, _2, up to X ploidy.
-                      // The total number of headers divided by the number of
-                      // unique headers should be equal to the ploidy.
-                      $ploidy_suffix = ($marker_num % ($num_headers / $num_unique_headers)) + 1;
-                      $variant_name .= "_$ploidy_suffix";
-                    }
-                  }
-                  else {
-                    $num_headers = count($content['headers']) - 1;
-                    $num_items = count($content[$j]) - 1;
-                    $ploidy_suffix = ($marker_num % ($num_items / $num_headers)) + 1;
-                    if (array_key_exists($key, $content['headers'])) {
-                      $last = $variant_name = $content['headers'][$key];
-                      $variant_name .= "_$ploidy_suffix";
-                    }
-                    else {
-                      $variant_name = "{$last}_$ploidy_suffix";
-                    }
-                  }
-                  $marker_num++;
-                  break;
-
-                default:
-                  break;
-              }
-              $marker_name = $variant_name . $marker;
-              $genotype_name = "$marker-$variant_name-$species_code-$val";
-
-              $records['feature'][$marker_name] = array(
-                'organism_id' => $current_id,
-                'uniquename' => $marker_name,
-                'type_id' => $seq_var_cvterm,
-              );
-
-              $records['feature'][$variant_name] = array(
-                'organism_id' => $current_id,
-                'uniquename' => $variant_name,
-                'type_id' => $seq_var_cvterm,
-              );
-
-              $records['genotype'][$genotype_name] = array(
-                'name' => $genotype_name,
-                'uniquename' => $genotype_name,
-                'description' => $val,
-                'type_id' => $microsat_cvterm,
-              );
-
-              $records['genotype_call']["$stock_id-$genotype_name"] = array(
-                'project_id' => $project_id,
-                'stock_id' => $stock_id,
-                '#fk' => array(
-                  'genotype' => $genotype_name,
-                  'variant' => $variant_name,
-                  'marker' => $marker_name,
-                ),
-              );
-
-              $records['stock_genotype']["$stock_id-$genotype_name"] = array(
-                'stock_id' => $stock_id,
-                '#fk' => array(
-                  'genotype' => $genotype_name,
-                ),
-              );
-
-              if ($genotype_count >= $record_group) {
-                $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
-                $records = array(
-                  'feature' => array(),
-                  'genotype' => array(),
-                  'genotype_call' => array(),
-                  'stock_genotype' => array(),
-                );
-                $genotype_count = 0;
-              }
-            }
-          }
-        }
-        $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
-        unset($records);
+        $fks += tpps_chado_insert_multi($options['records'], array('fks' => 'genotype', 'fk_overrides' => $overrides));
+        unset($options['records']);
         $genotype_count = 0;
       }
 
@@ -928,89 +497,31 @@ function tpps_file_parsing($accession) {
           'rank' => $file_rank,
         ));
         $file_rank++;
-        $content = tpps_parse_file($genotype['files']['other']);
-        $groups = $genotype['files']['other-groups'];
-        $marker = $genotype['other-marker'];
 
-        $records = array(
-          'feature' => array(),
-          'genotype' => array(),
-          'genotype_call' => array(),
-          'stock_genotype' => array(),
-        );
-        $gen_mark_cvterm = chado_get_cvterm(array(
+        $groups = $genotype['files']['other-groups'];
+
+        $options['type'] = 'other';
+        $options['headers'] = tpps_other_marker_headers($genotype['files']['other'], $groups['Genotype Data'][0]);
+        $options['marker'] = $genotype['other-marker'];
+        $options['type_cvterm'] = chado_get_cvterm(array(
           'cv_id' => array(
             'name' => 'sequence',
           ),
           'name' => 'genetic_marker',
           'is_obsolete' => 0,
         ))->cvterm_id;
+        $options['tree_id'] = $groups['Tree Id'][1];
 
-        for ($j = 0; $j < count($content) - 1; $j++) {
-          $tree_id = $content[$j][$groups['Tree Id'][1]];
-          $stock_id = $form_state['ids']['stock_ids'][trim($tree_id)];
-          $species_code = $species_codes[$form_state['ids']['stock_species'][trim($tree_id)]];
-          $current_id = $form_state['ids']['stock_species'][trim($tree_id)];
-          foreach ($groups['Genotype Data'][0] as $geno_data_col) {
-            $value = $content[$j][$geno_data_col];
-            $variant_name = $content['headers'][$geno_data_col];
-            $marker_name = $variant_name . $marker;
-            $genotype_name = "$marker-$variant_name-$species_code-$value";
+        tpps_file_iterator($genotype['files']['other'], 'tpps_process_genotype_spreadsheet', $options);
 
-            $records['feature'][$marker_name] = array(
-              'organism_id' => $current_id,
-              'uniquename' => $marker_name,
-              'type_id' => $seq_var_cvterm,
-            );
-
-            $records['feature'][$variant_name] = array(
-              'organism_id' => $current_id,
-              'uniquename' => $variant_name,
-              'type_id' => $seq_var_cvterm,
-            );
-
-            $records['genotype'][$genotype_name] = array(
-              'name' => $genotype_name,
-              'uniquename' => $genotype_name,
-              'description' => $value,
-              'type_id' => $gen_mark_cvterm,
-            );
-
-            $records['genotype_call']["$stock_id-$genotype_name"] = array(
-              'project_id' => $project_id,
-              'stock_id' => $stock_id,
-              '#fk' => array(
-                'genotype' => $genotype_name,
-                'variant' => $variant_name,
-                'marker' => $marker_name,
-              ),
-            );
-
-            $records['stock_genotype']["$stock_id-$genotype_name"] = array(
-              'stock_id' => $stock_id,
-              '#fk' => array(
-                'genotype' => $genotype_name,
-              ),
-            );
-
-            if ($genotype_count >= $record_group) {
-              $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
-              $records = array(
-                'feature' => array(),
-                'genotype' => array(),
-                'genotype_call' => array(),
-                'stock_genotype' => array(),
-              );
-              $genotype_count = 0;
-            }
-          }
-        }
-        $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
-        unset($records);
+        $fks += tpps_chado_insert_multi($options['records'], array('fks' => 'genotype', 'fk_overrides' => $overrides));
+        unset($options['records']);
         $genotype_count = 0;
       }
 
       if (!empty($genotype['files']['file-type']['VCF'])) {
+        // TODO: we probably want to use tpps_file_iterator to parse vcf files.
+
         $genotype_vcf_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
           'type_id' => array(
@@ -1027,13 +538,8 @@ function tpps_file_parsing($accession) {
 
         $marker = 'SNP';
 
-        $records = array(
-          'feature' => array(),
-          'genotype' => array(),
-          'genotype_call' => array(),
-          'genotypeprop' => array(),
-          'stock_genotype' => array(),
-        );
+        $records['genotypeprop'] = array();
+
         $snp_cvterm = chado_get_cvterm(array(
           'cv_id' => array(
             'name' => 'sequence',
@@ -1272,10 +778,9 @@ function tpps_file_parsing($accession) {
       if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
         $species_index = "species-1";
       }
-      $accession_file = file_load($form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file']);
-      $id_col = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id'][1];
+      $tree_accession = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index];
+      $id_col = $tree_accession['file-groups']['Tree Id'][1];
 
-      $content = tpps_parse_file($accession_file->fid);
       $env_cvterm = chado_get_cvterm(array(
         'cv_id' => array(
           'name' => 'biomaterial_property',
@@ -1284,7 +789,7 @@ function tpps_file_parsing($accession) {
         'is_obsolete' => 0,
       ))->cvterm_id;
 
-      if ($env_layers_check) {
+      if ($env_layers_check and db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
         $layers_params = array();
         $records = array(
           'phenotype' => array(),
@@ -1320,105 +825,22 @@ function tpps_file_parsing($accession) {
           }
         }
 
-        for ($j = 0; $j < count($content) - 1; $j++) {
-          $tree_id = $content[$j][$id_col];
-          $stock_id = $form_state['ids']['stock_ids'][$tree_id];
+        $options = array(
+          'no_header' => !empty($tree_accession['file-no-header']),
+          'records' => $records,
+          'tree_id' => $tree_accession['file-groups']['Tree Id'][1],
+          'accession' => $form_state['accession'],
+          'stock_ids' => $form_state['ids']['stock_ids'],
+          'layers_params' => $layers_params,
+          'env_count' => &$env_count,
+          'env_cvterm' => $env_cvterm,
+          'suffix' => 0,
+        );
 
-          $gps_query = chado_select_record('stockprop', array('value'), array(
-            'stock_id' => $stock_id,
-            'type_id' => array(
-              'name' => 'gps_latitude',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $lat = current($gps_query)->value;
+        tpps_file_iterator($tree_accession['file'], 'tpps_process_environment_layers', $options);
 
-          $gps_query = chado_select_record('stockprop', array('value'), array(
-            'stock_id' => $stock_id,
-            'type_id' => array(
-              'name' => 'gps_longitude',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $long = current($gps_query)->value;
-
-          if (db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
-            foreach ($layers_params as $layer_id => $params) {
-              $layer_query = db_select('cartogratree_layers', 'l')
-                ->fields('l', array('title'))
-                ->condition('layer_id', $layer_id)
-                ->execute();
-
-              $layer_name = $layer_query->fetchObject()->title;
-
-              foreach ($params as $param_id => $param) {
-                $env_count++;
-                $param_query = db_select('cartogratree_fields', 'f')
-                  ->fields('f', array('field_name'))
-                  ->condition('field_id', $param_id)
-                  ->execute();
-
-                $param_name = $param_query->fetchObject()->field_name;
-                $phenotype_name = "{$form_state['accession']}-$tree_id-$layer_name-$param_name-$j";
-
-                $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
-                $type = variable_get("tpps_param_{$param_id}_type", 'attr_id');
-
-                if ($type == 'attr_id') {
-                  $records['phenotype'][$phenotype_name] = array(
-                    'uniquename' => $phenotype_name,
-                    'name' => $param_name,
-                    'attr_id' => $env_cvterm,
-                    'value' => $value,
-                  );
-
-                  $records['stock_phenotype'][$phenotype_name] = array(
-                    'stock_id' => $stock_id,
-                    '#fk' => array(
-                      'phenotype' => $phenotype_name,
-                    ),
-                  );
-                }
-                else {
-                  $records['phenotype'][$phenotype_name] = array(
-                    'uniquename' => $phenotype_name,
-                    'name' => "$param_name",
-                    'value' => "$value",
-                  );
-
-                  $records['phenotype_cvterm'][$phenotype_name] = array(
-                    'cvterm_id' => $env_cvterm,
-                    '#fk' => array(
-                      'phenotype' => $phenotype_name,
-                    ),
-                  );
-
-                  $records['stock_phenotype'][$phenotype_name] = array(
-                    'stock_id' => $stock_id,
-                    '#fk' => array(
-                      'phenotype' => $phenotype_name,
-                    ),
-                  );
-                }
-
-                if ($env_count >= $record_group) {
-                  tpps_chado_insert_multi($records);
-                  $records = array(
-                    'phenotype' => array(),
-                    'phenotype_cvterm' => array(),
-                    'stock_phenotype' => array(),
-                  );
-                  $env_count = 0;
-                }
-              }
-            }
-          }
-        }
-
-        tpps_chado_insert_multi($records);
-        unset($records);
+        tpps_chado_insert_multi($options['records']);
+        unset($options['records']);
         $env_count = 0;
       }
 
@@ -1440,77 +862,706 @@ function tpps_file_parsing($accession) {
         'phenotypeprop' => array(),
       );
 
-      $desc_id = chado_get_cvterm(array(
-        'name' => 'description',
-        'cv_id' => array(
-          'name' => 'schema',
-        ),
-        'is_obsolete' => 0,
-      ))->cvterm_id;
-      $unit_id = chado_get_cvterm(array(
-        'name' => 'unit',
-        'cv_id' => array(
-          'name' => 'uo',
-        ),
-        'is_obsolete' => 0,
-      ))->cvterm_id;
+      $options = array(
+        'no_header' => !empty($tree_accession['file-no-header']),
+        'accession' => $form_state['accession'],
+        'records' => $records,
+        'env_meta' => $env_meta,
+        'env_count' => $env_count,
+        'suffix' => 0,
+        'stock_ids' => $form_state['ids']['stock_ids'],
+        'tree_id' => $tree_accession['file-groups']['Tree Id'][1],
+        'env_cvterm' => $env_cvterm,
+        'desc_id' => chado_get_cvterm(array(
+          'name' => 'description',
+          'cv_id' => array(
+            'name' => 'schema',
+          ),
+          'is_obsolete' => 0,
+        ))->cvterm_id,
+        'unit_id' => chado_get_cvterm(array(
+          'name' => 'unit',
+          'cv_id' => array(
+            'name' => 'uo',
+          ),
+          'is_obsolete' => 0,
+        ))->cvterm_id,
+      );
 
-      for ($j = 0; $j < count($content) - 1; $j++) {
-        $tree_id = $content[$j][$id_col];
-        foreach ($env_meta as $current_env) {
-          $env_count++;
-          $name = $current_env['name'];
-          $desc = $current_env['desc'];
-          $unit = $current_env['unit'];
-          $val = $current_env['val'];
-          $phenotype_name = "{$form_state['accession']}-$tree_id-$name-$j";
+      tpps_file_iterator($tree_accession['file'], 'tpps_process_environment_manual', $options);
 
-          $records['phenotype'][$phenotype_name] = array(
-            'uniquename' => $phenotype_name,
-            'name' => $name,
-            'attr_id' => $env_cvterm,
-            'value' => $val,
-          );
-
-          $records['stock_phenotype'][$phenotype_name] = array(
-            'stock_id' => $form_state['ids']['stock_ids'][$tree_id],
-            '#fk' => array(
-              'phenotype' => $phenotype_name,
-            ),
-          );
-
-          $records['phenotypeprop']["$phenotype_name-desc"] = array(
-            'type_id' => $desc_id,
-            'value' => $desc,
-            '#fk' => array(
-              'phenotype' => $phenotype_name,
-            ),
-          );
-
-          $records['phenotypeprop']["$phenotype_name-unit"] = array(
-            'type_id' => $unit_id,
-            'value' => $unit,
-            '#fk' => array(
-              'phenotype' => $phenotype_name,
-            ),
-          );
-
-          if ($env_count >= $record_group) {
-            tpps_chado_insert_multi($records);
-            $records = array(
-              'phenotype' => array(),
-              'stock_phenotype' => array(),
-              'phenotypeprop' => array(),
-            );
-            $env_count = 0;
-          }
-        }
-      }
-
-      tpps_chado_insert_multi($records);
-      unset($records);
+      tpps_chado_insert_multi($options['records']);
+      unset($options['records']);
     }
   }
 
   tpps_update_submission($form_state);
+}
+
+/**
+ * This function will process a row from a phenotype metadata file.
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_phenotype_meta($row, array &$options = array()) {
+  $columns = $options['meta_columns'];
+  $meta = &$options['meta'];
+
+  $name = strtolower($row[$columns['name']]);
+  $meta[$name] = array();
+  $meta[$name]['attr'] = $row[$columns['attr']];
+  $meta[$name]['desc'] = $row[$columns['desc']];
+  $meta[$name]['unit'] = $row[$columns['unit']];
+  if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
+    $meta[$name]['struct'] = $row[$columns['struct']];
+  }
+  if (!empty($columns['min']) and isset($row[$columns['min']]) and $row[$columns['min']] != '') {
+    $meta[$name]['min'] = $row[$columns['min']];
+  }
+  if (!empty($columns['max']) and isset($row[$columns['max']]) and $row[$columns['max']] != '') {
+    $meta[$name]['max'] = $row[$columns['max']];
+  }
+}
+
+/**
+ * This function will further refine existing phenotype metadata.
+ *
+ * The function mostly just adds cvterm ids where applicable.
+ *
+ * @param array $meta
+ *   The existing metadata array.
+ */
+function tpps_refine_phenotype_meta(array &$meta) {
+  $cvt_cache = array();
+  $local_cv = chado_get_cv(array('name' => 'local'));
+  $local_db = variable_get('tpps_local_db');
+  foreach ($meta as $name => $data) {
+    if (!empty($cvt_cache[$data['attr']])) {
+      $meta[$name]['attr_id'] = $cvt_cache[$data['attr']];
+    }
+    else {
+      $attr = chado_select_record('cvterm', array('cvterm_id'), array(
+        'name' => array(
+          'data' => $data['attr'],
+          'op' => 'LIKE',
+        ),
+      ), array(
+        'limit' => 1,
+      ));
+      $meta[$name]['attr_id'] = current($attr)->cvterm_id ?? NULL;
+
+      if (empty($meta[$name]['attr_id'])) {
+        $meta[$name]['attr_id'] = chado_insert_cvterm(array(
+          'id' => "{$local_db->name}:{$data['attr']}",
+          'name' => $data['attr'],
+          'definition' => '',
+          'cv_name' => $local_cv->name,
+        ))->cvterm_id;
+      }
+      $cvt_cache[$data['attr']] = $meta[$name]['attr_id'];
+    }
+
+    if (!empty($data['struct'])) {
+      if (!empty($cvt_cache[$data['struct']])) {
+        $meta[$name]['struct_id'] = $cvt_cache[$data['struct']];
+      }
+      else {
+        $obs = chado_select_record('cvterm', array('cvterm_id'), array(
+          'name' => array(
+            'data' => $data['struct'],
+            'op' => 'LIKE',
+          ),
+        ), array(
+          'limit' => 1,
+        ));
+        $meta[$name]['struct_id'] = current($obs)->cvterm_id ?? NULL;
+
+        if (empty($meta[$name]['struct_id'])) {
+          $meta[$name]['struct_id'] = chado_insert_cvterm(array(
+            'id' => "{$local_db->name}:{$data['struct']}",
+            'name' => $data['struct'],
+            'definition' => '',
+            'cv_name' => $local_cv->name,
+          ))->cvterm_id;
+        }
+        $cvt_cache[$data['struct']] = $meta[$name]['struct_id'];
+      }
+    }
+    else {
+      $meta[$name]['struct_id'] = NULL;
+    }
+  }
+}
+
+/**
+ * This function will process a row from a phenotype data file.
+ *
+ * This function is used for standard phenotypes of both phenotype formats, as
+ * well as phenotype isotope files. The functionality is slightly different
+ * based on the type of phenotype file being processed (set in the options
+ * array). This function is meant to be used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_phenotype_data($row, array &$options = array()) {
+  $iso = $options['iso'] ?? FALSE;
+  $records = &$options['records'];
+  $meta_headers = $options['meta_headers'] ?? NULL;
+  $file_headers = $options['file_headers'] ?? NULL;
+  $cvterms = $options['cvterms'];
+  $meta = $options['meta'];
+  $empty = $options['file-empty'] ?? NULL;
+  $accession = $options['accession'];
+  $suffix = &$options['suffix'];
+  $stock_ids = $options['stock_ids'];
+  $phenotype_count = &$options['phenotype_count'];
+  $record_group = variable_get('tpps_record_group', 10000);
+
+  if (!$iso) {
+    if (isset($meta_headers['name']) and (isset($meta_headers['value']))) {
+      $id = $row[$meta_headers['value']];
+      $values = array($id => $row[$meta_headers['name']]);
+    }
+
+    if (!empty($options['data_columns'])) {
+      $values = $options['data_columns'];
+    }
+
+    $tree_id = $row[$options['tree_id']];
+    $clone_col = $meta_headers['clone'] ?? NULL;
+    if (isset($clone_col) and !empty($row[$clone_col]) and $row[$clone_col] !== $empty) {
+      $tree_id .= "-" . $row[$clone_col];
+    }
+  }
+  else {
+    foreach ($row as $id => $value) {
+      if (empty($tree_id)) {
+        $tree_id = $value;
+        continue;
+      }
+      $values[$id] = $file_headers[$id];
+    }
+  }
+
+  foreach ($values as $id => $name) {
+    $attr_id = $iso ? $meta['attr_id'] : $meta[strtolower($name)]['attr_id'];
+    $value = $row[$id];
+    $phenotype_name = "$accession-$tree_id-$name-$suffix";
+
+    $records['phenotype'][$phenotype_name] = array(
+      'uniquename' => $phenotype_name,
+      'name' => $name,
+      'attr_id' => $attr_id,
+      'observable_id' => $meta[strtolower($name)]['struct_id'] ?? NULL,
+      'value' => $value,
+    );
+
+    $records['stock_phenotype'][$phenotype_name] = array(
+      'stock_id' => $stock_ids[$tree_id],
+      '#fk' => array(
+        'phenotype' => $phenotype_name,
+      ),
+    );
+
+    if (isset($meta[strtolower($name)]['time'])) {
+      $records['phenotypeprop']["$phenotype_name-time"] = array(
+        'type_id' => $cvterms['time'],
+        'value' => $phenotypes_meta[strtolower($name)]['time'],
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+    }
+    elseif (isset($meta_headers['time'])) {
+      $records['phenotypeprop']["$phenotype_name-time"] = array(
+        'type_id' => $cvterms['time'],
+        'value' => $row[$meta_headers['time']],
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+    }
+
+    $records['phenotypeprop']["$phenotype_name-desc"] = array(
+      'type_id' => $cvterms['desc'],
+      'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
+      '#fk' => array(
+        'phenotype' => $phenotype_name,
+      ),
+    );
+
+    $records['phenotypeprop']["$phenotype_name-unit"] = array(
+      'type_id' => $cvterms['unit'],
+      'value' => $iso ? $meta['unit'] : $meta[strtolower($name)]['unit'],
+      '#fk' => array(
+        'phenotype' => $phenotype_name,
+      ),
+    );
+
+    if (isset($meta[strtolower($name)]['min'])) {
+      $records['phenotypeprop']["$phenotype_name-min"] = array(
+        'type_id' => $cvterms['min'],
+        'value' => $meta[strtolower($name)]['min'],
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+    }
+
+    if (isset($meta[strtolower($name)]['max'])) {
+      $records['phenotypeprop']["$phenotype_name-max"] = array(
+        'type_id' => $cvterms['max'],
+        'value' => $meta[strtolower($name)]['max'],
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+    }
+
+    if ($phenotype_count > $record_group) {
+      tpps_chado_insert_multi($records);
+      $records = array(
+        'phenotype' => array(),
+        'phenotypeprop' => array(),
+        'stock_phenotype' => array(),
+      );
+      $phenotype_count = 0;
+    }
+
+    $phenotype_count++;
+  }
+  $suffix++;
+}
+
+/**
+ * This function processes a single row of a genotype spreadsheet.
+ *
+ * This function is used for SNP assay files, SSR spreadsheets, and other
+ * marker type spreadsheets. The functionality is slightly different based on
+ * the type of marker being processed (this is set in the options array). This
+ * function is meant to be used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
+  $type = $options['type'];
+  $records = &$options['records'];
+  $fks = &$options['fks'];
+  $headers = $options['headers'];
+  $stock_ids = $options['stock_ids'];
+  $species_codes = $options['species_codes'];
+  $stock_species = $options['stock_species'];
+  $genotype_count = &$options['genotype_count'];
+  $genotype_total = &$options['genotype_total'];
+  $project_id = $options['project_id'];
+  $marker = $options['marker'];
+  $type_cvterm = $options['type_cvterm'];
+  $seq_var_cvterm = $options['seq_var_cvterm'];
+  $record_group = variable_get('tpps_record_group', 10000);
+  $stock_id = NULL;
+  if ($type == 'other') {
+    $val = $row[$options['tree_id']];
+    $stock_id = $stock_ids[trim($val)];
+    $current_id = $stock_species[trim($val)];
+    $species_code = $species_codes[$current_id];
+  }
+  foreach ($row as $key => $val) {
+    if (empty($headers[$key])) {
+      continue;
+    }
+
+    if (!isset($stock_id)) {
+      $stock_id = $stock_ids[trim($val)];
+      $current_id = $stock_species[trim($val)];
+      $species_code = $species_codes[$current_id];
+      continue;
+    }
+    $genotype_count++;
+
+    if ($type == 'ssrs' and ($val === 0 or $val === "0")) {
+      $val = "NA";
+    }
+
+    $variant_name = $headers[$key];
+    $marker_name = $variant_name . $marker;
+    $genotype_name = "$marker-$variant_name-$species_code-$val";
+
+    $records['feature'][$marker_name] = array(
+      'organism_id' => $current_id,
+      'uniquename' => $marker_name,
+      'type_id' => $seq_var_cvterm,
+    );
+
+    $records['feature'][$variant_name] = array(
+      'organism_id' => $current_id,
+      'uniquename' => $variant_name,
+      'type_id' => $seq_var_cvterm,
+    );
+
+    $records['genotype'][$genotype_name] = array(
+      'name' => $genotype_name,
+      'uniquename' => $genotype_name,
+      'description' => $val,
+      'type_id' => $type_cvterm,
+    );
+
+    $records['genotype_call']["$stock_id-$genotype_name"] = array(
+      'project_id' => $project_id,
+      'stock_id' => $stock_id,
+      '#fk' => array(
+        'genotype' => $genotype_name,
+        'variant' => $variant_name,
+        'marker' => $marker_name,
+      ),
+    );
+
+    $records['stock_genotype']["$stock_id-$genotype_name"] = array(
+      'stock_id' => $stock_id,
+      '#fk' => array(
+        'genotype' => $genotype_name,
+      ),
+    );
+
+    if ($genotype_count >= $record_group) {
+      $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $options['overrides']));
+      $records = array(
+        'feature' => array(),
+        'genotype' => array(),
+        'genotype_call' => array(),
+        'stock_genotype' => array(),
+      );
+      $genotype_total += $genotype_count;
+      $genotype_count = 0;
+    }
+  }
+}
+
+/**
+ * This function formats headers for a microsatellite spreadsheet.
+ *
+ * SSR/cpSSR spreadsheets will often have blank or duplicate headers, depending
+ * on the ploidy of the organism they are meant for. This file standardizes the
+ * headers for the spreadsheet so that they can be used with the
+ * tpps_process_genotype_spreadsheet() function.
+ *
+ * @param int $fid
+ *   The Drupal managed file id of the file.
+ * @param string $ploidy
+ *   The ploidy of the organism, as indicated by the user.
+ *
+ * @return array
+ *   The array of standardized headers for the spreadsheet.
+ */
+function tpps_ssrs_headers($fid, $ploidy) {
+  $headers = tpps_file_headers($fid);
+  if ($ploidy == 'Haploid') {
+    return $headers;
+  }
+  $row_len = count($headers);
+  $results = $headers;
+
+  while (($k = array_search(NULL, $results))) {
+    unset($results[$k]);
+  }
+
+  $marker_num = 0;
+  $first = TRUE;
+  reset($headers);
+  $num_headers = count($results);
+  $num_unique_headers = count(array_unique($results));
+
+  foreach ($headers as $key => $val) {
+    next($headers);
+    $next_key = key($headers);
+    if ($first) {
+      $first = FALSE;
+      continue;
+    }
+
+    switch ($ploidy) {
+      case 'Diploid':
+        if ($num_headers == ($row_len + 1) / 2) {
+          // Every other marker column name is left blank.
+          if (array_key_exists($key, $results)) {
+            $last = $results[$key];
+            $results[$key] .= "_A";
+            break;
+          }
+          $results[$key] = $last . "_B";
+          break;
+        }
+        
+        if ($num_headers == $row_len) {
+          // All of the marker column names are filled out.
+          if ($num_headers != $num_unique_headers) {
+            // The marker column names are duplicates, need to append
+            // _A and _B.
+            if ($results[$key] == $results[$next_key]) {
+              $results[$key] .= "_A";
+              break;
+            }
+            $results[$key] .= "_B";
+          }
+        }
+        break;
+
+      case 'Polyploid':
+        if ($num_headers == $row_len) {
+          // All of the marker column names are filled out.
+          if ($num_unique_headers != $num_headers) {
+            // The marker column names are duplicates, need to append
+            // _1, _2, up to X ploidy.
+            // The total number of headers divided by the number of
+            // unique headers should be equal to the ploidy.
+            $ploidy_suffix = ($marker_num % ($num_headers - 1 / $num_unique_headers - 1)) + 1;
+            $results[$key] .= "_$ploidy_suffix";
+          }
+          $marker_num++;
+          break;
+        }
+        $ploidy_suffix = ($marker_num % ($row_len - 1 / $num_headers - 1)) + 1;
+        if (array_key_exists($key, $results)) {
+          $last = $results[$key];
+          $results[$key] .= "_$ploidy_suffix";
+        }
+        else {
+          $results[$key] = "{$last}_$ploidy_suffix";
+        }
+        $marker_num++;
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  return $results;
+}
+
+/**
+ * This function formats headers for the "other" type genotype markers.
+ *
+ * The headers for the "other" genotype marker types are set by the users, so
+ * we need to return the names of the headers they have indicated, rather than
+ * the values provided in the file-groups array.
+ *
+ * @param int $fid
+ *   The Drupal managed file id of the file.
+ * @param array $cols
+ *   An array of columns indicating which of the columns contain genotype data.
+ *
+ * @return array
+ *   The array of standardized headers for the spreadsheet.
+ */
+function tpps_other_marker_headers($fid, array $cols) {
+  $headers = tpps_file_headers($fid);
+  $results = array();
+  foreach ($cols as $col) {
+    $results[$col] = $headers[$col];
+  }
+  return $results;
+}
+
+/**
+ * This function processes a single row of a tree accession file.
+ *
+ * This function populates the db with environmental data provided through
+ * CartograTree layers. This function is meant to be used with
+ * tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_environment_layers($row, array &$options = array()) {
+  $id_col = $options['tree_id'];
+  $records = &$options['records'];
+  $stock_ids = $options['stock_ids'];
+  $layers_params = $options['layers_params'];
+  $env_count = &$options['env_count'];
+  $accession = $options['accession'];
+  $suffix = &$options['suffix'];
+  $env_cvterm = $options['env_cvterm'];
+  $record_group = variable_get('tpps_record_group', 10000);
+
+  $tree_id = $row[$id_col];
+  $stock_id = $stock_ids[$tree_id];
+
+  $gps_query = chado_select_record('stockprop', array('value'), array(
+    'stock_id' => $stock_id,
+    'type_id' => array(
+      'name' => 'gps_latitude',
+    ),
+  ), array(
+    'limit' => 1,
+  ));
+  $lat = current($gps_query)->value;
+
+  $gps_query = chado_select_record('stockprop', array('value'), array(
+    'stock_id' => $stock_id,
+    'type_id' => array(
+      'name' => 'gps_longitude',
+    ),
+  ), array(
+    'limit' => 1,
+  ));
+  $long = current($gps_query)->value;
+
+  foreach ($layers_params as $layer_id => $params) {
+    $layer_query = db_select('cartogratree_layers', 'l')
+      ->fields('l', array('title'))
+      ->condition('layer_id', $layer_id)
+      ->execute();
+
+    $layer_name = $layer_query->fetchObject()->title;
+
+    foreach ($params as $param_id => $param) {
+      $param_query = db_select('cartogratree_fields', 'f')
+        ->fields('f', array('field_name'))
+        ->condition('field_id', $param_id)
+        ->execute();
+
+      $param_name = $param_query->fetchObject()->field_name;
+      $phenotype_name = "$accession-$tree_id-$layer_name-$param_name-$suffix";
+
+      $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
+      $type = variable_get("tpps_param_{$param_id}_type", 'attr_id');
+
+      if ($type == 'attr_id') {
+        $records['phenotype'][$phenotype_name] = array(
+          'uniquename' => $phenotype_name,
+          'name' => $param_name,
+          'attr_id' => $env_cvterm,
+          'value' => $value,
+        );
+
+        $records['stock_phenotype'][$phenotype_name] = array(
+          'stock_id' => $stock_id,
+          '#fk' => array(
+            'phenotype' => $phenotype_name,
+          ),
+        );
+      }
+      else {
+        $records['phenotype'][$phenotype_name] = array(
+          'uniquename' => $phenotype_name,
+          'name' => "$param_name",
+          'value' => "$value",
+        );
+
+        $records['phenotype_cvterm'][$phenotype_name] = array(
+          'cvterm_id' => $env_cvterm,
+          '#fk' => array(
+            'phenotype' => $phenotype_name,
+          ),
+        );
+
+        $records['stock_phenotype'][$phenotype_name] = array(
+          'stock_id' => $stock_id,
+          '#fk' => array(
+            'phenotype' => $phenotype_name,
+          ),
+        );
+      }
+
+      $env_count++;
+      if ($env_count >= $record_group) {
+        tpps_chado_insert_multi($records);
+        $records = array(
+          'phenotype' => array(),
+          'phenotype_cvterm' => array(),
+          'stock_phenotype' => array(),
+        );
+        $env_count = 0;
+      }
+    }
+  }
+  $suffix++;
+}
+
+/**
+ * This function processes a single row of a tree accession file.
+ *
+ * This function populates the db with environmental data provided manually by
+ * the user (as opposed to CartograTree layers). This function is meant to be
+ * used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_environment_manual($row, array &$options = array()) {
+  $records = &$options['records'];
+  $accession = $options['accession'];
+  $id_col = $options['tree_id'];
+  $suffix = &$options['suffix'];
+  $env_meta = $options['env_meta'];
+  $env_count = &$options['env_count'];
+  $desc_id = $options['desc_id'];
+  $unit_id = $options['unit_id'];
+  $env_cvterm = $options['env_cvterm'];
+  $stock_ids = $options['stock_ids'];
+  $record_group = variable_get('tpps_record_group', 10000);
+
+  $tree_id = $row[$id_col];
+  foreach ($env_meta as $current_env) {
+    $name = $current_env['name'];
+    $desc = $current_env['desc'];
+    $unit = $current_env['unit'];
+    $val = $current_env['val'];
+    $phenotype_name = "$accession-$tree_id-$name-$suffix";
+
+    $records['phenotype'][$phenotype_name] = array(
+      'uniquename' => $phenotype_name,
+      'name' => $name,
+      'attr_id' => $env_cvterm,
+      'value' => $val,
+    );
+
+    $records['stock_phenotype'][$phenotype_name] = array(
+      'stock_id' => $stock_ids[$tree_id],
+      '#fk' => array(
+        'phenotype' => $phenotype_name,
+      ),
+    );
+
+    $records['phenotypeprop']["$phenotype_name-desc"] = array(
+      'type_id' => $desc_id,
+      'value' => $desc,
+      '#fk' => array(
+        'phenotype' => $phenotype_name,
+      ),
+    );
+
+    $records['phenotypeprop']["$phenotype_name-unit"] = array(
+      'type_id' => $unit_id,
+      'value' => $unit,
+      '#fk' => array(
+        'phenotype' => $phenotype_name,
+      ),
+    );
+
+    $env_count++;
+    if ($env_count >= $record_group) {
+      tpps_chado_insert_multi($records);
+      $records = array(
+        'phenotype' => array(),
+        'stock_phenotype' => array(),
+        'phenotypeprop' => array(),
+      );
+      $env_count = 0;
+    }
+  }
+  $suffix++;
 }

@@ -20,7 +20,10 @@ function tpps_submit_all($accession) {
   $form_state = tpps_load_submission($accession);
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
-  tpps_submission_clear_db($accession);
+  if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
+    tpps_submission_clear_db($accession);
+  }
+  $project_id = $form_state['ids']['project_id'] ?? NULL;
   $transaction = db_transaction();
 
   try {
@@ -30,10 +33,14 @@ function tpps_submit_all($accession) {
     $form_state['file_rank'] = 0;
     $form_state['ids'] = array();
 
-    $form_state['ids']['project_id'] = tpps_chado_insert_record('project', array(
+    $project_record = array(
       'name' => $firstpage['publication']['title'],
       'description' => $firstpage['publication']['abstract'],
-    ));
+    );
+    if (!empty($project_id)) {
+      $project_record['project_id'] = $project_id;
+    }
+    $form_state['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
 
     tpps_tripal_entity_publish('Project', array($firstpage['publication']['title'], $form_state['ids']['project_id']));
 
@@ -75,6 +82,7 @@ function tpps_submit_page_1(array &$form_state) {
 
   $dbxref_id = $form_state['dbxref_id'];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
+  $seconds = $firstpage['publication']['secondaryAuthors'];
 
   tpps_chado_insert_record('project_dbxref', array(
     'project_id' => $form_state['ids']['project_id'],
@@ -98,11 +106,10 @@ function tpps_submit_page_1(array &$form_state) {
   ));
 
   $authors = array($firstpage['primaryAuthor']);
-  if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0) {
-
-    for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++) {
+  if (empty($seconds['check']) and $seconds['number'] != 0) {
+    for ($i = 1; $i <= $seconds['number']; $i++) {
       tpps_chado_insert_record('contact', array(
-        'name' => $firstpage['publication']['secondaryAuthors'][$i],
+        'name' => $seconds[$i],
         'type_id' => array(
           'cv_id' => array(
             'name' => 'tripal_contact',
@@ -111,10 +118,20 @@ function tpps_submit_page_1(array &$form_state) {
           'is_obsolete' => 0,
         ),
       ));
-      $authors[] = $firstpage['publication']['secondaryAuthors'][$i];
+
+      $names = explode(" ", $seconds[$i]);
+      $first_name = $names[0];
+      $last_name = implode(" ", array_slice($names, 1));
+
+      $pubauthors[] = array(
+        'rank' => "$i",
+        'surname' => $last_name,
+        'givennames' => $first_name,
+      );
+      $authors[] = $seconds[$i];
     }
   }
-  elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0) {
+  elseif (!empty($seconds['check'])) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
@@ -124,38 +141,27 @@ function tpps_submit_page_1(array &$form_state) {
         'name' => 'url',
         'is_obsolete' => 0,
       ),
-      'value' => file_create_url(file_load($firstpage['publication']['secondaryAuthors']['file'])->uri),
+      'value' => file_create_url(file_load($seconds['file'])->uri),
       'rank' => $form_state['file_rank'],
     ));
-    $content = tpps_parse_file($firstpage['publication']['secondaryAuthors']['file']);
-    $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
-
-    foreach ($column_vals as $col => $val) {
-      if ($val == '1') {
-        $first_name = $col;
-      }
-      if ($val == '2') {
-        $last_name = $col;
-      }
-      if ($val == '3') {
-        $middle_initial = $col;
-      }
-    }
-
-    for ($i = 0; $i < count($content) - 1; $i++) {
-      tpps_chado_insert_record('contact', array(
-        'name' => "{$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}",
-        'type_id' => array(
-          'cv_id' => array(
-            'name' => 'tripal_contact',
-          ),
-          'name' => 'Person',
-          'is_obsolete' => 0,
-        ),
-      ));
-      $authors[] = "{$content[$i][$last_name]}, {$content[$i][$first_name]} {$content[$i][$middle_initial]}";
-    }
     $form_state['file_rank']++;
+
+    $column_vals = $seconds['file-columns'];
+    $pubauthors = array();
+    $rank = 0;
+
+    $options = array(
+      'column_ids' => array(
+        'first' => array_search('1', $column_vals),
+        'last' => array_search('2', $column_vals),
+        'mid' => array_search('3', $column_vals),
+      ),
+      'pubauthors' => &$pubauthors,
+      'pubauthor_rank' => &$rank,
+      'authors' => &$authors,
+    );
+
+    tpps_iterate_file($seconds['file'], 'tpps_process_secondary_authors', $options);
   }
 
   $publication_id = tpps_chado_insert_record('pub', array(
@@ -190,27 +196,29 @@ function tpps_submit_page_1(array &$form_state) {
     'pub_id' => $publication_id,
   ));
 
-  $organization_id = tpps_chado_insert_record('contact', array(
-    'name' => $firstpage['organization'],
-    'type_id' => array(
-      'cv_id' => array(
-        'name' => 'tripal_contact',
+  if (!empty($firstpage['organization'])) {
+    $organization_id = tpps_chado_insert_record('contact', array(
+      'name' => $firstpage['organization'],
+      'type_id' => array(
+        'cv_id' => array(
+          'name' => 'tripal_contact',
+        ),
+        'name' => 'Organization',
+        'is_obsolete' => 0,
       ),
-      'name' => 'Organization',
-      'is_obsolete' => 0,
-    ),
-  ));
+    ));
 
-  tpps_chado_insert_record('contact_relationship', array(
-    'type_id' => array(
-      'name' => 'part of',
-      'cv_id' => array(
-        'name' => 'tripal_contact',
+    tpps_chado_insert_record('contact_relationship', array(
+      'type_id' => array(
+        'name' => 'part of',
+        'cv_id' => array(
+          'name' => 'tripal_contact',
+        ),
       ),
-    ),
-    'subject_id' => $primary_author_id,
-    'object_id' => $organization_id,
-  ));
+      'subject_id' => $primary_author_id,
+      'object_id' => $organization_id,
+    ));
+  }
 
   $names = explode(" ", $firstpage['primaryAuthor']);
   $first_name = $names[0];
@@ -223,42 +231,10 @@ function tpps_submit_page_1(array &$form_state) {
     'givennames' => $first_name,
   ));
 
-  if ($firstpage['publication']['secondaryAuthors']['check'] == 0 and $firstpage['publication']['secondaryAuthors']['number'] != 0) {
-    for ($i = 1; $i <= $firstpage['publication']['secondaryAuthors']['number']; $i++) {
-      $names = explode(" ", $firstpage['publication']['secondaryAuthors'][$i]);
-      $first_name = $names[0];
-      $last_name = implode(" ", array_slice($names, 1));
-      tpps_chado_insert_record('pubauthor', array(
-        'pub_id' => $publication_id,
-        'rank' => "$i",
-        'surname' => $last_name,
-        'givennames' => $first_name,
-      ));
-    }
-  }
-  elseif ($firstpage['publication']['secondaryAuthors']['check'] != 0) {
-    $content = tpps_parse_file($firstpage['publication']['secondaryAuthors']['file'], 0, !empty($firstpage['publication']['secondaryAuthors']['file-no-header']));
-    $column_vals = $firstpage['publication']['secondaryAuthors']['file-columns'];
-    $groups = $firstpage['publication']['secondaryAuthors']['file-groups'];
-
-    $first_name = $groups['First Name']['1'];
-    $last_name = $groups['Last Name']['2'];
-
-    foreach ($column_vals as $col => $val) {
-      if ($val == '3') {
-        $middle_initial = $col;
-        break;
-      }
-    }
-
-    for ($i = 0; $i < count($content) - 1; $i++) {
-      $rank = $i + 1;
-      tpps_chado_insert_record('pubauthor', array(
-        'pub_id' => $publication_id,
-        'rank' => "$rank",
-        'surname' => $content[$i][$last_name],
-        'givennames' => $content[$i][$first_name] . " " . $content[$i][$middle_initial],
-      ));
+  if (!empty($pubauthors)) {
+    foreach ($pubauthors as $info) {
+      $info['pub_id'] = $publication_id;
+      tpps_chado_insert_record('pubauthor', $info);
     }
   }
 
@@ -369,23 +345,25 @@ function tpps_submit_page_2(array &$form_state) {
 
   $secondpage = $form_state['saved_values'][TPPS_PAGE_2];
 
-  tpps_chado_insert_record('projectprop', array(
-    'project_id' => $form_state['ids']['project_id'],
-    'type_id' => array(
-      'name' => 'study_start',
-      'is_obsolete' => 0,
-    ),
-    'value' => $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'],
-  ));
+  if (!empty($secondpage['StartingDate'])) {
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $form_state['ids']['project_id'],
+      'type_id' => array(
+        'name' => 'study_start',
+        'is_obsolete' => 0,
+      ),
+      'value' => $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'],
+    ));
 
-  tpps_chado_insert_record('projectprop', array(
-    'project_id' => $form_state['ids']['project_id'],
-    'type_id' => array(
-      'name' => 'study_end',
-      'is_obsolete' => 0,
-    ),
-    'value' => $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'],
-  ));
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $form_state['ids']['project_id'],
+      'type_id' => array(
+        'name' => 'study_end',
+        'is_obsolete' => 0,
+      ),
+      'value' => $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'],
+    ));
+  }
 
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $form_state['ids']['project_id'],
@@ -659,14 +637,12 @@ function tpps_submit_page_2(array &$form_state) {
  *   The state of the form being submitted.
  */
 function tpps_submit_page_3(array &$form_state) {
-
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   $organism_number = $firstpage['organism']['number'];
-  $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
   $form_state['locations'] = array();
-  $record_group = variable_get('tpps_record_group', 10000);
   $stock_count = 0;
+  $loc_name = 'Location (latitude/longitude or country/state or population group)';
 
   if (!empty($thirdpage['study_location'])) {
     if ($thirdpage['study_location']['type'] !== '2') {
@@ -735,6 +711,67 @@ function tpps_submit_page_3(array &$form_state) {
     }
   }
 
+  $cvterms = array(
+    'org' => chado_get_cvterm(array(
+      'cv_id' => array(
+        'name' => 'obi',
+      ),
+      'name' => 'organism',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+    'clone' => chado_get_cvterm(array(
+      'cv_id' => array(
+        'name' => 'sequence',
+      ),
+      'name' => 'clone',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+    'has_part' => chado_get_cvterm(array(
+      'cv_id' => array(
+        'name' => 'sequence',
+      ),
+      'name' => 'has_part',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+    'lat' => chado_get_cvterm(array(
+      'name' => 'gps_latitude',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+    'lng' => chado_get_cvterm(array(
+      'name' => 'gps_longitude',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+    'country' => chado_get_cvterm(array(
+      'cv_id' => array(
+        'name' => 'tripal_contact',
+      ),
+      'name' => 'Country',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+    'state' => chado_get_cvterm(array(
+      'cv_id' => array(
+        'name' => 'tripal_contact',
+      ),
+      'name' => 'State',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+    'county' => chado_get_cvterm(array(
+      'name' => 'county',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+    'district' => chado_get_cvterm(array(
+      'name' => 'district',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+    'loc' => chado_get_cvterm(array(
+      'cv_id' => array(
+        'name' => 'nd_geolocation_property',
+      ),
+      'name' => 'Location',
+      'is_obsolete' => 0,
+    ))->cvterm_id,
+  );
+
   $form_state['ids']['stock_ids'] = array();
   $records = array(
     'stock' => array(),
@@ -761,24 +798,20 @@ function tpps_submit_page_3(array &$form_state) {
 
   $form_state['ids']['stock_species'] = array();
 
+  $options = array(
+    'cvterms' => $cvterms,
+    'records' => $records,
+    'overrides' => $overrides,
+    'locations' => &$form_state['locations'],
+    'accession' => $form_state['accession'],
+    'single_file' => empty($thirdpage['tree-accession']['check']),
+    'org_names' => $firstpage['organism'],
+    'saved_ids' => &$form_state['ids'],
+    'stock_count' => &$stock_count,
+  );
+
   for ($i = 1; $i <= $organism_number; $i++) {
     $tree_accession = $thirdpage['tree-accession']["species-$i"];
-    $fid = $tree_accession['file'];
-    $column_vals = $tree_accession['file-columns'];
-    $groups = $tree_accession['file-groups'];
-    $no_header = !empty($tree_accession['file-no-header']);
-    $loc_group = $groups['Location (latitude/longitude or country/state or population group)'];
-    $loc_type = $loc_group['#type'];
-
-    if ($organism_number != 1 and empty($thirdpage['tree-accession']['check'])) {
-      if ($groups['Genus and Species']['#type'] == 'separate') {
-        $genus_col_name = $groups['Genus and Species']['6'];
-        $species_col_name = $groups['Genus and Species']['7'];
-      }
-      else {
-        $org_col_name = $groups['Genus and Species']['10'];
-      }
-    }
 
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
@@ -789,334 +822,48 @@ function tpps_submit_page_3(array &$form_state) {
         'name' => 'url',
         'is_obsolete' => 0,
       ),
-      'value' => file_create_url(file_load($fid)->uri),
+      'value' => file_create_url(file_load($tree_accession['file'])->uri),
       'rank' => $form_state['file_rank'],
     ));
+    $form_state['file_rank']++;
 
-    $content = tpps_parse_file($fid, 0, $no_header);
+    $column_vals = $tree_accession['file-columns'];
+    $groups = $tree_accession['file-groups'];
 
-    foreach ($column_vals as $col => $val) {
-      if ($val == '8') {
-        $county_col_name = $col;
-      }
-      if ($val == '9') {
-        $district_col_name = $col;
-      }
-      if ($val == '13') {
-        $clone_col_name = $col;
-      }
-    }
+    $options['org_num'] = $i;
+    $options['no_header'] = !empty($tree_accession['file-no-header']);
+    $options['empty'] = $tree_accession['file-empty'];
+    $options['pop_group'] = $tree_accession['pop-group'];
+    $county = array_search('8', $column_vals);
+    $district = array_search('9', $column_vals);
+    $clone = array_search('13', $column_vals);
+    $options['column_ids'] = array(
+      'id' => $groups['Tree Id']['1'],
+      'lat' => $groups[$loc_name]['4'] ?? NULL,
+      'lng' => $groups[$loc_name]['5'] ?? NULL,
+      'country' => $groups[$loc_name]['2'] ?? NULL,
+      'state' => $groups[$loc_name]['3'] ?? NULL,
+      'county' => ($county !== FALSE) ? $county : NULL,
+      'district' => ($district !== FALSE) ? $district : NULL,
+      'clone' => ($clone !== FALSE) ? $clone : NULL,
+      'pop_group' => $groups[$loc_name]['12'] ?? NULL,
+    );
 
-    $id_col_accession_name = $groups['Tree Id']['1'];
-    $org_cvterm = chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'obi',
-      ),
-      'name' => 'organism',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-    $clone_cvterm = chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'sequence',
-      ),
-      'name' => 'clone',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-    $has_part_cvterm = chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'sequence',
-      ),
-      'name' => 'has_part',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-    $lat_cvterm = chado_get_cvterm(array(
-      'name' => 'gps_latitude',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-    $lng_cvterm = chado_get_cvterm(array(
-      'name' => 'gps_longitude',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-    $country_cvterm = chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-      'name' => 'Country',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-    $state_cvterm = chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-      'name' => 'State',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-    $county_cvterm = chado_get_cvterm(array(
-      'name' => 'county',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-    $district_cvterm = chado_get_cvterm(array(
-      'name' => 'district',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-    $loc_cvterm = chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'nd_geolocation_property',
-      ),
-      'name' => 'Location',
-      'is_obsolete' => 0,
-    ))->cvterm_id;
-
-    for ($j = 0; $j < count($content) - 1; $j++) {
-      $tree_id = $content[$j][$id_col_accession_name];
-      $id = $form_state['ids']['organism_ids'][$i];
-      if ($organism_number != 1 and $thirdpage['tree-accession']['check'] == 0) {
-        if ($groups['Genus and Species']['#type'] == 'separate') {
-          $genus_full_name = "{$content[$j][$genus_col_name]} {$content[$j][$species_col_name]}";
-        }
-        else {
-          $genus_full_name = "{$content[$j][$org_col_name]}";
-        }
-        $id = $form_state['ids']['organism_ids'][array_search($genus_full_name, $firstpage['organism'])];
-      }
-
-      $records['stock'][$tree_id] = array(
-        'uniquename' => $form_state['accession'] . '-' . $tree_id,
-        'type_id' => $org_cvterm,
-        'organism_id' => $id,
-      );
-      $form_state['ids']['stock_species'][$tree_id] = $id;
-
-      $records['project_stock'][$tree_id] = array(
-        'project_id' => $form_state['ids']['project_id'],
-        '#fk' => array(
-          'stock' => $tree_id,
-        ),
-      );
-
-      if (isset($clone_col_name) and !empty($content[$j][$clone_col_name]) and $content[$j][$clone_col_name] !== $tree_accession['file-empty']) {
-        $clone_name = $tree_id . '-' . $content[$j][$clone_col_name];
-
-        $records['stock'][$clone_name] = array(
-          'uniquename' => $form_state['accession'] . '-' . $clone_name,
-          'type_id' => $clone_cvterm,
-          'organism_id' => $id,
-        );
-        $form_state['ids']['stock_species'][$clone_name] = $id;
-
-        $records['project_stock'][$clone_name] = array(
-          'project_id' => $form_state['ids']['project_id'],
-          '#fk' => array(
-            'stock' => $clone_name,
-          ),
-        );
-
-        $records['stock_relationship'][$clone_name] = array(
-          'type_id' => $has_part_cvterm,
-          '#fk' => array(
-            'subject' => $tree_id,
-            'object' => $clone_name,
-          ),
-        );
-
-        $tree_id = $clone_name;
-      }
-
-      if (!empty($loc_group['4']) and !empty($content[$j][$loc_group['4']]) and !empty($loc_group['5']) and !empty($content[$j][$loc_group['5']])) {
-        $lat_name = $loc_group['4'];
-        $lng_name = $loc_group['5'];
-        $raw_coord = $content[$j][$lat_name] . ',' . $content[$j][$lng_name];
-        $standard_coord = explode(',', tpps_standard_coord($raw_coord));
-
-        $records['stockprop']["$tree_id-lat"] = array(
-          'type_id' => $lat_cvterm,
-          'value' => $standard_coord[0],
-          '#fk' => array(
-            'stock' => $tree_id,
-          ),
-        );
-
-        $records['stockprop']["$tree_id-long"] = array(
-          'type_id' => $lng_cvterm,
-          'value' => $standard_coord[1],
-          '#fk' => array(
-            'stock' => $tree_id,
-          ),
-        );
-      }
-      elseif (!empty($loc_group['2']) and !empty($content[$j][$loc_group['2']]) and !empty($loc_group['3']) and !empty($content[$j][$loc_group['3']])) {
-        $country_col_name = $loc_group['2'];
-        $state_col_name = $loc_group['3'];
-
-        $records['stockprop']["$tree_id-country"] = array(
-          'type_id' => $country_cvterm,
-          'value' => $content[$j][$country_col_name],
-          '#fk' => array(
-            'stock' => $tree_id,
-          ),
-        );
-
-        $records['stockprop']["$tree_id-state"] = array(
-          'type_id' => $state_cvterm,
-          'value' => $content[$j][$state_col_name],
-          '#fk' => array(
-            'stock' => $tree_id,
-          ),
-        );
-
-        $location = "{$content[$j][$state_col_name]}, {$content[$j][$country_col_name]}";
-
-        if (isset($county_col_name)) {
-          $records['stockprop']["$tree_id-county"] = array(
-            'type_id' => $county_cvterm,
-            'value' => $content[$j][$county_col_name],
-            '#fk' => array(
-              'stock' => $tree_id,
-            ),
-          );
-          $location = "{$content[$j][$county_col_name]}, $location";
-        }
-
-        if (isset($district_col_name)) {
-          $records['stockprop']["$tree_id-district"] = array(
-            'type_id' => $district_cvterm,
-            'value' => $content[$j][$district_col_name],
-            '#fk' => array(
-              'stock' => $tree_id,
-            ),
-          );
-          $location = "{$content[$j][$district_col_name]}, $location";
-        }
-
-        if (isset($geo_api_key)) {
-          if (!array_key_exists($location, $form_state['locations'])) {
-            $query = urlencode($location);
-            $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-            $response = json_decode(file_get_contents($url));
-
-            if ($response->total_results) {
-              $results = $response->results;
-              if ($response->total_results > 1 and !isset($district_col_name) and !isset($country_col_name)) {
-                foreach ($results as $item) {
-                  if ($item->components->_type == 'state') {
-                    $result = $item->geometry;
-                    break;
-                  }
-                }
-                if (!isset($result)) {
-                  $result = $results[0]->geometry;
-                }
-              }
-              else {
-                $result = $results[0]->geometry;
-              }
-            }
-            $form_state['locations'][$location] = isset($result) ? $result : NULL;
-          }
-          else {
-            $result = $form_state['locations'][$location];
-          }
-
-          if (!empty($result)) {
-            $records['stockprop']["$tree_id-lat"] = array(
-              'type_id' => $lat_cvterm,
-              'value' => $result->lat,
-              '#fk' => array(
-                'stock' => $tree_id,
-              ),
-            );
-
-            $records['stockprop']["$tree_id-long"] = array(
-              'type_id' => $lng_cvterm,
-              'value' => $result->lng,
-              '#fk' => array(
-                'stock' => $tree_id,
-              ),
-            );
-          }
-        }
+    if ($organism_number != 1 and empty($thirdpage['tree-accession']['check'])) {
+      if ($groups['Genus and Species']['#type'] == 'separate') {
+        $options['column_ids']['genus'] = $groups['Genus and Species']['6'];
+        $options['column_ids']['species'] = $groups['Genus and Species']['7'];
       }
       else {
-        $pop_group_name = $loc_group['12'];
-
-        $loc = $thirdpage['tree-accession']['pop-group'][$content[$j][$pop_group_name]];
-        $coord = tpps_standard_coord($loc);
-
-        if ($coord) {
-          $parts = explode(',', $coord);
-          $records['stockprop']["$tree_id-lat"] = array(
-            'type_id' => $lat_cvterm,
-            'value' => $parts[0],
-            '#fk' => array(
-              'stock' => $tree_id,
-            ),
-          );
-
-          $records['stockprop']["$tree_id-long"] = array(
-            'type_id' => $lng_cvterm,
-            'value' => $parts[1],
-            '#fk' => array(
-              'stock' => $tree_id,
-            ),
-          );
-        }
-        else {
-          $records['stockprop']["$tree_id-location"] = array(
-            'type_id' => $loc_cvterm,
-            'value' => $loc,
-            '#fk' => array(
-              'stock' => $tree_id,
-            ),
-          );
-
-          if (isset($geo_api_key)) {
-            if (!array_key_exists($location, $form_state['locations'])) {
-              $query = urlencode($loc);
-              $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-              $response = json_decode(file_get_contents($url));
-              $result = ($response->total_results) ? $response->results[0]->geometry : NULL;
-              $form_state['locations'][$location] = $result;
-            }
-            else {
-              $result = $form_state['locations'][$location];
-            }
-
-            if (!empty($result)) {
-              $records['stockprop']["$tree_id-lat"] = array(
-                'type_id' => $lat_cvterm,
-                'value' => $result->lat,
-                '#fk' => array(
-                  'stock' => $tree_id,
-                ),
-              );
-
-              $records['stockprop']["$tree_id-long"] = array(
-                'type_id' => $lng_cvterm,
-                'value' => $result->lng,
-                '#fk' => array(
-                  'stock' => $tree_id,
-                ),
-              );
-            }
-          }
-        }
-      }
-      $stock_count++;
-      if ($stock_count >= $record_group) {
-        $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($records, array('fk_overrides' => $overrides, 'fks' => 'stock'));
-        $records = array(
-          'stock' => array(),
-          'stockprop' => array(),
-          'stock_relationship' => array(),
-          'project_stock' => array(),
-        );
-        $stock_count = 0;
+        $options['column_ids']['org'] = $groups['Genus and Species']['10'];
       }
     }
 
-    $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($records, array('fk_overrides' => $overrides, 'fks' => 'stock'));
-    unset($records);
-    $form_state['file_rank']++;
+    tpps_file_iterator($tree_accession['file'], 'tpps_process_accession', $options);
+
+    $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($options['records'], array('fk_overrides' => $overrides, 'fks' => 'stock'));
+    unset($options['records']);
+    $stock_count = 0;
     if (empty($thirdpage['tree-accession']['check'])) {
       break;
     }
@@ -1351,5 +1098,257 @@ function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = 
         ))
         ->execute();
     }
+  }
+}
+
+/**
+ * This function processes a single row of a secondary authors file.
+ *
+ * This function is meant to be used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_secondary_authors($row, array &$options) {
+  $cols = $options['column_ids'];
+  $authors = &$options['authors'];
+  $pubauthors = &$options['pubauthors'];
+  $rank = &$options['pubauthor_rank'];
+
+  $author_name = "{$row[$cols['last']]}, {$row[$cols['first']]} {$row[$cols['mid']]}";
+  tpps_chado_insert_record('contact', array(
+    'name' => $author_name,
+    'type_id' => array(
+      'cv_id' => array(
+        'name' => 'tripal_contact',
+      ),
+      'name' => 'Person',
+      'is_obsolete' => 0,
+    ),
+  ));
+  $pubauthors[] = array(
+    'rank' => "$rank",
+    'surname' => $row[$cols['last']],
+    'givennames' => $row[$cols['first']] . " " . $row[$cols['mid']],
+  );
+  $authors[] = $author_name;
+  $rank++;
+}
+
+/**
+ * This function processes a single row of an accession file.
+ *
+ * This function is meant to be used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_accession($row, array &$options) {
+  $cvterm = $options['cvterms'];
+  $records = &$options['records'];
+  $locations = &$options['locations'];
+  $accession = $options['accession'];
+  $cols = $options['column_ids'];
+  $saved_ids = &$options['saved_ids'];
+  $stock_count = &$options['stock_count'];
+  $record_group = variable_get('tpps_record_group', 10000);
+  $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
+
+  $tree_id = $row[$cols['id']];
+  $id = $saved_ids['organism_ids'][$options['org_num']];
+  if ($options['org_names']['number'] != 1 and $options['single_file']) {
+    $org_full_name = $row[$cols['org']] ?? "{$row[$cols['genus']]} {$row[$cols['species']]}";
+    $id = $saved_ids['organism_ids'][array_search($org_full_name, $options['org_names'])];
+  }
+
+  $records['stock'][$tree_id] = array(
+    'uniquename' => "$accession-$tree_id",
+    'type_id' => $cvterm['org'],
+    'organism_id' => $id,
+  );
+  $saved_ids['stock_species'][$tree_id] = $id;
+
+  $records['project_stock'][$tree_id] = array(
+    'project_id' => $saved_ids['project_id'],
+    '#fk' => array(
+      'stock' => $tree_id,
+    ),
+  );
+
+  if (isset($row[$cols['clone']]) and $row[$cols['clone']] !== $options['empty']) {
+    $clone_name = $tree_id . '-' . $row[$cols['clone']];
+
+    $records['stock'][$clone_name] = array(
+      'uniquename' => $accession . '-' . $clone_name,
+      'type_id' => $cvterm['clone'],
+      'organism_id' => $id,
+    );
+    $saved_ids['stock_species'][$clone_name] = $id;
+
+    $records['project_stock'][$clone_name] = array(
+      'project_id' => $saved_ids['project_id'],
+      '#fk' => array(
+        'stock' => $clone_name,
+      ),
+    );
+
+    $records['stock_relationship'][$clone_name] = array(
+      'type_id' => $cvterm['has_part'],
+      '#fk' => array(
+        'subject' => $tree_id,
+        'object' => $clone_name,
+      ),
+    );
+
+    $tree_id = $clone_name;
+  }
+
+  if (!empty($row[$cols['lat']]) and !empty($row[$cols['lng']])) {
+    $raw_coord = $row[$cols['lat']] . ',' . $row[$cols['lng']];
+    $standard_coord = explode(',', tpps_standard_coord($raw_coord));
+    $lat = $standard_coord[0];
+    $lng = $standard_coord[1];
+  }
+  elseif (!empty($row[$cols['state']]) and !empty($row[$cols['country']])) {
+    $records['stockprop']["$tree_id-country"] = array(
+      'type_id' => $cvterm['country'],
+      'value' => $row[$cols['country']],
+      '#fk' => array(
+        'stock' => $tree_id,
+      ),
+    );
+
+    $records['stockprop']["$tree_id-state"] = array(
+      'type_id' => $cvterm['state'],
+      'value' => $row[$cols['state']],
+      '#fk' => array(
+        'stock' => $tree_id,
+      ),
+    );
+
+    $location = "{$row[$cols['state']]}, {$row[$cols['country']]}";
+
+    if (!empty($row[$cols['county']])) {
+      $records['stockprop']["$tree_id-county"] = array(
+        'type_id' => $cvterm['county'],
+        'value' => $row[$cols['county']],
+        '#fk' => array(
+          'stock' => $tree_id,
+        ),
+      );
+      $location = "{$row[$cols['county']]}, $location";
+    }
+
+    if (!empty($row[$cols['district']])) {
+      $records['stockprop']["$tree_id-district"] = array(
+        'type_id' => $cvterm['district'],
+        'value' => $row[$cols['district']],
+        '#fk' => array(
+          'stock' => $tree_id,
+        ),
+      );
+      $location = "{$row[$cols['district']]}, $location";
+    }
+
+    if (isset($geo_api_key)) {
+      if (!array_key_exists($location, $options['locations'])) {
+        $query = urlencode($location);
+        $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
+        $response = json_decode(file_get_contents($url));
+
+        if ($response->total_results) {
+          $results = $response->results;
+          $result = $results[0]->geometry;
+          if ($response->total_results > 1 and !isset($cols['district']) and !isset($cols['county'])) {
+            foreach ($results as $item) {
+              if ($item->components->_type == 'state') {
+                $result = $item->geometry;
+                break;
+              }
+            }
+          }
+        }
+        $options['locations'][$location] = $result ?? NULL;
+      }
+      else {
+        $result = $options['locations'][$location];
+      }
+
+      if (!empty($result)) {
+        $lat = $result->$lat;
+        $lng = $result->$lng;
+      }
+    }
+  }
+  else {
+    $location = $options['pop_group'][$row[$cols['pop_group']]];
+    $coord = tpps_standard_coord($location);
+
+    if ($coord) {
+      $parts = explode(',', $coord);
+      $lat = $parts[0];
+      $lng = $parts[1];
+    }
+    else {
+      $records['stockprop']["$tree_id-location"] = array(
+        'type_id' => $cvterm['loc'],
+        'value' => $location,
+        '#fk' => array(
+          'stock' => $tree_id,
+        ),
+      );
+
+      if (isset($geo_api_key)) {
+        if (!array_key_exists($location, $options['locations'])) {
+          $query = urlencode($location);
+          $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
+          $response = json_decode(file_get_contents($url));
+          $result = ($response->total_results) ? $response->results[0]->geometry : NULL;
+          $options['locations'][$location] = $result;
+        }
+        else {
+          $result = $options['locations'][$location];
+        }
+
+        if (!empty($result)) {
+          $lat = $result->$lat;
+          $lng = $result->$lng;
+        }
+      }
+    }
+  }
+
+  if (!empty($lat) and !empty($lng)) {
+    $records['stockprop']["$tree_id-lat"] = array(
+      'type_id' => $cvterm['lat'],
+      'value' => $lat,
+      '#fk' => array(
+        'stock' => $tree_id,
+      ),
+    );
+
+    $records['stockprop']["$tree_id-long"] = array(
+      'type_id' => $cvterm['lng'],
+      'value' => $lng,
+      '#fk' => array(
+        'stock' => $tree_id,
+      ),
+    );
+  }
+
+  $stock_count++;
+  if ($stock_count >= $record_group) {
+    $saved_ids['stock_ids'] += tpps_chado_insert_multi($records, array('fk_overrides' => $options['overrides'], 'fks' => 'stock'));
+    $records = array(
+      'stock' => array(),
+      'stockprop' => array(),
+      'stock_relationship' => array(),
+      'project_stock' => array(),
+    );
+    $stock_count = 0;
   }
 }
