@@ -781,7 +781,6 @@ function tpps_file_parsing($accession) {
       $tree_accession = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index];
       $id_col = $tree_accession['file-groups']['Tree Id'][1];
 
-      $content = tpps_parse_file($tree_accession['file']);
       $env_cvterm = chado_get_cvterm(array(
         'cv_id' => array(
           'name' => 'biomaterial_property',
