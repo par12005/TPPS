@@ -781,7 +781,6 @@ function tpps_file_parsing($accession) {
       $tree_accession = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index];
       $id_col = $tree_accession['file-groups']['Tree Id'][1];
 
-      // TODO: Use tpps_file_iterator() to process this file.
       $content = tpps_parse_file($tree_accession['file']);
       $env_cvterm = chado_get_cvterm(array(
         'cv_id' => array(
@@ -791,7 +790,7 @@ function tpps_file_parsing($accession) {
         'is_obsolete' => 0,
       ))->cvterm_id;
 
-      if ($env_layers_check) {
+      if ($env_layers_check and db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
         $layers_params = array();
         $records = array(
           'phenotype' => array(),
@@ -827,105 +826,22 @@ function tpps_file_parsing($accession) {
           }
         }
 
-        for ($j = 0; $j < count($content) - 1; $j++) {
-          $tree_id = $content[$j][$id_col];
-          $stock_id = $form_state['ids']['stock_ids'][$tree_id];
+        $options = array(
+          'no_header' => !empty($tree_accession['file-no-header']),
+          'records' => $records,
+          'tree_id' => $tree_accession['file-groups']['Tree Id'][1],
+          'accession' => $form_state['accession'],
+          'stock_ids' => $form_state['ids']['stock_ids'],
+          'layers_params' => $layers_params,
+          'env_count' => &$env_count,
+          'env_cvterm' => $env_cvterm,
+          'suffix' => 0,
+        );
 
-          $gps_query = chado_select_record('stockprop', array('value'), array(
-            'stock_id' => $stock_id,
-            'type_id' => array(
-              'name' => 'gps_latitude',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $lat = current($gps_query)->value;
+        tpps_file_iterator($tree_accession['file'], 'tpps_process_environment_layers', $options);
 
-          $gps_query = chado_select_record('stockprop', array('value'), array(
-            'stock_id' => $stock_id,
-            'type_id' => array(
-              'name' => 'gps_longitude',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $long = current($gps_query)->value;
-
-          if (db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
-            foreach ($layers_params as $layer_id => $params) {
-              $layer_query = db_select('cartogratree_layers', 'l')
-                ->fields('l', array('title'))
-                ->condition('layer_id', $layer_id)
-                ->execute();
-
-              $layer_name = $layer_query->fetchObject()->title;
-
-              foreach ($params as $param_id => $param) {
-                $env_count++;
-                $param_query = db_select('cartogratree_fields', 'f')
-                  ->fields('f', array('field_name'))
-                  ->condition('field_id', $param_id)
-                  ->execute();
-
-                $param_name = $param_query->fetchObject()->field_name;
-                $phenotype_name = "{$form_state['accession']}-$tree_id-$layer_name-$param_name-$j";
-
-                $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
-                $type = variable_get("tpps_param_{$param_id}_type", 'attr_id');
-
-                if ($type == 'attr_id') {
-                  $records['phenotype'][$phenotype_name] = array(
-                    'uniquename' => $phenotype_name,
-                    'name' => $param_name,
-                    'attr_id' => $env_cvterm,
-                    'value' => $value,
-                  );
-
-                  $records['stock_phenotype'][$phenotype_name] = array(
-                    'stock_id' => $stock_id,
-                    '#fk' => array(
-                      'phenotype' => $phenotype_name,
-                    ),
-                  );
-                }
-                else {
-                  $records['phenotype'][$phenotype_name] = array(
-                    'uniquename' => $phenotype_name,
-                    'name' => "$param_name",
-                    'value' => "$value",
-                  );
-
-                  $records['phenotype_cvterm'][$phenotype_name] = array(
-                    'cvterm_id' => $env_cvterm,
-                    '#fk' => array(
-                      'phenotype' => $phenotype_name,
-                    ),
-                  );
-
-                  $records['stock_phenotype'][$phenotype_name] = array(
-                    'stock_id' => $stock_id,
-                    '#fk' => array(
-                      'phenotype' => $phenotype_name,
-                    ),
-                  );
-                }
-
-                if ($env_count >= $record_group) {
-                  tpps_chado_insert_multi($records);
-                  $records = array(
-                    'phenotype' => array(),
-                    'phenotype_cvterm' => array(),
-                    'stock_phenotype' => array(),
-                  );
-                  $env_count = 0;
-                }
-              }
-            }
-          }
-        }
-
-        tpps_chado_insert_multi($records);
-        unset($records);
+        tpps_chado_insert_multi($options['records']);
+        unset($options['records']);
         $env_count = 0;
       }
 
@@ -1454,6 +1370,124 @@ function tpps_other_marker_headers($fid, array $cols) {
     $results[$col] = $headers[$col];
   }
   return $results;
+}
+
+/**
+ * This function processes a single row of a tree accession file.
+ *
+ * This function populates the db with environmental data provided through
+ * CartograTree layers. This function is meant to be used with
+ * tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_environment_layers($row, array &$options = array()) {
+  $id_col = $options['tree_id'];
+  $records = &$options['records'];
+  $stock_ids = $options['stock_ids'];
+  $layers_params = $options['layers_params'];
+  $env_count = &$options['env_count'];
+  $accession = $options['accession'];
+  $suffix = &$options['suffix'];
+  $env_cvterm = $options['env_cvterm'];
+  $record_group = variable_get('tpps_record_group', 10000);
+
+  $tree_id = $row[$id_col];
+  $stock_id = $stock_ids[$tree_id];
+
+  $gps_query = chado_select_record('stockprop', array('value'), array(
+    'stock_id' => $stock_id,
+    'type_id' => array(
+      'name' => 'gps_latitude',
+    ),
+  ), array(
+    'limit' => 1,
+  ));
+  $lat = current($gps_query)->value;
+
+  $gps_query = chado_select_record('stockprop', array('value'), array(
+    'stock_id' => $stock_id,
+    'type_id' => array(
+      'name' => 'gps_longitude',
+    ),
+  ), array(
+    'limit' => 1,
+  ));
+  $long = current($gps_query)->value;
+
+  foreach ($layers_params as $layer_id => $params) {
+    $layer_query = db_select('cartogratree_layers', 'l')
+      ->fields('l', array('title'))
+      ->condition('layer_id', $layer_id)
+      ->execute();
+
+    $layer_name = $layer_query->fetchObject()->title;
+
+    foreach ($params as $param_id => $param) {
+      $param_query = db_select('cartogratree_fields', 'f')
+        ->fields('f', array('field_name'))
+        ->condition('field_id', $param_id)
+        ->execute();
+
+      $param_name = $param_query->fetchObject()->field_name;
+      $phenotype_name = "$accession-$tree_id-$layer_name-$param_name-$suffix";
+
+      $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
+      $type = variable_get("tpps_param_{$param_id}_type", 'attr_id');
+
+      if ($type == 'attr_id') {
+        $records['phenotype'][$phenotype_name] = array(
+          'uniquename' => $phenotype_name,
+          'name' => $param_name,
+          'attr_id' => $env_cvterm,
+          'value' => $value,
+        );
+
+        $records['stock_phenotype'][$phenotype_name] = array(
+          'stock_id' => $stock_id,
+          '#fk' => array(
+            'phenotype' => $phenotype_name,
+          ),
+        );
+      }
+      else {
+        $records['phenotype'][$phenotype_name] = array(
+          'uniquename' => $phenotype_name,
+          'name' => "$param_name",
+          'value' => "$value",
+        );
+
+        $records['phenotype_cvterm'][$phenotype_name] = array(
+          'cvterm_id' => $env_cvterm,
+          '#fk' => array(
+            'phenotype' => $phenotype_name,
+          ),
+        );
+
+        $records['stock_phenotype'][$phenotype_name] = array(
+          'stock_id' => $stock_id,
+          '#fk' => array(
+            'phenotype' => $phenotype_name,
+          ),
+        );
+      }
+
+      $env_count++;
+      if ($env_count >= $record_group) {
+        tpps_chado_insert_multi($records);
+        $records = array(
+          'phenotype' => array(),
+          'phenotype_cvterm' => array(),
+          'stock_phenotype' => array(),
+        );
+        $env_count = 0;
+      }
+    }
+  }
+  $suffix++;
 }
 
 /**
