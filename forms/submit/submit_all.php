@@ -796,6 +796,16 @@ function tpps_submit_page_3(array &$form_state) {
     ),
   );
 
+  $multi_insert_options = array(
+    'fk_overrides' => $overrides,
+    'fks' => 'stock',
+    'entities' => array(
+      'label' => 'Stock',
+      'table' => 'stock',
+      'prefix' => $form_state['accession'] . '-',
+    ),
+  );
+
   $form_state['ids']['stock_species'] = array();
 
   $options = array(
@@ -808,6 +818,7 @@ function tpps_submit_page_3(array &$form_state) {
     'org_names' => $firstpage['organism'],
     'saved_ids' => &$form_state['ids'],
     'stock_count' => &$stock_count,
+    'multi_insert' => $multi_insert_options,
   );
 
   for ($i = 1; $i <= $organism_number; $i++) {
@@ -861,19 +872,13 @@ function tpps_submit_page_3(array &$form_state) {
 
     tpps_file_iterator($tree_accession['file'], 'tpps_process_accession', $options);
 
-    $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($options['records'], array('fk_overrides' => $overrides, 'fks' => 'stock'));
+    $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($options['records'], $multi_insert_options);
     unset($options['records']);
     $stock_count = 0;
     if (empty($thirdpage['tree-accession']['check'])) {
       break;
     }
   }
-
-  $stock_publish_vals = array();
-  foreach ($form_state['ids']['stock_ids'] as $tree_id => $stock_id) {
-    $stock_publish_vals[] = array($form_state['accession'] . '-' . $tree_id, $stock_id);
-  }
-  tpps_tripal_entity_publish('Stock', $stock_publish_vals, array('multi' => TRUE));
 
   if (!empty($thirdpage['existing_trees'])) {
     tpps_matching_trees($form_state['ids']['project_id']);
@@ -1026,82 +1031,6 @@ function tpps_submit_summary(array &$form_state) {
 }
 
 /**
- * Publish a Tripal Entity based on the bundle name, title, and record id.
- *
- * @param string $bundle_name
- *   The name of the bundle, for example, "Organism", "Gene", "Project", etc.
- * @param array $vals
- *   The an array of entity values to be published.
- * @param array $options
- *   Additional options for publishing.
- */
-function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = array()) {
-  if (!empty($options['multi'])) {
-    $bundle = tripal_load_bundle_entity(array('label' => $bundle_name));
-    if (!isset($bundle)) {
-      return;
-    }
-
-    $time = time();
-    $entity_insert = db_insert('tripal_entity')
-      ->fields(array('type', 'bundle', 'term_id', 'title', 'created', 'changed'));
-    foreach ($vals as $record) {
-      if (empty(chado_get_record_entity_by_bundle($bundle, $record[1]))) {
-        $entity_insert->values(array(
-          'type' => 'TripalEntity',
-          'bundle' => 'bio_data_' . $bundle->id,
-          'term_id' => $bundle->term_id,
-          'title' => $record[0],
-          'created' => $time,
-          'changed' => $time,
-        ));
-      }
-    }
-
-    $entity_id = $entity_insert->execute();
-    $bio_data_insert = db_insert('chado_bio_data_' . $bundle->id)
-      ->fields(array('entity_id', 'record_id'));
-    foreach ($vals as $record) {
-      if (empty(chado_get_record_entity_by_bundle($bundle, $record[1]))) {
-        $bio_data_insert->values(array(
-          'entity_id' => $entity_id,
-          'record_id' => $record[1],
-        ));
-        $entity_id--;
-      }
-    }
-    $bio_data_insert->execute();
-  }
-  else {
-    $bundle = tripal_load_bundle_entity(array('label' => $bundle_name));
-
-    if (!isset($bundle)) {
-      return;
-    }
-
-    if (empty(chado_get_record_entity_by_bundle($bundle, $vals[1]))) {
-      $entity_id = db_insert('tripal_entity')
-        ->fields(array(
-          'type' => 'TripalEntity',
-          'bundle' => 'bio_data_' . $bundle->id,
-          'term_id' => $bundle->term_id,
-          'title' => $vals[0],
-          'created' => time(),
-          'changed' => time(),
-        ))
-        ->execute();
-
-      db_insert('chado_bio_data_' . $bundle->id)
-        ->fields(array(
-          'entity_id' => $entity_id,
-          'record_id' => $vals[1],
-        ))
-        ->execute();
-    }
-  }
-}
-
-/**
  * This function processes a single row of a secondary authors file.
  *
  * This function is meant to be used with tpps_file_iterator().
@@ -1155,6 +1084,7 @@ function tpps_process_accession($row, array &$options) {
   $cols = $options['column_ids'];
   $saved_ids = &$options['saved_ids'];
   $stock_count = &$options['stock_count'];
+  $multi_insert_options = $options['multi_insert'];
   $record_group = variable_get('tpps_record_group', 10000);
   $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
 
@@ -1342,7 +1272,7 @@ function tpps_process_accession($row, array &$options) {
 
   $stock_count++;
   if ($stock_count >= $record_group) {
-    $saved_ids['stock_ids'] += tpps_chado_insert_multi($records, array('fk_overrides' => $options['overrides'], 'fks' => 'stock'));
+    $saved_ids['stock_ids'] += tpps_chado_insert_multi($records, $multi_insert_options);
     $records = array(
       'stock' => array(),
       'stockprop' => array(),
