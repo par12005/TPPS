@@ -1018,7 +1018,7 @@ function tpps_main_submit($form, &$form_state) {
       break;
 
     default:
-      print_r('Invalid form stage');
+      drupal_set_message(t('Invalid form stage.'), 'error');
       break;
   }
 

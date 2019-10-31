@@ -255,7 +255,6 @@ function tpps_file_parsing($accession) {
       $genotype = $fourthpage["organism-$i"]['genotype'];
       $genotype_count = 0;
       $genotype_total = 0;
-      $fks = array();
       $seq_var_cvterm = chado_get_cvterm(array(
         'cv_id' => array(
           'name' => 'sequence',
@@ -287,6 +286,14 @@ function tpps_file_parsing($accession) {
         'stock_genotype' => array(),
       );
 
+      $multi_insert_options = array(
+        'fk_overrides' => $overrides,
+        'entities' => array(
+          'label' => 'Genotype',
+          'table' => 'genotype',
+        ),
+      );
+
       $options = array(
         'records' => $records,
         'stock_ids' => $form_state['ids']['stock_ids'],
@@ -296,8 +303,8 @@ function tpps_file_parsing($accession) {
         'genotype_total' => &$genotype_total,
         'project_id' => $project_id,
         'seq_var_cvterm' => $seq_var_cvterm,
-        'fks' => &$fks,
         'overrides' => $overrides,
+        'multi_insert' => $multi_insert_options,
       );
 
       if ($genotype['ref-genome'] == 'bio') {
@@ -428,7 +435,7 @@ function tpps_file_parsing($accession) {
 
         tpps_file_iterator($genotype['files']['snps-assay'], 'tpps_process_genotype_spreadsheet', $options);
 
-        $fks += tpps_chado_insert_multi($options['records'], array('fks' => 'genotype', 'fk_overrides' => $overrides));
+        tpps_chado_insert_multi($options['records'], $multi_insert_options);
         unset($options['records']);
         $genotype_total += $genotype_count;
         $genotype_count = 0;
@@ -478,7 +485,7 @@ function tpps_file_parsing($accession) {
 
         tpps_file_iterator($genotype['files']['ssrs'], 'tpps_process_genotype_spreadsheet', $options);
 
-        $fks += tpps_chado_insert_multi($options['records'], array('fks' => 'genotype', 'fk_overrides' => $overrides));
+        tpps_chado_insert_multi($options['records'], $multi_insert_options);
         unset($options['records']);
         $genotype_count = 0;
       }
@@ -514,7 +521,7 @@ function tpps_file_parsing($accession) {
 
         tpps_file_iterator($genotype['files']['other'], 'tpps_process_genotype_spreadsheet', $options);
 
-        $fks += tpps_chado_insert_multi($options['records'], array('fks' => 'genotype', 'fk_overrides' => $overrides));
+        tpps_chado_insert_multi($options['records'], $multi_insert_options);
         unset($options['records']);
         $genotype_count = 0;
       }
@@ -731,7 +738,7 @@ function tpps_file_parsing($accession) {
             // their relevant genotypeprops.
             if ($genotype_count > $record_group) {
               $genotype_count = 0;
-              $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
+              tpps_chado_insert_multi($records, $multi_insert_options);
               $records = array(
                 'feature' => array(),
                 'genotype' => array(),
@@ -753,17 +760,11 @@ function tpps_file_parsing($accession) {
           }
         }
         // Insert the last set of values.
-        $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $overrides));
+        tpps_chado_insert_multi($records, $multi_insert_options);
         unset($records);
         $genotype_count = 0;
         // dpm('done: ' . date('r'));.
       }
-
-      $genotype_publish_vals = array();
-      foreach ($fks as $name => $record_id) {
-        $genotype_publish_vals[] = array($name, $record_id);
-      }
-      tpps_tripal_entity_publish('Genotype', $genotype_publish_vals, array('multi' => TRUE));
     }
 
     if (isset($fourthpage["organism-$i"]['environment'])) {
@@ -1155,7 +1156,6 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
 function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $type = $options['type'];
   $records = &$options['records'];
-  $fks = &$options['fks'];
   $headers = $options['headers'];
   $stock_ids = $options['stock_ids'];
   $species_codes = $options['species_codes'];
@@ -1166,6 +1166,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $marker = $options['marker'];
   $type_cvterm = $options['type_cvterm'];
   $seq_var_cvterm = $options['seq_var_cvterm'];
+  $multi_insert_options = $options['multi_insert'];
   $record_group = variable_get('tpps_record_group', 10000);
   $stock_id = NULL;
   if ($type == 'other') {
@@ -1232,7 +1233,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     );
 
     if ($genotype_count >= $record_group) {
-      $fks += tpps_chado_insert_multi($records, array('fks' => 'genotype', 'fk_overrides' => $options['overrides']));
+      tpps_chado_insert_multi($records, $multi_insert_options);
       $records = array(
         'feature' => array(),
         'genotype' => array(),

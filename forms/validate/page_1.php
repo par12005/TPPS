@@ -14,11 +14,6 @@
  *   The state of the form that is being validated.
  */
 function tpps_page_1_validate_form(array &$form, array &$form_state) {
-  // For testing only.
-  /*foreach($form_state['values'] as $key => $value){
-  print_r($key . " => " . $value . ";<br>");
-  }*/
-
   if ($form_state['submitted'] == '1') {
     unset($form_state['file_info'][TPPS_PAGE_1]);
 

@@ -288,11 +288,97 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
     print_r($times);
   }
 
+  if (!empty($options['entities'])) {
+    tpps_tripal_entity_publish($options['entities']['label'], $fks[$options['entities']['table']], array(
+      'multi' => TRUE,
+      'prefix' => $options['entities']['prefix'] ?? NULL,
+    ));
+  }
+
   if (!empty($options['fks'])) {
     return $fks[$options['fks']];
   }
   else {
     return $fks;
+  }
+}
+
+/**
+ * Publish a Tripal Entity based on the bundle name, title, and record id.
+ *
+ * @param string $bundle_name
+ *   The name of the bundle, for example, "Organism", "Gene", "Project", etc.
+ * @param array $vals
+ *   The an array of entity values to be published.
+ * @param array $options
+ *   Additional options for publishing.
+ */
+function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = array()) {
+  if (!empty($options['multi'])) {
+    $bundle = tripal_load_bundle_entity(array('label' => $bundle_name));
+    if (!isset($bundle)) {
+      return;
+    }
+
+    $time = time();
+    $entity_insert = db_insert('tripal_entity')
+      ->fields(array('type', 'bundle', 'term_id', 'title', 'created', 'changed'));
+    foreach ($vals as $title => $id) {
+      if (empty(chado_get_record_entity_by_bundle($bundle, $id))) {
+        if (!empty($options['prefix'])) {
+          $title = $options['prefix'] . $title;
+        }
+        $entity_insert->values(array(
+          'type' => 'TripalEntity',
+          'bundle' => 'bio_data_' . $bundle->id,
+          'term_id' => $bundle->term_id,
+          'title' => $title,
+          'created' => $time,
+          'changed' => $time,
+        ));
+      }
+    }
+    $entity_id = $entity_insert->execute() - count($vals) + 1;
+
+    $bio_data_insert = db_insert('chado_bio_data_' . $bundle->id)
+      ->fields(array('entity_id', 'record_id'));
+    foreach ($vals as $id) {
+      if (empty(chado_get_record_entity_by_bundle($bundle, $id))) {
+        $bio_data_insert->values(array(
+          'entity_id' => $entity_id,
+          'record_id' => $id,
+        ));
+        $entity_id++;
+      }
+    }
+    $bio_data_insert->execute();
+  }
+  else {
+    $bundle = tripal_load_bundle_entity(array('label' => $bundle_name));
+
+    if (!isset($bundle)) {
+      return;
+    }
+
+    if (empty(chado_get_record_entity_by_bundle($bundle, $vals[1]))) {
+      $entity_id = db_insert('tripal_entity')
+        ->fields(array(
+          'type' => 'TripalEntity',
+          'bundle' => 'bio_data_' . $bundle->id,
+          'term_id' => $bundle->term_id,
+          'title' => $vals[0],
+          'created' => time(),
+          'changed' => time(),
+        ))
+        ->execute();
+
+      db_insert('chado_bio_data_' . $bundle->id)
+        ->fields(array(
+          'entity_id' => $entity_id,
+          'record_id' => $vals[1],
+        ))
+        ->execute();
+    }
   }
 }
 
