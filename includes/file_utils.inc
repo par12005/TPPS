@@ -78,9 +78,9 @@ function tpps_parse_flat($location, $max_rows = 0, $no_header = FALSE) {
     $values = array();
     for ($i = 0; $i < $longest; $i++) {
       $key = pack('H*', $hex);
-      $values[$key] = $vals[$i] ?? NULL;
+      $values[$key] = trim($vals[$i]) ?? NULL;
       if (!check_plain($values[$key])) {
-        $values[$key] = mb_convert_encoding($values[$key], "UTF-8", "Windows-1252");
+        $values[$key] = trim(mb_convert_encoding($values[$key], "UTF-8", "Windows-1252"));
       }
       $hex = tpps_increment_hex($hex);
     }
@@ -488,7 +488,7 @@ function tpps_parse_flat_column($location, $column, $no_header = FALSE) {
   }
   while (($line = fgets($handle)) !== FALSE) {
     $vals = explode($delim, $line);
-    $results[] = $vals[$column];
+    $results[] = trim($vals[$column]);
   }
 
   fclose($handle);
