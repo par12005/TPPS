@@ -323,6 +323,7 @@ function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = 
     $time = time();
     $entity_insert = db_insert('tripal_entity')
       ->fields(array('type', 'bundle', 'term_id', 'title', 'created', 'changed'));
+    $entity_count = 0;
     foreach ($vals as $title => $id) {
       if (empty(chado_get_record_entity_by_bundle($bundle, $id))) {
         if (!empty($options['prefix'])) {
@@ -336,9 +337,10 @@ function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = 
           'created' => $time,
           'changed' => $time,
         ));
+        $entity_count++;
       }
     }
-    $entity_id = $entity_insert->execute() - count($vals) + 1;
+    $entity_id = $entity_insert->execute() - $entity_count + 1;
 
     $bio_data_insert = db_insert('chado_bio_data_' . $bundle->id)
       ->fields(array('entity_id', 'record_id'));
