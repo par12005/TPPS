@@ -186,82 +186,38 @@ function tpps_file_len($fid) {
   $file = file_load($fid);
   $location = drupal_realpath($file->uri);
   $extension = tpps_get_path_extension($location);
-  switch ($extension) {
-    case 'xlsx':
-      return tpps_xlsx_len($location);
-
-    case 'vcf':
-      return tpps_flat_len($location, array(
-        'skip_prefix' => '#',
-      ));
-
-    case 'txt':
-    case 'csv':
-      return tpps_flat_len($location);
-
-    default:
-      throw new Exception('Unrecognized file type');
-  }
-}
-
-/**
- * Returns the number of lines in a flat file.
- *
- * @param string $location
- *   The path on the server to the file being parsed.
- * @param array $options
- *   Additional options for lines to skip (useful for .vcf files).
- *
- * @return int
- *   The number of lines in the file.
- */
-function tpps_flat_len($location, array $options = array()) {
-  $original = ini_get('auto_detect_line_endings');
-  if (!$original) {
-    ini_set('auto_detect_line_endings', TRUE);
-  }
-
-  $skip = NULL;
-  if (array_key_exists('skip_prefix', $options)) {
-    $skip = $options['skip_prefix'];
-  }
-
   $count = 0;
-  $handle = fopen($location, 'r');
-  while (($line = fgets($handle)) !== FALSE) {
-    if (isset($skip) and (substr($line, 0, strlen($skip)) == $skip)) {
-      continue;
-    }
-    $count++;
+  $options = array(
+    'count' => &$count,
+  );
+  if ($extension == 'vcf') {
+    $options['skip_prefix'] = '#';
   }
-
-  fclose($handle);
-  ini_set('auto_detect_line_endings', $original);
+  tpps_file_iterator($fid, 'tpps_file_get_len', $options);
   return $count;
 }
 
 /**
- * Returns the number of rows in an xlsx file.
+ * This is the helper function for tpps_file_len().
  *
- * @param string $location
- *   The path on the server to the file being parsed.
+ * This function is passed to the tpps_file_iterator during tpps_file_len, and
+ * increments the count attribute of the options array. It also checks whether
+ * a skip_prefix was provided, and skips lines if necessary.
  *
- * @return int
- *   The number of lines in the file.
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_xlsx_len($location) {
-  $count = 0;
-  $dir = drupal_realpath(TPPS_TEMP_XLSX);
-
-  $zip = new ZipArchive();
-  $zip->open($location);
-  $zip->extractTo($dir);
-
-  $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
-  $xlrows = $sheet->sheetData->row;
-  tpps_rmdir($dir);
-
-  return count($xlrows);
+function tpps_file_get_len($row, array &$options = array()) {
+  if (empty($options['skip_prefix'])) {
+    $options['count']++;
+  }
+  else {
+    if (substr(current($row), 0, strlen($options['skip_prefix'])) != $options['skip_prefix']) {
+      $options['count']++;
+    }
+  }
 }
 
 /**
