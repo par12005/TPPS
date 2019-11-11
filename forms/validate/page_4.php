@@ -223,9 +223,9 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         $phenotype_names = array();
         if ($phenotype['format'] == 0) {
           $phenotype_file_name_cols = $groups['Phenotype Data']['0'];
-          $content = tpps_parse_file($phenotype_file, 1);
+          $headers = tpps_file_headers($phenotype_file, !empty($phenotype['file-no-header']));
           foreach ($phenotype_file_name_cols as $column_index) {
-            $phenotype_names[] = $content['headers'][$column_index];
+            $phenotype_names[] = $headers[$column_index];
           }
         }
         else {
@@ -282,13 +282,13 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
     }
   }
   else {
-    $content = tpps_parse_file($phenotype['iso'], 1);
-    $id_col_name = key($content['headers']);
-    while (($k = array_search(NULL, $content['headers']))) {
-      unset($content['headers'][$k]);
+    $headers = tpps_file_headers($phenotype['iso']);
+    $id_col_name = key($headers);
+    while (($k = array_search(NULL, $headers))) {
+      unset($headers[$k]);
     }
-    $num_columns = count($content[0]) - 1;
-    $num_unique_columns = count(array_unique($content['headers'])) - 1;
+    $num_columns = tpps_file_width($phenotype['iso']) - 1;
+    $num_unique_columns = count(array_unique($headers)) - 1;
 
     if ($num_unique_columns != $num_columns) {
       form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file.");
@@ -517,13 +517,13 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: field is required.");
     }
     elseif (!empty($file_type['SNPs Genotype Assay'])) {
-      $content = tpps_parse_file($snps_assay, 1);
-      $id_col_name = key($content['headers']);
-      while (($k = array_search(NULL, $content['headers']))) {
-        unset($content['headers'][$k]);
+      $headers = tpps_file_headers($snps_assay);
+      $id_col_name = key($headers);
+      while (($k = array_search(NULL, $headers))) {
+        unset($headers[$k]);
       }
-      $num_columns = count($content[0]) - 1;
-      $num_unique_columns = count(array_unique($content['headers'])) - 1;
+      $num_columns = tpps_file_width($snps_assay) - 1;
+      $num_unique_columns = count(array_unique($headers)) - 1;
 
       if ($num_unique_columns != $num_columns) {
         form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file.");
@@ -570,13 +570,13 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][files][ssrs]", "SSRs/cpSSRs Spreadsheet: field is required.");
     }
     elseif (!empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and !empty($genotype['files']['ploidy'])) {
-      $content = tpps_parse_file($genotype['files']['ssrs'], 1);
-      $id_col_name = key($content['headers']);
-      while (($k = array_search(NULL, $content['headers']))) {
-        unset($content['headers'][$k]);
+      $headers = tpps_file_headers($genotype['files']['ssrs']);
+      $id_col_name = key($headers);
+      while (($k = array_search(NULL, $headers))) {
+        unset($headers[$k]);
       }
-      $num_columns = count($content[0]) - 1;
-      $num_unique_columns = count(array_unique($content['headers'])) - 1;
+      $num_columns = tpps_file_width($genotype['files']['ssrs']) - 1;
+      $num_unique_columns = count(array_unique($headers)) - 1;
 
       switch ($genotype['files']['ploidy']) {
         case 'Haploid':
