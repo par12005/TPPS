@@ -6,7 +6,7 @@
  */
 
 /**
- * This function parses a file and returns an arary of its content.
+ * This function parses a file and returns an array of its content.
  *
  * The process of actually parsing the file is done with the use of helper
  * functions, and this function returns the results.
@@ -22,6 +22,7 @@
  *   An array containing the content headers and content body.
  */
 function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
+  // TODO: use tpps_file_iterator to parse files.
   $file = file_load($fid);
   $location = drupal_realpath($file->uri);
   $extension = tpps_get_path_extension($location);
@@ -59,7 +60,7 @@ function tpps_parse_flat($location, $max_rows = 0, $no_header = FALSE) {
 
   $content = array();
   $delim = ',';
-  $longest = tpps_longest_line($location, $delim);
+  $longest = tpps_flat_width($location, $delim);
   $handle = fopen($location, 'r');
   $count = 0;
 
@@ -221,6 +222,69 @@ function tpps_file_len_helper($row, array &$options = array()) {
 }
 
 /**
+ * This function returns the width of a file.
+ *
+ * The process of finding the width of the file is done with the use of helper
+ * functions, and this function returns the results.
+ *
+ * @param int $fid
+ *   The Drupal managed file identifier of the file to be parsed.
+ *
+ * @return int
+ *   The length of the longest line in the file.
+ */
+function tpps_file_width($fid) {
+  $file = file_load($fid);
+  $location = drupal_realpath($file->uri);
+  $extension = tpps_get_path_extension($location);
+  switch ($extension) {
+    case 'xlsx':
+      return tpps_xlsx_width($location);
+      break;
+
+    case 'txt':
+    case 'csv':
+      return tpps_flat_width($location);
+      break;
+
+    default:
+      throw new Exception('Unrecognized file type');
+  }
+}
+
+/**
+ * This function gets the length of the longest line of an xlsx file.
+ *
+ * @param string $location
+ *   The location of the file.
+ *
+ * @return int
+ *   The length of the longest line.
+ */
+function tpps_xlsx_width($location) {
+  $dir = drupal_realpath(TPPS_TEMP_XLSX);
+
+  $zip = new ZipArchive();
+  $zip->open($location);
+  $zip->extractTo($dir);
+
+  $data_location = $dir . '/xl/worksheets/sheet1.xml';
+
+  $dimension = tpps_xlsx_get_dimension($data_location);
+  preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
+  $left_hex = unpack('H*', $matches[1]);
+  $hex = $left_hex[1];
+  $right_hex = unpack('H*', $matches[2]);
+
+  $len = 0;
+  while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
+    $len++;
+    $hex = tpps_increment_hex($hex);
+  }
+  return $len;
+}
+
+/**
  * This function gets the length of the longest line of a flat file.
  *
  * @param string $location
@@ -231,7 +295,7 @@ function tpps_file_len_helper($row, array &$options = array()) {
  * @return int
  *   The length of the longest line.
  */
-function tpps_longest_line($location, $delim = ',') {
+function tpps_flat_width($location, $delim = ',') {
   $longest = 0;
   $handle = fopen($location, 'r');
 
@@ -360,6 +424,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
  *   An array of values found in the parsed column.
  */
 function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
+  // TODO: use tpps_file_iterator to parse files.
   $file = file_load($fid);
   $location = drupal_realpath($file->uri);
   $extension = tpps_get_path_extension($location);
@@ -802,7 +867,6 @@ function tpps_xlsx_get_cell_value(&$reader, $cell_type, array &$strings = array(
     if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'v') {
       $value = $reader->readInnerXml();
       if (!empty($cell_type) and $cell_type == 's') {
-        //$value = tpps_xlsx_get_string($strings_location, $value, $string_cache);
         $value = $strings[$value];
       }
       return $value;
@@ -1036,7 +1100,7 @@ function tpps_flat_generator($location, array $options = array()) {
   $max_rows = $options['max_rows'] ?? NULL;
 
   $delim = ',';
-  $longest = tpps_longest_line($location, $delim);
+  $longest = tpps_flat_width($location, $delim);
   $handle = fopen($location, 'r');
 
   if (!$no_header) {
