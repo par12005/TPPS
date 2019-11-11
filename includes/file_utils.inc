@@ -79,8 +79,8 @@ function tpps_parse_flat($location, $max_rows = 0, $no_header = FALSE) {
     $values = array();
     for ($i = 0; $i < $longest; $i++) {
       $key = pack('H*', $hex);
-      $values[$key] = trim($vals[$i]) ?? NULL;
-      if (!check_plain($values[$key])) {
+      $values[$key] = isset($vals[$i]) ? trim($vals[$i]) : NULL;
+      if (isset($values[$key]) and !check_plain($values[$key])) {
         $values[$key] = trim(mb_convert_encoding($values[$key], "UTF-8", "Windows-1252"));
       }
       $hex = tpps_increment_hex($hex);
@@ -1057,7 +1057,7 @@ function tpps_xlsx_generator($location, array $options = array()) {
       $hex = $left_hex[1];
       while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
         $key = pack('H*', $hex);
-        $values[$key] = trim($row[$key]) ?? NULL;
+        $values[$key] = isset($row[$key]) ? trim($row[$key]) : NULL;
         $hex = tpps_increment_hex($hex);
       }
       yield $values;
@@ -1065,7 +1065,7 @@ function tpps_xlsx_generator($location, array $options = array()) {
     }
 
     foreach ($columns as $column) {
-      $values[$column] = trim($row[$column]) ?? NULL;
+      $values[$column] = isset($row[$column]) ? trim($row[$column]) : NULL;
     }
     yield $values;
   }
@@ -1121,8 +1121,8 @@ function tpps_flat_generator($location, array $options = array()) {
       $hex = unpack('H*', 'A')[1];
       for ($i = 0; $i < $longest; $i++) {
         $key = pack('H*', $hex);
-        $values[$key] = trim($vals[$i]) ?? NULL;
-        if (!check_plain($values[$key])) {
+        $values[$key] = isset($vals[$i]) ? trim($vals[$i]) : NULL;
+        if (isset($values[$key]) and !check_plain($values[$key])) {
           $values[$key] = trim(mb_convert_encoding($values[$key], "UTF-8", "Windows-1252"));
         }
         $hex = tpps_increment_hex($hex);
