@@ -21,10 +21,11 @@
  * @return array
  *   An array containing the content headers and content body.
  */
-function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
+function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE, $columns = NULL) {
   $content = array();
   $options = array(
     'no_header' => $no_header,
+    'columns' => $columns,
     'max_rows' => $max_rows,
     'content' => &$content,
   );
@@ -301,97 +302,30 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
  *   An array of values found in the parsed column.
  */
 function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
-  // TODO: use tpps_file_iterator to parse files.
-  $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
-  $extension = tpps_get_path_extension($location);
-  switch ($extension) {
-    case 'xlsx':
-      return tpps_parse_xlsx_column($location, $column, $no_header);
-
-    case 'txt':
-    case 'csv':
-      return tpps_parse_flat_column($location, $column, $no_header);
-
-    default:
-      throw new Exception('Unrecognized file type');
-  }
-}
-
-/**
- * Parses a single column from an xlsx file.
- *
- * @param string $location
- *   The location of the file to be parsed.
- * @param string $column
- *   The alphabetical key of the column to be parsed.
- * @param bool $no_header
- *   Whether or not the no_header options has been set to true for the file.
- *
- * @return array
- *   An array of values found in the parsed column.
- */
-function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
   $content = array();
-  $dir = drupal_realpath(TPPS_TEMP_XLSX);
-
-  $zip = new ZipArchive();
-  $zip->open($location);
-  $zip->extractTo($dir);
-
-  $strings_location = $dir . '/xl/sharedStrings.xml';
-  $data_location = $dir . '/xl/worksheets/sheet1.xml';
-
-  $strings = tpps_xlsx_get_strings($strings_location);
-  $reader = new XMLReader();
-  $reader->open($data_location);
-  if (!$no_header) {
-    tpps_xlsx_get_row($reader, $strings);
-  }
-  while (($row = tpps_xlsx_get_row($reader, $strings))) {
-    $content[] = $row[$column] ?? NULL;
-  }
-
-  $reader->close();
-  tpps_rmdir($dir);
-
+  $options = array(
+    'no_header' => $no_header,
+    'columns' => array($column),
+    'content' => &$content,
+  );
+  tpps_file_iterator($fid, 'tpps_parse_file_column_helper', $options);
   return $content;
 }
 
 /**
- * Parses a single column from a flat file.
+ * This function processes a single row of a file.
  *
- * @param string $location
- *   The location of the file to be parsed.
- * @param string $column
- *   The alphabetical key of the column to be parsed.
- * @param bool $no_header
- *   Whether or not the no_header options has been set to true for the file.
+ * This function populates the content attribute of the options array with the
+ * data in a single column. This function is meant to be used with 
+ * tpps_file_iterator().
  *
- * @return array
- *   An array of values found in the parsed column.
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_parse_flat_column($location, $column, $no_header = FALSE) {
-  $original = ini_get('auto_detect_line_endings');
-  if (!$original) {
-    ini_set('auto_detect_line_endings', TRUE);
-  }
-  $delim = ',';
-  $column = tpps_convert_colname($column);
-
-  $results = array();
-  $handle = fopen($location, 'r');
-  if (!$no_header) {
-    fgets($handle);
-  }
-  while (($line = fgets($handle)) !== FALSE) {
-    $vals = explode($delim, $line);
-    $results[] = trim($vals[$column]);
-  }
-
-  fclose($handle);
-  ini_set('auto_detect_line_endings', $original);
-  return $results;
+function tpps_parse_file_column_helper($row, &$options) {
+  $options['content'][] = $row[current($options['columns'])];
 }
 
 /**
@@ -839,8 +773,8 @@ function tpps_file_headers($fid, $no_header = FALSE) {
 /**
  * Iterates over a file and applies a function to each generator result.
  *
- * This function should be used in place of the deprecated tpps_parse_file()
- * wherever possible, as it uses much less memory and is much faster.
+ * This function should be used in place of tpps_parse_file() wherever
+ * possible, as it uses much less memory and is much faster.
  *
  * @param int $fid
  *   The Drupal managed file id of the file.
