@@ -198,16 +198,19 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
       if (!empty($fid) and ($file = file_load($fid)) and $pop_group_show) {
         $form['tree-accession']["species-$i"]['pop-group']['#type'] = 'fieldset';
-        $content = tpps_parse_file($fid);
-
-        for ($j = 0; $j < count($content) - 1; $j++) {
-          $pop_group = $content[$j][$pop_col];
-          if (empty($form['tree-accession']["species-$i"]['pop-group'][$pop_group])) {
-            $form['tree-accession']["species-$i"]['pop-group'][$pop_group] = array(
-              '#type' => 'textfield',
-              '#title' => "Location for $name trees from group $pop_group:",
-            );
-          }
+        $pop_groups = array();
+        $options = array(
+          'columns' => array(
+            $pop_col,
+          ),
+          'pop_groups' => &$pop_groups,
+        );
+        tpps_file_iterator($fid, 'tpps_accession_pop_groups', $options);
+        foreach ($pop_groups as $pop_group) {
+          $form['tree-accession']["species-$i"]['pop-group'][$pop_group] = array(
+            '#type' => 'textfield',
+            '#title' => "Location for $name trees from group $pop_group:",
+          );
         }
       }
     }

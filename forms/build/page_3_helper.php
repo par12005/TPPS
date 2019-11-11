@@ -126,3 +126,23 @@ function tpps_study_location(array &$form, array &$form_state) {
 
   return $form;
 }
+
+/**
+ * This function processes a single row of an accession file.
+ *
+ * This function populates the pop_groups attribute of the options array with
+ * the names of all the selected population groups from an accession file. This
+ * function is meant to be used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_accession_pop_groups($row, &$options) {
+  $groups = &$options['pop_groups'];
+  $col = current($options['columns']);
+  if (array_search($row[$col], $groups) === FALSE) {
+    $groups[] = $row[$col];
+  }
+}
