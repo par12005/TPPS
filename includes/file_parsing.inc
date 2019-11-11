@@ -1073,7 +1073,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     if (isset($meta[strtolower($name)]['time'])) {
       $records['phenotypeprop']["$phenotype_name-time"] = array(
         'type_id' => $cvterms['time'],
-        'value' => $phenotypes_meta[strtolower($name)]['time'],
+        'value' => $meta[strtolower($name)]['time'],
         '#fk' => array(
           'phenotype' => $phenotype_name,
         ),

@@ -6,7 +6,7 @@
  */
 
 /**
- * This function parses a file and returns an arary of its content.
+ * This function parses a file and returns an array of its content.
  *
  * The process of actually parsing the file is done with the use of helper
  * functions, and this function returns the results.
@@ -21,156 +21,35 @@
  * @return array
  *   An array containing the content headers and content body.
  */
-function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
-  $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
-  $extension = tpps_get_path_extension($location);
-  switch ($extension) {
-    case 'xlsx':
-      return tpps_parse_xlsx($location, $max_rows, $no_header);
-
-    case 'txt':
-    case 'csv':
-      return tpps_parse_flat($location, $max_rows, $no_header);
-
-    default:
-      throw new Exception('Unrecognized file type');
-  }
-}
-
-/**
- * This function parses a .csv file and returns an array of its content.
- *
- * @param string $location
- *   The path on the server to the file being parsed.
- * @param int $max_rows
- *   The maximum number of rows to read from the file.
- * @param bool $no_header
- *   Whether or not the no_header option has been set to True for the file.
- *
- * @return array
- *   An array containing the content headers and content body.
- */
-function tpps_parse_flat($location, $max_rows = 0, $no_header = FALSE) {
-  $original = ini_get('auto_detect_line_endings');
-  if (!$original) {
-    ini_set('auto_detect_line_endings', TRUE);
-  }
-
+function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE, $columns = NULL) {
   $content = array();
-  $delim = ',';
-  $longest = tpps_longest_line($location, $delim);
-  $handle = fopen($location, 'r');
-  $count = 0;
+  $options = array(
+    'no_header' => $no_header,
+    'columns' => $columns,
+    'max_rows' => $max_rows,
+    'content' => &$content,
+  );
 
-  if ($no_header) {
-    $hex = unpack('H*', 'A')[1];
-    for ($i = 0; $i < $longest; $i++) {
-      $key = pack('H*', $hex);
-      $content['headers'][$key] = $i;
-      $hex = tpps_increment_hex($hex);
-    }
-  }
-
-  while (($line = fgets($handle))) {
-    $hex = unpack('H*', 'A')[1];
-    $vals = explode($delim, $line);
-    $values = array();
-    for ($i = 0; $i < $longest; $i++) {
-      $key = pack('H*', $hex);
-      $values[$key] = trim($vals[$i]) ?? NULL;
-      if (!check_plain($values[$key])) {
-        $values[$key] = trim(mb_convert_encoding($values[$key], "UTF-8", "Windows-1252"));
-      }
-      $hex = tpps_increment_hex($hex);
-    }
-
-    if (!isset($content['headers'])) {
-      $content['headers'] = $values;
-      continue;
-    }
-
-    $count++;
-    $content[] = $values;
-    if ($max_rows > 0 and $count >= $max_rows) {
-      break;
-    }
-  }
-
-  fclose($handle);
-  ini_set('auto_detect_line_endings', $original);
+  tpps_file_iterator($fid, 'tpps_parse_file_helper', $options);
+  $content['headers'] = tpps_file_headers($fid, $no_header);
   return $content;
 }
 
 /**
- * This function parses an .xlsx file and returns an array of its content.
+ * This function processes a single row of a file.
  *
- * @param string $location
- *   The path on the server to the file being parsed.
- * @param int $max_rows
- *   The maximum number of rows to read from the file.
- * @param bool $no_header
- *   Whether or not the no_header option has been set to True for the file.
+ * This function populates the content attribute of the options array with
+ * content returned by the TPPS file generator. It is used by both the
+ * tpps_parse_file and the tpps_file_headers functions. This function is meant
+ * to be used with tpps_file_iterator().
  *
- * @return array
- *   An array containing the content headers and content body.
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
-  $content = array();
-  $dir = drupal_realpath(TPPS_TEMP_XLSX);
-
-  $zip = new ZipArchive();
-  $zip->open($location);
-  $zip->extractTo($dir);
-
-  $strings_location = $dir . '/xl/sharedStrings.xml';
-  $data_location = $dir . '/xl/worksheets/sheet1.xml';
-
-  // Get width of the data in the file.
-  $dimension = tpps_xlsx_get_dimension($data_location);
-  preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
-  $left_hex = unpack('H*', $matches[1]);
-  $hex = $left_hex[1];
-  $right_hex = unpack('H*', $matches[2]);
-
-  if ($no_header) {
-    while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
-      $key = pack('H*', $hex);
-      $content['headers'][$key] = base_convert($hex, 16, 10) - base_convert($left_hex[1], 16, 10);
-      $hex = tpps_increment_hex($hex);
-    }
-  }
-
-  $strings = tpps_xlsx_get_strings($strings_location);
-  $reader = new XMLReader();
-  $reader->open($data_location);
-  $count = 0;
-  while (($row = tpps_xlsx_get_row($reader, $strings))) {
-    ksort($row);
-    $values = array();
-    $hex = $left_hex[1];
-    while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
-      $key = pack('H*', $hex);
-      $values[$key] = $row[$key] ?? NULL;
-      $hex = tpps_increment_hex($hex);
-    }
-
-    if (!isset($content['headers'])) {
-      $content['headers'] = $values;
-      continue;
-    }
-
-    $content[] = $values;
-    $count++;
-    if ($max_rows > 0 and $count >= $max_rows) {
-      break;
-    }
-  }
-
-  $reader->close();
-  tpps_rmdir($dir);
-
-  return $content;
+function tpps_parse_file_helper($row, &$options) {
+  $options['content'][] = $row;
 }
 
 /**
@@ -186,18 +65,65 @@ function tpps_file_len($fid) {
   $file = file_load($fid);
   $location = drupal_realpath($file->uri);
   $extension = tpps_get_path_extension($location);
+  $count = 0;
+  $options = array(
+    'count' => &$count,
+  );
+  if ($extension == 'vcf') {
+    $options['skip_prefix'] = '#';
+  }
+  tpps_file_iterator($fid, 'tpps_file_len_helper', $options);
+  return $count;
+}
+
+/**
+ * This is the helper function for tpps_file_len().
+ *
+ * This function is passed to the tpps_file_iterator during tpps_file_len, and
+ * increments the count attribute of the options array. It also checks whether
+ * a skip_prefix was provided, and skips lines if necessary.
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_file_len_helper($row, array &$options = array()) {
+  if (empty($options['skip_prefix'])) {
+    $options['count']++;
+  }
+  else {
+    if (substr(current($row), 0, strlen($options['skip_prefix'])) != $options['skip_prefix']) {
+      $options['count']++;
+    }
+  }
+}
+
+/**
+ * This function returns the width of a file.
+ *
+ * The process of finding the width of the file is done with the use of helper
+ * functions, and this function returns the results.
+ *
+ * @param int $fid
+ *   The Drupal managed file identifier of the file to be parsed.
+ *
+ * @return int
+ *   The length of the longest line in the file.
+ */
+function tpps_file_width($fid) {
+  $file = file_load($fid);
+  $location = drupal_realpath($file->uri);
+  $extension = tpps_get_path_extension($location);
   switch ($extension) {
     case 'xlsx':
-      return tpps_xlsx_len($location);
-
-    case 'vcf':
-      return tpps_flat_len($location, array(
-        'skip_prefix' => '#',
-      ));
+      return tpps_xlsx_width($location);
+      break;
 
     case 'txt':
     case 'csv':
-      return tpps_flat_len($location);
+      return tpps_flat_width($location);
+      break;
 
     default:
       throw new Exception('Unrecognized file type');
@@ -205,63 +131,35 @@ function tpps_file_len($fid) {
 }
 
 /**
- * Returns the number of lines in a flat file.
+ * This function gets the length of the longest line of an xlsx file.
  *
  * @param string $location
- *   The path on the server to the file being parsed.
- * @param array $options
- *   Additional options for lines to skip (useful for .vcf files).
+ *   The location of the file.
  *
  * @return int
- *   The number of lines in the file.
+ *   The length of the longest line.
  */
-function tpps_flat_len($location, array $options = array()) {
-  $original = ini_get('auto_detect_line_endings');
-  if (!$original) {
-    ini_set('auto_detect_line_endings', TRUE);
-  }
-
-  $skip = NULL;
-  if (array_key_exists('skip_prefix', $options)) {
-    $skip = $options['skip_prefix'];
-  }
-
-  $count = 0;
-  $handle = fopen($location, 'r');
-  while (($line = fgets($handle)) !== FALSE) {
-    if (isset($skip) and (substr($line, 0, strlen($skip)) == $skip)) {
-      continue;
-    }
-    $count++;
-  }
-
-  fclose($handle);
-  ini_set('auto_detect_line_endings', $original);
-  return $count;
-}
-
-/**
- * Returns the number of rows in an xlsx file.
- *
- * @param string $location
- *   The path on the server to the file being parsed.
- *
- * @return int
- *   The number of lines in the file.
- */
-function tpps_xlsx_len($location) {
-  $count = 0;
+function tpps_xlsx_width($location) {
   $dir = drupal_realpath(TPPS_TEMP_XLSX);
 
   $zip = new ZipArchive();
   $zip->open($location);
   $zip->extractTo($dir);
 
-  $sheet = simplexml_load_file($dir . '/xl/worksheets/sheet1.xml');
-  $xlrows = $sheet->sheetData->row;
-  tpps_rmdir($dir);
+  $data_location = $dir . '/xl/worksheets/sheet1.xml';
 
-  return count($xlrows);
+  $dimension = tpps_xlsx_get_dimension($data_location);
+  preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
+  $left_hex = unpack('H*', $matches[1]);
+  $hex = $left_hex[1];
+  $right_hex = unpack('H*', $matches[2]);
+
+  $len = 0;
+  while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
+    $len++;
+    $hex = tpps_increment_hex($hex);
+  }
+  return $len;
 }
 
 /**
@@ -275,7 +173,7 @@ function tpps_xlsx_len($location) {
  * @return int
  *   The length of the longest line.
  */
-function tpps_longest_line($location, $delim = ',') {
+function tpps_flat_width($location, $delim = ',') {
   $longest = 0;
   $handle = fopen($location, 'r');
 
@@ -404,96 +302,30 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
  *   An array of values found in the parsed column.
  */
 function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
-  $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
-  $extension = tpps_get_path_extension($location);
-  switch ($extension) {
-    case 'xlsx':
-      return tpps_parse_xlsx_column($location, $column, $no_header);
-
-    case 'txt':
-    case 'csv':
-      return tpps_parse_flat_column($location, $column, $no_header);
-
-    default:
-      throw new Exception('Unrecognized file type');
-  }
-}
-
-/**
- * Parses a single column from an xlsx file.
- *
- * @param string $location
- *   The location of the file to be parsed.
- * @param string $column
- *   The alphabetical key of the column to be parsed.
- * @param bool $no_header
- *   Whether or not the no_header options has been set to true for the file.
- *
- * @return array
- *   An array of values found in the parsed column.
- */
-function tpps_parse_xlsx_column($location, $column, $no_header = FALSE) {
   $content = array();
-  $dir = drupal_realpath(TPPS_TEMP_XLSX);
-
-  $zip = new ZipArchive();
-  $zip->open($location);
-  $zip->extractTo($dir);
-
-  $strings_location = $dir . '/xl/sharedStrings.xml';
-  $data_location = $dir . '/xl/worksheets/sheet1.xml';
-
-  $strings = tpps_xlsx_get_strings($strings_location);
-  $reader = new XMLReader();
-  $reader->open($data_location);
-  if (!$no_header) {
-    tpps_xlsx_get_row($reader, $strings);
-  }
-  while (($row = tpps_xlsx_get_row($reader, $strings))) {
-    $content[] = $row[$column] ?? NULL;
-  }
-
-  $reader->close();
-  tpps_rmdir($dir);
-
+  $options = array(
+    'no_header' => $no_header,
+    'columns' => array($column),
+    'content' => &$content,
+  );
+  tpps_file_iterator($fid, 'tpps_parse_file_column_helper', $options);
   return $content;
 }
 
 /**
- * Parses a single column from a flat file.
+ * This function processes a single row of a file.
  *
- * @param string $location
- *   The location of the file to be parsed.
- * @param string $column
- *   The alphabetical key of the column to be parsed.
- * @param bool $no_header
- *   Whether or not the no_header options has been set to true for the file.
+ * This function populates the content attribute of the options array with the
+ * data in a single column. This function is meant to be used with 
+ * tpps_file_iterator().
  *
- * @return array
- *   An array of values found in the parsed column.
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_parse_flat_column($location, $column, $no_header = FALSE) {
-  $original = ini_get('auto_detect_line_endings');
-  if (!$original) {
-    ini_set('auto_detect_line_endings', TRUE);
-  }
-  $delim = ',';
-  $column = tpps_convert_colname($column);
-
-  $results = array();
-  $handle = fopen($location, 'r');
-  if (!$no_header) {
-    fgets($handle);
-  }
-  while (($line = fgets($handle)) !== FALSE) {
-    $vals = explode($delim, $line);
-    $results[] = trim($vals[$column]);
-  }
-
-  fclose($handle);
-  ini_set('auto_detect_line_endings', $original);
-  return $results;
+function tpps_parse_file_column_helper($row, &$options) {
+  $options['content'][] = $row[current($options['columns'])];
 }
 
 /**
@@ -846,7 +678,6 @@ function tpps_xlsx_get_cell_value(&$reader, $cell_type, array &$strings = array(
     if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'v') {
       $value = $reader->readInnerXml();
       if (!empty($cell_type) and $cell_type == 's') {
-        //$value = tpps_xlsx_get_string($strings_location, $value, $string_cache);
         $value = $strings[$value];
       }
       return $value;
@@ -917,16 +748,33 @@ function tpps_rmdir($dir) {
  *   An array of headers for the file.
  */
 function tpps_file_headers($fid, $no_header = FALSE) {
-  // TODO: make this a standalone function - it should not depend on tpps_parse_file.
-  $content = tpps_parse_file($fid, 1, $no_header);
-  return $content['headers'];
+  $headers = array();
+  if ($no_header) {
+    $hex = unpack('H*', 'A')[1];
+    $width = tpps_file_width($fid);
+    for ($i = 0; $i < $width; $i++) {
+      $key = pack('H*', $hex);
+      $headers[$key] = $i;
+      $hex = tpps_increment_hex($hex);
+    }
+    return $headers;
+  }
+
+  $content = array();
+  $options = array(
+    'no_header' => TRUE,
+    'max_rows' => 1,
+    'content' => &$content,
+  );
+  tpps_file_iterator($fid, 'tpps_parse_file_helper', $options);
+  return current($content);
 }
 
 /**
  * Iterates over a file and applies a function to each generator result.
  *
- * This function should be used in place of the deprecated tpps_parse_file()
- * wherever possible, as it uses much less memory and is much faster.
+ * This function should be used in place of tpps_parse_file() wherever
+ * possible, as it uses much less memory and is much faster.
  *
  * @param int $fid
  *   The Drupal managed file id of the file.
@@ -1037,7 +885,7 @@ function tpps_xlsx_generator($location, array $options = array()) {
       $hex = $left_hex[1];
       while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
         $key = pack('H*', $hex);
-        $values[$key] = trim($row[$key]) ?? NULL;
+        $values[$key] = isset($row[$key]) ? trim($row[$key]) : NULL;
         $hex = tpps_increment_hex($hex);
       }
       yield $values;
@@ -1045,7 +893,7 @@ function tpps_xlsx_generator($location, array $options = array()) {
     }
 
     foreach ($columns as $column) {
-      $values[$column] = trim($row[$column]) ?? NULL;
+      $values[$column] = isset($row[$column]) ? trim($row[$column]) : NULL;
     }
     yield $values;
   }
@@ -1080,7 +928,7 @@ function tpps_flat_generator($location, array $options = array()) {
   $max_rows = $options['max_rows'] ?? NULL;
 
   $delim = ',';
-  $longest = tpps_longest_line($location, $delim);
+  $longest = tpps_flat_width($location, $delim);
   $handle = fopen($location, 'r');
 
   if (!$no_header) {
@@ -1101,8 +949,8 @@ function tpps_flat_generator($location, array $options = array()) {
       $hex = unpack('H*', 'A')[1];
       for ($i = 0; $i < $longest; $i++) {
         $key = pack('H*', $hex);
-        $values[$key] = trim($vals[$i]) ?? NULL;
-        if (!check_plain($values[$key])) {
+        $values[$key] = isset($vals[$i]) ? trim($vals[$i]) : NULL;
+        if (isset($values[$key]) and !check_plain($values[$key])) {
           $values[$key] = trim(mb_convert_encoding($values[$key], "UTF-8", "Windows-1252"));
         }
         $hex = tpps_increment_hex($hex);

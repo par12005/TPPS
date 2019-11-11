@@ -588,12 +588,8 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
       $rows = $content;
       unset($rows['headers']);
-      $headers = array();
-      foreach ($content['headers'] as $col_name) {
-        $headers[] = $col_name;
-      }
       $vars = array(
-        'header' => $headers,
+        'header' => $content['headers'],
         'rows' => $rows,
         'attributes' => array('class' => array('view')),
         'caption' => '',

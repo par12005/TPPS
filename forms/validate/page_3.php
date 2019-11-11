@@ -73,38 +73,15 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
         }
 
         if (!form_get_errors()) {
-          $id_name = $groups['Tree Id']['1'];
-          $col_names = $values['file-columns'];
-          $content = tpps_parse_file($values['file'], 0, !empty($values['file-no-header']));
-          $empty = $values['file-empty'];
-          $location_options = $required_groups['Location (latitude/longitude or country/state or population group)'];;
-          $location_columns = $groups['Location (latitude/longitude or country/state or population group)'];
-          $location_types = $location_columns['#type'];
-
-          if (gettype($location_types) !== 'array') {
-            $location_types = array($location_types);
-          }
-
-          foreach ($content as $row => $vals) {
-            if ($row !== 'headers' and !empty($vals[$id_name])) {
-              $valid_row = FALSE;
-              foreach ($location_types as $type) {
-                $valid_combination = TRUE;
-                foreach ($location_options[$type] as $column) {
-                  if (empty($vals[$location_columns[$column]]) or $vals[$location_columns[$column]] == $empty) {
-                    $valid_combination = FALSE;
-                  }
-                }
-                if ($valid_combination) {
-                  $valid_row = TRUE;
-                  break;
-                }
-              }
-              if (!$valid_row) {
-                form_set_error("tree-accession][species-$i][file", "Tree Accession file: Some location information is missing for tree \"{$vals[$id_name]}\".");
-              }
-            }
-          }
+          $options = array(
+            'no_header' => !empty($values['file-no-header']),
+            'loc_options' => $required_groups['Location (latitude/longitude or country/state or population group)'],
+            'id_col' => $groups['Tree Id']['1'],
+            'loc_cols' => $groups['Location (latitude/longitude or country/state or population group)'],
+            'empty' => $values['file-empty'],
+            'org_num' => $i,
+          );
+          tpps_file_iterator($values['file'], 'tpps_accession_valid_locations', $options);
         }
 
         if (!form_get_errors()) {
@@ -133,5 +110,48 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
       }
     }
   }
+}
 
+/**
+ * This function processes a single row of a tree accession file.
+ *
+ * This function validates that the accession file has valid/complete location
+ * information for each tree. This function is meant to be used with
+ * tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_accession_valid_locations($row, &$options) {
+  $id_name = $options['id_col'];
+  $empty = $options['empty'];
+  $location_options = $options['loc_options'];
+  $location_columns = $options['loc_cols'];
+  $location_types = $location_columns['#type'];
+  $org_num = $options['org_num'];
+
+  if (gettype($location_types) !== 'array') {
+    $location_types = array($location_types);
+  }
+
+  if (!empty($row[$id_name])) {
+    $valid_row = FALSE;
+    foreach ($location_types as $type) {
+      $valid_combination = TRUE;
+      foreach ($location_options[$type] as $column) {
+        if (empty($row[$location_columns[$column]]) or $row[$location_columns[$column]] == $empty) {
+          $valid_combination = FALSE;
+        }
+      }
+      if ($valid_combination) {
+        $valid_row = TRUE;
+        break;
+      }
+    }
+    if (!$valid_row) {
+      form_set_error("tree-accession][species-$org_num][file", "Tree Accession file: Some location information is missing for tree \"{$row[$id_name]}\".");
+    }
+  }
 }

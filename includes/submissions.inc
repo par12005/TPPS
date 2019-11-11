@@ -287,11 +287,11 @@ function tpps_submission_update_stats(array &$form_state) {
           continue;
         }
         if (!empty($phenotype['iso']) and file_load($phenotype['iso'])) {
-          $content = tpps_parse_file($phenotype['iso'], 1);
-          while (($k = array_search(NULL, $content['headers']))) {
-            unset($content['headers'][$k]);
+          $headers = tpps_file_headers($phenotype['iso']);
+          while (($k = array_search(NULL, $headers))) {
+            unset($headers[$k]);
           }
-          $num_unique_columns = count(array_unique($content['headers'])) - 1;
+          $num_unique_columns = count(array_unique($headers)) - 1;
           $rows = tpps_file_len($phenotype['iso']) - 1;
           $form_state['stats']['phenotype_count'] += $rows * $num_unique_columns;
         }
