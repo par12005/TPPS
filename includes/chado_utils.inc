@@ -71,11 +71,12 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
     if (array_key_exists('unique keys', $table_desc)) {
       $unique = $table_desc['unique keys'];
     }
-    $u_cols = array($primary);
-    $u_vals = array();
+    $unique['primary'] = array($primary);
 
     $exists = FALSE;
     foreach ($unique as $name => $fields) {
+      $u_cols = array($primary);
+      $u_vals = array();
       foreach ($fields as $index => $field) {
         $u_cols[] = $field;
         if (!array_key_exists($field, $insert_values)) {
@@ -205,9 +206,8 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
     }
     foreach ($records as $id => $values) {
       $unique = !empty($schema['unique keys']) ? $schema['unique keys'] : array();
+      $unique['primary'] = array($primary);
 
-      $u_cols = array('*');
-      $u_vals = array();
       $exists = FALSE;
 
       if (!empty($values['#fk'])) {
@@ -220,6 +220,8 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
       }
 
       foreach ($unique as $fields) {
+        $u_cols = array('*');
+        $u_vals = array();
         foreach ($fields as $field) {
           if (!array_key_exists($field, $values)) {
             if (array_key_exists('default', $schema['fields'][$field])) {
