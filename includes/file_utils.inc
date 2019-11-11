@@ -193,7 +193,7 @@ function tpps_file_len($fid) {
   if ($extension == 'vcf') {
     $options['skip_prefix'] = '#';
   }
-  tpps_file_iterator($fid, 'tpps_file_get_len', $options);
+  tpps_file_iterator($fid, 'tpps_file_len_helper', $options);
   return $count;
 }
 
@@ -209,7 +209,7 @@ function tpps_file_len($fid) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_file_get_len($row, array &$options = array()) {
+function tpps_file_len_helper($row, array &$options = array()) {
   if (empty($options['skip_prefix'])) {
     $options['count']++;
   }
