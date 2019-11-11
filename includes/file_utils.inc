@@ -22,156 +22,33 @@
  *   An array containing the content headers and content body.
  */
 function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE) {
-  // TODO: use tpps_file_iterator to parse files.
-  $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
-  $extension = tpps_get_path_extension($location);
-  switch ($extension) {
-    case 'xlsx':
-      return tpps_parse_xlsx($location, $max_rows, $no_header);
-
-    case 'txt':
-    case 'csv':
-      return tpps_parse_flat($location, $max_rows, $no_header);
-
-    default:
-      throw new Exception('Unrecognized file type');
-  }
-}
-
-/**
- * This function parses a .csv file and returns an array of its content.
- *
- * @param string $location
- *   The path on the server to the file being parsed.
- * @param int $max_rows
- *   The maximum number of rows to read from the file.
- * @param bool $no_header
- *   Whether or not the no_header option has been set to True for the file.
- *
- * @return array
- *   An array containing the content headers and content body.
- */
-function tpps_parse_flat($location, $max_rows = 0, $no_header = FALSE) {
-  $original = ini_get('auto_detect_line_endings');
-  if (!$original) {
-    ini_set('auto_detect_line_endings', TRUE);
-  }
-
   $content = array();
-  $delim = ',';
-  $longest = tpps_flat_width($location, $delim);
-  $handle = fopen($location, 'r');
-  $count = 0;
+  $options = array(
+    'no_header' => $no_header,
+    'max_rows' => $max_rows,
+    'content' => &$content,
+  );
 
-  if ($no_header) {
-    $hex = unpack('H*', 'A')[1];
-    for ($i = 0; $i < $longest; $i++) {
-      $key = pack('H*', $hex);
-      $content['headers'][$key] = $i;
-      $hex = tpps_increment_hex($hex);
-    }
-  }
-
-  while (($line = fgets($handle))) {
-    $hex = unpack('H*', 'A')[1];
-    $vals = explode($delim, $line);
-    $values = array();
-    for ($i = 0; $i < $longest; $i++) {
-      $key = pack('H*', $hex);
-      $values[$key] = isset($vals[$i]) ? trim($vals[$i]) : NULL;
-      if (isset($values[$key]) and !check_plain($values[$key])) {
-        $values[$key] = trim(mb_convert_encoding($values[$key], "UTF-8", "Windows-1252"));
-      }
-      $hex = tpps_increment_hex($hex);
-    }
-
-    if (!isset($content['headers'])) {
-      $content['headers'] = $values;
-      continue;
-    }
-
-    $count++;
-    $content[] = $values;
-    if ($max_rows > 0 and $count >= $max_rows) {
-      break;
-    }
-  }
-
-  fclose($handle);
-  ini_set('auto_detect_line_endings', $original);
+  tpps_file_iterator($fid, 'tpps_parse_file_helper', $options);
+  $content['headers'] = tpps_file_headers($fid, $no_header);
   return $content;
 }
 
 /**
- * This function parses an .xlsx file and returns an array of its content.
+ * This function processes a single row of a file.
  *
- * @param string $location
- *   The path on the server to the file being parsed.
- * @param int $max_rows
- *   The maximum number of rows to read from the file.
- * @param bool $no_header
- *   Whether or not the no_header option has been set to True for the file.
+ * This function populates the content attribute of the options array with
+ * content returned by the TPPS file generator. It is used by both the
+ * tpps_parse_file and the tpps_file_headers functions. This function is meant
+ * to be used with tpps_file_iterator().
  *
- * @return array
- *   An array containing the content headers and content body.
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_parse_xlsx($location, $max_rows = 0, $no_header = FALSE) {
-  $content = array();
-  $dir = drupal_realpath(TPPS_TEMP_XLSX);
-
-  $zip = new ZipArchive();
-  $zip->open($location);
-  $zip->extractTo($dir);
-
-  $strings_location = $dir . '/xl/sharedStrings.xml';
-  $data_location = $dir . '/xl/worksheets/sheet1.xml';
-
-  // Get width of the data in the file.
-  $dimension = tpps_xlsx_get_dimension($data_location);
-  preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
-  $left_hex = unpack('H*', $matches[1]);
-  $hex = $left_hex[1];
-  $right_hex = unpack('H*', $matches[2]);
-
-  if ($no_header) {
-    while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
-      $key = pack('H*', $hex);
-      $content['headers'][$key] = base_convert($hex, 16, 10) - base_convert($left_hex[1], 16, 10);
-      $hex = tpps_increment_hex($hex);
-    }
-  }
-
-  $strings = tpps_xlsx_get_strings($strings_location);
-  $reader = new XMLReader();
-  $reader->open($data_location);
-  $count = 0;
-  while (($row = tpps_xlsx_get_row($reader, $strings))) {
-    ksort($row);
-    $values = array();
-    $hex = $left_hex[1];
-    while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
-      $key = pack('H*', $hex);
-      $values[$key] = $row[$key] ?? NULL;
-      $hex = tpps_increment_hex($hex);
-    }
-
-    if (!isset($content['headers'])) {
-      $content['headers'] = $values;
-      continue;
-    }
-
-    $content[] = $values;
-    $count++;
-    if ($max_rows > 0 and $count >= $max_rows) {
-      break;
-    }
-  }
-
-  $reader->close();
-  tpps_rmdir($dir);
-
-  return $content;
+function tpps_parse_file_helper($row, &$options) {
+  $options['content'][] = $row;
 }
 
 /**
@@ -937,9 +814,26 @@ function tpps_rmdir($dir) {
  *   An array of headers for the file.
  */
 function tpps_file_headers($fid, $no_header = FALSE) {
-  // TODO: make this a standalone function - it should not depend on tpps_parse_file.
-  $content = tpps_parse_file($fid, 1, $no_header);
-  return $content['headers'];
+  $headers = array();
+  if ($no_header) {
+    $hex = unpack('H*', 'A')[1];
+    $width = tpps_file_width($fid);
+    for ($i = 0; $i < $width; $i++) {
+      $key = pack('H*', $hex);
+      $headers[$key] = $i;
+      $hex = tpps_increment_hex($hex);
+    }
+    return $headers;
+  }
+
+  $content = array();
+  $options = array(
+    'no_header' => TRUE,
+    'max_rows' => 1,
+    'content' => &$content,
+  );
+  tpps_file_iterator($fid, 'tpps_parse_file_helper', $options);
+  return current($content);
 }
 
 /**
