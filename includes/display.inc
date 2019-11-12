@@ -504,6 +504,14 @@ function tpps_flatten(array $state) {
       $data["Supplemental File $i"] = $sum_page['files'][$i];
     }
   }
+  foreach ($sum_page['tree_pictures'] as $name => $fid) {
+    if (!$fid) {
+      $data["$name species photo"] = t('None provided');
+    }
+    else {
+      $data["$name species photo"] = $fid;
+    }
+  }
   unset($data['summarypage']);
 
   $data['#dbxref_id'] = isset($state['dbxref_id']) ? $state['dbxref_id'] : NULL;
@@ -558,6 +566,11 @@ function tpps_table_display(array &$state) {
             . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>"
             . "<script>jQuery('#{$name}map_button').click(getCoordinates);</script>";
         }
+      }
+      elseif (preg_match('/species photo/', $key) and ($file_name = file_load($val)->filename)) {
+        $file_url = check_plain(file_create_url(file_load($val)->uri));
+        $val_str = "<img src='$file_url' width='100%'>";
+        $val_str .= "<br><a href='$file_url' target='blank'>$file_name</a>";
       }
       elseif (preg_match('/Month/', $key)) {
         // Skip experiment start/end month.
