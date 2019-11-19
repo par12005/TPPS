@@ -20,9 +20,7 @@ function tpps_submit_all($accession) {
   $form_state = tpps_load_submission($accession);
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
-  if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
-    tpps_submission_clear_db($accession);
-  }
+  tpps_submission_clear_db($accession);
   $project_id = $form_state['ids']['project_id'] ?? NULL;
   $transaction = db_transaction();
 
