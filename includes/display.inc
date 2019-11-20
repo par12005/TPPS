@@ -504,12 +504,14 @@ function tpps_flatten(array $state) {
       $data["Supplemental File $i"] = $sum_page['files'][$i];
     }
   }
-  foreach ($sum_page['tree_pictures'] as $name => $fid) {
-    if (!$fid) {
-      $data["$name species photo"] = t('None provided');
-    }
-    else {
-      $data["$name species photo"] = $fid;
+  if (!empty($sum_page['tree_pictures'])) {
+    foreach ($sum_page['tree_pictures'] as $name => $fid) {
+      if (!$fid) {
+        $data["$name species photo"] = t('None provided');
+      }
+      else {
+        $data["$name species photo"] = $fid;
+      }
     }
   }
   unset($data['summarypage']);
