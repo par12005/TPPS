@@ -32,6 +32,8 @@ function tpps_submit_all($accession) {
     $form_state['file_rank'] = 0;
     $form_state['ids'] = array();
 
+    $form_state['title'] = $firstpage['publication']['title'];
+    $form_state['abstract'] = $firstpage['publication']['abstract'];
     $project_record = array(
       'name' => $firstpage['publication']['title'],
       'description' => $firstpage['publication']['abstract'],
@@ -178,6 +180,8 @@ function tpps_submit_page_1(array &$form_state) {
     'uniquename' => implode('; ', $authors) . " {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
   ));
   tpps_tripal_entity_publish('Publication', array($firstpage['publication']['title'], $publication_id));
+  $form_state['pyear'] = $firstpage['publication']['year'];
+  $form_state['journal'] = $firstpage['publication']['journal'];
 
   tpps_chado_insert_record('pubprop', array(
     'pub_id' => $publication_id,
@@ -190,6 +194,7 @@ function tpps_submit_page_1(array &$form_state) {
     ),
     'value' => implode(', ', $authors),
   ));
+  $form_state['authors'] = $authors;
 
   tpps_chado_insert_record('project_pub', array(
     'project_id' => $form_state['ids']['project_id'],
@@ -1312,6 +1317,7 @@ function tpps_clean_state(array &$form_state) {
     'accession' => $form_state['accession'],
     'dbxref_id' => $form_state['dbxref_id'],
     'stats' => $form_state['stats'],
+    'file_info' => $form_state['file_info'],
     'status' => $form_state['status'],
     'submitting_uid' => $form_state['submitting_uid'],
     'job_id' => $form_state['job_id'],
