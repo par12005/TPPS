@@ -26,6 +26,7 @@ function tpps_submit_all($accession) {
 
   try {
     $form_state = tpps_load_submission($accession);
+    tpps_clean_state($form_state);
     $values = $form_state['saved_values'];
     $firstpage = $values[TPPS_PAGE_1];
     $form_state['file_rank'] = 0;
@@ -1280,4 +1281,24 @@ function tpps_process_accession($row, array &$options) {
     );
     $stock_count = 0;
   }
+}
+
+/**
+ * Cleans unnecessary information from the form state.
+ *
+ * @param array $form_state
+ *   The form state to be cleaned.
+ */
+function tpps_clean_state(array &$form_state) {
+  $new_state = array(
+    'saved_values' => $form_state['saved_values'],
+    'stage' => $form_state['stage'],
+    'accession' => $form_state['accession'],
+    'dbxref_id' => $form_state['dbxref_id'],
+    'stats' => $form_state['stats'],
+    'status' => $form_state['status'],
+    'submitting_uid' => $form_state['submitting_uid'],
+    'job_id' => $form_state['job_id'],
+  );
+  $form_state = $new_state;
 }
