@@ -100,7 +100,7 @@ function tpps_file_parsing($accession) {
         'records' => $records,
         'cvterms' => $phenotype_cvterms,
         'accession' => $form_state['accession'],
-        'stock_ids' => $form_state['ids']['stock_ids'],
+        'tree_info' => $form_state['tree_info'],
         'suffix' => 0,
         'phenotype_count' => $phenotype_count,
       );
@@ -296,9 +296,8 @@ function tpps_file_parsing($accession) {
 
       $options = array(
         'records' => $records,
-        'stock_ids' => $form_state['ids']['stock_ids'],
+        'tree_info' => $form_state['tree_info'],
         'species_codes' => $species_codes,
-        'stock_species' => $form_state['ids']['stock_species'],
         'genotype_count' => $genotype_count,
         'genotype_total' => &$genotype_total,
         'project_id' => $project_id,
@@ -755,7 +754,7 @@ function tpps_file_parsing($accession) {
           elseif (preg_match('/#CHROM/', $vcf_line)) {
             $vcf_line = explode("\t", $vcf_line);
             for ($j = 9; $j < count($vcf_line); $j++) {
-              $stocks[] = $form_state['ids']['stock_ids'][trim($vcf_line[$j])];
+              $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
             }
           }
         }
@@ -831,7 +830,7 @@ function tpps_file_parsing($accession) {
           'records' => $records,
           'tree_id' => $tree_accession['file-groups']['Tree Id'][1],
           'accession' => $form_state['accession'],
-          'stock_ids' => $form_state['ids']['stock_ids'],
+          'tree_info' => $form_state['tree_info'],
           'layers_params' => $layers_params,
           'env_count' => &$env_count,
           'env_cvterm' => $env_cvterm,
@@ -870,7 +869,7 @@ function tpps_file_parsing($accession) {
         'env_meta' => $env_meta,
         'env_count' => $env_count,
         'suffix' => 0,
-        'stock_ids' => $form_state['ids']['stock_ids'],
+        'tree_info' => $form_state['tree_info'],
         'tree_id' => $tree_accession['file-groups']['Tree Id'][1],
         'env_cvterm' => $env_cvterm,
         'desc_id' => chado_get_cvterm(array(
@@ -1020,7 +1019,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   $empty = $options['file-empty'] ?? NULL;
   $accession = $options['accession'];
   $suffix = &$options['suffix'];
-  $stock_ids = $options['stock_ids'];
+  $tree_info = &$options['tree_info'];
   $phenotype_count = &$options['phenotype_count'];
   $record_group = variable_get('tpps_record_group', 10000);
 
@@ -1064,7 +1063,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     );
 
     $records['stock_phenotype'][$phenotype_name] = array(
-      'stock_id' => $stock_ids[$tree_id],
+      'stock_id' => $tree_info[$tree_id]['stock_id'],
       '#fk' => array(
         'phenotype' => $phenotype_name,
       ),
@@ -1157,9 +1156,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $type = $options['type'];
   $records = &$options['records'];
   $headers = $options['headers'];
-  $stock_ids = $options['stock_ids'];
+  $tree_info = &$options['tree_info'];
   $species_codes = $options['species_codes'];
-  $stock_species = $options['stock_species'];
   $genotype_count = &$options['genotype_count'];
   $genotype_total = &$options['genotype_total'];
   $project_id = $options['project_id'];
@@ -1171,8 +1169,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $stock_id = NULL;
   if ($type == 'other') {
     $val = $row[$options['tree_id']];
-    $stock_id = $stock_ids[trim($val)];
-    $current_id = $stock_species[trim($val)];
+    $stock_id = $tree_info[trim($val)]['stock_id'];
+    $current_id = $tree_info[trim($val)]['organism_id'];
     $species_code = $species_codes[$current_id];
   }
   foreach ($row as $key => $val) {
@@ -1181,8 +1179,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     }
 
     if (!isset($stock_id)) {
-      $stock_id = $stock_ids[trim($val)];
-      $current_id = $stock_species[trim($val)];
+      $stock_id = $tree_info[trim($val)]['stock_id'];
+      $current_id = $tree_info[trim($val)]['organism_id'];
       $species_code = $species_codes[$current_id];
       continue;
     }
@@ -1387,7 +1385,7 @@ function tpps_other_marker_headers($fid, array $cols) {
 function tpps_process_environment_layers($row, array &$options = array()) {
   $id_col = $options['tree_id'];
   $records = &$options['records'];
-  $stock_ids = $options['stock_ids'];
+  $tree_info = &$options['tree_info'];
   $layers_params = $options['layers_params'];
   $env_count = &$options['env_count'];
   $accession = $options['accession'];
@@ -1396,7 +1394,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
   $record_group = variable_get('tpps_record_group', 10000);
 
   $tree_id = $row[$id_col];
-  $stock_id = $stock_ids[$tree_id];
+  $stock_id = $tree_info[$tree_id]['stock_id'];
 
   $gps_query = chado_select_record('stockprop', array('value'), array(
     'stock_id' => $stock_id,
@@ -1512,7 +1510,7 @@ function tpps_process_environment_manual($row, array &$options = array()) {
   $desc_id = $options['desc_id'];
   $unit_id = $options['unit_id'];
   $env_cvterm = $options['env_cvterm'];
-  $stock_ids = $options['stock_ids'];
+  $tree_info = &$options['tree_info'];
   $record_group = variable_get('tpps_record_group', 10000);
 
   $tree_id = $row[$id_col];
@@ -1531,7 +1529,7 @@ function tpps_process_environment_manual($row, array &$options = array()) {
     );
 
     $records['stock_phenotype'][$phenotype_name] = array(
-      'stock_id' => $stock_ids[$tree_id],
+      'stock_id' => $tree_info[$tree_id]['stock_id'],
       '#fk' => array(
         'phenotype' => $phenotype_name,
       ),
