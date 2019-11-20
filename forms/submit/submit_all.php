@@ -773,7 +773,6 @@ function tpps_submit_page_3(array &$form_state) {
     ))->cvterm_id,
   );
 
-  $form_state['ids']['stock_ids'] = array();
   $records = array(
     'stock' => array(),
     'stockprop' => array(),
@@ -806,8 +805,6 @@ function tpps_submit_page_3(array &$form_state) {
       'prefix' => $form_state['accession'] . '-',
     ),
   );
-
-  $form_state['ids']['stock_species'] = array();
 
   $options = array(
     'cvterms' => $cvterms,
@@ -874,9 +871,7 @@ function tpps_submit_page_3(array &$form_state) {
 
     tpps_file_iterator($tree_accession['file'], 'tpps_process_accession', $options);
 
-    $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($options['records'], $multi_insert_options);
     $new_ids = tpps_chado_insert_multi($options['records'], $multi_insert_options);
-    $form_state['ids']['stock_ids'] += $new_ids;
     foreach ($new_ids as $t_id => $stock_id) {
       $form_state['tree_info'][$t_id]['stock_id'] = $stock_id;
     }
@@ -1110,7 +1105,6 @@ function tpps_process_accession($row, array &$options) {
   $tree_info[$tree_id] = array(
     'organism_id' => $id,
   );
-  $saved_ids['stock_species'][$tree_id] = $id;
 
   $records['project_stock'][$tree_id] = array(
     'project_id' => $saved_ids['project_id'],
@@ -1127,7 +1121,6 @@ function tpps_process_accession($row, array &$options) {
       'type_id' => $cvterm['clone'],
       'organism_id' => $id,
     );
-    $saved_ids['stock_species'][$clone_name] = $id;
     $tree_info[$clone_name] = array(
       'organism_id' => $id,
     );
@@ -1292,7 +1285,6 @@ function tpps_process_accession($row, array &$options) {
   $stock_count++;
   if ($stock_count >= $record_group) {
     $new_ids = tpps_chado_insert_multi($records, $multi_insert_options);
-    $saved_ids['stock_ids'] += $new_ids;
     foreach ($new_ids as $t_id => $stock_id) {
       $tree_info[$t_id]['stock_id'] = $stock_id;
     }
