@@ -53,6 +53,17 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
+  $items['tpps/details'] = array(
+    'title' => 'TPPS Details',
+    'page callback' => 'tpps_details',
+    'page arguments' => array(),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access tpps details'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['tpps/details/%'] = $items['tpps/details'];
+  $items['tpps/details/%']['page arguments'] = array(2);
+
   $items['user/%user/tpps'] = array(
     'title' => 'TPPS Submissions',
     'page callback' => 'tpps_tab_create',
@@ -220,6 +231,11 @@ function tpps_permission() {
   $perms['access tpps form'] = array(
     'title' => t('Access TPPS Form'),
     'description' => t('Access TPPS Submission form and create submissions.'),
+  );
+
+  $perms['access tpps details'] = array(
+    'title' => t('Access TPPS Details'),
+    'description' => t('Access TPPS Complete Submissions Details page.'),
   );
 
   $perms['administer tpps module'] = array(

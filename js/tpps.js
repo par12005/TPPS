@@ -130,7 +130,12 @@ jQuery(document).ready(function ($) {
   }
   
   jQuery("#edit-step").hide();
-  
+
+  var detail_regex = /tpps\/details\/TGDR.*/g;
+  if (window.location.pathname.match(detail_regex)) {
+    getAllCoordinates();
+  }
+
   if (jQuery("#edit-step").length > 0){
     var status_block = jQuery(".tpps-status-block");
     jQuery(".region-sidebar-second").empty();
@@ -205,6 +210,18 @@ function clearMarkers(prefix) {
     maps[prefix + 'markers'][i].setMap(null);
   }
   maps[prefix + 'markers'] = [];
+}
+
+function getAllCoordinates() {
+  var fids = Drupal.settings.tpps.map_fids;
+
+  console.log(fids);
+  jQuery.each(Object.keys(fids), function() {
+    fid = parseInt(this);
+    console.log(fid);
+    console.log(fids[this]);
+    // TODO.
+  });
 }
 
 function getCoordinates(){
