@@ -89,7 +89,7 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
         }
       }
 
-      if (($results = chado_select_record($table, $u_cols, $u_vals))) {
+      if (!empty($u_vals) and ($results = chado_select_record($table, $u_cols, $u_vals))) {
         $exists = TRUE;
         // If the new values match with exactly one record, update that one
         // and return the primary key.
