@@ -641,6 +641,7 @@ function tpps_submit_page_3(array &$form_state) {
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   $organism_number = $firstpage['organism']['number'];
   $form_state['locations'] = array();
+  $form_state['tree_info'] = array();
   $stock_count = 0;
   $loc_name = 'Location (latitude/longitude or country/state or population group)';
 
@@ -819,6 +820,7 @@ function tpps_submit_page_3(array &$form_state) {
     'saved_ids' => &$form_state['ids'],
     'stock_count' => &$stock_count,
     'multi_insert' => $multi_insert_options,
+    'tree_info' => &$form_state['tree_info'],
   );
 
   for ($i = 1; $i <= $organism_number; $i++) {
@@ -873,6 +875,11 @@ function tpps_submit_page_3(array &$form_state) {
     tpps_file_iterator($tree_accession['file'], 'tpps_process_accession', $options);
 
     $form_state['ids']['stock_ids'] += tpps_chado_insert_multi($options['records'], $multi_insert_options);
+    $new_ids = tpps_chado_insert_multi($options['records'], $multi_insert_options);
+    $form_state['ids']['stock_ids'] += $new_ids;
+    foreach ($new_ids as $t_id => $stock_id) {
+      $form_state['tree_info'][$t_id]['stock_id'] = $stock_id;
+    }
     unset($options['records']);
     $stock_count = 0;
     if (empty($thirdpage['tree-accession']['check'])) {
@@ -1079,12 +1086,12 @@ function tpps_process_secondary_authors($row, array &$options) {
 function tpps_process_accession($row, array &$options) {
   $cvterm = $options['cvterms'];
   $records = &$options['records'];
-  $locations = &$options['locations'];
   $accession = $options['accession'];
   $cols = $options['column_ids'];
   $saved_ids = &$options['saved_ids'];
   $stock_count = &$options['stock_count'];
   $multi_insert_options = $options['multi_insert'];
+  $tree_info = &$options['tree_info'];
   $record_group = variable_get('tpps_record_group', 10000);
   $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
 
@@ -1098,6 +1105,9 @@ function tpps_process_accession($row, array &$options) {
   $records['stock'][$tree_id] = array(
     'uniquename' => "$accession-$tree_id",
     'type_id' => $cvterm['org'],
+    'organism_id' => $id,
+  );
+  $tree_info[$tree_id] = array(
     'organism_id' => $id,
   );
   $saved_ids['stock_species'][$tree_id] = $id;
@@ -1118,6 +1128,9 @@ function tpps_process_accession($row, array &$options) {
       'organism_id' => $id,
     );
     $saved_ids['stock_species'][$clone_name] = $id;
+    $tree_info[$clone_name] = array(
+      'organism_id' => $id,
+    );
 
     $records['project_stock'][$clone_name] = array(
       'project_id' => $saved_ids['project_id'],
@@ -1184,6 +1197,8 @@ function tpps_process_accession($row, array &$options) {
       $location = "{$row[$cols['district']]}, $location";
     }
 
+    $tree_info[$tree_id]['location'] = $location;
+
     if (isset($geo_api_key)) {
       if (!array_key_exists($location, $options['locations'])) {
         $query = urlencode($location);
@@ -1232,6 +1247,8 @@ function tpps_process_accession($row, array &$options) {
         ),
       );
 
+      $tree_info[$tree_id]['location'] = $location;
+
       if (isset($geo_api_key)) {
         if (!array_key_exists($location, $options['locations'])) {
           $query = urlencode($location);
@@ -1268,11 +1285,18 @@ function tpps_process_accession($row, array &$options) {
         'stock' => $tree_id,
       ),
     );
+    $tree_info[$tree_id]['lat'] = $lat;
+    $tree_info[$tree_id]['lng'] = $lng;
   }
 
   $stock_count++;
   if ($stock_count >= $record_group) {
-    $saved_ids['stock_ids'] += tpps_chado_insert_multi($records, $multi_insert_options);
+    $new_ids = tpps_chado_insert_multi($records, $multi_insert_options);
+    $saved_ids['stock_ids'] += $new_ids;
+    foreach ($new_ids as $t_id => $stock_id) {
+      $tree_info[$t_id]['stock_id'] = $stock_id;
+    }
+
     $records = array(
       'stock' => array(),
       'stockprop' => array(),
