@@ -263,7 +263,7 @@ function tpps_submission_update_stats(array &$form_state) {
     case TPPS_PAGE_3:
       $form_state['stats']['tree_count'] = 0;
       for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
-        $form_state['stats']['tree_count'] += tpps_file_len($form_state['values']['tree-accession']["species-$i"]['file']) - 1;
+        $form_state['stats']['tree_count'] += tpps_file_len($form_state['values']['tree-accession']["species-$i"]['file']);
         $form_state['stats']['tree_count'] += $form_state['values']['tree-accession']["species-$i"]['file-no-header'];
         if ($form_state['stats']['species_count'] == 1 or empty($form_state['values']['tree-accession']['check'])) {
           break;
