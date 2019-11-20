@@ -89,6 +89,15 @@ function tpps_api_paths() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['tpps/api/files/%'] = array(
+    'title' => 'TPPS Submission Files Download',
+    'page callback' => 'tpps_api_compress_files',
+    'page arguments' => array(3),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access tpps details'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
   return $items;
 }
 
@@ -143,4 +152,16 @@ function tpps_api_check_accession($accession = NULL) {
   }
 
   return tpps_load_submission($accession) ? TRUE : FALSE;
+}
+
+/**
+ * 
+ */
+function tpps_api_compress_files($accession = NULL) {
+  $state = tpps_load_submission($accession);
+  if (empty($state)) {
+    throw new Exception('Invalid state accession number');
+  }
+
+  // TODO.
 }

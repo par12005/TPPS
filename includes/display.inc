@@ -863,71 +863,21 @@ function tpps_preview_file() {
 }
 
 /**
- * 
+ * Returns an entity link based on an id and a name.
+ *
+ * @param int $id
+ *   The record id in CHADO.
+ * @param string $name
+ *   The display text of the link.
+ * @param string $label
+ *   The label of the bundle.
+ *
+ * @return string
+ *   The constructed link.
  */
-function tpps_details($accession = NULL) {
+function tpps_entity_link($id, $name, $label) {
   global $base_url;
-  $output = "";
-
-  if (empty($accession)) {
-    $submissions = db_select('chado.plusgeno_view', 'p')
-      ->fields('p')
-      ->execute();
-
-    $rows = array();
-    while (($sub = $submissions->fetchObject())) {
-      $species_link = implode('-', explode(' ', $sub->species));
-      $species_link = "<a href=\"$base_url/organism/$species_link\">{$sub->species}</a>";
-      $row = array(
-        "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->accession}</a>",
-        "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->title}</a>",
-        $species_link,
-        $sub->tree_count,
-        $sub->phenotypes_assessed,
-        $sub->phen_count,
-        $sub->gen_count,
-      );
-      $rows[$sub->accession] = $row;
-    }
-
-    ksort($rows);
-
-    $vars = array(
-      'header' => array(
-        'Accession',
-        'Title',
-        'Species',
-        'Tree Count',
-        'Phenotypes Assessed',
-        'Phenotypic Measures',
-        'Genotype Count',
-      ),
-      'rows' => $rows,
-      'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
-      'caption' => '',
-      'colgroups' => NULL,
-      'sticky' => FALSE,
-      'empty' => '',
-    );
-
-    $output = theme_table($vars);
-    return $output;
-  }
-
-  $output = "<a href=\"$base_url/tpps/details\">Return to TPPS Details</a>$output";
-  $state = tpps_load_submission($accession);
-  if (!empty($state)) {
-    $map_api_key = variable_get('tpps_maps_api_key', NULL);
-    $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-      async defer></script>"
-      . "<div id=\"map_wrapper\"></div>";
-    $org_num = $state['stats']['species_count'];
-
-    
-    // TODO.
-    $output .= $map_api_tools;
-    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-    return $output;
-  }
-  return $output;
+  $bundle = tripal_load_bundle_entity(array('label' => $label));
+  $entity_id = chado_get_record_entity_by_bundle($bundle, $id);
+  return "<a href=\"$base_url/bio_data/$entity_id\">$name</a>";
 }
