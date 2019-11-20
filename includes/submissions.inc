@@ -174,13 +174,16 @@ function tpps_delete_submission($accession, $redirect = TRUE) {
 function tpps_submission_rename_files($accession) {
   $state = tpps_load_submission($accession);
   if (!empty($state['file_info'])) {
+    $state['files'] = array();
     foreach ($state['file_info'] as $page_files) {
       foreach ($page_files as $fid => $name) {
+        $state['files'][] = $fid;
         $file = tpps_rename_file($fid, "{$accession}_{$name}");
         $file->status = FILE_STATUS_PERMANENT;
         file_save($file);
       }
     }
+    tpps_update_submission($state);
   }
 }
 
