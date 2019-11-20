@@ -156,7 +156,11 @@ jQuery(document).ready(function ($) {
   jQuery.each(buttons, function(){
     jQuery(this).attr('type', 'button')
   });
-  jQuery("#map_wrapper").hide();
+
+  var detail_regex = /tpps\/details\/TGDR.*/g;
+  if (!window.location.pathname.match(detail_regex)) {
+    jQuery("#map_wrapper").hide();
+  }
 
   var preview_buttons = jQuery('input.preview_button');
   jQuery.each(preview_buttons, function() {
