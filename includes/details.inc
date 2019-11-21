@@ -23,14 +23,16 @@ function tpps_details($accession = NULL) {
       async defer></script>"
       . "<div id=\"map_wrapper\"></div>";
     $tree_info = array();
-    foreach ($state['tree_info'] as $name => $info) {
-      $tree_info[] = array(
-        $name,
-        $info['lat'],
-        $info['lng'],
-      );
+    if (!empty($state['tree_info'])) {
+      foreach ($state['tree_info'] as $name => $info) {
+        $tree_info[] = array(
+          $name,
+          $info['lat'],
+          $info['lng'],
+        );
+      }
+      drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
     }
-    drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
     $output .= $map_api_tools;
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
@@ -289,6 +291,11 @@ function tpps_details_study(&$state) {
  */
 function tpps_details_trees(&$state) {
   $rows = array();
+
+  if (empty($state['tree_info'])) {
+    $output = t('The tree information for this study has not been properly updated. Please contact your site administrator.');
+    return $output;
+  }
 
   foreach ($state['tree_info'] as $name => $info) {
     $id = $info['organism_id'];

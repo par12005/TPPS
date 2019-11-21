@@ -985,3 +985,79 @@ function tpps_update_7100() {
     throw $e;
   }
 }
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7101() {
+  // TODO.
+  $transaction = db_transaction();
+  try {
+    $submissions = tpps_load_submission_multiple(array(
+      'status' => 'Approved',
+    ));
+
+    foreach ($submissions as $state) {
+      $firstpage = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
+      $seconds = $firstpage['publication']['secondaryAuthors'] ?? NULL;
+      $state['title'] = $firstpage['publication']['title'] ?? "";
+      $state['abstract'] = $firstpage['publication']['abstract'] ?? "";
+      $state['pyear'] = $firstpage['publication']['year'] ?? "";
+      $state['journal'] = $firstpage['publication']['journal'] ?? "";
+      $state['authors'] = !empty($firstpage['primaryAuthor']) ? array($firstpage['primaryAuthor']) : array();
+      $state['files'] = array();
+      if (empty($seconds['check']) and !empty($seconds['number'])) {
+        for ($i = 1; $i <= $seconds['number']; $i++) {
+          $state['authors'][] = $seconds[$i];
+        }
+      }
+      elseif (!empty($seconds['check']) and file_load($seconds['file'])) {
+        $state['files'][] = $seconds['file'];
+        $column_vals = $seconds['file-columns'] ?? array();
+        $col_f = array_search('1', $column_vals);
+        $col_l = array_search('2', $column_vals);
+        $col_m = array_search('3', $column_vals);
+        $content = tpps_parse_file($seconds['file'], 0, $seconds['file-no-header']);
+        if (!empty($content)) {
+          foreach ($content as $row) {
+            $state['authors'][] = "{$row[$col_l]}, {$row[$col_f]} {$row[$col_m]}";
+          }
+        }
+      }
+
+      if (empty($state['tree_info'])) {
+        $state['tree_info'] = array();
+        $query = db_select('chado.stock', 's');
+        $query->join('chado.stockprop', 'lat', 'lat.stock_id = s.stock_id');
+        $query->join('chado.stockprop', 'lng', 'lng.stock_id = s.stock_id');
+        $query->fields('s', array('stock_id', 'uniquename', 'organism_id'));
+        $query->fields('lat', array('value'));
+        $query->fields('lng', array('value'));
+        $query->condition('s.uniquename', db_like($state['accession']) . '%', 'LIKE');
+        $query->condition('lat.type_id', chado_get_cvterm(array(
+          'name' => 'gps_latitude',
+        ))->cvterm_id);
+        $query->condition('lng.type_id', chado_get_cvterm(array(
+          'name' => 'gps_longitude',
+        ))->cvterm_id);
+
+        $query = $query->execute();
+
+        while (($tree = $query->fetchObject())) {
+          preg_match('/^TGDR[0-9]+-(.*)$/', $tree->uniquename, $matches);
+          $state['tree_info'][$matches[1]] = array(
+            'stock_id' => $tree->stock_id,
+            'lat' => $tree->value,
+            'lng' => $tree->lng_value,
+            'organism_id' => $tree->organism_id,
+          );
+        }
+      }
+      tpps_update_submission($state);
+    }
+  }
+  catch (Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
