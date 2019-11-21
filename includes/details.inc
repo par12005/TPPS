@@ -79,9 +79,9 @@ function tpps_details_tabs(&$state) {
       $e_exist = TRUE;
     }
   }
-  $output .= $p_exist ? '<li><a data-toggle="tab" href="#phenotype">Phenotype</a></li>' : "";
-  $output .= $g_exist ? '<li><a data-toggle="tab" href="#genotype">Genotype</a></li>' : "";
-  $output .= $e_exist ? '<li><a data-toggle="tab" href="#environment">Environment</a></li>' : "";
+  $output .= $p_exist ? '<li><a data-toggle="tab" href="#phenotype">Phenotypes</a></li>' : "";
+  $output .= $g_exist ? '<li><a data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
+  $output .= $e_exist ? '<li><a data-toggle="tab" href="#environment">Environments</a></li>' : "";
   $output .= '</ul><div class="tab-content">';
 
   $output .= tpps_details_species($state);
@@ -370,8 +370,51 @@ function tpps_details_trees(&$state) {
  * 
  */
 function tpps_details_phenotype(&$state) {
-  // TODO.
-  $table = "table";
+  $rows = array();
+  $query = db_select('chado.phenotype', 'p');
+  $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
+  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
+  $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
+  $query->fields('p', array('phenotype_id', 'name', 'attr_id', 'observable_id', 'value'));
+  $query->fields('s', array('uniquename', 'stock_id'));
+  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query = $query->execute();
+
+  while (($result = $query->fetchObject())) {
+    preg_match('/^TGDR...-(.*)$/', $result->uniquename, $matches);
+    $tree = $matches[1];
+    $obs = chado_get_cvterm(array(
+      'cvterm_id' => $result->observable_id,
+    ))->name ?? "";
+    $attr = chado_get_cvterm(array(
+      'cvterm_id' => $result->attr_id,
+    ))->name ?? "";
+
+    $rows[] = array(
+      tpps_entity_link($result->stock_id, $tree, 'Stock'),
+      tpps_entity_link($result->phenotype_id, $result->name, 'Phenotype'),
+      $obs,
+      $attr,
+      $result->value,
+    );
+  }
+
+  $vars = array(
+    'header' => array(
+      'Tree',
+      'Name',
+      'Entity',
+      'Attribute',
+      'Value'
+    ),
+    'rows' => $rows,
+    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  );
+  $table = theme_table($vars);
   $output = "<div id=\"phenotype\" class=\"tab-pane fade\">$table</div>";
   return $output;
 }
@@ -381,7 +424,7 @@ function tpps_details_phenotype(&$state) {
  */
 function tpps_details_genotype(&$state) {
   // TODO.
-  $table = "table";
+  $table = "Coming Soon!";
   $output = "<div id=\"genotype\" class=\"tab-pane fade\">$table</div>";
   return $output;
 }
@@ -391,7 +434,7 @@ function tpps_details_genotype(&$state) {
  */
 function tpps_details_environment(&$state) {
   // TODO.
-  $table = "table";
+  $table = "Coming Soon!";
   $output = "<div id=\"environment\" class=\"tab-pane fade\">$table</div>";
   return $output;
 }
