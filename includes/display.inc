@@ -878,6 +878,9 @@ function tpps_preview_file() {
 function tpps_entity_link($id, $name, $label) {
   global $base_url;
   $bundle = tripal_load_bundle_entity(array('label' => $label));
+  if (empty($bundle)) {
+    return $name;
+  }
   $entity_id = chado_get_record_entity_by_bundle($bundle, $id);
   if (!empty($entity_id)) {
     return "<a href=\"$base_url/bio_data/$entity_id\">$name</a>";
