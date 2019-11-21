@@ -1053,6 +1053,27 @@ function tpps_update_7101() {
           );
         }
       }
+
+      $org_num = $state['stats']['species_count'] ?? 0;
+      for ($i = 1; $i <= $org_num; $i++) {
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['iso'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['file'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['metadata'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['snps-assay'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['assay-design'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['ssrs'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['other'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['vcf'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['tripal_fasta']['file']['file_upload'] ?? NULL;
+      }
+
+      foreach ($state['files'] as $key => $val) {
+        if (empty($val)) {
+          unset($state['files'][$key]);
+        }
+      }
+
       tpps_update_submission($state);
     }
   }
