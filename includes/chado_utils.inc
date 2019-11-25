@@ -513,5 +513,5 @@ function tpps_get_subkingdom($org_name) {
   if (!empty($subkingom)) {
     return $subkingom;
   }
-  return tpps_ncbi_get_subkingom($org_name);
+  return tpps_ncbi_get_subkingdom($org_name);
 }

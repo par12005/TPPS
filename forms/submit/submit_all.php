@@ -968,6 +968,27 @@ function tpps_submit_page_4(array &$form_state) {
           drupal_set_message('Cannot submit import: ' . $ex->getMessage(), 'error');
         }
       }
+      elseif ($ref_genome === 'bio') {
+        $eutils = $fourthpage["organism-$i"]['genotype']['tripal_eutils'];
+        $class = 'EutilsImporter';
+        tripal_load_include_importer_class($class);
+
+        $run_args = array(
+          'importer_class' => $class,
+          'db' => $eutils['db'],
+          'accession' => $eutils['accession'],
+          'linked_records' => $eutils['options']['linked_records']
+        );
+
+        try {
+          $importer = new $class();
+          $importer->create($run_args);
+          $importer->submitJob();
+        }
+        catch (Exception $ex) {
+          drupal_set_message('Cannot submit BioProject: ' . $ex->getMessage(), 'error');
+        }
+      }
     }
   }
 }
