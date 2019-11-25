@@ -36,6 +36,7 @@ function tpps_flatten(array $state) {
   else {
     $data['#page_1_cleared'] = FALSE;
   }
+  $data['#study_photo'] = $page_1['photo'] ?? NULL;
   $data['Publication DOI'] = isset($page_1['doi']) ? $page_1['doi'] : NULL;
   $data['Publication Title'] = isset($pub['title']) ? $pub['title'] : NULL;
   $data['Primary Author'] = isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : NULL;
@@ -645,7 +646,13 @@ function tpps_table_display(array &$state) {
     'empty' => '',
   );
 
-  $display = theme_table($vars) . $content;
+  $photo = "";
+  if (!empty($flat['#study_photo'])) {
+    $url = check_plain(file_create_url(file_load($flat['#study_photo'])->uri));
+    $photo = "<img src=\"$url\" style=\"display: block; margin-left: auto; margin-right: auto;\"></img>";
+  }
+
+  $display = $photo . theme_table($vars) . $content;
 
   return $display;
 }

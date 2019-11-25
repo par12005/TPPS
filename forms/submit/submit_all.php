@@ -91,6 +91,22 @@ function tpps_submit_page_1(array &$form_state) {
     'dbxref_id' => $dbxref_id,
   ));
 
+  if (($file = file_load($firstpage['photo']))) {
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $form_state['ids']['project_id'],
+      'type_id' => array(
+        'cv_id' => array(
+          'name' => 'schema',
+        ),
+        'name' => 'url',
+        'is_obsolete' => 0,
+      ),
+      'value' => file_create_url($file->uri),
+      'rank' => $form_state['file_rank'],
+    ));
+    $form_state['file_rank']++;
+  }
+
   $primary_author_id = tpps_chado_insert_record('contact', array(
     'name' => $firstpage['primaryAuthor'],
     'type_id' => array(
