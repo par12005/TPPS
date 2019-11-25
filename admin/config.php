@@ -19,6 +19,7 @@
 function tpps_admin_settings(array $form, array &$form_state) {
 
   $authors = variable_get('tpps_author_files_dir', 'tpps_authors');
+  $photos= variable_get('tpps_study_photo_files_dir', 'tpps_study_photos');
   $accession = variable_get('tpps_accession_files_dir', 'tpps_accession');
   $genotype = variable_get('tpps_genotype_files_dir', 'tpps_genotype');
   $phenotype = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
@@ -125,6 +126,14 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#title' => t('Author files:'),
     '#default_value' => $authors,
     '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$authors"))),
+    '#prefix' => t('<h1>File Upload locations</h1>All file locations are relative to the "public://" file stream. Your current "public://" file stream points to "@path".<br><br>', array('@path' => drupal_realpath('public://'))),
+  );
+
+  $form['tpps_study_photo_files_dir'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Author files:'),
+    '#default_value' => $photos,
+    '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$photos"))),
     '#prefix' => t('<h1>File Upload locations</h1>All file locations are relative to the "public://" file stream. Your current "public://" file stream points to "@path".<br><br>', array('@path' => drupal_realpath('public://'))),
   );
 
