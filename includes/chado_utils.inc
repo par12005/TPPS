@@ -206,7 +206,9 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
     }
     foreach ($records as $id => $values) {
       $unique = !empty($schema['unique keys']) ? $schema['unique keys'] : array();
-      $unique['primary'] = array($primary);
+      if (!empty($values[$primary])) {
+        $unique['primary'] = array($primary);
+      }
 
       $exists = FALSE;
 
