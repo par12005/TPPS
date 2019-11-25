@@ -344,7 +344,28 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     form_set_error("$id][genotype][ref-genome", "Reference Genome: field is required.");
   }
   elseif ($ref_genome === 'bio') {
-    if (!$genotype['BioProject-id']) {
+    if (!$genotype['tripal_eutils']['accession']) {
+      form_set_error("$id][genotype][tripal_eutils][accession", 'NCBI Accession Number: field is required.');
+    }
+    $connection = new \EUtils();
+    try {
+      $connection->setPreview();
+      $parsed = $connection->get($genotype['tripal_eutils']['db'], $genotype['tripal_eutils']['accession']);
+      foreach ($_SESSION['messages']['status'] as $key => $message) {
+        if ($message == '<pre>biosample</pre>') {
+          unset($_SESSION['messages']['status'][$key]);
+          if (empty($_SESSION['messages']['status'])) {
+            unset($_SESSION['messages']['status']);
+          }
+          break;
+        }
+      }
+      $form_state['values']['parsed'] = $parsed;
+    }
+    catch (\Exception $e) {
+      form_set_error("$id][genotype][tripal_eutils][accession", $e->getMessage());
+    }
+    /*if (!$genotype['BioProject-id']) {
       form_set_error("$id][genotype][Bioproject-id", 'BioProject Id: field is required.');
     }
     else {
@@ -357,7 +378,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       if (preg_match('/^0*$/', $assembly_auto_check)) {
         form_set_error("$id][genotype][assembly-auto", 'Assembly file(s): field is required.');
       }
-    }
+    }*/
   }
   elseif ($ref_genome === 'url' or $ref_genome === 'manual' or $ref_genome === 'manual2') {
 

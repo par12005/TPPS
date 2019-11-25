@@ -11,7 +11,6 @@ define("TPPS_PAGE_1", 1);
 define("TPPS_PAGE_2", 2);
 define("TPPS_PAGE_3", 3);
 define("TPPS_PAGE_4", 4);
-define("TPPS_NCBI_EUTILS_BASE", "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/");
 define("TPPS_TEMP_XLSX", "temporary://tpps_xlsx");
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';

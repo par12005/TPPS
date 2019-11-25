@@ -306,7 +306,7 @@ function tpps_file_parsing($accession) {
         'multi_insert' => $multi_insert_options,
       );
 
-      if ($genotype['ref-genome'] == 'bio') {
+      /*if ($genotype['ref-genome'] == 'bio') {
 
         $bioproject_id = tpps_chado_insert_record('dbxref', array(
           'db_id' => array(
@@ -339,7 +339,8 @@ function tpps_file_parsing($accession) {
           }
         }
       }
-      elseif ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url') {
+      else*/
+      if ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url') {
         if ($genotype['tripal_fasta']['file_upload']) {
           // Uploaded new file.
           $assembly_user = $genotype['tripal_fasta']['file_upload'];

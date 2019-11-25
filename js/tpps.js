@@ -162,6 +162,11 @@ jQuery(document).ready(function ($) {
     jQuery("#map_wrapper").hide();
   }
 
+  var preview_record_buttons = jQuery('input').filter(function() { return this.id.match(/-tripal-eutils-callback/); });
+  jQuery.each(preview_record_buttons, function() {
+    jQuery(this).attr('type', 'button');
+  });
+
   var preview_buttons = jQuery('input.preview_button');
   jQuery.each(preview_buttons, function() {
     jQuery(this).attr('type', 'button');

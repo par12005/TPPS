@@ -23,7 +23,7 @@ function tpps_ajax_bioproject_callback(array &$form, array $form_state) {
 
   $ajax_id = $form_state['triggering_element']['#parents'][0];
 
-  return $form[$ajax_id]['genotype']['assembly-auto'];
+  return $form[$ajax_id]['genotype']['tripal_eutils'];
 }
 
 /**

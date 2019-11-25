@@ -924,7 +924,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     '#title' => t('Reference Assembly used: *'),
     '#options' => $ref_genome_arr,
   );
-
+/*
   $fields['BioProject-id'] = array(
     '#type' => 'textfield',
     '#title' => t('BioProject Accession Number: *'),
@@ -1011,8 +1011,61 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
       $fields['assembly-auto']['#description'] = t('We could not find any assembly files related to that BioProject. Please ensure your accession number is of the format "PRJNA#"');
     }
   }
+  */
 
   require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
+  $class = 'EutilsImporter';
+  tripal_load_include_importer_class($class);
+  $eutils = tripal_get_importer_form(array(), $form_state, $class);
+  $eutils['#type'] = 'fieldset';
+  $eutils['#title'] = 'Tripal Eutils BioProject Loader';
+  $eutils['#states'] = array(
+    'visible' => array(
+      ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'bio'),
+    ),
+  );
+  $eutils['accession']['#description'] = t('Valid examples: 12384, 394253, 66853, PRJNA185471');
+  $eutils['db'] = array(
+    '#type' => 'hidden',
+    '#value' => 'bioproject'
+  );
+  unset($eutils['options']);
+  $eutils['options']['linked_records'] = array(
+    '#type' => 'hidden',
+    '#value' => 1,
+  );
+  $eutils['callback']['#ajax'] = array(
+    'callback' => 'tpps_ajax_bioproject_callback',
+    'wrapper' => "$id-tripal-eutils",
+  );
+  $eutils['#prefix'] = "<div id=\"$id-tripal-eutils\">";
+  $eutils['#suffix'] = '</div>';
+
+  if (!empty($form_state['values'][$id]['genotype']['tripal_eutils'])) {
+    $eutils_vals = $form_state['values'][$id]['genotype']['tripal_eutils'];
+    if (!empty($eutils_vals['accession']) and !empty($eutils_vals['db'])) {
+      $connection = new \EUtils();
+      try {
+        $connection->setPreview(TRUE);
+        $eutils['data'] = $connection->get($eutils_vals['db'], $eutils_vals['accession']);
+        foreach ($_SESSION['messages']['status'] as $key => $message) {
+          if ($message == '<pre>biosample</pre>') {
+            unset($_SESSION['messages']['status'][$key]);
+            if (empty($_SESSION['messages']['status'])) {
+              unset($_SESSION['messages']['status']);
+            }
+            break;
+          }
+        }
+      } catch (\Exception $e) {
+        tripal_set_message($e->getMessage(), TRIPAL_ERROR);
+      }
+    }
+  }
+  unset($eutils['button']);
+  unset($eutils['instructions']);
+  $fields['tripal_eutils'] = $eutils;
+
   $class = 'FASTAImporter';
   tripal_load_include_importer_class($class);
   $tripal_upload_location = "public://tripal/users/$uid";

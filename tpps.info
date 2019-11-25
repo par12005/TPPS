@@ -7,3 +7,4 @@ configure = admin/config/content/tpps
 dependencies[] = tripal
 dependencies[] = ultimate_cron
 dependencies[] = jquery_update
+dependencies[] = tripal_eutils
