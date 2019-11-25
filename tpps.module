@@ -26,6 +26,7 @@ require_once 'includes/submissions.inc';
 require_once 'includes/zenodo.inc';
 require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
+require_once 'includes/details.inc';
 require_once 'api/tpps.api.inc';
 
 /**
@@ -52,6 +53,17 @@ function tpps_menu() {
     'access arguments' => array('access tpps form'),
     'type' => MENU_NORMAL_ITEM,
   );
+
+  $items['tpps/details'] = array(
+    'title' => 'TPPS Details',
+    'page callback' => 'tpps_details',
+    'page arguments' => array(),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access tpps details'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['tpps/details/%'] = $items['tpps/details'];
+  $items['tpps/details/%']['page arguments'] = array(2);
 
   $items['user/%user/tpps'] = array(
     'title' => 'TPPS Submissions',
@@ -220,6 +232,11 @@ function tpps_permission() {
   $perms['access tpps form'] = array(
     'title' => t('Access TPPS Form'),
     'description' => t('Access TPPS Submission form and create submissions.'),
+  );
+
+  $perms['access tpps details'] = array(
+    'title' => t('Access TPPS Details'),
+    'description' => t('Access TPPS Complete Submissions Details page.'),
   );
 
   $perms['administer tpps module'] = array(

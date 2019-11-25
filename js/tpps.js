@@ -130,7 +130,7 @@ jQuery(document).ready(function ($) {
   }
   
   jQuery("#edit-step").hide();
-  
+
   if (jQuery("#edit-step").length > 0){
     var status_block = jQuery(".tpps-status-block");
     jQuery(".region-sidebar-second").empty();
@@ -156,7 +156,11 @@ jQuery(document).ready(function ($) {
   jQuery.each(buttons, function(){
     jQuery(this).attr('type', 'button')
   });
-  jQuery("#map_wrapper").hide();
+
+  var detail_regex = /tpps\/details\/TGDR.*/g;
+  if (!window.location.pathname.match(detail_regex)) {
+    jQuery("#map_wrapper").hide();
+  }
 
   var preview_buttons = jQuery('input.preview_button');
   jQuery.each(preview_buttons, function() {
@@ -198,6 +202,11 @@ function initMap() {
     maps[species_name + 'total_lat'];
     maps[species_name + 'total_long'];
   });
+
+  var detail_regex = /tpps\/details\/TGDR.*/g;
+  if (window.location.pathname.match(detail_regex)) {
+    jQuery.fn.updateMap(Drupal.settings.tpps.tree_info);
+  }
 }
 
 function clearMarkers(prefix) {
@@ -276,11 +285,15 @@ function getCoordinates(){
 
 jQuery.fn.updateMap = function(locations, prefix = "") {
   jQuery("#" + prefix + "map_wrapper").show();
+  var detail_regex = /tpps\/details\/TGDR.*/g;
   if (jQuery("#edit-step").length > 0 && jQuery("#edit-step")[0].value == 3){
     jQuery("#" + prefix + "map_wrapper").css({"height": "450px"});
     jQuery("#" + prefix + "map_wrapper").css({"max-width": "800px"});
   }
   else if(jQuery("#tpps_table_display").length > 0) {
+    jQuery("#" + prefix + "map_wrapper").css({"height": "450px"});
+  }
+  else if (window.location.pathname.match(detail_regex)) {
     jQuery("#" + prefix + "map_wrapper").css({"height": "450px"});
   }
   else {

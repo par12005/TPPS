@@ -174,13 +174,16 @@ function tpps_delete_submission($accession, $redirect = TRUE) {
 function tpps_submission_rename_files($accession) {
   $state = tpps_load_submission($accession);
   if (!empty($state['file_info'])) {
+    $state['files'] = array();
     foreach ($state['file_info'] as $page_files) {
       foreach ($page_files as $fid => $name) {
+        $state['files'][] = $fid;
         $file = tpps_rename_file($fid, "{$accession}_{$name}");
         $file->status = FILE_STATUS_PERMANENT;
         file_save($file);
       }
     }
+    tpps_update_submission($state);
   }
 }
 
@@ -263,7 +266,7 @@ function tpps_submission_update_stats(array &$form_state) {
     case TPPS_PAGE_3:
       $form_state['stats']['tree_count'] = 0;
       for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
-        $form_state['stats']['tree_count'] += tpps_file_len($form_state['values']['tree-accession']["species-$i"]['file']) - 1;
+        $form_state['stats']['tree_count'] += tpps_file_len($form_state['values']['tree-accession']["species-$i"]['file']);
         $form_state['stats']['tree_count'] += $form_state['values']['tree-accession']["species-$i"]['file-no-header'];
         if ($form_state['stats']['species_count'] == 1 or empty($form_state['values']['tree-accession']['check'])) {
           break;
@@ -273,10 +276,12 @@ function tpps_submission_update_stats(array &$form_state) {
 
     case TPPS_PAGE_4:
       $form_state['stats']['phenotype_count'] = 0;
+      $form_state['stats']['unique_phenotypes'] = 0;
       for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
         $phenotype = $form_state['values']["organism-$i"]['phenotype'] ?? NULL;
+        $form_state['stats']['unique_phenotypes'] += $phenotype['number'] ?? 0;
         if (empty($phenotype['iso_check']) and !empty($phenotype['file']) and file_load($phenotype['file'])) {
-          $rows = tpps_file_len($phenotype['file']) - 1 + !empty($phenotype['file-no-header']);
+          $rows = tpps_file_len($phenotype['file']) + !empty($phenotype['file-no-header']);
           if ($phenotype['format'] == 0) {
             $phenotype_file_name_cols = $phenotype['file-groups']['Phenotype Data']['0'];
             $form_state['stats']['phenotype_count'] += $rows * count($phenotype_file_name_cols);
@@ -284,6 +289,11 @@ function tpps_submission_update_stats(array &$form_state) {
           else {
             $form_state['stats']['phenotype_count'] += $rows;
           }
+
+          if (!empty($phenotype['metadata']) and file_load($phenotype['metadata'])) {
+            $form_state['stats']['unique_phenotypes'] += tpps_file_len($phenotype['metadata']) + !empty($phenotype['metadata-no-header']);
+          }
+
           continue;
         }
         if (!empty($phenotype['iso']) and file_load($phenotype['iso'])) {
@@ -292,7 +302,7 @@ function tpps_submission_update_stats(array &$form_state) {
             unset($headers[$k]);
           }
           $num_unique_columns = count(array_unique($headers)) - 1;
-          $rows = tpps_file_len($phenotype['iso']) - 1;
+          $rows = tpps_file_len($phenotype['iso']);
           $form_state['stats']['phenotype_count'] += $rows * $num_unique_columns;
         }
       }

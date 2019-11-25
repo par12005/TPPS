@@ -504,12 +504,14 @@ function tpps_flatten(array $state) {
       $data["Supplemental File $i"] = $sum_page['files'][$i];
     }
   }
-  foreach ($sum_page['tree_pictures'] as $name => $fid) {
-    if (!$fid) {
-      $data["$name species photo"] = t('None provided');
-    }
-    else {
-      $data["$name species photo"] = $fid;
+  if (!empty($sum_page['tree_pictures'])) {
+    foreach ($sum_page['tree_pictures'] as $name => $fid) {
+      if (!$fid) {
+        $data["$name species photo"] = t('None provided');
+      }
+      else {
+        $data["$name species photo"] = $fid;
+      }
     }
   }
   unset($data['summarypage']);
@@ -858,4 +860,30 @@ function tpps_preview_file() {
     print($display);
     return;
   }
+}
+
+/**
+ * Returns an entity link based on an id and a name.
+ *
+ * @param int $id
+ *   The record id in CHADO.
+ * @param string $name
+ *   The display text of the link.
+ * @param string $label
+ *   The label of the bundle.
+ *
+ * @return string
+ *   The constructed link, or the provided name if no entity is found.
+ */
+function tpps_entity_link($id, $name, $label) {
+  global $base_url;
+  $bundle = tripal_load_bundle_entity(array('label' => $label));
+  if (empty($bundle)) {
+    return $name;
+  }
+  $entity_id = chado_get_record_entity_by_bundle($bundle, $id);
+  if (!empty($entity_id)) {
+    return "<a href=\"$base_url/bio_data/$entity_id\">$name</a>";
+  }
+  return $name;
 }

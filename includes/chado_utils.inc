@@ -89,7 +89,7 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
         }
       }
 
-      if (($results = chado_select_record($table, $u_cols, $u_vals))) {
+      if (!empty($u_vals) and ($results = chado_select_record($table, $u_cols, $u_vals))) {
         $exists = TRUE;
         // If the new values match with exactly one record, update that one
         // and return the primary key.
@@ -206,7 +206,9 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
     }
     foreach ($records as $id => $values) {
       $unique = !empty($schema['unique keys']) ? $schema['unique keys'] : array();
-      $unique['primary'] = array($primary);
+      if (!empty($values[$primary])) {
+        $unique['primary'] = array($primary);
+      }
 
       $exists = FALSE;
 
@@ -448,4 +450,68 @@ function tpps_table_columns($table) {
     $cols[] = $name;
   }
   return $cols;
+}
+
+/**
+ * Tries to retrieve family information about an organism from the db.
+ *
+ * If family information for the genus does not already exist, then the
+ * function tries to retrieve family information from NCBI.
+ *
+ * @param string $org_name
+ *   The full name (genus, species) of the organism.
+ *
+ * @return string
+ *   The family of the organism.
+ */
+function tpps_get_family($org_name) {
+  $parts = explode(' ', $org_name);
+  $genus = $parts[0];
+
+  $fam_query = db_select('chado.organismprop', 'op');
+  $fam_query->join('chado.organism', 'o', 'o.organism_id = op.organism_id');
+  $fam_query->fields('op', array('value'));
+  $fam_query->condition('op.type_id', chado_get_cvterm(array(
+    'name' => 'family',
+  ))->cvterm_id);
+  $fam_query->condition('o.genus', $genus);
+  $fam_query->range(0, 1);
+  $fam_query = $fam_query->execute();
+  $family = $fam_query->fetchObject()->value ?? NULL;
+  if (!empty($family)) {
+    return $family;
+  }
+  return tpps_ncbi_get_family($org_name);
+}
+
+/**
+ * Tries to retrieve subkingdom information about an organism from the db.
+ *
+ * If subkingdom information for the genus does not already exist, then the
+ * function tries to retrieve subkingdom information from NCBI.
+ *
+ * @param string $org_name
+ *   The full name (genus, species) of the organism.
+ *
+ * @return string
+ *   The subkingdom of the organism.
+ */
+function tpps_get_subkingdom($org_name) {
+  $parts = explode(' ', $org_name);
+  $genus = $parts[0];
+
+  $sub_query = db_select('chado.organismprop', 'op');
+  $sub_query->join('chado.organism', 'o', 'o.organism_id = op.organism_id');
+  $sub_query->fields('op', array('value'));
+  $sub_query->condition('op.type_id', chado_get_cvterm(array(
+    'name' => 'subkingdom',
+  ))->cvterm_id);
+  $sub_query->condition('o.genus', $genus);
+  $sub_query->range(0, 1);
+  $sub_query = $sub_query->execute();
+  $subkingom = $sub_query->fetchObject()->value ?? NULL;
+  if (!empty($subkingom)) {
+    return $subkingom;
+  }
+  return tpps_ncbi_get_subkingom($org_name);
 }
