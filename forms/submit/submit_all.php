@@ -308,7 +308,7 @@ function tpps_submit_page_1(array &$form_state) {
     $fam_exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], 'family');
 
     if (!$fam_exists) {
-      $family = tpps_ncbi_get_family($firstpage['organism'][$i]);
+      $family = tpps_get_family($firstpage['organism'][$i]);
       tpps_chado_insert_record('organismprop', array(
         'organism_id' => $form_state['ids']['organism_ids'][$i],
         'type_id' => array(
@@ -321,7 +321,7 @@ function tpps_submit_page_1(array &$form_state) {
     $sub_exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], 'subkingdom');
 
     if (!$sub_exists) {
-      $subkingdom = tpps_ncbi_get_subkingdom($firstpage['organism'][$i]);
+      $subkingdom = tpps_get_subkingdom($firstpage['organism'][$i]);
       tpps_chado_insert_record('organismprop', array(
         'organism_id' => $form_state['ids']['organism_ids'][$i],
         'type_id' => array(
