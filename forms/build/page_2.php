@@ -76,15 +76,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#suffix' => '</div>',
   );
 
-  if (!empty($form_state['values']['study_type'])) {
-    $type = $form_state['values']['study_type'];
-  }
-  elseif (!empty($form_state['saved_values'][TPPS_PAGE_2]['study_type'])) {
-    $type = $form_state['saved_values'][TPPS_PAGE_2]['study_type'];
-  }
-  else {
-    $type = 0;
-  }
+  $type = tpps_get_ajax_value($form_state, array('study_type'), 0);
 
   switch ($type) {
     case '1':
