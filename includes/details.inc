@@ -122,10 +122,9 @@ function tpps_details_top() {
 
     $query = db_select('chado.stock', 's');
     $query->join('chado.organism', 'o', 'o.organism_id = s.organism_id');
-    $query->join('chado.project_stock', 'ps', 'ps.stock_id = s.stock_id');
     $query->fields('o', array('genus', 'species', 'organism_id'));
     $query->addExpression('count(s.stock_id)', 'count');
-    $query->condition('ps.project_id', $proj_id);
+    $query->condition('s.uniquename', db_like($sub->accession) . '%', 'LIKE');
     $query->groupBy('o.organism_id');
     $query = $query->execute();
 
