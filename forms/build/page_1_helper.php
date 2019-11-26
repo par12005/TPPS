@@ -119,71 +119,24 @@ function tpps_publication(array &$form, array $values, array $form_state) {
  */
 function tpps_organism(array &$form, array &$form_state) {
 
-  if (isset($form_state['values']['organism']['number']) and $form_state['triggering_element']['#name'] == "Add Organism") {
-    $form_state['values']['organism']['number']++;
-  }
-  elseif (isset($form_state['values']['organism']['number']) and $form_state['triggering_element']['#name'] == "Remove Organism" and $form_state['values']['organism']['number'] > 1) {
-    $form_state['values']['organism']['number']--;
-  }
-  $org_number = isset($form_state['values']['organism']['number']) ? $form_state['values']['organism']['number'] : NULL;
-
-  if (!isset($org_number) and isset($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'])) {
-    $org_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  }
-  if (!isset($org_number)) {
-    $org_number = 1;
-  }
-
-  $form['organism'] = array(
-    '#type' => 'fieldset',
-    '#tree' => TRUE,
-    '#title' => t('<div class="fieldset-title">Organism information:</div>'),
-    '#description' => t('Up to 5 organisms per submission.'),
-    '#collapsible' => TRUE,
-    '#prefix' => '<div id="organism-wrapper">',
-    '#suffix' => '</div>',
-  );
-
-  $form['organism']['add'] = array(
-    '#type' => 'button',
-    '#button_type' => 'button',
-    '#value' => t('Add Organism'),
-    '#name' => t('Add Organism'),
-    '#ajax' => array(
-      'wrapper' => 'organism-wrapper',
-      'callback' => 'tpps_organism_callback',
+  $field = array(
+    '#type' => 'textfield',
+    '#title' => "Species !num",
+    '#autocomplete_path' => 'species/autocomplete',
+    '#attributes' => array(
+      'data-toggle' => array('tooltip'),
+      'data-placement' => array('right'),
+      'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
     ),
   );
 
-  $form['organism']['remove'] = array(
-    '#type' => 'button',
-    '#button_type' => 'button',
-    '#value' => t('Remove Organism'),
-    '#name' => t('Remove Organism'),
-    '#ajax' => array(
-      'wrapper' => 'organism-wrapper',
-      'callback' => 'tpps_organism_callback',
+  tpps_dynamic_list($form, $form_state, 'organism', $field, array(
+    'label' => 'Organism',
+    'default' => 1,
+    'substitute_fields' => array(
+      '#title',
     ),
-  );
-
-  $form['organism']['number'] = array(
-    '#type' => 'hidden',
-    '#value' => $org_number,
-  );
-
-  for ($i = 1; $i <= $org_number; $i++) {
-
-    $form['organism']["$i"] = array(
-      '#type' => 'textfield',
-      '#title' => t("Species @num: *", array('@num' => $i)),
-      '#autocomplete_path' => "species/autocomplete",
-      '#attributes' => array(
-        'data-toggle' => array('tooltip'),
-        'data-placement' => array('right'),
-        'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
-      ),
-    );
-  }
+  ));
 
   return $form;
 }
