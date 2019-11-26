@@ -295,26 +295,19 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   tpps_page_4_ref($fields, $form_state, $id);
 
-  if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value'])) {
-    $snps_check = $form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SNPs'])) {
-    $snps_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SNPs'];
-  }
+  $marker_parents = array(
+    $id,
+    'genotype',
+    'marker-type',
+  );
+  $parents = array_merge($marker_parents, array('SNPs'));
+  $snps_check = tpps_get_ajax_value($form_state, $parents);
 
-  if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SSRs/cpSSRs']['#value'])) {
-    $ssrs_check = $form_state['complete form'][$id]['genotype']['marker-type']['SSRs/cpSSRs']['#value'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SSRs/cpSSRs'])) {
-    $ssrs_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SSRs/cpSSRs'];
-  }
+  $parents = array_merge($marker_parents, array('SSRs/cpSSRs'));
+  $ssrs_check = tpps_get_ajax_value($form_state, $parents);
 
-  if (isset($form_state['complete form'][$id]['genotype']['marker-type']['Other']['#value'])) {
-    $other_marker_check = $form_state['complete form'][$id]['genotype']['marker-type']['Other']['#value'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['Other'])) {
-    $other_marker_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['Other'];
-  }
+  $parents = array_merge($marker_parents, array('Other'));
+  $other_marker_check = tpps_get_ajax_value($form_state, $parents);
 
   $fields['files'] = array(
     '#type' => 'fieldset',
@@ -339,46 +332,33 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     );
   }
 
+  $file_type_parents = array(
+    $id,
+    'genotype',
+    'files',
+    'file-type',
+  );
   $options = array();
   if (!empty($snps_check)) {
     $options['SNPs Genotype Assay'] = 'SNPs Genotype Assay';
-    if (!empty($form_state['complete form'][$id]['genotype']['files']['file-type']['SNPs Genotype Assay']['#value']) or !empty($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SNPs Genotype Assay'])) {
+    $parents = array_merge($file_type_parents, array('SNPs Genotype Assay'));
+    $snps_assay_check = tpps_get_ajax_value($form_state, $parents);
+
+    if (!empty($snps_assay_check)) {
       $options['Assay Design'] = 'Assay Design';
     }
-
-    if (isset($form_state['complete form'][$id]['genotype']['files']['file-type']['SNPs Genotype Assay']['#value'])) {
-      $snps_assay_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['SNPs Genotype Assay']['#value'];
-    }
-    elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SNPs Genotype Assay'])) {
-      $snps_assay_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SNPs Genotype Assay'];
-    }
-
-    if (!empty($snps_assay_check) and isset($form_state['complete form'][$id]['genotype']['files']['file-type']['Assay Design']['#value'])) {
-      $assay_design_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['Assay Design']['#value'];
-    }
-    elseif (!empty($snps_assay_check) and isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['Assay Design'])) {
-      $assay_design_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['Assay Design'];
-    }
+    $parents = array_merge($file_type_parents, array('Assay Design'));
+    $assay_design_check = tpps_get_ajax_value($form_state, $parents);
   }
   if (!empty($ssrs_check)) {
     $options['SSRs/cpSSRs Genotype Spreadsheet'] = 'SSRs/cpSSRs Genotype Spreadsheet';
-
-    if (isset($form_state['complete form'][$id]['genotype']['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet']['#value'])) {
-      $ssrs_file_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet']['#value'];
-    }
-    elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
-      $ssrs_file_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'];
-    }
+    $parents = array_merge($file_type_parents, array('SSRs/cpSSRs Genotype Spreadsheet'));
+    $ssrs_file_check = tpps_get_ajax_value($form_state, $parents);
   }
   if (!empty($other_marker_check)) {
     $options['Other Marker Genotype Spreadsheet'] = 'Other Marker Genotype Spreadsheet';
-
-    if (isset($form_state['complete form'][$id]['genotype']['files']['file-type']['Other Marker Genotype Spreadsheet']['#value'])) {
-      $other_file_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['Other Marker Genotype Spreadsheet']['#value'];
-    }
-    elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
-      $other_file_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['Other Marker Genotype Spreadsheet'];
-    }
+    $parents = array_merge($file_type_parents, array('Other Marker Genotype Spreadsheet'));
+    $other_file_check = tpps_get_ajax_value($form_state, $parents);
   }
   $options['VCF'] = 'VCF';
 
@@ -392,12 +372,8 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     ),
   );
 
-  if (isset($form_state['complete form'][$id]['genotype']['files']['file-type']['VCF']['#value'])) {
-    $vcf_file_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['VCF']['#value'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['VCF'])) {
-    $vcf_file_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['VCF'];
-  }
+  $parents = array_merge($file_type_parents, array('VCF'));
+  $vcf_file_check = tpps_get_ajax_value($form_state, $parents);
 
   if (!empty($snps_assay_check)) {
     $fields['files']['snps-assay'] = array(
@@ -466,23 +442,28 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#tree' => TRUE,
     );
 
-    if (isset($form_state['values'][$id]['genotype']['files']['ploidy'])) {
-      switch ($form_state['values'][$id]['genotype']['files']['ploidy']) {
-        case 'Haploid':
-          $fields['files']['ssrs']['#description'] .= ' For haploid, TPPS assumes that each remaining column in the spreadsheet is a marker.';
-          break;
+    $ploidy = tpps_get_ajax_value($form_state, array(
+      $id,
+      'genotype',
+      'files',
+      'ploidy',
+    ));
 
-        case 'Diploid':
-          $fields['files']['ssrs']['#description'] .= ' For diploid, TPPS will assume that pairs of columns together are describing an individual marker, so the second and third columns would be the first marker, the fourth and fifth columns would be the second marker, etc.';
-          break;
+    switch ($ploidy) {
+      case 'Haploid':
+        $fields['files']['ssrs']['#description'] .= ' For haploid, TPPS assumes that each remaining column in the spreadsheet is a marker.';
+        break;
 
-        case 'Polyploid':
-          $fields['files']['ssrs']['#description'] .= ' For polyploid, TPPS will read columns until it arrives at a non-empty column with a different name from the last.';
-          break;
+      case 'Diploid':
+        $fields['files']['ssrs']['#description'] .= ' For diploid, TPPS will assume that pairs of columns together are describing an individual marker, so the second and third columns would be the first marker, the fourth and fifth columns would be the second marker, etc.';
+        break;
 
-        default:
-          break;
-      }
+      case 'Polyploid':
+        $fields['files']['ssrs']['#description'] .= ' For polyploid, TPPS will read columns until it arrives at a non-empty column with a different name from the last.';
+        break;
+
+      default:
+        break;
     }
 
     if (isset($fields['files']['ssrs']['#value']['fid'])) {
@@ -514,7 +495,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     );
 
     $fields['files']['other']['empty'] = array(
-      '#default_value' => isset($values[$id]['genotype']['files']['other']['empty']) ? $values[$id]['genotype']['files']['other']['empty'] : 'NA',
+      '#default_value' => $values[$id]['genotype']['files']['other']['empty'] ?? 'NA',
     );
 
     $fields['files']['other']['columns'] = array(
