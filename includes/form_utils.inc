@@ -2,12 +2,31 @@
 
 /**
  * @file
+ * Defines useful functions to be used with the TPPS form.
  */
 
 /**
- * 
+ * Creates a dynamic list fieldset complete with add/remove buttons and ajax.
+ *
+ * This function accepts a form object, form state object, an id, and a field
+ * to repeat, and creates a fieldset with buttons to add/remove items from the
+ * list. This function also supports a variety of additional options, which can
+ * be specified in the $options array. The list will be inserted at $form[$id],
+ * unless parents are specified in the options, in which case the list will be
+ * inserted at $form[...$parents][$id].
+ *
+ * @param array $form
+ *   The form array that the new list will be generated for.
+ * @param array $form_state
+ *   The form state array of the provided form.
+ * @param string $id
+ *   The id of the dynamic list.
+ * @param array $repeat
+ *   The field to repeat.
+ * @param array $options
+ *   Additional options.
  */
-function tpps_dynamic_list(&$form, &$form_state, $id, $repeat, $options = array()) {
+function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat, array $options = array()) {
   $label = $options['label'] ?? $id;
   $parents = $options['parents'] ?? array();
   $number_parents = $parents;
@@ -88,9 +107,28 @@ function tpps_dynamic_list(&$form, &$form_state, $id, $repeat, $options = array(
 }
 
 /**
- * 
+ * Retrieves the value of the number of a tpps_dynamic_list fieldset.
+ *
+ * This function first checks the values of the form state, then the
+ * saved_values, and finally returns the default if it cannot find the nubmer.
+ *
+ * @param array $state
+ *   The state of the form.
+ * @param array $parents
+ *   The parents leading to the list number.
+ * @param string $up
+ *   The #name of the button to increase the list number.
+ * @param string $down
+ *   The #name of the button to decrease the list number.
+ * @param int $default
+ *   The default number if the number does not exist.
+ * @param int $minimum
+ *   The minimum number we are allowed to reach.
+ *
+ * @return int
+ *   The ajax number of the dynamic list, or the default number.
  */
-function tpps_get_ajax_number(&$state, $parents, $up, $down, $default = 0, $minimum = 0) {
+function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $default = 0, $minimum = 0) {
   // Get page number.
   $page = $state['stage'];
 
@@ -122,9 +160,27 @@ function tpps_get_ajax_number(&$state, $parents, $up, $down, $default = 0, $mini
 }
 
 /**
- * 
+ * Retrieves the value of a field that may have been altered through ajax.
+ *
+ * This function first checks the 'complete form' of the form state, then the
+ * saved_values, and finally returns the default if it cannot find the value.
+ * If the value we are trying to reach is part of a TPPS managed_file, then we
+ * can also pass the file name in order to find saved_values such as
+ * 'file-columns', or 'file-no-header'.
+ *
+ * @param array $state
+ *   The state of the form.
+ * @param array $parents
+ *   The parents leading to the list number.
+ * @param mixed $default
+ *   The default value to return.
+ * @param string $file_name
+ *   Optional - the name of the file.
+ *
+ * @return mixed
+ *   The value of the specified field, or the default value.
  */
-function tpps_get_ajax_value(&$state, $parents, $default = NULL, $file_name = "") {
+function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $file_name = "") {
   $page = $state['stage'];
   $value_parents = $parents;
   array_unshift($value_parents, 'complete form');
