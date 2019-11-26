@@ -24,7 +24,7 @@ function tpps_dynamic_list(&$form, &$form_state, $id, $repeat, $options = array(
   $sub_fields = $options['substitute_fields'] ?? array();
   $replace_pattern = $options['replacement_pattern'] ?? '/!num/';
   
-  $number = tpps_get_ajax_number($form_state, $number_parents, $up, $down, $default, $minimum);
+  $number = tpps_get_ajax_number($form_state, $number_parents, $up . $name_suffix, $down . $name_suffix, $default, $minimum);
 
   $element = array(
     '#type' => 'fieldset',

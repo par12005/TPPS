@@ -27,7 +27,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">Phenotype Information:</div>'),
     '#tree' => TRUE,
-    '#prefix' => "<div id=\"phenotypes-$id\">",
+    '#prefix' => "<div id=\"phenotype-main-$id\">",
     '#suffix' => '</div>',
     '#description' => t('Upload a file and/or fill in form fields below to provide us with metadata about your phenotypes.'),
     '#collapsible' => TRUE,
@@ -38,7 +38,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#title' => t('My phenotypes are results from a mass spectrometry or isotope analysis'),
     '#ajax' => array(
       'callback' => 'tpps_update_phenotype',
-      'wrapper' => "phenotypes-$id",
+      'wrapper' => "phenotype-main-$id",
     ),
   );
 
@@ -183,6 +183,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     'callback' => 'tpps_update_phenotype',
     'parents' => array($id, 'phenotype'),
     'wrapper' => "phenotypes-$id",
+    'name_suffix' => $id,
     'substitute_fields' => array(
       array('name', '#title'),
       array('name', '#prefix'),
@@ -567,13 +568,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 function tpps_environment(array &$form, array &$form_state, $id) {
   $cartogratree_env = variable_get('tpps_cartogratree_env', FALSE);
 
-  $fields = array(
+  $form[$id]['environment'] = array(
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">Environmental Information:</div>'),
     '#collapsible' => TRUE,
     '#tree' => TRUE,
-    '#prefix' => "<div id=\"environment-$id\">",
-    '#suffix' => '</div>',
   );
 
   if ($cartogratree_env and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
@@ -640,13 +639,13 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       }
     }
 
-    $fields['use_layers'] = array(
+    $form[$id]['environment']['use_layers'] = array(
       '#type' => 'checkbox',
       '#title' => 'I used environmental layers in my study that are indexed by CartograTree.',
       '#description' => 'If the layer you used is not in the list below, then the administrator for this site might not have enabled the layer group you used. Please contact them for more information.',
     );
 
-    $fields['env_layers_groups'] = array(
+    $form[$id]['environment']['env_layers_groups'] = array(
       '#type' => 'fieldset',
       '#title' => 'Cartogratree Environmental Layers: *',
       '#collapsible' => TRUE,
@@ -657,7 +656,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       ),
     );
 
-    $fields['env_layers'] = array(
+    $form[$id]['environment']['env_layers'] = array(
       '#type' => 'fieldset',
       '#title' => 'Cartogratree Environmental Layers: *',
       '#collapsible' => TRUE,
@@ -668,7 +667,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       ),
     );
 
-    $fields['env_params'] = array(
+    $form[$id]['environment']['env_params'] = array(
       '#type' => 'fieldset',
       '#title' => 'CartograTree Environmental Layer Parameters: *',
       '#collapsible' => TRUE,
@@ -684,13 +683,13 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       $layer_group = $layer_info['group'];
       $layer_params = $layer_info['params'];
 
-      $fields['env_layers_groups'][$layer_group] = array(
+      $form[$id]['environment']['env_layers_groups'][$layer_group] = array(
         '#type' => 'checkbox',
         '#title' => $layer_group,
         '#return_value' => $layer_info['group_id'],
       );
 
-      $fields['env_layers'][$layer_title] = array(
+      $form[$id]['environment']['env_layers'][$layer_title] = array(
         '#type' => 'checkbox',
         '#title' => "<strong>$layer_title</strong> - $layer_group",
         '#states' => array(
@@ -702,7 +701,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       );
 
       if (!empty($layer_params)) {
-        $fields['env_params']["$layer_title"] = array(
+        $form[$id]['environment']['env_params']["$layer_title"] = array(
           '#type' => 'fieldset',
           '#title' => "$layer_title Parameters",
           '#description' => "Please select the parameters you used from the $layer_title layer.",
@@ -715,7 +714,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
         );
 
         foreach ($layer_params as $param_id => $param) {
-          $fields['env_params']["$layer_title"][$param] = array(
+          $form[$id]['environment']['env_params']["$layer_title"][$param] = array(
             '#type' => 'checkbox',
             '#title' => $param,
             '#return_value' => $param_id,
@@ -725,98 +724,65 @@ function tpps_environment(array &$form, array &$form_state, $id) {
     }
   }
 
-  $fields['env_manual_check'] = array(
+  $form[$id]['environment']['env_manual_check'] = array(
     '#type' => 'checkbox',
     '#title' => 'I have environmental data that I collected myself.',
   );
 
-  if (isset($form_state['values'][$id]['environment']['number']) and $form_state['triggering_element']['#name'] == "Add Environment Data-$id") {
-    $form_state['values'][$id]['environment']['number']++;
-  }
-  elseif (isset($form_state['values'][$id]['environment']['number']) and $form_state['triggering_element']['#name'] == "Remove Environment Data-$id" and $form_state['values'][$id]['environment']['number'] > 0) {
-    $form_state['values'][$id]['environment']['number']--;
-  }
-  $environment_number = isset($form_state['values'][$id]['environment']['number']) ? $form_state['values'][$id]['environment']['number'] : NULL;
-
-  if (!isset($environment_number) and isset($form_state['saved_values'][TPPS_PAGE_4][$id]['environment']['number'])) {
-    $environment_number = $form_state['saved_values'][TPPS_PAGE_4][$id]['environment']['number'];
-  }
-  if (!isset($environment_number)) {
-    $environment_number = 1;
-  }
-
-  $fields['number'] = array(
-    '#type' => 'hidden',
-    '#value' => "$environment_number",
-  );
-
-  $fields['env_manual'] = array(
+  $field = array(
     '#type' => 'fieldset',
-    '#title' => 'Custom Environmental Data:',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[environment][env_manual_check]"]' => array('checked' => TRUE),
-      ),
+    '#tree' => TRUE,
+    'name' => array(
+      '#type' => 'textfield',
+      '#title' => 'Environmental Data !num Name: *',
+      '#prefix' => '<label><b>Environment Data !num:</b></label>',
+      '#description' => 'Please provide the name of Environmental Data !num. Some example environmental data names might include "soil chemistry", "rainfall", "average temperature", etc.',
     ),
-    '#collapsible' => TRUE,
-  );
-
-  $fields['env_manual']['add'] = array(
-    '#type' => 'button',
-    '#name' => t("Add Environment Data-@i", array('@i' => $id)),
-    '#button_type' => 'button',
-    '#value' => t('Add Environment Data'),
-    '#ajax' => array(
-      'callback' => 'tpps_update_environment',
-      'wrapper' => "environment-$id",
+    'description' => array(
+      '#type' => 'textfield',
+      '#title' => 'Environmental Data !num Description: *',
+      '#description' => 'Please provide a short description of Environmental Data !num.',
     ),
-  );
-
-  $fields['env_manual']['remove'] = array(
-    '#type' => 'button',
-    '#name' => t("Remove Environment Data-@i", array('@i' => $id)),
-    '#button_type' => 'button',
-    '#value' => t('Remove Environment Data'),
-    '#ajax' => array(
-      'callback' => 'tpps_update_environment',
-      'wrapper' => "environment-$id",
+    'units' => array(
+      '#type' => 'textfield',
+      '#title' => 'Environmental Data !num Units: *',
+      '#description' => 'Please provide the units of Environmental Data !num.',
+    ),
+    'value' => array(
+      '#type' => 'textfield',
+      '#title' => 'Environmental Data !num Value: *',
+      '#description' => 'Please provide the value of Environmental Data !num.',
     ),
   );
 
-  for ($i = 1; $i <= $environment_number; $i++) {
+  tpps_dynamic_list($form, $form_state, 'env_manual', $field, array(
+    'label' => 'Environmental Data',
+    'title' => "",
+    'callback' => 'tpps_update_environment',
+    'parents' => array($id, 'environment'),
+    'wrapper' => "environment-$id",
+    'name_suffix' => $id,
+    'substitute_fields' => array(
+      array('name', '#title'),
+      array('name', '#prefix'),
+      array('name', '#description'),
+      array('description', '#title'),
+      array('description', '#description'),
+      array('units', '#title'),
+      array('units', '#description'),
+      array('value', '#title'),
+      array('value', '#description'),
+    ),
+  ));
+  dpm($form[$id]['environment']);
 
-    $fields['env_manual']["$i"] = array(
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-    );
+  $form[$id]['environment']['env_manual']['#states'] = array(
+    'visible' => array(
+      ':input[name="' . $id . '[environment][env_manual_check]"]' => array('checked' => TRUE),
+    ),
+  );
 
-    $fields['env_manual']["$i"]['name'] = array(
-      '#type' => 'textfield',
-      '#title' => t("Environmental Data @i Name: *", array('@i' => $i)),
-      '#prefix' => "<label><b>Environment Data $i:</b></label>",
-      '#description' => t('Please provide the name of Environmental Data @i. Some example environmental data names might include "soil chemistry", "rainfall", "average temperature", etc.', array('@i' => $i)),
-    );
-
-    $fields['env_manual']["$i"]['description'] = array(
-      '#type' => 'textfield',
-      '#title' => t("Environmental Data @i Description: *", array('@i' => $i)),
-      '#description' => t("Please provide a short description of Environmental Data @i.", array('@i' => $i)),
-    );
-
-    $fields['env_manual']["$i"]['units'] = array(
-      '#type' => 'textfield',
-      '#title' => t("Environmental Data @i Units: *", array('@i' => $i)),
-      '#description' => t("Please provide the units of Environmental Data @i.", array('@i' => $i)),
-    );
-
-    $fields['env_manual']["$i"]['value'] = array(
-      '#type' => 'textfield',
-      '#title' => t("Environmental Data @i Value: *", array('@i' => $i)),
-      '#description' => t("Please provide the value of Environmental Data @i.", array('@i' => $i)),
-    );
-  }
-
-  return $fields;
+  return $form[$id]['environment'];
 }
 
 /**
