@@ -1006,22 +1006,9 @@ function tpps_update_7101() {
       $state['journal'] = $firstpage['publication']['journal'] ?? "";
       $state['authors'] = !empty($firstpage['primaryAuthor']) ? array($firstpage['primaryAuthor']) : array();
       $state['files'] = array();
-      if (empty($seconds['check']) and !empty($seconds['number'])) {
+      if (!empty($seconds['number'])) {
         for ($i = 1; $i <= $seconds['number']; $i++) {
           $state['authors'][] = $seconds[$i];
-        }
-      }
-      elseif (!empty($seconds['check']) and file_load($seconds['file'])) {
-        $state['files'][] = $seconds['file'];
-        $column_vals = $seconds['file-columns'] ?? array();
-        $col_f = array_search('1', $column_vals);
-        $col_l = array_search('2', $column_vals);
-        $col_m = array_search('3', $column_vals);
-        $content = tpps_parse_file($seconds['file'], 0, $seconds['file-no-header']);
-        if (!empty($content)) {
-          foreach ($content as $row) {
-            $state['authors'][] = "{$row[$col_l]}, {$row[$col_f]} {$row[$col_m]}";
-          }
         }
       }
 

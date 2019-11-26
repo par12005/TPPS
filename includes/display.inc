@@ -53,10 +53,6 @@ function tpps_flatten(array $state) {
         $data["Secondary Author $i"] = $pub['secondaryAuthors']["$i"];
       }
     }
-    if ($pub['secondaryAuthors']['check'] and $pub['secondaryAuthors']['file']) {
-      $data["Secondary Authors File"] = $pub['secondaryAuthors']['file'];
-      $data['#secondary_authors_file_no_header'] = isset($pub['secondaryAuthors']['file-no-header']) ? $pub['secondaryAuthors']['file-no-header'] : NULL;
-    }
   }
 
   if (isset($org['number'])) {

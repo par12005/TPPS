@@ -124,7 +124,7 @@ function tpps_submit_page_1(array &$form_state) {
   ));
 
   $authors = array($firstpage['primaryAuthor']);
-  if (empty($seconds['check']) and $seconds['number'] != 0) {
+  if ($seconds['number'] != 0) {
     for ($i = 1; $i <= $seconds['number']; $i++) {
       tpps_chado_insert_record('contact', array(
         'name' => $seconds[$i],
@@ -148,38 +148,6 @@ function tpps_submit_page_1(array &$form_state) {
       );
       $authors[] = $seconds[$i];
     }
-  }
-  elseif (!empty($seconds['check'])) {
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'cv_id' => array(
-          'name' => 'schema',
-        ),
-        'name' => 'url',
-        'is_obsolete' => 0,
-      ),
-      'value' => file_create_url(file_load($seconds['file'])->uri),
-      'rank' => $form_state['file_rank'],
-    ));
-    $form_state['file_rank']++;
-
-    $column_vals = $seconds['file-columns'];
-    $pubauthors = array();
-    $rank = 0;
-
-    $options = array(
-      'column_ids' => array(
-        'first' => array_search('1', $column_vals),
-        'last' => array_search('2', $column_vals),
-        'mid' => array_search('3', $column_vals),
-      ),
-      'pubauthors' => &$pubauthors,
-      'pubauthor_rank' => &$rank,
-      'authors' => &$authors,
-    );
-
-    tpps_iterate_file($seconds['file'], 'tpps_process_secondary_authors', $options);
   }
 
   $publication_id = tpps_chado_insert_record('pub', array(
@@ -1072,42 +1040,6 @@ function tpps_submit_summary(array &$form_state) {
       }
     }
   }
-}
-
-/**
- * This function processes a single row of a secondary authors file.
- *
- * This function is meant to be used with tpps_file_iterator().
- *
- * @param mixed $row
- *   The item yielded by the TPPS file generator.
- * @param array $options
- *   Additional options set when calling tpps_file_iterator().
- */
-function tpps_process_secondary_authors($row, array &$options) {
-  $cols = $options['column_ids'];
-  $authors = &$options['authors'];
-  $pubauthors = &$options['pubauthors'];
-  $rank = &$options['pubauthor_rank'];
-
-  $author_name = "{$row[$cols['last']]}, {$row[$cols['first']]} {$row[$cols['mid']]}";
-  tpps_chado_insert_record('contact', array(
-    'name' => $author_name,
-    'type_id' => array(
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-      'name' => 'Person',
-      'is_obsolete' => 0,
-    ),
-  ));
-  $pubauthors[] = array(
-    'rank' => "$rank",
-    'surname' => $row[$cols['last']],
-    'givennames' => $row[$cols['first']] . " " . $row[$cols['mid']],
-  );
-  $authors[] = $author_name;
-  $rank++;
 }
 
 /**
