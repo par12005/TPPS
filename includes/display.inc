@@ -53,10 +53,6 @@ function tpps_flatten(array $state) {
         $data["Secondary Author $i"] = $pub['secondaryAuthors']["$i"];
       }
     }
-    if ($pub['secondaryAuthors']['check'] and $pub['secondaryAuthors']['file']) {
-      $data["Secondary Authors File"] = $pub['secondaryAuthors']['file'];
-      $data['#secondary_authors_file_no_header'] = isset($pub['secondaryAuthors']['file-no-header']) ? $pub['secondaryAuthors']['file-no-header'] : NULL;
-    }
   }
 
   if (isset($org['number'])) {
@@ -295,8 +291,8 @@ function tpps_flatten(array $state) {
       if (isset($org['phenotype'])) {
         $pheno = &$org['phenotype'];
 
-        if (isset($pheno['number'])) {
-          $data['#number_phenotypes'] = $pheno['number'];
+        if (isset($pheno['phenotypes-meta']['number'])) {
+          $data['#number_phenotypes'] = $pheno['phenotypes-meta']['number'];
           $pheno_meta = &$pheno['phenotypes-meta'];
           for ($j = 1; $j <= $data['#number_phenotypes']; $j++) {
             $fields = array(
@@ -473,8 +469,8 @@ function tpps_flatten(array $state) {
         }
 
         if (!empty($env['env_manual_check'])) {
-          if (!empty($env['number'])) {
-            $data['#number_manual_env'] = $env['number'];
+          if (!empty($env['env_manual']['number'])) {
+            $data['#number_manual_env'] = $env['env_manual']['number'];
             for ($j = 1; $j <= $data['#number_manual_env']; $j++) {
               $fields = array(
                 'name' => 'Name',

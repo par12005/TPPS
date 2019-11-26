@@ -107,7 +107,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
   $id = "organism-$org_num";
 
   if (empty($iso_check)) {
-    $phenotype_number = $phenotype['number'];
+    $phenotype_number = $phenotype['phenotypes-meta']['number'];
     $phenotype_check = $phenotype['check'];
     $phenotype_meta = $phenotype['metadata'];
     $phenotype_file = $phenotype['file'];
@@ -702,7 +702,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
  *   The id of the organism fieldset being validated.
  */
 function tpps_validate_environment(array &$environment, $id) {
-  if ($environment['use_layers']) {
+  if (!empty($environment['use_layers'])) {
     // Using cartogratree environment layers.
     $group_check = '';
     $new_layers = array();
@@ -753,7 +753,7 @@ function tpps_validate_environment(array &$environment, $id) {
   }
 
   if ($environment['env_manual_check']) {
-    $env_number = $environment['number'];
+    $env_number = $environment['env_manual']['number'];
     for ($i = 1; $i <= $env_number; $i++) {
       $current_env = $environment['env_manual']["$i"];
       $name = $current_env['name'];

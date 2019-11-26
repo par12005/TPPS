@@ -106,7 +106,7 @@ function tpps_file_parsing($accession) {
       );
 
       if (empty($phenotype['iso-check'])) {
-        $phenotype_number = $phenotype['number'];
+        $phenotype_number = $phenotype['phenotypes-meta']['number'];
         $phenotypes_meta = array();
 
         tpps_chado_insert_record('projectprop', array(
@@ -772,7 +772,7 @@ function tpps_file_parsing($accession) {
       $env_layers_check = isset($environment['use_layers']) ? $environment['use_layers'] : FALSE;
       $env_layers = isset($environment['env_layers']) ? $environment['env_layers'] : FALSE;
       $env_params = isset($environment['env_params']) ? $environment['env_params'] : FALSE;
-      $env_number = $environment['number'];
+      $env_number = $environment['env_manual']['number'];
       $env_count = 0;
 
       $species_index = "species-$i";

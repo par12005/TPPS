@@ -134,9 +134,6 @@ function tpps_doi_upload_files($id, array &$state) {
   $token = variable_get('tpps_zenodo_api_key', NULL);
   $prefix = variable_get('tpps_zenodo_prefix', '');
   $files = array();
-  if (!empty($state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['check'])) {
-    $files[] = $state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['file'];
-  }
 
   for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
     $files[] = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];

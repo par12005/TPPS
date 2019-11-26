@@ -119,71 +119,24 @@ function tpps_publication(array &$form, array $values, array $form_state) {
  */
 function tpps_organism(array &$form, array &$form_state) {
 
-  if (isset($form_state['values']['organism']['number']) and $form_state['triggering_element']['#name'] == "Add Organism") {
-    $form_state['values']['organism']['number']++;
-  }
-  elseif (isset($form_state['values']['organism']['number']) and $form_state['triggering_element']['#name'] == "Remove Organism" and $form_state['values']['organism']['number'] > 1) {
-    $form_state['values']['organism']['number']--;
-  }
-  $org_number = isset($form_state['values']['organism']['number']) ? $form_state['values']['organism']['number'] : NULL;
-
-  if (!isset($org_number) and isset($form_state['saved_values'][TPPS_PAGE_1]['organism']['number'])) {
-    $org_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  }
-  if (!isset($org_number)) {
-    $org_number = 1;
-  }
-
-  $form['organism'] = array(
-    '#type' => 'fieldset',
-    '#tree' => TRUE,
-    '#title' => t('<div class="fieldset-title">Organism information:</div>'),
-    '#description' => t('Up to 5 organisms per submission.'),
-    '#collapsible' => TRUE,
-    '#prefix' => '<div id="organism-wrapper">',
-    '#suffix' => '</div>',
-  );
-
-  $form['organism']['add'] = array(
-    '#type' => 'button',
-    '#button_type' => 'button',
-    '#value' => t('Add Organism'),
-    '#name' => t('Add Organism'),
-    '#ajax' => array(
-      'wrapper' => 'organism-wrapper',
-      'callback' => 'tpps_organism_callback',
+  $field = array(
+    '#type' => 'textfield',
+    '#title' => "Species !num",
+    '#autocomplete_path' => 'species/autocomplete',
+    '#attributes' => array(
+      'data-toggle' => array('tooltip'),
+      'data-placement' => array('right'),
+      'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
     ),
   );
 
-  $form['organism']['remove'] = array(
-    '#type' => 'button',
-    '#button_type' => 'button',
-    '#value' => t('Remove Organism'),
-    '#name' => t('Remove Organism'),
-    '#ajax' => array(
-      'wrapper' => 'organism-wrapper',
-      'callback' => 'tpps_organism_callback',
+  tpps_dynamic_list($form, $form_state, 'organism', $field, array(
+    'label' => 'Organism',
+    'default' => 1,
+    'substitute_fields' => array(
+      '#title',
     ),
-  );
-
-  $form['organism']['number'] = array(
-    '#type' => 'hidden',
-    '#value' => $org_number,
-  );
-
-  for ($i = 1; $i <= $org_number; $i++) {
-
-    $form['organism']["$i"] = array(
-      '#type' => 'textfield',
-      '#title' => t("Species @num: *", array('@num' => $i)),
-      '#autocomplete_path' => "species/autocomplete",
-      '#attributes' => array(
-        'data-toggle' => array('tooltip'),
-        'data-placement' => array('right'),
-        'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
-      ),
-    );
-  }
+  ));
 
   return $form;
 }
@@ -259,87 +212,22 @@ function tpps_year(array &$form, array $values, array $form_state) {
  *   The populated form.
  */
 function tpps_secondary_authors(array &$form, array $values, array $form_state) {
-
-  $file_upload_location = 'public://' . variable_get('tpps_author_files_dir', 'tpps_authors');
-
-  $form['publication']['secondaryAuthors'] = array(
-    '#type' => 'fieldset',
-  );
-
-  $form['publication']['secondaryAuthors']['add'] = array(
-    '#type' => 'button',
-    '#title' => t('Add Secondary Author'),
-    '#button_type' => 'button',
-    '#value' => t('Add Secondary Author'),
-  );
-
-  $form['publication']['secondaryAuthors']['remove'] = array(
-    '#type' => 'button',
-    '#title' => t('Remove Secondary Author'),
-    '#button_type' => 'button',
-    '#value' => t('Remove Secondary Author'),
-  );
-
-  $form['publication']['secondaryAuthors']['number'] = array(
+  $field = array(
     '#type' => 'textfield',
-    '#default_value' => isset($values['publication']['secondaryAuthors']['number']) ? $values['publication']['secondaryAuthors']['number'] : '0',
+    '#title' => "Secondary Author !num",
+    '#autocomplete_path' => 'author/autocomplete',
   );
 
-  for ($i = 1; $i <= 30; $i++) {
-
-    $form['publication']['secondaryAuthors'][$i] = array(
-      '#type' => 'textfield',
-      '#title' => t("Secondary Author @num: *", array('@num' => $i)),
-      '#autocomplete_path' => 'author/autocomplete',
-    );
-  }
-
-  $form['publication']['secondaryAuthors']['check'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('I have >30 Secondary Authors'),
-    '#attributes' => array(
-      'data-toggle' => array('tooltip'),
-      'data-placement' => array('right'),
-      'title' => array('Upload a file instead'),
+  tpps_dynamic_list($form, $form_state, 'secondaryAuthors', $field, array(
+    'label' => 'Secondary Author',
+    'callback' => 'tpps_authors_callback',
+    'substitute_fields' => array(
+      '#title',
     ),
-  );
-
-  $form['publication']['secondaryAuthors']['file'] = array(
-    '#type' => 'managed_file',
-    '#title' => t('Secondary Authors file: please upload a spreadsheet with columns for last name, first name, and middle initial of each author, in any order'),
-    '#upload_location' => "$file_upload_location",
-    '#upload_validators' => array(
-      'file_validate_extensions' => array('txt csv xlsx'),
+    'parents' => array(
+      'publication',
     ),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="publication[secondaryAuthors][check]"]' => array('checked' => TRUE),
-      ),
-    ),
-    '#tree' => TRUE,
-  );
-
-  $form['publication']['secondaryAuthors']['file']['empty'] = array(
-    '#default_value' => isset($values['publication']['secondaryAuthors']['file']['empty']) ? $values['publication']['secondaryAuthors']['file']['empty'] : 'NA',
-  );
-
-  $form['publication']['secondaryAuthors']['file']['columns'] = array(
-    '#description' => 'Please define which columns hold the required data: Last Name, First Name.',
-  );
-
-  $column_options = array(
-    'N/A',
-    'First Name',
-    'Last Name',
-    'Middle Initial',
-  );
-
-  $form['publication']['secondaryAuthors']['file']['columns-options'] = array(
-    '#type' => 'hidden',
-    '#value' => $column_options,
-  );
-
-  $form['publication']['secondaryAuthors']['file']['no-header'] = array();
+  ));
 
   return $form;
 }

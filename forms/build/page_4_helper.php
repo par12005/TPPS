@@ -23,29 +23,30 @@
 function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   $phenotype_upload_location = 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
 
-  $fields = array(
+  $form[$id]['phenotype'] = array(
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">Phenotype Information:</div>'),
     '#tree' => TRUE,
-    '#prefix' => "<div id=\"phenotypes-$id\">",
+    '#prefix' => "<div id=\"phenotype-main-$id\">",
     '#suffix' => '</div>',
     '#description' => t('Upload a file and/or fill in form fields below to provide us with metadata about your phenotypes.'),
     '#collapsible' => TRUE,
   );
 
-  $fields['iso-check'] = array(
+  $form[$id]['phenotype']['iso-check'] = array(
     '#type' => 'checkbox',
     '#title' => t('My phenotypes are results from a mass spectrometry or isotope analysis'),
     '#ajax' => array(
       'callback' => 'tpps_update_phenotype',
-      'wrapper' => "phenotypes-$id",
+      'wrapper' => "phenotype-main-$id",
     ),
   );
 
-  $iso_check = isset($form_state['values'][$id]['phenotype']['iso-check']) ? $form_state['values'][$id]['phenotype']['iso-check'] : NULL;
-  if (!isset($iso_check)) {
-    $iso_check = isset($form_state['saved_values'][TPPS_PAGE_4][$id]['phenotype']['iso-check']) ? $form_state['saved_values'][TPPS_PAGE_4][$id]['phenotype']['iso-check'] : NULL;
-  }
+  $iso_check = tpps_get_ajax_value($form_state, array(
+    $id,
+    'phenotype',
+    'iso-check',
+  ), NULL);
 
   if (!empty($iso_check)) {
     $fields['iso'] = array(
@@ -61,76 +62,24 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     return $fields;
   }
 
-  if (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Add Phenotype-$id") {
-    $form_state['values'][$id]['phenotype']['number']++;
-  }
-  elseif (isset($form_state['values'][$id]['phenotype']['number']) and $form_state['triggering_element']['#name'] == "Remove Phenotype-$id" and $form_state['values'][$id]['phenotype']['number'] > 0) {
-    $form_state['values'][$id]['phenotype']['number']--;
-  }
-  $phenotype_number = isset($form_state['values'][$id]['phenotype']['number']) ? $form_state['values'][$id]['phenotype']['number'] : NULL;
-
-  if (!isset($phenotype_number) and isset($form_state['saved_values'][TPPS_PAGE_4][$id]['phenotype']['number'])) {
-    $phenotype_number = $form_state['saved_values'][TPPS_PAGE_4][$id]['phenotype']['number'];
-  }
-  if (!isset($phenotype_number)) {
-    $phenotype_number = 0;
-  }
-
-  $fields['add'] = array(
-    '#type' => 'button',
-    '#name' => t("Add Phenotype-@i", array('@i' => $id)),
-    '#button_type' => 'button',
-    '#value' => t('Add Phenotype'),
-    '#ajax' => array(
-      'callback' => 'tpps_update_phenotype',
-      'wrapper' => "phenotypes-$id",
-    ),
-  );
-
-  $fields['remove'] = array(
-    '#type' => 'button',
-    '#name' => t("Remove Phenotype-@i", array('@i' => $id)),
-    '#button_type' => 'button',
-    '#value' => t('Remove Phenotype'),
-    '#ajax' => array(
-      'callback' => 'tpps_update_phenotype',
-      'wrapper' => "phenotypes-$id",
-    ),
-  );
-
-  $fields['number'] = array(
-    '#type' => 'hidden',
-    '#value' => "$phenotype_number",
-  );
-
-  $fields['phenotypes-meta'] = array(
+  $field = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
-  );
-
-  for ($i = 1; $i <= $phenotype_number; $i++) {
-
-    $fields['phenotypes-meta']["$i"] = array(
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-    );
-
-    $fields['phenotypes-meta']["$i"]['name'] = array(
+    'name' => array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype @i Name: *", array('@i' => $i)),
+      '#title' => 'Phenotype !num Name: *',
       '#autocomplete_path' => 'phenotype/autocomplete',
-      '#prefix' => "<label><b>Phenotype $i:</b></label>",
+      '#prefix' => "<label><b>Phenotype !num:</b></label>",
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
         'data-placement' => array('right'),
         'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your <a href="@url">Phenotype file</a> below.', array('@url' => url('/tpps', array('fragment' => "edit-$id-phenotype-file-ajax-wrapper")))),
-    );
-
-    $fields['phenotypes-meta']["$i"]['attribute'] = array(
+    ),
+    'attribute' => array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype @i Attribute: *", array('@i' => $i)),
+      '#title' => 'Phenotype !num Attribute: *',
       '#autocomplete_path' => 'attribute/autocomplete',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -138,17 +87,15 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
-    );
-
-    $fields['phenotypes-meta']["$i"]['description'] = array(
+    ),
+    'description' => array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype @i Description: *", array('@i' => $i)),
-      '#description' => t("Please provide a short description of Phenotype @i", array('@i' => $i)),
-    );
-
-    $fields['phenotypes-meta']["$i"]['units'] = array(
+      '#title' => 'Phenotype !num Description: *',
+      '#description' => 'Please provide a short description of Phenotype !num',
+    ),
+    'units' => array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype @i Units: *", array('@i' => $i)),
+      '#title' => 'Phenotype !num Units: *',
       '#autocomplete_path' => 'units/autocomplete',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -156,16 +103,14 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
-    );
-
-    $fields['phenotypes-meta']["$i"]['struct-check'] = array(
+    ),
+    'struct-check' => array(
       '#type' => 'checkbox',
-      '#title' => t("Phenotype @i has a structure descriptor", array('@i' => $i)),
-    );
-
-    $fields['phenotypes-meta']["$i"]['structure'] = array(
+      '#title' => 'Phenotype !num has a structure descriptor',
+    ),
+    'structure' => array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype @i Structure: *", array('@i' => $i)),
+      '#title' => 'Phenotype !num Structure: *',
       '#autocomplete_path' => 'structure/autocomplete',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -175,70 +120,99 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
       '#states' => array(
         'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][struct-check]"]' => array('checked' => TRUE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][struct-check]"]' => array('checked' => TRUE),
         ),
       ),
-    );
-
-    $fields['phenotypes-meta']["$i"]['val-check'] = array(
+    ),
+    'val-check' => array(
       '#type' => 'checkbox',
-      '#title' => t("Phenotype @i has a value range", array('@i' => $i)),
+      '#title' => 'Phenotype !num has a value range',
       '#states' => array(
         'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][bin-check]"]' => array('checked' => FALSE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => FALSE),
         ),
       ),
-    );
-
-    $fields['phenotypes-meta']["$i"]['bin-check'] = array(
+    ),
+    'bin-check' => array(
       '#type' => 'checkbox',
-      '#title' => t("Phenotype @i is a binary phenotype", array('@i' => $i)),
+      '#title' => 'Phenotype !num is a binary phenotype',
       '#states' => array(
         'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => FALSE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => FALSE),
         ),
       ),
-    );
-
-    $fields['phenotypes-meta']["$i"]['min'] = array(
+    ),
+    'min' => array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype @i Minimum Value (type 1 for binary): *", array('@i' => $i)),
+      '#title' => 'Phenotype !num Minimum Value (type 1 for binary): *',
       '#states' => array(
         'invisible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => FALSE),
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][bin-check]"]' => array('checked' => FALSE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => FALSE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => FALSE),
         ),
       ),
-    );
-
-    $fields['phenotypes-meta']["$i"]['max'] = array(
+    ),
+    'max' => array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype @i Maximum Value (type 2 for binary): *", array('@i' => $i)),
+      '#title' => 'Phenotype !num Maximum Value (type 2 for binary): *',
       '#states' => array(
         'invisible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][val-check]"]' => array('checked' => FALSE),
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][bin-check]"]' => array('checked' => FALSE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => FALSE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => FALSE),
         ),
       ),
-    );
-
-    $fields['phenotypes-meta']["$i"]['time-check'] = array(
+    ),
+    'time-check' => array(
       '#type' => 'checkbox',
-      '#title' => t("Phenotype @i has a time point/range", array('@i' => $i)),
-    );
-
-    $fields['phenotypes-meta']["$i"]['time'] = array(
+      '#title' => 'Phenotype !num has a time point/range',
+    ),
+    'time' => array(
       '#type' => 'textfield',
-      '#title' => t("Phenotype @i Time: *", array('@i' => $i)),
+      '#title' => 'Phenotype !num Time: *',
       '#states' => array(
         'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][' . $i . '][time-check]"]' => array('checked' => TRUE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][time-check]"]' => array('checked' => TRUE),
         ),
       ),
-    );
-  }
+    ),
+  );
 
-  $fields['check'] = array(
+  tpps_dynamic_list($form, $form_state, 'phenotypes-meta', $field, array(
+    'label' => 'Phenotype',
+    'title' => "",
+    'callback' => 'tpps_update_phenotype',
+    'parents' => array($id, 'phenotype'),
+    'wrapper' => "phenotypes-$id",
+    'name_suffix' => $id,
+    'substitute_fields' => array(
+      array('name', '#title'),
+      array('name', '#prefix'),
+      array('attribute', '#title'),
+      array('description', '#title'),
+      array('description', '#description'),
+      array('units', '#title'),
+      array('struct-check', '#title'),
+      array('structure', '#title'),
+      array('val-check', '#title'),
+      array('bin-check', '#title'),
+      array('min', '#title'),
+      array('max', '#title'),
+      array('time-check', '#title'),
+      array('time', '#title'),
+    ),
+    'substitute_keys' => array(
+      array('structure', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][struct-check]"]'),
+      array('val-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
+      array('bin-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
+      array('min', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
+      array('min', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
+      array('max', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
+      array('max', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
+      array('time', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][time-check]"]'),
+    ),
+  ));
+
+  $form[$id]['phenotype']['check'] = array(
     '#type' => 'checkbox',
     '#title' => t('I would like to upload a phenotype metadata file'),
     '#attributes' => array(
@@ -249,7 +223,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#description' => t('We encourage that you only upload a phenotype metadata file if you have > 20 phenotypes. Using the fields above instead of uploading a metadata file allows you to select from standardized controlled vocabulary terms, which makes your data more findable, interoperable, and reusable.'),
   );
 
-  $fields['metadata'] = array(
+  $form[$id]['phenotype']['metadata'] = array(
     '#type' => 'managed_file',
     '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, description, and units of each of your phenotypes: *'),
     '#upload_location' => "$phenotype_upload_location",
@@ -264,11 +238,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#tree' => TRUE,
   );
 
-  $fields['metadata']['empty'] = array(
+  $form[$id]['phenotype']['metadata']['empty'] = array(
     '#default_value' => isset($values["$id"]['phenotype']['metadata']['empty']) ? $values["$id"]['phenotype']['metadata']['empty'] : 'NA',
   );
 
-  $fields['metadata']['columns'] = array(
+  $form[$id]['phenotype']['metadata']['columns'] = array(
     '#description' => 'Please define which columns hold the required data: Phenotype name',
   );
 
@@ -283,14 +257,14 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     'Maximum Value',
   );
 
-  $fields['metadata']['columns-options'] = array(
+  $form[$id]['phenotype']['metadata']['columns-options'] = array(
     '#type' => 'hidden',
     '#value' => $column_options,
   );
 
-  $fields['metadata']['no-header'] = array();
+  $form[$id]['phenotype']['metadata']['no-header'] = array();
 
-  return $fields;
+  return $form[$id]['phenotype'];
 }
 
 /**
@@ -322,26 +296,19 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   tpps_page_4_ref($fields, $form_state, $id);
 
-  if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value'])) {
-    $snps_check = $form_state['complete form'][$id]['genotype']['marker-type']['SNPs']['#value'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SNPs'])) {
-    $snps_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SNPs'];
-  }
+  $marker_parents = array(
+    $id,
+    'genotype',
+    'marker-type',
+  );
+  $parents = array_merge($marker_parents, array('SNPs'));
+  $snps_check = tpps_get_ajax_value($form_state, $parents);
 
-  if (isset($form_state['complete form'][$id]['genotype']['marker-type']['SSRs/cpSSRs']['#value'])) {
-    $ssrs_check = $form_state['complete form'][$id]['genotype']['marker-type']['SSRs/cpSSRs']['#value'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SSRs/cpSSRs'])) {
-    $ssrs_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['SSRs/cpSSRs'];
-  }
+  $parents = array_merge($marker_parents, array('SSRs/cpSSRs'));
+  $ssrs_check = tpps_get_ajax_value($form_state, $parents);
 
-  if (isset($form_state['complete form'][$id]['genotype']['marker-type']['Other']['#value'])) {
-    $other_marker_check = $form_state['complete form'][$id]['genotype']['marker-type']['Other']['#value'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['Other'])) {
-    $other_marker_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['marker-type']['Other'];
-  }
+  $parents = array_merge($marker_parents, array('Other'));
+  $other_marker_check = tpps_get_ajax_value($form_state, $parents);
 
   $fields['files'] = array(
     '#type' => 'fieldset',
@@ -366,46 +333,33 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     );
   }
 
+  $file_type_parents = array(
+    $id,
+    'genotype',
+    'files',
+    'file-type',
+  );
   $options = array();
   if (!empty($snps_check)) {
     $options['SNPs Genotype Assay'] = 'SNPs Genotype Assay';
-    if (!empty($form_state['complete form'][$id]['genotype']['files']['file-type']['SNPs Genotype Assay']['#value']) or !empty($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SNPs Genotype Assay'])) {
+    $parents = array_merge($file_type_parents, array('SNPs Genotype Assay'));
+    $snps_assay_check = tpps_get_ajax_value($form_state, $parents);
+
+    if (!empty($snps_assay_check)) {
       $options['Assay Design'] = 'Assay Design';
     }
-
-    if (isset($form_state['complete form'][$id]['genotype']['files']['file-type']['SNPs Genotype Assay']['#value'])) {
-      $snps_assay_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['SNPs Genotype Assay']['#value'];
-    }
-    elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SNPs Genotype Assay'])) {
-      $snps_assay_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SNPs Genotype Assay'];
-    }
-
-    if (!empty($snps_assay_check) and isset($form_state['complete form'][$id]['genotype']['files']['file-type']['Assay Design']['#value'])) {
-      $assay_design_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['Assay Design']['#value'];
-    }
-    elseif (!empty($snps_assay_check) and isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['Assay Design'])) {
-      $assay_design_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['Assay Design'];
-    }
+    $parents = array_merge($file_type_parents, array('Assay Design'));
+    $assay_design_check = tpps_get_ajax_value($form_state, $parents);
   }
   if (!empty($ssrs_check)) {
     $options['SSRs/cpSSRs Genotype Spreadsheet'] = 'SSRs/cpSSRs Genotype Spreadsheet';
-
-    if (isset($form_state['complete form'][$id]['genotype']['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet']['#value'])) {
-      $ssrs_file_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet']['#value'];
-    }
-    elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
-      $ssrs_file_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'];
-    }
+    $parents = array_merge($file_type_parents, array('SSRs/cpSSRs Genotype Spreadsheet'));
+    $ssrs_file_check = tpps_get_ajax_value($form_state, $parents);
   }
   if (!empty($other_marker_check)) {
     $options['Other Marker Genotype Spreadsheet'] = 'Other Marker Genotype Spreadsheet';
-
-    if (isset($form_state['complete form'][$id]['genotype']['files']['file-type']['Other Marker Genotype Spreadsheet']['#value'])) {
-      $other_file_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['Other Marker Genotype Spreadsheet']['#value'];
-    }
-    elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
-      $other_file_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['Other Marker Genotype Spreadsheet'];
-    }
+    $parents = array_merge($file_type_parents, array('Other Marker Genotype Spreadsheet'));
+    $other_file_check = tpps_get_ajax_value($form_state, $parents);
   }
   $options['VCF'] = 'VCF';
 
@@ -419,12 +373,8 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     ),
   );
 
-  if (isset($form_state['complete form'][$id]['genotype']['files']['file-type']['VCF']['#value'])) {
-    $vcf_file_check = $form_state['complete form'][$id]['genotype']['files']['file-type']['VCF']['#value'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['VCF'])) {
-    $vcf_file_check = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['file-type']['VCF'];
-  }
+  $parents = array_merge($file_type_parents, array('VCF'));
+  $vcf_file_check = tpps_get_ajax_value($form_state, $parents);
 
   if (!empty($snps_assay_check)) {
     $fields['files']['snps-assay'] = array(
@@ -493,23 +443,28 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#tree' => TRUE,
     );
 
-    if (isset($form_state['values'][$id]['genotype']['files']['ploidy'])) {
-      switch ($form_state['values'][$id]['genotype']['files']['ploidy']) {
-        case 'Haploid':
-          $fields['files']['ssrs']['#description'] .= ' For haploid, TPPS assumes that each remaining column in the spreadsheet is a marker.';
-          break;
+    $ploidy = tpps_get_ajax_value($form_state, array(
+      $id,
+      'genotype',
+      'files',
+      'ploidy',
+    ));
 
-        case 'Diploid':
-          $fields['files']['ssrs']['#description'] .= ' For diploid, TPPS will assume that pairs of columns together are describing an individual marker, so the second and third columns would be the first marker, the fourth and fifth columns would be the second marker, etc.';
-          break;
+    switch ($ploidy) {
+      case 'Haploid':
+        $fields['files']['ssrs']['#description'] .= ' For haploid, TPPS assumes that each remaining column in the spreadsheet is a marker.';
+        break;
 
-        case 'Polyploid':
-          $fields['files']['ssrs']['#description'] .= ' For polyploid, TPPS will read columns until it arrives at a non-empty column with a different name from the last.';
-          break;
+      case 'Diploid':
+        $fields['files']['ssrs']['#description'] .= ' For diploid, TPPS will assume that pairs of columns together are describing an individual marker, so the second and third columns would be the first marker, the fourth and fifth columns would be the second marker, etc.';
+        break;
 
-        default:
-          break;
-      }
+      case 'Polyploid':
+        $fields['files']['ssrs']['#description'] .= ' For polyploid, TPPS will read columns until it arrives at a non-empty column with a different name from the last.';
+        break;
+
+      default:
+        break;
     }
 
     if (isset($fields['files']['ssrs']['#value']['fid'])) {
@@ -541,7 +496,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     );
 
     $fields['files']['other']['empty'] = array(
-      '#default_value' => isset($values[$id]['genotype']['files']['other']['empty']) ? $values[$id]['genotype']['files']['other']['empty'] : 'NA',
+      '#default_value' => $values[$id]['genotype']['files']['other']['empty'] ?? 'NA',
     );
 
     $fields['files']['other']['columns'] = array(
@@ -613,13 +568,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 function tpps_environment(array &$form, array &$form_state, $id) {
   $cartogratree_env = variable_get('tpps_cartogratree_env', FALSE);
 
-  $fields = array(
+  $form[$id]['environment'] = array(
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">Environmental Information:</div>'),
     '#collapsible' => TRUE,
     '#tree' => TRUE,
-    '#prefix' => "<div id=\"environment-$id\">",
-    '#suffix' => '</div>',
   );
 
   if ($cartogratree_env and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
@@ -686,13 +639,13 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       }
     }
 
-    $fields['use_layers'] = array(
+    $form[$id]['environment']['use_layers'] = array(
       '#type' => 'checkbox',
       '#title' => 'I used environmental layers in my study that are indexed by CartograTree.',
       '#description' => 'If the layer you used is not in the list below, then the administrator for this site might not have enabled the layer group you used. Please contact them for more information.',
     );
 
-    $fields['env_layers_groups'] = array(
+    $form[$id]['environment']['env_layers_groups'] = array(
       '#type' => 'fieldset',
       '#title' => 'Cartogratree Environmental Layers: *',
       '#collapsible' => TRUE,
@@ -703,7 +656,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       ),
     );
 
-    $fields['env_layers'] = array(
+    $form[$id]['environment']['env_layers'] = array(
       '#type' => 'fieldset',
       '#title' => 'Cartogratree Environmental Layers: *',
       '#collapsible' => TRUE,
@@ -714,7 +667,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       ),
     );
 
-    $fields['env_params'] = array(
+    $form[$id]['environment']['env_params'] = array(
       '#type' => 'fieldset',
       '#title' => 'CartograTree Environmental Layer Parameters: *',
       '#collapsible' => TRUE,
@@ -730,13 +683,13 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       $layer_group = $layer_info['group'];
       $layer_params = $layer_info['params'];
 
-      $fields['env_layers_groups'][$layer_group] = array(
+      $form[$id]['environment']['env_layers_groups'][$layer_group] = array(
         '#type' => 'checkbox',
         '#title' => $layer_group,
         '#return_value' => $layer_info['group_id'],
       );
 
-      $fields['env_layers'][$layer_title] = array(
+      $form[$id]['environment']['env_layers'][$layer_title] = array(
         '#type' => 'checkbox',
         '#title' => "<strong>$layer_title</strong> - $layer_group",
         '#states' => array(
@@ -748,7 +701,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       );
 
       if (!empty($layer_params)) {
-        $fields['env_params']["$layer_title"] = array(
+        $form[$id]['environment']['env_params']["$layer_title"] = array(
           '#type' => 'fieldset',
           '#title' => "$layer_title Parameters",
           '#description' => "Please select the parameters you used from the $layer_title layer.",
@@ -761,7 +714,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
         );
 
         foreach ($layer_params as $param_id => $param) {
-          $fields['env_params']["$layer_title"][$param] = array(
+          $form[$id]['environment']['env_params']["$layer_title"][$param] = array(
             '#type' => 'checkbox',
             '#title' => $param,
             '#return_value' => $param_id,
@@ -771,98 +724,64 @@ function tpps_environment(array &$form, array &$form_state, $id) {
     }
   }
 
-  $fields['env_manual_check'] = array(
+  $form[$id]['environment']['env_manual_check'] = array(
     '#type' => 'checkbox',
     '#title' => 'I have environmental data that I collected myself.',
   );
 
-  if (isset($form_state['values'][$id]['environment']['number']) and $form_state['triggering_element']['#name'] == "Add Environment Data-$id") {
-    $form_state['values'][$id]['environment']['number']++;
-  }
-  elseif (isset($form_state['values'][$id]['environment']['number']) and $form_state['triggering_element']['#name'] == "Remove Environment Data-$id" and $form_state['values'][$id]['environment']['number'] > 0) {
-    $form_state['values'][$id]['environment']['number']--;
-  }
-  $environment_number = isset($form_state['values'][$id]['environment']['number']) ? $form_state['values'][$id]['environment']['number'] : NULL;
-
-  if (!isset($environment_number) and isset($form_state['saved_values'][TPPS_PAGE_4][$id]['environment']['number'])) {
-    $environment_number = $form_state['saved_values'][TPPS_PAGE_4][$id]['environment']['number'];
-  }
-  if (!isset($environment_number)) {
-    $environment_number = 1;
-  }
-
-  $fields['number'] = array(
-    '#type' => 'hidden',
-    '#value' => "$environment_number",
-  );
-
-  $fields['env_manual'] = array(
+  $field = array(
     '#type' => 'fieldset',
-    '#title' => 'Custom Environmental Data:',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[environment][env_manual_check]"]' => array('checked' => TRUE),
-      ),
+    '#tree' => TRUE,
+    'name' => array(
+      '#type' => 'textfield',
+      '#title' => 'Environmental Data !num Name: *',
+      '#prefix' => '<label><b>Environment Data !num:</b></label>',
+      '#description' => 'Please provide the name of Environmental Data !num. Some example environmental data names might include "soil chemistry", "rainfall", "average temperature", etc.',
     ),
-    '#collapsible' => TRUE,
-  );
-
-  $fields['env_manual']['add'] = array(
-    '#type' => 'button',
-    '#name' => t("Add Environment Data-@i", array('@i' => $id)),
-    '#button_type' => 'button',
-    '#value' => t('Add Environment Data'),
-    '#ajax' => array(
-      'callback' => 'tpps_update_environment',
-      'wrapper' => "environment-$id",
+    'description' => array(
+      '#type' => 'textfield',
+      '#title' => 'Environmental Data !num Description: *',
+      '#description' => 'Please provide a short description of Environmental Data !num.',
     ),
-  );
-
-  $fields['env_manual']['remove'] = array(
-    '#type' => 'button',
-    '#name' => t("Remove Environment Data-@i", array('@i' => $id)),
-    '#button_type' => 'button',
-    '#value' => t('Remove Environment Data'),
-    '#ajax' => array(
-      'callback' => 'tpps_update_environment',
-      'wrapper' => "environment-$id",
+    'units' => array(
+      '#type' => 'textfield',
+      '#title' => 'Environmental Data !num Units: *',
+      '#description' => 'Please provide the units of Environmental Data !num.',
+    ),
+    'value' => array(
+      '#type' => 'textfield',
+      '#title' => 'Environmental Data !num Value: *',
+      '#description' => 'Please provide the value of Environmental Data !num.',
     ),
   );
 
-  for ($i = 1; $i <= $environment_number; $i++) {
+  tpps_dynamic_list($form, $form_state, 'env_manual', $field, array(
+    'label' => 'Environmental Data',
+    'title' => "",
+    'callback' => 'tpps_update_environment',
+    'parents' => array($id, 'environment'),
+    'wrapper' => "environment-$id",
+    'name_suffix' => $id,
+    'substitute_fields' => array(
+      array('name', '#title'),
+      array('name', '#prefix'),
+      array('name', '#description'),
+      array('description', '#title'),
+      array('description', '#description'),
+      array('units', '#title'),
+      array('units', '#description'),
+      array('value', '#title'),
+      array('value', '#description'),
+    ),
+  ));
 
-    $fields['env_manual']["$i"] = array(
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-    );
+  $form[$id]['environment']['env_manual']['#states'] = array(
+    'visible' => array(
+      ':input[name="' . $id . '[environment][env_manual_check]"]' => array('checked' => TRUE),
+    ),
+  );
 
-    $fields['env_manual']["$i"]['name'] = array(
-      '#type' => 'textfield',
-      '#title' => t("Environmental Data @i Name: *", array('@i' => $i)),
-      '#prefix' => "<label><b>Environment Data $i:</b></label>",
-      '#description' => t('Please provide the name of Environmental Data @i. Some example environmental data names might include "soil chemistry", "rainfall", "average temperature", etc.', array('@i' => $i)),
-    );
-
-    $fields['env_manual']["$i"]['description'] = array(
-      '#type' => 'textfield',
-      '#title' => t("Environmental Data @i Description: *", array('@i' => $i)),
-      '#description' => t("Please provide a short description of Environmental Data @i.", array('@i' => $i)),
-    );
-
-    $fields['env_manual']["$i"]['units'] = array(
-      '#type' => 'textfield',
-      '#title' => t("Environmental Data @i Units: *", array('@i' => $i)),
-      '#description' => t("Please provide the units of Environmental Data @i.", array('@i' => $i)),
-    );
-
-    $fields['env_manual']["$i"]['value'] = array(
-      '#type' => 'textfield',
-      '#title' => t("Environmental Data @i Value: *", array('@i' => $i)),
-      '#description' => t("Please provide the value of Environmental Data @i.", array('@i' => $i)),
-    );
-  }
-
-  return $fields;
+  return $form[$id]['environment'];
 }
 
 /**
@@ -924,94 +843,6 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     '#title' => t('Reference Assembly used: *'),
     '#options' => $ref_genome_arr,
   );
-/*
-  $fields['BioProject-id'] = array(
-    '#type' => 'textfield',
-    '#title' => t('BioProject Accession Number: *'),
-    '#ajax' => array(
-      'callback' => 'tpps_ajax_bioproject_callback',
-      'wrapper' => "$id-assembly-auto",
-    ),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'bio'),
-      ),
-    ),
-  );
-
-  $fields['assembly-auto'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Waiting for BioProject accession number...'),
-    '#tree' => TRUE,
-    '#prefix' => "<div id='$id-assembly-auto'>",
-    '#suffix' => '</div>',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'bio'),
-      ),
-    ),
-  );
-
-  if (isset($form_state['values'][$id]['genotype']['BioProject-id']) and $form_state['values'][$id]['genotype']['BioProject-id'] != '') {
-    $bio_id = $form_state['values']["$id"]['genotype']['BioProject-id'];
-    $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['BioProject-id'] = $form_state['values'][$id]['genotype']['BioProject-id'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['BioProject-id']) and $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['BioProject-id'] != '') {
-    $bio_id = $form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['BioProject-id'];
-  }
-  elseif (isset($form_state['complete form']['organism-1']['genotype']['BioProject-id']['#value']) and $form_state['complete form']['organism-1']['genotype']['BioProject-id']['#value'] != '') {
-    $bio_id = $form_state['complete form']['organism-1']['genotype']['BioProject-id']['#value'];
-  }
-
-  if (isset($bio_id) and $bio_id != '') {
-
-    if (strlen($bio_id) > 5) {
-      $bio_id = substr($bio_id, 5);
-    }
-
-    $options = array();
-    $url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=bioproject&db=nuccore&id=" . $bio_id;
-    $response_xml_data = file_get_contents($url);
-    $link_types = simplexml_load_string($response_xml_data)->children()->children()->LinkSetDb;
-
-    if (preg_match('/<LinkSetDb>/', $response_xml_data)) {
-
-      foreach ($link_types as $type_xml) {
-        $type = $type_xml->LinkName->__tostring();
-
-        switch ($type) {
-          case 'bioproject_nuccore_tsamaster':
-            $suffix = 'TSA';
-            break;
-
-          case 'bioproject_nuccore_wgsmaster':
-            $suffix = 'WGS';
-            break;
-
-          default:
-            continue 2;
-        }
-
-        foreach ($type_xml->Link as $link) {
-          $options[$link->Id->__tostring()] = $suffix;
-        }
-      }
-
-      $fields['assembly-auto']['#title'] = '<div class="fieldset-title">Select all that apply: *</div>';
-      $fields['assembly-auto']['#collapsible'] = TRUE;
-
-      foreach ($options as $item => $suffix) {
-        $fields['assembly-auto']["$item"] = array(
-          '#type' => 'checkbox',
-          '#title' => "$item ($suffix) <a href=\"https://www.ncbi.nlm.nih.gov/nuccore/$item\" target=\"blank\">View on NCBI</a>",
-        );
-      }
-    }
-    else {
-      $fields['assembly-auto']['#description'] = t('We could not find any assembly files related to that BioProject. Please ensure your accession number is of the format "PRJNA#"');
-    }
-  }
-  */
 
   require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
   $class = 'EutilsImporter';
