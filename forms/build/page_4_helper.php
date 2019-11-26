@@ -774,7 +774,6 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       array('value', '#description'),
     ),
   ));
-  dpm($form[$id]['environment']);
 
   $form[$id]['environment']['env_manual']['#states'] = array(
     'visible' => array(

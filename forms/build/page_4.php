@@ -100,7 +100,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           '#tree' => TRUE,
           '#states' => array(
             'invisible' => array(
-              ":input[name=\"organism-{$i}[phenotype][number]\"]" => array('value' => '0'),
+              ":input[name=\"organism-{$i}[phenotype][phenotypes-meta][number]\"]" => array('value' => '0'),
               ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
             ),
           ),
