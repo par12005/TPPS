@@ -19,6 +19,8 @@ function tpps_dynamic_list(&$form, &$form_state, $id, $repeat, $options = array(
   $minimum = $options['minimum'] ?? $default;
   $fieldset_title = $options['title'] ?? "$label information:";
   $button_callback = $options['callback'] ?? "tpps_{$id}_callback";
+  $list_wrapper = $options['wrapper'] ?? "$id-wrapper";
+  $sub_keys = $options['substitute_keys'] ?? array();
   $sub_fields = $options['substitute_fields'] ?? array();
   $replace_pattern = $options['replacement_pattern'] ?? '/!num/';
   
@@ -29,7 +31,7 @@ function tpps_dynamic_list(&$form, &$form_state, $id, $repeat, $options = array(
     '#tree' => TRUE,
     '#title' => "<div class=\"fieldset-title\">$fieldset_title</div>",
     '#collapsible' => $options['collapsible'] ?? TRUE,
-    '#prefix' => "<div id=\"$id-wrapper\">",
+    '#prefix' => "<div id=\"$list_wrapper\">",
     '#suffix' => '</div>',
     'add' => array(
       '#type' => 'button',
@@ -37,7 +39,7 @@ function tpps_dynamic_list(&$form, &$form_state, $id, $repeat, $options = array(
       '#value' => $up,
       '#name' => $up . $name_suffix,
       '#ajax' => array(
-        'wrapper' => "$id-wrapper",
+        'wrapper' => $list_wrapper,
         'callback' => $button_callback,
       ),
     ),
@@ -47,7 +49,7 @@ function tpps_dynamic_list(&$form, &$form_state, $id, $repeat, $options = array(
       '#value' => $down,
       '#name' => $down . $name_suffix,
       '#ajax' => array(
-        'wrapper' => "$id-wrapper",
+        'wrapper' => $list_wrapper,
         'callback' => $button_callback,
       ),
     ),
@@ -67,6 +69,15 @@ function tpps_dynamic_list(&$form, &$form_state, $id, $repeat, $options = array(
         $new_value = preg_replace($replace_pattern, $i, drupal_array_get_nested_value($repeat, $field));
         drupal_array_set_nested_value($instance, $field, $new_value);
       }
+    }
+    foreach ($sub_keys as $key) {
+      $value = drupal_array_get_nested_value($instance, $key);
+      drupal_array_set_nested_value($instance, $key, NULL);
+      $new_key = array();
+      foreach ($key as $key_item) {
+        $new_key[] = preg_replace($replace_pattern, $i, $key_item);
+      }
+      drupal_array_set_nested_value($instance, $new_key, $value);
     }
     $element[$i] = $instance;
   }
