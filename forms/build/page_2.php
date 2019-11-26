@@ -23,17 +23,9 @@ require_once 'page_2_helper.php';
  *   The completed Study Design form.
  */
 function tpps_page_2_create_form(array &$form, array $form_state) {
+  tpps_study_date('Starting', $form, $form_state);
 
-  if (isset($form_state['saved_values'][TPPS_PAGE_2])) {
-    $values = $form_state['saved_values'][TPPS_PAGE_2];
-  }
-  else {
-    $values = array();
-  }
-
-  tpps_study_date('Starting', $form, $values, $form_state);
-
-  tpps_study_date('Ending', $form, $values, $form_state);
+  tpps_study_date('Ending', $form, $form_state);
 
   $form['data_type'] = array(
     '#type' => 'select',

@@ -12,15 +12,13 @@
  *   The type of date, 'Starting' or 'Ending'.
  * @param array $form
  *   The form to be populated.
- * @param array $values
- *   The form_state values of the form to be populated.
  * @param array $form_state
  *   The state of the form to be populated.
  *
  * @return array
  *   The populated form.
  */
-function tpps_study_date($type, array &$form, array $values, array &$form_state) {
+function tpps_study_date($type, array &$form, array &$form_state) {
 
   $form[$type . 'Date'] = array(
     '#type' => 'fieldset',
