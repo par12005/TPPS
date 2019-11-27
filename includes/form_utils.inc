@@ -185,7 +185,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
   $value_parents = $parents;
   array_unshift($value_parents, 'complete form');
   $element = drupal_array_get_nested_value($state, $value_parents);
-  if ($element['#type'] != 'fieldset') {
+  if (isset($element['#type']) and $element['#type'] != 'fieldset') {
     array_push($value_parents, '#value');
   }
   $val = drupal_array_get_nested_value($state, $value_parents);
