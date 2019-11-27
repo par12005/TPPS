@@ -214,6 +214,8 @@ function tpps_install() {
   tpps_default_permissions();
 
   tpps_create_entities();
+
+  tpps_add_dryad();
 }
 
 /**
@@ -953,6 +955,17 @@ function tpps_create_stock_entity() {
 }
 
 /**
+ * Creates the dryad DB.
+ */
+function tpps_add_dryad() {
+  chado_insert_db(array(
+    'name' => 'dryad',
+    'url' => 'https://datadryad.org/',
+    'urlprefix' => 'https://datadryad.org/resource/doi:{doi}',
+  ));
+}
+
+/**
  * Implements hook_update_N().
  */
 function tpps_update_7100() {
@@ -1068,4 +1081,11 @@ function tpps_update_7101() {
     $transaction->rollback();
     throw $e;
   }
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7102() {
+  tpps_add_dryad();
 }
