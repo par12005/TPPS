@@ -25,6 +25,7 @@ require_once 'includes/submissions.inc';
 require_once 'includes/zenodo.inc';
 require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
+require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'api/tpps.api.inc';
 
@@ -798,6 +799,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       $form_state['accession'] = $old_form_state['accession'];
       $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
       $form_state['stats'] = $old_form_state['stats'] ?? NULL;
+      $form_state['tpps_type'] = $old_form_state['tpps_type'] ?? NULL;
     }
   }
   else {
@@ -813,6 +815,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     $form_state['accession'] = $old_form_state['accession'];
     $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
     $form_state['stats'] = $old_form_state['stats'] ?? NULL;
+    $form_state['tpps_type'] = $old_form_state['tpps_type'] ?? NULL;
   }
 
   $form['step'] = array(

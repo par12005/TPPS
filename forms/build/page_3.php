@@ -76,10 +76,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
   $file_description .= "Please find an example of an accession file below.<figure><img src=\"/{$image_path}accession_example.png\"><figcaption>Example Accession File</figcaption></figure>";
 
-  $check = $form_state['complete form']['tree-accession']['check']['#value'] ?? NULL;
-  if (!isset($check)) {
-    $check = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'] ?? FALSE;
-  }
+  $check = tpps_get_ajax_value($form_state, array('tree-accession', 'check'), NULL);
 
   for ($i = 1; $i <= $species_number; $i++) {
     $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"];
@@ -172,10 +169,12 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
     $pop_group_show = FALSE;
 
-    $cols = $form_state['complete form']['tree-accession']["species-$i"]['file']['columns'] ?? NULL;
-    if (!isset($cols)) {
-      $cols = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file-columns'] ?? NULL;
-    }
+    $cols = tpps_get_ajax_value($form_state, array(
+      'tree-accession',
+      "species-$i",
+      'file',
+      'columns',
+    ), NULL, 'file');
 
     if (!empty($cols)) {
       foreach ($cols as $col_name => $data) {

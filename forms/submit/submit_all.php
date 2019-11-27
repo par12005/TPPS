@@ -91,7 +91,19 @@ function tpps_submit_page_1(array &$form_state) {
     'dbxref_id' => $dbxref_id,
   ));
 
-  if (($file = file_load($firstpage['photo']))) {
+  if (!empty($form_state['tpps_type']) and $form_state['tpps_type'] == 'tppsc') {
+    $dryad_db = chado_get_db(array('name' => 'dryad'));
+    $dryad_dbxref = chado_insert_dbxref(array(
+      'db_id' => $dryad_db->db_id,
+      'accession' => $form_state['saved_values'][TPPS_PAGE_1]['doi'],
+    ))->dbxref_id;
+    tpps_chado_insert_record('project_dbxref', array(
+      'project_id' => $form_state['ids']['project_id'],
+      'dbxref_id' => $dryad_dbxref,
+    ));
+  }
+
+  if (!empty($firstpage['photo']) and ($file = file_load($firstpage['photo']))) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
@@ -124,7 +136,7 @@ function tpps_submit_page_1(array &$form_state) {
   ));
 
   $authors = array($firstpage['primaryAuthor']);
-  if (empty($seconds['check']) and $seconds['number'] != 0) {
+  if ($seconds['number'] != 0) {
     for ($i = 1; $i <= $seconds['number']; $i++) {
       tpps_chado_insert_record('contact', array(
         'name' => $seconds[$i],
@@ -149,38 +161,6 @@ function tpps_submit_page_1(array &$form_state) {
       $authors[] = $seconds[$i];
     }
   }
-  elseif (!empty($seconds['check'])) {
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'cv_id' => array(
-          'name' => 'schema',
-        ),
-        'name' => 'url',
-        'is_obsolete' => 0,
-      ),
-      'value' => file_create_url(file_load($seconds['file'])->uri),
-      'rank' => $form_state['file_rank'],
-    ));
-    $form_state['file_rank']++;
-
-    $column_vals = $seconds['file-columns'];
-    $pubauthors = array();
-    $rank = 0;
-
-    $options = array(
-      'column_ids' => array(
-        'first' => array_search('1', $column_vals),
-        'last' => array_search('2', $column_vals),
-        'mid' => array_search('3', $column_vals),
-      ),
-      'pubauthors' => &$pubauthors,
-      'pubauthor_rank' => &$rank,
-      'authors' => &$authors,
-    );
-
-    tpps_iterate_file($seconds['file'], 'tpps_process_secondary_authors', $options);
-  }
 
   $publication_id = tpps_chado_insert_record('pub', array(
     'title' => $firstpage['publication']['title'],
@@ -198,6 +178,19 @@ function tpps_submit_page_1(array &$form_state) {
   tpps_tripal_entity_publish('Publication', array($firstpage['publication']['title'], $publication_id));
   $form_state['pyear'] = $firstpage['publication']['year'];
   $form_state['journal'] = $firstpage['publication']['journal'];
+
+  if (!empty($firstpage['publication']['abstract'])) {
+    tpps_chado_insert_record('pubprop', array(
+      'pub_id' => $publication_id,
+      'type_id' => array(
+        'name' => 'Abstract',
+        'cv_id' => array(
+          'name' => 'tripal_pub',
+        ),
+      ),
+      'value' => $firstpage['publication']['abstract'],
+    ));
+  }
 
   tpps_chado_insert_record('pubprop', array(
     'pub_id' => $publication_id,
@@ -1075,42 +1068,6 @@ function tpps_submit_summary(array &$form_state) {
 }
 
 /**
- * This function processes a single row of a secondary authors file.
- *
- * This function is meant to be used with tpps_file_iterator().
- *
- * @param mixed $row
- *   The item yielded by the TPPS file generator.
- * @param array $options
- *   Additional options set when calling tpps_file_iterator().
- */
-function tpps_process_secondary_authors($row, array &$options) {
-  $cols = $options['column_ids'];
-  $authors = &$options['authors'];
-  $pubauthors = &$options['pubauthors'];
-  $rank = &$options['pubauthor_rank'];
-
-  $author_name = "{$row[$cols['last']]}, {$row[$cols['first']]} {$row[$cols['mid']]}";
-  tpps_chado_insert_record('contact', array(
-    'name' => $author_name,
-    'type_id' => array(
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-      'name' => 'Person',
-      'is_obsolete' => 0,
-    ),
-  ));
-  $pubauthors[] = array(
-    'rank' => "$rank",
-    'surname' => $row[$cols['last']],
-    'givennames' => $row[$cols['first']] . " " . $row[$cols['mid']],
-  );
-  $authors[] = $author_name;
-  $rank++;
-}
-
-/**
  * This function processes a single row of an accession file.
  *
  * This function is meant to be used with tpps_file_iterator().
@@ -1358,6 +1315,7 @@ function tpps_clean_state(array &$form_state) {
     'status' => $form_state['status'],
     'submitting_uid' => $form_state['submitting_uid'],
     'job_id' => $form_state['job_id'],
+    'tpps_type' => $form_state['tpps_type'] ?? NULL,
   );
   $form_state = $new_state;
 }

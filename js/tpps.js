@@ -1,80 +1,4 @@
 jQuery(document).ready(function ($) {
-  
-  function Secondary_Authors(){
-    var secondary_authors_button_add = jQuery('#edit-publication-secondaryauthors-add');
-    var secondary_authors_button_remove = jQuery('#edit-publication-secondaryauthors-remove');
-    var secondary_authors = jQuery('#edit-publication-secondaryauthors').children('div').children('div');
-    var secondary_authors_check = jQuery('#edit-publication-secondaryauthors-check');
-    var secondary_authors_number_field = jQuery(secondary_authors[0]);
-    secondary_authors_number_field.hide();
-    secondary_authors = secondary_authors.slice(1,31);
-    var secondary_authors_number = jQuery('#edit-publication-secondaryauthors-number')[0].value;
-
-    secondary_authors.hide();
-
-    if (secondary_authors_number > 0 && !secondary_authors_check[0].checked){
-      for (var i = 0; i < secondary_authors_number; i++){
-        jQuery(secondary_authors[i]).show();
-      }
-
-      for (var i = secondary_authors_number; i <= 30; i++){
-        jQuery(secondary_authors[i]).hide();
-      }
-    }
-
-    secondary_authors_button_add.attr('type', 'button');
-    secondary_authors_button_remove.attr('type', 'button');
-
-    secondary_authors_button_add.on('click', function(){
-      if (secondary_authors_number < 30){
-        secondary_authors_number++;
-        jQuery('#edit-publication-secondaryauthors-number')[0].value = secondary_authors_number;
-
-        for (var i = 0; i < secondary_authors_number; i++){
-          jQuery(secondary_authors[i]).show();
-        }
-
-        for (var i = secondary_authors_number; i <= 30; i++){
-          jQuery(secondary_authors[i]).hide();
-        }
-      }
-    });
-
-    secondary_authors_button_remove.on('click', function(){
-      if (secondary_authors_number > 0){
-        secondary_authors_number--;
-        jQuery('#edit-publication-secondaryauthors-number')[0].value = secondary_authors_number;
-
-        for (var i = 0; i < secondary_authors_number; i++){
-          jQuery(secondary_authors[i]).show();
-        }
-
-        for (var i = secondary_authors_number; i <= 30; i++){
-          jQuery(secondary_authors[i]).hide();
-        }
-      }
-    });
-    
-    secondary_authors_check.on('click', function(){
-      if (secondary_authors_check[0].checked){
-        secondary_authors_button_add.hide();
-        secondary_authors_button_remove.hide();
-        secondary_authors.hide();
-      }
-      else if (secondary_authors_number >= 0){
-        secondary_authors_button_add.show();
-        secondary_authors_button_remove.show();
-        for (var i = 0; i < secondary_authors_number; i++){
-          jQuery(secondary_authors[i]).show();
-        }
-
-        for (var i = secondary_authors_number; i <= 30; i++){
-          jQuery(secondary_authors[i]).hide();
-        }
-      }
-    });
-  }
-
   function Supplemental_Files(){
     var files_add = jQuery('#edit-files-add');
     var files_remove = jQuery('#edit-files-remove');
@@ -138,10 +62,6 @@ jQuery(document).ready(function ($) {
 
     jQuery("#progress").css('font-size', '1.5rem');
     jQuery("#progress").css('margin-bottom', '30px');
-    
-    if (jQuery("#edit-step")[0].value == 1){
-      Secondary_Authors();
-    }
 
     if (jQuery("#edit-step")[0].value === 'summarypage'){
       Supplemental_Files();
