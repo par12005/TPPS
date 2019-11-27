@@ -345,6 +345,11 @@ function tpps_submit_page_1(array &$form_state) {
       'project_id' => $form_state['ids']['project_id'],
     ));
 
+    tpps_chado_insert_record('pub_organism', array(
+      'organism_id' => $form_state['ids']['organism_ids'][$i],
+      'pub_id' => $publication_id,
+    ));
+
     tpps_tripal_entity_publish('Organism', array("$genus $species", $form_state['ids']['organism_ids'][$i]));
   }
 }
