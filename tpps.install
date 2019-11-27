@@ -207,6 +207,54 @@ function tpps_install() {
     ),
   ), TRUE, NULL, FALSE);
 
+  chado_create_custom_table('pub_organism', array(
+    'description' => '',
+    'fields' => array(
+      'pub_organism_id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'organism_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'pub_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+    ),
+    'foreign keys' => array(
+      'organism' => array(
+        'table' => 'organism',
+        'columns' => array(
+          'organism_id' => 'organism_id',
+        ),
+      ),
+      'pub' => array(
+        'table' => 'pub',
+        'columns' => array(
+          'pub_id' => 'pub_id',
+        ),
+      ),
+    ),
+    'unique keys' => array(
+      'pub_organism_c1' => array(
+        'pub_id',
+        'organism_id',
+      ),
+    ),
+    'primary key' => array(
+      'pub_organism_id',
+    ),
+  ), TRUE, NULL, FALSE);
+
   tpps_create_plusgeno_view();
 
   tpps_install_cvterms();
@@ -1110,6 +1158,38 @@ function tpps_update_7103() {
           'project_id' => $state['ids']['project_id'],
           'dbxref_id' => $dryad_dbxref,
         ));
+      }
+    }
+  }
+  catch (Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7104() {
+  $transaction = db_transaction();
+  try {
+    $submissions = tpps_load_submission_multiple(array(
+      'status' => 'Approved',
+    ));
+    foreach ($submissions as $state) {
+      if (!empty($state['ids']['organism_ids']) and !empty($state['ids']['project_id'])) {
+        $proj_id = $state['ids']['project_id'];
+        $pub_id = db_select('chado.project_pub', 'p')
+          ->fields('p', array('pub_id'))
+          ->condition('project_id', $proj_id)
+          ->range(0,1)
+          ->execute()->fetchObject()->pub_id;
+        foreach ($state['ids']['organism_ids'] as $org_id) {
+          tpps_chado_insert_record('pub_organism', array(
+            'organism_id' => $org_id,
+            'pub_id' => $pub_id,
+          ));
+        }
       }
     }
   }
