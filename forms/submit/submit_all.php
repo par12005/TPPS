@@ -91,7 +91,19 @@ function tpps_submit_page_1(array &$form_state) {
     'dbxref_id' => $dbxref_id,
   ));
 
-  if (($file = file_load($firstpage['photo']))) {
+  if (!empty($form_state['tpps_type']) and $form_state['tpps_type'] == 'tppsc') {
+    $dryad_db = chado_get_db(array('name' => 'dryad'));
+    $dryad_dbxref = chado_insert_dbxref(array(
+      'db_id' => $dryad_db->db_id,
+      'accession' => $form_state['saved_values'][TPPS_PAGE_1]['doi'],
+    ))->dbxref_id;
+    tpps_chado_insert_record('project_dbxref', array(
+      'project_id' => $form_state['ids']['project_id'],
+      'dbxref_id' => $dryad_dbxref,
+    ));
+  }
+
+  if (!empty($firstpage['photo']) and ($file = file_load($firstpage['photo']))) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
       'type_id' => array(
