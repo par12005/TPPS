@@ -104,21 +104,21 @@ function tpps_details_tabs(&$state) {
 function tpps_details_top() {
   global $base_url;
 
-  $submissions = db_select('chado.plusgeno_view', 'p')
-    ->fields('p')
-    ->execute();
+  $submissions = db_select('chado.plusgeno_view', 'pg');
+  $submissions->innerJoin('chado.project', 'p', 'p.project_id = pg.project_id');
+  $submissions->fields('pg', array(
+    'title',
+    'project_id',
+    'accession',
+    'phenotypes_assessed',
+    'phen_count',
+    'gen_count',
+  ));
+  $submissions = $submissions->execute();
 
   $rows = array();
   while (($sub = $submissions->fetchObject())) {
     $proj_id = $sub->project_id;
-    $p_query = db_select('chado.project', 'p')
-      ->fields('p', array('project_id'))
-      ->condition('project_id', $proj_id)
-      ->range(0, 1)
-      ->execute()->fetchObject();
-    if (empty($p_query->project_id)) {
-      continue;
-    }
 
     $query = db_select('chado.stock', 's');
     $query->join('chado.organism', 'o', 'o.organism_id = s.organism_id');
@@ -135,36 +135,14 @@ function tpps_details_top() {
       $species[] = tpps_entity_link($result->organism_id, "{$result->genus} {$result->species}", 'Organism');
     }
 
-    $query = db_select('chado.phenotype', 'p');
-    $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
-    $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
-    $query->addExpression('count(distinct(p.name))', 'count');
-    $query->condition('ps.project_id', $proj_id);
-    $result = $query->execute()->fetchObject();
-    $unique_phen = $result->count;
-
-    $query = db_select('chado.stock_phenotype', 'sp');
-    $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
-    $query->addExpression('count(sp.phenotype_id)', 'count');
-    $query->condition('ps.project_id', $proj_id);
-    $result = $query->execute()->fetchObject();
-    $phen_count = $result->count;
-
-    $query = db_select('chado.stock_genotype', 'sg');
-    $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
-    $query->addExpression('count(sg.genotype_id)', 'count');
-    $query->condition('ps.project_id', $proj_id);
-    $result = $query->execute()->fetchObject();
-    $gen_count = $result->count;
-
     $row = array(
       "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->accession}</a>",
       "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->title}</a>",
       implode('<br>', $species),
       $tree_count,
-      $unique_phen ? $unique_phen : "",
-      $phen_count ? $phen_count : "",
-      $gen_count ? $gen_count : "",
+      $sub->phenotypes_assessed,
+      $sub->phen_count,
+      $sub->gen_count,
     );
     $rows[$sub->accession] = $row;
   }
