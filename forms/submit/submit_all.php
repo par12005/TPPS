@@ -167,6 +167,19 @@ function tpps_submit_page_1(array &$form_state) {
   $form_state['pyear'] = $firstpage['publication']['year'];
   $form_state['journal'] = $firstpage['publication']['journal'];
 
+  if (!empty($firstpage['publication']['abstract'])) {
+    tpps_chado_insert_record('pubprop', array(
+      'pub_id' => $publication_id,
+      'type_id' => array(
+        'name' => 'Abstract',
+        'cv_id' => array(
+          'name' => 'tripal_pub',
+        ),
+      ),
+      'value' => $firstpage['publication']['abstract'],
+    ));
+  }
+
   tpps_chado_insert_record('pubprop', array(
     'pub_id' => $publication_id,
     'type_id' => array(
