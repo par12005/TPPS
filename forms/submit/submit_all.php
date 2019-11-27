@@ -1315,6 +1315,7 @@ function tpps_clean_state(array &$form_state) {
     'status' => $form_state['status'],
     'submitting_uid' => $form_state['submitting_uid'],
     'job_id' => $form_state['job_id'],
+    'tpps_type' => $form_state['tpps_type'] ?? NULL,
   );
   $form_state = $new_state;
 }
