@@ -166,6 +166,7 @@ function tpps_details_top() {
   );
 
   $output = theme_table($vars);
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   return $output;
 }
 
