@@ -110,6 +110,7 @@ function tpps_details_top() {
     'title',
     'project_id',
     'accession',
+    'tree_count',
     'phenotypes_assessed',
     'phen_count',
     'gen_count',
@@ -120,18 +121,15 @@ function tpps_details_top() {
   while (($sub = $submissions->fetchObject())) {
     $proj_id = $sub->project_id;
 
-    $query = db_select('chado.stock', 's');
-    $query->join('chado.organism', 'o', 'o.organism_id = s.organism_id');
-    $query->fields('o', array('genus', 'species', 'organism_id'));
-    $query->addExpression('count(s.stock_id)', 'count');
-    $query->condition('s.uniquename', db_like($sub->accession) . '%', 'LIKE');
-    $query->groupBy('o.organism_id');
+    $query = db_select('chado.organism', 'o');
+    $query->join('chado.pub_organism', 'po', 'o.organism_id = po.organism_id');
+    $query->join('chado.project_pub', 'pp', 'pp.pub_id = po.pub_id');
+    $query->fields('o', array('organism_id', 'genus', 'species'));
+    $query->condition('pp.project_id', $proj_id);
     $query = $query->execute();
 
-    $tree_count = 0;
     $species = array();
     while (($result = $query->fetchObject())) {
-      $tree_count += $result->count;
       $species[] = tpps_entity_link($result->organism_id, "{$result->genus} {$result->species}", 'Organism');
     }
 
@@ -139,7 +137,7 @@ function tpps_details_top() {
       "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->accession}</a>",
       "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->title}</a>",
       implode('<br>', $species),
-      $tree_count,
+      $sub->tree_count,
       $sub->phenotypes_assessed,
       $sub->phen_count,
       $sub->gen_count,
