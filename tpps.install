@@ -1089,3 +1089,33 @@ function tpps_update_7101() {
 function tpps_update_7102() {
   tpps_add_dryad();
 }
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7103() {
+  $transaction = db_transaction();
+  try {
+    $submissions = tpps_load_submission_multiple(array(
+      'status' => 'Approved',
+    ));
+    foreach ($submissions as $state) {
+      if (!empty($state['saved_values'][TPPS_PAGE_1]['doi'])) {
+        print_r($state['accession'] . "\n");
+        $dryad_db = chado_get_db(array('name' => 'dryad'));
+        $dryad_dbxref = chado_insert_dbxref(array(
+          'db_id' => $dryad_db->db_id,
+          'accession' => $state['saved_values'][TPPS_PAGE_1]['doi'],
+        ))->dbxref_id;
+        tpps_chado_insert_record('project_dbxref', array(
+          'project_id' => $state['ids']['project_id'],
+          'dbxref_id' => $dryad_dbxref,
+        ));
+      }
+    }
+  }
+  catch (Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
