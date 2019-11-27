@@ -1100,8 +1100,7 @@ function tpps_update_7103() {
       'status' => 'Approved',
     ));
     foreach ($submissions as $state) {
-      if (!empty($state['saved_values'][TPPS_PAGE_1]['doi'])) {
-        print_r($state['accession'] . "\n");
+      if (!empty($state['saved_values'][TPPS_PAGE_1]['doi']) and !empty($state['ids']['project_id'])) {
         $dryad_db = chado_get_db(array('name' => 'dryad'));
         $dryad_dbxref = chado_insert_dbxref(array(
           'db_id' => $dryad_db->db_id,
