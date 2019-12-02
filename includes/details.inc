@@ -114,6 +114,13 @@ function tpps_details_tab($accession, $type) {
  */
 function tpps_details_top() {
   global $base_url;
+  $per_page = 20;
+  $query = db_select('chado.plusgeno_view', 'pg');
+  $query->addExpression('count(accession)', 'count');
+  $query = $query->execute();
+  $total = $query->fetchObject()->count;
+  $page = pager_default_initialize($total, $per_page);
+  $start = $page * $per_page;
 
   $submissions = db_select('chado.plusgeno_view', 'pg');
   $submissions->innerJoin('chado.project', 'p', 'p.project_id = pg.project_id');
@@ -126,6 +133,7 @@ function tpps_details_top() {
     'phen_count',
     'gen_count',
   ));
+  $submissions->range($start, $per_page);
   $submissions = $submissions->execute();
 
   $rows = array();
@@ -177,8 +185,9 @@ function tpps_details_top() {
   );
 
   $output = theme_table($vars);
+  $pager = theme('pager', array('quantity', $total));
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-  return $output;
+  return $pager . $output;
 }
 
 /**
