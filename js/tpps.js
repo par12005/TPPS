@@ -136,6 +136,13 @@ function detailsTab() {
     page = clicked_tab.hash.match(/#(.*):(.*)/)[2];
     detail_pages[detail_type] = page;
   }
+  else {
+    if (jQuery('#' + detail_type)[0].innerHTML !== "") {
+      // If we aren't loading a new page and we already have data for this tab,
+      // then we don't need to change any of the HTML.
+      return;
+    }
+  }
   jQuery('#' + detail_type)[0].innerHTML = "Loading...";
 
   var request = jQuery.post(path + '/' + detail_type, {
