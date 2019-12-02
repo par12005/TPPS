@@ -98,6 +98,7 @@ jQuery(document).ready(function ($) {
     jQuery(this).click(detailsTab);
   })
   jQuery('[href="#species"]').trigger('click');
+  jQuery('a:contains("Return to TPPS List")').hide();
 });
 
 function previewFile() {

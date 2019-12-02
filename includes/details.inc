@@ -54,6 +54,9 @@ function tpps_details($accession = NULL) {
     return $output;
   }
 
+  if (function_exists('tpps_details_byaccession_page')) {
+    $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
+  }
   return $output;
 }
 
@@ -194,10 +197,23 @@ function tpps_details_top() {
  * 
  */
 function tpps_details_species(&$state) {
+  $accession = $state['accession'];
+  $project_id = db_select('chado.plusgeno_view', 'pg')
+    ->fields('pg', array('project_id'))
+    ->condition('accession', $accession)
+    ->range(0, 1)
+    ->execute()->fetchObject()->project_id;
+
+  $query = db_select('chado.organism', 'o');
+  $query->join('chado.pub_organism', 'po', 'o.organism_id = po.organism_id');
+  $query->join('chado.project_pub', 'pp', 'pp.pub_id = po.pub_id');
+  $query->fields('o', array('organism_id', 'genus', 'species'));
+  $query->condition('pp.project_id', $project_id);
+  $query = $query->execute();
   $rows = array();
 
-  for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
-    $id = $state['ids']['organism_ids'][$i];
+  while (($result = $query->fetchObject())) {
+    $id = $result->organism_id;
     $family = $order = $common_name = "";
 
     if (tpps_chado_prop_exists('organism', $id, 'family')) {
@@ -230,13 +246,12 @@ function tpps_details_species(&$state) {
         ->execute()->fetchObject()->value;
     }
 
-    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$i];
-    $species_link = tpps_entity_link($id, $species_name, 'Organism');
-
+    $name = "{$result->genus} {$result->species}";
+    $link = tpps_entity_link($id, $name, 'Organism');
     $rows[] = array(
       $order,
       $family,
-      $species_link,
+      $link,
       $common_name,
     );
   }
@@ -372,6 +387,13 @@ function tpps_details_trees(&$state) {
  * 
  */
 function tpps_details_phenotype(&$state) {
+  $accession = $state['accession'];
+  $project_id = db_select('chado.plusgeno_view', 'pg')
+    ->fields('pg', array('project_id'))
+    ->condition('accession', $accession)
+    ->range(0, 1)
+    ->execute()->fetchObject()->project_id;
+
   $params = drupal_get_query_parameters($_POST);
   $page = 0;
   if (!empty($params['page'])) {
@@ -386,7 +408,7 @@ function tpps_details_phenotype(&$state) {
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
   $query->addExpression('count(p.phenotype_id)', 'count');
-  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->condition('ps.project_id', $project_id);
   $query = $query->execute();
   $total = $query->fetchObject()->count;
 
@@ -399,7 +421,7 @@ function tpps_details_phenotype(&$state) {
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
   $query->fields('p', array('phenotype_id', 'name', 'attr_id', 'observable_id', 'value'));
   $query->fields('s', array('uniquename', 'stock_id'));
-  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->condition('ps.project_id', $project_id);
   $query->range($start, $per_page);
   $query = $query->execute();
 
@@ -446,6 +468,13 @@ function tpps_details_phenotype(&$state) {
  * 
  */
 function tpps_details_genotype(&$state) {
+  $accession = $state['accession'];
+  $project_id = db_select('chado.plusgeno_view', 'pg')
+    ->fields('pg', array('project_id'))
+    ->condition('accession', $accession)
+    ->range(0, 1)
+    ->execute()->fetchObject()->project_id;
+
   $params = drupal_get_query_parameters($_POST);
   $page = 0;
   if (!empty($params['page'])) {
@@ -459,7 +488,7 @@ function tpps_details_genotype(&$state) {
   $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
   $query->addExpression('count(g.genotype_id)', 'count');
-  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->condition('ps.project_id', $project_id);
   $query = $query->execute();
   $total = $query->fetchObject()->count;
 
@@ -472,7 +501,7 @@ function tpps_details_genotype(&$state) {
   $query->join('chado.stock', 's', 's.stock_id = sg.stock_id');
   $query->fields('g', array('genotype_id', 'name', 'uniquename', 'description', 'type_id'));
   $query->fields('s', array('uniquename', 'stock_id'));
-  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->condition('ps.project_id', $project_id);
   $query->range($start, $per_page);
   $query = $query->execute();
 
