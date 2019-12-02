@@ -92,6 +92,12 @@ jQuery(document).ready(function ($) {
     jQuery(this).attr('type', 'button');
     jQuery(this).click(previewFile);
   });
+
+  var details_tabs = jQuery('.nav-tabs > .nav-item > .nav-link');
+  jQuery.each(details_tabs, function() {
+    jQuery(this).click(detailsTab);
+  })
+  jQuery('[href="#species"]').trigger('click');
 });
 
 function previewFile() {
@@ -111,6 +117,53 @@ function previewFile() {
   else {
     return;
   }
+}
+
+var detail_pages = {
+  "trees": 0,
+  "phenotype": 0,
+  "genotype": 0,
+  "environment": 0,
+};
+
+function detailsTab() {
+  var clicked_tab = jQuery(this)[0];
+  var path = clicked_tab.pathname;
+  var detail_type = clicked_tab.hash.substr(1);
+  var page = detail_pages[detail_type];
+  if (clicked_tab.hash.match(/#(.*):(.*)/) !== null) {
+    detail_type = clicked_tab.hash.match(/#(.*):(.*)/)[1];
+    page = clicked_tab.hash.match(/#(.*):(.*)/)[2];
+    detail_pages[detail_type] = page;
+  }
+  else {
+    if (jQuery('#' + detail_type)[0].innerHTML !== "") {
+      // If we aren't loading a new page and we already have data for this tab,
+      // then we don't need to change any of the HTML.
+      return;
+    }
+  }
+  jQuery('#' + detail_type)[0].innerHTML = "Loading...";
+
+  var request = jQuery.post(path + '/' + detail_type, {
+    page: page
+  });
+
+  request.done(function (data) {
+    jQuery('#' + detail_type)[0].innerHTML = data;
+    var details_pagers = jQuery('#' + detail_type + ' > div > ul');
+    if (details_pagers.length > 0) {
+      var pages = jQuery('#' + detail_type + ' > div > ul > li > a');
+      jQuery.each(pages, function() {
+        var page = 0;
+        if (this.search.match(/\?page=(.*)/) !== null) {
+          page = this.search.match(/\?page=(.*)/)[1];
+        }
+        this.href = '#' + detail_type + ':' + page;
+        jQuery(this).click(detailsTab);
+      });
+    }
+  });
 }
 
 var maps = {};

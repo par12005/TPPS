@@ -61,10 +61,10 @@ function tpps_details($accession = NULL) {
  * 
  */
 function tpps_details_tabs(&$state) {
-  $output = '<ul class="nav nav-tabs">
-    <li class="active"><a data-toggle="tab" class="active" href="#species">Species</a></li>
-    <li><a data-toggle="tab" href="#study_details">Study Details</a></li>
-    <li><a data-toggle="tab" href="#trees">Trees</a></li>';
+  $output = '<ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item"><a class="nav-link active" role="tab" data-toggle="tab" href="#species">Species</a></li>
+    <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#study">Study Details</a></li>
+    <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#trees">Trees</a></li>';
   $p_exist = FALSE;
   $g_exist = FALSE;
   $e_exist = FALSE;
@@ -79,20 +79,31 @@ function tpps_details_tabs(&$state) {
       $e_exist = TRUE;
     }
   }
-  $output .= $p_exist ? '<li><a data-toggle="tab" href="#phenotype">Phenotypes</a></li>' : "";
-  $output .= $g_exist ? '<li><a data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
-  $output .= $e_exist ? '<li><a data-toggle="tab" href="#environment">Environments</a></li>' : "";
-  $output .= '</ul><div class="tab-content">';
+  $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes</a></li>' : "";
+  $output .= $g_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
+  $output .= $e_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#environment">Environments</a></li>' : "";
+  $output .= '</ul><div id="tab-content" class="tab-content">';
 
-  $output .= tpps_details_species($state);
-  $output .= tpps_details_study($state);
-  $output .= tpps_details_trees($state);
+  $output .= "<div id=\"species\" role=\"tabpanel\" class=\"tab-pane fade in active\"></div>";
+  $output .= "<div id=\"study\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
+  $output .= "<div id=\"trees\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
 
-  $output .= $p_exist ? tpps_details_phenotype($state) : "";
-  $output .= $g_exist ? tpps_details_genotype($state) : "";
-  $output .= $e_exist ? tpps_details_environment($state) : "";
+  $output .= $p_exist ? "<div id=\"phenotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
+  $output .= $g_exist ? "<div id=\"genotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
+  $output .= $e_exist ? "<div id=\"environment\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
+
   $output .= '</div>';
   return $output;
+}
+
+/**
+ *
+ */
+function tpps_details_tab($accession, $type) {
+  $function = "tpps_details_$type";
+  $state = tpps_load_submission($accession);
+  print($function($state));
+  return;
 }
 
 /**
@@ -103,6 +114,13 @@ function tpps_details_tabs(&$state) {
  */
 function tpps_details_top() {
   global $base_url;
+  $per_page = 20;
+  $query = db_select('chado.plusgeno_view', 'pg');
+  $query->addExpression('count(accession)', 'count');
+  $query = $query->execute();
+  $total = $query->fetchObject()->count;
+  $page = pager_default_initialize($total, $per_page);
+  $start = $page * $per_page;
 
   $submissions = db_select('chado.plusgeno_view', 'pg');
   $submissions->innerJoin('chado.project', 'p', 'p.project_id = pg.project_id');
@@ -115,6 +133,7 @@ function tpps_details_top() {
     'phen_count',
     'gen_count',
   ));
+  $submissions->range($start, $per_page);
   $submissions = $submissions->execute();
 
   $rows = array();
@@ -166,8 +185,9 @@ function tpps_details_top() {
   );
 
   $output = theme_table($vars);
+  $pager = theme('pager', array('quantity', $total));
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-  return $output;
+  return $pager . $output;
 }
 
 /**
@@ -235,9 +255,7 @@ function tpps_details_species(&$state) {
     'sticky' => FALSE,
     'empty' => '',
   );
-  $table = theme_table($vars);
-  $output = "<div id=\"species\" class=\"tab-pane fade in active show\">$table</div>";
-  return $output;
+  return theme_table($vars);
 }
 
 /**
@@ -294,23 +312,31 @@ function tpps_details_study(&$state) {
     'sticky' => FALSE,
     'empty' => '',
   );
-  $table = theme_table($vars);
-  $output = "<div id=\"study_details\" class=\"tab-pane fade\">$table</div>";
-  return $output;
+  return theme_table($vars);
 }
 
 /**
  * 
  */
 function tpps_details_trees(&$state) {
+  $params = drupal_get_query_parameters($_POST);
+  $page = 0;
+  if (!empty($params['page'])) {
+    $page = $params['page'];
+  }
   $rows = array();
+  $per_page = 20;
 
   if (empty($state['tree_info'])) {
     $output = t('The tree information for this study has not been properly updated. Please contact your site administrator.');
     return $output;
   }
 
-  foreach ($state['tree_info'] as $name => $info) {
+  $_GET['page'] = $page;
+  pager_default_initialize(count($state['tree_info']), $per_page);
+  $chunks = array_chunk($state['tree_info'], $per_page, TRUE);
+
+  foreach ($chunks[$page] as $name => $info) {
     $id = $info['organism_id'];
     $form_number = array_search($id, $state['ids']['organism_ids']);
     $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$form_number];
@@ -338,15 +364,35 @@ function tpps_details_trees(&$state) {
     'empty' => '',
   );
   $table = theme_table($vars);
-  $output = "<div id=\"trees\" class=\"tab-pane fade\">$table</div>";
-  return $output;
+  $pager = theme('pager', array('quantity', count($state['tree_info'])));
+  return $pager . $table;
 }
 
 /**
  * 
  */
 function tpps_details_phenotype(&$state) {
+  $params = drupal_get_query_parameters($_POST);
+  $page = 0;
+  if (!empty($params['page'])) {
+    $page = $params['page'];
+  }
   $rows = array();
+  $per_page = 20;
+  $start = $page * $per_page;
+
+  $query = db_select('chado.phenotype', 'p');
+  $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
+  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
+  $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
+  $query->addExpression('count(p.phenotype_id)', 'count');
+  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query = $query->execute();
+  $total = $query->fetchObject()->count;
+
+  $_GET['page'] = $page;
+  pager_default_initialize($total, $per_page);
+
   $query = db_select('chado.phenotype', 'p');
   $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
@@ -354,6 +400,7 @@ function tpps_details_phenotype(&$state) {
   $query->fields('p', array('phenotype_id', 'name', 'attr_id', 'observable_id', 'value'));
   $query->fields('s', array('uniquename', 'stock_id'));
   $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->range($start, $per_page);
   $query = $query->execute();
 
   while (($result = $query->fetchObject())) {
@@ -391,18 +438,75 @@ function tpps_details_phenotype(&$state) {
     'empty' => '',
   );
   $table = theme_table($vars);
-  $output = "<div id=\"phenotype\" class=\"tab-pane fade\">$table</div>";
-  return $output;
+  $pager = theme('pager', array('quantity', $total));
+  return $pager . $table;
 }
 
 /**
  * 
  */
 function tpps_details_genotype(&$state) {
-  // TODO.
-  $table = "Coming Soon!";
-  $output = "<div id=\"genotype\" class=\"tab-pane fade\">$table</div>";
-  return $output;
+  $params = drupal_get_query_parameters($_POST);
+  $page = 0;
+  if (!empty($params['page'])) {
+    $page = $params['page'];
+  }
+  $rows = array();
+  $per_page = 20;
+  $start = $page * $per_page;
+
+  $query = db_select('chado.genotype', 'g');
+  $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
+  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
+  $query->addExpression('count(g.genotype_id)', 'count');
+  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query = $query->execute();
+  $total = $query->fetchObject()->count;
+
+  $_GET['page'] = $page;
+  pager_default_initialize($total, $per_page);
+
+  $query = db_select('chado.genotype', 'g');
+  $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
+  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
+  $query->join('chado.stock', 's', 's.stock_id = sg.stock_id');
+  $query->fields('g', array('genotype_id', 'name', 'uniquename', 'description', 'type_id'));
+  $query->fields('s', array('uniquename', 'stock_id'));
+  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->range($start, $per_page);
+  $query = $query->execute();
+
+  while (($result = $query->fetchObject())) {
+    preg_match('/^TGDR...-(.*)$/', $result->s_uniquename, $matches);
+    $tree = $matches[1];
+    $type = chado_get_cvterm(array(
+      'cvterm_id' => $result->type_id,
+    ))->name ?? "";
+    $rows[] = array(
+      tpps_entity_link($result->stock_id, $tree, 'Stock'),
+      tpps_entity_link($result->genotype_id, $result->uniquename, 'Genotype'),
+      $result->description,
+      $type,
+    );
+  }
+
+  $vars = array(
+    'header' => array(
+      'Tree',
+      'Name',
+      'Description',
+      'Marker Type',
+    ),
+    'rows' => $rows,
+    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  );
+  $table = theme_table($vars);
+  $pager = theme('pager', array('quantity', $total));
+  return $pager . $table;
 }
 
 /**
@@ -410,7 +514,5 @@ function tpps_details_genotype(&$state) {
  */
 function tpps_details_environment(&$state) {
   // TODO.
-  $table = "Coming Soon!";
-  $output = "<div id=\"environment\" class=\"tab-pane fade\">$table</div>";
-  return $output;
+  return "Coming Soon!";
 }
