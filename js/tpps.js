@@ -143,9 +143,9 @@ function detailsTab() {
 
   request.done(function (data) {
     jQuery('#' + detail_type)[0].innerHTML = data;
-    var details_pagers = jQuery('#' + detail_type + ' > div > .pagination');
+    var details_pagers = jQuery('#' + detail_type + ' > div > ul');
     if (details_pagers.length > 0) {
-      var pages = jQuery('#' + detail_type + ' > div > .pagination > li > a');
+      var pages = jQuery('#' + detail_type + ' > div > ul > li > a');
       jQuery.each(pages, function() {
         var page = 0;
         if (this.search.match(/\?page=(.*)/) !== null) {
