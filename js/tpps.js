@@ -136,6 +136,7 @@ function detailsTab() {
     page = clicked_tab.hash.match(/#(.*):(.*)/)[2];
     detail_pages[detail_type] = page;
   }
+  jQuery('#' + detail_type)[0].innerHTML = "Loading...";
 
   var request = jQuery.post(path + '/' + detail_type, {
     page: page
