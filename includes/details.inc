@@ -446,8 +446,67 @@ function tpps_details_phenotype(&$state) {
  * 
  */
 function tpps_details_genotype(&$state) {
-  // TODO.
-  return "Coming Soon!";
+  $params = drupal_get_query_parameters($_POST);
+  $page = 0;
+  if (!empty($params['page'])) {
+    $page = $params['page'];
+  }
+  $rows = array();
+  $per_page = 20;
+  $start = $page * $per_page;
+
+  $query = db_select('chado.genotype', 'g');
+  $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
+  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
+  $query->addExpression('count(g.genotype_id)', 'count');
+  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query = $query->execute();
+  $total = $query->fetchObject()->count;
+
+  $_GET['page'] = $page;
+  pager_default_initialize($total, $per_page);
+
+  $query = db_select('chado.genotype', 'g');
+  $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
+  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
+  $query->join('chado.stock', 's', 's.stock_id = sg.stock_id');
+  $query->fields('g', array('genotype_id', 'name', 'uniquename', 'description', 'type_id'));
+  $query->fields('s', array('uniquename', 'stock_id'));
+  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->range($start, $per_page);
+  $query = $query->execute();
+
+  while (($result = $query->fetchObject())) {
+    preg_match('/^TGDR...-(.*)$/', $result->s_uniquename, $matches);
+    $tree = $matches[1];
+    $type = chado_get_cvterm(array(
+      'cvterm_id' => $result->type_id,
+    ))->name ?? "";
+    $rows[] = array(
+      tpps_entity_link($result->stock_id, $tree, 'Stock'),
+      tpps_entity_link($result->genotype_id, $result->uniquename, 'Genotype'),
+      $result->description,
+      $type,
+    );
+  }
+
+  $vars = array(
+    'header' => array(
+      'Tree',
+      'Name',
+      'Description',
+      'Marker Type',
+    ),
+    'rows' => $rows,
+    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  );
+  $table = theme_table($vars);
+  $pager = theme('pager', array('quantity', $total));
+  return $pager . $table;
 }
 
 /**
