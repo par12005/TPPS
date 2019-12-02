@@ -56,6 +56,7 @@ function tpps_details($accession = NULL) {
 
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
+    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
   }
   return $output;
 }
