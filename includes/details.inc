@@ -27,6 +27,8 @@ function tpps_details($accession = NULL) {
     if (module_exists('cartogratree')) {
       $output .= "Studies that have georeferenced accessions associated with them can be queried on <b><a href=\"cartogratree\">CartograTree.</a></b>";
     }
+    $form = drupal_get_form('tpps_details_search');
+    $output .= render($form);
     $output .= "<div id='tpps-details-table'>" . tpps_details_top() . "</div>";
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
@@ -209,6 +211,44 @@ function tpps_details_top() {
   $output = theme_table($vars);
   $pager = theme('pager', array('quantity', $total));
   return $pager . $output;
+}
+
+/**
+ *
+ */
+function tpps_details_top_callback() {
+  print(tpps_details_top());
+  return;
+}
+
+/**
+ *
+ */
+function tpps_details_search($form, $form_state) {
+  $form['type'] = array(
+    '#type' => 'select',
+    '#options' => array(
+      'title' => 'Title',
+      'species' => 'Species',
+      'accession' => 'Accession',
+    ),
+  );
+
+  $form['value'] = array(
+    '#type' => 'textfield',
+  );
+
+  $form['submit'] = array(
+    '#type' => 'button',
+    '#button_type' => 'button',
+    '#value' => t('Search'),
+  );
+
+  $form['#attributes'] = array(
+    'style' => 'text-align:center',
+  );
+
+  return $form;
 }
 
 /**

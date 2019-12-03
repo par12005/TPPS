@@ -62,6 +62,11 @@ function tpps_menu() {
     'access arguments' => array('access tpps details'),
     'type' => MENU_NORMAL_ITEM,
   );
+
+  $items['tpps/details/top'] = $items['tpps/details'];
+  $items['tpps/details/top']['page callback'] = 'tpps_details_top_callback';
+  $items['tpps/details/top']['type'] = MENU_CALLBACK;
+
   $items['tpps/details/%'] = $items['tpps/details'];
   $items['tpps/details/%']['page arguments'] = array(2);
 
