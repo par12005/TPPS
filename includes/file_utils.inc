@@ -177,8 +177,8 @@ function tpps_flat_width($location, $delim = ',') {
   $longest = 0;
   $handle = fopen($location, 'r');
 
-  while (($line = fgets($handle))) {
-    $longest = max($longest, count(explode($delim, $line)));
+  while (($line = fgetcsv($handle, 0, $delim))) {
+    $longest = max($longest, count($line));
   }
 
   fclose($handle);
@@ -936,14 +936,13 @@ function tpps_flat_generator($location, array $options = array()) {
   }
   $count = 0;
 
-  while (($line = fgets($handle))) {
+  while (($vals = fgetcsv($handle, 0, $delim))) {
     if (!empty($max_rows) and $count >= $max_rows) {
       break;
     }
     $count++;
 
     $values = array();
-    $vals = explode($delim, $line);
 
     if (empty($columns)) {
       $hex = unpack('H*', 'A')[1];

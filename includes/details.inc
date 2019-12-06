@@ -12,7 +12,25 @@ function tpps_details($accession = NULL) {
   $output = "";
 
   if (empty($accession)) {
-    return tpps_details_top();
+    $query = db_select('chado.plusgeno_view', 'pg');
+    $query->addExpression('count(distinct(accession))', 'count');
+    $query = $query->execute();
+    $num_studies = $query->fetchObject()->count;
+
+    $query = db_select('chado.plusgeno_view', 'pg');
+    $query->addExpression('count(distinct(species))', 'count');
+    $query = $query->execute();
+    $num_species = $query->fetchObject()->count;
+
+    $tpps_link = "<b><a target=\"blank\" href=\"/tpps\">submit your study</a></b>";
+    $output .= "This page reflects community submissions associated with published studies. Each submission is associated with a longterm identifier that connects the genotype, phenotype, and/or environmental metrics assessed. These studies represent diversity assessements, association mapping, and landscape genomics. We accept studies with a variety of marker types. We encourage you to $tpps_link to TreeGenes and utilize the provided accession in your publication. We currently have <b>$num_studies</b> studies representing <b>$num_species</b> species.";
+    if (module_exists('cartogratree')) {
+      $output .= "Studies that have georeferenced accessions associated with them can be queried on <b><a href=\"cartogratree\">CartograTree.</a></b>";
+    }
+    $output .= "<div id='tpps-details-table'>" . tpps_details_top() . "</div>";
+    drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+    return $output;
   }
 
   $output = "<a href=\"$base_url/tpps/details\">Return to TPPS Details</a>$output";
@@ -54,6 +72,10 @@ function tpps_details($accession = NULL) {
     return $output;
   }
 
+  if (function_exists('tpps_details_byaccession_page')) {
+    $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
+    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+  }
   return $output;
 }
 
@@ -186,7 +208,6 @@ function tpps_details_top() {
 
   $output = theme_table($vars);
   $pager = theme('pager', array('quantity', $total));
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   return $pager . $output;
 }
 
@@ -194,10 +215,16 @@ function tpps_details_top() {
  * 
  */
 function tpps_details_species(&$state) {
+  $query = db_select('chado.organism', 'o');
+  $query->join('chado.pub_organism', 'po', 'o.organism_id = po.organism_id');
+  $query->join('chado.project_pub', 'pp', 'pp.pub_id = po.pub_id');
+  $query->fields('o', array('organism_id', 'genus', 'species'));
+  $query->condition('pp.project_id', $state['ids']['project_id']);
+  $query = $query->execute();
   $rows = array();
 
-  for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
-    $id = $state['ids']['organism_ids'][$i];
+  while (($result = $query->fetchObject())) {
+    $id = $result->organism_id;
     $family = $order = $common_name = "";
 
     if (tpps_chado_prop_exists('organism', $id, 'family')) {
@@ -230,13 +257,12 @@ function tpps_details_species(&$state) {
         ->execute()->fetchObject()->value;
     }
 
-    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$i];
-    $species_link = tpps_entity_link($id, $species_name, 'Organism');
-
+    $name = "{$result->genus} {$result->species}";
+    $link = tpps_entity_link($id, $name, 'Organism');
     $rows[] = array(
       $order,
       $family,
-      $species_link,
+      $link,
       $common_name,
     );
   }
