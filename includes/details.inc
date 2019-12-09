@@ -167,6 +167,7 @@ function tpps_details_top() {
     'gen_count',
   ));
   $submissions->range($start, $per_page);
+  $submissions->orderBy('accession');
   $submissions = $submissions->execute();
 
   $rows = array();
