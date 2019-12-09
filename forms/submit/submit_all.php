@@ -150,8 +150,8 @@ function tpps_submit_page_1(array &$form_state) {
       ));
 
       $names = explode(" ", $seconds[$i]);
-      $first_name = $names[0];
-      $last_name = implode(" ", array_slice($names, 1));
+      $first_name = implode(" ", array_slice($names, 0, -1));
+      $last_name = end($names);
 
       $pubauthors[] = array(
         'rank' => "$i",
@@ -235,8 +235,8 @@ function tpps_submit_page_1(array &$form_state) {
   }
 
   $names = explode(" ", $firstpage['primaryAuthor']);
-  $first_name = $names[0];
-  $last_name = implode(" ", array_slice($names, 1));
+  $first_name = implode(" ", array_slice($names, 0, -1));
+  $last_name = end($names);
 
   tpps_chado_insert_record('pubauthor', array(
     'pub_id' => $publication_id,
