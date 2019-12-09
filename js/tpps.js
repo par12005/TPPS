@@ -99,6 +99,12 @@ jQuery(document).ready(function ($) {
   })
   jQuery('[href="#species"]').trigger('click');
   jQuery('a:contains("Return to TPPS List")').hide();
+  jQuery('#edit-details-search').attr('type', 'button');
+  jQuery('#edit-details-search').click(detailSearch);
+  jQuery('#tpps-details-search').submit(function() {
+    detailSearch();
+    return false;
+  });
 });
 
 function previewFile() {
@@ -164,6 +170,19 @@ function detailsTab() {
         jQuery(this).click(detailsTab);
       });
     }
+  });
+}
+
+function detailSearch() {
+  var path = '/tpps/details/top';
+
+  var request = jQuery.post(path, {
+    type: jQuery('#edit-details-type')[0].value,
+    value: jQuery('#edit-details-value')[0].value
+  });
+
+  request.done(function (data) {
+    jQuery('#tpps-details-table')[0].innerHTML = data;
   });
 }
 

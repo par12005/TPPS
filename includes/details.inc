@@ -138,16 +138,25 @@ function tpps_details_tab($accession, $type) {
  */
 function tpps_details_top() {
   global $base_url;
+  $params = drupal_get_query_parameters($_POST);
   $per_page = 20;
+
   $query = db_select('chado.plusgeno_view', 'pg');
   $query->addExpression('count(accession)', 'count');
+  if (!empty($params['type']) and !empty($params['value'])) {
+    $query->condition($params['type'], $params['value'], '~*');
+  }
   $query = $query->execute();
   $total = $query->fetchObject()->count;
+
   $page = pager_default_initialize($total, $per_page);
   $start = $page * $per_page;
 
   $submissions = db_select('chado.plusgeno_view', 'pg');
   $submissions->innerJoin('chado.project', 'p', 'p.project_id = pg.project_id');
+  if (!empty($params['type']) and !empty($params['value'])) {
+    $submissions->condition($params['type'], $params['value'], '~*');
+  }
   $submissions->fields('pg', array(
     'title',
     'project_id',
@@ -225,7 +234,7 @@ function tpps_details_top_callback() {
  *
  */
 function tpps_details_search($form, $form_state) {
-  $form['type'] = array(
+  $form['details_type'] = array(
     '#type' => 'select',
     '#options' => array(
       'title' => 'Title',
@@ -234,11 +243,11 @@ function tpps_details_search($form, $form_state) {
     ),
   );
 
-  $form['value'] = array(
+  $form['details_value'] = array(
     '#type' => 'textfield',
   );
 
-  $form['submit'] = array(
+  $form['details_search'] = array(
     '#type' => 'button',
     '#button_type' => 'button',
     '#value' => t('Search'),
