@@ -91,7 +91,7 @@ function tpps_submit_page_1(array &$form_state) {
     'dbxref_id' => $dbxref_id,
   ));
 
-  if (!empty($form_state['tpps_type']) and $form_state['tpps_type'] == 'tppsc') {
+  if (!empty($form_state['tpps_type']) and $form_state['tpps_type'] == 'tppsc' and !empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])) {
     $dryad_db = chado_get_db(array('name' => 'dryad'));
     $dryad_dbxref = chado_insert_dbxref(array(
       'db_id' => $dryad_db->db_id,
