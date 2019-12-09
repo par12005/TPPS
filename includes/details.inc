@@ -25,7 +25,7 @@ function tpps_details($accession = NULL) {
     $tpps_link = "<b><a target=\"blank\" href=\"/tpps\">submit your study</a></b>";
     $output .= "This page reflects community submissions associated with published studies. Each submission is associated with a longterm identifier that connects the genotype, phenotype, and/or environmental metrics assessed. These studies represent diversity assessements, association mapping, and landscape genomics. We accept studies with a variety of marker types. We encourage you to $tpps_link to TreeGenes and utilize the provided accession in your publication. We currently have <b>$num_studies</b> studies representing <b>$num_species</b> species.";
     if (module_exists('cartogratree')) {
-      $output .= "Studies that have georeferenced accessions associated with them can be queried on <b><a href=\"cartogratree\">CartograTree.</a></b>";
+      $output .= " Studies that have georeferenced accessions associated with them can be queried on <b><a href=\"cartogratree\">CartograTree.</a></b>";
     }
     $form = drupal_get_form('tpps_details_search');
     $output .= render($form);
