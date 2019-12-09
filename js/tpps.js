@@ -178,7 +178,8 @@ function detailSearch() {
 
   var request = jQuery.post(path, {
     type: jQuery('#edit-details-type')[0].value,
-    value: jQuery('#edit-details-value')[0].value
+    value: jQuery('#edit-details-value')[0].value,
+    op: jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value
   });
 
   request.done(function (data) {

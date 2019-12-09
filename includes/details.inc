@@ -143,8 +143,8 @@ function tpps_details_top() {
 
   $query = db_select('chado.plusgeno_view', 'pg');
   $query->addExpression('count(accession)', 'count');
-  if (!empty($params['type']) and !empty($params['value'])) {
-    $query->condition($params['type'], $params['value'], '~*');
+  if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
+    $query->condition($params['type'], $params['value'], $params['op']);
   }
   $query = $query->execute();
   $total = $query->fetchObject()->count;
@@ -154,8 +154,8 @@ function tpps_details_top() {
 
   $submissions = db_select('chado.plusgeno_view', 'pg');
   $submissions->innerJoin('chado.project', 'p', 'p.project_id = pg.project_id');
-  if (!empty($params['type']) and !empty($params['value'])) {
-    $submissions->condition($params['type'], $params['value'], '~*');
+  if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
+    $submissions->condition($params['type'], $params['value'], $params['op']);
   }
   $submissions->fields('pg', array(
     'title',
@@ -240,7 +240,51 @@ function tpps_details_search($form, $form_state) {
       'title' => 'Title',
       'species' => 'Species',
       'accession' => 'Accession',
+      'author' => 'Primary Author',
+      'year' => 'Publication Year',
+      'tree_count' => 'Tree Count',
+      'phen_count' => 'Phenotype Count',
+      'gen_count' => 'Genotype Count',
+      'phenotypes_assessed' => 'Unique Phenotypes',
     ),
+    '#ajax' => array(
+      'wrapper' => 'tpps-details-op',
+      'callback' => 'tpps_details_op_callback',
+    ),
+  );
+
+  $ops = array(
+    '~*' => '~*',
+    'LIKE' => 'LIKE',
+    '=' => '=',
+  );
+
+  if (!empty($form_state['values']['details_type'])) {
+    switch ($form_state['values']['details_type']) {
+      case 'gen_count':
+      case 'phen_count':
+      case 'phenotypes_assessed':
+      case 'tree_count':
+        $ops = array(
+          '=' => '=',
+          '>' => '>',
+          '<' => '<',
+          '>=' => '>=',
+          '<=' => '<=',
+          '!=' => '!=',
+        );
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  $form['details_op'] = array(
+    '#type' => 'select',
+    '#options' => $ops,
+    '#prefix' => '<div id="tpps-details-op">',
+    '#suffix' => '</div>',
   );
 
   $form['details_value'] = array(
@@ -258,6 +302,13 @@ function tpps_details_search($form, $form_state) {
   );
 
   return $form;
+}
+
+/**
+ * 
+ */
+function tpps_details_op_callback($form, $form_state) {
+  return $form['details_op'];
 }
 
 /**
