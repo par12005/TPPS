@@ -25,8 +25,10 @@ function tpps_details($accession = NULL) {
     $tpps_link = "<b><a target=\"blank\" href=\"/tpps\">submit your study</a></b>";
     $output .= "This page reflects community submissions associated with published studies. Each submission is associated with a longterm identifier that connects the genotype, phenotype, and/or environmental metrics assessed. These studies represent diversity assessements, association mapping, and landscape genomics. We accept studies with a variety of marker types. We encourage you to $tpps_link to TreeGenes and utilize the provided accession in your publication. We currently have <b>$num_studies</b> studies representing <b>$num_species</b> species.";
     if (module_exists('cartogratree')) {
-      $output .= "Studies that have georeferenced accessions associated with them can be queried on <b><a href=\"cartogratree\">CartograTree.</a></b>";
+      $output .= " Studies that have georeferenced accessions associated with them can be queried on <b><a href=\"cartogratree\">CartograTree.</a></b>";
     }
+    $form = drupal_get_form('tpps_details_search');
+    $output .= render($form);
     $output .= "<div id='tpps-details-table'>" . tpps_details_top() . "</div>";
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
@@ -136,16 +138,25 @@ function tpps_details_tab($accession, $type) {
  */
 function tpps_details_top() {
   global $base_url;
+  $params = drupal_get_query_parameters($_POST);
   $per_page = 20;
+
   $query = db_select('chado.plusgeno_view', 'pg');
   $query->addExpression('count(accession)', 'count');
+  if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
+    $query->condition($params['type'], $params['value'], $params['op']);
+  }
   $query = $query->execute();
   $total = $query->fetchObject()->count;
+
   $page = pager_default_initialize($total, $per_page);
   $start = $page * $per_page;
 
   $submissions = db_select('chado.plusgeno_view', 'pg');
   $submissions->innerJoin('chado.project', 'p', 'p.project_id = pg.project_id');
+  if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
+    $submissions->condition($params['type'], $params['value'], $params['op']);
+  }
   $submissions->fields('pg', array(
     'title',
     'project_id',
@@ -209,6 +220,95 @@ function tpps_details_top() {
   $output = theme_table($vars);
   $pager = theme('pager', array('quantity', $total));
   return $pager . $output;
+}
+
+/**
+ *
+ */
+function tpps_details_top_callback() {
+  print(tpps_details_top());
+  return;
+}
+
+/**
+ *
+ */
+function tpps_details_search($form, $form_state) {
+  $form['details_type'] = array(
+    '#type' => 'select',
+    '#options' => array(
+      'title' => 'Title',
+      'species' => 'Species',
+      'accession' => 'Accession',
+      'author' => 'Primary Author',
+      'year' => 'Publication Year',
+      'tree_count' => 'Tree Count',
+      'phen_count' => 'Phenotype Count',
+      'gen_count' => 'Genotype Count',
+      'phenotypes_assessed' => 'Unique Phenotypes',
+    ),
+    '#ajax' => array(
+      'wrapper' => 'tpps-details-op',
+      'callback' => 'tpps_details_op_callback',
+    ),
+  );
+
+  $ops = array(
+    '~*' => '~*',
+    'LIKE' => 'LIKE',
+    '=' => '=',
+  );
+
+  if (!empty($form_state['values']['details_type'])) {
+    switch ($form_state['values']['details_type']) {
+      case 'gen_count':
+      case 'phen_count':
+      case 'phenotypes_assessed':
+      case 'tree_count':
+        $ops = array(
+          '=' => '=',
+          '>' => '>',
+          '<' => '<',
+          '>=' => '>=',
+          '<=' => '<=',
+          '!=' => '!=',
+        );
+        break;
+
+      default:
+        break;
+    }
+  }
+
+  $form['details_op'] = array(
+    '#type' => 'select',
+    '#options' => $ops,
+    '#prefix' => '<div id="tpps-details-op">',
+    '#suffix' => '</div>',
+  );
+
+  $form['details_value'] = array(
+    '#type' => 'textfield',
+  );
+
+  $form['details_search'] = array(
+    '#type' => 'button',
+    '#button_type' => 'button',
+    '#value' => t('Search'),
+  );
+
+  $form['#attributes'] = array(
+    'style' => 'text-align:center',
+  );
+
+  return $form;
+}
+
+/**
+ * 
+ */
+function tpps_details_op_callback($form, $form_state) {
+  return $form['details_op'];
 }
 
 /**
