@@ -143,7 +143,7 @@ function tpps_details_top() {
   if (!empty($params['page'])) {
     $page = $params['page'];
   }
-  $per_page = 3;
+  $per_page = 20;
 
   $query = db_select('chado.plusgeno_view', 'pg');
   $query->addExpression('count(accession)', 'count');
