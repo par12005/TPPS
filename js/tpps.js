@@ -96,7 +96,7 @@ jQuery(document).ready(function ($) {
   var details_tabs = jQuery('.nav-tabs > .nav-item > .nav-link');
   jQuery.each(details_tabs, function() {
     jQuery(this).click(detailsTab);
-  })
+  });
   jQuery('[href="#species"]').trigger('click');
   jQuery('a:contains("Return to TPPS List")').hide();
   jQuery('#edit-details-search').attr('type', 'button');
@@ -105,6 +105,8 @@ jQuery(document).ready(function ($) {
     detailSearch();
     return false;
   });
+
+  initDetailPages();
 });
 
 function previewFile() {
@@ -173,17 +175,37 @@ function detailsTab() {
   });
 }
 
+function initDetailPages() {
+  var details_pages = jQuery('#tpps-details-table > div > ul > li > a');
+  if (details_pages.length > 0) {
+    jQuery.each(details_pages, function() {
+      var page = 0;
+        if (this.search.match(/\?page=(.*)/) !== null) {
+          page = this.search.match(/\?page=(.*)/)[1];
+        }
+      this.href = '#top:' + page;
+      jQuery(this).click(detailSearch);
+    });
+  }
+}
+
 function detailSearch() {
   var path = '/tpps/details/top';
+  var page = 0;
+  if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
+    page = this.hash.match(/#.*:(.*)/)[1];
+  }
 
   var request = jQuery.post(path, {
     type: jQuery('#edit-details-type')[0].value,
     value: jQuery('#edit-details-value')[0].value,
-    op: jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value
+    op: jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value,
+    page: page
   });
 
   request.done(function (data) {
     jQuery('#tpps-details-table')[0].innerHTML = data;
+    initDetailPages();
   });
 }
 

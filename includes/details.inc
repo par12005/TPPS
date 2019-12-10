@@ -139,7 +139,11 @@ function tpps_details_tab($accession, $type) {
 function tpps_details_top() {
   global $base_url;
   $params = drupal_get_query_parameters($_POST);
-  $per_page = 20;
+  $page = 0;
+  if (!empty($params['page'])) {
+    $page = $params['page'];
+  }
+  $per_page = 3;
 
   $query = db_select('chado.plusgeno_view', 'pg');
   $query->addExpression('count(accession)', 'count');
@@ -149,6 +153,7 @@ function tpps_details_top() {
   $query = $query->execute();
   $total = $query->fetchObject()->count;
 
+  $_GET['page'] = $page;
   $page = pager_default_initialize($total, $per_page);
   $start = $page * $per_page;
 
