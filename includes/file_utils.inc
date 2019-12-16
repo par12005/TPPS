@@ -932,7 +932,7 @@ function tpps_flat_generator($location, array $options = array()) {
   $handle = fopen($location, 'r');
 
   if (!$no_header) {
-    fgets($handle);
+    fgetcsv($handle);
   }
   $count = 0;
 
