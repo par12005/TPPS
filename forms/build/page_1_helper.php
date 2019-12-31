@@ -229,5 +229,7 @@ function tpps_secondary_authors(array &$form, array $values, array $form_state) 
     ),
   ));
 
+  $form['publication']['secondaryAuthors']['#title'] = "<div class=\"fieldset-title\" style=\"font-size:.8em\">Secondary Author Information</div>";
+
   return $form;
 }
