@@ -50,7 +50,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
     '#upload_validators' => array(
       'file_validate_extensions' => array('img jpg jpeg png'),
     ),
-    '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['photo'],
+    '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['photo'] ?? NULL,
   );
 
   tpps_organism($form, $form_state);
