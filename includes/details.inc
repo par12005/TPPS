@@ -548,8 +548,8 @@ function tpps_details_phenotype(&$state) {
     $rows[] = array(
       tpps_entity_link($result->stock_id, $tree, 'Stock'),
       tpps_entity_link($result->phenotype_id, $result->name, 'Phenotype'),
-      $obs,
       $attr,
+      $obs,
       $result->value,
     );
   }
@@ -558,8 +558,8 @@ function tpps_details_phenotype(&$state) {
     'header' => array(
       'Tree',
       'Name',
-      'Entity',
       'Attribute',
+      'Entity',
       'Value'
     ),
     'rows' => $rows,
