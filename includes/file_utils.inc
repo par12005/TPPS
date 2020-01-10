@@ -674,7 +674,7 @@ function tpps_xlsx_get_row(&$reader, &$strings = array(), $plain = TRUE) {
  *   Either the value in the 'v' element of the cell or the associated string.
  */
 function tpps_xlsx_get_cell_value(&$reader, $cell_type, array &$strings = array()) {
-  while (!($reader->nodeType == XMLReader::END_ELEMENT and $reader->name == 'c') and $reader->read()) {
+  while (!($reader->nodeType == XMLReader::END_ELEMENT and ($reader->name == 'c' or $reader->name == 'row')) and $reader->read()) {
     if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'v') {
       $value = $reader->readInnerXml();
       if (!empty($cell_type) and $cell_type == 's') {
