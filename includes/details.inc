@@ -1,11 +1,22 @@
 <?php
 
 /**
- * 
+ * @file
+ * Defines functions to be used in the TPPS Details pages.
  */
 
 /**
- * 
+ * Starting point for most TPPS Details pages.
+ *
+ * Either returns the top details page, which allows users to select from
+ * completed studies, or returns the per-submission details page, which allows
+ * users to browse the details of a study.
+ *
+ * @param string $accession
+ *   The accession to get details from. If NULL, show all submissions.
+ *
+ * @return string
+ *   The appropriate output.
  */
 function tpps_details($accession = NULL) {
   global $base_url;
@@ -82,9 +93,15 @@ function tpps_details($accession = NULL) {
 }
 
 /**
- * 
+ * Returns a template for details tabs.
+ *
+ * @param array $state
+ *   The form state of the submission.
+ *
+ * @return string
+ *   HTML for the details tabs.
  */
-function tpps_details_tabs(&$state) {
+function tpps_details_tabs(array &$state) {
   $output = '<ul class="nav nav-tabs" role="tablist">
     <li class="nav-item"><a class="nav-link active" role="tab" data-toggle="tab" href="#species">Species</a></li>
     <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#study">Study Details</a></li>
@@ -103,9 +120,8 @@ function tpps_details_tabs(&$state) {
       $e_exist = TRUE;
     }
   }
-  $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes</a></li>' : "";
+  $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes / Environments</a></li>' : "";
   $output .= $g_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
-  $output .= $e_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#environment">Environments</a></li>' : "";
   $output .= '</ul><div id="tab-content" class="tab-content">';
 
   $output .= "<div id=\"species\" role=\"tabpanel\" class=\"tab-pane fade in active\"></div>";
@@ -114,14 +130,18 @@ function tpps_details_tabs(&$state) {
 
   $output .= $p_exist ? "<div id=\"phenotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
   $output .= $g_exist ? "<div id=\"genotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
-  $output .= $e_exist ? "<div id=\"environment\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
 
   $output .= '</div>';
   return $output;
 }
 
 /**
+ * A callback to print a single detail tab.
  *
+ * @param string $accession
+ *   The accession number of the submission.
+ * @param string $type
+ *   The type of details we want to print.
  */
 function tpps_details_tab($accession, $type) {
   $function = "tpps_details_$type";
@@ -229,7 +249,7 @@ function tpps_details_top() {
 }
 
 /**
- *
+ * Serves as a direct callback to print the contents of tpps_details_top().
  */
 function tpps_details_top_callback() {
   print(tpps_details_top());
@@ -237,9 +257,17 @@ function tpps_details_top_callback() {
 }
 
 /**
+ * Define a search form to search and filter through the TPPS Details page.
  *
+ * @param array $form
+ *   The form array object.
+ * @param array $form_state
+ *   The form state array object.
+ *
+ * @return array
+ *   The populated search form.
  */
-function tpps_details_search($form, $form_state) {
+function tpps_details_search(array $form, array $form_state) {
   $form['details_type'] = array(
     '#type' => 'select',
     '#options' => array(
@@ -311,16 +339,30 @@ function tpps_details_search($form, $form_state) {
 }
 
 /**
- * 
+ * AJAX callback for the search form details_op element.
+ *
+ * @param array $form
+ *   The form being updated.
+ * @param array $form_state
+ *   The state of the form being updated.
+ *
+ * @return array
+ *   The part of the form to be updated.
  */
-function tpps_details_op_callback($form, $form_state) {
+function tpps_details_op_callback(array $form, array $form_state) {
   return $form['details_op'];
 }
 
 /**
- * 
+ * Creates the table for species details for a submission.
+ *
+ * @param array $state
+ *   The form state of the submission.
+ *
+ * @return string
+ *   The HTML table of species associated with the submission.
  */
-function tpps_details_species(&$state) {
+function tpps_details_species(array &$state) {
   $query = db_select('chado.organism', 'o');
   $query->join('chado.pub_organism', 'po', 'o.organism_id = po.organism_id');
   $query->join('chado.project_pub', 'pp', 'pp.pub_id = po.pub_id');
@@ -391,9 +433,15 @@ function tpps_details_species(&$state) {
 }
 
 /**
- * 
+ * Creates the table for study information details for a submission.
+ *
+ * @param array $state
+ *   The form state of the submission.
+ *
+ * @return string
+ *   The HTML table of study information of the submission.
  */
-function tpps_details_study(&$state) {
+function tpps_details_study(array &$state) {
   $rows = array();
 
   $species = array();
@@ -448,9 +496,15 @@ function tpps_details_study(&$state) {
 }
 
 /**
- * 
+ * Creates the table of individual tree details for a submission.
+ *
+ * @param array $state
+ *   The form state of the submission.
+ *
+ * @return string
+ *   The HTML table of trees associated with the submission.
  */
-function tpps_details_trees(&$state) {
+function tpps_details_trees(array &$state) {
   $params = drupal_get_query_parameters($_POST);
   $page = 0;
   if (!empty($params['page'])) {
@@ -501,9 +555,15 @@ function tpps_details_trees(&$state) {
 }
 
 /**
- * 
+ * Creates the table of individual tree phenotype details for a submission.
+ *
+ * @param array $state
+ *   The form state of the submission.
+ *
+ * @return string
+ *   The HTML table of trees and phenotypes associated with the submission.
  */
-function tpps_details_phenotype(&$state) {
+function tpps_details_phenotype(array &$state) {
   $params = drupal_get_query_parameters($_POST);
   $page = 0;
   if (!empty($params['page'])) {
@@ -575,9 +635,15 @@ function tpps_details_phenotype(&$state) {
 }
 
 /**
- * 
+ * Creates the table of individual tree genotype details for a submission.
+ *
+ * @param array $state
+ *   The form state of the submission.
+ *
+ * @return string
+ *   The HTML table of trees and genotypes associated with the submission.
  */
-function tpps_details_genotype(&$state) {
+function tpps_details_genotype(array &$state) {
   $params = drupal_get_query_parameters($_POST);
   $page = 0;
   if (!empty($params['page'])) {
@@ -639,12 +705,4 @@ function tpps_details_genotype(&$state) {
   $table = theme_table($vars);
   $pager = theme('pager', array('quantity', $total));
   return $pager . $table;
-}
-
-/**
- * 
- */
-function tpps_details_environment(&$state) {
-  // TODO.
-  return "Coming Soon!";
 }
