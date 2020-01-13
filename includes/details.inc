@@ -166,9 +166,27 @@ function tpps_details_top() {
   $per_page = 20;
 
   $query = db_select('chado.plusgeno_view', 'pg');
-  $query->addExpression('count(accession)', 'count');
+  $query->addExpression('count(distinct(pg.accession))', 'count');
   if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
-    $query->condition($params['type'], $params['value'], $params['op']);
+    switch ($params['type']) {
+      case 'title':
+      case 'project_id':
+      case 'accession':
+      case 'author':
+      case 'year':
+        $query->condition($params['type'], $params['value'], $params['op']);
+        break;
+
+      case 'phenotype_name':
+        $query->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $query->innerJoin('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
+        $query->innerJoin('chado.phenotype', 'ph', 'ph.phenotype_id = sp.phenotype_id');
+        $query->condition('ph.name', $params['value'], $params['op']);
+        break;
+
+      default:
+        break;
+    }
   }
   $query = $query->execute();
   $total = $query->fetchObject()->count;
@@ -178,9 +196,28 @@ function tpps_details_top() {
   $start = $page * $per_page;
 
   $submissions = db_select('chado.plusgeno_view', 'pg');
+  $submissions->distinct();
   $submissions->innerJoin('chado.project', 'p', 'p.project_id = pg.project_id');
   if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
-    $submissions->condition($params['type'], $params['value'], $params['op']);
+    switch ($params['type']) {
+      case 'title':
+      case 'project_id':
+      case 'accession':
+      case 'author':
+      case 'year':
+        $submissions->condition($params['type'], $params['value'], $params['op']);
+        break;
+
+      case 'phenotype_name':
+        $submissions->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $submissions->innerJoin('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
+        $submissions->innerJoin('chado.phenotype', 'ph', 'ph.phenotype_id = sp.phenotype_id');
+        $submissions->condition('ph.name', $params['value'], $params['op']);
+        break;
+
+      default:
+        break;
+    }
   }
   $submissions->fields('pg', array(
     'title',
@@ -192,7 +229,7 @@ function tpps_details_top() {
     'gen_count',
   ));
   $submissions->range($start, $per_page);
-  $submissions->orderBy('accession');
+  $submissions->orderBy('pg.accession');
   $submissions = $submissions->execute();
 
   $rows = array();
@@ -276,6 +313,7 @@ function tpps_details_search(array $form, array $form_state) {
       'accession' => 'Accession',
       'author' => 'Primary Author',
       'year' => 'Publication Year',
+      'phenotype_name' => 'Phenotype Name',
     ),
     '#ajax' => array(
       'wrapper' => 'tpps-details-op',
@@ -291,20 +329,6 @@ function tpps_details_search(array $form, array $form_state) {
 
   if (!empty($form_state['values']['details_type'])) {
     switch ($form_state['values']['details_type']) {
-      case 'gen_count':
-      case 'phen_count':
-      case 'phenotypes_assessed':
-      case 'tree_count':
-        $ops = array(
-          '=' => '=',
-          '>' => '>',
-          '<' => '<',
-          '>=' => '>=',
-          '<=' => '<=',
-          '!=' => '!=',
-        );
-        break;
-
       default:
         break;
     }
