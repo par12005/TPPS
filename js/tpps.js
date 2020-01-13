@@ -196,6 +196,7 @@ function detailSearch() {
     page = this.hash.match(/#.*:(.*)/)[1];
   }
 
+  jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
   var request = jQuery.post(path, {
     type: jQuery('#edit-details-type')[0].value,
     value: jQuery('#edit-details-value')[0].value,
