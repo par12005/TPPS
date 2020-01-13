@@ -182,7 +182,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     'title' => "",
     'callback' => 'tpps_update_phenotype',
     'parents' => array($id, 'phenotype'),
-    'wrapper' => "phenotypes-$id",
+    'wrapper' => "phenotype-main-$id",
     'name_suffix' => $id,
     'substitute_fields' => array(
       array('name', '#title'),
