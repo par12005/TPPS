@@ -276,10 +276,6 @@ function tpps_details_search(array $form, array $form_state) {
       'accession' => 'Accession',
       'author' => 'Primary Author',
       'year' => 'Publication Year',
-      'tree_count' => 'Tree Count',
-      'phen_count' => 'Phenotype Count',
-      'gen_count' => 'Genotype Count',
-      'phenotypes_assessed' => 'Unique Phenotypes',
     ),
     '#ajax' => array(
       'wrapper' => 'tpps-details-op',
