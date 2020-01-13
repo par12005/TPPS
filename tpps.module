@@ -12,6 +12,7 @@ define("TPPS_PAGE_2", 2);
 define("TPPS_PAGE_3", 3);
 define("TPPS_PAGE_4", 4);
 define("TPPS_TEMP_XLSX", "temporary://tpps_xlsx");
+define("TPPS_TEMP_ZIP", "temporary://tpps_zip");
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';

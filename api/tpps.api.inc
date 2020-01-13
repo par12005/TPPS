@@ -155,13 +155,45 @@ function tpps_api_check_accession($accession = NULL) {
 }
 
 /**
- * 
+ * Creates and downloads a .zip file of all relevant files for the submission.
+ *
+ * @param string $accession
+ *   The accession number of the submission with the associated files.
  */
 function tpps_api_compress_files($accession = NULL) {
   $state = tpps_load_submission($accession);
   if (empty($state)) {
     throw new Exception('Invalid state accession number');
   }
+  ob_end_clean();
+  $zip_name = "{$accession}_files.zip";
+  if (!file_exists(drupal_realpath(TPPS_TEMP_ZIP))) {
+    mkdir(drupal_realpath(TPPS_TEMP_ZIP));
+  }
+  exec(TPPS_TEMP_ZIP);
+  $zip_loc = drupal_realpath(TPPS_TEMP_ZIP) . '/' . $zip_name;
 
-  // TODO.
+  $file_info = $state['file_info'];
+  foreach ($file_info as $page) {
+    foreach ($page as $fid => $name) {
+      $location = drupal_realpath(file_load($fid)->uri);
+      $file_str[] = $location;
+    }
+  }
+
+  if (file_exists(drupal_realpath($zip_loc))) {
+    unlink($zip_loc);
+  }
+
+  $file_str = implode(" ", $file_str);
+  $cmd = "zip -j $zip_loc $file_str";
+  exec($cmd);
+  drupal_add_http_header('Content-Type', 'application/zip');
+  drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $zip_name . '"');
+  drupal_add_http_header('Content-length', filesize($zip_loc));
+  drupal_add_http_header('Pragma', "no-cache");
+  drupal_add_http_header('Expires', '0');
+
+  readfile("$zip_loc");
+  exit;
 }
