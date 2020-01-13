@@ -103,9 +103,8 @@ function tpps_details_tabs(&$state) {
       $e_exist = TRUE;
     }
   }
-  $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes</a></li>' : "";
+  $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes / Environments</a></li>' : "";
   $output .= $g_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
-  $output .= $e_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#environment">Environments</a></li>' : "";
   $output .= '</ul><div id="tab-content" class="tab-content">';
 
   $output .= "<div id=\"species\" role=\"tabpanel\" class=\"tab-pane fade in active\"></div>";
@@ -114,7 +113,6 @@ function tpps_details_tabs(&$state) {
 
   $output .= $p_exist ? "<div id=\"phenotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
   $output .= $g_exist ? "<div id=\"genotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
-  $output .= $e_exist ? "<div id=\"environment\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
 
   $output .= '</div>';
   return $output;
@@ -639,12 +637,4 @@ function tpps_details_genotype(&$state) {
   $table = theme_table($vars);
   $pager = theme('pager', array('quantity', $total));
   return $pager . $table;
-}
-
-/**
- * 
- */
-function tpps_details_environment(&$state) {
-  // TODO.
-  return "Coming Soon!";
 }
