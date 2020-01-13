@@ -43,7 +43,7 @@ function tpps_ajax_bioproject_callback(array &$form, array $form_state) {
 function tpps_update_phenotype(array $form, array &$form_state) {
   $id = $form_state['triggering_element']['#parents'][0];
 
-  return $form[$id]['phenotype']['phenotypes-meta'];
+  return $form[$id]['phenotype'];
 }
 
 /**
