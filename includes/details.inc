@@ -361,18 +361,24 @@ function tpps_details_search(array $form, array $form_state) {
     '#options' => $ops,
   );
 
-  #$form['#prefix'] = '<div id="tpps-details-form">';
-  #$form['#suffix'] = '</div>';
-
   $form['details_value'] = array(
     '#type' => 'textfield',
     '#suffix' => '</div>',
+    '#autocomplete_path' => 'tpps/autocomplete/project_title',
   );
 
   if (!empty($form_state['values']['details_type'])) {
     switch ($form_state['values']['details_type']) {
+      case 'title':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/project_title';
+        break;
+
       case 'species':
         $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/species';
+        break;
+
+      case 'accession':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/project_accession';
         break;
 
       case 'author':
