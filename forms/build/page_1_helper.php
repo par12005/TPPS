@@ -21,7 +21,7 @@ function tpps_user_info(array &$form, array $values) {
   $form['primaryAuthor'] = array(
     '#type' => 'textfield',
     '#title' => t('Primary Author: *'),
-    '#autocomplete_path' => 'author/autocomplete',
+    '#autocomplete_path' => 'tpps/autocomplete/author',
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
       'data-placement' => array('right'),
@@ -32,7 +32,7 @@ function tpps_user_info(array &$form, array $values) {
   $form['organization'] = array(
     '#type' => 'textfield',
     '#title' => t('Organization: *'),
-    '#autocomplete_path' => 'organization/autocomplete',
+    '#autocomplete_path' => 'tpps/autocomplete/organization',
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
       'data-placement' => array('right'),
@@ -100,7 +100,7 @@ function tpps_publication(array &$form, array $values, array $form_state) {
   $form['publication']['journal'] = array(
     '#type' => 'textfield',
     '#title' => t('Journal: *'),
-    '#autocomplete_path' => 'journal/autocomplete',
+    '#autocomplete_path' => 'tpps/autocomplete/journal',
   );
 
   return $form;
@@ -122,7 +122,7 @@ function tpps_organism(array &$form, array &$form_state) {
   $field = array(
     '#type' => 'textfield',
     '#title' => "Species !num",
-    '#autocomplete_path' => 'species/autocomplete',
+    '#autocomplete_path' => 'tpps/autocomplete/species',
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
       'data-placement' => array('right'),
@@ -215,7 +215,7 @@ function tpps_secondary_authors(array &$form, array $values, array $form_state) 
   $field = array(
     '#type' => 'textfield',
     '#title' => "Secondary Author !num",
-    '#autocomplete_path' => 'author/autocomplete',
+    '#autocomplete_path' => 'tpps/autocomplete/author',
   );
 
   tpps_dynamic_list($form, $form_state, 'secondaryAuthors', $field, array(

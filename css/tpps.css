@@ -86,9 +86,6 @@ th > div.form-type-select > .ajax-progress {
 #tpps_table_display td {
   padding: 10px;
 }
-#tpps-details-search > div > div {
-  display: inline-block;
-}
-#tpps-details-search > div {
-  display: inline-block;
+#tpps-details-form  {
+  margin: 10px 0px;
 }

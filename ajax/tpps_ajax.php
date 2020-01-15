@@ -6,6 +6,20 @@
  */
 
 /**
+ * Call the correct autocomplete function based on the type provided.
+ *
+ * @param string $type
+ *   The type of autocomplete function needed.
+ * @param string $string
+ *   The string to be autocompleted.
+ */
+function tpps_autocomplete($type, $string = "") {
+  $function = "tpps_{$type}_autocomplete";
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
+  $function($string);
+}
+
+/**
  * Author auto-complete matching.
  *
  * @param string $string
@@ -13,7 +27,6 @@
  */
 function tpps_author_autocomplete($string) {
   $matches = array();
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $results = chado_select_record('contact', array('name'), array(
     'name' => $string,
@@ -35,6 +48,48 @@ function tpps_author_autocomplete($string) {
 }
 
 /**
+ * Project title auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_project_title_autocomplete($string) {
+  $matches = array();
+
+  $query = db_select('chado.plusgeno_view', 'p')
+    ->fields('p', array('title'))
+    ->condition('title', $string, '~*')
+    ->execute();
+
+  while (($result = $query->fetchObject())) {
+    $matches[$result->title] = check_plain($result->title);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
+ * Project accession number auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_project_accession_autocomplete($string) {
+  $matches = array();
+
+  $query = db_select('chado.plusgeno_view', 'p')
+    ->fields('p', array('accession'))
+    ->condition('accession', $string, '~*')
+    ->execute();
+
+  while (($result = $query->fetchObject())) {
+    $matches[$result->accession] = check_plain($result->accession);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
  * Organization auto-complete matching.
  *
  * @param string $string
@@ -42,7 +97,6 @@ function tpps_author_autocomplete($string) {
  */
 function tpps_organization_autocomplete($string) {
   $matches = array();
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $results = chado_select_record('contact', array('name'), array(
     'name' => $string,
@@ -71,7 +125,6 @@ function tpps_organization_autocomplete($string) {
  */
 function tpps_journal_autocomplete($string) {
   $matches = array();
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $results = chado_select_record('pub', array('series_name'), array(
     'series_name' => $string,
@@ -94,7 +147,6 @@ function tpps_journal_autocomplete($string) {
  */
 function tpps_species_autocomplete($string) {
   $matches = array();
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $parts = explode(" ", $string);
   if (!isset($parts[1])) {
@@ -127,7 +179,6 @@ function tpps_species_autocomplete($string) {
  */
 function tpps_phenotype_autocomplete($string) {
   $matches = array();
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $results = chado_select_record('phenotype', array('name'), array(
     'name' => array(
@@ -144,6 +195,74 @@ function tpps_phenotype_autocomplete($string) {
 }
 
 /**
+ * Phenotype ontology name auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_phenotype_ontology_autocomplete($string) {
+  $matches = array();
+
+  $query = db_select('chado.phenotype', 'p');
+  $query->join('chado.cvterm', 'cvt', 'cvt.cvterm_id = p.attr_id');
+  $query->join('chado.cv', 'cv', 'cv.cv_id = cvt.cv_id');
+  $query->fields('cv', array('name'));
+  $query->condition('cv.name', $string, '~*');
+  $query = $query->execute();
+
+  while (($result = $query->fetchObject())) {
+    $matches[$result->name] = check_plain($result->name);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
+ * Genotype name auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_genotype_autocomplete($string) {
+  $matches = array();
+
+  $results = chado_select_record('genotype', array('name'), array(
+    'name' => array(
+      'data' => $string,
+      'op' => '~*',
+    ),
+  ));
+
+  foreach ($results as $row) {
+    $matches[$row->name] = check_plain($row->name);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
+ * Genotype marker name auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_genotype_marker_autocomplete($string) {
+  $matches = array();
+
+  $query = db_select('chado.genotype', 'g');
+  $query->join('chado.cvterm', 'cvt', 'cvt.cvterm_id = g.type_id');
+  $query->fields('cvt', array('name'));
+  $query->condition('cvt.name', $string, '~*');
+  $query = $query->execute();
+
+  while (($result = $query->fetchObject())) {
+    $matches[$result->name] = check_plain($result->name);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
  * Phenotype attribute auto-complete matching.
  *
  * @param string $string
@@ -151,7 +270,6 @@ function tpps_phenotype_autocomplete($string) {
  */
 function tpps_attribute_autocomplete($string) {
   $matches = array();
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
   $attributes = array();
   $attr_results = chado_select_record('phenotype', array('distinct attr_id'), array());
 
@@ -182,7 +300,6 @@ function tpps_attribute_autocomplete($string) {
  */
 function tpps_units_autocomplete($string) {
   $matches = array();
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
 
   $results = chado_select_record('phenotypeprop', array('value'), array(
     'value' => array(
@@ -212,7 +329,6 @@ function tpps_units_autocomplete($string) {
  */
 function tpps_structure_autocomplete($string) {
   $matches = array();
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
   $structures = array();
   $struct_results = chado_select_record('phenotype', array('distinct observable_id'), array());
 

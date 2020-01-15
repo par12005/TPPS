@@ -170,6 +170,7 @@ function tpps_details_top() {
   if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
     switch ($params['type']) {
       case 'title':
+      case 'species':
       case 'project_id':
       case 'accession':
       case 'author':
@@ -182,6 +183,30 @@ function tpps_details_top() {
         $query->innerJoin('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
         $query->innerJoin('chado.phenotype', 'ph', 'ph.phenotype_id = sp.phenotype_id');
         $query->condition('ph.name', $params['value'], $params['op']);
+        break;
+
+      case 'phenotype_ontology':
+        $query->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $query->innerJoin('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
+        $query->innerJoin('chado.phenotype', 'ph', 'ph.phenotype_id = sp.phenotype_id');
+        $query->innerJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = ph.attr_id');
+        $query->innerJoin('chado.cv', 'cv', 'cv.cv_id = cvt.cv_id');
+        $query->condition('cv.name', $params['value'], $params['op']);
+        break;
+
+      case 'genotype_name':
+        $query->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $query->innerJoin('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
+        $query->innerJoin('chado.genotype', 'g', 'g.genotype_id = sg.genotype_id');
+        $query->condition('g.name', $params['value'], $params['op']);
+        break;
+
+      case 'genotype_marker':
+        $query->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $query->innerJoin('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
+        $query->innerJoin('chado.genotype', 'g', 'g.genotype_id = sg.genotype_id');
+        $query->innerJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = g.type_id');
+        $query->condition('cvt.name', $params['value'], $params['op']);
         break;
 
       default:
@@ -201,6 +226,7 @@ function tpps_details_top() {
   if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
     switch ($params['type']) {
       case 'title':
+      case 'species':
       case 'project_id':
       case 'accession':
       case 'author':
@@ -213,6 +239,30 @@ function tpps_details_top() {
         $submissions->innerJoin('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
         $submissions->innerJoin('chado.phenotype', 'ph', 'ph.phenotype_id = sp.phenotype_id');
         $submissions->condition('ph.name', $params['value'], $params['op']);
+        break;
+
+      case 'phenotype_ontology':
+        $submissions->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $submissions->innerJoin('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
+        $submissions->innerJoin('chado.phenotype', 'ph', 'ph.phenotype_id = sp.phenotype_id');
+        $submissions->innerJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = ph.attr_id');
+        $submissions->innerJoin('chado.cv', 'cv', 'cv.cv_id = cvt.cv_id');
+        $submissions->condition('cv.name', $params['value'], $params['op']);
+        break;
+
+      case 'genotype_name':
+        $submissions->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $submissions->innerJoin('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
+        $submissions->innerJoin('chado.genotype', 'g', 'g.genotype_id = sg.genotype_id');
+        $submissions->condition('g.name', $params['value'], $params['op']);
+        break;
+
+      case 'genotype_marker':
+        $submissions->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $submissions->innerJoin('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
+        $submissions->innerJoin('chado.genotype', 'g', 'g.genotype_id = sg.genotype_id');
+        $submissions->innerJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = g.type_id');
+        $submissions->condition('cvt.name', $params['value'], $params['op']);
         break;
 
       default:
@@ -314,11 +364,15 @@ function tpps_details_search(array $form, array $form_state) {
       'author' => 'Primary Author',
       'year' => 'Publication Year',
       'phenotype_name' => 'Phenotype Name',
+      'phenotype_ontology' => 'Phenotype Ontology Name',
+      'genotype_name' => 'Genotype Name',
+      'genotype_marker' => 'Genotype Marker Type',
     ),
     '#ajax' => array(
-      'wrapper' => 'tpps-details-op',
-      'callback' => 'tpps_details_op_callback',
+      'wrapper' => 'tpps-details-form',
+      'callback' => 'tpps_details_form_callback',
     ),
+    '#prefix' => '<div id="tpps-details-form">',
   );
 
   $ops = array(
@@ -337,13 +391,53 @@ function tpps_details_search(array $form, array $form_state) {
   $form['details_op'] = array(
     '#type' => 'select',
     '#options' => $ops,
-    '#prefix' => '<div id="tpps-details-op">',
-    '#suffix' => '</div>',
   );
 
   $form['details_value'] = array(
     '#type' => 'textfield',
+    '#suffix' => '</div>',
+    '#autocomplete_path' => 'tpps/autocomplete/project_title',
   );
+
+  if (!empty($form_state['values']['details_type'])) {
+    switch ($form_state['values']['details_type']) {
+      case 'title':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/project_title';
+        break;
+
+      case 'species':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/species';
+        break;
+
+      case 'accession':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/project_accession';
+        break;
+
+      case 'author':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/author';
+        break;
+
+      case 'phenotype_name':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/phenotype';
+        break;
+
+      case 'phenotype_ontology':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/phenotype_ontology';
+        break;
+
+      case 'genotype_name':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/genotype';
+        break;
+
+        case 'genotype_marker':
+          $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/genotype_marker';
+          break;
+  
+      default:
+        $form['details_value']['#autocomplete_path'] = NULL;
+        break;
+    }
+  }
 
   $form['details_search'] = array(
     '#type' => 'button',
@@ -369,8 +463,12 @@ function tpps_details_search(array $form, array $form_state) {
  * @return array
  *   The part of the form to be updated.
  */
-function tpps_details_op_callback(array $form, array $form_state) {
-  return $form['details_op'];
+function tpps_details_form_callback(array $form, array $form_state) {
+  return array(
+    'details_type' => $form['details_type'],
+    'details_op' => $form['details_op'],
+    'details_value' => $form['details_value'],
+  );
 }
 
 /**
