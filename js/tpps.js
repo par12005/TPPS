@@ -198,8 +198,8 @@ function detailSearch() {
 
   jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
   var request = jQuery.post(path, {
-    type: jQuery('#edit-details-type')[0].value,
-    value: jQuery('#edit-details-value')[0].value,
+    type: jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value,
+    value: jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value,
     op: jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value,
     page: page
   });
