@@ -89,3 +89,6 @@ th > div.form-type-select > .ajax-progress {
 #tpps-details-form  {
   margin: 10px 0px;
 }
+#tpps-details-form > div {
+  display: inline-block;
+}
