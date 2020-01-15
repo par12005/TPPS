@@ -218,6 +218,29 @@ function tpps_phenotype_ontology_autocomplete($string) {
 }
 
 /**
+ * Genotype name auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_genotype_autocomplete($string) {
+  $matches = array();
+
+  $results = chado_select_record('genotype', array('name'), array(
+    'name' => array(
+      'data' => $string,
+      'op' => '~*',
+    ),
+  ));
+
+  foreach ($results as $row) {
+    $matches[$row->name] = check_plain($row->name);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
  * Phenotype attribute auto-complete matching.
  *
  * @param string $string
