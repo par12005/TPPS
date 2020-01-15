@@ -184,6 +184,14 @@ function tpps_menu() {
     'file' => 'ajax/tpps_ajax.php',
   );
 
+  $items['phenotype-ontology/autocomplete'] = array(
+    'title' => 'Autocomplete for Phenotype Name',
+    'page callback' => 'tpps_phenotype_ontology_autocomplete',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'ajax/tpps_ajax.php',
+  );
+
   $items['attribute/autocomplete'] = array(
     'title' => 'Autocomplete for Phenotype Attribute',
     'page callback' => 'tpps_attribute_autocomplete',

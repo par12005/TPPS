@@ -144,6 +144,30 @@ function tpps_phenotype_autocomplete($string) {
 }
 
 /**
+ * Phenotype ontology name auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_phenotype_ontology_autocomplete($string) {
+  $matches = array();
+  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
+
+  $query = db_select('chado.phenotype', 'p');
+  $query->join('chado.cvterm', 'cvt', 'cvt.cvterm_id = p.attr_id');
+  $query->join('chado.cv', 'cv', 'cv.cv_id = cvt.cv_id');
+  $query->fields('cv', array('name'));
+  $query->condition('cv.name', $string, '~*');
+  $query = $query->execute();
+
+  while (($result = $query->fetchObject())) {
+    $matches[$result->name] = check_plain($result->name);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
  * Phenotype attribute auto-complete matching.
  *
  * @param string $string
