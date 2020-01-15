@@ -29,7 +29,6 @@ require_once 'includes/ncbi_utils.inc';
 require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'api/tpps.api.inc';
-require_once 'ajax/tpps_ajax.php';
 
 /**
  * Implements hook_menu().

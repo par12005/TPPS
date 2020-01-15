@@ -340,6 +340,7 @@ function tpps_details_search(array $form, array $form_state) {
       'wrapper' => 'tpps-details-form',
       'callback' => 'tpps_details_form_callback',
     ),
+    '#prefix' => '<div id="tpps-details-form">',
   );
 
   $ops = array(
@@ -360,11 +361,12 @@ function tpps_details_search(array $form, array $form_state) {
     '#options' => $ops,
   );
 
-  $form['#prefix'] = '<div id="tpps-details-form">';
-  $form['#suffix'] = '</div>';
+  #$form['#prefix'] = '<div id="tpps-details-form">';
+  #$form['#suffix'] = '</div>';
 
   $form['details_value'] = array(
     '#type' => 'textfield',
+    '#suffix' => '</div>',
   );
 
   if (!empty($form_state['values']['details_type'])) {
@@ -382,7 +384,7 @@ function tpps_details_search(array $form, array $form_state) {
         break;
 
       case 'phenotype_ontology':
-        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/phenotype-ontology';
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/phenotype_ontology';
         break;
 
       default:
@@ -415,7 +417,11 @@ function tpps_details_search(array $form, array $form_state) {
  *   The part of the form to be updated.
  */
 function tpps_details_form_callback(array $form, array $form_state) {
-  return $form;
+  return array(
+    'details_type' => $form['details_type'],
+    'details_op' => $form['details_op'],
+    'details_value' => $form['details_value'],
+  );
 }
 
 /**
