@@ -170,6 +170,7 @@ function tpps_details_top() {
   if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
     switch ($params['type']) {
       case 'title':
+      case 'species':
       case 'project_id':
       case 'accession':
       case 'author':
@@ -210,6 +211,7 @@ function tpps_details_top() {
   if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
     switch ($params['type']) {
       case 'title':
+      case 'species':
       case 'project_id':
       case 'accession':
       case 'author':
@@ -367,6 +369,18 @@ function tpps_details_search(array $form, array $form_state) {
 
   if (!empty($form_state['values']['details_type'])) {
     switch ($form_state['values']['details_type']) {
+      case 'species':
+        $form['details_value']['#autocomplete_path'] = 'species/autocomplete';
+        break;
+
+      case 'author':
+        $form['details_value']['#autocomplete_path'] = 'author/autocomplete';
+        break;
+
+      case 'phenotype_name':
+        $form['details_value']['#autocomplete_path'] = 'phenotype/autocomplete';
+        break;
+
       case 'phenotype_ontology':
         $form['details_value']['#autocomplete_path'] = 'phenotype-ontology/autocomplete';
         break;
