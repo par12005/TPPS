@@ -184,6 +184,15 @@ function tpps_details_top() {
         $query->condition('ph.name', $params['value'], $params['op']);
         break;
 
+      case 'phenotype_ontology':
+        $query->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $query->innerJoin('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
+        $query->innerJoin('chado.phenotype', 'ph', 'ph.phenotype_id = sp.phenotype_id');
+        $query->innerJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = ph.attr_id');
+        $query->innerJoin('chado.cv', 'cv', 'cv.cv_id = cvt.cv_id');
+        $query->condition('cv.name', $params['value'], $params['op']);
+        break;
+
       default:
         break;
     }
@@ -213,6 +222,15 @@ function tpps_details_top() {
         $submissions->innerJoin('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
         $submissions->innerJoin('chado.phenotype', 'ph', 'ph.phenotype_id = sp.phenotype_id');
         $submissions->condition('ph.name', $params['value'], $params['op']);
+        break;
+
+      case 'phenotype_ontology':
+        $submissions->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $submissions->innerJoin('chado.stock_phenotype', 'sp', 'sp.stock_id = ps.stock_id');
+        $submissions->innerJoin('chado.phenotype', 'ph', 'ph.phenotype_id = sp.phenotype_id');
+        $submissions->innerJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = ph.attr_id');
+        $submissions->innerJoin('chado.cv', 'cv', 'cv.cv_id = cvt.cv_id');
+        $submissions->condition('cv.name', $params['value'], $params['op']);
         break;
 
       default:
@@ -314,10 +332,11 @@ function tpps_details_search(array $form, array $form_state) {
       'author' => 'Primary Author',
       'year' => 'Publication Year',
       'phenotype_name' => 'Phenotype Name',
+      'phenotype_ontology' => 'Phenotype Ontology Name',
     ),
     '#ajax' => array(
-      'wrapper' => 'tpps-details-op',
-      'callback' => 'tpps_details_op_callback',
+      'wrapper' => 'tpps-details-form',
+      'callback' => 'tpps_details_form_callback',
     ),
   );
 
@@ -337,13 +356,25 @@ function tpps_details_search(array $form, array $form_state) {
   $form['details_op'] = array(
     '#type' => 'select',
     '#options' => $ops,
-    '#prefix' => '<div id="tpps-details-op">',
-    '#suffix' => '</div>',
   );
+
+  $form['#prefix'] = '<div id="tpps-details-form">';
+  $form['#suffix'] = '</div>';
 
   $form['details_value'] = array(
     '#type' => 'textfield',
   );
+
+  if (!empty($form_state['values']['details_type'])) {
+    switch ($form_state['values']['details_type']) {
+      case 'phenotype_ontology':
+        $form['details_value']['#autocomplete_path'] = 'phenotype-ontology/autocomplete';
+        break;
+
+      default:
+        break;
+    }
+  }
 
   $form['details_search'] = array(
     '#type' => 'button',
@@ -369,8 +400,8 @@ function tpps_details_search(array $form, array $form_state) {
  * @return array
  *   The part of the form to be updated.
  */
-function tpps_details_op_callback(array $form, array $form_state) {
-  return $form['details_op'];
+function tpps_details_form_callback(array $form, array $form_state) {
+  return $form;
 }
 
 /**
