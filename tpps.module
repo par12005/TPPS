@@ -29,6 +29,7 @@ require_once 'includes/ncbi_utils.inc';
 require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'api/tpps.api.inc';
+require_once 'ajax/tpps_ajax.php';
 
 /**
  * Implements hook_menu().
@@ -144,77 +145,7 @@ function tpps_menu() {
     'file' => 'admin/config.php',
   );
 
-  $items['author/autocomplete'] = array(
-    'title' => 'Autocomplete for Authors',
-    'page callback' => 'tpps_author_autocomplete',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'ajax/tpps_ajax.php',
-  );
-
-  $items['organization/autocomplete'] = array(
-    'title' => 'Autocomplete for Organizations',
-    'page callback' => 'tpps_organization_autocomplete',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'ajax/tpps_ajax.php',
-  );
-
-  $items['journal/autocomplete'] = array(
-    'title' => 'Autocomplete for Publications',
-    'page callback' => 'tpps_journal_autocomplete',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'ajax/tpps_ajax.php',
-  );
-
-  $items['species/autocomplete'] = array(
-    'title' => 'Autocomplete for species',
-    'page callback' => 'tpps_species_autocomplete',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'ajax/tpps_ajax.php',
-  );
-
-  $items['phenotype/autocomplete'] = array(
-    'title' => 'Autocomplete for Phenotype Name',
-    'page callback' => 'tpps_phenotype_autocomplete',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'ajax/tpps_ajax.php',
-  );
-
-  $items['phenotype-ontology/autocomplete'] = array(
-    'title' => 'Autocomplete for Phenotype Name',
-    'page callback' => 'tpps_phenotype_ontology_autocomplete',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'ajax/tpps_ajax.php',
-  );
-
-  $items['attribute/autocomplete'] = array(
-    'title' => 'Autocomplete for Phenotype Attribute',
-    'page callback' => 'tpps_attribute_autocomplete',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'ajax/tpps_ajax.php',
-  );
-
-  $items['units/autocomplete'] = array(
-    'title' => 'Autocomplete for Phenotype Units',
-    'page callback' => 'tpps_units_autocomplete',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'ajax/tpps_ajax.php',
-  );
-
-  $items['structure/autocomplete'] = array(
-    'title' => 'Autocomplete for Phenotype Structure',
-    'page callback' => 'tpps_structure_autocomplete',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK,
-    'file' => 'ajax/tpps_ajax.php',
-  );
+  tpps_autocomplete_paths($items);
 
   /*
    * Ajax Callback for accession coordinates.
