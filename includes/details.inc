@@ -370,19 +370,19 @@ function tpps_details_search(array $form, array $form_state) {
   if (!empty($form_state['values']['details_type'])) {
     switch ($form_state['values']['details_type']) {
       case 'species':
-        $form['details_value']['#autocomplete_path'] = 'species/autocomplete';
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/species';
         break;
 
       case 'author':
-        $form['details_value']['#autocomplete_path'] = 'author/autocomplete';
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/author';
         break;
 
       case 'phenotype_name':
-        $form['details_value']['#autocomplete_path'] = 'phenotype/autocomplete';
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/phenotype';
         break;
 
       case 'phenotype_ontology':
-        $form['details_value']['#autocomplete_path'] = 'phenotype-ontology/autocomplete';
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/phenotype-ontology';
         break;
 
       default:

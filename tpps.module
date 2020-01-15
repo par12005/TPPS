@@ -145,7 +145,16 @@ function tpps_menu() {
     'file' => 'admin/config.php',
   );
 
-  tpps_autocomplete_paths($items);
+  $items['tpps/autocomplete/%'] = array(
+    'title' => 'TPPS Autocomplete',
+    'description' => 'Autocomplete functions for TPPS module',
+    'page callback' => 'tpps_autocomplete',
+    'page arguments' => array(2),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'ajax/tpps_ajax.php',
+  );
 
   /*
    * Ajax Callback for accession coordinates.

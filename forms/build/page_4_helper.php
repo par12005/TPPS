@@ -68,7 +68,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     'name' => array(
       '#type' => 'textfield',
       '#title' => 'Phenotype !num Name: *',
-      '#autocomplete_path' => 'phenotype/autocomplete',
+      '#autocomplete_path' => 'tpps/autocomplete/phenotype',
       '#prefix' => "<label><b>Phenotype !num:</b></label>",
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -80,7 +80,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     'attribute' => array(
       '#type' => 'textfield',
       '#title' => 'Phenotype !num Attribute: *',
-      '#autocomplete_path' => 'attribute/autocomplete',
+      '#autocomplete_path' => 'tpps/autocomplete/attribute',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
         'data-placement' => array('right'),
@@ -96,7 +96,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     'units' => array(
       '#type' => 'textfield',
       '#title' => 'Phenotype !num Units: *',
-      '#autocomplete_path' => 'units/autocomplete',
+      '#autocomplete_path' => 'tpps/autocomplete/units',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
         'data-placement' => array('right'),
@@ -111,7 +111,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     'structure' => array(
       '#type' => 'textfield',
       '#title' => 'Phenotype !num Structure: *',
-      '#autocomplete_path' => 'structure/autocomplete',
+      '#autocomplete_path' => 'tpps/autocomplete/structure',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
         'data-placement' => array('right'),
