@@ -201,6 +201,14 @@ function tpps_details_top() {
         $query->condition('g.name', $params['value'], $params['op']);
         break;
 
+      case 'genotype_marker':
+        $query->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $query->innerJoin('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
+        $query->innerJoin('chado.genotype', 'g', 'g.genotype_id = sg.genotype_id');
+        $query->innerJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = g.type_id');
+        $query->condition('cvt.name', $params['value'], $params['op']);
+        break;
+
       default:
         break;
     }
@@ -247,6 +255,14 @@ function tpps_details_top() {
         $submissions->innerJoin('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
         $submissions->innerJoin('chado.genotype', 'g', 'g.genotype_id = sg.genotype_id');
         $submissions->condition('g.name', $params['value'], $params['op']);
+        break;
+
+      case 'genotype_marker':
+        $submissions->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
+        $submissions->innerJoin('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
+        $submissions->innerJoin('chado.genotype', 'g', 'g.genotype_id = sg.genotype_id');
+        $submissions->innerJoin('chado.cvterm', 'cvt', 'cvt.cvterm_id = g.type_id');
+        $submissions->condition('cvt.name', $params['value'], $params['op']);
         break;
 
       default:
@@ -350,6 +366,7 @@ function tpps_details_search(array $form, array $form_state) {
       'phenotype_name' => 'Phenotype Name',
       'phenotype_ontology' => 'Phenotype Ontology Name',
       'genotype_name' => 'Genotype Name',
+      'genotype_marker' => 'Genotype Marker Type',
     ),
     '#ajax' => array(
       'wrapper' => 'tpps-details-form',
@@ -412,6 +429,10 @@ function tpps_details_search(array $form, array $form_state) {
         $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/genotype';
         break;
 
+        case 'genotype_marker':
+          $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/genotype_marker';
+          break;
+  
       default:
         $form['details_value']['#autocomplete_path'] = NULL;
         break;

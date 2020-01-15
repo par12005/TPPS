@@ -241,6 +241,28 @@ function tpps_genotype_autocomplete($string) {
 }
 
 /**
+ * Genotype marker name auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_genotype_marker_autocomplete($string) {
+  $matches = array();
+
+  $query = db_select('chado.genotype', 'g');
+  $query->join('chado.cvterm', 'cvt', 'cvt.cvterm_id = g.type_id');
+  $query->fields('cvt', array('name'));
+  $query->condition('cvt.name', $string, '~*');
+  $query = $query->execute();
+
+  while (($result = $query->fetchObject())) {
+    $matches[$result->name] = check_plain($result->name);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
  * Phenotype attribute auto-complete matching.
  *
  * @param string $string
