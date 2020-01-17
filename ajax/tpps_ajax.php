@@ -226,15 +226,13 @@ function tpps_phenotype_ontology_autocomplete($string) {
 function tpps_genotype_autocomplete($string) {
   $matches = array();
 
-  $results = chado_select_record('genotype', array('name'), array(
-    'name' => array(
-      'data' => $string,
-      'op' => '~*',
-    ),
-  ));
+  $query = db_select('chado.tpps_search_genotype_name', 'g')
+    ->fields('g', array('name'))
+    ->condition('g.name', $string, '~*')
+    ->execute();
 
-  foreach ($results as $row) {
-    $matches[$row->name] = check_plain($row->name);
+  while (($result = $query->fetchObject())) {
+    $matches[$result->name] = check_plain($result->name);
   }
 
   drupal_json_output($matches);
@@ -249,11 +247,10 @@ function tpps_genotype_autocomplete($string) {
 function tpps_genotype_marker_autocomplete($string) {
   $matches = array();
 
-  $query = db_select('chado.genotype', 'g');
-  $query->join('chado.cvterm', 'cvt', 'cvt.cvterm_id = g.type_id');
-  $query->fields('cvt', array('name'));
-  $query->condition('cvt.name', $string, '~*');
-  $query = $query->execute();
+  $query = db_select('chado.tpps_search_genotype_marker', 'g')
+    ->fields('g', array('name'))
+    ->condition('g.name', $string, '~*')
+    ->execute();
 
   while (($result = $query->fetchObject())) {
     $matches[$result->name] = check_plain($result->name);
