@@ -195,9 +195,7 @@ function tpps_details_top() {
         break;
 
       case 'genotype_name':
-        $query->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
-        $query->innerJoin('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
-        $query->innerJoin('chado.genotype', 'g', 'g.genotype_id = sg.genotype_id');
+        $query->innerJoin('chado.tpps_search_genotype_name', 'g', 'g.project_id = pg.project_id');
         $query->condition('g.name', $params['value'], $params['op']);
         break;
 
@@ -251,9 +249,7 @@ function tpps_details_top() {
         break;
 
       case 'genotype_name':
-        $submissions->innerJoin('chado.project_stock', 'ps', 'ps.project_id = pg.project_id');
-        $submissions->innerJoin('chado.stock_genotype', 'sg', 'sg.stock_id = ps.stock_id');
-        $submissions->innerJoin('chado.genotype', 'g', 'g.genotype_id = sg.genotype_id');
+        $submissions->innerJoin('chado.tpps_search_genotype_name', 'g', 'g.project_id = pg.project_id');
         $submissions->condition('g.name', $params['value'], $params['op']);
         break;
 
