@@ -257,7 +257,7 @@ function tpps_install() {
 
   tpps_create_plusgeno_view();
 
-  tpps_create_genotype_search_view();
+  tpps_create_genotype_search_views();
 
   tpps_install_cvterms();
 
@@ -619,7 +619,7 @@ function tpps_create_plusgeno_view() {
 /**
  * Create the chado.tpps_search_genotype_name materialized view.
  */
-function tpps_create_genotype_search_view() {
+function tpps_create_genotype_search_views() {
   $query = db_select('pg_class', 'p')
     ->fields('p')
     ->condition('relname', 'tpps_search_genotype_name')
@@ -630,6 +630,20 @@ function tpps_create_genotype_search_view() {
       from chado.genotype_call gc
         inner join chado.genotype g
       on (g.genotype_id = gc.genotype_id);');
+  }
+  
+  $query = db_select('pg_class', 'p')
+    ->fields('p')
+    ->condition('relname', 'tpps_search_genotype_marker')
+    ->execute();
+  if (!($result = $query->fetchObject())) {
+    db_query('create materialized view chado.tpps_search_genotype_marker as
+      select distinct gc.project_id, cvt.name
+      from chado.genotype_call gc
+        inner join chado.genotype g
+          on (g.genotype_id = gc.genotype_id)
+        inner join chado.cvterm cvt
+          on (cvt.cvterm_id = g.cvterm_id);');
   }
 }
 
@@ -1222,5 +1236,5 @@ function tpps_update_7104() {
  * Implements hook_update_N().
  */
 function tpps_update_7105() {
-  tpps_create_genotype_search_view();
+  tpps_create_genotype_search_views();
 }
