@@ -16,6 +16,7 @@ function tpps_refresh_views() {
     $response = file_get_contents("$base_url/cartogratree/api/v2/trees/reload?api_key=$ct_api_key");
   }
   db_query('refresh materialized view chado.tpps_search_genotype_name;');
+  db_query('refresh materialized view chado.tpps_search_genotype_marker;');
 }
 
 /**
