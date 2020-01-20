@@ -643,7 +643,7 @@ function tpps_create_genotype_search_views() {
         inner join chado.genotype g
           on (g.genotype_id = gc.genotype_id)
         inner join chado.cvterm cvt
-          on (cvt.cvterm_id = g.cvterm_id);');
+          on (cvt.cvterm_id = g.type_id);');
   }
 }
 
