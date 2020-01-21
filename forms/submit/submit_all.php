@@ -1221,8 +1221,8 @@ function tpps_process_accession($row, array &$options) {
       }
 
       if (!empty($result)) {
-        $lat = $result->$lat;
-        $lng = $result->$lng;
+        $lat = $result->lat;
+        $lng = $result->lng;
       }
     }
   }
@@ -1259,8 +1259,8 @@ function tpps_process_accession($row, array &$options) {
         }
 
         if (!empty($result)) {
-          $lat = $result->$lat;
-          $lng = $result->$lng;
+          $lat = $result->lat;
+          $lng = $result->lng;
         }
       }
     }
