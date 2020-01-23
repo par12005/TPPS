@@ -561,7 +561,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
           $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
         }
 
-        $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name);
+        $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['species-1']['file-no-header'];
+        $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
