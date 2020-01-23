@@ -262,8 +262,9 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
               break;
             }
           }
-
-          $missing_trees = tpps_compare_files($form_state['values'][$id]['phenotype']['file'], $tree_accession_file, $phenotype_file_tree_col, $id_col_accession_name);
+          $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
+          $phenotype_no_header = $form_state['values'][$id]['phenotype']['file-no-header'];
+          $missing_trees = tpps_compare_files($form_state['values'][$id]['phenotype']['file'], $tree_accession_file, $phenotype_file_tree_col, $id_col_accession_name, $phenotype_no_header, $acc_no_header);
 
           if ($missing_trees !== array()) {
             $tree_id_str = implode(', ', $missing_trees);
@@ -302,7 +303,8 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
       $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
-      $missing_trees = tpps_compare_files($phenotype['iso'], $tree_accession_file, $id_col_name, $id_col_accession_name);
+      $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
+      $missing_trees = tpps_compare_files($phenotype['iso'], $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
       if ($missing_trees !== array()) {
         $tree_id_str = implode(', ', $missing_trees);
@@ -552,16 +554,16 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
       if (!form_get_errors()) {
         if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['species-1']['file'];
-          $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['species-1']['file-groups']['Tree Id']['1'];
+          $species_index = 'species-1';
         }
         else {
           $num = substr($id, 9);
-          $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file'];
-          $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$num"]['file-groups']['Tree Id']['1'];
+          $species_index = "species-$num";
         }
+        $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
+        $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
-        $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['species-1']['file-no-header'];
+        $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
         $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
         if ($missing_trees !== array()) {
@@ -634,7 +636,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
         $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
-        $missing_trees = tpps_compare_files($genotype['files']['ssrs'], $tree_accession_file, $id_col_name, $id_col_accession_name);
+        $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
+        $missing_trees = tpps_compare_files($genotype['files']['ssrs'], $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
