@@ -61,8 +61,10 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
           ->fieldCondition('local__email', 'value', $mail)
           ->range(0, 1)
           ->execute();
-        $entity = array_pop(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
-        dpm($entity->title);
+        if (!empty($results['TripalEntity'])) {
+          $id = current($results['TripalEntity'])->id;
+          $entity = current(tripal_load_entity('TripalEntity', array($id))) ?? NULL;
+        }
       }
       if (!empty($state)) {
         $row = array(
