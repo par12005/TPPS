@@ -249,26 +249,28 @@ function tpps_flatten(array $state) {
   }
   $page_3 = &$data[TPPS_PAGE_3]['tree-accession'];
 
-  for ($i = 1; $i <= $data['#number_organisms']; $i++) {
-    if (!empty($page_3["species-$i"]['file'])) {
-      $organism_name = $data["Species $i"] . ' Accession File';
-      $organism_selector = $data["Species $i"] . '_';
-      if ($data['#number_organisms'] > 1 and empty($page_3['check'])) {
-        $organism_name = 'Tree Accession File';
-        $organism_selector = "";
+  if (!empty($data['#number_organisms'])) {
+    for ($i = 1; $i <= $data['#number_organisms']; $i++) {
+      if (!empty($page_3["species-$i"]['file'])) {
+        $organism_name = $data["Species $i"] . ' Accession File';
+        $organism_selector = $data["Species $i"] . '_';
+        if ($data['#number_organisms'] > 1 and empty($page_3['check'])) {
+          $organism_name = 'Tree Accession File';
+          $organism_selector = "";
+        }
+  
+        $data[$organism_name] = $page_3["species-$i"]['file'];
+        if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
+          $data["#{$organism_selector}accession_no_header"] = $page_3["species-$i"]['file-no-header'] ?? '0';
+          $data["#{$organism_selector}accession_id_col"] = $page_3["species-$i"]['file-groups']['Tree Id'][1];
+          $data["#{$organism_selector}accession_lat_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
+          $data["#{$organism_selector}accession_long_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
+        }
       }
-
-      $data[$organism_name] = $page_3["species-$i"]['file'];
-      if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
-        $data["#{$organism_selector}accession_no_header"] = $page_3["species-$i"]['file-no-header'] ?? '0';
-        $data["#{$organism_selector}accession_id_col"] = $page_3["species-$i"]['file-groups']['Tree Id'][1];
-        $data["#{$organism_selector}accession_lat_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
-        $data["#{$organism_selector}accession_long_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
+  
+      if (empty($page_3['check'])) {
+        break;
       }
-    }
-
-    if (empty($page_3['check'])) {
-      break;
     }
   }
 
@@ -283,205 +285,207 @@ function tpps_flatten(array $state) {
   else {
     $data['#page_4_cleared'] = FALSE;
   }
-  for ($i = 1; $i <= $data['#number_organisms']; $i++) {
-    if (isset($page_4["organism-$i"])) {
-      $org = &$page_4["organism-$i"];
-      $org_name = isset($data["Species $i"]) ? $data["Species $i"] : NULL;
-
-      if (isset($org['phenotype'])) {
-        $pheno = &$org['phenotype'];
-
-        if (isset($pheno['phenotypes-meta']['number'])) {
-          $data['#number_phenotypes'] = $pheno['phenotypes-meta']['number'];
-          $pheno_meta = &$pheno['phenotypes-meta'];
-          for ($j = 1; $j <= $data['#number_phenotypes']; $j++) {
-            $fields = array(
-              'name' => 'Name',
-              'attribute' => 'Attribute',
-              'description' => 'Description',
-              'units' => 'Units',
-            );
-            if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
-              $fields['structure'] = 'Structure';
-            }
-            if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
-              $fields['min'] = 'Minimum Value';
-              $fields['max'] = 'Maximum Value';
-            }
-
-            foreach ($fields as $field => $field_string) {
-              if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
-                $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
-              }
-            }
-          }
-        }
-
-        if (isset($pheno['check']) and $pheno['check'] and isset($pheno['metadata']) and $pheno['metadata']) {
-          $data["$org_name Phenotype Metadata File"] = $pheno['metadata'];
-        }
-
-        if (isset($pheno['file']) and $pheno['file']) {
-          $data["$org_name Phenotype File"] = $pheno['file'];
-        }
-        $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
-      }
-
-      if (isset($org['genotype'])) {
-        $geno = &$org['genotype'];
-        $files = &$geno['files'];
-
-        $marker_types = array();
-        foreach ($geno['marker-type'] as $key => $val) {
-          if ($val) {
-            $marker_types[] = $key;
-          }
-        }
-        $data["$org_name Genotype Marker Types"] = isset($marker_types) ? implode(', ', $marker_types) : NULL;
-
-        if (isset($geno['marker-type']['SNPs']) and $geno['marker-type']['SNPs']) {
-          $snp = $geno['SNPs'];
-          if (isset($snp['genotyping-design']) and $snp['genotyping-design']) {
-            $geno_design_options = array(
-              1 => 'GBS',
-              2 => 'Targeted Capture',
-              3 => 'Whole Genome Resequencing',
-              4 => 'RNA-Seq',
-              5 => 'Genotyping Array',
-            );
-            if (isset($geno_design_options[$snp['genotyping-design']])) {
-              $data["$org_name Genotyping Design"] = $geno_design_options[$snp['genotyping-design']];
-            }
-
-            if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'GBS' and isset($snp['GBS']) and $snp['GBS']) {
-              $gbs_options = array(
-                1 => 'RADSeq',
-                2 => 'ddRAD-Seq',
-                3 => 'NextRAD',
-                4 => 'RAPTURE',
-                5 => 'Other',
-              );
-              if (isset($gbs_options[$snp['GBS']])) {
-                $data["$org_name GBS Type"] = $gbs_options[$snp['GBS']];
-              }
-
-              if (isset($data["$org_name GBS Type"]) and $data["$org_name GBS Type"] == 'Other' and isset($snp['GBS-other']) and $snp['GBS-other'] != '') {
-                $data["$org_name Custom GBS Type"] = $snp['GBS-other'];
-              }
-            }
-
-            if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'Targeted Capture' and isset($snp['targeted-capture']) and $snp['targeted-capture']) {
-              $targeted_capture_options = array(
-                1 => 'Exome Capture',
-                2 => 'Other',
-              );
-              if (isset($targeted_capture_options[$snp['targeted-capture']])) {
-                $data["$org_name Targeted Capture Type"] = $targeted_capture_options[$snp['targeted-capture']];
-              }
-
-              if (isset($data["$org_name Targeted Capture Type"]) and $data["$org_name Targeted Capture Type"] == 'Other' and isset($snp['targeted-capture-other']) and $snp['targeted-capture-other'] != '') {
-                $data["$org_name Custom Targeted Capture Type"] = $snp['targeted-capture-other'];
-              }
-            }
-          }
-        }
-        if (isset($geno['marker-type']['SSRs/cpSSRs']) and $geno['marker-type']['SSRs/cpSSRs'] and isset($geno['SSRs/cpSSRs']) and $geno['SSRs/cpSSRs'] != '') {
-          $data["$org_name SSRs/cpSSRs Type"] = $geno['SSRs/cpSSRs'];
-        }
-        if (isset($geno['marker-type']['Other']) and $geno['marker-type']['Other'] and isset($geno['other-marker']) and $geno['other-marker'] != '') {
-          $data["$org_name Other Marker Type"] = $geno['other-marker'];
-        }
-
-        if (isset($geno['ref-genome']) and $geno['ref-genome'] === 'bio' and isset($geno['BioProject-id']) and $geno['BioProject-id'] != '') {
-          $data["$org_name BioProject Id"] = $geno['BioProject-id'];
-
-          if (isset($geno['assembly-auto']) and gettype($geno['assembly-auto']) === 'array') {
-            $count = 1;
-            foreach ($geno['assembly-auto'] as $id => $check) {
-              if (isset($check) and $check) {
-                $data["$org_name Linked Accession $count"] = $id;
-                $count++;
-              }
-            }
-          }
-        }
-        elseif (isset($geno['ref-genome']) and ($geno['ref-genome'] === 'manual' or $geno['ref-genome'] === 'manual2') and isset($geno['tripal_fasta']['file']['file_upload']) and isset($geno['tripal_fasta']['file']['file_upload_existing']) and ($geno['tripal_fasta']['file']['file_upload'] or $geno['tripal_fasta']['file']['file_upload_existing'])) {
-          if ($geno['tripal_fasta']['file']['file_upload']) {
-            $data["$org_name Uploaded Reference File"] = $geno['tripal_fasta']['file']['file_upload'];
-          }
-          if ($geno['tripal_fasta']['file']['file_upload_existing']) {
-            $data["$org_name Reference File"] = $geno['tripal_fasta']['file']['file_upload_existing'];
-          }
-        }
-        elseif (isset($geno['ref-genome']) and $geno['ref-genome'] === 'url' and isset($geno['tripal_fasta']['file']['file_remote']) and $geno['tripal_fasta']['file']['file_remote']) {
-          $data["$org_name Website of reference file"] = $geno['tripal_fasta']['file']['file_remote'];
-        }
-        elseif (isset($geno['ref-genome']) and $geno['ref-genome']) {
-          $data["$org_name Reference Genome"] = $geno['ref-genome'];
-        }
-
-        if (!empty($geno['files']['snps-assay'])) {
-          $data["$org_name SNPs Genotype Assay File"] = $geno['files']['snps-assay'];
-        }
-
-        if (!empty($geno['files']['assay-design'])) {
-          $data["$org_name Assay Design File"] = $geno['files']['assay-design'];
-        }
-
-        if (!empty($geno['files']['ssrs'])) {
-          $data["$org_name SSRs/cpSSRs Genotype File"] = $geno['files']['ssrs'];
-        }
-
-        if (!empty($geno['files']['other'])) {
-          $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
-        }
-
-        if (!empty($geno['files']['vcf'])) {
-          $data["$org_name VCF File"] = $geno['files']['vcf'];
-        }
-      }
-
-      if (isset($org['environment'])) {
-        $env = &$org['environment'];
-
-        if (variable_get('tpps_cartogratree_env', FALSE) and !empty($env['use_layers'])) {
-          $data["Cartogratree Layers"] = array();
-          foreach ($env['env_layers'] as $layer => $layer_id) {
-            if (!empty($layer_id)) {
-              $data["Cartogratree Layers"][] = $layer;
-            }
-            if (!empty($layer_id) and !empty($env['env_params'][$layer])) {
-              $params = array();
-              foreach ($env['env_params'][$layer] as $param => $param_id) {
-                if (!empty($param_id)) {
-                  $params[] = $param;
-                }
-              }
-              $data["Cartogratree Layer: $layer Parameters"] = implode(', ', $params);
-            }
-          }
-          if (!empty($data["Cartogratree Layers"])) {
-            $data["Cartogratree Layers"] = implode(', ', $data["Cartogratree Layers"]);
-          }
-          else {
-            unset($data["Cartogratree Layers"]);
-          }
-        }
-
-        if (!empty($env['env_manual_check'])) {
-          if (!empty($env['env_manual']['number'])) {
-            $data['#number_manual_env'] = $env['env_manual']['number'];
-            for ($j = 1; $j <= $data['#number_manual_env']; $j++) {
+  if (!empty($data['#number_organisms'])) {
+    for ($i = 1; $i <= $data['#number_organisms']; $i++) {
+      if (isset($page_4["organism-$i"])) {
+        $org = &$page_4["organism-$i"];
+        $org_name = isset($data["Species $i"]) ? $data["Species $i"] : NULL;
+  
+        if (isset($org['phenotype'])) {
+          $pheno = &$org['phenotype'];
+  
+          if (isset($pheno['phenotypes-meta']['number'])) {
+            $data['#number_phenotypes'] = $pheno['phenotypes-meta']['number'];
+            $pheno_meta = &$pheno['phenotypes-meta'];
+            for ($j = 1; $j <= $data['#number_phenotypes']; $j++) {
               $fields = array(
                 'name' => 'Name',
+                'attribute' => 'Attribute',
                 'description' => 'Description',
                 'units' => 'Units',
-                'value' => 'Value',
               );
-
+              if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
+                $fields['structure'] = 'Structure';
+              }
+              if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
+                $fields['min'] = 'Minimum Value';
+                $fields['max'] = 'Maximum Value';
+              }
+  
               foreach ($fields as $field => $field_string) {
-                if (!empty($env['env_manual']["$j"][$field])) {
-                  $data["$org_name Environment Value $j $field_string"] = $env['env_manual'][$j][$field];
+                if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
+                  $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
+                }
+              }
+            }
+          }
+  
+          if (isset($pheno['check']) and $pheno['check'] and isset($pheno['metadata']) and $pheno['metadata']) {
+            $data["$org_name Phenotype Metadata File"] = $pheno['metadata'];
+          }
+  
+          if (isset($pheno['file']) and $pheno['file']) {
+            $data["$org_name Phenotype File"] = $pheno['file'];
+          }
+          $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
+        }
+  
+        if (isset($org['genotype'])) {
+          $geno = &$org['genotype'];
+          $files = &$geno['files'];
+  
+          $marker_types = array();
+          foreach ($geno['marker-type'] as $key => $val) {
+            if ($val) {
+              $marker_types[] = $key;
+            }
+          }
+          $data["$org_name Genotype Marker Types"] = isset($marker_types) ? implode(', ', $marker_types) : NULL;
+  
+          if (isset($geno['marker-type']['SNPs']) and $geno['marker-type']['SNPs']) {
+            $snp = $geno['SNPs'];
+            if (isset($snp['genotyping-design']) and $snp['genotyping-design']) {
+              $geno_design_options = array(
+                1 => 'GBS',
+                2 => 'Targeted Capture',
+                3 => 'Whole Genome Resequencing',
+                4 => 'RNA-Seq',
+                5 => 'Genotyping Array',
+              );
+              if (isset($geno_design_options[$snp['genotyping-design']])) {
+                $data["$org_name Genotyping Design"] = $geno_design_options[$snp['genotyping-design']];
+              }
+  
+              if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'GBS' and isset($snp['GBS']) and $snp['GBS']) {
+                $gbs_options = array(
+                  1 => 'RADSeq',
+                  2 => 'ddRAD-Seq',
+                  3 => 'NextRAD',
+                  4 => 'RAPTURE',
+                  5 => 'Other',
+                );
+                if (isset($gbs_options[$snp['GBS']])) {
+                  $data["$org_name GBS Type"] = $gbs_options[$snp['GBS']];
+                }
+  
+                if (isset($data["$org_name GBS Type"]) and $data["$org_name GBS Type"] == 'Other' and isset($snp['GBS-other']) and $snp['GBS-other'] != '') {
+                  $data["$org_name Custom GBS Type"] = $snp['GBS-other'];
+                }
+              }
+  
+              if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'Targeted Capture' and isset($snp['targeted-capture']) and $snp['targeted-capture']) {
+                $targeted_capture_options = array(
+                  1 => 'Exome Capture',
+                  2 => 'Other',
+                );
+                if (isset($targeted_capture_options[$snp['targeted-capture']])) {
+                  $data["$org_name Targeted Capture Type"] = $targeted_capture_options[$snp['targeted-capture']];
+                }
+  
+                if (isset($data["$org_name Targeted Capture Type"]) and $data["$org_name Targeted Capture Type"] == 'Other' and isset($snp['targeted-capture-other']) and $snp['targeted-capture-other'] != '') {
+                  $data["$org_name Custom Targeted Capture Type"] = $snp['targeted-capture-other'];
+                }
+              }
+            }
+          }
+          if (isset($geno['marker-type']['SSRs/cpSSRs']) and $geno['marker-type']['SSRs/cpSSRs'] and isset($geno['SSRs/cpSSRs']) and $geno['SSRs/cpSSRs'] != '') {
+            $data["$org_name SSRs/cpSSRs Type"] = $geno['SSRs/cpSSRs'];
+          }
+          if (isset($geno['marker-type']['Other']) and $geno['marker-type']['Other'] and isset($geno['other-marker']) and $geno['other-marker'] != '') {
+            $data["$org_name Other Marker Type"] = $geno['other-marker'];
+          }
+  
+          if (isset($geno['ref-genome']) and $geno['ref-genome'] === 'bio' and isset($geno['BioProject-id']) and $geno['BioProject-id'] != '') {
+            $data["$org_name BioProject Id"] = $geno['BioProject-id'];
+  
+            if (isset($geno['assembly-auto']) and gettype($geno['assembly-auto']) === 'array') {
+              $count = 1;
+              foreach ($geno['assembly-auto'] as $id => $check) {
+                if (isset($check) and $check) {
+                  $data["$org_name Linked Accession $count"] = $id;
+                  $count++;
+                }
+              }
+            }
+          }
+          elseif (isset($geno['ref-genome']) and ($geno['ref-genome'] === 'manual' or $geno['ref-genome'] === 'manual2') and isset($geno['tripal_fasta']['file']['file_upload']) and isset($geno['tripal_fasta']['file']['file_upload_existing']) and ($geno['tripal_fasta']['file']['file_upload'] or $geno['tripal_fasta']['file']['file_upload_existing'])) {
+            if ($geno['tripal_fasta']['file']['file_upload']) {
+              $data["$org_name Uploaded Reference File"] = $geno['tripal_fasta']['file']['file_upload'];
+            }
+            if ($geno['tripal_fasta']['file']['file_upload_existing']) {
+              $data["$org_name Reference File"] = $geno['tripal_fasta']['file']['file_upload_existing'];
+            }
+          }
+          elseif (isset($geno['ref-genome']) and $geno['ref-genome'] === 'url' and isset($geno['tripal_fasta']['file']['file_remote']) and $geno['tripal_fasta']['file']['file_remote']) {
+            $data["$org_name Website of reference file"] = $geno['tripal_fasta']['file']['file_remote'];
+          }
+          elseif (isset($geno['ref-genome']) and $geno['ref-genome']) {
+            $data["$org_name Reference Genome"] = $geno['ref-genome'];
+          }
+  
+          if (!empty($geno['files']['snps-assay'])) {
+            $data["$org_name SNPs Genotype Assay File"] = $geno['files']['snps-assay'];
+          }
+  
+          if (!empty($geno['files']['assay-design'])) {
+            $data["$org_name Assay Design File"] = $geno['files']['assay-design'];
+          }
+  
+          if (!empty($geno['files']['ssrs'])) {
+            $data["$org_name SSRs/cpSSRs Genotype File"] = $geno['files']['ssrs'];
+          }
+  
+          if (!empty($geno['files']['other'])) {
+            $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
+          }
+  
+          if (!empty($geno['files']['vcf'])) {
+            $data["$org_name VCF File"] = $geno['files']['vcf'];
+          }
+        }
+  
+        if (isset($org['environment'])) {
+          $env = &$org['environment'];
+  
+          if (variable_get('tpps_cartogratree_env', FALSE) and !empty($env['use_layers'])) {
+            $data["Cartogratree Layers"] = array();
+            foreach ($env['env_layers'] as $layer => $layer_id) {
+              if (!empty($layer_id)) {
+                $data["Cartogratree Layers"][] = $layer;
+              }
+              if (!empty($layer_id) and !empty($env['env_params'][$layer])) {
+                $params = array();
+                foreach ($env['env_params'][$layer] as $param => $param_id) {
+                  if (!empty($param_id)) {
+                    $params[] = $param;
+                  }
+                }
+                $data["Cartogratree Layer: $layer Parameters"] = implode(', ', $params);
+              }
+            }
+            if (!empty($data["Cartogratree Layers"])) {
+              $data["Cartogratree Layers"] = implode(', ', $data["Cartogratree Layers"]);
+            }
+            else {
+              unset($data["Cartogratree Layers"]);
+            }
+          }
+  
+          if (!empty($env['env_manual_check'])) {
+            if (!empty($env['env_manual']['number'])) {
+              $data['#number_manual_env'] = $env['env_manual']['number'];
+              for ($j = 1; $j <= $data['#number_manual_env']; $j++) {
+                $fields = array(
+                  'name' => 'Name',
+                  'description' => 'Description',
+                  'units' => 'Units',
+                  'value' => 'Value',
+                );
+  
+                foreach ($fields as $field => $field_string) {
+                  if (!empty($env['env_manual']["$j"][$field])) {
+                    $data["$org_name Environment Value $j $field_string"] = $env['env_manual'][$j][$field];
+                  }
                 }
               }
             }
