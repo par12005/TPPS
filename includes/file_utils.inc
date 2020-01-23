@@ -684,6 +684,34 @@ function tpps_xlsx_get_row(&$reader, &$strings = array(), $plain = TRUE, $column
 }
 
 /**
+ * Translates the date from an .xlsx file.
+ *
+ * This function may seem strange at first, but skips $date = 60 on purpose.
+ * Day 60 in Excel's encoding represents 2/29/1900, which is not a real date.
+ *
+ * @param mixed $date
+ *   The date to be translated.
+ *
+ * @return mixed
+ *   The original date provided, a re-formated date, or NULL on failure.
+ */
+function tpps_xlsx_translate_date($date) {
+  if (strtotime($date) !== FALSE) {
+    return $date;
+  }
+
+  if ($date > 60) {
+    $date = $date - 1;
+    return date("m/d/Y", strtotime("12/31/1899 +$date days"));
+  }
+  if ($date < 60) {
+    return date("m/d/Y", strtotime("12/31/1899 +$date days"));
+  }
+
+  return NULL;
+}
+
+/**
  * Returns a cell value from an XML file.
  *
  * This function recieves an XMLReader object, a cell type attribute, and a
