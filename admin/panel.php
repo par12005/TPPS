@@ -133,8 +133,11 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
     }
   }
   else {
-    $submission_state = tpps_load_submission($accession);
-    $status = $submission_state['status'];
+    $submission = tpps_load_submission($accession, False);
+    $status = $submission->status;
+    $submission_state = unserialize($submission->submission_state);
+    $submission_state['status'] = $status;
+    tpps_update_submission($submission_state);
     $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
     $display .= tpps_table_display($submission_state);
 

@@ -763,6 +763,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       $form_state['ids'] = $old_form_state['ids'] ?? NULL;
       $form_state['tpps_type'] = $old_form_state['tpps_type'] ?? NULL;
       $form_state['file_info'] = $old_form_state['file_info'] ?? NULL;
+      $form_state['status'] = $old_form_state['status'] ?? NULL;
     }
   }
   else {
@@ -781,6 +782,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     $form_state['ids'] = $old_form_state['ids'] ?? NULL;
     $form_state['tpps_type'] = $old_form_state['tpps_type'] ?? NULL;
     $form_state['file_info'] = $old_form_state['file_info'] ?? NULL;
+    $form_state['status'] = $old_form_state['status'] ?? NULL;
   }
 
   $form['step'] = array(
@@ -994,7 +996,7 @@ function tpps_main_submit($form, &$form_state) {
       }
       else {
         $form_state['status'] = 'Pending Approval';
-        tpps_update_submission($form_state, array('status' => 'Pending Approval'));
+        tpps_update_submission($form_state);
         tpps_submit_email($form_state);
         drupal_goto("completed-submission/{$form_state['accession']}");
         return;
