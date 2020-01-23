@@ -39,21 +39,35 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 
   if (empty($accession)) {
 
-    $states = tpps_load_submission_multiple(array(
+    $submissions = tpps_load_submission_multiple(array(
       'status' => array(
         'Pending Approval',
         'Submission Job Running',
         'Approved',
         'Approved - Delayed Submission Release',
       ),
-    ));
+    ), FALSE);
 
     $pending = array();
     $approved = array();
-    foreach ($states as $state) {
+    $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
+    foreach ($submissions as $submission) {
+      $state = unserialize($submission->submission_state);
+      $mail = user_load($submission->uid)->mail;
+      if ($contact_bundle) {
+        $query = new EntityFieldQuery();
+        $results = $query->entityCondition('entity_type', 'TripalEntity')
+          ->entityCondition('bundle', $contact_bundle->name)
+          ->fieldCondition('local__email', 'value', $mail)
+          ->range(0, 1)
+          ->execute();
+        $entity = array_pop(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
+        dpm($entity->title);
+      }
       if (!empty($state)) {
         $row = array(
           l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
+          $entity->title ?? NULL,
           $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
           $state['status'],
         );
@@ -71,6 +85,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 
     $headers = array(
       'Accession Number',
+      'Submitting User',
       'Title',
       'Status',
     );
