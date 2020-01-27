@@ -580,10 +580,10 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
       $element['columns'][$first_col]['#prefix'] = "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>" . $element['columns'][$first_col]['#prefix'];
       $element['columns'][$key]['#suffix'] = "</tr>" . $matches[2] . "</div>";
+      $warning = "Please note that if you remain idle on a TPPS page with files for more than 6 hours, you run the risk of having those files reset if you do not click \"Save\".";
+      $element['columns'][$key]['#suffix'] = $element['columns'][$key]['#suffix'] . $warning;
     }
   }
-  $warning = "Please note that if you remain idle on a TPPS page with files for more than 6 hours, you run the risk of having those files reset if you do not click \"Save\".";
-  $element['#suffix'] = isset($element['#suffix']) ? $element['#suffix'] . $warning : $warning;
 
   if (isset($element['empty'])) {
 
