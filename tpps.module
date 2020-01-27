@@ -710,7 +710,11 @@ function tpps_page_build(&$page) {
     $blockObject->subject = '';
     $blockObject->region = 'Content';
     $block = _block_get_renderable_array(_block_render_blocks(array($blockObject)));
+    $content = drupal_get_region_content('sidebar_second');
     $tpps_status = "<div class='block block-system contextual-links-region block-menu tpps-status-block'>{$block['views_tpps_status']['#markup']}</div>";
+    if (empty($content)) {
+      $tpps_status = "<div class=\"region region-sidebar-second col-md-3\">$tpps_status</div>";
+    }
     drupal_add_region_content('sidebar_second', $tpps_status);
   }
 
