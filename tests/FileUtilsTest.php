@@ -7,18 +7,28 @@ use stdClass;
 use ZipArchive;
 
 class FileUtilsTest extends TripalTestCase {
-  // Uncomment to auto start and rollback db transactions per test method.
   use DBTransaction;
+
+  /**
+   * Constructs a test case with the given name and creates some file paths.
+   *
+   * @param string $name
+   * @param array  $data
+   * @param string $dataName
+   */
+  function __construct($name = null, array $data = [], $dataName = '') {
+    parent::__construct($name, $data, $dataName);
+    $this->path1 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test_1.xlsx';
+    $this->path2 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test_2.xlsx';
+    $this->path3 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test.csv';
+  }
 
   /**
    * Tests the tpps_get_path_extension() function.
    */
   public function testGetExtension() {
-    $file1 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test_1.xlsx';
-    $file2 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test.csv';
-
-    $this->assertTrue(tpps_get_path_extension($file1) === 'xlsx');
-    $this->assertTrue(tpps_get_path_extension($file2) === 'csv');
+    $this->assertTrue(tpps_get_path_extension($this->path1) === 'xlsx');
+    $this->assertTrue(tpps_get_path_extension($this->path3) === 'csv');
   }
 
   /**
@@ -29,19 +39,17 @@ class FileUtilsTest extends TripalTestCase {
    */
   public function testGetDimensions() {
     $dir = drupal_realpath(TPPS_TEMP_XLSX);
-    $path1 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test_1.xlsx';
-    $path2 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test_2.xlsx';
 
     // Test first file dimension.
     $zip = new ZipArchive();
-    $zip->open($path1);
+    $zip->open($this->path1);
     $zip->extractTo($dir);
     $data_location = $dir . '/xl/worksheets/sheet1.xml';
     $this->assertTrue(tpps_xlsx_get_dimension($data_location) === 'A1:D7');
   
     // Test second file dimension.
     $zip = new ZipArchive();
-    $zip->open($path2);
+    $zip->open($this->path2);
     $zip->extractTo($dir);
     $data_location = $dir . '/xl/worksheets/sheet1.xml';
     $this->assertTrue(tpps_xlsx_get_dimension($data_location) === 'A1:D9');
@@ -67,6 +75,22 @@ class FileUtilsTest extends TripalTestCase {
     $this->assertEquals('AA', pack('H*', tpps_increment_hex(unpack('H*', 'Z')[1])));
     $this->assertEquals('BA', pack('H*', tpps_increment_hex(unpack('H*', 'AZ')[1])));
     $this->assertEquals('AAAA', pack('H*', tpps_increment_hex(unpack('H*', 'ZZZ')[1])));
+  }
+
+  /**
+   * Tests the tpps_file_len() function.
+   *
+   * This function needs to work for both xlsx and csv files.
+   */
+  public function testFileLength() {
+    $path1 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test_1.xlsx';
+    $path2 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test.csv';
+
+    $file1 = $this->initializeTestFile($this->path1);
+    $this->assertEquals(6, tpps_file_len($file1->fid));
+    
+    $file2 = $this->initializeTestFile($this->path3);
+    $this->assertEquals(2, tpps_file_len($file2->fid));
   }
 
   /**
