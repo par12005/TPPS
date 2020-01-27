@@ -12,6 +12,13 @@ env:
 
 before_script:
   - docker pull statonlab/tripal3
+  - |
+    if [ "0" -eq "$(php -m | grep -c '^zip$')" ]; then
+      pecl install zip
+      php -m
+    else
+      echo "zip extension is available and enabled"
+    fi
 
 script:
   - docker run -it -d --rm --name tripal -v "$(pwd)":/modules/tpps statonlab/tripal3
