@@ -12,7 +12,6 @@ env:
 
 before_script:
   - docker pull statonlab/tripal3
-  - echo "extension = zip.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 script:
   - docker run -it -d --rm --name tripal -v "$(pwd)":/modules/tpps statonlab/tripal3
