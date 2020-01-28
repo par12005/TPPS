@@ -32,6 +32,20 @@ class FileUtilsTest extends TripalTestCase {
   }
 
   /**
+   * Tests the tpps_file_width() function.
+   */
+  public function testFileWidth() {
+    $file1 = $this->initializeTestFile($this->path1);
+    $this->assertEquals(4, tpps_file_width($file1->fid));
+
+    $file2 = $this->initializeTestFile($this->path2);
+    $this->assertEquals(4, tpps_file_width($file2->fid));
+
+    $file3 = $this->initializeTestFile($this->path3);
+    $this->assertEquals(26, tpps_file_width($file3->fid));
+  }
+
+  /**
    * Tests the tpps_xlsx_get_dimension() function.
    *
    * Verify that the dimensions of the two accession .xlsx files are correct
@@ -83,9 +97,6 @@ class FileUtilsTest extends TripalTestCase {
    * This function needs to work for both xlsx and csv files.
    */
   public function testFileLength() {
-    $path1 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test_1.xlsx';
-    $path2 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test.csv';
-
     $file1 = $this->initializeTestFile($this->path1);
     $this->assertEquals(6, tpps_file_len($file1->fid));
     
