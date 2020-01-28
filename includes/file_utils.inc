@@ -174,6 +174,11 @@ function tpps_xlsx_width($location) {
  *   The length of the longest line.
  */
 function tpps_flat_width($location, $delim = ',') {
+  $original = ini_get('auto_detect_line_endings');
+  if (!$original) {
+    ini_set('auto_detect_line_endings', TRUE);
+  }
+
   $longest = 0;
   $handle = fopen($location, 'r');
 
@@ -182,6 +187,7 @@ function tpps_flat_width($location, $delim = ',') {
   }
 
   fclose($handle);
+  ini_set('auto_detect_line_endings', $original);
   return $longest;
 }
 
