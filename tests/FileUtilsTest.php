@@ -32,20 +32,6 @@ class FileUtilsTest extends TripalTestCase {
   }
 
   /**
-   * Tests the tpps_file_width() function.
-   */
-  public function testFileWidth() {
-    $file1 = $this->initializeTestFile($this->path1);
-    $this->assertEquals(4, tpps_file_width($file1->fid));
-
-    $file2 = $this->initializeTestFile($this->path2);
-    $this->assertEquals(4, tpps_file_width($file2->fid));
-
-    $file3 = $this->initializeTestFile($this->path3);
-    $this->assertEquals(26, tpps_file_width($file3->fid));
-  }
-
-  /**
    * Tests the tpps_xlsx_get_dimension() function.
    *
    * Verify that the dimensions of the two accession .xlsx files are correct
@@ -102,6 +88,20 @@ class FileUtilsTest extends TripalTestCase {
     
     $file2 = $this->initializeTestFile($this->path3);
     $this->assertEquals(2, tpps_file_len($file2->fid));
+  }
+
+  /**
+   * Tests the tpps_file_width() function.
+   */
+  public function testFileWidth() {
+    $file1 = $this->initializeTestFile($this->path1);
+    $this->assertEquals(4, tpps_file_width($file1->fid));
+
+    $file2 = $this->initializeTestFile($this->path2);
+    $this->assertEquals(4, tpps_file_width($file2->fid));
+
+    $file3 = $this->initializeTestFile($this->path3);
+    $this->assertEquals(26, tpps_file_width($file3->fid));
   }
 
   /**
