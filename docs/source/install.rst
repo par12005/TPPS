@@ -6,6 +6,8 @@ Installation
   - Tripal (v3.x)
   - Tripal Chado
   - Ultimate Cron
+  - JQuery Update
+  - Tripal EUtils
 
 2. Inside your /sites/all/modules directory, download TPPS by running:
 
