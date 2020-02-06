@@ -303,65 +303,69 @@ function tpps_uninstall() {
  * keep track of submissions.
  */
 function tpps_schema() {
-  $schema['tpps_submission'] = array(
-    'description' => 'Contains TPPS Submissions',
-    'fields' => array(
-      'tpps_submission_id' => array(
-        'description' => 'The id of the TPPS submission.',
-        'type' => 'serial',
-        'size' => 'normal',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-      'uid' => array(
-        'description' => 'user id of the user who created the submission.',
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => TRUE,
-      ),
-      'status' => array(
-        'description' => 'Status of the submission - Incomplete, Pending Approval, Submission Job Running or Approved.',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'accession' => array(
-        'description' => 'The TGDR### accession number of the submission',
-        'type' => 'varchar',
-        'size' => 'normal',
-        'not null' => TRUE,
-      ),
-      'dbxref_id' => array(
-        'description' => 'The dbxref_id from chado.dbxref.',
-        'type' => 'int',
-        'size' => 'big',
-        'not null' => TRUE,
-      ),
-      'submission_state' => array(
-        'description' => 'The form_state of the submission.',
-        'type' => 'blob',
-        'size' => 'big',
-        'not null' => TRUE,
-      ),
-    ),
-    'foreign keys' => array(
-      'uid' => array(
-        'table' => 'users',
-        'columns' => array(
-          'uid' => 'uid',
+  $schema = array();
+
+  if (!db_table_exists('tpps_submission')) {
+    $schema['tpps_submission'] = array(
+      'description' => 'Contains TPPS Submissions',
+      'fields' => array(
+        'tpps_submission_id' => array(
+          'description' => 'The id of the TPPS submission.',
+          'type' => 'serial',
+          'size' => 'normal',
+          'unsigned' => TRUE,
+          'not null' => TRUE,
+        ),
+        'uid' => array(
+          'description' => 'user id of the user who created the submission.',
+          'type' => 'int',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'status' => array(
+          'description' => 'Status of the submission - Incomplete, Pending Approval, Submission Job Running or Approved.',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'accession' => array(
+          'description' => 'The TGDR### accession number of the submission',
+          'type' => 'varchar',
+          'size' => 'normal',
+          'not null' => TRUE,
+        ),
+        'dbxref_id' => array(
+          'description' => 'The dbxref_id from chado.dbxref.',
+          'type' => 'int',
+          'size' => 'big',
+          'not null' => TRUE,
+        ),
+        'submission_state' => array(
+          'description' => 'The form_state of the submission.',
+          'type' => 'blob',
+          'size' => 'big',
+          'not null' => TRUE,
         ),
       ),
-      'dbxref_id' => array(
-        'table' => 'chado.dbxref',
-        'columns' => array(
-          'dbxref_id' => 'dbxref_id',
+      'foreign keys' => array(
+        'uid' => array(
+          'table' => 'users',
+          'columns' => array(
+            'uid' => 'uid',
+          ),
+        ),
+        'dbxref_id' => array(
+          'table' => 'chado.dbxref',
+          'columns' => array(
+            'dbxref_id' => 'dbxref_id',
+          ),
         ),
       ),
-    ),
-    'primary key' => array(
-      'tpps_submission_id',
-    ),
-  );
+      'primary key' => array(
+        'tpps_submission_id',
+      ),
+    );
+  }
 
   if (!db_table_exists('chado.genotype_call')) {
     $schema['chado.genotype_call'] = array(
