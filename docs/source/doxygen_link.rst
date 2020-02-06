@@ -1,1 +1,1 @@
-.. include:: _static/doxygen/index.html
+.. include:: <_static/doxygen/index.html>
