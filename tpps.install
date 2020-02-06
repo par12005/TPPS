@@ -303,6 +303,8 @@ function tpps_uninstall() {
  * keep track of submissions.
  */
 function tpps_schema() {
+  $schema = array();
+
   if (!db_table_exists('tpps_submission')) {
     $schema['tpps_submission'] = array(
       'description' => 'Contains TPPS Submissions',
