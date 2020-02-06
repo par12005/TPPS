@@ -174,7 +174,7 @@ function tpps_api_compress_files($accession = NULL) {
 
   $files = $state['files'];
   foreach ($files as $fid) {
-    $file_str[] = drupal_realpath(file_load($fid)->uri);
+    $file_str[] = str_replace(' ', '\\ ', drupal_realpath(file_load($fid)->uri));
   }
 
   if (file_exists(drupal_realpath($zip_loc))) {
