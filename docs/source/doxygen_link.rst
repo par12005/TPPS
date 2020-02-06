@@ -1,1 +1,2 @@
-.. include:: <_static/doxygen/index.html>
+.. raw:: html
+   :file: _static/doxygen/index.html
