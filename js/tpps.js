@@ -90,7 +90,17 @@ jQuery(document).ready(function ($) {
   var preview_buttons = jQuery('input.preview_button');
   jQuery.each(preview_buttons, function() {
     jQuery(this).attr('type', 'button');
-    jQuery(this).click(previewFile);
+    jQuery(this).click(function() {
+      previewFile(this, 3);
+    });
+  });
+
+  var preview_full_buttons = jQuery('input.preview_full_button');
+  jQuery.each(preview_full_buttons, function() {
+    jQuery(this).attr('type', 'button');
+    jQuery(this).click(function() {
+      previewFile(this, 0);
+    });
   });
 
   var details_tabs = jQuery('.nav-tabs > .nav-item > .nav-link');
@@ -109,17 +119,19 @@ jQuery(document).ready(function ($) {
   initDetailPages();
 });
 
-function previewFile() {
+function previewFile(element, num_rows = 3) {
   var fid;
-  if (this.id.match(/fid_(.*)/) !== null) {
-    fid = this.id.match(/fid_(.*)/)[1];
+  if (element.id.match(/fid_(.*)/) !== null) {
+    fid = element.id.match(/fid_(.*)/)[1];
+
     var request = jQuery.post('/tpps-preview-file', {
-      fid: fid
+      fid: fid,
+      rows: num_rows
     });
 
     request.done(function (data) {
       if (jQuery('.preview_' + fid).length === 0) {
-        jQuery('#fid_' + fid).after(data);
+        jQuery('#fid_' + fid).before(data);
       }
     });
   }
