@@ -134,7 +134,19 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
 
   // Check form_state values, update if necessary.
   $value_parents = $parents;
-  array_unshift($value_parents, 'values');
+  // If the triggering element is an upload/remove file button, then the
+  // form_state['values'] array will not be loaded correctly, so we will need
+  // to use the 'complete form' array instead.
+  if (preg_match('/^.*_(upload|remove)_button$/', $state['triggering_element']['#name'])) {
+    array_unshift($value_parents, 'complete form');
+    $val = drupal_array_get_nested_value($state, $value_parents);
+    if (isset($val['#type']) and $val['#type'] == 'hidden') {
+      array_push($value_parents, '#value');
+    }
+  }
+  else {
+    array_unshift($value_parents, 'values');
+  }
   $val = drupal_array_get_nested_value($state, $value_parents);
   if (isset($val) and $state['triggering_element']['#name'] == $up) {
     drupal_array_set_nested_value($state, $value_parents, $val + 1);
