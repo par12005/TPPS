@@ -557,6 +557,9 @@ function tpps_table_display(array &$state) {
         $file_url = check_plain(file_create_url(file_load($val)->uri));
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
         $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button\" type=\"button\" value=\"Preview file\"></input>";
+        if (tpps_access('administer tpps module')) {
+          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button\" type=\"button\" value=\"Show full file\"></input>";
+        }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           $name = "";
           if ($matches[1] != "Tree ") {
@@ -834,16 +837,15 @@ function tpps_tab_create($user) {
  */
 function tpps_preview_file() {
   $params = drupal_get_query_parameters($_POST);
-  if (!empty($params['fid'])) {
-    $fid = $params['fid'];
-    $no_header = FALSE;
-  }
-  else {
+  $no_header = FALSE;
+  $fid = $params['fid'] ?? NULL;
+  if (empty($fid)) {
     return;
   }
+  $rows = $params['rows'] ?? 3;
 
   if ((file_load($fid))) {
-    $content = tpps_parse_file($fid, 3, !empty($no_header));
+    $content = tpps_parse_file($fid, $rows, !empty($no_header));
     $rows = array();
     for ($i = 0; $i < count($content) - 1; $i++) {
       $rows[] = $content[$i];
