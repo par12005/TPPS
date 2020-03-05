@@ -71,7 +71,11 @@ function tpps_details($accession = NULL) {
     $output .= "<h2>{$state['title']}</h2>";
     $authors = implode(', ', $state['authors']);
     $output .= "<h4>$authors</h4>";
-    $output .= "<h4>Published {$state['pyear']}, in {$state['journal']}</h4>";
+    $output .= "<h4>Published {$state['pyear']}";
+    if (!empty($state['journal'])) {
+      $output .= ", in {$state['journal']}";
+    }
+    $output .= "</h4>";
     $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
       . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
           jQuery('#abstract')[0].innerHTML = \"{$state['abstract']}\";
