@@ -68,10 +68,25 @@ function tpps_details($accession = NULL) {
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
-    $output .= "<h2>{$state['title']}</h2>";
+    $pub_link = $state['title'];
+    $pub_id = db_select('chado.project_pub', 'p')
+      ->fields('p', array('pub_id'))
+      ->condition('project_id', $state['ids']['project_id'])
+      ->execute()->fetchObject()->pub_id;
+    if (!empty($pub_id)) {
+      $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
+      $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
+      $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
+    }
+
+    $output .= "<h2>$pub_link</h2>";
     $authors = implode(', ', $state['authors']);
     $output .= "<h4>$authors</h4>";
-    $output .= "<h4>Published {$state['pyear']}, in {$state['journal']}</h4>";
+    $output .= "<h4>Published {$state['pyear']}";
+    if (!empty($state['journal'])) {
+      $output .= ", in {$state['journal']}";
+    }
+    $output .= "</h4>";
     $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
       . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
           jQuery('#abstract')[0].innerHTML = \"{$state['abstract']}\";
@@ -574,8 +589,18 @@ function tpps_details_study(array &$state) {
     $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
   }
 
+  $pub_link = $state['title'];
+  $pub_id = db_select('chado.project_pub', 'p')
+    ->fields('p', array('pub_id'))
+    ->condition('project_id', $state['ids']['project_id'])
+    ->execute()->fetchObject()->pub_id;
+  if (!empty($pub_id)) {
+    $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
+    $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
+    $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
+  }
   $rows[] = array('Accession', $state['accession']);
-  $rows[] = array('Title', $state['title']);
+  $rows[] = array('Title', $pub_link);
   $rows[] = array('Authors', implode(', ', $state['authors']));
   $rows[] = array('Species', implode('<br>', $species));
   $rows[] = array('Data Type', $state['saved_values'][TPPS_PAGE_2]['data_type']);
