@@ -1249,6 +1249,8 @@ function tpps_update_7105() {
 function tpps_update_7106() {
   $submissions = tpps_load_submission_multiple();
   foreach ($submissions as $state) {
-    tpps_update_submission($state);
+    if (empty($state['updated'])) {
+      tpps_update_submission($state);
+    }
   }
 }
