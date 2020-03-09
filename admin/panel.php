@@ -389,7 +389,7 @@ function tpps_admin_panel_top(array &$form) {
   if (!empty($db)) {
     $rows = array();
     $query = db_select('chado.organism', 'o');
-    $query->fields('o', array('genus', 'species'));
+    $query->fields('o', array('organism_id', 'genus', 'species'));
 
     $query_e = db_select('chado.organism_dbxref', 'odb');
     $query_e->join('chado.dbxref', 'd', 'd.dbxref_id = odb.dbxref_id');
@@ -398,9 +398,13 @@ function tpps_admin_panel_top(array &$form) {
     $query->notExists($query_e);
     $query = $query->execute();
 
+    $org_bundle = tripal_load_bundle_entity(array('label' => 'Organism'));
     while (($org = $query->fetchObject())) {
+      $id = $org->organism_id;
+      $entity = chado_get_record_entity_by_bundle($org_bundle, $id);
+      $link = "$base_url/organism/{$entity->id}/edit";
       $rows[] = array(
-        "$org->genus $org->species",
+        "<a href=\"$link\" target=\"_blank\">$org->genus $org->species</a>",
       );
     }
 
@@ -420,7 +424,7 @@ function tpps_admin_panel_top(array &$form) {
         'empty' => '',
       );
 
-      $form['#suffix'] .= "<div class='tpps_table'><label for='new_species'>New Species: the species listed below likely need to be updated, because they do not have NCBI Taxonomy identifiers in the database.</label>" . theme_table($vars) . "</div>";
+      $form['new_species']['#markup'] = "<div class='tpps_table'><label for='new_species'>New Species: the species listed below likely need to be updated, because they do not have NCBI Taxonomy identifiers in the database.</label>" . theme_table($vars) . "</div>";
     }
     variable_set('tpps_new_organisms', $tpps_new_orgs);
   }
