@@ -50,6 +50,7 @@ function tpps_init_project(array &$form_state) {
   ));
 
   $form_state['dbxref_id'] = $dbxref_id['dbxref_id'];
+  $form_state['created'] = time();
   $form_state['accession'] = $accession;
   $form_state['saved_values']['frontpage']['accession'] = $accession;
   $form_state['status'] = 'Incomplete';

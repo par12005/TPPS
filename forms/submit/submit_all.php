@@ -62,7 +62,7 @@ function tpps_submit_all($accession) {
     tpps_submission_rename_files($accession);
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Approved';
-    $form_state['submission_time'] = date(DATE_RFC2822);
+    $form_state['loaded'] = time();
     tpps_update_submission($form_state, array('status' => 'Approved'));
   }
   catch (Exception $e) {

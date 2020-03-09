@@ -224,3 +224,30 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
   $saved_val = drupal_array_get_nested_value($state, $saved_value_parents);
   return $saved_val ?? $default;
 }
+
+/**
+ * Migrates necessary information from the old form state to the new one.
+ *
+ * This function is usually only called from tpps_main().
+ *
+ * @param array $new
+ *   The new form state to be populated.
+ * @param array $old
+ *   The old form state with the old information.
+ */
+function tpps_form_state_info(&$new, &$old) {
+  $new['saved_values'] = $old['saved_values'];
+  $new['stage'] = $old['stage'];
+  $new['accession'] = $old['accession'];
+  $new['dbxref_id'] = $old['dbxref_id'];
+  $new['stats'] = $old['stats'] ?? NULL;
+  $new['ids'] = $old['ids'] ?? NULL;
+  $new['tpps_type'] = $old['tpps_type'] ?? NULL;
+  $new['file_info'] = $old['file_info'] ?? NULL;
+  $new['status'] = $old['status'] ?? NULL;
+  $new['updated'] = $old['updated'] ?? time();
+  $new['created'] = $old['created'] ?? NULL;
+  $new['approved'] = $old['approved'] ?? NULL;
+  $new['completed'] = $old['completed'] ?? NULL;
+  $new['loaded'] = $old['loaded'] ?? NULL;
+}
