@@ -248,6 +248,29 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
       );
     }
 
+    $date = $submission_state['saved_values']['summarypage']['release-date'] ?? NULL;
+    $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
+    if ($status != 'Approved' or strtotime($datestr) > time()) {
+      $form['date'] = array(
+        '#type' => 'date',
+        '#title' => t('Change release date'),
+        '#description' => t('You can use this field and the button below to change the release date of a submission.'),
+        '#default_value' => $date,
+      );
+
+      $form['CHANGE_DATE'] = array(
+        '#type' => 'submit',
+        '#value' => t('Change Date'),
+        '#states' => array(
+          'invisible' => array(
+            ':input[name="date[day]"]' => array('value' => $date['day']),
+            ':input[name="date[month]"]' => array('value' => $date['month']),
+            ':input[name="date[year]"]' => array('value' => $date['year']),
+          ),
+        ),
+      );
+    }
+
     $form['state-status'] = array(
       '#type' => 'select',
       '#title' => t('Change state status'),
@@ -330,52 +353,64 @@ function tpps_admin_panel_submit($form, &$form_state) {
     }
   }
 
-  if ($form_state['triggering_element']['#value'] == 'Reject') {
-    drupal_mail($type, 'user_rejected', $to, user_preferred_language($user), $params, $from, TRUE);
-    unset($state['status']);
-    tpps_update_submission($state, array('status' => 'Incomplete'));
-    drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
-    drupal_goto('<front>');
-  }
-  elseif ($form_state['triggering_element']['#value'] == 'Approve') {
-    module_load_include('php', 'tpps', 'forms/submit/submit_all');
-    global $user;
-    $uid = $user->uid;
-    $state['submitting_uid'] = $uid;
+  switch ($form_state['triggering_element']['#value']) {
+    case 'Reject':
+      drupal_mail($type, 'user_rejected', $to, user_preferred_language($user), $params, $from, TRUE);
+      unset($state['status']);
+      tpps_update_submission($state, array('status' => 'Incomplete'));
+      drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
+      drupal_goto('<front>');
+      break;
 
-    $params['subject'] = "$type_label Submission Approved: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-    $params['accession'] = $state['accession'];
-    drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
-    drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
+    case 'Approve':
+      module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      global $user;
+      $uid = $user->uid;
+      $state['submitting_uid'] = $uid;
 
-    $includes = array();
-    $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
-    $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-    $args = array($accession);
-    if ($state['saved_values']['summarypage']['release']) {
-      $jid = tripal_add_job("$type_label Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
-      $state['job_id'] = $jid;
-      tpps_update_submission($state);
-    }
-    else {
-      $date = $state['saved_values']['summarypage']['release-date'];
-      $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
-      if (time() > $time) {
+      $params['subject'] = "$type_label Submission Approved: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+      $params['accession'] = $state['accession'];
+      drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
+      drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
+
+      $includes = array();
+      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+      $args = array($accession);
+      if ($state['saved_values']['summarypage']['release']) {
         $jid = tripal_add_job("$type_label Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
         $state['job_id'] = $jid;
         tpps_update_submission($state);
       }
       else {
-        $delayed_submissions = variable_get('tpps_delayed_submissions', array());
-        $delayed_submissions[$accession] = $accession;
-        variable_set('tpps_delayed_submissions', $delayed_submissions);
-        $state['status'] = 'Approved - Delayed Submission Release';
-        tpps_update_submission($state);
+        $date = $state['saved_values']['summarypage']['release-date'];
+        $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
+        if (time() > $time) {
+          $jid = tripal_add_job("$type_label Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+          $state['job_id'] = $jid;
+          tpps_update_submission($state);
+        }
+        else {
+          $delayed_submissions = variable_get('tpps_delayed_submissions', array());
+          $delayed_submissions[$accession] = $accession;
+          variable_set('tpps_delayed_submissions', $delayed_submissions);
+          $state['status'] = 'Approved - Delayed Submission Release';
+          tpps_update_submission($state);
+        }
       }
-    }
-  }
-  else {
-    $state['status'] = $form_state['values']['state-status'];
-    tpps_update_submission($state);
+      break;
+
+    case 'Change Date':
+      $state['saved_values']['summarypage']['release-date'] = $form_state['values']['date'];
+      tpps_update_submission($state);
+      break;
+
+    case 'Change Status':
+      $state['status'] = $form_state['values']['state-status'];
+      tpps_update_submission($state);
+      break;
+
+    default:
+      break;
   }
 }
