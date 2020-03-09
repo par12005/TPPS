@@ -400,11 +400,15 @@ function tpps_admin_panel_top(array &$form) {
 
     $org_bundle = tripal_load_bundle_entity(array('label' => 'Organism'));
     while (($org = $query->fetchObject())) {
-      $id = $org->organism_id;
-      $entity = chado_get_record_entity_by_bundle($org_bundle, $id);
-      $link = "$base_url/organism/{$entity->id}/edit";
+      $id = chado_get_record_entity_by_bundle($org_bundle, $org->organism_id);
+      if (!empty($id)) {
+        $rows[] = array(
+          "<a href=\"$base_url/bio_data/{$id}/edit\" target=\"_blank\">$org->genus $org->species</a>",
+        );
+        continue;
+      }
       $rows[] = array(
-        "<a href=\"$link\" target=\"_blank\">$org->genus $org->species</a>",
+        "$org->genus $org->species",
       );
     }
 
