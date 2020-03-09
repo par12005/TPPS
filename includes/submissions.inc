@@ -68,7 +68,7 @@ function tpps_load_submission($accession, $state = TRUE) {
 function tpps_load_submission_multiple(array $conditions = array(), $state = TRUE) {
   $submissions = array();
   $query = db_select('tpps_submission', 's')
-    ->fields('s', array('accession'));
+    ->fields('s');
 
   if (!empty($conditions)) {
     foreach ($conditions as $key => $cond) {
@@ -87,9 +87,13 @@ function tpps_load_submission_multiple(array $conditions = array(), $state = TRU
     }
   }
 
-  $results = $query->execute()->fetchAll();
-  foreach ($results as $result) {
-    $submissions[] = tpps_load_submission($result->accession, $state);
+  $results = $query->execute();
+  while (($result = $results->fetchObject())) {
+    if ($state) {
+      $submissions[] = unserialize($result->submission_state);
+      continue;
+    }
+    $submissions[] = $result;
   }
   return $submissions;
 }
