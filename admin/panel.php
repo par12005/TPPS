@@ -216,6 +216,11 @@ function tpps_admin_panel_top(array &$form) {
 
   foreach ($submissions as $submission) {
     $state = unserialize($submission->submission_state);
+    $status = $submission->status;
+    if (empty($state['status'])) {
+      $state['status'] = $status;
+      tpps_update_submission($state);
+    }
     $mail = user_load($submission->uid)->mail;
     $submitting_user = $mail ?? NULL;
     if ($contact_bundle) {
@@ -250,9 +255,11 @@ function tpps_admin_panel_top(array &$form) {
         case 'Submission Job Running':
           $status_label = $status_label ?? (!empty($state['approved']) ? ("Submission Job Running - job started on " . date("F j, Y, \a\t g:i a", $state['approved'])) : "Submission Job Running");
         case 'Approved - Delayed Submission Release':
-          $release = $state['saved_values']['summarypage']['release-date'];
-          $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");
-          $status_label = $status_label ?? ("Approved - Delayed Submission Release on " . date("F j, Y", $release));
+          if (empty($status_label)) {
+            $release = $state['saved_values']['summarypage']['release-date'] ?? NULL;
+            $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");
+            $status_label = "Approved - Delayed Submission Release on " . date("F j, Y", $release);
+          }
           $row = array(
             l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
             $entity->title ?? ($mail ?? NULL),
