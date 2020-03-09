@@ -1242,3 +1242,15 @@ function tpps_update_7104() {
 function tpps_update_7105() {
   tpps_create_genotype_search_views();
 }
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7106() {
+  $submissions = tpps_load_submission_multiple();
+  foreach ($submissions as $state) {
+    if (empty($state['updated'])) {
+      tpps_update_submission($state);
+    }
+  }
+}

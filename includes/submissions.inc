@@ -131,6 +131,7 @@ function tpps_update_submission(array $state, array $options = array()) {
   if (empty($options['status']) and !empty($state['status'])) {
     $options['status'] = $state['status'];
   }
+  $state['updated'] = time();
   $options['submission_state'] = serialize($state);
 
   db_update('tpps_submission')

@@ -382,7 +382,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
-        'file_validate_extensions' => array('xlsx'),
+        'file_validate_extensions' => array('csv tsv xlsx'),
       ),
       '#description' => "Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain SNP data.",
       '#tree' => TRUE,
@@ -410,7 +410,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => 'Genotype Assay Design File: *',
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
-        'file_validate_extensions' => array('xlsx'),
+        'file_validate_extensions' => array('csv tsv xlsx'),
       ),
       '#tree' => TRUE,
     );
@@ -437,7 +437,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('SSRs/cpSSRs Spreadsheet: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
-        'file_validate_extensions' => array('xlsx'),
+        'file_validate_extensions' => array('csv tsv xlsx'),
       ),
       '#description' => t('Please upload a spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Tree Identifier that matches your accession file.'),
       '#tree' => TRUE,
@@ -489,7 +489,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Other Marker Genotype Spreadsheet: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
-        'file_validate_extensions' => array('xlsx'),
+        'file_validate_extensions' => array('csv tsv xlsx'),
       ),
       '#description' => "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier.",
       '#tree' => TRUE,
