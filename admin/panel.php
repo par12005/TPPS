@@ -69,7 +69,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
       if (!empty($state)) {
         $row = array(
           l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
-          $entity->title ?? NULL,
+          $entity->title ?? ($mail ?? NULL),
           $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
           $state['status'],
         );
