@@ -38,116 +38,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   global $base_url;
 
   if (empty($accession)) {
-
-    $submissions = tpps_load_submission_multiple(array(
-      'status' => array(
-        'Pending Approval',
-        'Submission Job Running',
-        'Approved',
-        'Approved - Delayed Submission Release',
-      ),
-    ), FALSE);
-
-    $pending = array();
-    $approved = array();
-    $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
-    foreach ($submissions as $submission) {
-      $state = unserialize($submission->submission_state);
-      $mail = user_load($submission->uid)->mail;
-      if ($contact_bundle) {
-        $query = new EntityFieldQuery();
-        $results = $query->entityCondition('entity_type', 'TripalEntity')
-          ->entityCondition('bundle', $contact_bundle->name)
-          ->fieldCondition('local__email', 'value', $mail)
-          ->range(0, 1)
-          ->execute();
-        if (!empty($results['TripalEntity'])) {
-          $id = current($results['TripalEntity'])->id;
-          $entity = current(tripal_load_entity('TripalEntity', array($id))) ?? NULL;
-        }
-      }
-      if (!empty($state)) {
-        $row = array(
-          l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
-          $entity->title ?? ($mail ?? NULL),
-          $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
-          $state['status'],
-        );
-        if ($state['status'] == 'Pending Approval') {
-          $pending[(int) substr($state['accession'], 4)] = $row;
-        }
-        else {
-          $approved[(int) substr($state['accession'], 4)] = $row;
-        }
-      }
-    }
-    ksort($pending);
-    ksort($approved);
-    $rows = array_merge($pending, $approved);
-
-    $headers = array(
-      'Accession Number',
-      'Submitting User',
-      'Title',
-      'Status',
-    );
-
-    $vars = array(
-      'header' => $headers,
-      'rows' => $rows,
-      'attributes' => array(
-        'class' => array('view', 'tpps_table'),
-        'id' => 'tpps_table_display',
-      ),
-      'caption' => '',
-      'colgroups' => NULL,
-      'sticky' => FALSE,
-      'empty' => '',
-    );
-
-    $form['#attributes'] = array('class' => array('hide-me'));
-    $form['#suffix'] = "<div class='tpps_table'><label for='tpps_table_display'>Completed TPPS Submissions</label>" . theme_table($vars) . "</div>";
-
-    $tpps_new_orgs = variable_get('tpps_new_organisms', NULL);
-    $db = chado_get_db(array('name' => 'NCBI Taxonomy'));
-    if (!empty($db)) {
-      $rows = array();
-      $query = db_select('chado.organism', 'o');
-      $query->fields('o', array('genus', 'species'));
-
-      $query_e = db_select('chado.organism_dbxref', 'odb');
-      $query_e->join('chado.dbxref', 'd', 'd.dbxref_id = odb.dbxref_id');
-      $query_e->condition('d.db_id', $db->db_id)
-        ->where('odb.organism_id = o.organism_id');
-      $query->notExists($query_e);
-      $query = $query->execute();
-
-      while (($org = $query->fetchObject())) {
-        $rows[] = array(
-          "$org->genus $org->species",
-        );
-      }
-
-      if (!empty($rows)) {
-        $headers = array();
-
-        $vars = array(
-          'header' => $headers,
-          'rows' => $rows,
-          'attributes' => array(
-            'class' => array('view', 'tpps_table'),
-            'id' => 'new_species',
-          ),
-          'caption' => '',
-          'colgroups' => NULL,
-          'sticky' => FALSE,
-          'empty' => '',
-        );
-
-        $form['#suffix'] .= "<div class='tpps_table'><label for='new_species'>New Species: the species listed below likely need to be updated, because they do not have NCBI Taxonomy identifiers in the database.</label>" . theme_table($vars) . "</div>";
-      }
-      variable_set('tpps_new_organisms', $tpps_new_orgs);
-    }
+    tpps_admin_panel_top($form);
   }
   else {
     $submission = tpps_load_submission($accession, False);
@@ -303,6 +194,228 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 }
 
 /**
+ * Create tables for pending, approved, and incomplete TPPS Submissions.
+ *
+ * @param array $form
+ *   The form element of the TPPS admin panel page.
+ */
+function tpps_admin_panel_top(array &$form) {
+  global $base_url;
+
+  $submissions = tpps_load_submission_multiple(array(), FALSE);
+
+  $pending = array();
+  $approved = array();
+  $incomplete = array();
+
+  $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
+
+  foreach ($submissions as $submission) {
+    $state = unserialize($submission->submission_state);
+    $mail = user_load($submission->uid)->mail;
+    $submitting_user = $mail ?? NULL;
+    if ($contact_bundle) {
+      $query = new EntityFieldQuery();
+      $results = $query->entityCondition('entity_type', 'TripalEntity')
+        ->entityCondition('bundle', $contact_bundle->name)
+        ->fieldCondition('local__email', 'value', $mail)
+        ->range(0, 1)
+        ->execute();
+      if (!empty($results['TripalEntity'])) {
+        $id = current($results['TripalEntity'])->id;
+        $entity = current(tripal_load_entity('TripalEntity', array($id))) ?? NULL;
+        $submitting_user = $entity->title ?? $submitting_user;
+      }
+    }
+
+    if (!empty($state)) {
+      switch ($state['status']) {
+        case 'Pending Approval':
+          // TODO
+          $row = array(
+            l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
+            $entity->title ?? ($mail ?? NULL),
+            $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
+            !empty($state['completed']) ? date("F j, Y, g:i a", $state['completed']) : "Unknown",
+          );
+          $pending[(int) substr($state['accession'], 4)] = $row;
+          break;
+
+        case 'Approved':
+          $status_label = !empty($state['loaded']) ? "Approved - load completed on " . date("F j, Y, \a\t g:i a", $state['loaded']) : "Approved";
+        case 'Submission Job Running':
+          $status_label = $status_label ?? (!empty($state['approved']) ? ("Submission Job Running - job started on " . date("F j, Y, \a\t g:i a", $state['approved'])) : "Submission Job Running");
+        case 'Approved - Delayed Submission Release':
+          $release = $state['saved_values']['summarypage']['release-date'];
+          $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");
+          $status_label = $status_label ?? ("Approved - Delayed Submission Release on " . date("F j, Y", $release));
+          $row = array(
+            l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
+            $entity->title ?? ($mail ?? NULL),
+            $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
+            $status_label,
+          );
+          $approved[(int) substr($state['accession'], 4)] = $row;
+          break;
+
+        default:
+          switch ($state['stage']) {
+            case TPPS_PAGE_1:
+              $stage = "Author and Species Information";
+              break;
+
+            case TPPS_PAGE_2:
+              $stage = "Experimental Conditions";
+              break;
+
+            case TPPS_PAGE_3:
+              $stage = "Tree Accession";
+              break;
+
+            case TPPS_PAGE_4:
+              $stage = "Submit Data";
+              break;
+
+            case 'summarypage':
+              $stage = "Review Data and Submit";
+              break;
+
+            default:
+              $stage = "Unknown";
+              break;
+          }
+
+          $row = array(
+            l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
+            $entity->title ?? ($mail ?? NULL),
+            $state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? 'Title not provided yet',
+            $stage,
+            !empty($state['updated']) ? date("F j, Y, g:i a", $state['updated']) : "Unknown",
+          );
+          $incomplete[(int) substr($state['accession'], 4)] = $row;
+          break;
+      }
+    }
+  }
+
+  ksort($pending);
+  ksort($approved);
+  ksort($incomplete);
+
+  $vars = array(
+    'attributes' => array(
+      'class' => array('view', 'tpps_table'),
+    ),
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  );
+
+  $vars['header'] = array(
+    'Accession Number',
+    'Submitting User',
+    'Title',
+    'Date Submitted',
+  );
+  $vars['rows'] = $pending;
+  $pending_table = theme_table($vars);
+
+  $vars['header'] = array(
+    'Accession Number',
+    'Submitting User',
+    'Title',
+    'Status',
+  );
+  $vars['rows'] = $approved;
+  $approved_table = theme_table($vars);
+
+  $vars['header'] = array(
+    'Accession Number',
+    'Submitting User',
+    'Title',
+    'Stage',
+    'Last Updated',
+  );
+  $vars['rows'] = $incomplete;
+  $incomplete_table = theme_table($vars);
+
+  if (!empty($pending)) {
+    $form['pending'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Pending TPPS submissions'),
+      '#collapsible' => TRUE,
+      'table' => array(
+        '#markup' => $pending_table,
+      ),
+    );
+  }
+
+  if (!empty($approved)) {
+    $form['approved'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Approved TPPS submissions'),
+      '#collapsible' => TRUE,
+      'table' => array(
+        '#markup' => $approved_table,
+      ),
+    );
+  }
+
+  if (!empty($incomplete)) {
+    $form['incomplete'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Incomplete TPPS submissions'),
+      '#collapsible' => TRUE,
+      'table' => array(
+        '#markup' => $incomplete_table,
+      ),
+    );
+  }
+
+  $tpps_new_orgs = variable_get('tpps_new_organisms', NULL);
+  $db = chado_get_db(array('name' => 'NCBI Taxonomy'));
+  if (!empty($db)) {
+    $rows = array();
+    $query = db_select('chado.organism', 'o');
+    $query->fields('o', array('genus', 'species'));
+
+    $query_e = db_select('chado.organism_dbxref', 'odb');
+    $query_e->join('chado.dbxref', 'd', 'd.dbxref_id = odb.dbxref_id');
+    $query_e->condition('d.db_id', $db->db_id)
+      ->where('odb.organism_id = o.organism_id');
+    $query->notExists($query_e);
+    $query = $query->execute();
+
+    while (($org = $query->fetchObject())) {
+      $rows[] = array(
+        "$org->genus $org->species",
+      );
+    }
+
+    if (!empty($rows)) {
+      $headers = array();
+
+      $vars = array(
+        'header' => $headers,
+        'rows' => $rows,
+        'attributes' => array(
+          'class' => array('view', 'tpps_table'),
+          'id' => 'new_species',
+        ),
+        'caption' => '',
+        'colgroups' => NULL,
+        'sticky' => FALSE,
+        'empty' => '',
+      );
+
+      $form['#suffix'] .= "<div class='tpps_table'><label for='new_species'>New Species: the species listed below likely need to be updated, because they do not have NCBI Taxonomy identifiers in the database.</label>" . theme_table($vars) . "</div>";
+    }
+    variable_set('tpps_new_organisms', $tpps_new_orgs);
+  }
+}
+
+/**
  * Implements hook_form_validate().
  *
  * Checks that the reject reason has been filled out if the submission was
@@ -356,8 +469,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
   switch ($form_state['triggering_element']['#value']) {
     case 'Reject':
       drupal_mail($type, 'user_rejected', $to, user_preferred_language($user), $params, $from, TRUE);
-      unset($state['status']);
-      tpps_update_submission($state, array('status' => 'Incomplete'));
+      $state['status'] = 'Incomplete';
+      tpps_update_submission($state);
       drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
       drupal_goto('<front>');
       break;
