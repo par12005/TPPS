@@ -44,8 +44,10 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
     $submission = tpps_load_submission($accession, False);
     $status = $submission->status;
     $submission_state = unserialize($submission->submission_state);
-    $submission_state['status'] = $status;
-    tpps_update_submission($submission_state);
+    if (empty($submission_state['status'])) {
+      $submission_state['status'] = $status;
+      tpps_update_submission($submission_state);
+    }
     $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
     $display .= tpps_table_display($submission_state);
 
@@ -140,26 +142,28 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
     }
 
     $date = $submission_state['saved_values']['summarypage']['release-date'] ?? NULL;
-    $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
-    if ($status != 'Approved' or strtotime($datestr) > time()) {
-      $form['date'] = array(
-        '#type' => 'date',
-        '#title' => t('Change release date'),
-        '#description' => t('You can use this field and the button below to change the release date of a submission.'),
-        '#default_value' => $date,
-      );
+    if (!empty($date)) {
+      $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
+      if ($status != 'Approved' or strtotime($datestr) > time()) {
+        $form['date'] = array(
+          '#type' => 'date',
+          '#title' => t('Change release date'),
+          '#description' => t('You can use this field and the button below to change the release date of a submission.'),
+          '#default_value' => $date,
+        );
 
-      $form['CHANGE_DATE'] = array(
-        '#type' => 'submit',
-        '#value' => t('Change Date'),
-        '#states' => array(
-          'invisible' => array(
-            ':input[name="date[day]"]' => array('value' => $date['day']),
-            ':input[name="date[month]"]' => array('value' => $date['month']),
-            ':input[name="date[year]"]' => array('value' => $date['year']),
+        $form['CHANGE_DATE'] = array(
+          '#type' => 'submit',
+          '#value' => t('Change Date'),
+          '#states' => array(
+            'invisible' => array(
+              ':input[name="date[day]"]' => array('value' => $date['day']),
+              ':input[name="date[month]"]' => array('value' => $date['month']),
+              ':input[name="date[year]"]' => array('value' => $date['year']),
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
 
     $form['state-status'] = array(

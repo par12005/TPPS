@@ -73,10 +73,10 @@ function tpps_flatten(array $state) {
   else {
     $data['#page_2_cleared'] = FALSE;
   }
-  $data['Experiment Starting Month'] = isset($page_2['StartingDate']['month']) ? $page_2['StartingDate']['month'] : NULL;
-  $data['Experiment Starting Year'] = isset($page_2['StartingDate']['year']) ? $page_2['StartingDate']['year'] : NULL;
-  $data['Experiment Ending Month'] = isset($page_2['EndingDate']['month']) ? $page_2['EndingDate']['month'] : NULL;
-  $data['Experiment Ending Year'] = isset($page_2['EndingDate']['year']) ? $page_2['EndingDate']['year'] : NULL;
+  $data['Experiment Starting Month'] = !empty($page_2['StartingDate']['month']) ? $page_2['StartingDate']['month'] : NULL;
+  $data['Experiment Starting Year'] = !empty($page_2['StartingDate']['year']) ? $page_2['StartingDate']['year'] : NULL;
+  $data['Experiment Ending Month'] = !empty($page_2['EndingDate']['month']) ? $page_2['EndingDate']['month'] : NULL;
+  $data['Experiment Ending Year'] = !empty($page_2['EndingDate']['year']) ? $page_2['EndingDate']['year'] : NULL;
   if (!empty($page_2['study_location'])) {
     // Legacy support for old TPPS submissions.
     $legacy_loc = &$page_2['study_location'];
@@ -541,7 +541,7 @@ function tpps_flatten(array $state) {
  */
 function tpps_table_display(array &$state) {
 
-  $accession = $state['saved_values'][TPPS_PAGE_4]['accession'];
+  $accession = $state['accession'];
   $flat = tpps_flatten($state);
   $map_api_key = variable_get('tpps_maps_api_key', NULL);
 
