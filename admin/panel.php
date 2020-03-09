@@ -212,7 +212,14 @@ function tpps_admin_panel_top(array &$form) {
   $approved = array();
   $incomplete = array();
 
-  $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
+  $submitting_user_cache = array();
+  $mail_cvterm = tripal_get_cvterm(array(
+    'name' => 'email',
+    'cv_id' => array(
+      'name' => 'local',
+    ),
+    'is_obsolete' => 0,
+  ))->cvterm_id;
 
   foreach ($submissions as $submission) {
     $state = unserialize($submission->submission_state);
@@ -221,29 +228,28 @@ function tpps_admin_panel_top(array &$form) {
       $state['status'] = $status;
       tpps_update_submission($state);
     }
-    $mail = user_load($submission->uid)->mail;
-    $submitting_user = $mail ?? NULL;
-    if ($contact_bundle) {
-      $query = new EntityFieldQuery();
-      $results = $query->entityCondition('entity_type', 'TripalEntity')
-        ->entityCondition('bundle', $contact_bundle->name)
-        ->fieldCondition('local__email', 'value', $mail)
-        ->range(0, 1)
-        ->execute();
-      if (!empty($results['TripalEntity'])) {
-        $id = current($results['TripalEntity'])->id;
-        $entity = current(tripal_load_entity('TripalEntity', array($id))) ?? NULL;
-        $submitting_user = $entity->title ?? $submitting_user;
-      }
+
+    if (empty($submitting_user_cache[$submission->uid])) {
+      $mail = user_load($submission->uid)->mail;
+      $query = db_select('chado.contact', 'c');
+      $query->join('chado.contactprop', 'cp', 'cp.contact_id = c.contact_id');
+      $query->condition('cp.value', $mail);
+      $query->condition('cp.type_id', $mail_cvterm);
+      $query->fields('c', array('name'));
+      $query->range(0,1);
+      $query = $query->execute();
+      $name = $query->fetchObject()->name ?? NULL;
+
+      $submitting_user_cache[$submission->uid] = $name ?? $mail;
     }
+    $submitting_user = $submitting_user_cache[$submission->uid] ?? NULL;
 
     if (!empty($state)) {
       switch ($state['status']) {
         case 'Pending Approval':
-          // TODO
           $row = array(
             l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
-            $entity->title ?? ($mail ?? NULL),
+            $submitting_user,
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             !empty($state['completed']) ? date("F j, Y, g:i a", $state['completed']) : "Unknown",
           );
@@ -262,7 +268,7 @@ function tpps_admin_panel_top(array &$form) {
           }
           $row = array(
             l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
-            $entity->title ?? ($mail ?? NULL),
+            $submitting_user,
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             $status_label,
           );
@@ -298,7 +304,7 @@ function tpps_admin_panel_top(array &$form) {
 
           $row = array(
             l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
-            $entity->title ?? ($mail ?? NULL),
+            $submitting_user,
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? 'Title not provided yet',
             $stage,
             !empty($state['updated']) ? date("F j, Y, g:i a", $state['updated']) : "Unknown",
