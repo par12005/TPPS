@@ -175,6 +175,9 @@ function tpps_details_top() {
   global $base_url;
   $params = drupal_get_query_parameters($_POST);
   $page = 0;
+  if (empty($params)) {
+    $params = drupal_get_query_parameters();
+  }
   if (!empty($params['page'])) {
     $page = $params['page'];
   }
