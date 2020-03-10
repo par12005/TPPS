@@ -363,6 +363,7 @@ function tpps_details_top_callback() {
  *   The populated search form.
  */
 function tpps_details_search(array $form, array $form_state) {
+  $params = drupal_get_query_parameters();
   $form['details_type'] = array(
     '#type' => 'select',
     '#options' => array(
@@ -381,6 +382,7 @@ function tpps_details_search(array $form, array $form_state) {
       'callback' => 'tpps_details_form_callback',
     ),
     '#prefix' => '<div id="tpps-details-form">',
+    '#default_value' => $params['type'] ?? NULL,
   );
 
   $ops = array(
@@ -399,13 +401,19 @@ function tpps_details_search(array $form, array $form_state) {
   $form['details_op'] = array(
     '#type' => 'select',
     '#options' => $ops,
+    '#default_value' => $params['op'] ?? NULL,
   );
 
   $form['details_value'] = array(
     '#type' => 'textfield',
     '#suffix' => '</div>',
     '#autocomplete_path' => 'tpps/autocomplete/project_title',
+    '#default_value' => $params['value'] ?? NULL,
   );
+
+  if (empty($form_state['values']['details_type'])) {
+    $form_state['values']['details_type'] = $params['type'] ?? NULL;
+  }
 
   if (!empty($form_state['values']['details_type'])) {
     switch ($form_state['values']['details_type']) {
