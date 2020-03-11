@@ -125,16 +125,16 @@ function tpps_get_cvterms_v1_2() {
     'study_end' => 'ncit:Study Completion Date',
     'experiment_location' => 'ncit:Location',
     'assession_season' => 'ncit:Season',
-    'assession_number' => 'local',
+    'assession_number' => 'local:Number of times the trees were assessed, on average.',
     'co2_control' => 'peco:carbon dioxide exposure',
     'co2_level' => 'envo:atmospheric carbon dioxide',
     'humidity_control' => 'peco:humidity exposure',
     'humidity_level' => 'envo:humidity',
     'light_control' => 'peco:light intensity exposure',
-    'light_level' => 'pato:brightness',
-    'temperature_high' => 'local',
-    'temperature_low' => 'local',
-    'rooting_type' => 'local',
+    'light_level' => 'envo:visible spectrum radiation',
+    'temperature_high' => 'local:Average high temperature of the environment.',
+    'temperature_low' => 'local:Average low temperature of the environment.',
+    'rooting_type' => 'local:Type of rooting. Aeroponics, Hydroponics, or Soil.',
     'soil_type' => 'envo:soil',
     'soil_container' => 'ncit:Container',
     'pH_control' => 'peco:pH exposure',
@@ -153,11 +153,11 @@ function tpps_get_cvterms_v1_2() {
     'association_results_type' => 'ncit:Data Type',
     'county' => 'ncit:County',
     'district' => 'ncit:Locality',
-    'organism 4 letter code' => 'local',
+    'organism 4 letter code' => 'local:4 letter abbreviation of species. Usually first two letters of genus + first two letters of species, may be different if that code already exists (use next letters from species if possible).',
     'cpSSR' => NULL,
     'SSR' => 'so:microsatellite',
     'time' => 'pato:time',
-    'source_description' => 'local',
+    'source_description' => 'local:A textual description of study type and comments for a source.',
   );
 }
 
@@ -267,7 +267,7 @@ function tpps_ols_add_cvterm($term) {
 
   $cvt = chado_get_cvterm($query);
   if (!$cvt) {
-    drupal_set_message("Adding term {$term->label}, description: {$term->description[0]} to ontology {$term->ontology_prefix}", 'status');
+    drupal_set_message("Adding cvterm {$term->label}, description: {$term->description[0]} to ontology {$term->ontology_prefix}", 'status');
     $cvterm = array(
       'id' => $term->obo_id,
       'name' => $term->label,
@@ -278,8 +278,34 @@ function tpps_ols_add_cvterm($term) {
   }
 
   if (!$cvt) {
-    drupal_set_message("There was an error adding term {$term->label} to ontology {$term->ontology_prefix}", 'error');
+    drupal_set_message("There was an error adding cvterm {$term->label} to ontology {$term->ontology_prefix}", 'error');
   }
 
   return $cvt;
+}
+
+/**
+ * Install a single cvterm to chado from OLS.
+ *
+ * @param string $info
+ *   String of the format '<ontology>:<term name>'.
+ *
+ * @return stdClass|bool
+ *   The resulting cvterm object, or FALSE on failure.
+ */
+function tpps_ols_install_term($info) {
+  $parts = explode(':', $info);
+  $ontology = $parts[0];
+  if ($ontology == 'local') {
+    return 'local';
+  }
+  $term = $parts[1];
+
+  tpps_ols_add_cv($ontology);
+  $response = tpps_ols_search($term, $ontology)->response;
+  if ($response->numFound != 1) {
+    drupal_set_message("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found", 'error');
+    return FALSE;
+  }
+  return tpps_ols_add_cvterm($response->docs[0]);
 }
