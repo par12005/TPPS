@@ -1057,7 +1057,7 @@ function tpps_submit_summary(array &$form_state) {
             'name' => 'source_description',
             'is_obsolete' => 0,
           ),
-          'value' => file_create_url(file_load($form_state['saved_values']['summarypage']['analysis']["{$option}_file_description"])->uri),
+          'value' => $form_state['saved_values']['summarypage']['analysis']["{$option}_file_description"],
         ));
       }
     }
