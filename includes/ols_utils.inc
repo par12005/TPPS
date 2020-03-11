@@ -309,3 +309,33 @@ function tpps_ols_install_term($info) {
   }
   return tpps_ols_add_cvterm($response->docs[0]);
 }
+
+/**
+ *
+ */
+function tpps_migrate_cvterms($old_major, $old_minor, $new_major = NULL, $new_minor = NULL) {
+  if (empty($new_major) or empty($new_minor)) {
+    $new_major = TPPS_MAJOR_VERSION;
+    $new_minor = TPPS_MINOR_VERSION;
+  }
+  $old_v = $old_major . '_' . $old_minor;
+  $new_v = $new_major . '_' . $new_minor;
+  $old_term_func = 'tpps_get_cvterms_v' . $old_v;
+  $new_term_func = 'tpps_get_cvterms_v' . $new_v;
+  $old_terms = $old_term_func();
+  $new_terms = $new_term_func();
+
+  foreach ($old_terms as $key => $old_info) {
+    $new_info = $new_terms[$key] ?? NULL;
+
+    if (!isset($new_info) or !isset($old_info)) {
+      continue;
+    }
+
+    if ($old_info == $new_info) {
+      continue;
+    }
+
+    // TODO
+  }
+}
