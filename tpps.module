@@ -5,6 +5,8 @@
  * Core of the TPPS module.
  */
 
+define("TPPS_MAJOR_VERSION", 1);
+define("TPPS_MINOR_VERSION", 2);
 define("TPPS_JS_PATH", '/js/tpps.js');
 define("TPPS_CSS_PATH", '/css/tpps.css');
 define("TPPS_PAGE_1", 1);
