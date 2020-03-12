@@ -259,6 +259,8 @@ function tpps_install() {
 
   tpps_create_genotype_search_views();
 
+  tpps_install_miappe_ontology();
+
   tpps_install_cvterms();
 
   tpps_default_permissions();
@@ -455,6 +457,34 @@ function tpps_schema() {
   }
 
   return $schema;
+}
+
+/**
+ * Install the MIAPPE ontology using via the obo file and tripal_cv_load_obo().
+ *
+ * The MIAPPE ontology obo file was created using http://robot.obolibrary.org/
+ * on the owl file found here: https://github.com/MIAPPE/MIAPPE-ontology.
+ */
+function tpps_install_miappe_ontology() {
+  module_load_include('inc', 'tripal_chado', 'includes/tripal_chado.cv');
+  $transaction = db_transaction();
+
+  $file_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/includes/lib/ppeo.obo';
+
+  try {
+    $obo_id = db_insert('tripal_cv_obo')
+      ->fields(array(
+        'name' => 'PPEO',
+        'path' => $file_path,
+      ))
+      ->execute();
+    print_r($obo_id);
+    tripal_cv_load_obo($obo_id);
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
 }
 
 /**
