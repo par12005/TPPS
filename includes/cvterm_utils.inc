@@ -2,9 +2,7 @@
 
 /**
  * @file
- * Defines utilities for using the OLS API.
- *
- * Also defines some utilities for managing TPPS cvterms.
+ * Defines utilities for managing TPPS cvterms.
  */
 
 /**
