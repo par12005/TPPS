@@ -123,7 +123,7 @@ function tpps_get_cvterms_v1_2() {
   return array(
     'study_start' => 'ncit:Study Start Date',
     'study_end' => 'ncit:Study Completion Date',
-    'experiment_location' => 'ncit:Location',
+    'experiment_location' => 'ppeo:location',
     'assession_season' => 'ncit:Season',
     'assession_number' => 'local:Number of times the trees were assessed, on average.',
     'co2_control' => 'peco:carbon dioxide exposure',
@@ -146,7 +146,7 @@ function tpps_get_cvterms_v1_2() {
     'biotic_environment' => 'peco:biotic plant exposure',
     'study_type' => 'peco:study type',
     'phenotype_binary_type' => NULL,
-    'file_path' => 'ncit:Pathname',
+    'file_path' => 'ppeo:data file',
     'contact photo' => NULL,
     'gps_latitude' => 'ncit:Latitude',
     'gps_longitude' => 'ncit:Longitude',
@@ -155,7 +155,7 @@ function tpps_get_cvterms_v1_2() {
     'district' => 'ncit:Locality',
     'organism 4 letter code' => 'local:4 letter abbreviation of species. Usually first two letters of genus + first two letters of species, may be different if that code already exists (use next letters from species if possible).',
     'cpSSR' => NULL,
-    'SSR' => 'so:microsatellite',
+    'SSR' => NULL,
     'time' => 'pato:time',
     'source_description' => 'local:A textual description of study type and comments for a source.',
   );
@@ -225,22 +225,23 @@ function tpps_get_cvterms_v1_1() {
  */
 function tpps_ols_add_cv($ontology_id) {
   $cv_info = tpps_ols_ontology_info($ontology_id);
-  $cv_query = array(
-    'name' => $cv_info['name'],
+  $query = array(
+    'name' => array(
+      'op' => 'ILIKE',
+      'data' => $cv_info['name'],
+    ),
   );
 
-  $db = chado_get_db(array(
-    'name' => $cv_info['name'],
-  ));
+  $db = chado_get_db($query);
   if (!$db) {
     drupal_set_message("Adding db $ontology_id", 'status');
     chado_insert_db($cv_info);
   }
 
-  $cv = chado_get_cv($cv_query);
+  $cv = chado_get_cv($query);
   if (!$cv) {
     drupal_set_message("Adding vocabulary $ontology_id", 'status');
-    $cv = chado_insert_cv($cv_info['name'], $cv_info['definition']);
+    $cv = chado_insert_cv($cv_info['name'], $cv_info['description']);
   }
   if (!$cv) {
     drupal_set_message("There was an error adding vocabulary $ontology_id", 'error');
@@ -258,11 +259,17 @@ function tpps_ols_add_cv($ontology_id) {
  *   The resulting cvterm object, or FALSE on failure
  */
 function tpps_ols_add_cvterm($term) {
+  $cv_query = array(
+    'name' => array(
+      'op' => 'ILIKE',
+      'data' => $term->ontology_prefix,
+    ),
+  );
+  $cv = chado_get_cv($cv_query);
+
   $query = array(
     'name' => $term->label,
-    'cv_id' => array(
-      'name' => $term->ontology_prefix,
-    ),
+    'cv_id' => $cv->cv_id,
   );
 
   $cvt = chado_get_cvterm($query);
@@ -272,7 +279,7 @@ function tpps_ols_add_cvterm($term) {
       'id' => $term->obo_id,
       'name' => $term->label,
       'definition' => $term->description[0],
-      'cv_name' => $term->ontology_prefix,
+      'cv_name' => $cv->name,
     );
     $cvt = chado_insert_cvterm($cvterm);
   }
@@ -290,8 +297,8 @@ function tpps_ols_add_cvterm($term) {
  * @param string $info
  *   String of the format '<ontology>:<term name>'.
  *
- * @return stdClass|bool
- *   The resulting cvterm object, or FALSE on failure.
+ * @return stdClass|string|bool
+ *   The resulting cvterm object, or "local", or FALSE on failure.
  */
 function tpps_ols_install_term($info) {
   $parts = explode(':', $info);
@@ -300,30 +307,89 @@ function tpps_ols_install_term($info) {
     return 'local';
   }
   $term = $parts[1];
+  $cv_query = array(
+    'name' => array(
+      'op' => 'ILIKE',
+      'data' => $ontology,
+    ),
+  );
 
-  tpps_ols_add_cv($ontology);
-  $response = tpps_ols_search($term, $ontology)->response;
-  if ($response->numFound != 1) {
-    drupal_set_message("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found", 'error');
-    return FALSE;
+  $query = array(
+    'name' => $term,
+    'cv_id' => $cv_query,
+  );
+  $cv = chado_get_cv($cv_query);
+  if (!$cv) {
+    tpps_ols_add_cv($ontology);
   }
-  return tpps_ols_add_cvterm($response->docs[0]);
+
+  $cvt = chado_get_cvterm($query);
+  if (!$cvt) {
+    $response = tpps_ols_search($term, $ontology)->response;
+    if ($response->numFound != 1) {
+      drupal_set_message("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found", 'error');
+      return FALSE;
+    }
+    $cvt = tpps_ols_add_cvterm($response->docs[0]);
+  }
+  return $cvt;
+}
+
+/**
+ * Adds a cvtermsynonym record for two matching cvterms.
+ *
+ * This is useful for migrating from an older TPPS cvterm version to a new one.
+ *
+ * @param stdClass $old_cvt
+ *   The old cvterm object returned by chado_get_cvterm().
+ * @param stdClass $new_cvt
+ *   The new cvterm object returned by chado_get_cvterm().
+ */
+function tpps_match_cvterms($old_cvt, $new_cvt) {
+  if (empty($old_cvt->name)) {
+    return;
+  }
+  db_insert('chado.cvtermsynonym')
+    ->fields(array(
+      'cvterm_id' => $new_cvt->cvterm_id,
+      'synonym' => $old_cvt->name,
+      'type_id' => chado_get_cvterm(array(
+        'name' => 'exact',
+        'cv_id' => array(
+          'synonym_type',
+        ),
+      ))->cvterm_id,
+    ))
+    ->execute();
+
+  $old_synonyms = db_select('chado.cvtermsynonym', 'c')
+    ->fields('c', array('synonym', 'type_id'))
+    ->condition('cvterm_id', $old_cvt->cvterm_id)
+    ->execute();
+
+  while (($syn = $old_synonyms->fetchObject())) {
+    db_insert('chado.cvtermsynonym')
+      ->fields(array(
+        'cvterm_id' => $new_cvt->cvterm_id,
+        'synonym' => $syn->synonym,
+        'type_id' => $syn->type_id,
+      ))
+      ->execute();
+  }
 }
 
 /**
  *
  */
-function tpps_migrate_cvterms($old_major, $old_minor, $new_major = NULL, $new_minor = NULL) {
-  if (empty($new_major) or empty($new_minor)) {
-    $new_major = TPPS_MAJOR_VERSION;
-    $new_minor = TPPS_MINOR_VERSION;
-  }
+function tpps_migrate_cvterms($old_major, $old_minor, $new_major = TPPS_MAJOR_VERSION, $new_minor = TPPS_MINOR_VERSION) {
   $old_v = $old_major . '_' . $old_minor;
   $new_v = $new_major . '_' . $new_minor;
   $old_term_func = 'tpps_get_cvterms_v' . $old_v;
   $new_term_func = 'tpps_get_cvterms_v' . $new_v;
   $old_terms = $old_term_func();
   $new_terms = $new_term_func();
+
+  $transaction = db_transaction();
 
   foreach ($old_terms as $key => $old_info) {
     $new_info = $new_terms[$key] ?? NULL;
@@ -336,6 +402,35 @@ function tpps_migrate_cvterms($old_major, $old_minor, $new_major = NULL, $new_mi
       continue;
     }
 
-    // TODO
+    preg_match('/^([^:]*):(.*)$/', $old_info, $matches);
+    $old_ont = $matches[1];
+    $old_term = $matches[2];
+
+    if ($old_ont == 'local') {
+      $old_cvt = chado_get_cvterm(array(
+        'name' => $key,
+        'definition' => $old_term,
+      ));
+    }
+    else {
+      $old_cvt = chado_get_cvterm(array(
+        'name' => $old_term,
+        'cv_id' => array(
+          'name' => array(
+            'op' => 'ILIKE',
+            'data' => $old_ont,
+          ),
+        ),
+      ));
+    }
+
+    $new_cvt = tpps_ols_install_term($new_info);
+    unset($new_terms[$key]);
+    tpps_match_cvterms($old_cvt, $new_cvt);
+  }
+  foreach ($new_terms as $key => $info) {
+    if (!empty($info)) {
+      tpps_ols_install_term($info);
+    }
   }
 }

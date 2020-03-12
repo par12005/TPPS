@@ -478,7 +478,6 @@ function tpps_install_miappe_ontology() {
         'path' => $file_path,
       ))
       ->execute();
-    print_r($obo_id);
     tripal_cv_load_obo($obo_id);
   }
   catch (\Exception $e) {
@@ -539,6 +538,7 @@ function tpps_install_cvterms() {
     $transaction->rollback();
     throw $e;
   }
+  $transaction->rollback();
 }
 
 /**
@@ -1277,4 +1277,22 @@ function tpps_update_7106() {
       tpps_update_submission($state);
     }
   }
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7107() {
+  $cv = chado_get_cv(array('name' => 'PPEO'));
+  if (empty($cv)) {
+    tpps_install_miappe_ontology();
+  }
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7108() {
+  // Migrate TPPS cvterms from TPPS version 1.1 to 1.2.
+  tpps_migrate_cvterms(1, 1, 1, 2);
 }
