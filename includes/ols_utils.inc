@@ -379,7 +379,20 @@ function tpps_match_cvterms($old_cvt, $new_cvt) {
 }
 
 /**
+ * Migrate TPPS cvterms from an old version to a new version.
  *
+ * This is useful if a term that was previously in a local ontology is being
+ * moved to a standardized ontology from OLS. New cvterms inherit all of the
+ * same synonyms as the old cvterms.
+ *
+ * @param int $old_major
+ *   Major version of the old cvterms.
+ * @param int $old_minor
+ *   Minor version of the old cvterms.
+ * @param int $new_major
+ *   Opotional major version of the new cvterms.
+ * @param int $new_minor
+ *   Opotional minor version of the new cvterms.
  */
 function tpps_migrate_cvterms($old_major, $old_minor, $new_major = TPPS_MAJOR_VERSION, $new_minor = TPPS_MINOR_VERSION) {
   $old_v = $old_major . '_' . $old_minor;
