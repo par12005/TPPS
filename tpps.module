@@ -5,6 +5,8 @@
  * Core of the TPPS module.
  */
 
+define("TPPS_MAJOR_VERSION", 1);
+define("TPPS_MINOR_VERSION", 2);
 define("TPPS_JS_PATH", '/js/tpps.js');
 define("TPPS_CSS_PATH", '/css/tpps.css');
 define("TPPS_PAGE_1", 1);
@@ -13,6 +15,7 @@ define("TPPS_PAGE_3", 3);
 define("TPPS_PAGE_4", 4);
 define("TPPS_TEMP_XLSX", "temporary://tpps_xlsx");
 define("TPPS_TEMP_ZIP", "temporary://tpps_zip");
+define("TPPS_OLS_BASE", "http://www.ebi.ac.uk/ols/api/");
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';
@@ -28,6 +31,7 @@ require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
 require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
+require_once 'includes/ols_utils.inc';
 require_once 'api/tpps.api.inc';
 
 /**

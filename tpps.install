@@ -259,6 +259,8 @@ function tpps_install() {
 
   tpps_create_genotype_search_views();
 
+  tpps_install_miappe_ontology();
+
   tpps_install_cvterms();
 
   tpps_default_permissions();
@@ -458,63 +460,85 @@ function tpps_schema() {
 }
 
 /**
+ * Install the MIAPPE ontology using via the obo file and tripal_cv_load_obo().
+ *
+ * The MIAPPE ontology obo file was created using http://robot.obolibrary.org/
+ * on the owl file found here: https://github.com/MIAPPE/MIAPPE-ontology.
+ */
+function tpps_install_miappe_ontology() {
+  module_load_include('inc', 'tripal_chado', 'includes/tripal_chado.cv');
+  $transaction = db_transaction();
+
+  $file_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/includes/lib/ppeo.obo';
+
+  try {
+    $obo_id = db_insert('tripal_cv_obo')
+      ->fields(array(
+        'name' => 'PPEO',
+        'path' => $file_path,
+      ))
+      ->execute();
+    tripal_cv_load_obo($obo_id);
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
+
+/**
  * Adds local TPPS cvterms.
  */
 function tpps_install_cvterms() {
-  $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = variable_get('tpps_local_db');
+  $terms_function = "tpps_get_cvterms_v" . TPPS_MAJOR_VERSION . "_" . TPPS_MINOR_VERSION;
+  $terms = $terms_function();
 
-  $terms = array(
-    'study_start' => 'The month and year that the study began.',
-    'study_end' => 'The month and year that the study ended.',
-    'experiment_location' => 'Geographic location of the experiment.',
-    'assession_season' => 'Season the trees were assessed.',
-    'assession_number' => 'Number of times the trees were assessed, on average.',
-    'co2_control' => 'Whether or not the co2 level of the environment was controlled. True or False.',
-    'co2_level' => 'Must have an associated co2_control property. If co2_control is True, this term describes the co2 level the environment was kept at. If co2_control is False, this term describes the average measured co2 value in the environment.',
-    'humidity_control' => 'Whether or not the air humidity level of the environment was controlled. True or False.',
-    'humidity_level' => 'Must have an associated humidity_control property. If humidity_control is True, this term describes the air humidity level the environment was kept at. If humidity_control is False, this term describes the average measured air humidity value in the environment.',
-    'light_control' => 'Whether or not the light intensity level of the environment was controlled. True or False.',
-    'light_level' => 'Must have an associated light_control property. If light_control is True, this term describes the light intensity level the environment was kept at. If light_control is False, this term describes the average measured light intensity value in the environment.',
-    'temperature_high' => 'Average high temperature of the environment.',
-    'temperature_low' => 'Average low temperature of the environment.',
-    'rooting_type' => 'Type of rooting. Aeroponics, Hydroponics, or Soil.',
-    'soil_type' => 'Type of soil. For example: Sand, Peat, Mixed, etc.',
-    'soil_container' => 'Type of soil container.',
-    'pH_control' => 'Whether or not the pH level of the environment was controlled. True or False.',
-    'pH_level' => 'Must have an associated pH_control property. If pH_control is True, this term describes the pH level the environment was kept at. If pH_control is False, this term describes the average measured pH value in the environment.',
-    'treatment' => 'Describes the treatment of the trees during the study. For example, air or soil temperature regimes, chemical administration, fertilizer, non-mineral nutrient, or rainfall regimes, disease status, etc.',
-    'irrigation_type' => 'Describes the type of irrigation. For example, drip irrigation, irrigation from the top, no irrigation, etc.',
-    'salinity_control' => 'Whether or not the salinity level of the environment was controlled. True or False.',
-    'salinity_level' => 'Must have an associated salinity_control property. If salinity_control is True, this term describes the salinity level the environment was kept at. If salinity_control is False, this term describes the average measured salinity value in the environment.',
-    'biotic_environment' => 'Describes the biotic environment.',
-    'study_type' => 'Describes the type of environment the trees were in during the study. Possible values are Natural Population (Landscape), Growth Chamber, Greenhouse, Experimental/Common Garden, Plantation.',
-    'phenotype_binary_type' => 'Describes one type of a binary phenotype.',
-    'file_path' => 'Specifies the path to a file',
-    'contact photo' => 'A profile photo for a contact record',
-    'gps_latitude' => 'Coordinate that specifies north-south position on Earth\'s surface',
-    'gps_longitude' => 'Coordinate that specifies east-west position on Earth\'s surface',
-    'association_results_type' => 'The type of the association results.',
-    'county' => 'A political and administrative division of a state',
-    'district' => 'A distinct area of a geographic entity, such as a country or city',
-    'organism 4 letter code' => '4 letter abbreviation of species. Usually first two letters of genus + first two letters of species, may be different if that code already exists (use next letters from species if possible).',
-    'cpSSR' => 'Chloroplast simple sequence repeats.',
-    'SSR' => 'Simple sequence repeats. Microsatellite.',
-    'time' => 'A quality in which events occur in sequence.',
-    'source_description' => 'A textual description of study type and comments for a source.',
-  );
+  $transaction = db_transaction();
 
-  foreach ($terms as $term_name => $term_definition) {
-    if (!chado_get_cvterm(array('name' => $term_name))) {
-      $term = array(
-        'id' => "{$local_db->name}:$term_name",
-        'name' => $term_name,
-        'definition' => $term_definition,
-        'cv_name' => $local_cv->name,
-      );
-      chado_insert_cvterm($term);
+  try {
+    foreach ($terms as $key => $info) {
+      if (empty($info)) {
+        continue;
+      }
+
+      if ($key == 'new_terms' and is_array($info)) {
+        foreach ($info as $term_info) {
+          tpps_ols_install_term($term_info);
+        }
+        continue;
+      }
+
+      $result = tpps_ols_install_term($info);
+      if ($result === 'local') {
+        $parts = explode(':', $info);
+        $term = $parts[1];
+        $cvt = chado_get_cvterm(array(
+          'name' => $key,
+          'is_obsolete' => 0,
+        ));
+
+        if (!$cvt) {
+          drupal_set_message("Creating local cvterm $key", 'status');
+          $cvt = chado_insert_cvterm(array(
+            'id' => "{$local_db->name}:$key",
+            'name' => $key,
+            'definition' => $term,
+            'cv_name' => 'local',
+          ));
+
+          if (!$cvt) {
+            drupal_set_message("Error creating local cvterm $key", 'error');
+          }
+        }
+      }
     }
   }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+  $transaction->rollback();
 }
 
 /**
@@ -1253,4 +1277,22 @@ function tpps_update_7106() {
       tpps_update_submission($state);
     }
   }
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7107() {
+  $cv = chado_get_cv(array('name' => 'PPEO'));
+  if (empty($cv)) {
+    tpps_install_miappe_ontology();
+  }
+}
+
+/**
+ * Implements hook_update_N().
+ */
+function tpps_update_7108() {
+  // Migrate TPPS cvterms from TPPS version 1.1 to 1.2.
+  tpps_migrate_cvterms(1, 1, 1, 2);
 }
