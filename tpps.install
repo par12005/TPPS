@@ -515,6 +515,7 @@ function tpps_install_cvterms() {
         $term = $parts[1];
         $cvt = chado_get_cvterm(array(
           'name' => $key,
+          'definition' => $term,
           'is_obsolete' => 0,
         ));
 
@@ -785,12 +786,7 @@ function tpps_create_entities() {
 function tpps_create_genotype_entity() {
   $local_db = variable_get('tpps_local_db');
   $local_cv = chado_get_cv(array('name' => 'local'));
-  $genotype_term = chado_get_cvterm(array(
-    'name' => 'genotype',
-    'cv_id' => array(
-      'name' => 'sequence',
-    ),
-  ), array(
+  $genotype_term = tpps_load_cvterm('genotype', array(
     'include_fk' => array(
       'dbxref_id' => 1,
     ),
@@ -928,21 +924,7 @@ function tpps_create_genotype_entity() {
  * Creates the Stock Tripal Entity type.
  */
 function tpps_create_stock_entity() {
-  chado_insert_cvterm(array(
-    'id' => 'PO:0000003',
-    'name' => 'whole plant',
-    'definition' => 'A plant structure (PO:0005679) which is a whole organism. [ POC:curators ]',
-    'db_name' => 'PO',
-  ));
-
-  $stock_term = chado_get_cvterm(array(
-    'name' => 'whole plant',
-    'dbxref_id' => array(
-      'db_id' => array(
-        'name' => 'PO',
-      ),
-    ),
-  ), array(
+  $stock_term = tpps_load_cvterm('whole_plant', array(
     'include_fk' => array(
       'dbxref_id' => 1,
     ),
@@ -970,12 +952,7 @@ function tpps_create_stock_entity() {
   $bundle = tripal_load_bundle_entity(array('label' => 'Stock'));
   tripal_save_title_format($bundle, '[data__identifier]');
 
-  $phenotype_term = chado_get_cvterm(array(
-    'name' => 'phenotype',
-    'cv_id' => array(
-      'name' => 'sbo',
-    ),
-  ), array(
+  $phenotype_term = tpps_load_cvterm('phenotype', array(
     'include_fk' => array(
       'dbxref_id' => 1,
     ),
@@ -1016,12 +993,7 @@ function tpps_create_stock_entity() {
     ),
   ));
 
-  $genotype_term = chado_get_cvterm(array(
-    'name' => 'genotype',
-    'cv_id' => array(
-      'name' => 'sequence',
-    ),
-  ), array(
+  $genotype_term = tpps_load_cvterm('genotype', array(
     'include_fk' => array(
       'dbxref_id' => 1,
     ),
@@ -1147,12 +1119,8 @@ function tpps_update_7101() {
         $query->fields('lat', array('value'));
         $query->fields('lng', array('value'));
         $query->condition('s.uniquename', db_like($state['accession']) . '%', 'LIKE');
-        $query->condition('lat.type_id', chado_get_cvterm(array(
-          'name' => 'gps_latitude',
-        ))->cvterm_id);
-        $query->condition('lng.type_id', chado_get_cvterm(array(
-          'name' => 'gps_longitude',
-        ))->cvterm_id);
+        $query->condition('lat.type_id', tpps_load_cvterm('gps_latitude', array(), '1_1')->cvterm_id);
+        $query->condition('lng.type_id', tpps_load_cvterm('gps_longitude', array(), '1_1')->cvterm_id);
 
         $query = $query->execute();
 

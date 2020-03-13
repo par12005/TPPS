@@ -172,29 +172,33 @@ function tpps_load_cv($info) {
 /**
  *
  */
-function tpps_load_cvterm($term, array $options = array()) {
+function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
   $cvt_v = variable_get('tpps_cvterms_version', '1_1');
-  $get_cvt = 'tpps_get_cvterms_v' . $cvt_v;
+  $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
   $terms = $get_cvt();
   $info = $terms[$term] ?? NULL;
 
   if (empty($info)) {
-    $info = "local:$term";
+    $info = ":$term";
   }
 
   preg_match('/^([^:]*):(.*)$/', $info, $matches);
   $ontology = $matches[1];
   $name = $matches[2];
   $identifiers = array(
+    'name' => $term,
     'is_obsolete' => 0,
   );
 
-  $identifiers['name'] = $term;
-  if ($ontology != 'local') {
-    $identifiers['name'] = $name;
-    $identifiers['cv_id'] = tpps_load_cv($ontology);
+  if (!empty($ontology)) {
+    if ($ontology == 'local') {
+      $identifiers['definition'] = $name;
+    }
+    else {
+      $identifiers['name'] = $name;
+      $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
+    }
   }
-
   return chado_get_cvterm($identifiers, $options);
 }
 
@@ -240,6 +244,7 @@ function tpps_get_cvterms_v1_2() {
     'contact photo' => NULL,
     'gps_latitude' => 'ncit:Latitude',
     'gps_longitude' => 'ncit:Longitude',
+    'location' => 'ncit:Location',
     'association_results_type' => 'ncit:Data Type',
     'county' => 'ncit:County',
     'district' => 'ncit:Locality',
@@ -248,7 +253,34 @@ function tpps_get_cvterms_v1_2() {
     'SSR' => NULL,
     'time' => 'pato:time',
     'source_description' => 'local:A textual description of study type and comments for a source.',
-    'genotype' => 'sequence:genotype',
+    'genotype' => 'so:genotype',
+    'sequence_variant' => 'so:sequence_variant',
+    'snp' => 'so:SNP',
+    'ssr' => 'so:microsatellite',
+    'genetic_marker' => 'so:genetic_marker',
+    'quality_value' => 'so:quality_value',
+    'allelic_frequency' => 'so:allelic_frequency',
+    'read_depth' => 'ncit:Read Depth',
+    'number_samples' => 'local:Number of samples',
+    'filter' => 'edam:Sequence contamination filtering',
+    'whole plant' => 'po:whole plant',
+    'phenotype' => 'sbo:phenotype',
+    'email' => 'local:Email address',
+    'organization' => 'tripal_contact:Organization',
+    'country' => 'tripal_contact:Country',
+    'state' => 'tripal_contact:State',
+    'organism' => 'obi:organism',
+    'family' => 'taxonomic_rank:family',
+    'subkingdom' => 'taxonomic_rank:subkingdom',
+    'order' => 'taxonomic_rank:order',
+    'common name' => 'ncbitaxon:common name',
+    'description' => 'schema:description',
+    'unit' => 'uo:unit',
+    'format' => 'ncit:Format',
+    'minimum' => 'ncit:Minimum',
+    'maximum' => 'ncit:Maximum',
+    'intensity' => 'pato:intensity',
+    'environment' => 'envo:environmental_system',
   );
 }
 
@@ -302,6 +334,9 @@ function tpps_get_cvterms_v1_1() {
     'SSR' => 'local:Simple sequence repeats. Microsatellite.',
     'time' => 'local:A quality in which events occur in sequence.',
     'source_description' => 'local:A textual description of study type and comments for a source.',
+    'location' => 'nd_geolocation_property:Location',
+    'format' => 'sep:format',
+    'environment' => 'biomaterial_property:climate_environment',
   );
 }
 

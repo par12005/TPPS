@@ -471,9 +471,7 @@ function tpps_get_family($org_name) {
   $fam_query = db_select('chado.organismprop', 'op');
   $fam_query->join('chado.organism', 'o', 'o.organism_id = op.organism_id');
   $fam_query->fields('op', array('value'));
-  $fam_query->condition('op.type_id', chado_get_cvterm(array(
-    'name' => 'family',
-  ))->cvterm_id);
+  $fam_query->condition('op.type_id', tpps_load_cvterm('family')->cvterm_id);
   $fam_query->condition('o.genus', $genus);
   $fam_query->range(0, 1);
   $fam_query = $fam_query->execute();
@@ -503,9 +501,7 @@ function tpps_get_subkingdom($org_name) {
   $sub_query = db_select('chado.organismprop', 'op');
   $sub_query->join('chado.organism', 'o', 'o.organism_id = op.organism_id');
   $sub_query->fields('op', array('value'));
-  $sub_query->condition('op.type_id', chado_get_cvterm(array(
-    'name' => 'subkingdom',
-  ))->cvterm_id);
+  $sub_query->condition('op.type_id', tpps_load_cvterm('subkingdom')->cvterm_id);
   $sub_query->condition('o.genus', $genus);
   $sub_query->range(0, 1);
   $sub_query = $sub_query->execute();

@@ -309,7 +309,7 @@ function tpps_submit_page_1(array &$form_state) {
 
       tpps_chado_insert_record('organismprop', array(
         'organism_id' => $form_state['ids']['organism_ids'][$i],
-        'type_id' => chado_get_cvterm(array('name' => 'organism 4 letter code'))->cvterm_id,
+        'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
         'value' => $trial_code,
       ));
     }
@@ -732,64 +732,16 @@ function tpps_submit_page_3(array &$form_state) {
   }
 
   $cvterms = array(
-    'org' => chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'obi',
-      ),
-      'name' => 'organism',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
-    'clone' => chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'sequence',
-      ),
-      'name' => 'clone',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
-    'has_part' => chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'sequence',
-      ),
-      'name' => 'has_part',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
-    'lat' => chado_get_cvterm(array(
-      'name' => 'gps_latitude',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
-    'lng' => chado_get_cvterm(array(
-      'name' => 'gps_longitude',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
-    'country' => chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-      'name' => 'Country',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
-    'state' => chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-      'name' => 'State',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
-    'county' => chado_get_cvterm(array(
-      'name' => 'county',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
-    'district' => chado_get_cvterm(array(
-      'name' => 'district',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
-    'loc' => chado_get_cvterm(array(
-      'cv_id' => array(
-        'name' => 'nd_geolocation_property',
-      ),
-      'name' => 'Location',
-      'is_obsolete' => 0,
-    ))->cvterm_id,
+    'org' => tpps_load_cvterm('organism')->cvterm_id,
+    'clone' => tpps_load_cvterm('clone')->cvterm_id,
+    'has_part' => tpps_load_cvterm('has_part')->cvterm_id,
+    'lat' => tpps_load_cvterm('gps_latitude')->cvterm_id,
+    'lng' => tpps_load_cvterm('gps_longitude')->cvterm_id,
+    'country' => tpps_load_cvterm('country')->cvterm_id,
+    'state' => tpps_load_cvterm('state')->cvterm_id,
+    'county' => tpps_load_cvterm('county')->cvterm_id,
+    'district' => tpps_load_cvterm('district')->cvterm_id,
+    'loc' => tpps_load_cvterm('location')->cvterm_id,
   );
 
   $records = array(

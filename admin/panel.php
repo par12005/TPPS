@@ -213,13 +213,7 @@ function tpps_admin_panel_top(array &$form) {
   $incomplete = array();
 
   $submitting_user_cache = array();
-  $mail_cvterm = tripal_get_cvterm(array(
-    'name' => 'email',
-    'cv_id' => array(
-      'name' => 'local',
-    ),
-    'is_obsolete' => 0,
-  ))->cvterm_id;
+  $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
 
   foreach ($submissions as $submission) {
     $state = unserialize($submission->submission_state);

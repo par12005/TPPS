@@ -55,38 +55,11 @@ function tpps_file_parsing($accession) {
 
       // Get appropriate cvterms.
       $phenotype_cvterms = array(
-        'time' => chado_get_cvterm(array(
-          'name' => 'time',
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'desc' => chado_get_cvterm(array(
-          'name' => 'description',
-          'cv_id' => array(
-            'name' => 'schema',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'unit' => chado_get_cvterm(array(
-          'name' => 'unit',
-          'cv_id' => array(
-            'name' => 'uo',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'min' => chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'ncit',
-          ),
-          'name' => 'Minimum',
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'max' => chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'ncit',
-          ),
-          'name' => 'Maximum',
-          'is_obsolete' => 0,
-        ))->cvterm_id,
+        'time' => tpps_load_cvterm('time')->cvterm_id,
+        'desc' => tpps_load_cvterm('description')->cvterm_id,
+        'unit' => tpps_load_cvterm('unit')->cvterm_id,
+        'min' => tpps_load_cvterm('minimum')->cvterm_id,
+        'max' => tpps_load_cvterm('maximum')->cvterm_id,
       );
 
       $records = array(
@@ -239,10 +212,7 @@ function tpps_file_parsing($accession) {
         $options['meta'] = array(
           'desc' => "Mass Spectrometry",
           'unit' => "intensity (arbitrary units)",
-          'attr_id' => chado_get_cvterm(array(
-            'name' => 'intensity',
-            'is_obsolete' => 0,
-          ))->cvterm_id,
+          'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
         );
 
         tpps_file_iterator($phenotype['iso'], 'tpps_process_phenotype_data', $options);
@@ -255,13 +225,7 @@ function tpps_file_parsing($accession) {
       $genotype = $fourthpage["organism-$i"]['genotype'];
       $genotype_count = 0;
       $genotype_total = 0;
-      $seq_var_cvterm = chado_get_cvterm(array(
-        'cv_id' => array(
-          'name' => 'sequence',
-        ),
-        'name' => 'sequence_variant',
-        'is_obsolete' => 0,
-      ))->cvterm_id;
+      $seq_var_cvterm = tpps_load_cvterm('sequence_variant')->cvterm_id;
       $overrides = array(
         'genotype_call' => array(
           'variant' => array(
@@ -425,13 +389,7 @@ function tpps_file_parsing($accession) {
         $options['type'] = 'snp';
         $options['headers'] = tpps_file_headers($genotype['files']['snps-assay']);
         $options['marker'] = 'SNP';
-        $options['type_cvterm'] = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'SNP',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
+        $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
 
         tpps_file_iterator($genotype['files']['snps-assay'], 'tpps_process_genotype_spreadsheet', $options);
 
@@ -475,13 +433,7 @@ function tpps_file_parsing($accession) {
         $options['type'] = 'ssrs';
         $options['headers'] = tpps_ssrs_headers($genotype['files']['ssrs'], $genotype['files']['ploidy']);
         $options['marker'] = $genotype['SSRs/cpSSRs'];
-        $options['type_cvterm'] = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'microsatellite',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
+        $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
 
         tpps_file_iterator($genotype['files']['ssrs'], 'tpps_process_genotype_spreadsheet', $options);
 
@@ -510,13 +462,7 @@ function tpps_file_parsing($accession) {
         $options['type'] = 'other';
         $options['headers'] = tpps_other_marker_headers($genotype['files']['other'], $groups['Genotype Data'][0]);
         $options['marker'] = $genotype['other-marker'];
-        $options['type_cvterm'] = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'genetic_marker',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
+        $options['type_cvterm'] = tpps_load_cvterm('genetic_marker')->cvterm_id;
         $options['tree_id'] = $groups['Tree Id'][1];
 
         tpps_file_iterator($genotype['files']['other'], 'tpps_process_genotype_spreadsheet', $options);
@@ -547,52 +493,13 @@ function tpps_file_parsing($accession) {
 
         $records['genotypeprop'] = array();
 
-        $snp_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'SNP',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $format_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sep',
-          ),
-          'name' => 'format',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $qual_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'quality_value',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $filter_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'operation',
-          ),
-          'name' => 'Sequence contamination filtering',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $freq_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'allelic_frequency',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $depth_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'ncit',
-          ),
-          'name' => 'Read Depth',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $n_sample_cvterm = chado_get_cvterm(array(
-          'name' => 'number_samples',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
+        $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
+        $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
+        $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
+        $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
+        $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
+        $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
+        $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
         $vcf_file = file_load($genotype['files']['vcf']);
         $location = drupal_realpath($vcf_file->uri);
@@ -782,13 +689,7 @@ function tpps_file_parsing($accession) {
       $tree_accession = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index];
       $id_col = $tree_accession['file-groups']['Tree Id'][1];
 
-      $env_cvterm = chado_get_cvterm(array(
-        'cv_id' => array(
-          'name' => 'biomaterial_property',
-        ),
-        'name' => 'climate_environment',
-        'is_obsolete' => 0,
-      ))->cvterm_id;
+      $env_cvterm = tpps_load_cvterm('environment')->cvterm_id;
 
       if ($env_layers_check and db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
         $layers_params = array();
@@ -873,20 +774,8 @@ function tpps_file_parsing($accession) {
         'tree_info' => $form_state['tree_info'],
         'tree_id' => $tree_accession['file-groups']['Tree Id'][1],
         'env_cvterm' => $env_cvterm,
-        'desc_id' => chado_get_cvterm(array(
-          'name' => 'description',
-          'cv_id' => array(
-            'name' => 'schema',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'unit_id' => chado_get_cvterm(array(
-          'name' => 'unit',
-          'cv_id' => array(
-            'name' => 'uo',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id,
+        'desc_id' => tpps_load_cvterm('description')->cvterm_id,
+        'unit_id' => tpps_load_cvterm('unit')->cvterm_id,
       );
 
       tpps_file_iterator($tree_accession['file'], 'tpps_process_environment_manual', $options);

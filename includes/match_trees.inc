@@ -14,8 +14,8 @@
 function tpps_matching_trees($project_id) {
   $eps = variable_get('tpps_gps_epsilon', .001);
 
-  $lat_id = chado_get_cvterm(array('name' => 'gps_latitude', 'is_obsolete' => 0))->cvterm_id;
-  $lng_id = chado_get_cvterm(array('name' => 'gps_longitude', 'is_obsolete' => 0))->cvterm_id;
+  $lat_id = tpps_load_cvterm('gps_latitude')->cvterm_id;
+  $lng_id = tpps_load_cvterm('gps_longitude')->cvterm_id;
 
   $query_trees_1 = db_select('chado.stock', 's');
   $query_trees_1->join('chado.stockprop', 'lat', "lat.stock_id = s.stock_id AND lat.type_id = $lat_id");

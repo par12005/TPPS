@@ -76,12 +76,7 @@ function tpps_api_organization_pid_query(array $orgs) {
     'c.name',
   ));
   $and = db_and()
-    ->condition('c.type_id', chado_get_cvterm(array(
-      'name' => 'Organization',
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-    ))->cvterm_id)
+    ->condition('c.type_id', tpps_load_cvterm('organization')->cvterm_id)
     ->condition($or);
   $query->condition($and);
   return $query->execute();
