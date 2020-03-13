@@ -192,12 +192,7 @@ function tpps_load_cvterm($term, array $options = array()) {
   $identifiers['name'] = $term;
   if ($ontology != 'local') {
     $identifiers['name'] = $name;
-    $identifiers['cv_id'] = array(
-      'name' => array(
-        'op' => 'ILIKE',
-        'data' => 'ontology',
-      ),
-    );
+    $identifiers['cv_id'] = tpps_load_cv($ontology);
   }
 
   return chado_get_cvterm($identifiers, $options);
