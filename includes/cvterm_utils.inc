@@ -40,10 +40,13 @@ function tpps_ols_search($query, $ontology = NULL, $exact = TRUE) {
  *   An array containing some minimal information about the specified ontology.
  */
 function tpps_ols_ontology_info($id) {
-  $response = tpps_ols_call(array(
+  $response = @tpps_ols_call(array(
     'ontologies',
     $id,
   ));
+  if (empty($response)) {
+    return NULL;
+  }
   $name = $response->config->preferredPrefix;
   $base_uri = $response->config->baseUris[0] ?? NULL;
   if (substr($base_uri, -1 * (strlen($name) + 1)) == "_$name") {
@@ -56,6 +59,8 @@ function tpps_ols_ontology_info($id) {
     'description' => $response->config->title,
     'url' => $response->config->homepage,
     'urlprefix' => $url_prefix ?? NULL,
+    'cvname' => $name,
+    'namespace' => $response->config->annotations->{'default-namespace'}[0],
   );
 }
 
@@ -104,6 +109,98 @@ function tpps_ols_url($types, array $args = array()) {
   }
 
   return $url;
+}
+
+/**
+ * Load a cv based on an OLS ontology id or cv_info object.
+ *
+ * @param array|string $info
+ *   Either an OLS ontology id or a cv_info object.
+ *
+ * @return stdClass|NULL
+ *   The resulting cv object or NULL on failure.
+ */
+function tpps_load_cv($info) {
+  $id = $info;
+  if (!is_string($info)) {
+    $id = $info['id'];
+  }
+  $id = strtolower($id);
+
+  $cache = cache_get('tpps_cv')->data ?? array();
+
+  // Try to load cv_id from cache.
+  $cv_id = $cache[$id] ?? NULL;
+  if (!empty($cv_id)) {
+    return chado_get_cv(array(
+      'cv_id' => $cv_id,
+    ));
+  }
+
+  $cv_info = $info;
+  if (is_string($info)) {
+    $cv_info = tpps_ols_ontology_info($info);
+  }
+  if (empty($cv_info)) {
+    $cv_info = array(
+      'cvname' => $info,
+      'namespace' => $info,
+    );
+  }
+
+  $query = array(
+    'name' => array(
+      'op' => 'ILIKE',
+      'data' => $cv_info['cvname'],
+    ),
+  );
+
+  $cv = chado_get_cv($query);
+  if (!$cv) {
+    $query['name']['data'] = $cv_info['namespace'];
+    $cv = chado_get_cv($query);
+  }
+
+  if (!$cv) {
+    return NULL;
+  }
+  $cache[$id] = $cv->cv_id;
+  cache_set('tpps_cv', $cache);
+  return $cv;
+}
+
+/**
+ *
+ */
+function tpps_load_cvterm($term, array $options = array()) {
+  $cvt_v = variable_get('tpps_cvterms_version', '1_1');
+  $get_cvt = 'tpps_get_cvterms_v' . $cvt_v;
+  $terms = $get_cvt();
+  $info = $terms[$term] ?? NULL;
+
+  if (empty($info)) {
+    $info = "local:$term";
+  }
+
+  preg_match('/^([^:]*):(.*)$/', $info, $matches);
+  $ontology = $matches[1];
+  $name = $matches[2];
+  $identifiers = array(
+    'is_obsolete' => 0,
+  );
+
+  $identifiers['name'] = $term;
+  if ($ontology != 'local') {
+    $identifiers['name'] = $name;
+    $identifiers['cv_id'] = array(
+      'name' => array(
+        'op' => 'ILIKE',
+        'data' => 'ontology',
+      ),
+    );
+  }
+
+  return chado_get_cvterm($identifiers, $options);
 }
 
 /**
@@ -156,6 +253,7 @@ function tpps_get_cvterms_v1_2() {
     'SSR' => NULL,
     'time' => 'pato:time',
     'source_description' => 'local:A textual description of study type and comments for a source.',
+    'genotype' => 'sequence:genotype',
   );
 }
 
@@ -226,17 +324,23 @@ function tpps_ols_add_cv($ontology_id) {
   $query = array(
     'name' => array(
       'op' => 'ILIKE',
-      'data' => $cv_info['name'],
+      'data' => $cv_info['cvname'],
     ),
   );
 
   $db = chado_get_db($query);
   if (!$db) {
     drupal_set_message("Adding db $ontology_id", 'status');
-    chado_insert_db($cv_info);
+    chado_insert_db(array(
+      'name' => $cv_info['cvname'],
+      'description' => $cv_info['description'],
+      'url' => $cv_info['url'],
+      'urlprefix' => $cv_info['urlprefix'],
+    ));
   }
 
-  $cv = chado_get_cv($query);
+  $cv = tpps_load_cv($cv_info);
+
   if (!$cv) {
     drupal_set_message("Adding vocabulary $ontology_id", 'status');
     $cv = chado_insert_cv($cv_info['name'], $cv_info['description']);
@@ -257,13 +361,7 @@ function tpps_ols_add_cv($ontology_id) {
  *   The resulting cvterm object, or FALSE on failure
  */
 function tpps_ols_add_cvterm($term) {
-  $cv_query = array(
-    'name' => array(
-      'op' => 'ILIKE',
-      'data' => $term->ontology_prefix,
-    ),
-  );
-  $cv = chado_get_cv($cv_query);
+  $cv = tpps_load_cv($term->ontology_name);
 
   $query = array(
     'name' => $term->label,
@@ -305,23 +403,16 @@ function tpps_ols_install_term($info) {
     return 'local';
   }
   $term = $parts[1];
-  $cv_query = array(
-    'name' => array(
-      'op' => 'ILIKE',
-      'data' => $ontology,
-    ),
-  );
 
-  $query = array(
-    'name' => $term,
-    'cv_id' => $cv_query,
-  );
-  $cv = chado_get_cv($cv_query);
+  $cv = tpps_load_cv($ontology);
   if (!$cv) {
-    tpps_ols_add_cv($ontology);
+    $cv = tpps_ols_add_cv($ontology);
   }
 
-  $cvt = chado_get_cvterm($query);
+  $cvt = chado_get_cvterm(array(
+    'name' => $term,
+    'cv_id' => $cv->cv_id,
+  ));
   if (!$cvt) {
     $response = tpps_ols_search($term, $ontology)->response;
     if ($response->numFound != 1) {
@@ -432,12 +523,7 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
     else {
       $old_cvt = chado_get_cvterm(array(
         'name' => $old_term,
-        'cv_id' => array(
-          'name' => array(
-            'op' => 'ILIKE',
-            'data' => $old_ont,
-          ),
-        ),
+        'cv_id' => tpps_load_cv($old_ont)->cv_id,
       ));
     }
 
