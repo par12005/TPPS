@@ -1076,6 +1076,8 @@ function tpps_add_dryad() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Convert old submissions to new form_state structure.
  */
 function tpps_update_7100() {
 
@@ -1110,6 +1112,8 @@ function tpps_update_7100() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Populate top-level state info for old submissions.
  */
 function tpps_update_7101() {
   // TODO.
@@ -1194,6 +1198,8 @@ function tpps_update_7101() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Add dryad db to chado.
  */
 function tpps_update_7102() {
   tpps_add_dryad();
@@ -1201,6 +1207,8 @@ function tpps_update_7102() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Add DOI dbxref to old TPPSc submissions.
  */
 function tpps_update_7103() {
   $transaction = db_transaction();
@@ -1230,6 +1238,8 @@ function tpps_update_7103() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Populate pub_organism table for old TPPS submissions.
  */
 function tpps_update_7104() {
   $transaction = db_transaction();
@@ -1262,6 +1272,8 @@ function tpps_update_7104() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Create materialized views for genotype search functions.
  */
 function tpps_update_7105() {
   tpps_create_genotype_search_views();
@@ -1269,6 +1281,8 @@ function tpps_update_7105() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Create last-updated timestamps for old submissions.
  */
 function tpps_update_7106() {
   $submissions = tpps_load_submission_multiple();
@@ -1281,6 +1295,8 @@ function tpps_update_7106() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Load MIAPPE ontology to chado.
  */
 function tpps_update_7107() {
   $cv = chado_get_cv(array('name' => 'PPEO'));
@@ -1291,9 +1307,10 @@ function tpps_update_7107() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Set default cvterms version and migrate to 1.2.
  */
 function tpps_update_7108() {
-  // Migrate TPPS cvterms from TPPS version 1.1 to 1.2.
   variable_set('tpps_cvterms_version', '1_1');
   tpps_migrate_cvterms(1, 1, 1, 2);
 }
