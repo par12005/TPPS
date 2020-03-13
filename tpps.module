@@ -31,7 +31,7 @@ require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
 require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
-require_once 'includes/ols_utils.inc';
+require_once 'includes/cvterm_utils.inc';
 require_once 'api/tpps.api.inc';
 
 /**

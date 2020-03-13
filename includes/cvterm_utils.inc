@@ -381,7 +381,10 @@ function tpps_match_cvterms($old_cvt, $new_cvt) {
  *
  * This is useful if a term that was previously in a local ontology is being
  * moved to a standardized ontology from OLS. New cvterms inherit all of the
- * same synonyms as the old cvterms.
+ * same synonyms as the old cvterms. If version numbers are left blank, then
+ * the old version number will be imported from the tpps_cvterms_version
+ * variable and the new version number will be imported by the
+ * TPPS_MAJOR_VERSION and TPPS_MINOR_VERSION constants defined in tpps.module.
  *
  * @param int $old_major
  *   Major version of the old cvterms.
@@ -392,8 +395,11 @@ function tpps_match_cvterms($old_cvt, $new_cvt) {
  * @param int $new_minor
  *   Opotional minor version of the new cvterms.
  */
-function tpps_migrate_cvterms($old_major, $old_minor, $new_major = TPPS_MAJOR_VERSION, $new_minor = TPPS_MINOR_VERSION) {
-  $old_v = $old_major . '_' . $old_minor;
+function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major = TPPS_MAJOR_VERSION, $new_minor = TPPS_MINOR_VERSION) {
+  $old_v = variable_get('tpps_cvterms_version', '1_1');
+  if (!empty($old_major) and !empty($old_minor)) {
+    $old_v = $old_major . '_' . $old_minor;
+  }
   $new_v = $new_major . '_' . $new_minor;
   $old_term_func = 'tpps_get_cvterms_v' . $old_v;
   $new_term_func = 'tpps_get_cvterms_v' . $new_v;
@@ -444,4 +450,6 @@ function tpps_migrate_cvterms($old_major, $old_minor, $new_major = TPPS_MAJOR_VE
       tpps_ols_install_term($info);
     }
   }
+
+  variable_set('tpps_cvterms_version', $new_v);
 }

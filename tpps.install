@@ -1294,5 +1294,6 @@ function tpps_update_7107() {
  */
 function tpps_update_7108() {
   // Migrate TPPS cvterms from TPPS version 1.1 to 1.2.
+  variable_set('tpps_cvterms_version', '1_1');
   tpps_migrate_cvterms(1, 1, 1, 2);
 }
