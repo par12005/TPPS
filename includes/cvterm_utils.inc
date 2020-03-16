@@ -468,18 +468,27 @@ function tpps_match_cvterms($old_cvt, $new_cvt) {
   if (empty($old_cvt->name)) {
     return;
   }
-  db_insert('chado.cvtermsynonym')
-    ->fields(array(
-      'cvterm_id' => $new_cvt->cvterm_id,
-      'synonym' => $old_cvt->name,
-      'type_id' => chado_get_cvterm(array(
-        'name' => 'exact',
-        'cv_id' => array(
-          'synonym_type',
-        ),
-      ))->cvterm_id,
-    ))
-    ->execute();
+  $result = db_select('chado.cvtermsynonym', 'cs')
+    ->fields('cs', array('cvtermsynonym_id'))
+    ->condition('cvterm_id', $new_cvt->cvterm_id)
+    ->condition('synonym', $old_cvt->name)
+    ->range(0,1)
+    ->execute()->fetchObject() ?? NULL;
+
+  if (empty($result)) {
+    db_insert('chado.cvtermsynonym')
+      ->fields(array(
+        'cvterm_id' => $new_cvt->cvterm_id,
+        'synonym' => $old_cvt->name,
+        'type_id' => chado_get_cvterm(array(
+          'name' => 'exact',
+          'cv_id' => array(
+            'synonym_type',
+          ),
+        ))->cvterm_id,
+      ))
+      ->execute();
+  }
 
   $old_synonyms = db_select('chado.cvtermsynonym', 'c')
     ->fields('c', array('synonym', 'type_id'))
