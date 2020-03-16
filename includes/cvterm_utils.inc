@@ -156,7 +156,7 @@ function tpps_load_cv($info) {
   );
 
   $cv = chado_generate_var('cv', $query);
-  if (!$cv) {
+  if (!$cv and !empty($cv_info['namespace'])) {
     $query['name']['data'] = $cv_info['namespace'];
     $cv = chado_generate_var('cv', $query);
   }
