@@ -155,15 +155,21 @@ function tpps_load_cv($info) {
     ),
   );
 
-  $cv = chado_get_cv($query);
+  $cv = chado_generate_var('cv', $query);
   if (!$cv) {
     $query['name']['data'] = $cv_info['namespace'];
-    $cv = chado_get_cv($query);
+    $cv = chado_generate_var('cv', $query);
+  }
+
+  if (is_array($cv)) {
+    $query['name']['op'] = 'LIKE';
+    $cv = chado_generate_var('cv', $query);
   }
 
   if (!$cv) {
     return NULL;
   }
+
   $cache[$id] = $cv->cv_id;
   cache_set('tpps_cv', $cache);
   return $cv;
@@ -547,43 +553,49 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
 
   $transaction = db_transaction();
 
-  foreach ($old_terms as $key => $old_info) {
-    $new_info = $new_terms[$key] ?? NULL;
+  try {
+    foreach ($old_terms as $key => $old_info) {
+      $new_info = $new_terms[$key] ?? NULL;
 
-    if (!isset($new_info) or !isset($old_info)) {
-      continue;
+      if (!isset($new_info) or !isset($old_info)) {
+        continue;
+      }
+
+      if ($old_info == $new_info) {
+        continue;
+      }
+
+      preg_match('/^([^:]*):(.*)$/', $old_info, $matches);
+      $old_ont = $matches[1];
+      $old_term = $matches[2];
+
+      if ($old_ont == 'local') {
+        $old_cvt = chado_get_cvterm(array(
+          'name' => $key,
+          'definition' => $old_term,
+        ));
+      }
+      else {
+        $old_cvt = chado_get_cvterm(array(
+          'name' => $old_term,
+          'cv_id' => tpps_load_cv($old_ont)->cv_id,
+        ));
+      }
+
+      $new_cvt = tpps_ols_install_term($new_info);
+      unset($new_terms[$key]);
+      tpps_match_cvterms($old_cvt, $new_cvt);
+    }
+    foreach ($new_terms as $key => $info) {
+      if (!empty($info)) {
+        tpps_ols_install_term($info);
+      }
     }
 
-    if ($old_info == $new_info) {
-      continue;
-    }
-
-    preg_match('/^([^:]*):(.*)$/', $old_info, $matches);
-    $old_ont = $matches[1];
-    $old_term = $matches[2];
-
-    if ($old_ont == 'local') {
-      $old_cvt = chado_get_cvterm(array(
-        'name' => $key,
-        'definition' => $old_term,
-      ));
-    }
-    else {
-      $old_cvt = chado_get_cvterm(array(
-        'name' => $old_term,
-        'cv_id' => tpps_load_cv($old_ont)->cv_id,
-      ));
-    }
-
-    $new_cvt = tpps_ols_install_term($new_info);
-    unset($new_terms[$key]);
-    tpps_match_cvterms($old_cvt, $new_cvt);
+    variable_set('tpps_cvterms_version', $new_v);
   }
-  foreach ($new_terms as $key => $info) {
-    if (!empty($info)) {
-      tpps_ols_install_term($info);
-    }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
   }
-
-  variable_set('tpps_cvterms_version', $new_v);
 }
