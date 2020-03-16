@@ -286,7 +286,7 @@ function tpps_get_cvterms_v1_2() {
     'minimum' => 'ncit:Minimum',
     'maximum' => 'ncit:Maximum',
     'intensity' => 'pato:intensity',
-    'environment' => 'envo:environmental_system',
+    'environment' => 'envo:environmental system',
   );
 }
 
