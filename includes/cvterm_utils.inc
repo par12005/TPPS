@@ -176,7 +176,20 @@ function tpps_load_cv($info) {
 }
 
 /**
+ * Load a cvterm based on a key from tpps_get_cvterms_v<version>().
  *
+ * If the key does not appear in tpps_get_cvterms_v<version>(), then we just
+ * load the cvterm using the provided key as the name.
+ *
+ * @param string $term
+ *   The key of the cvterm we are trying to load.
+ * @param array $options
+ *   Optional additional options to be passed to chado_get_cvterm().
+ * @param string $version
+ *   Optional TPPS cvterm version.
+ *
+ * @return stdClass|FALSE
+ *   The resulting cvterm object, or FALSE on failure.
  */
 function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
   $cvt_v = variable_get('tpps_cvterms_version', '1_1');
