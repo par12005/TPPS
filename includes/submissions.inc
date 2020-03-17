@@ -186,6 +186,13 @@ function tpps_submission_rename_files($accession) {
         $file = tpps_rename_file($fid, "{$accession}_{$name}");
         $file->status = FILE_STATUS_PERMANENT;
         file_save($file);
+        if (!empty($state['revised_files'][$fid])) {
+          $rev_fid = $state['revised_files'][$fid];
+          $state['files'][] = $rev_fid;
+          $file = tpps_rename_file($rev_fid, "{$accession}_{$name}_revised");
+          $file->status = FILE_STATUS_PERMANENT;
+          file_save($file);
+        }
       }
     }
     tpps_update_submission($state);

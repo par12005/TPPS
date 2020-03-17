@@ -557,6 +557,12 @@ function tpps_table_display(array &$state, array $options = array()) {
         $file_name = $file->filename;
         $file_url = check_plain(file_create_url($file->uri));
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
+        if (!empty($state['revised_files'][$val]) and ($revised_file = file_load($state['revised_files'][$val]))) {
+          $val = $state['revised_files'][$val];
+          $file_url = check_plain(file_create_url($revised_file->uri));
+          $file_name = $revised_file->filename;
+          $val_str = "<a href='$file_url' target='blank'>$file_name</a> ( Revised from $val_str )";
+        }
         $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button\" type=\"button\" value=\"Preview file\"></input>";
         if (tpps_access('administer tpps module')) {
           $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button\" type=\"button\" value=\"Show full file\"></input>";
