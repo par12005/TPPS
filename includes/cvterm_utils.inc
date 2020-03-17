@@ -234,59 +234,17 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
  */
 function tpps_get_cvterms_v1_2() {
   return array(
-    'study_start' => 'ncit:Study Start Date',
-    'study_end' => 'ncit:Study Completion Date',
-    'experiment_location' => 'ppeo:location',
-    'assession_season' => 'ncit:Season',
+    // Local terms.
     'assession_number' => 'local:Number of times the trees were assessed, on average.',
-    'co2_control' => 'peco:carbon dioxide exposure',
-    'co2_level' => 'envo:atmospheric carbon dioxide',
-    'humidity_control' => 'peco:humidity exposure',
-    'humidity_level' => 'envo:humidity',
-    'light_control' => 'peco:light intensity exposure',
-    'light_level' => 'envo:visible spectrum radiation',
     'temperature_high' => 'local:Average high temperature of the environment.',
     'temperature_low' => 'local:Average low temperature of the environment.',
     'rooting_type' => 'local:Type of rooting. Aeroponics, Hydroponics, or Soil.',
-    'soil_type' => 'envo:soil',
-    'soil_container' => 'ncit:Container',
-    'pH_control' => 'peco:pH exposure',
-    'pH_level' => 'pato:acidity',
-    'treatment' => 'peco:plant exposure',
-    'irrigation_type' => 'agro:irrigation process',
-    'salinity_control' => 'peco:salt exposure',
-    'salinity_level' => 'envo:salt',
-    'biotic_environment' => 'peco:biotic plant exposure',
-    'study_type' => 'peco:study type',
-    'phenotype_binary_type' => NULL,
-    'file_path' => 'ppeo:data file',
-    'contact photo' => NULL,
-    'gps_latitude' => 'ncit:Latitude',
-    'gps_longitude' => 'ncit:Longitude',
-    'location' => 'ncit:Location',
-    'association_results_type' => 'ncit:Data Type',
-    'county' => 'ncit:County',
-    'district' => 'ncit:Locality',
     'organism 4 letter code' => 'local:4 letter abbreviation of species. Usually first two letters of genus + first two letters of species, may be different if that code already exists (use next letters from species if possible).',
-    'cpSSR' => NULL,
-    'SSR' => NULL,
-    'time' => 'pato:time',
     'source_description' => 'local:A textual description of study type and comments for a source.',
-    'reference_genome' => 'so:reference_genome',
-    'genotype' => 'so:genotype',
-    'sequence_variant' => 'so:sequence_variant',
-    'snp' => 'so:SNP',
-    'ssr' => 'so:microsatellite',
-    'genetic_marker' => 'so:genetic_marker',
-    'quality_value' => 'so:quality_value',
-    'allelic_frequency' => 'so:allelic_frequency',
-    'synonymous' => 'so:synonymous',
-    'read_depth' => 'ncit:Read Depth',
-    'number_samples' => 'local:Number of samples',
-    'filter' => 'edam:Sequence contamination filtering',
-    'whole plant' => 'po:whole plant',
-    'phenotype' => 'sbo:phenotype',
     'email' => 'local:Email address',
+    'number_samples' => 'local:Number of samples',
+
+    // Tripal terms.
     'article' => 'tripal_pub:Journal Article',
     'abstract' => 'tripal_pub:Abstract',
     'authors' => 'tripal_pub:Authors',
@@ -296,20 +254,95 @@ function tpps_get_cvterms_v1_2() {
     'country' => 'tripal_contact:Country',
     'state' => 'tripal_contact:State',
     'analysis_type' => 'analysis_property:Analysis Type',
+
+    // PPEO terms.
+    'experiment_location' => 'ppeo:location',
+    'file_path' => 'ppeo:data file',
+
+    // NCIT terms.
+    'study_start' => 'ncit:Study Start Date',
+    'district' => 'ncit:Locality',
+    'study_end' => 'ncit:Study Completion Date',
+    'assession_season' => 'ncit:Season',
+    'soil_container' => 'ncit:Container',
+    'gps_latitude' => 'ncit:Latitude',
+    'gps_longitude' => 'ncit:Longitude',
+    'location' => 'ncit:Location',
+    'association_results_type' => 'ncit:Data Type',
+    'county' => 'ncit:County',
+    'read_depth' => 'ncit:Read Depth',
+    'format' => 'ncit:Format',
+    'minimum' => 'ncit:Minimum',
+    'maximum' => 'ncit:Maximum',
+
+    // PATO terms.
+    'pH_level' => 'pato:acidity',
+    'time' => 'pato:time',
+    'intensity' => 'pato:intensity',
+    'description' => 'pato:Description',
+
+    // PO terms.
+    'whole plant' => 'po:whole plant',
+
+    // PECO terms.
+    'co2_control' => 'peco:carbon dioxide exposure',
+    'humidity_control' => 'peco:humidity exposure',
+    'light_control' => 'peco:light intensity exposure',
+    'pH_control' => 'peco:pH exposure',
+    'treatment' => 'peco:plant exposure',
+    'salinity_control' => 'peco:salt exposure',
+    'biotic_environment' => 'peco:biotic plant exposure',
+    'study_type' => 'peco:study type',
+
+    // ENVO terms.
+    'co2_level' => 'envo:atmospheric carbon dioxide',
+    'humidity_level' => 'envo:humidity',
+    'light_level' => 'envo:visible spectrum radiation',
+    'soil_type' => 'envo:soil',
+    'salinity_level' => 'envo:salt',
+    'environment' => 'envo:environmental system',
+
+    // AGRO terms.
+    'irrigation_type' => 'agro:irrigation process',
+
+    // SO terms.
+    'reference_genome' => 'so:reference_genome',
+    'genotype' => 'so:genotype',
+    'sequence_variant' => 'so:sequence_variant',
+    'snp' => 'so:SNP',
+    'ssr' => 'so:microsatellite',
+    'genetic_marker' => 'so:genetic_marker',
+    'quality_value' => 'so:quality_value',
+    'allelic_frequency' => 'so:allelic_frequency',
+    'synonymous' => 'so:synonymous',
+    'clone' => 'so:clone',
+
+    // EDAM terms.
+    'filter' => 'edam:Sequence contamination filtering',
+
+    // UO terms.
+    'unit' => 'uo:unit',
+
+    // SBO terms.
+    'phenotype' => 'sbo:phenotype',
+
+    // OBI terms.
     'organism' => 'obi:organism',
+
+    // TAXRANK terms.
     'family' => 'taxonomic_rank:family',
     'subkingdom' => 'taxonomic_rank:subkingdom',
     'order' => 'taxonomic_rank:order',
     'speciesaggregate' => 'taxonomic_rank:speciesaggregate',
+
+    // NCBI terms.
     'common name' => 'ncbitaxon:common name',
-    'description' => 'schema:description',
-    'unit' => 'uo:unit',
-    'format' => 'ncit:Format',
-    'minimum' => 'ncit:Minimum',
-    'maximum' => 'ncit:Maximum',
-    'intensity' => 'pato:intensity',
-    'environment' => 'envo:environmental system',
-    'clone' => 'so:clone',
+
+    // Abandoned terms.
+    'phenotype_binary_type' => NULL,
+    'contact photo' => NULL,
+    'cpSSR' => NULL,
+    'SSR' => NULL,
   );
 }
 
@@ -366,6 +399,7 @@ function tpps_get_cvterms_v1_1() {
     'location' => 'nd_geolocation_property:Location',
     'format' => 'sep:format',
     'environment' => 'biomaterial_property:climate_environment',
+    'description' => 'schema:description',
   );
 }
 
@@ -475,7 +509,7 @@ function tpps_ols_install_term($info) {
   if (!$cvt) {
     $response = tpps_ols_search($term, $ontology)->response;
     if ($response->numFound != 1) {
-      drupal_set_message("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found", 'error');
+      throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
       return FALSE;
     }
     $cvt = tpps_ols_add_cvterm($response->docs[0]);
