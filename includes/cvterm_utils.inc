@@ -300,6 +300,7 @@ function tpps_get_cvterms_v1_2() {
     'maximum' => 'ncit:Maximum',
     'intensity' => 'pato:intensity',
     'environment' => 'envo:environmental system',
+    'clone' => 'so:clone',
   );
 }
 
@@ -341,7 +342,7 @@ function tpps_get_cvterms_v1_1() {
     'biotic_environment' => 'local:Describes the biotic environment.',
     'study_type' => 'local:Describes the type of environment the trees were in during the study. Possible values are Natural Population (Landscape), Growth Chamber, Greenhouse, Experimental/Common Garden, Plantation.',
     'phenotype_binary_type' => 'local:Describes one type of a binary phenotype.',
-    'file_path' => 'local:Specifies the path to a file',
+    'file_path' => 'schema:url',
     'contact photo' => 'local:A profile photo for a contact record',
     'gps_latitude' => 'local:Coordinate that specifies north-south position on Earth\'s surface',
     'gps_longitude' => 'local:Coordinate that specifies east-west position on Earth\'s surface',
