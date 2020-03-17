@@ -112,6 +112,9 @@ function tpps_summary_create_form(array &$form, array $form_state) {
       '#title' => $label . " file:",
       '#description' => t('Please upload the file associated with this analysis type'),
       '#upload_location' => 'public://' . variable_get('tpps_analysis_dir', 'tpps_analysis'),
+      '#upload_validators' => array(
+        'file_validate_extensions' => array(),
+      ),
       '#states' => array(
         'visible' => array(
           ":input[name=\"analysis[{$option}_check]\"]" => array('checked' => TRUE),
