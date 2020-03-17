@@ -539,7 +539,7 @@ function tpps_flatten(array $state) {
  * @return string
  *   The TPPS Submission formatted in an HTML table.
  */
-function tpps_table_display(array &$state) {
+function tpps_table_display(array &$state, array $options = array()) {
 
   $accession = $state['accession'];
   $flat = tpps_flatten($state);
@@ -552,9 +552,10 @@ function tpps_table_display(array &$state) {
       $key_str = filter_xss(check_plain($key));
       $val_str = filter_xss(check_plain($val));
 
-      if (preg_match('/File/', $key) and ($file_name = file_load($val)->filename)) {
+      if (preg_match('/File/', $key) and ($file = file_load($val))) {
         // Create links to files.
-        $file_url = check_plain(file_create_url(file_load($val)->uri));
+        $file_name = $file->filename;
+        $file_url = check_plain(file_create_url($file->uri));
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
         $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button\" type=\"button\" value=\"Preview file\"></input>";
         if (tpps_access('administer tpps module')) {
@@ -571,6 +572,10 @@ function tpps_table_display(array &$state) {
             . "<input id=\"{$name}map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
             . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>"
             . "<script>jQuery('#{$name}map_button').click(getCoordinates);</script>";
+        }
+
+        if (!empty($options['files']['revision_destination'])) {
+          $val_str .= "<div id=\"file_{$file->fid}_options_dest\"></div>";
         }
       }
       elseif (preg_match('/species photo/', $key) and ($file_name = file_load($val)->filename)) {
