@@ -44,13 +44,7 @@ function tpps_matching_trees($project_id) {
     tpps_chado_insert_record('stock_relationship', array(
       'subject_id' => $record->stock_id1,
       'object_id' => $record->stock_id2,
-      'type_id' => array(
-        'name' => 'synonymous',
-        'cv_id' => array(
-          'name' => 'sequence',
-        ),
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('synonymous')->cvterm_id,
     ));
   }
 }

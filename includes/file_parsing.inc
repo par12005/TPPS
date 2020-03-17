@@ -29,9 +29,7 @@ function tpps_file_parsing($accession) {
   $species_codes = array();
   for ($i = 1; $i <= $organism_number; $i++) {
     $species_codes[$form_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
-      'type_id' => array(
-        'name' => 'organism 4 letter code',
-      ),
+      'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
       'organism_id' => $form_state['ids']['organism_ids'][$i],
     ), array(
       'limit' => 1,
@@ -287,13 +285,7 @@ function tpps_file_parsing($accession) {
           $assembly_user = $genotype['tripal_fasta']['file_remote'];
           $assembly_user_id = tpps_chado_insert_record('projectprop', array(
             'project_id' => $project_id,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'schema',
-              ),
-              'name' => 'url',
-              'is_obsolete' => 0,
-            ),
+            'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
             'value' => $assembly_user,
             'rank' => $file_rank,
           ));
@@ -303,13 +295,7 @@ function tpps_file_parsing($accession) {
       elseif ($genotype['ref-genome'] != 'none') {
         $reference_genome_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'sequence',
-            ),
-            'name' => 'reference_genome',
-            'is_obsolete' => 0,
-          ),
+          'type_id' => tpps_load_cvterm('reference_genome')->cvterm_id,
           'value' => $genotype['ref-genome'],
         ));
       }
@@ -1180,9 +1166,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 
   $gps_query = chado_select_record('stockprop', array('value'), array(
     'stock_id' => $stock_id,
-    'type_id' => array(
-      'name' => 'gps_latitude',
-    ),
+    'type_id' =>tpps_load_cvterm('gps_latitude')->cvterm_id,
   ), array(
     'limit' => 1,
   ));
@@ -1190,9 +1174,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 
   $gps_query = chado_select_record('stockprop', array('value'), array(
     'stock_id' => $stock_id,
-    'type_id' => array(
-      'name' => 'gps_longitude',
-    ),
+    'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
   ), array(
     'limit' => 1,
   ));

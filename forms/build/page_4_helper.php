@@ -812,12 +812,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   if ($genome_dir) {
     $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
+    $code_cvterm = tpps_load_cvterm('organism 4 letter code')->cvterm_id;
     foreach ($results as $key => $value) {
       $org_id_query = chado_select_record('organismprop', array('organism_id'), array(
         'value' => $key,
-        'type_id' => array(
-          'name' => 'organism 4 letter code',
-        ),
+        'type_id' => $code_cvterm,
       ));
       $org_query = chado_select_record('organism', array('genus', 'species'), array(
         'organism_id' => current($org_id_query)->organism_id,

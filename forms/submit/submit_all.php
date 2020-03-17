@@ -109,13 +109,7 @@ function tpps_submit_page_1(array &$form_state) {
 
   $primary_author_id = tpps_chado_insert_record('contact', array(
     'name' => $firstpage['primaryAuthor'],
-    'type_id' => array(
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-      'name' => 'Person',
-      'is_obsolete' => 0,
-    ),
+    'type_id' => tpps_load_cvterm('person')->cvterm_id,
   ));
 
   tpps_chado_insert_record('project_contact', array(
@@ -128,13 +122,7 @@ function tpps_submit_page_1(array &$form_state) {
     for ($i = 1; $i <= $seconds['number']; $i++) {
       tpps_chado_insert_record('contact', array(
         'name' => $seconds[$i],
-        'type_id' => array(
-          'cv_id' => array(
-            'name' => 'tripal_contact',
-          ),
-          'name' => 'Person',
-          'is_obsolete' => 0,
-        ),
+        'type_id' => tpps_load_cvterm('person')->cvterm_id,
       ));
 
       $names = explode(" ", $seconds[$i]);
@@ -153,13 +141,7 @@ function tpps_submit_page_1(array &$form_state) {
   $publication_id = tpps_chado_insert_record('pub', array(
     'title' => $firstpage['publication']['title'],
     'series_name' => $firstpage['publication']['journal'],
-    'type_id' => array(
-      'cv_id' => array(
-        'name' => 'tripal_pub',
-      ),
-      'name' => 'Journal Article',
-      'is_obsolete' => 0,
-    ),
+    'type_id' => tpps_load_cvterm('article')->cvterm_id,
     'pyear' => $firstpage['publication']['year'],
     'uniquename' => implode('; ', $authors) . " {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
   ));
@@ -170,25 +152,14 @@ function tpps_submit_page_1(array &$form_state) {
   if (!empty($firstpage['publication']['abstract'])) {
     tpps_chado_insert_record('pubprop', array(
       'pub_id' => $publication_id,
-      'type_id' => array(
-        'name' => 'Abstract',
-        'cv_id' => array(
-          'name' => 'tripal_pub',
-        ),
-      ),
+      'type_id' => tpps_load_cvterm('abstract')->cvterm_id,
       'value' => $firstpage['publication']['abstract'],
     ));
   }
 
   tpps_chado_insert_record('pubprop', array(
     'pub_id' => $publication_id,
-    'type_id' => array(
-      'name' => 'Authors',
-      'cv_id' => array(
-        'tripal_pub',
-      ),
-      'is_obsolete' => 0,
-    ),
+    'type_id' => tpps_load_cvterm('authors')->cvterm_id,
     'value' => implode(', ', $authors),
   ));
   $form_state['authors'] = $authors;
@@ -201,22 +172,11 @@ function tpps_submit_page_1(array &$form_state) {
   if (!empty($firstpage['organization'])) {
     $organization_id = tpps_chado_insert_record('contact', array(
       'name' => $firstpage['organization'],
-      'type_id' => array(
-        'cv_id' => array(
-          'name' => 'tripal_contact',
-        ),
-        'name' => 'Organization',
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('organization')->cvterm_id,
     ));
 
     tpps_chado_insert_record('contact_relationship', array(
-      'type_id' => array(
-        'name' => 'part of',
-        'cv_id' => array(
-          'name' => 'tripal_contact',
-        ),
-      ),
+      'type_id' => tpps_load_cvterm('contact_part_of')->cvterm_id,
       'subject_id' => $primary_author_id,
       'object_id' => $organization_id,
     ));
@@ -259,12 +219,7 @@ function tpps_submit_page_1(array &$form_state) {
     );
 
     if (preg_match('/ x /', $species)) {
-      $record['type_id'] = array(
-        'name' => 'speciesaggregate',
-        'cv_id' => array(
-          'name' => 'taxonomic_rank',
-        ),
-      );
+      $record['type_id'] = tpps_load_cvterm('speciesaggregate')->cvterm_id;
     }
     $form_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
 
@@ -288,9 +243,7 @@ function tpps_submit_page_1(array &$form_state) {
         }
         $trial_code = substr($genus, $g_offset, 2) . substr($species, $s_offset, 2);
         $new_code_query = chado_select_record('organismprop', array('value'), array(
-          'type_id' => array(
-            'name' => 'organism 4 letter code',
-          ),
+          'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
           'value' => $trial_code,
         ));
       } while (!empty($new_code_query));
@@ -308,9 +261,7 @@ function tpps_submit_page_1(array &$form_state) {
       $family = tpps_get_family($firstpage['organism'][$i]);
       tpps_chado_insert_record('organismprop', array(
         'organism_id' => $form_state['ids']['organism_ids'][$i],
-        'type_id' => array(
-          'name' => 'family',
-        ),
+        'type_id' => tpps_load_cvterm('family')->cvterm_id,
         'value' => $family,
       ));
     }
@@ -321,9 +272,7 @@ function tpps_submit_page_1(array &$form_state) {
       $subkingdom = tpps_get_subkingdom($firstpage['organism'][$i]);
       tpps_chado_insert_record('organismprop', array(
         'organism_id' => $form_state['ids']['organism_ids'][$i],
-        'type_id' => array(
-          'name' => 'subkingdom',
-        ),
+        'type_id' => tpps_load_cvterm('subkingdom')->cvterm_id,
         'value' => $subkingdom,
       ));
     }
@@ -355,29 +304,20 @@ function tpps_submit_page_2(array &$form_state) {
   if (!empty($secondpage['StartingDate'])) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'study_start',
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('study_start')->cvterm_id,
       'value' => $secondpage['StartingDate']['month'] . " " . $secondpage['StartingDate']['year'],
     ));
 
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'study_end',
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('study_end')->cvterm_id,
       'value' => $secondpage['EndingDate']['month'] . " " . $secondpage['EndingDate']['year'],
     ));
   }
 
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $form_state['ids']['project_id'],
-    'type_id' => array(
-      'name' => 'association_results_type',
-      'is_obsolete' => 0,
-    ),
+    'type_id' => tpps_load_cvterm('association_results_type')->cvterm_id,
     'value' => $secondpage['data_type'],
   ));
 
@@ -392,10 +332,7 @@ function tpps_submit_page_2(array &$form_state) {
 
   tpps_chado_insert_record('projectprop', array(
     'project_id' => $form_state['ids']['project_id'],
-    'type_id' => array(
-      'name' => 'study_type',
-      'is_obsolete' => 0,
-    ),
+    'type_id' => tpps_load_cvterm('study_type')->cvterm_id,
     'value' => $studytype_options[$secondpage['study_type']],
   ));
 
@@ -404,10 +341,7 @@ function tpps_submit_page_2(array &$form_state) {
 
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'assession_season',
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('assession_season')->cvterm_id,
       'value' => $seasons,
     ));
   }
@@ -415,10 +349,7 @@ function tpps_submit_page_2(array &$form_state) {
   if (!empty($secondpage['study_info']['assessions'])) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'assession_number',
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('assession_number')->cvterm_id,
       'value' => $secondpage['study_info']['assessions'],
     ));
   }
@@ -426,19 +357,13 @@ function tpps_submit_page_2(array &$form_state) {
   if (!empty($secondpage['study_info']['temp'])) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'temperature_high',
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('temperature_high')->cvterm_id,
       'value' => $secondpage['study_info']['temp']['high'],
     ));
 
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'temperature_low',
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('temperature_low')->cvterm_id,
       'value' => $secondpage['study_info']['temp']['low'],
     ));
   }
@@ -456,30 +381,21 @@ function tpps_submit_page_2(array &$form_state) {
 
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
-        'type_id' => array(
-          'name' => "{$type}_control",
-          'is_obsolete' => 0,
-        ),
+        'type_id' => tpps_load_cvterm("{$type}_control")->cvterm_id,
         'value' => ($set['option'] == '1') ? 'True' : 'False',
       ));
 
       if ($set['option'] == '1') {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
-          'type_id' => array(
-            'name' => "{$type}_level",
-            'is_obsolete' => 0,
-          ),
+          'type_id' => tpps_load_cvterm("{$type}_level")->cvterm_id,
           'value' => $set['controlled'],
         ));
       }
       elseif (!empty($set['uncontrolled'])) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
-          'type_id' => array(
-            'name' => "{$type}_level",
-            'is_obsolete' => 0,
-          ),
+          'type_id' => tpps_load_cvterm("{$type}_level")->cvterm_id,
           'value' => $set['uncontrolled'],
         ));
       }
@@ -491,29 +407,20 @@ function tpps_submit_page_2(array &$form_state) {
 
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'rooting_type',
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('rooting_type')->cvterm_id,
       'value' => $root['option'],
     ));
 
     if ($root['option'] == 'Soil') {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
-        'type_id' => array(
-          'name' => 'soil_type',
-          'is_obsolete' => 0,
-        ),
+        'type_id' => tpps_load_cvterm('soil_type')->cvterm_id,
         'value' => ($root['soil']['type'] == 'Other') ? $root['soil']['other'] : $root['soil']['type'],
       ));
 
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
-        'type_id' => array(
-          'name' => 'soil_container',
-          'is_obsolete' => 0,
-        ),
+        'type_id' => tpps_load_cvterm('soil_container')->cvterm_id,
         'value' => $root['soil']['container'],
       ));
     }
@@ -523,30 +430,21 @@ function tpps_submit_page_2(array &$form_state) {
 
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
-        'type_id' => array(
-          'name' => "pH_control",
-          'is_obsolete' => 0,
-        ),
+        'type_id' => tpps_load_cvterm('pH_control')->cvterm_id,
         'value' => ($set['option'] == '1') ? 'True' : 'False',
       ));
 
       if ($set['option'] == '1') {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
-          'type_id' => array(
-            'name' => "pH_level",
-            'is_obsolete' => 0,
-          ),
+          'type_id' => tpps_load_cvterm('pH_level')->cvterm_id,
           'value' => $set['controlled'],
         ));
       }
       elseif (!empty($set['uncontrolled'])) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
-          'type_id' => array(
-            'name' => "pH_level",
-            'is_obsolete' => 0,
-          ),
+          'type_id' => tpps_load_cvterm('pH_level')->cvterm_id,
           'value' => $set['uncontrolled'],
         ));
       }
@@ -568,10 +466,7 @@ function tpps_submit_page_2(array &$form_state) {
       elseif ($record_next) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
-          'type_id' => array(
-            'name' => 'treatment',
-            'is_obsolete' => 0,
-          ),
+          'type_id' => tpps_load_cvterm('treatment')->cvterm_id,
           'value' => $value,
           'rank' => $rank,
         ));
@@ -585,10 +480,7 @@ function tpps_submit_page_2(array &$form_state) {
     $irrigation = $form_state['values']['study_info']['irrigation'];
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'name' => 'irrigation_type',
-        'is_obsolete' => 0,
-      ),
+      'type_id' => tpps_load_cvterm('irrigation_type')->cvterm_id,
       'value' => ($irrigation['option'] == 'Other') ? $irrigation['other'] : $irrigation['option'],
     ));
   }
@@ -598,10 +490,7 @@ function tpps_submit_page_2(array &$form_state) {
       if ($check) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
-          'type_id' => array(
-            'name' => 'biotic_environment',
-            'is_obsolete' => 0,
-          ),
+          'type_id' => tpps_load_cvterm('biotic_environment')->cvterm_id,
           'value' => ($key == 'Other') ? $form_state['values']['study_info']['biotic_env']['other'] : $key,
         ));
       }
@@ -622,10 +511,7 @@ function tpps_submit_page_2(array &$form_state) {
         elseif ($record_next) {
           tpps_chado_insert_record('projectprop', array(
             'project_id' => $form_state['ids']['project_id'],
-            'type_id' => array(
-              'name' => 'treatment',
-              'is_obsolete' => 0,
-            ),
+            'type_id' => tpps_load_cvterm('treatment')->cvterm_id,
             'value' => $value,
             'rank' => $rank,
           ));
@@ -660,19 +546,13 @@ function tpps_submit_page_3(array &$form_state) {
 
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
-        'type_id' => array(
-          'name' => 'gps_latitude',
-          'is_obsolete' => 0,
-        ),
+        'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
         'value' => $latitude,
       ));
 
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
-        'type_id' => array(
-          'name' => 'gps_longitude',
-          'is_obsolete' => 0,
-        ),
+        'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
         'value' => $longitude,
       ));
     }
@@ -681,10 +561,7 @@ function tpps_submit_page_3(array &$form_state) {
 
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
-        'type_id' => array(
-          'name' => 'experiment_location',
-          'is_obsolete' => 0,
-        ),
+        'type_id' => tpps_load_cvterm('experiment_location')->cvterm_id,
         'value' => $location,
       ));
 
@@ -699,19 +576,13 @@ function tpps_submit_page_3(array &$form_state) {
 
           tpps_chado_insert_record('projectprop', array(
             'project_id' => $form_state['ids']['project_id'],
-            'type_id' => array(
-              'name' => 'gps_latitude',
-              'is_obsolete' => 0,
-            ),
+            'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
             'value' => $result->lat,
           ));
 
           tpps_chado_insert_record('projectprop', array(
             'project_id' => $form_state['ids']['project_id'],
-            'type_id' => array(
-              'name' => 'gps_longitude',
-              'is_obsolete' => 0,
-            ),
+            'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
             'value' => $result->lng,
           ));
         }
@@ -955,13 +826,7 @@ function tpps_submit_summary(array &$form_state) {
     if (!empty($form_state['saved_values']['summarypage']['analysis']["{$option}_check"])) {
       tpps_chado_insert_record('projectprop', array(
         'project_id' => $form_state['ids']['project_id'],
-        'type_id' => array(
-          'cv_id' => array(
-            'name' => 'analysis_property',
-          ),
-          'name' => 'Analysis Type',
-          'is_obsolete' => 0,
-        ),
+        'type_id' => tpps_load_cvterm('analysis_type')->cvterm_id,
         'value' => $label,
       ));
 
@@ -971,10 +836,7 @@ function tpps_submit_summary(array &$form_state) {
 
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
-          'type_id' => array(
-            'name' => 'source_description',
-            'is_obsolete' => 0,
-          ),
+          'type_id' => tpps_load_cvterm('source_description')->cvterm_id,
           'value' => $form_state['saved_values']['summarypage']['analysis']["{$option}_file_description"],
         ));
       }
