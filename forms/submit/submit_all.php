@@ -103,20 +103,8 @@ function tpps_submit_page_1(array &$form_state) {
     ));
   }
 
-  if (!empty($firstpage['photo']) and ($file = file_load($firstpage['photo']))) {
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'cv_id' => array(
-          'name' => 'schema',
-        ),
-        'name' => 'url',
-        'is_obsolete' => 0,
-      ),
-      'value' => file_create_url($file->uri),
-      'rank' => $form_state['file_rank'],
-    ));
-    $form_state['file_rank']++;
+  if (!empty($firstpage['photo'])) {
+    tpps_add_project_file($form_state, $firstpage['photo']);
   }
 
   $primary_author_id = tpps_chado_insert_record('contact', array(
@@ -793,20 +781,9 @@ function tpps_submit_page_3(array &$form_state) {
 
   for ($i = 1; $i <= $organism_number; $i++) {
     $tree_accession = $thirdpage['tree-accession']["species-$i"];
+    $fid = $tree_accession['file'];
 
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'type_id' => array(
-        'cv_id' => array(
-          'name' => 'schema',
-        ),
-        'name' => 'url',
-        'is_obsolete' => 0,
-      ),
-      'value' => file_create_url(file_load($tree_accession['file'])->uri),
-      'rank' => $form_state['file_rank'],
-    ));
-    $form_state['file_rank']++;
+    tpps_add_project_file($form_state, $fid);
 
     $column_vals = $tree_accession['file-columns'];
     $groups = $tree_accession['file-groups'];
@@ -840,7 +817,7 @@ function tpps_submit_page_3(array &$form_state) {
       }
     }
 
-    tpps_file_iterator($tree_accession['file'], 'tpps_process_accession', $options);
+    tpps_file_iterator($fid, 'tpps_process_accession', $options);
 
     $new_ids = tpps_chado_insert_multi($options['records'], $multi_insert_options);
     foreach ($new_ids as $t_id => $stock_id) {
@@ -988,20 +965,9 @@ function tpps_submit_summary(array &$form_state) {
         'value' => $label,
       ));
 
-      if (!empty($form_state['saved_values']['summarypage']['analysis']["{$option}_file"]) and file_load($form_state['saved_values']['summarypage']['analysis']["{$option}_file"])) {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $form_state['ids']['project_id'],
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'url',
-            'is_obsolete' => 0,
-          ),
-          'value' => file_create_url(file_load($form_state['saved_values']['summarypage']['analysis']["{$option}_file"])->uri),
-          'rank' => $form_state['file_rank'],
-        ));
-        $form_state['file_rank']++;
+      $fid = $form_state['saved_values']['summarypage']['analysis']["{$option}_file"];
+      if (!empty($fid)) {
+        tpps_add_project_file($form_state, $fid);
 
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
@@ -1273,6 +1239,7 @@ function tpps_clean_state(array &$form_state) {
     'submitting_uid' => $form_state['submitting_uid'],
     'job_id' => $form_state['job_id'],
     'tpps_type' => $form_state['tpps_type'] ?? NULL,
+    'revised_files' => $form_state['revised_files'] ?? NULL,
   );
   $form_state = $new_state;
 }
