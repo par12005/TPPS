@@ -474,6 +474,54 @@ function tpps_ols_install_term($info) {
 }
 
 /**
+ * Installs a local TPPS cvterm based on a provided key.
+ *
+ * This function should be used if the tpps_ols_install_term() function returns
+ * "local".
+ *
+ * @param string $key
+ *   The key of the TPPS cvterm being installed.
+ * @param string $version
+ *   The TPPS cvterm version to use.
+ */
+function tpps_local_install_term($key, $version = NULL) {
+  if (empty($version)) {
+    $version = TPPS_MAJOR_VERSION . '_' . TPPS_MINOR_VERSION;
+  }
+  $get_cvt = 'tpps_get_cvterms_v' . $version;
+  $terms = $get_cvt();
+  $info = $terms[$key] ?? NULL;
+  if (empty($info)) {
+    throw new \Exception("Error installing term $key: Term info could not be found for TPPS cvterm version $version.");
+  }
+
+  $local_db = variable_get('tpps_local_db');
+  $parts = explode(':', $info);
+  $term = $parts[1];
+  $cvt = chado_get_cvterm(array(
+    'name' => $key,
+    'definition' => $term,
+    'is_obsolete' => 0,
+  ));
+
+  if (!$cvt) {
+    drupal_set_message("Creating local cvterm $key", 'status');
+    $cvt = chado_insert_cvterm(array(
+      'id' => "{$local_db->name}:$key",
+      'name' => $key,
+      'definition' => $term,
+      'cv_name' => 'local',
+    ));
+
+    if (!$cvt) {
+      drupal_set_message("Error creating local cvterm $key", 'error');
+    }
+  }
+
+  return $cvt;
+}
+
+/**
  * Adds a cvtermsynonym record for two matching cvterms.
  *
  * This is useful for migrating from an older TPPS cvterm version to a new one.
@@ -559,6 +607,9 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
     $old_v = $old_major . '_' . $old_minor;
   }
   $new_v = $new_major . '_' . $new_minor;
+  if ($new_v === $old_v) {
+    return;
+  }
   $old_term_func = 'tpps_get_cvterms_v' . $old_v;
   $new_term_func = 'tpps_get_cvterms_v' . $new_v;
   $old_terms = $old_term_func();
@@ -601,7 +652,10 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
     }
     foreach ($new_terms as $key => $info) {
       if (!empty($info)) {
-        tpps_ols_install_term($info);
+        $result = tpps_ols_install_term($info);
+        if ($result === 'local') {
+          tpps_local_install_term($key, $new_v);
+        }
       }
     }
 

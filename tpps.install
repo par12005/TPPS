@@ -490,7 +490,6 @@ function tpps_install_miappe_ontology() {
  * Adds local TPPS cvterms.
  */
 function tpps_install_cvterms() {
-  $local_db = variable_get('tpps_local_db');
   $terms_function = "tpps_get_cvterms_v" . TPPS_MAJOR_VERSION . "_" . TPPS_MINOR_VERSION;
   $terms = $terms_function();
 
@@ -511,27 +510,7 @@ function tpps_install_cvterms() {
 
       $result = tpps_ols_install_term($info);
       if ($result === 'local') {
-        $parts = explode(':', $info);
-        $term = $parts[1];
-        $cvt = chado_get_cvterm(array(
-          'name' => $key,
-          'definition' => $term,
-          'is_obsolete' => 0,
-        ));
-
-        if (!$cvt) {
-          drupal_set_message("Creating local cvterm $key", 'status');
-          $cvt = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:$key",
-            'name' => $key,
-            'definition' => $term,
-            'cv_name' => 'local',
-          ));
-
-          if (!$cvt) {
-            drupal_set_message("Error creating local cvterm $key", 'error');
-          }
-        }
+        tpps_local_install_term($key);
       }
     }
     variable_set('tpps_cvterms_version', TPPS_MAJOR_VERSION . '_' . TPPS_MINOR_VERSION);
