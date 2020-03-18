@@ -116,6 +116,11 @@ jQuery(document).ready(function ($) {
     return false;
   });
 
+  var file_options = jQuery('div').filter(function() { return this.id.match(/^file_.*_options$/); });
+  jQuery.each(file_options, function() {
+    jQuery(this).prependTo('#' + this.id + '_dest');
+  });
+
   initDetailPages();
 });
 

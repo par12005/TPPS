@@ -33,168 +33,220 @@
  *   The administrative panel form.
  */
 function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
-
-  global $user;
-  global $base_url;
-
   if (empty($accession)) {
     tpps_admin_panel_top($form);
   }
   else {
-    $submission = tpps_load_submission($accession, False);
-    $status = $submission->status;
-    $submission_state = unserialize($submission->submission_state);
-    if (empty($submission_state['status'])) {
-      $submission_state['status'] = $status;
-      tpps_update_submission($submission_state);
-    }
-    $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
-    $display .= tpps_table_display($submission_state);
-
-    $form['form_table'] = array(
-      '#type' => 'hidden',
-      '#value' => $accession,
-      '#suffix' => $display,
-    );
-
-    if ($status == "Pending Approval") {
-
-      $form['params'] = array(
-        '#type' => 'fieldset',
-        '#title' => 'Select Environmental parameter types:',
-        '#tree' => TRUE,
-        '#description' => '',
-      );
-
-      $orgamism_num = $submission_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-      $show_layers = FALSE;
-      for ($i = 1; $i <= $orgamism_num; $i++) {
-        if (!empty($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['use_layers'])) {
-          foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_layers'] as $layer => $layer_id) {
-            if (!empty($layer_id)) {
-              foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_params'][$layer] as $param_name => $param_id) {
-                if (!empty($param_id)) {
-                  $type = variable_get("tpps_param_{$param_id}_type", NULL);
-                  if (empty($type)) {
-                    $query = db_select('cartogratree_fields', 'f')
-                      ->fields('f', array('display_name'))
-                      ->condition('field_id', $param_id)
-                      ->execute();
-                    $result = $query->fetchObject();
-                    $name = $result->display_name;
-
-                    $form['params'][$param_id] = array(
-                      '#type' => 'radios',
-                      '#title' => "Select Type for environmental layer parameter \"$name\":",
-                      '#options' => array(
-                        'attr_id' => 'attr_id',
-                        'cvterm' => 'cvterm',
-                      ),
-                      '#required' => TRUE,
-                    );
-                    $show_layers = TRUE;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-
-      if (!$show_layers) {
-        unset($form['params']);
-      }
-
-      $form['approve-check'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('This submission has been reviewed and approved.'),
-      );
-
-      $form['reject-reason'] = array(
-        '#type' => 'textarea',
-        '#title' => t('Reason for rejection:'),
-        '#states' => array(
-          'invisible' => array(
-            ':input[name="approve-check"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
-
-      $form['REJECT'] = array(
-        '#type' => 'submit',
-        '#value' => t('Reject'),
-        '#states' => array(
-          'invisible' => array(
-            ':input[name="approve-check"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
-
-      $form['APPROVE'] = array(
-        '#type' => 'submit',
-        '#value' => t('Approve'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="approve-check"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
-    }
-
-    $date = $submission_state['saved_values']['summarypage']['release-date'] ?? NULL;
-    if (!empty($date)) {
-      $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
-      if ($status != 'Approved' or strtotime($datestr) > time()) {
-        $form['date'] = array(
-          '#type' => 'date',
-          '#title' => t('Change release date'),
-          '#description' => t('You can use this field and the button below to change the release date of a submission.'),
-          '#default_value' => $date,
-        );
-
-        $form['CHANGE_DATE'] = array(
-          '#type' => 'submit',
-          '#value' => t('Change Date'),
-          '#states' => array(
-            'invisible' => array(
-              ':input[name="date[day]"]' => array('value' => $date['day']),
-              ':input[name="date[month]"]' => array('value' => $date['month']),
-              ':input[name="date[year]"]' => array('value' => $date['year']),
-            ),
-          ),
-        );
-      }
-    }
-
-    $form['state-status'] = array(
-      '#type' => 'select',
-      '#title' => t('Change state status'),
-      '#description' => t('Warning: This feature is experimental and may cause unforseen issues. Please do not change the status of this submission unless you are willing to risk the loss of existing data. The current status of the submission is @status.', array('@status' => $status)),
-      '#options' => array(
-        'Incomplete' => 'Incomplete',
-        'Pending Approval' => 'Pending Approval',
-        'Submission Job Running' => 'Submission Job Running',
-        'Approved' => 'Approved',
-        'Approved - Delayed Submission Release' => 'Approved - Delayed Submission Release',
-      ),
-      '#default_value' => $status,
-    );
-
-    $form['CHANGE_STATUS'] = array(
-      '#type' => 'submit',
-      '#value' => t('Change Status'),
-      '#states' => array(
-        'invisible' => array(
-          ':input[name="state-status"]' => array('value' => $status),
-        ),
-      ),
-    );
+    tpps_manage_submission_form($form, $form_state, $accession);
   }
 
   drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
   return $form;
+}
+
+/**
+ * Build form to manage TPPS submissions from admin panel.
+ *
+ * This includes options to change the status or release date of the
+ * submission, as well as options to upload revised versions of files.
+ *
+ * @param array $form
+ *   The form element to be populated.
+ * @param array $form_state
+ *   The state of the form element to be populated.
+ * @param string $accession
+ *   The accession number of the submission being managed.
+ */
+function tpps_manage_submission_form(array &$form, array &$form_state, $accession = NULL) {
+  global $base_url;
+  $submission = tpps_load_submission($accession, False);
+  $status = $submission->status;
+  $submission_state = unserialize($submission->submission_state);
+  if (empty($submission_state['status'])) {
+    $submission_state['status'] = $status;
+    tpps_update_submission($submission_state);
+  }
+  $options = array();
+  $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
+
+  if ($status == "Pending Approval") {
+    $options['files'] = array(
+      'revision_destination' => TRUE,
+    );
+    foreach ($submission_state['file_info'] as $page => $files) {
+      foreach ($files as $fid => $file_type) {
+        $file = file_load($fid) ?? NULL;
+
+        $form["edit_file_{$fid}_check"] = array(
+          '#type' => 'checkbox',
+          '#title' => t('I would like to upload a revised version of this file'),
+          '#prefix' => "<div id=\"file_{$fid}_options\">",
+        );
+
+        $form["edit_file_{$fid}_file"] = array(
+          '#type' => 'managed_file',
+          '#title' => 'Upload new file',
+          '#upload_location' => dirname($file->uri),
+          '#upload_validators' => array(
+            'file_validate_extensions' => array(),
+          ),
+          '#states' => array(
+            'visible' => array(
+              ":input[name=\"edit_file_{$fid}_check\"]" => array('checked' => TRUE),
+            ),
+          ),
+        );
+        $form["edit_file_{$fid}_markup"] = array(
+          '#markup' => '</div>',
+        );
+      }
+    }
+  }
+  $display .= tpps_table_display($submission_state, $options);
+
+  $form['accession'] = array(
+    '#type' => 'hidden',
+    '#value' => $accession,
+  );
+
+  $form['form_table'] = array(
+    '#markup' => $display,
+  );
+
+  if ($status == "Pending Approval") {
+
+    $form['params'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Select Environmental parameter types:',
+      '#tree' => TRUE,
+      '#description' => '',
+    );
+
+    $orgamism_num = $submission_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+    $show_layers = FALSE;
+    for ($i = 1; $i <= $orgamism_num; $i++) {
+      if (!empty($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['use_layers'])) {
+        foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_layers'] as $layer => $layer_id) {
+          if (!empty($layer_id)) {
+            foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_params'][$layer] as $param_name => $param_id) {
+              if (!empty($param_id)) {
+                $type = variable_get("tpps_param_{$param_id}_type", NULL);
+                if (empty($type)) {
+                  $query = db_select('cartogratree_fields', 'f')
+                    ->fields('f', array('display_name'))
+                    ->condition('field_id', $param_id)
+                    ->execute();
+                  $result = $query->fetchObject();
+                  $name = $result->display_name;
+
+                  $form['params'][$param_id] = array(
+                    '#type' => 'radios',
+                    '#title' => "Select Type for environmental layer parameter \"$name\":",
+                    '#options' => array(
+                      'attr_id' => 'attr_id',
+                      'cvterm' => 'cvterm',
+                    ),
+                    '#required' => TRUE,
+                  );
+                  $show_layers = TRUE;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (!$show_layers) {
+      unset($form['params']);
+    }
+
+    $form['approve-check'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('This submission has been reviewed and approved.'),
+    );
+
+    $form['reject-reason'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Reason for rejection:'),
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="approve-check"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+
+    $form['REJECT'] = array(
+      '#type' => 'submit',
+      '#value' => t('Reject'),
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="approve-check"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+
+    $form['APPROVE'] = array(
+      '#type' => 'submit',
+      '#value' => t('Approve'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="approve-check"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+  }
+
+  $date = $submission_state['saved_values']['summarypage']['release-date'] ?? NULL;
+  if (!empty($date)) {
+    $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
+    if ($status != 'Approved' or strtotime($datestr) > time()) {
+      $form['date'] = array(
+        '#type' => 'date',
+        '#title' => t('Change release date'),
+        '#description' => t('You can use this field and the button below to change the release date of a submission.'),
+        '#default_value' => $date,
+      );
+
+      $form['CHANGE_DATE'] = array(
+        '#type' => 'submit',
+        '#value' => t('Change Date'),
+        '#states' => array(
+          'invisible' => array(
+            ':input[name="date[day]"]' => array('value' => $date['day']),
+            ':input[name="date[month]"]' => array('value' => $date['month']),
+            ':input[name="date[year]"]' => array('value' => $date['year']),
+          ),
+        ),
+      );
+    }
+  }
+
+  $form['state-status'] = array(
+    '#type' => 'select',
+    '#title' => t('Change state status'),
+    '#description' => t('Warning: This feature is experimental and may cause unforseen issues. Please do not change the status of this submission unless you are willing to risk the loss of existing data. The current status of the submission is @status.', array('@status' => $status)),
+    '#options' => array(
+      'Incomplete' => 'Incomplete',
+      'Pending Approval' => 'Pending Approval',
+      'Submission Job Running' => 'Submission Job Running',
+      'Approved' => 'Approved',
+      'Approved - Delayed Submission Release' => 'Approved - Delayed Submission Release',
+    ),
+    '#default_value' => $status,
+  );
+
+  $form['CHANGE_STATUS'] = array(
+    '#type' => 'submit',
+    '#value' => t('Change Status'),
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="state-status"]' => array('value' => $status),
+      ),
+    ),
+  );
 }
 
 /**
@@ -213,13 +265,7 @@ function tpps_admin_panel_top(array &$form) {
   $incomplete = array();
 
   $submitting_user_cache = array();
-  $mail_cvterm = tripal_get_cvterm(array(
-    'name' => 'email',
-    'cv_id' => array(
-      'name' => 'local',
-    ),
-    'is_obsolete' => 0,
-  ))->cvterm_id;
+  $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
 
   foreach ($submissions as $submission) {
     $state = unserialize($submission->submission_state);
@@ -451,6 +497,24 @@ function tpps_admin_panel_validate($form, &$form_state) {
     if (isset($form_state['values']['reject-reason']) and $form_state['values']['reject-reason'] == '' and $form_state['triggering_element']['#value'] == 'Reject') {
       form_set_error('reject-reason', 'Please explain why the submission was rejected.');
     }
+
+    if ($form_state['triggering_element']['#value'] == 'Approve') {
+      $accession = $form_state['values']['accession'];
+      $state = tpps_load_submission($accession);
+      foreach ($state['file_info'] as $page => $files) {
+        foreach ($files as $fid => $file_type) {
+          if (!empty($form_state['values']["edit_file_{$fid}_check"]) and empty($form_state['values']["edit_file_{$fid}_file"])) {
+            form_set_error("edit_file_{$fid}_file", 'Please upload a revised version fo the user-provided file.');
+          }
+          if (!empty($form_state['values']["edit_file_{$fid}_file"])) {
+            $file = file_load($form_state['values']["edit_file_{$fid}_file"]);
+            file_usage_add($file, 'tpps', 'tpps_project', substr($accession, 4));
+          }
+        }
+      }
+    }
+    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+    drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   }
 }
 
@@ -467,7 +531,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $type = $form_state['tpps_type'] ?? 'tpps';
   $type_label = ($type == 'tpps') ? 'TPPS' : 'TPPSC';
 
-  $accession = $form_state['values']['form_table'];
+  $accession = $form_state['values']['accession'];
   $submission = tpps_load_submission($accession, FALSE);
   $user = user_load($submission->uid);
   $to = $user->mail;
@@ -511,6 +575,15 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
       drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
 
+      $state['revised_files'] = array();
+      foreach ($state['file_info'] as $page => $files) {
+        foreach ($files as $fid => $file_type) {
+          if (!empty($form_state['values']["edit_file_{$fid}_check"])) {
+            $state['revised_files'][$fid] = $form_state['values']["edit_file_{$fid}_file"];
+          }
+        }
+      }
+
       $includes = array();
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
@@ -518,7 +591,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
       if ($state['saved_values']['summarypage']['release']) {
         $jid = tripal_add_job("$type_label Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
         $state['job_id'] = $jid;
-        tpps_update_submission($state);
       }
       else {
         $date = $state['saved_values']['summarypage']['release-date'];
@@ -526,16 +598,15 @@ function tpps_admin_panel_submit($form, &$form_state) {
         if (time() > $time) {
           $jid = tripal_add_job("$type_label Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
           $state['job_id'] = $jid;
-          tpps_update_submission($state);
         }
         else {
           $delayed_submissions = variable_get('tpps_delayed_submissions', array());
           $delayed_submissions[$accession] = $accession;
           variable_set('tpps_delayed_submissions', $delayed_submissions);
           $state['status'] = 'Approved - Delayed Submission Release';
-          tpps_update_submission($state);
         }
       }
+      tpps_update_submission($state);
       break;
 
     case 'Change Date':

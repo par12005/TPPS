@@ -471,9 +471,7 @@ function tpps_get_family($org_name) {
   $fam_query = db_select('chado.organismprop', 'op');
   $fam_query->join('chado.organism', 'o', 'o.organism_id = op.organism_id');
   $fam_query->fields('op', array('value'));
-  $fam_query->condition('op.type_id', chado_get_cvterm(array(
-    'name' => 'family',
-  ))->cvterm_id);
+  $fam_query->condition('op.type_id', tpps_load_cvterm('family')->cvterm_id);
   $fam_query->condition('o.genus', $genus);
   $fam_query->range(0, 1);
   $fam_query = $fam_query->execute();
@@ -503,9 +501,7 @@ function tpps_get_subkingdom($org_name) {
   $sub_query = db_select('chado.organismprop', 'op');
   $sub_query->join('chado.organism', 'o', 'o.organism_id = op.organism_id');
   $sub_query->fields('op', array('value'));
-  $sub_query->condition('op.type_id', chado_get_cvterm(array(
-    'name' => 'subkingdom',
-  ))->cvterm_id);
+  $sub_query->condition('op.type_id', tpps_load_cvterm('subkingdom')->cvterm_id);
   $sub_query->condition('o.genus', $genus);
   $sub_query->range(0, 1);
   $sub_query = $sub_query->execute();
@@ -514,4 +510,36 @@ function tpps_get_subkingdom($org_name) {
     return $subkingom;
   }
   return tpps_ncbi_get_subkingdom($org_name);
+}
+
+/**
+ * Add a file path as a projectprop to a submission.
+ *
+ * @param array $state
+ *   The TPPS submission associated with the file.
+ * @param int $fid
+ *   The managed file id number.
+ */
+function tpps_add_project_file(array &$state, &$fid) {
+  $file = file_load($fid) ?? NULL;
+  if ($file) {
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $state['ids']['project_id'],
+      'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
+      'value' => file_create_url($file->uri),
+      'rank' => $state['file_rank'],
+    ));
+    $state['file_rank']++;
+  }
+
+  if (!empty($state['revised_files'][$fid]) and ($file = file_load($state['revised_files'][$fid]))) {
+    $fid = $state['revised_files'][$fid];
+    tpps_chado_insert_record('projectprop', array(
+      'project_id' => $state['ids']['project_id'],
+      'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
+      'value' => file_create_url($file->uri),
+      'rank' => $state['file_rank'],
+    ));
+    $state['file_rank']++;
+  }
 }

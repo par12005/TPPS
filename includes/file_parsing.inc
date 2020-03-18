@@ -29,9 +29,7 @@ function tpps_file_parsing($accession) {
   $species_codes = array();
   for ($i = 1; $i <= $organism_number; $i++) {
     $species_codes[$form_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
-      'type_id' => array(
-        'name' => 'organism 4 letter code',
-      ),
+      'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
       'organism_id' => $form_state['ids']['organism_ids'][$i],
     ), array(
       'limit' => 1,
@@ -55,38 +53,11 @@ function tpps_file_parsing($accession) {
 
       // Get appropriate cvterms.
       $phenotype_cvterms = array(
-        'time' => chado_get_cvterm(array(
-          'name' => 'time',
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'desc' => chado_get_cvterm(array(
-          'name' => 'description',
-          'cv_id' => array(
-            'name' => 'schema',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'unit' => chado_get_cvterm(array(
-          'name' => 'unit',
-          'cv_id' => array(
-            'name' => 'uo',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'min' => chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'ncit',
-          ),
-          'name' => 'Minimum',
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'max' => chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'ncit',
-          ),
-          'name' => 'Maximum',
-          'is_obsolete' => 0,
-        ))->cvterm_id,
+        'time' => tpps_load_cvterm('time')->cvterm_id,
+        'desc' => tpps_load_cvterm('description')->cvterm_id,
+        'unit' => tpps_load_cvterm('unit')->cvterm_id,
+        'min' => tpps_load_cvterm('minimum')->cvterm_id,
+        'max' => tpps_load_cvterm('maximum')->cvterm_id,
       );
 
       $records = array(
@@ -108,20 +79,9 @@ function tpps_file_parsing($accession) {
       if (empty($phenotype['iso-check'])) {
         $phenotype_number = $phenotype['phenotypes-meta']['number'];
         $phenotypes_meta = array();
+        $data_fid = $phenotype['file'];
 
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'url',
-            'is_obsolete' => 0,
-          ),
-          'value' => file_create_url(file_load($phenotype['file'])->uri),
-          'rank' => $file_rank,
-        ));
-        $file_rank++;
+        tpps_add_project_file($form_state, $data_fid);
 
         // Populate $phenotypes_meta with manually entered metadata.
         for ($j = 1; $j <= $phenotype_number; $j++) {
@@ -143,19 +103,8 @@ function tpps_file_parsing($accession) {
         }
 
         if ($phenotype['check'] == '1') {
-          $phenotype_meta_file_id = tpps_chado_insert_record('projectprop', array(
-            'project_id' => $project_id,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'schema',
-              ),
-              'name' => 'url',
-              'is_obsolete' => 0,
-            ),
-            'value' => file_create_url(file_load($phenotype['metadata'])->uri),
-            'rank' => $file_rank,
-          ));
-          $file_rank++;
+          $meta_fid = $phenotype['metadata'];
+          tpps_add_project_file($form_state, $meta_fid);
 
           // Get metadata column values.
           $groups = $phenotype['metadata-groups'];
@@ -179,7 +128,7 @@ function tpps_file_parsing($accession) {
             'meta' => &$phenotypes_meta,
           );
 
-          tpps_file_iterator($phenotype['metadata'], 'tpps_process_phenotype_meta', $meta_options);
+          tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
         }
 
         tpps_refine_phenotype_meta($phenotypes_meta);
@@ -200,7 +149,7 @@ function tpps_file_parsing($accession) {
 
         // Get data header values.
         if ($phenotype['format'] == 0) {
-          $file_headers = tpps_file_headers($phenotype['file'], $phenotype['file-no-header']);
+          $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
           $data_columns = array();
           foreach ($groups['Phenotype Data']['0'] as $col) {
             $data_columns[$col] = $file_headers[$col];
@@ -215,37 +164,23 @@ function tpps_file_parsing($accession) {
         $options['meta'] = $phenotypes_meta;
         $options['file_empty'] = $phenotype['file-empty'];
 
-        tpps_file_iterator($phenotype['file'], 'tpps_process_phenotype_data', $options);
+        tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
       }
       else {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'url',
-            'is_obsolete' => 0,
-          ),
-          'value' => file_create_url(file_load($phenotype['iso'])->uri),
-          'rank' => $file_rank,
-        ));
-        $file_rank++;
+        $iso_fid = $phenotype['iso'];
+        tpps_add_project_file($form_state, $iso_fid);
 
         $options['iso'] = TRUE;
         $options['records'] = $records;
         $options['cvterms'] = $phenotype_cvterms;
-        $options['file_headers'] = tpps_file_headers($phenotype['iso']);
+        $options['file_headers'] = tpps_file_headers($iso_fid);
         $options['meta'] = array(
           'desc' => "Mass Spectrometry",
           'unit' => "intensity (arbitrary units)",
-          'attr_id' => chado_get_cvterm(array(
-            'name' => 'intensity',
-            'is_obsolete' => 0,
-          ))->cvterm_id,
+          'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
         );
 
-        tpps_file_iterator($phenotype['iso'], 'tpps_process_phenotype_data', $options);
+        tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
       }
       tpps_chado_insert_multi($options['records']);
       unset($options['records']);
@@ -255,13 +190,7 @@ function tpps_file_parsing($accession) {
       $genotype = $fourthpage["organism-$i"]['genotype'];
       $genotype_count = 0;
       $genotype_total = 0;
-      $seq_var_cvterm = chado_get_cvterm(array(
-        'cv_id' => array(
-          'name' => 'sequence',
-        ),
-        'name' => 'sequence_variant',
-        'is_obsolete' => 0,
-      ))->cvterm_id;
+      $seq_var_cvterm = tpps_load_cvterm('sequence_variant')->cvterm_id;
       $overrides = array(
         'genotype_call' => array(
           'variant' => array(
@@ -344,49 +273,19 @@ function tpps_file_parsing($accession) {
         if ($genotype['tripal_fasta']['file_upload']) {
           // Uploaded new file.
           $assembly_user = $genotype['tripal_fasta']['file_upload'];
-          $assembly_user_id = tpps_chado_insert_record('projectprop', array(
-            'project_id' => $project_id,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'schema',
-              ),
-              'name' => 'url',
-              'is_obsolete' => 0,
-            ),
-            'value' => file_create_url(file_load($assembly_user)->uri),
-            'rank' => $file_rank,
-          ));
-          $file_rank++;
+          tpps_add_project_file($form_state, $assembly_user);
         }
         if ($genotype['tripal_fasta']['file_upload_existing']) {
           // Uploaded existing file.
           $assembly_user = $genotype['tripal_fasta']['file_upload_existing'];
-          $assembly_user_id = tpps_chado_insert_record('projectprop', array(
-            'project_id' => $project_id,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'schema',
-              ),
-              'name' => 'url',
-              'is_obsolete' => 0,
-            ),
-            'value' => file_create_url(file_load($assembly_user)->uri),
-            'rank' => $file_rank,
-          ));
-          $file_rank++;
+          tpps_add_project_file($form_state, $assembly_user);
         }
         if ($genotype['tripal_fasta']['file_remote']) {
           // Provided url to file.
           $assembly_user = $genotype['tripal_fasta']['file_remote'];
           $assembly_user_id = tpps_chado_insert_record('projectprop', array(
             'project_id' => $project_id,
-            'type_id' => array(
-              'cv_id' => array(
-                'name' => 'schema',
-              ),
-              'name' => 'url',
-              'is_obsolete' => 0,
-            ),
+            'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
             'value' => $assembly_user,
             'rank' => $file_rank,
           ));
@@ -396,44 +295,21 @@ function tpps_file_parsing($accession) {
       elseif ($genotype['ref-genome'] != 'none') {
         $reference_genome_id = tpps_chado_insert_record('projectprop', array(
           'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'sequence',
-            ),
-            'name' => 'reference_genome',
-            'is_obsolete' => 0,
-          ),
+          'type_id' => tpps_load_cvterm('reference_genome')->cvterm_id,
           'value' => $genotype['ref-genome'],
         ));
       }
 
       if (!empty($genotype['files']['file-type']['SNPs Genotype Assay'])) {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'url',
-            'is_obsolete' => 0,
-          ),
-          'value' => file_create_url(file_load($genotype['files']['snps-assay'])->uri),
-          'rank' => $file_rank,
-        ));
-        $file_rank++;
+        $snp_fid = $genotype['files']['snps-assay'];
+        tpps_add_project_file($form_state, $snp_fid);
 
         $options['type'] = 'snp';
-        $options['headers'] = tpps_file_headers($genotype['files']['snps-assay']);
+        $options['headers'] = tpps_file_headers($snp_fid);
         $options['marker'] = 'SNP';
-        $options['type_cvterm'] = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'SNP',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
+        $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
 
-        tpps_file_iterator($genotype['files']['snps-assay'], 'tpps_process_genotype_spreadsheet', $options);
+        tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
 
         tpps_chado_insert_multi($options['records'], $multi_insert_options);
         unset($options['records']);
@@ -442,48 +318,20 @@ function tpps_file_parsing($accession) {
       }
 
       if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'url',
-            'is_obsolete' => 0,
-          ),
-          'value' => file_create_url(file_load($genotype['files']['assay-design'])->uri),
-          'rank' => $file_rank,
-        ));
-        $file_rank++;
+        $design_fid = $genotype['files']['assay-design'];
+        tpps_add_project_file($form_state, $design_fid);
       }
 
       if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'url',
-            'is_obsolete' => 0,
-          ),
-          'value' => file_create_url(file_load($genotype['files']['ssrs'])->uri),
-          'rank' => $file_rank,
-        ));
-        $file_rank++;
+        $ssr_fid = $genotype['files']['ssrs'];
+        tpps_add_project_file($form_state, $ssr_fid);
 
         $options['type'] = 'ssrs';
-        $options['headers'] = tpps_ssrs_headers($genotype['files']['ssrs'], $genotype['files']['ploidy']);
+        $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
         $options['marker'] = $genotype['SSRs/cpSSRs'];
-        $options['type_cvterm'] = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'microsatellite',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
+        $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
 
-        tpps_file_iterator($genotype['files']['ssrs'], 'tpps_process_genotype_spreadsheet', $options);
+        tpps_file_iterator($ssr_fid, 'tpps_process_genotype_spreadsheet', $options);
 
         tpps_chado_insert_multi($options['records'], $multi_insert_options);
         unset($options['records']);
@@ -491,35 +339,18 @@ function tpps_file_parsing($accession) {
       }
 
       if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'url',
-            'is_obsolete' => 0,
-          ),
-          'value' => file_create_url(file_load($genotype['files']['other'])->uri),
-          'rank' => $file_rank,
-        ));
-        $file_rank++;
+        $other_fid = $genotype['files']['other'];
+        tpps_add_project_file($form_state, $other_fid);
 
         $groups = $genotype['files']['other-groups'];
 
         $options['type'] = 'other';
-        $options['headers'] = tpps_other_marker_headers($genotype['files']['other'], $groups['Genotype Data'][0]);
+        $options['headers'] = tpps_other_marker_headers($other_fid, $groups['Genotype Data'][0]);
         $options['marker'] = $genotype['other-marker'];
-        $options['type_cvterm'] = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'genetic_marker',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
+        $options['type_cvterm'] = tpps_load_cvterm('genetic_marker')->cvterm_id;
         $options['tree_id'] = $groups['Tree Id'][1];
 
-        tpps_file_iterator($genotype['files']['other'], 'tpps_process_genotype_spreadsheet', $options);
+        tpps_file_iterator($other_fid, 'tpps_process_genotype_spreadsheet', $options);
 
         tpps_chado_insert_multi($options['records'], $multi_insert_options);
         unset($options['records']);
@@ -529,72 +360,22 @@ function tpps_file_parsing($accession) {
       if (!empty($genotype['files']['file-type']['VCF'])) {
         // TODO: we probably want to use tpps_file_iterator to parse vcf files.
 
-        $genotype_vcf_id = tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'url',
-            'is_obsolete' => 0,
-          ),
-          'value' => file_create_url(file_load($genotype['files']['vcf'])->uri),
-          'rank' => $file_rank,
-        ));
-        $file_rank++;
+        $vcf_fid = $genotype['files']['vcf'];
+        tpps_add_project_file($form_state, $vcf_fid);
 
         $marker = 'SNP';
 
         $records['genotypeprop'] = array();
 
-        $snp_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'SNP',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $format_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sep',
-          ),
-          'name' => 'format',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $qual_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'quality_value',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $filter_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'operation',
-          ),
-          'name' => 'Sequence contamination filtering',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $freq_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'sequence',
-          ),
-          'name' => 'allelic_frequency',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $depth_cvterm = chado_get_cvterm(array(
-          'cv_id' => array(
-            'name' => 'ncit',
-          ),
-          'name' => 'Read Depth',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
-        $n_sample_cvterm = chado_get_cvterm(array(
-          'name' => 'number_samples',
-          'is_obsolete' => 0,
-        ))->cvterm_id;
+        $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
+        $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
+        $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
+        $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
+        $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
+        $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
+        $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
-        $vcf_file = file_load($genotype['files']['vcf']);
+        $vcf_file = file_load($vcf_fid);
         $location = drupal_realpath($vcf_file->uri);
         $vcf_content = fopen($location, 'r');
         $stocks = array();
@@ -780,15 +561,13 @@ function tpps_file_parsing($accession) {
         $species_index = "species-1";
       }
       $tree_accession = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index];
+      $tree_acc_fid = $tree_accession['file'];
+      if (!empty($form_state['revised_files'][$tree_acc_fid]) and ($file = file_load($form_state['revised_files'][$tree_acc_fid]))) {
+        $tree_acc_fid = $form_state['revised_files'][$tree_acc_fid];
+      }
       $id_col = $tree_accession['file-groups']['Tree Id'][1];
 
-      $env_cvterm = chado_get_cvterm(array(
-        'cv_id' => array(
-          'name' => 'biomaterial_property',
-        ),
-        'name' => 'climate_environment',
-        'is_obsolete' => 0,
-      ))->cvterm_id;
+      $env_cvterm = tpps_load_cvterm('environment')->cvterm_id;
 
       if ($env_layers_check and db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
         $layers_params = array();
@@ -838,7 +617,7 @@ function tpps_file_parsing($accession) {
           'suffix' => 0,
         );
 
-        tpps_file_iterator($tree_accession['file'], 'tpps_process_environment_layers', $options);
+        tpps_file_iterator($tree_acc_fid, 'tpps_process_environment_layers', $options);
 
         tpps_chado_insert_multi($options['records']);
         unset($options['records']);
@@ -873,23 +652,11 @@ function tpps_file_parsing($accession) {
         'tree_info' => $form_state['tree_info'],
         'tree_id' => $tree_accession['file-groups']['Tree Id'][1],
         'env_cvterm' => $env_cvterm,
-        'desc_id' => chado_get_cvterm(array(
-          'name' => 'description',
-          'cv_id' => array(
-            'name' => 'schema',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id,
-        'unit_id' => chado_get_cvterm(array(
-          'name' => 'unit',
-          'cv_id' => array(
-            'name' => 'uo',
-          ),
-          'is_obsolete' => 0,
-        ))->cvterm_id,
+        'desc_id' => tpps_load_cvterm('description')->cvterm_id,
+        'unit_id' => tpps_load_cvterm('unit')->cvterm_id,
       );
 
-      tpps_file_iterator($tree_accession['file'], 'tpps_process_environment_manual', $options);
+      tpps_file_iterator($tree_acc_fid, 'tpps_process_environment_manual', $options);
 
       tpps_chado_insert_multi($options['records']);
       unset($options['records']);
@@ -1399,9 +1166,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 
   $gps_query = chado_select_record('stockprop', array('value'), array(
     'stock_id' => $stock_id,
-    'type_id' => array(
-      'name' => 'gps_latitude',
-    ),
+    'type_id' =>tpps_load_cvterm('gps_latitude')->cvterm_id,
   ), array(
     'limit' => 1,
   ));
@@ -1409,9 +1174,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 
   $gps_query = chado_select_record('stockprop', array('value'), array(
     'stock_id' => $stock_id,
-    'type_id' => array(
-      'name' => 'gps_longitude',
-    ),
+    'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
   ), array(
     'limit' => 1,
   ));

@@ -30,12 +30,7 @@ function tpps_author_autocomplete($string) {
 
   $results = chado_select_record('contact', array('name'), array(
     'name' => $string,
-    'type_id' => array(
-      'name' => 'Person',
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-    ),
+    'type_id' => tpps_load_cvterm('person')->cvterm_id,
   ), array(
     'regex_columns' => array('name'),
   ));
@@ -100,12 +95,7 @@ function tpps_organization_autocomplete($string) {
 
   $results = chado_select_record('contact', array('name'), array(
     'name' => $string,
-    'type_id' => array(
-      'name' => 'Organization',
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-    ),
+    'type_id' => tpps_load_cvterm('organization')->cvterm_id,
   ), array(
     'regex_columns' => array('name'),
   ));
@@ -303,12 +293,7 @@ function tpps_units_autocomplete($string) {
       'data' => $string,
       'op' => '~*',
     ),
-    'type_id' => array(
-      'name' => 'unit',
-      'cv_id' => array(
-        'name' => 'uo',
-      ),
-    ),
+    'type_id' => tpps_load_cvterm('unit')->cvterm_id,
   ));
 
   foreach ($results as $row) {

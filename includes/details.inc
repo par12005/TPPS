@@ -513,9 +513,7 @@ function tpps_details_species(array &$state) {
       $family = db_select('chado.organismprop', 'o')
         ->fields('o', array('value'))
         ->condition('organism_id', $id)
-        ->condition('type_id', chado_get_cvterm(array(
-          'name' => 'family',
-        ))->cvterm_id)
+        ->condition('type_id', tpps_load_cvterm('family')->cvterm_id)
         ->execute()->fetchObject()->value;
     }
 
@@ -523,9 +521,7 @@ function tpps_details_species(array &$state) {
       $order = db_select('chado.organismprop', 'o')
         ->fields('o', array('value'))
         ->condition('organism_id', $id)
-        ->condition('type_id', chado_get_cvterm(array(
-          'name' => 'order',
-        ))->cvterm_id)
+        ->condition('type_id', tpps_load_cvterm('order')->cvterm_id)
         ->execute()->fetchObject()->value;
     }
 
@@ -533,9 +529,7 @@ function tpps_details_species(array &$state) {
       $common_name = db_select('chado.organismprop', 'o')
         ->fields('o', array('value'))
         ->condition('organism_id', $id)
-        ->condition('type_id', chado_get_cvterm(array(
-          'name' => 'common name',
-        ))->cvterm_id)
+        ->condition('type_id', tpps_load_cvterm('common name')->cvterm_id)
         ->execute()->fetchObject()->value;
     }
 
