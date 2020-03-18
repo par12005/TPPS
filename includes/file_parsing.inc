@@ -847,9 +847,13 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       );
     }
     elseif (isset($meta_headers['time'])) {
+      $val = $row[$meta_headers['time']];
+      if (is_int($val)) {
+        $val = tpps_xlsx_translate_date($val);
+      }
       $records['phenotypeprop']["$phenotype_name-time"] = array(
         'type_id' => $cvterms['time'],
-        'value' => $row[$meta_headers['time']],
+        'value' => $val,
         '#fk' => array(
           'phenotype' => $phenotype_name,
         ),
