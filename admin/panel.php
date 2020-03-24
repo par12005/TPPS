@@ -188,7 +188,17 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
         ),
       ),
     );
+  }
 
+  $form['admin-comments'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Additional comments (administrator):'),
+    '#default_value' => $submission_state['admin_comments'] ?? NULL,
+    '#prefix' => '<div id="tpps-admin-comments">',
+    '#suffix' => '</div>',
+  );
+
+  if ($status == "Pending Approval") {
     $form['APPROVE'] = array(
       '#type' => 'submit',
       '#value' => t('Approve'),
@@ -199,14 +209,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       ),
     );
   }
-
-  $form['admin-comments'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Additional comments (administrator):'),
-    '#default_value' => $submission_state['admin_comments'] ?? NULL,
-    '#prefix' => '<div id="tpps-admin-comments">',
-    '#suffix' => '</div>',
-  );
 
   if ($status != "Pending Approval") {
     $form['SAVE_COMMENTS'] = array(
