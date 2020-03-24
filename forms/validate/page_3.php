@@ -72,6 +72,10 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           }
         }
 
+        if (isset($values['exact_coords']) and !$values['exact_coords'] and empty($values['coord_precision'])) {
+          form_set_error("tree-accession][species-$i][coord_precision", "Coordinates accuracy: field is required.");
+        }
+
         if (!form_get_errors()) {
           $options = array(
             'no_header' => !empty($values['file-no-header']),

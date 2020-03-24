@@ -205,6 +205,17 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
     return $val;
   }
 
+  $complete_parents = $parents;
+  array_unshift($complete_parents, 'complete form');
+  $element = drupal_array_get_nested_value($state, $complete_parents);
+  if (isset($element['#type']) and $element['#type'] != 'fieldset') {
+    array_push($complete_parents, '#value');
+  }
+  $val = drupal_array_get_nested_value($state, $complete_parents);
+  if (isset($val)) {
+    return $val;
+  }
+
   $saved_value_parents = $parents;
   if (!empty($file_name)) {
     $saved_value_parents = array();
