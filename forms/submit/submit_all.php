@@ -822,7 +822,12 @@ function tpps_submit_page_4(array &$form_state) {
 }
 
 /**
+ * Submits phenotype information for one species.
  *
+ * @param array $form_state
+ *   The TPPS submission object.
+ * @param int $i
+ *   The organism number we are submitting.
  */
 function tpps_submit_phenotype(array &$form_state, $i) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
@@ -966,7 +971,14 @@ function tpps_submit_phenotype(array &$form_state, $i) {
 }
 
 /**
- * 
+ * Submits genotype information for one species.
+ *
+ * @param array $form_state
+ *   The TPPS submission object.
+ * @param array $species_codes
+ *   An array of 4-letter species codes associated with the submission.
+ * @param int $i
+ *   The organism number we are submitting.
  */
 function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
@@ -1338,7 +1350,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
 }
 
 /**
+ * Submits environmental information for one species.
  *
+ * @param array $form_state
+ *   The TPPS submission object.
+ * @param int $i
+ *   The organism number we are submitting.
  */
 function tpps_submit_environment(array &$form_state, $i) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
