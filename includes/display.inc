@@ -684,7 +684,7 @@ function tpps_completed_display($accession = NULL) {
 
   global $base_url;
   $display = "";
-  $link = "$base_url/tpps_details/accession/$accession";
+  $link = "$base_url/tpps/details/$accession";
 
   $old_form_state = tpps_load_submission($accession);
   $values = $old_form_state['saved_values'];

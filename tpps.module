@@ -430,7 +430,7 @@ function tpps_mail($key, array &$message, array $params) {
       "Congratulations! Your submission to TPPS has been approved!<br><br>
       You may now refer to your submitted data with accession number {$params['accession']}.<br><br>
       You can still view your submission from your <a href=\"{$params['base_url']}/completed-submission/{$params['accession']}\">TPPS Completed Submissions</a> tab.<br>
-      Your submission should be public on the <a href=\"{$params['base_url']}/tpps_details/main\">TPPS/TGDR Landing Page</a> within the next 24 hours.<br>
+      Your submission should be public on the <a href=\"{$params['base_url']}/tpps/details\">TPPS/TGDR Landing Page</a> within the next 24 hours.<br>
       To generate a DOI for your submission, please click <a href=\"{$params['base_url']}/tpps/doi/{$params['accession']}\">here</a>.";
       break;
 
