@@ -75,6 +75,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     $options['files'] = array(
       'revision_destination' => TRUE,
     );
+
     foreach ($submission_state['file_info'] as $page => $files) {
       foreach ($files as $fid => $file_type) {
         $file = file_load($fid) ?? NULL;
@@ -199,6 +200,25 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     );
   }
 
+  $form['admin-comments'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Additional comments (administrator):'),
+    '#default_value' => $submission_state['admin_comments'] ?? NULL,
+    '#prefix' => '<div id="tpps-admin-comments">',
+    '#suffix' => '</div>',
+  );
+
+  if ($status != "Pending Approval") {
+    $form['SAVE_COMMENTS'] = array(
+      '#type' => 'button',
+      '#value' => t('Save Comments'),
+      '#ajax' => array(
+        'callback' => 'tpps_save_admin_comments',
+        'wrapper' => 'tpps-admin-comments',
+      ),
+    );
+  }
+
   $date = $submission_state['saved_values']['summarypage']['release-date'] ?? NULL;
   if (!empty($date)) {
     $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
@@ -247,6 +267,25 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       ),
     ),
   );
+}
+
+/**
+ * Ajax callback to save admin comments.
+ *
+ * @param array $form
+ *   The admin panel form element.
+ * @param array $form_state
+ *   The state of the admin panel form element.
+ *
+ * @return array
+ *   The updated form element.
+ */
+function tpps_save_admin_comments(array $form, array $form_state) {
+  $state = tpps_load_submission($form_state['values']['accession']);
+  $state['admin_comments'] = $form_state['values']['admin-comments'];
+  tpps_update_submission($state);
+  drupal_set_message(t('Comments saved successfully'), 'status');
+  return $form['admin-comments'];
 }
 
 /**
@@ -536,6 +575,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $user = user_load($submission->uid);
   $to = $user->mail;
   $state = unserialize($submission->submission_state);
+  $state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
   $params = array();
 
   $from = variable_get('site_mail', '');
