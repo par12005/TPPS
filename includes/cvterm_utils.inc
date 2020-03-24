@@ -243,6 +243,8 @@ function tpps_get_cvterms_v1_2() {
     'source_description' => 'local:A textual description of study type and comments for a source.',
     'email' => 'local:Email address',
     'number_samples' => 'local:Number of samples',
+    'gps_type' => 'local:Type of GPS coordinates. Exact, Approximate, or Site-based.',
+    'gps_precision' => 'local:Precision of GPS coordinates.',
 
     // Tripal terms.
     'article' => 'tripal_pub:Journal Article',
