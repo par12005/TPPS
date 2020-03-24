@@ -279,7 +279,7 @@ function tpps_get_cvterms_v1_2() {
     'pH_level' => 'pato:acidity',
     'time' => 'pato:time',
     'intensity' => 'pato:intensity',
-    'description' => 'pato:Description',
+    'description' => 'pato:description',
 
     // PO terms.
     'whole plant' => 'po:whole plant',
