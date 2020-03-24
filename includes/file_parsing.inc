@@ -21,8 +21,7 @@ function tpps_file_parsing($accession) {
   $form_state = tpps_load_submission($accession);
 
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-  $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
-  $organism_number = $firstpage['organism']['number'];
+  $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
   $file_rank = &$form_state['file_rank'];
   $record_group = variable_get('tpps_record_group', 10000);
   $project_id = $form_state['ids']['project_id'];
@@ -37,16 +36,6 @@ function tpps_file_parsing($accession) {
   }
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    $parts = explode(" ", $firstpage['organism'][$i]);
-    $genus = $parts[0];
-    $species = implode(" ", array_slice($parts, 1));
-
-    if (isset($parts[2]) and ($parts[2] == 'var.' or $parts[2] == 'subsp.')) {
-      $infra = implode(" ", array_slice($parts, 2));
-    }
-    else {
-      $infra = NULL;
-    }
 
     if (isset($fourthpage["organism-$i"]['phenotype'])) {
       $phenotype = $fourthpage["organism-$i"]['phenotype'];
