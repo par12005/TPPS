@@ -103,6 +103,8 @@ jQuery(document).ready(function ($) {
     });
   });
 
+  jQuery('#edit-save-comments').attr('type', 'button');
+
   var details_tabs = jQuery('.nav-tabs > .nav-item > .nav-link');
   jQuery.each(details_tabs, function() {
     jQuery(this).click(detailsTab);
