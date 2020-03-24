@@ -598,6 +598,8 @@ function tpps_submit_page_3(array &$form_state) {
     'county' => tpps_load_cvterm('county')->cvterm_id,
     'district' => tpps_load_cvterm('district')->cvterm_id,
     'loc' => tpps_load_cvterm('location')->cvterm_id,
+    'gps_type' => tpps_load_cvterm('gps_type')->cvterm_id,
+    'precision' => tpps_load_cvterm('gps_precision')->cvterm_id,
   );
 
   $records = array(
@@ -660,6 +662,11 @@ function tpps_submit_page_3(array &$form_state) {
     $options['no_header'] = !empty($tree_accession['file-no-header']);
     $options['empty'] = $tree_accession['file-empty'];
     $options['pop_group'] = $tree_accession['pop-group'];
+    $options['exact'] = $tree_accession['exact_coords'] ?? NULL;
+    $options['precision'] = NULL;
+    if (!$options['exact']) {
+      $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
+    }
     $county = array_search('8', $column_vals);
     $district = array_search('9', $column_vals);
     $clone = array_search('13', $column_vals);
@@ -1359,7 +1366,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
  */
 function tpps_submit_environment(array &$form_state, $i) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-  $environment = $fourthpage["organism-$i"]['environment'];
+  $environment = $fourthpage["organism-$i"]['environment'] ?? NULL;
   if (empty($environment)) {
     return;
   }
@@ -2280,6 +2287,9 @@ function tpps_process_accession($row, array &$options) {
   $tree_info = &$options['tree_info'];
   $record_group = variable_get('tpps_record_group', 10000);
   $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
+  $site_based = FALSE;
+  $exact = $options['exact'] ?? NULL;
+  $precision = $options['precision'] ?? NULL;
 
   $tree_id = $row[$cols['id']];
   $id = $saved_ids['organism_ids'][$options['org_num']];
@@ -2341,6 +2351,7 @@ function tpps_process_accession($row, array &$options) {
     $lng = $standard_coord[1];
   }
   elseif (!empty($row[$cols['state']]) and !empty($row[$cols['country']])) {
+    $exact = FALSE;
     $records['stockprop']["$tree_id-country"] = array(
       'type_id' => $cvterm['country'],
       'value' => $row[$cols['country']],
@@ -2414,6 +2425,7 @@ function tpps_process_accession($row, array &$options) {
     }
   }
   else {
+    $site_based = TRUE;
     $location = $options['pop_group'][$row[$cols['pop_group']]];
     $coord = tpps_standard_coord($location);
 
@@ -2471,6 +2483,32 @@ function tpps_process_accession($row, array &$options) {
     );
     $tree_info[$tree_id]['lat'] = $lat;
     $tree_info[$tree_id]['lng'] = $lng;
+
+    $gps_type = "Site-based";
+    if (!$site_based) {
+      $gps_type = "Exact";
+      if (!$exact) {
+        $gps_type = "Approximate";
+      }
+    }
+
+    $records['stockprop']["$tree_id-gps-type"] = array(
+      'type_id' => $cvterm['gps_type'],
+      'value' => $gps_type,
+      '#fk' => array(
+        'stock' => $tree_id,
+      ),
+    );
+
+    if ($gps_type == "Approximate" and !empty($precision)) {
+      $records['stockprop']["$tree_id-precision"] = array(
+        'type_id' => $cvterm['precision'],
+        'value' => $precision,
+        '#fk' => array(
+          'stock' => $tree_id,
+        ),
+      );
+    }
   }
 
   $stock_count++;
