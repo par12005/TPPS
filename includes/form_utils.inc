@@ -250,4 +250,8 @@ function tpps_form_state_info(&$new, &$old) {
   $new['approved'] = $old['approved'] ?? NULL;
   $new['completed'] = $old['completed'] ?? NULL;
   $new['loaded'] = $old['loaded'] ?? NULL;
+  $new['submitting_uid'] = $old['submitting_uid'] ?? NULL;
+  $new['job_id'] = $old['job_id'] ?? NULL;
+  $new['revised_files'] = $old['revised_files'] ?? NULL;
+  $new['admin_comments'] = $old['admin_comments'] ?? NULL;
 }
