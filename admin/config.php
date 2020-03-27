@@ -69,6 +69,20 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_admin_email', 'treegenesdb@gmail.com'),
   );
 
+  $form['tpps_refresh_views_job_frequency'] = array(
+    '#type' => 'textfield',
+    '#title' => t('TPPS Refresh Views Cron Job Frequency'),
+    '#default_value' => variable_get('tpps_refresh_views_job_frequency', '0 */12 * * *'),
+    '#description' => t('This should be a valid crontab schedule string. If you don\'t know what that is or would like more information, see ') . l(t('here'), 'http://man7.org/linux/man-pages/man5/crontab.5.html') . t('. Please also note that if you change this value, you will need to clear your site\'s cache in order for the change to take effect.'),
+  );
+
+  $form['tpps_delayed_submissions_job_frequency'] = array(
+    '#type' => 'textfield',
+    '#title' => t('TPPS Delayed Submissions Cron Job Frequency'),
+    '#default_value' => variable_get('tpps_delayed_submissions_job_frequency', '0 */6 * * *'),
+    '#description' => t('This should be a valid crontab schedule string. If you don\'t know what that is or would like more information, see ') . l(t('here'), 'http://man7.org/linux/man-pages/man5/crontab.5.html') . t('. Please also note that if you change this value, you will need to clear your site\'s cache in order for the change to take effect.'),
+  );
+
   $form['tpps_cartogratree_env'] = array(
     '#type' => 'checkbox',
     '#title' => t('Use environmental layers from CartograTree'),
@@ -131,10 +145,9 @@ function tpps_admin_settings(array $form, array &$form_state) {
 
   $form['tpps_study_photo_files_dir'] = array(
     '#type' => 'textfield',
-    '#title' => t('Author files:'),
+    '#title' => t('Study photo files:'),
     '#default_value' => $photos,
     '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$photos"))),
-    '#prefix' => t('<h1>File Upload locations</h1>All file locations are relative to the "public://" file stream. Your current "public://" file stream points to "@path".<br><br>', array('@path' => drupal_realpath('public://'))),
   );
 
   $form['tpps_tree_pics_files_dir'] = array(
