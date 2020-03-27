@@ -348,24 +348,26 @@ function tpps_access($permission, array $args = array()) {
 function tpps_cronapi() {
   $items = array();
 
+  $freq = variable_get('tpps_refresh_views_job_frequency', '0 */12 * * *');
   $items['tpps_refresh_views'] = array(
     'title' => t('Refresh TPPS and CartograTree views'),
     'callback' => 'tpps_refresh_views',
     'scheduler' => array(
       'name' => 'crontab',
       'crontab' => array(
-        'rules' => array('0 */12 * * *'),
+        'rules' => array($freq),
       ),
     ),
   );
 
+  $freq = variable_get('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
   $items['tpps_delayed_submissions'] = array(
     'title' => t('Check to see if any of the delayed TPPS submissions should be published yet'),
     'callback' => 'tpps_delayed_submissions',
     'scheduler' => array(
       'name' => 'crontab',
       'crontab' => array(
-        'rules' => array('0 */6 * * *'),
+        'rules' => array($freq),
       ),
     ),
   );
