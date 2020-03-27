@@ -131,10 +131,9 @@ function tpps_admin_settings(array $form, array &$form_state) {
 
   $form['tpps_study_photo_files_dir'] = array(
     '#type' => 'textfield',
-    '#title' => t('Author files:'),
+    '#title' => t('Study photo files:'),
     '#default_value' => $photos,
     '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$photos"))),
-    '#prefix' => t('<h1>File Upload locations</h1>All file locations are relative to the "public://" file stream. Your current "public://" file stream points to "@path".<br><br>', array('@path' => drupal_realpath('public://'))),
   );
 
   $form['tpps_tree_pics_files_dir'] = array(
