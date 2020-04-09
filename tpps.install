@@ -1262,3 +1262,58 @@ function tpps_update_7108() {
   variable_set('tpps_cvterms_version', '1_1');
   tpps_migrate_cvterms(1, 1, 1, 2);
 }
+
+/**
+ * Implements hook_update_N().
+ *
+ * Corrects file path records for renamed files in the db.
+ */
+function tpps_update_7109() {
+  $submissions = tpps_load_submission_multiple(array(
+    'status' => 'Approved',
+  ));
+  $or = db_or()
+    ->condition('type_id', tpps_load_cvterm('file_path')->cvterm_id)
+    ->condition('type_id', tpps_load_cvterm('file_path', array(), '1_1')->cvterm_id);
+  foreach ($submissions as $state) {
+    $files = $state['files'] ?? NULL;
+    if (!empty($files) and !empty($state['file_info'])) {
+      $transaction = db_transaction();
+      try {
+        // Delete files from projectprop
+        $num_files = db_delete('chado.projectprop')
+          ->condition('project_id', $state['ids']['project_id'])
+          ->condition($or)
+          ->execute();
+        $state['file_rank'] = 0;
+        $state_files = count($files);
+        $state_files += count(($state['revised_files'] ?? array()));
+        if ($num_files != $state_files) {
+          throw new \Exception("Improper number of files in db vs files in state: $num_files in db and $state_files in state");
+        }
+        if (!empty($state['revised_files'])) {
+          foreach ($state['revised_files'] as $fid) {
+            $files[] = $fid;
+          }
+        }
+        foreach ($files as $fid) {
+          if ($fid) {
+            $file = file_load($fid);
+            tpps_chado_insert_record('projectprop', array(
+              'project_id' => $state['ids']['project_id'],
+              'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
+              'value' => file_create_url($file->uri),
+              'rank' => $state['file_rank']++,
+            ));
+          }
+        }
+        tpps_update_submission($state);
+      }
+      catch (\Exception $e) {
+        drupal_set_message("skipping accession {$state['accession']}: " . $e->getMessage());
+        $transaction->rollback();
+      }
+      unset($transaction);
+    }
+  }
+}
