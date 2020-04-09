@@ -183,9 +183,18 @@ function tpps_submission_rename_files($accession) {
     foreach ($state['file_info'] as $page_files) {
       foreach ($page_files as $fid => $name) {
         $state['files'][] = $fid;
+        $old_file = file_load($fid);
+        $old_path = file_create_url($old_file->uri);
         $file = tpps_rename_file($fid, "{$accession}_{$name}");
         $file->status = FILE_STATUS_PERMANENT;
-        file_save($file);
+        $file = file_save($file);
+        $new_path = file_create_url($file->uri);
+        chado_update_record('projectprop', array(
+          'project_id' => $state['ids']['project_id'],
+          'value' => $old_path,
+        ), array(
+          'value' => $new_path,
+        ));
         if (!empty($state['revised_files'][$fid])) {
           $rev_fid = $state['revised_files'][$fid];
           $state['files'][] = $rev_fid;
