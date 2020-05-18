@@ -184,6 +184,18 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     'parents' => array($id, 'phenotype'),
     'wrapper' => "phenotype-main-$id",
     'name_suffix' => $id,
+    'alternative_buttons' => array(
+      "Add 5 Phenotypes" => 5,
+      "Add 10 Phenotypes" => 10,
+      "Clear All Phenotypes" => 'tpps_phenotype_number_clear',
+    ),
+    'button_weights' => array(
+      "Add Phenotype" => -5,
+      "Add 5 Phenotypes" => -4,
+      "Add 10 Phenotypes" => -3,
+      "Remove Phenotype" => -2,
+      "Clear All Phenotypes" => -1,
+    ),
     'substitute_fields' => array(
       array('name', '#title'),
       array('name', '#prefix'),
@@ -265,6 +277,21 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   $form[$id]['phenotype']['metadata']['no-header'] = array();
 
   return $form[$id]['phenotype'];
+}
+
+/**
+ * Returns the phenotype number when the "Clear Phenotypes" button is pressed.
+ *
+ * @param string $button_name
+ *   The button being pressed.
+ * @param int $value
+ *   The value before the button was pressed.
+ *
+ * @return int
+ *   The resulting value from pressing the button.
+ */
+function tpps_phenotype_number_clear($button_name, $value) {
+  return 0;
 }
 
 /**
