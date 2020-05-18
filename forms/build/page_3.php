@@ -184,7 +184,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           continue;
         }
         $val = $data;
-        $fid = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
+        $fid = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'] ?? NULL;
         if (!empty($data['#value'])) {
           $fid = $form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid'];
           $val = $data['#value'];
