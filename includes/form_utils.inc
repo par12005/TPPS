@@ -133,8 +133,8 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
  * This function first checks the values of the form state, then the
  * saved_values, and finally returns the default if it cannot find the number.
  * This function also accepts an optional $options array, which contains
- * alternative increment values. This can be useful for adding buttons to a
- * dynamic list such as "Add 5 of x".
+ * alternative increment values, or functions which return a new number. This
+ * can be useful for adding buttons to a dynamic list such as "Add 5 of x".
  *
  * @param array $state
  *   The state of the form.
