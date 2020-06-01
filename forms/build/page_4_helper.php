@@ -334,6 +334,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $parents = array_merge($marker_parents, array('SSRs/cpSSRs'));
   $ssrs_check = tpps_get_ajax_value($form_state, $parents);
 
+  $parents = array_merge($marker_parents, array('Indels'));
+  $indel_check = tpps_get_ajax_value($form_state, $parents);
+
   $parents = array_merge($marker_parents, array('Other'));
   $other_marker_check = tpps_get_ajax_value($form_state, $parents);
 
@@ -382,6 +385,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     $options['SSRs/cpSSRs Genotype Spreadsheet'] = 'SSRs/cpSSRs Genotype Spreadsheet';
     $parents = array_merge($file_type_parents, array('SSRs/cpSSRs Genotype Spreadsheet'));
     $ssrs_file_check = tpps_get_ajax_value($form_state, $parents);
+  }
+  if (!empty($indel_check)) {
+    $options['Indel Genotype Spreadsheet'] = 'Indel Genotype Spreadsheet';
+    $parents = array_merge($file_type_parents, array('Indel Genotype Spreadsheet'));
+    $indel_file_check = tpps_get_ajax_value($form_state, $parents);
   }
   if (!empty($other_marker_check)) {
     $options['Other Marker Genotype Spreadsheet'] = 'Other Marker Genotype Spreadsheet';
@@ -504,6 +512,34 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
   else {
     $fields['files']['ssrs'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+  }
+
+  if (!empty($indel_file_check)) {
+    $fields['files']['indels'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Indel Genotype Spreadsheet: *'),
+      '#upload_location' => "$genotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#description' => t('Please upload a spreadsheet containing your Indels data. The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain Indel data.'),
+      '#tree' => TRUE,
+    );
+
+    if (isset($fields['files']['indels']['#value']['fid'])) {
+      $fields['files']['indels']['#default_value'] = $fields['files']['indels']['#value']['fid'];
+    }
+    if (!empty($fields['files']['indels']['#default_value']) and ($file = file_load($fields['files']['indels']['#default_value']))) {
+      // Stop using the file so it can be deleted if the user clicks 'remove'.
+      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+  }
+  else {
+    $fields['files']['indels'] = array(
       '#type' => 'managed_file',
       '#tree' => TRUE,
       '#access' => FALSE,
@@ -998,6 +1034,7 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#options' => drupal_map_assoc(array(
       t('SNPs'),
       t('SSRs/cpSSRs'),
+      t('Indels'),
       t('Other'),
     )),
   );
