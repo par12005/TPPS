@@ -1146,6 +1146,23 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     $genotype_count = 0;
   }
 
+  if (!empty($genotype['files']['file-type']['Indel Genotype Spreadsheet'])) {
+    $indel_fid = $genotype['files']['indels'];
+    tpps_add_project_file($form_state, $indel_fid);
+
+    $options['type'] = 'indel';
+    $options['headers'] = tpps_file_headers($indel_fid);
+    $options['marker'] = 'Indel';
+    $options['type_cvterm'] = tpps_load_cvterm('indel')->cvterm_id;
+
+    tpps_file_iterator($indel_fid, 'tpps_process_genotype_spreadsheet', $options);
+
+    tpps_chado_insert_multi($options['records'], $multi_insert_options);
+    unset($options['records']);
+    $genotype_total += $genotype_count;
+    $genotype_count = 0;
+  }
+
   if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
     $other_fid = $genotype['files']['other'];
     tpps_add_project_file($form_state, $other_fid);

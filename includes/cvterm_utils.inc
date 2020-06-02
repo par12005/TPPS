@@ -276,6 +276,7 @@ function tpps_get_cvterms_v1_2() {
     'format' => 'ncit:Format',
     'minimum' => 'ncit:Minimum',
     'maximum' => 'ncit:Maximum',
+    'indel' => 'ncit:Indel Mutation',
 
     // PATO terms.
     'pH_level' => 'pato:acidity',

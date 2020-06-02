@@ -458,7 +458,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     form_set_error("$id][genotype][other-marker", "Other Genotype marker: field is required.");
   }
 
-  if (empty($file_type['VCF']) and empty($file_type['SNPs Genotype Assay']) and empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and empty($file_type['Other Marker Genotype Spreadsheet'])) {
+  if (preg_match('/^0+$/', implode('', $file_type))) {
     form_set_error("$id][genotype][files][file-type", "Genotype File Type: field is required.");
   }
   else {
@@ -650,6 +650,51 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $file = file_load($genotype['files']['ssrs']);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Spreadsheet_$org_num";
+      }
+    }
+
+    if (!empty($file_type['Indel Genotype Spreadsheet']) and !$genotype['files']['indels']) {
+      form_set_error("$id][genotype][files][indels]", "Indel Genotype Spreadsheet: field is required.");
+    }
+    elseif (!empty($file_type['Indel Genotype Spreadsheet'])) {
+      $indel_fid = $genotype['files']['indels'];
+      $headers = tpps_file_headers($indel_fid);
+      $id_col_name = key($headers);
+      while (($k = array_search(NULL, $headers))) {
+        unset($headers[$k]);
+      }
+      $num_columns = tpps_file_width($indel_fid) - 1;
+      $num_unique_columns = count(array_unique($headers)) - 1;
+
+      if ($num_unique_columns != $num_columns) {
+        form_set_error("$id][genotype][files][indels", "Indel Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file.");
+      }
+
+      if (!form_get_errors()) {
+        if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+          $species_index = 'species-1';
+        }
+        else {
+          $num = substr($id, 9);
+          $species_index = "species-$num";
+        }
+        $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
+        $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+
+        $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
+        $missing_trees = tpps_compare_files($indel_fid, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
+
+        if ($missing_trees !== array()) {
+          $tree_id_str = implode(', ', $missing_trees);
+          form_set_error("$id][genotype][files][indels", "Indel Genotype Spreadsheet: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
+        }
+      }
+
+      if (!form_get_errors()) {
+        // Preserve file if it is valid.
+        $file = file_load($indel_fid);
+        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Indel_Assay_$org_num";
       }
     }
 
