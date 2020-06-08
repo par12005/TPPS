@@ -21,7 +21,7 @@
  * @global stdClass $user
  *   The user trying to access the submission.
  *
- * @return array
+ * @return array|object
  *   The form_state of the TPPS Submission form.
  */
 function tpps_load_submission($accession, $state = TRUE) {
