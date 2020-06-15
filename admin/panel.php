@@ -580,7 +580,7 @@ function tpps_admin_panel_validate($form, &$form_state) {
         }
         $result = db_select('tpps_submission', 's')
           ->fields('s')
-          ->condition('accesison', $acc)
+          ->condition('accession', $acc)
           ->range(0, 1)
           ->execute()->fetchObject();
         if (!empty($result)) {
