@@ -576,6 +576,15 @@ function tpps_admin_panel_validate($form, &$form_state) {
       foreach ($alt_acc as $acc) {
         if (!preg_match('/^TGDR\d{3,}$/', $acc)) {
           form_set_error('alternative_accessions', "The accession, $acc is not a valid TGDR### accession number.");
+          continue;
+        }
+        $result = db_select('tpps_submission', 's')
+          ->fields('s')
+          ->condition('accesison', $acc)
+          ->range(0, 1)
+          ->execute()->fetchObject();
+        if (!empty($result)) {
+          form_set_error('alternative_accessions', "The accession, $acc is already in use.");
         }
       }
     }
