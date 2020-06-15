@@ -156,14 +156,15 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
  */
 function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $default = 0, $minimum = 0, array $options = array()) {
   // Get page number.
-  $page = $state['stage'];
+  $page = $state['stage'] ?? '';
 
   // Check form_state values, update if necessary.
   $value_parents = $parents;
   // If the triggering element is an upload/remove file button, then the
   // form_state['values'] array will not be loaded correctly, so we will need
   // to use the 'complete form' array instead.
-  if (preg_match('/^.*_(upload|remove)_button$/', $state['triggering_element']['#name'])) {
+  $button_name = $state['triggering_element']['#name'] ?? '';
+  if (preg_match('/^.*_(upload|remove)_button$/', $button_name)) {
     array_unshift($value_parents, 'complete form');
     $val = drupal_array_get_nested_value($state, $value_parents);
     if (isset($val['#type']) and $val['#type'] == 'hidden') {
@@ -174,8 +175,8 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
     array_unshift($value_parents, 'values');
   }
   $val = drupal_array_get_nested_value($state, $value_parents);
-  if (isset($val) and array_key_exists($state['triggering_element']['#name'], $options)) {
-    $increment = $options[$state['triggering_element']['#name']];
+  if (isset($val) and array_key_exists($button_name, $options)) {
+    $increment = $options[$button_name];
     $new_val = $val;
     if (is_int($increment)) {
       $new_val = $val + $increment;
@@ -184,14 +185,14 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
       }
     }
     if (is_string($increment) and function_exists($increment)) {
-      $new_val = $increment($state['triggering_element']['#name'], $val);
+      $new_val = $increment($button_name, $val);
     }
     drupal_array_set_nested_value($state, $value_parents, $new_val);
   }
-  elseif (isset($val) and $state['triggering_element']['#name'] == $up) {
+  elseif (isset($val) and $button_name == $up) {
     drupal_array_set_nested_value($state, $value_parents, $val + 1);
   }
-  elseif (isset($val) and $state['triggering_element']['#name'] == $down and $val > $minimum) {
+  elseif (isset($val) and $button_name == $down and $val > $minimum) {
     drupal_array_set_nested_value($state, $value_parents, $val - 1);
   }
   $val = drupal_array_get_nested_value($state, $value_parents);
@@ -305,4 +306,5 @@ function tpps_form_state_info(&$new, &$old) {
   $new['job_id'] = $old['job_id'] ?? NULL;
   $new['revised_files'] = $old['revised_files'] ?? NULL;
   $new['admin_comments'] = $old['admin_comments'] ?? NULL;
+  $new['alternative_accessions'] = $old['alternative_accessions'] ?? NULL;
 }

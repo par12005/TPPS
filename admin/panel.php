@@ -246,6 +246,22 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     }
   }
 
+  if ($status == "Approved") {
+    $alt_acc = $submission_state['alternative_accessions'] ?? '';
+
+    $form['alternative_accessions'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Alternative accessions'),
+      '#default_value' => $alt_acc,
+      '#description' => t('Please provide a comma-delimited list of alternative accessions you would like to assign to this submission.'),
+    );
+
+    $form['SAVE_ALTERNATIVE_ACCESSIONS'] = array(
+      '#type' => 'submit',
+      '#value' => t('Save Alternative Accessions'),
+    );
+  }
+
   $form['state-status'] = array(
     '#type' => 'select',
     '#title' => t('Change state status'),
@@ -554,6 +570,25 @@ function tpps_admin_panel_validate($form, &$form_state) {
         }
       }
     }
+
+    if ($form_state['triggering_element']['#value'] == 'Save Alternative Accessions') {
+      $alt_acc = explode(',', $form_state['values']['alternative_accessions']);
+      foreach ($alt_acc as $acc) {
+        if (!preg_match('/^TGDR\d{3,}$/', $acc)) {
+          form_set_error('alternative_accessions', "The accession, $acc is not a valid TGDR### accession number.");
+          continue;
+        }
+        $result = db_select('tpps_submission', 's')
+          ->fields('s')
+          ->condition('accession', $acc)
+          ->range(0, 1)
+          ->execute()->fetchObject();
+        if (!empty($result)) {
+          form_set_error('alternative_accessions', "The accession, $acc is already in use.");
+        }
+      }
+    }
+
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   }
@@ -659,6 +694,17 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'Change Status':
       $state['status'] = $form_state['values']['state-status'];
       tpps_update_submission($state);
+      break;
+
+    case 'Save Alternative Accessions':
+      $old_alt_acc = $state['alternative_accessions'] ?? '';
+      $new_alt_acc = $form_state['values']['alternative_accessions'];
+      if ($old_alt_acc != $new_alt_acc) {
+        tpps_submission_add_alternative_accession($state, explode(',', $new_alt_acc));
+
+        $state['alternative_accessions'] = $new_alt_acc;
+        tpps_update_submission($state);
+      }
       break;
 
     default:
