@@ -247,7 +247,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   }
 
   if ($status == "Approved") {
-    $alt_acc = $submission_state['alternative_accessions'] ?? 'TGDR015';
+    $alt_acc = $submission_state['alternative_accessions'] ?? '';
 
     $form['alternative_accessions'] = array(
       '#type' => 'textfield',
@@ -690,7 +690,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'Save Alternative Accessions':
       $old_alt_acc = $state['alternative_accessions'] ?? '';
       $new_alt_acc = $form_state['values']['alternative_accessions'];
-      if (TRUE){//$old_alt_acc != $new_alt_acc) {
+      if ($old_alt_acc != $new_alt_acc) {
         tpps_submission_add_alternative_accession($state, explode(',', $new_alt_acc));
 
         $state['alternative_accessions'] = $new_alt_acc;
