@@ -15,6 +15,8 @@ function tpps_install() {
 
   tpps_alter_tpps_submissions();
 
+  tpps_alter_tpps_submission_dbxref();
+
   chado_create_custom_table('genotype_call', array(
     'description' => '',
     'fields' => array(
@@ -456,6 +458,54 @@ function tpps_schema() {
     );
   }
 
+  $schema['tpps_submission_dbxref'] = array(
+    'description' => '',
+    'fields' => array(
+      'tpps_submission_dbxref_id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'tpps_submission_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'dbxref_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+    ),
+    'foreign keys' => array(
+      'tpps_submission_id' => array(
+        'table' => 'tpps_submission',
+        'columns' => array(
+          'tpps_submission_id' => 'tpps_submission_id',
+        ),
+      ),
+      'dbxref_id' => array(
+        'table' => 'chado.dbxref',
+        'columns' => array(
+          'dbxref_id' => 'dbxref_id',
+        ),
+      ),
+    ),
+    'unique keys' => array(
+      'tpps_submission_dbxref_c1' => array(
+        'tpps_submission_id',
+        'dbxref_id',
+      ),
+    ),
+    'primary key' => array(
+      'tpps_submission_dbxref_id',
+    ),
+  );
+
   return $schema;
 }
 
@@ -560,6 +610,19 @@ function tpps_alter_tpps_submissions() {
     // Create foreign key for tpps_submission to reference users table.
     db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_uid_fkey FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE;');
     db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES chado.dbxref(dbxref_id) ON DELETE CASCADE;');
+  }
+}
+
+/**
+ * Add foreign key constraints to the tpps_submission_dbxref table.
+ */
+function tpps_alter_tpps_submission_dbxref() {
+  $results = db_query("SELECT contype "
+    . "FROM pg_catalog.pg_constraint con JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid "
+    . "WHERE rel.relname = 'tpps_submission_dbxref' AND contype like 'f';");
+  if (!$results->rowCount()) {
+    db_query('ALTER TABLE tpps_submission_dbxref ADD CONSTRAINT tpps_submission_dbxref_tpps_submission_id_fkey FOREIGN KEY (tpps_submission_id) REFERENCES tpps_submission(tpps_submission_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE tpps_submission_dbxref ADD CONSTRAINT tpps_submission_dbxref_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES chado.dbxref(dbxref_id) ON DELETE CASCADE;');
   }
 }
 
@@ -1315,5 +1378,31 @@ function tpps_update_7109() {
       }
       unset($transaction);
     }
+  }
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Initializes alternative accessions for each submission.
+ */
+function tpps_update_7110() {
+  $transaction = db_transaction();
+  try {
+    $submissions = tpps_load_submission_multiple();
+    foreach ($submissions as $state) {
+      $state['alternative_accessions'] = $state['alternative_accessions'] ?? '';
+      tpps_update_submission($state);
+    }
+
+    if (!db_table_exists('tpps_submission_dbxref')) {
+      $schema = tpps_schema();
+      db_create_table('tpps_submission_dbxref', $schema['tpps_submission_dbxref']);
+      tpps_alter_tpps_submission_dbxref();
+    }
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
   }
 }

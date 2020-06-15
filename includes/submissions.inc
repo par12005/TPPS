@@ -30,23 +30,40 @@ function tpps_load_submission($accession, $state = TRUE) {
     ->condition('accession', $accession)
     ->range(0, 1)
     ->execute()->fetchObject();
-  // For newer TPPS submissions, $result should be populated.
+
   if ($result) {
     if ($state) {
       return unserialize($result->submission_state);
     }
     return $result;
   }
+
+  // Search for alternative accessions.
+  $query = db_select('tpps_submission', 's');
+  $query->join('tpps_submission_dbxref', 's_dbx', 's.tpps_submission_id = s_dbx.tpps_submission_id');
+  $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
+  $query->fields('s');
+  $query->condition('dbx.accession', $accession);
+  $query->condition('s.status', 'Approved');
+  $query->range(0, 1);
+  $query = $query->execute();
+  $result = $query->fetchObject();
+
+  if ($result) {
+    if ($state) {
+      return unserialize($result->submission_state);
+    }
+    return $result;
+  }
+
   // Provide legacy support for older TPPS submissions.
+  global $user;
+  $state = variable_get('tpps_incomplete_' . $user->mail . $accession, NULL);
+  if (!empty($state)) {
+    return $state;
+  }
   else {
-    global $user;
-    $state = variable_get('tpps_incomplete_' . $user->mail . $accession, NULL);
-    if (!empty($state)) {
-      return $state;
-    }
-    else {
-      return variable_get('tpps_complete_' . $user->mail . $accession, NULL);
-    }
+    return variable_get('tpps_complete_' . $user->mail . $accession, NULL);
   }
 }
 
@@ -167,6 +184,51 @@ function tpps_delete_submission($accession, $redirect = TRUE) {
   }
   if ($redirect) {
     drupal_goto("user/{$user->uid}/tpps");
+  }
+}
+
+/**
+ * Updates alternative accessions of a TPPS Submission.
+ *
+ * @param array $state
+ *   The submission being updated.
+ * @param mixed $alt_accession
+ *   The alternative accessions of the state.
+ */
+function tpps_submission_add_alternative_accession($state, $alt_accession) {
+  $tpps_local_db = variable_get('tpps_local_db');
+  if (!is_array($alt_accession)) {
+    $alt_accession = array($alt_accession);
+  }
+
+  $state_id = tpps_load_submission($state['accession'], FALSE)->tpps_submission_id;
+
+  // Remove the existing alternative accessions
+  db_delete('tpps_submission_dbxref')
+    ->condition('tpps_submission_id', $state_id)
+    ->execute();
+
+  foreach ($alt_accession as $acc) {
+    $dbx = chado_select_record('dbxref', array('*'), array(
+      'db_id' => $tpps_local_db->db_id,
+      'accession' => $acc,
+    ));
+    $dbxref_id = current($dbx)->dbxref_id ?? NULL;
+
+    if (empty($dbxref_id)) {
+      $dbx = chado_insert_record('dbxref', array(
+        'db_id' => $tpps_local_db->db_id,
+        'accession' => $acc,
+      ));
+      $dbxref_id = $dbx['dbxref_id'];
+    }
+
+    db_insert('tpps_submission_dbxref')
+      ->fields(array(
+        'tpps_submission_id' => $state_id,
+        'dbxref_id' => $dbxref_id,
+      ))
+      ->execute();
   }
 }
 
