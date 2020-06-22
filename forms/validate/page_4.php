@@ -793,6 +793,24 @@ function tpps_validate_environment(array &$environment, $id) {
         $group_check .= "0";
       }
     }
+
+    if (!empty($environment['env_layers']['other'])) {
+      if (empty($environment['env_layers']['other_db'])) {
+        form_set_error("$id][environment][env_layers][other_db", 'Cartogratree other environmental layer DB: field is required.');
+      }
+
+      if (empty($environment['env_layers']['other_name'])) {
+        form_set_error("$id][environment][env_layers][other_name", 'Cartogratree other environmental layer name: field is required.');
+      }
+
+      if (!form_get_errors()) {
+        $new_layers['other'] = array(
+          'db' => $environment['env_layers']['other_db'],
+          'name' => $environment['env_layers']['other_name'],
+        );
+      }
+    }
+
     $environment['env_layers'] = $new_layers;
 
     if (preg_match('/^0+$/', $group_check)) {

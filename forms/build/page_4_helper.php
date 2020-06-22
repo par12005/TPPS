@@ -785,6 +785,34 @@ function tpps_environment(array &$form, array &$form_state, $id) {
         }
       }
     }
+
+    $form[$id]['environment']['env_layers']['other'] = array(
+      '#type' => 'checkbox',
+      '#title' => "<strong>Other custom layer</strong>",
+      '#return_value' => 'other',
+    );
+
+    $form[$id]['environment']['env_layers']['other_db'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Layer DB URL: *'),
+      '#description' => t('The url of the DB providing this layer'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[environment][env_layers][other]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+
+    $form[$id]['environment']['env_layers']['other_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Layer Name: *'),
+      '#description' => t('The name of the layer'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[environment][env_layers][other]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
   }
 
   $form[$id]['environment']['env_manual_check'] = array(
