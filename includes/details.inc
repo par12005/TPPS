@@ -56,11 +56,13 @@ function tpps_details($accession = NULL) {
     $tree_info = array();
     if (!empty($state['tree_info'])) {
       foreach ($state['tree_info'] as $name => $info) {
-        $tree_info[] = array(
-          $name,
-          $info['lat'],
-          $info['lng'],
-        );
+        if (!empty($info['lat']) and !empty($info['lng'])) {
+          $tree_info[] = array(
+            $name,
+            $info['lat'],
+            $info['lng'],
+          );
+        }
       }
       drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
     }
