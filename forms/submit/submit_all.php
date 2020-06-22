@@ -1415,6 +1415,9 @@ function tpps_submit_environment(array &$form_state, $i) {
     );
 
     foreach ($env_layers as $layer_name => $layer_id) {
+      if ($layer_name == 'other' or $layer_name == 'other_db' or $layer_name = 'other_name') {
+        continue;
+      }
       if (!empty($layer_id) and !empty($env_params[$layer_name])) {
         $layers_params[$layer_id] = array();
         $params = $env_params[$layer_name];
