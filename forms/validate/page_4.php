@@ -804,10 +804,9 @@ function tpps_validate_environment(array &$environment, $id) {
       }
 
       if (!form_get_errors()) {
-        $new_layers['other'] = array(
-          'db' => $environment['env_layers']['other_db'],
-          'name' => $environment['env_layers']['other_name'],
-        );
+        $new_layers['other'] = 'other';
+        $new_layers['other_db'] = $environment['env_layers']['other_db'];
+        $new_layers['other_name'] = $environment['env_layers']['other_name'];
       }
     }
 
