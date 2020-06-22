@@ -40,6 +40,13 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     '#description' => t('If this box is checked, TPPS will try to find trees with matching ids around the same location as the ones you are providing. If it finds them successfully, it will mark them as the same tree in the database.'),
   );
 
+  if (tpps_access('administer tpps module')) {
+    $form['skip_validation'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Skip location validation (ignore location information)'),
+    );
+  }
+
   $form['tree-accession'] = array(
     '#type' => 'fieldset',
     '#title' => t('Tree Accession Information'),

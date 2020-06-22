@@ -2441,7 +2441,7 @@ function tpps_process_accession($row, array &$options) {
       }
     }
   }
-  else {
+  elseif (!empty($row[$cols['pop_group']])) {
     $site_based = TRUE;
     $location = $options['pop_group'][$row[$cols['pop_group']]];
     $coord = tpps_standard_coord($location);
