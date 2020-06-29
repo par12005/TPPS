@@ -128,7 +128,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     $orgamism_num = $submission_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     $show_layers = FALSE;
     for ($i = 1; $i <= $orgamism_num; $i++) {
-      if (!empty($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['use_layers'])) {
+      if (!empty($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment'])) {
         foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_layers'] as $layer => $layer_id) {
           if (!empty($layer_id)) {
             foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_params'][$layer] as $param_name => $param_id) {

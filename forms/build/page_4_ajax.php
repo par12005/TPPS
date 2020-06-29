@@ -67,26 +67,6 @@ function tpps_phenotype_file_format_callback(array $form, array &$form_state) {
 }
 
 /**
- * Ajax callback for environment fieldset.
- *
- * Indicates the element to be updated when the add or remove environmental data
- * buttons are clicked.
- *
- * @param array $form
- *   The form to be updated.
- * @param array $form_state
- *   The state of the form to be updated.
- *
- * @return array
- *   The element in the form to be updated.
- */
-function tpps_update_environment(array $form, array &$form_state) {
-  $id = $form_state['triggering_element']['#parents'][0];
-
-  return $form[$id]['environment']['env_manual'];
-}
-
-/**
  * Ajax callback for genotype files fieldset.
  *
  * Indicates the element to be updated when the genotype marker types checkboxes
