@@ -514,9 +514,98 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       // Stop using the file so it can be deleted if the user clicks 'remove'.
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
+
+    $fields['files']['ssr-extra-check'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('I would like to include an additional SSRs/cpSSRs Spreadsheet (this is typically used when the study includes both SSR and cpSSR data)'),
+      '#ajax' => array(
+        'callback' => 'tpps_genotype_files_callback',
+        'wrapper' => "$id-genotype-files",
+      ),
+    );
+
+    $ssrs_extra_check = tpps_get_ajax_value($form_state, array(
+      $id,
+      'genotype',
+      'files',
+      'ssr-extra-check',
+    ));
+
+    if ($ssrs_extra_check) {
+      $fields['files']['extra-ploidy'] = array(
+        '#type' => 'select',
+        '#title' => t('Additional SSRs/cpSSRs Ploidy'),
+        '#options' => array(
+          0 => '- Select -',
+          'Haploid' => 'Haploid',
+          'Diploid' => 'Diploid',
+          'Polyploid' => 'Polyploid',
+        ),
+        '#ajax' => array(
+          'callback' => 'tpps_genotype_files_callback',
+          'wrapper' => "$id-genotype-files",
+        ),
+      );
+
+      $fields['files']['ssrs_extra'] = array(
+        '#type' => 'managed_file',
+        '#title' => t('SSRs/cpSSRs Additional Spreadsheet: *'),
+        '#upload_location' => "$genotype_upload_location",
+        '#upload_validators' => array(
+          'file_validate_extensions' => array('csv tsv xlsx'),
+        ),
+        '#description' => t('Please upload an additional spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Tree Identifier that matches your accession file.'),
+        '#tree' => TRUE,
+      );
+
+      $extra_ploidy = tpps_get_ajax_value($form_state, array(
+        $id,
+        'genotype',
+        'files',
+        'extra-ploidy',
+      ));
+
+      switch ($extra_ploidy) {
+        case 'Haploid':
+          $fields['files']['ssrs_extra']['#description'] .= ' For haploid, TPPS assumes that each remaining column in the spreadsheet is a marker.';
+          break;
+
+        case 'Diploid':
+          $fields['files']['ssrs_extra']['#description'] .= ' For diploid, TPPS will assume that pairs of columns together are describing an individual marker, so the second and third columns would be the first marker, the fourth and fifth columns would be the second marker, etc.';
+          break;
+
+        case 'Polyploid':
+          $fields['files']['ssrs_extra']['#description'] .= ' For polyploid, TPPS will read columns until it arrives at a non-empty column with a different name from the last.';
+          break;
+
+        default:
+          break;
+      }
+
+      if (isset($fields['files']['ssrs_extra']['#value']['fid'])) {
+        $fields['files']['ssrs_extra']['#default_value'] = $fields['files']['ssrs_extra']['#value']['fid'];
+      }
+      if (!empty($fields['files']['ssrs_extra']['#default_value']) and ($file = file_load($fields['files']['ssrs_extra']['#default_value']))) {
+        // Stop using the file so it can be deleted if the user clicks 'remove'.
+        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      }
+    }
+    else {
+      $fields['files']['ssrs-extra'] = array(
+        '#type' => 'managed_file',
+        '#tree' => TRUE,
+        '#access' => FALSE,
+      );
+    }
   }
   else {
     $fields['files']['ssrs'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+
+    $fields['files']['ssrs-extra'] = array(
       '#type' => 'managed_file',
       '#tree' => TRUE,
       '#access' => FALSE,
