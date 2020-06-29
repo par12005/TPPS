@@ -435,6 +435,10 @@ function tpps_flatten(array $state) {
             $data["$org_name SSRs/cpSSRs Genotype File"] = $geno['files']['ssrs'];
           }
 
+          if (!empty($geno['files']['ssrs_extra'])) {
+            $data["$org_name SSRs/cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
+          }
+
           if (!empty($geno['files']['indels'])) {
             $data["$org_name Indel Genotype File"] = $geno['files']['indels'];
           }

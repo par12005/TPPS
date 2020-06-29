@@ -1036,7 +1036,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     'records' => $records,
     'tree_info' => $form_state['tree_info'],
     'species_codes' => $species_codes,
-    'genotype_count' => $genotype_count,
+    'genotype_count' => &$genotype_count,
     'genotype_total' => &$genotype_total,
     'project_id' => $project_id,
     'seq_var_cvterm' => $seq_var_cvterm,
@@ -1121,7 +1121,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
 
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
-    unset($options['records']);
+    $options['records'] = $records;
     $genotype_total += $genotype_count;
     $genotype_count = 0;
   }
@@ -1143,8 +1143,21 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     tpps_file_iterator($ssr_fid, 'tpps_process_genotype_spreadsheet', $options);
 
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
-    unset($options['records']);
+    $options['records'] = $records;
     $genotype_count = 0;
+
+    if (!empty($genotype['files']['ssr-extra-check'])) {
+      $extra_fid = $genotype['files']['ssrs_extra'];
+      tpps_add_project_file($form_state, $extra_fid);
+
+      $options['headers'] = tpps_ssrs_headers($extra_fid, $genotype['files']['extra-ploidy']);
+
+      tpps_file_iterator($extra_fid, 'tpps_process_genotype_spreadsheet', $options);
+
+      tpps_chado_insert_multi($options['records'], $multi_insert_options);
+      $options['records'] = $records;
+      $genotype_count = 0;
+    }
   }
 
   if (!empty($genotype['files']['file-type']['Indel Genotype Spreadsheet'])) {
@@ -1159,7 +1172,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     tpps_file_iterator($indel_fid, 'tpps_process_genotype_spreadsheet', $options);
 
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
-    unset($options['records']);
+    $options['records'] = $records;
     $genotype_total += $genotype_count;
     $genotype_count = 0;
   }
@@ -1179,7 +1192,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     tpps_file_iterator($other_fid, 'tpps_process_genotype_spreadsheet', $options);
 
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
-    unset($options['records']);
+    $options['records'] = $records;
     $genotype_count = 0;
   }
 
