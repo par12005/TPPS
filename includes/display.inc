@@ -451,7 +451,7 @@ function tpps_flatten(array $state) {
         if (isset($org['environment'])) {
           $env = &$org['environment'];
   
-          if (variable_get('tpps_cartogratree_env', FALSE) and !empty($env['use_layers'])) {
+          if (variable_get('tpps_cartogratree_env', FALSE)) {
             $data["Cartogratree Layers"] = array();
             foreach ($env['env_layers'] as $layer => $layer_id) {
               if (!empty($layer_id)) {
@@ -472,26 +472,6 @@ function tpps_flatten(array $state) {
             }
             else {
               unset($data["Cartogratree Layers"]);
-            }
-          }
-  
-          if (!empty($env['env_manual_check'])) {
-            if (!empty($env['env_manual']['number'])) {
-              $data['#number_manual_env'] = $env['env_manual']['number'];
-              for ($j = 1; $j <= $data['#number_manual_env']; $j++) {
-                $fields = array(
-                  'name' => 'Name',
-                  'description' => 'Description',
-                  'units' => 'Units',
-                  'value' => 'Value',
-                );
-  
-                foreach ($fields as $field => $field_string) {
-                  if (!empty($env['env_manual']["$j"][$field])) {
-                    $data["$org_name Environment Value $j $field_string"] = $env['env_manual'][$j][$field];
-                  }
-                }
-              }
             }
           }
         }

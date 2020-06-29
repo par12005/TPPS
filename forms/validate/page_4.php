@@ -753,98 +753,68 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
  *   The id of the organism fieldset being validated.
  */
 function tpps_validate_environment(array &$environment, $id) {
-  if (!empty($environment['use_layers'])) {
-    // Using cartogratree environment layers.
-    $group_check = '';
-    $new_layers = array();
-    foreach ($environment['env_layers_groups'] as $group_name => $group_id) {
-      if (!empty($group_id)) {
-        $group_check .= "1";
-        if ($group_name == 'WorldClim v.2 (WorldClim)') {
-          $subgroups_query = db_select('cartogratree_layers', 'l')
-            ->distinct()
-            ->fields('l', array('subgroup_id'))
-            ->condition('group_id', $group_id)
-            ->execute();
-          while (($subgroup = $subgroups_query->fetchObject())) {
-            $subgroup_title = db_select('cartogratree_subgroups', 's')
-              ->fields('s', array('subgroup_name'))
-              ->condition('subgroup_id', $subgroup->subgroup_id)
-              ->execute()
-              ->fetchObject()->subgroup_name;
-            if (!empty($environment['env_layers'][$subgroup_title])) {
-              $new_layers[$subgroup_title] = $environment['env_layers'][$subgroup_title];
-            }
-          }
-        }
-        else {
-          $layer_query = db_select('cartogratree_layers', 'l')
-            ->fields('l', array('title'))
-            ->condition('group_id', $group_id)
-            ->execute();
-          while (($layer = $layer_query->fetchObject())) {
-            if (!empty($environment['env_layers'][$layer->title])) {
-              $new_layers[$layer->title] = $environment['env_layers'][$layer->title];
-            }
+  // Using cartogratree environment layers.
+  $group_check = '';
+  $new_layers = array();
+  foreach ($environment['env_layers_groups'] as $group_name => $group_id) {
+    if (!empty($group_id)) {
+      $group_check .= "1";
+      if ($group_name == 'WorldClim v.2 (WorldClim)') {
+        $subgroups_query = db_select('cartogratree_layers', 'l')
+          ->distinct()
+          ->fields('l', array('subgroup_id'))
+          ->condition('group_id', $group_id)
+          ->execute();
+        while (($subgroup = $subgroups_query->fetchObject())) {
+          $subgroup_title = db_select('cartogratree_subgroups', 's')
+            ->fields('s', array('subgroup_name'))
+            ->condition('subgroup_id', $subgroup->subgroup_id)
+            ->execute()
+            ->fetchObject()->subgroup_name;
+          if (!empty($environment['env_layers'][$subgroup_title])) {
+            $new_layers[$subgroup_title] = $environment['env_layers'][$subgroup_title];
           }
         }
       }
       else {
-        $group_check .= "0";
+        $layer_query = db_select('cartogratree_layers', 'l')
+          ->fields('l', array('title'))
+          ->condition('group_id', $group_id)
+          ->execute();
+        while (($layer = $layer_query->fetchObject())) {
+          if (!empty($environment['env_layers'][$layer->title])) {
+            $new_layers[$layer->title] = $environment['env_layers'][$layer->title];
+          }
+        }
       }
     }
-
-    if (!empty($environment['env_layers']['other'])) {
-      if (empty($environment['env_layers']['other_db'])) {
-        form_set_error("$id][environment][env_layers][other_db", 'Cartogratree other environmental layer DB: field is required.');
-      }
-
-      if (empty($environment['env_layers']['other_name'])) {
-        form_set_error("$id][environment][env_layers][other_name", 'Cartogratree other environmental layer name: field is required.');
-      }
-
-      if (!form_get_errors()) {
-        $new_layers['other'] = 'other';
-        $new_layers['other_db'] = $environment['env_layers']['other_db'];
-        $new_layers['other_name'] = $environment['env_layers']['other_name'];
-      }
-    }
-
-    $environment['env_layers'] = $new_layers;
-
-    if (preg_match('/^0+$/', $group_check)) {
-      form_set_error("$id][environment][env_layers_groups", 'Cartogratree environmental layers groups: field is required.');
-    }
-    elseif (empty($new_layers)) {
-      form_set_error("$id][environment][env_layers", 'CartograTree environmental layers: field is required.');
+    else {
+      $group_check .= "0";
     }
   }
 
-  if ($environment['env_manual_check']) {
-    $env_number = $environment['env_manual']['number'];
-    for ($i = 1; $i <= $env_number; $i++) {
-      $current_env = $environment['env_manual']["$i"];
-      $name = $current_env['name'];
-      $desc = $current_env['description'];
-      $unit = $current_env['units'];
-      $val = $current_env['value'];
+  if (!empty($environment['env_layers']['other'])) {
+    if (empty($environment['env_layers']['other_db'])) {
+      form_set_error("$id][environment][env_layers][other_db", 'Cartogratree other environmental layer DB: field is required.');
+    }
 
-      if (empty($name)) {
-        form_set_error("$id][environment][env_manual][$i][name", "Environment Data $i Name: field is required.");
-      }
-      if (empty($desc)) {
-        form_set_error("$id][environment][env_manual][$i][description", "Environment Data $i Description: field is required.");
-      }
-      if (empty($unit)) {
-        form_set_error("$id][environment][env_manual][$i][units", "Environment Data $i Units: field is required.");
-      }
-      if (empty($val)) {
-        form_set_error("$id][environment][env_manual][$i][value", "Environment Data $i Value: field is required.");
-      }
+    if (empty($environment['env_layers']['other_name'])) {
+      form_set_error("$id][environment][env_layers][other_name", 'Cartogratree other environmental layer name: field is required.');
+    }
+
+    if (!form_get_errors()) {
+      $new_layers['other'] = 'other';
+      $new_layers['other_db'] = $environment['env_layers']['other_db'];
+      $new_layers['other_name'] = $environment['env_layers']['other_name'];
     }
   }
 
-  if (empty($environment['env_manual_check']) and empty($environment['use_layers'])) {
-    form_set_error("$id][environment", 'Environment: field is required.');
+  $environment['env_layers'] = $new_layers;
+
+  if (preg_match('/^0+$/', $group_check)) {
+    form_set_error("$id][environment][env_layers_groups", 'Cartogratree environmental layers groups: field is required.');
+  }
+  elseif (empty($new_layers)) {
+    form_set_error("$id][environment][env_layers", 'CartograTree environmental layers: field is required.');
   }
 }

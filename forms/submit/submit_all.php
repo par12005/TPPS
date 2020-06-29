@@ -892,6 +892,7 @@ function tpps_submit_phenotype(array &$form_state, $i) {
       if ($phenotype['phenotypes-meta'][$j]['time-check'] == '1') {
         $phenotypes_meta[$name]['time'] = $phenotype['phenotypes-meta'][$j]['time'];
       }
+      $phenotypes_meta[$name]['env'] = !empty($phenotype['phenotypes-meta'][$j]['env-check']);
     }
 
     if ($phenotype['check'] == '1') {
@@ -1388,10 +1389,8 @@ function tpps_submit_environment(array &$form_state, $i) {
     return;
   }
 
-  $env_layers_check = isset($environment['use_layers']) ? $environment['use_layers'] : FALSE;
   $env_layers = isset($environment['env_layers']) ? $environment['env_layers'] : FALSE;
   $env_params = isset($environment['env_params']) ? $environment['env_params'] : FALSE;
-  $env_number = $environment['env_manual']['number'];
   $env_count = 0;
 
   $species_index = "species-$i";
@@ -1406,7 +1405,7 @@ function tpps_submit_environment(array &$form_state, $i) {
 
   $env_cvterm = tpps_load_cvterm('environment')->cvterm_id;
 
-  if ($env_layers_check and db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
+  if (db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
     $layers_params = array();
     $records = array(
       'phenotype' => array(),
@@ -1463,42 +1462,6 @@ function tpps_submit_environment(array &$form_state, $i) {
     unset($options['records']);
     $env_count = 0;
   }
-
-  $env_meta = array();
-
-  for ($j = 1; $j <= $env_number; $j++) {
-    $current_env = $environment['env_manual'][$j];
-    $env_meta[] = array(
-      'name' => $current_env['name'],
-      'desc' => $current_env['description'],
-      'unit' => $current_env['units'],
-      'val' => $current_env['value'],
-    );
-  }
-
-  $records = array(
-    'phenotype' => array(),
-    'stock_phenotype' => array(),
-    'phenotypeprop' => array(),
-  );
-
-  $options = array(
-    'no_header' => !empty($tree_accession['file-no-header']),
-    'accession' => $form_state['accession'],
-    'records' => $records,
-    'env_meta' => $env_meta,
-    'env_count' => $env_count,
-    'suffix' => 0,
-    'tree_info' => $form_state['tree_info'],
-    'tree_id' => $tree_accession['file-groups']['Tree Id'][1],
-    'env_cvterm' => $env_cvterm,
-    'desc_id' => tpps_load_cvterm('description')->cvterm_id,
-    'unit_id' => tpps_load_cvterm('unit')->cvterm_id,
-  );
-
-  tpps_file_iterator($tree_acc_fid, 'tpps_process_environment_manual', $options);
-
-  tpps_chado_insert_multi($options['records']);
 }
 
 /**
@@ -1545,7 +1508,7 @@ function tpps_refine_phenotype_meta(array &$meta) {
     if (!empty($cvt_cache[$data['attr']])) {
       $meta[$name]['attr_id'] = $cvt_cache[$data['attr']];
     }
-    else {
+    elseif (!$data['env']) {
       $attr = chado_select_record('cvterm', array('cvterm_id'), array(
         'name' => array(
           'data' => $data['attr'],
@@ -1565,6 +1528,9 @@ function tpps_refine_phenotype_meta(array &$meta) {
         ))->cvterm_id;
       }
       $cvt_cache[$data['attr']] = $meta[$name]['attr_id'];
+    }
+    else {
+      $meta[$name]['attr_id'] = tpps_load_cvterm('environment')->cvterm_id;
     }
 
     if (!empty($data['struct'])) {
@@ -2162,83 +2128,6 @@ function tpps_get_env_response($layer_id, $lat, $long) {
 
     return file_get_contents($url);
   }
-}
-
-/**
- * This function processes a single row of a tree accession file.
- *
- * This function populates the db with environmental data provided manually by
- * the user (as opposed to CartograTree layers). This function is meant to be
- * used with tpps_file_iterator().
- *
- * @param mixed $row
- *   The item yielded by the TPPS file generator.
- * @param array $options
- *   Additional options set when calling tpps_file_iterator().
- */
-function tpps_process_environment_manual($row, array &$options = array()) {
-  $records = &$options['records'];
-  $accession = $options['accession'];
-  $id_col = $options['tree_id'];
-  $suffix = &$options['suffix'];
-  $env_meta = $options['env_meta'];
-  $env_count = &$options['env_count'];
-  $desc_id = $options['desc_id'];
-  $unit_id = $options['unit_id'];
-  $env_cvterm = $options['env_cvterm'];
-  $tree_info = &$options['tree_info'];
-  $record_group = variable_get('tpps_record_group', 10000);
-
-  $tree_id = $row[$id_col];
-  foreach ($env_meta as $current_env) {
-    $name = $current_env['name'];
-    $desc = $current_env['desc'];
-    $unit = $current_env['unit'];
-    $val = $current_env['val'];
-    $phenotype_name = "$accession-$tree_id-$name-$suffix";
-
-    $records['phenotype'][$phenotype_name] = array(
-      'uniquename' => $phenotype_name,
-      'name' => $name,
-      'attr_id' => $env_cvterm,
-      'value' => $val,
-    );
-
-    $records['stock_phenotype'][$phenotype_name] = array(
-      'stock_id' => $tree_info[$tree_id]['stock_id'],
-      '#fk' => array(
-        'phenotype' => $phenotype_name,
-      ),
-    );
-
-    $records['phenotypeprop']["$phenotype_name-desc"] = array(
-      'type_id' => $desc_id,
-      'value' => $desc,
-      '#fk' => array(
-        'phenotype' => $phenotype_name,
-      ),
-    );
-
-    $records['phenotypeprop']["$phenotype_name-unit"] = array(
-      'type_id' => $unit_id,
-      'value' => $unit,
-      '#fk' => array(
-        'phenotype' => $phenotype_name,
-      ),
-    );
-
-    $env_count++;
-    if ($env_count >= $record_group) {
-      tpps_chado_insert_multi($records);
-      $records = array(
-        'phenotype' => array(),
-        'stock_phenotype' => array(),
-        'phenotypeprop' => array(),
-      );
-      $env_count = 0;
-    }
-  }
-  $suffix++;
 }
 
 /**

@@ -175,6 +175,10 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ),
       ),
     ),
+    'env-check' => array(
+      '#type' => 'checkbox',
+      '#title' => 'Phenotype !num is an environmental phenotype',
+    ),
   );
 
   tpps_dynamic_list($form, $form_state, 'phenotypes-meta', $field, array(
@@ -211,6 +215,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('max', '#title'),
       array('time-check', '#title'),
       array('time', '#title'),
+      array('env-check', '#title'),
     ),
     'substitute_keys' => array(
       array('structure', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][struct-check]"]'),
@@ -702,43 +707,22 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       }
     }
 
-    $form[$id]['environment']['use_layers'] = array(
-      '#type' => 'checkbox',
-      '#title' => 'I used environmental layers in my study that are indexed by CartograTree.',
-      '#description' => 'If the layer you used is not in the list below, then the administrator for this site might not have enabled the layer group you used. Please contact them for more information.',
-    );
-
     $form[$id]['environment']['env_layers_groups'] = array(
       '#type' => 'fieldset',
       '#title' => 'Cartogratree Environmental Layers: *',
       '#collapsible' => TRUE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE),
-        ),
-      ),
     );
 
     $form[$id]['environment']['env_layers'] = array(
       '#type' => 'fieldset',
       '#title' => 'Cartogratree Environmental Layers: *',
       '#collapsible' => TRUE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE),
-        ),
-      ),
     );
 
     $form[$id]['environment']['env_params'] = array(
       '#type' => 'fieldset',
       '#title' => 'CartograTree Environmental Layer Parameters: *',
       '#collapsible' => TRUE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE),
-        ),
-      ),
     );
 
     foreach ($options as $layer_id => $layer_info) {
@@ -814,63 +798,6 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       ),
     );
   }
-
-  $form[$id]['environment']['env_manual_check'] = array(
-    '#type' => 'checkbox',
-    '#title' => 'I have environmental data that I collected myself.',
-  );
-
-  $field = array(
-    '#type' => 'fieldset',
-    '#tree' => TRUE,
-    'name' => array(
-      '#type' => 'textfield',
-      '#title' => 'Environmental Data !num Name: *',
-      '#prefix' => '<label><b>Environment Data !num:</b></label>',
-      '#description' => 'Please provide the name of Environmental Data !num. Some example environmental data names might include "soil chemistry", "rainfall", "average temperature", etc.',
-    ),
-    'description' => array(
-      '#type' => 'textfield',
-      '#title' => 'Environmental Data !num Description: *',
-      '#description' => 'Please provide a short description of Environmental Data !num.',
-    ),
-    'units' => array(
-      '#type' => 'textfield',
-      '#title' => 'Environmental Data !num Units: *',
-      '#description' => 'Please provide the units of Environmental Data !num.',
-    ),
-    'value' => array(
-      '#type' => 'textfield',
-      '#title' => 'Environmental Data !num Value: *',
-      '#description' => 'Please provide the value of Environmental Data !num.',
-    ),
-  );
-
-  tpps_dynamic_list($form, $form_state, 'env_manual', $field, array(
-    'label' => 'Environmental Data',
-    'title' => "",
-    'callback' => 'tpps_update_environment',
-    'parents' => array($id, 'environment'),
-    'wrapper' => "environment-$id",
-    'name_suffix' => $id,
-    'substitute_fields' => array(
-      array('name', '#title'),
-      array('name', '#prefix'),
-      array('name', '#description'),
-      array('description', '#title'),
-      array('description', '#description'),
-      array('units', '#title'),
-      array('units', '#description'),
-      array('value', '#title'),
-      array('value', '#description'),
-    ),
-  ));
-
-  $form[$id]['environment']['env_manual']['#states'] = array(
-    'visible' => array(
-      ':input[name="' . $id . '[environment][env_manual_check]"]' => array('checked' => TRUE),
-    ),
-  );
 
   return $form[$id]['environment'];
 }
