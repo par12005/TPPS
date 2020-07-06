@@ -15,8 +15,10 @@
  */
 function tpps_autocomplete($type, $string = "") {
   $function = "tpps_{$type}_autocomplete";
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
-  $function($string);
+  if (function_exists($function)) {
+    $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
+    $function($string);
+  }
 }
 
 /**
@@ -328,6 +330,29 @@ function tpps_structure_autocomplete($string) {
 
   foreach ($results as $row) {
     $matches[$row->name] = check_plain($row->name . ': ' . $row->definition);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
+ * User account auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_user_autocomplete($string) {
+  $matches = array();
+  $or = db_or()
+    ->condition('mail', $string, '~*')
+    ->condition('name', $string, '~*');
+  $result = db_select('users')
+    ->fields('users', array('uid', 'name'))
+    ->condition($or)
+    ->execute();
+  foreach ($result as $user) {
+    $user = user_load($user->uid);
+    $matches["$user->mail"] = check_plain($user->name);
   }
 
   drupal_json_output($matches);

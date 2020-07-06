@@ -260,6 +260,19 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       '#type' => 'submit',
       '#value' => t('Save Alternative Accessions'),
     );
+
+    $submitting_user = user_load($submission_state['submitting_uid']);
+    $form['change_owner'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Choose a new owner for the submission'),
+      '#default_value' => $submitting_user->mail,
+      '#autocomplete_path' => 'tpps/autocomplete/user',
+    );
+
+    $form['CHANGE_OWNER'] = array(
+      '#type' => 'submit',
+      '#value' => t('Change Submission Owner'),
+    );
   }
 
   $form['state-status'] = array(
@@ -589,6 +602,13 @@ function tpps_admin_panel_validate($form, &$form_state) {
       }
     }
 
+    if ($form_state['triggering_element']['#value'] == 'Change Submission Owner') {
+      $new_user = user_load_by_mail($form_state['values']['change_owner']);
+      if (empty($new_user)) {
+        form_set_error('change_owner', 'Invalid user account');
+      }
+    }
+
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   }
@@ -705,6 +725,14 @@ function tpps_admin_panel_submit($form, &$form_state) {
         $state['alternative_accessions'] = $new_alt_acc;
         tpps_update_submission($state);
       }
+      break;
+
+    case 'Change Submission Owner':
+      $new_user = user_load_by_mail($form_state['values']['change_owner']);
+      $state['submitting_uid'] = $new_user->uid;
+      tpps_update_submission($state, array(
+        'uid' => $new_user->uid,
+      ));
       break;
 
     default:
