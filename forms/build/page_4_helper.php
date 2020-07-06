@@ -532,6 +532,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     ));
 
     if ($ssrs_extra_check) {
+      $fields['files']['extra-ssr-type'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Define Additional SSRs/cpSSRs Type: *'),
+      );
+
       $fields['files']['extra-ploidy'] = array(
         '#type' => 'select',
         '#title' => t('Additional SSRs/cpSSRs Ploidy'),

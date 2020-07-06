@@ -629,6 +629,10 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
 
       if (!empty($genotype['files']['ssr-extra-check'])) {
+        if (empty($genotype['files']['extra-ssr-type'])) {
+          form_set_error("$id][genotype][files][extra-ssr-type", "Define Additional SSRs/cpSSRs Type: field is required.");
+        }
+
         if (!$genotype['files']['ssrs_extra']) {
           form_set_error("$id][genotype][files][ssrs_extra]", "SSRs/cpSSRs Additional Spreadsheet: field is required.");
         }
@@ -691,6 +695,11 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $file = file_load($genotype['files']['ssrs']);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Spreadsheet_$org_num";
+        if (!empty($genotype['files']['ssrs_extra'])) {
+          $file = file_load($genotype['files']['ssrs_extra']);
+          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+          $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Additional_Spreadsheet_$org_num";
+        }
       }
     }
 

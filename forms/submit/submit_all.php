@@ -1150,6 +1150,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
       $extra_fid = $genotype['files']['ssrs_extra'];
       tpps_add_project_file($form_state, $extra_fid);
 
+      $options['marker'] = $genotype['files']['extra-ssr-type'];
       $options['headers'] = tpps_ssrs_headers($extra_fid, $genotype['files']['extra-ploidy']);
 
       tpps_file_iterator($extra_fid, 'tpps_process_genotype_spreadsheet', $options);
