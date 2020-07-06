@@ -770,7 +770,10 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     // Not first access.
     if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')) {
       // No submissions, or selected to create new submission.
-      tpps_init_project($form_state);
+      if (tpps_access('administer tpps module') and !empty($form_state['saved_values']['frontpage']['custom_accession_check'])) {
+        $accession = $form_state['saved_values']['frontpage']['custom_accession'];
+      }
+      tpps_init_project($form_state, $accession);
       tpps_create_submission($form_state, $user->uid);
     }
     $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
@@ -879,40 +882,42 @@ function tpps_main_validate(&$form, &$form_state) {
   }
 
   switch ($form_state['stage']) {
+    case 'frontpage':
+      require_once 'forms/validate/front.php';
+      tpps_front_page_validate_form($form, $form_state);
+      break;
+
     case TPPS_PAGE_1:
       require_once 'forms/validate/page_1.php';
       tpps_page_1_validate_form($form, $form_state);
-      drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     case TPPS_PAGE_2:
       require_once 'forms/validate/page_2.php';
       tpps_page_2_validate_form($form, $form_state);
-      drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     case TPPS_PAGE_3:
       require_once 'forms/validate/page_3.php';
       tpps_page_3_validate_form($form, $form_state);
-      drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     case TPPS_PAGE_4:
       require_once 'forms/validate/page_4.php';
       tpps_page_4_validate_form($form, $form_state);
-      drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     default:
       break;
   }
 
+  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+
   if (!form_get_errors()) {
     $form_state['values']['#cleared'] = TRUE;
     if ($form_state['submitted'] == '1') {
       tpps_submission_update_stats($form_state);
     }
-    // dpm($form_state['values']['#cleared']);.
   }
   else {
     $form_state['values']['#cleared'] = FALSE;
