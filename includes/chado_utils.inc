@@ -293,9 +293,9 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
   }
 
   if (!empty($options['entities'])) {
-    tpps_tripal_entity_publish($options['entities']['label'], $fks[$options['entities']['table']], array(
+    tpps_tripal_entity_publish($options['entities']['label'], ($fks[$options['entities']['table']] ?? array()), array(
       'multi' => TRUE,
-      'prefix' => $options['entities']['prefix'] ?? NULL,
+      'prefix' => ($options['entities']['prefix'] ?? NULL),
     ));
   }
 
