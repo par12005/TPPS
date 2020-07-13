@@ -261,10 +261,19 @@ function tpps_flatten(array $state) {
   
         $data[$organism_name] = $page_3["species-$i"]['file'];
         if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
-          $data["#{$organism_selector}accession_no_header"] = $page_3["species-$i"]['file-no-header'] ?? '0';
-          $data["#{$organism_selector}accession_id_col"] = $page_3["species-$i"]['file-groups']['Tree Id'][1];
-          $data["#{$organism_selector}accession_lat_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
-          $data["#{$organism_selector}accession_long_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
+          $fid = $page_3["species-$i"]['file'];
+          drupal_add_js(array(
+            'tpps' => array(
+              'accession_files' => array(
+                $fid => array(
+                  'no_header' => $page_3["species-$i"]['file-no-header'] ?? '0',
+                  'id_col' => $page_3["species-$i"]['file-groups']['Tree Id'][1],
+                  'lat_col' => $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4],
+                  'long_col' => $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5],
+                ),
+              ),
+            ),
+          ), 'setting');
         }
       }
   
@@ -556,16 +565,23 @@ function tpps_table_display(array &$state, array $options = array()) {
           $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button\" type=\"button\" value=\"Show full file\"></input>";
         }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
-          $name = "";
-          if ($matches[1] != "Tree ") {
-            $parts = explode(" ", $matches[1]);
-            $name = implode("_", $parts);
-          }
+          $fid = $file->fid;
+          $wrapper_id = "{$fid}_map_wrapper";
+          $button_id = "{$fid}_map_button";
+          $val_str .= "<div id=\"$wrapper_id\"></div>"
+            . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view trees on map!\"></input>";
 
-          $val_str .= "<div id=\"{$name}map_wrapper\"></div>"
-            . "<input id=\"{$name}map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
-            . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>"
-            . "<script>jQuery('#{$name}map_button').click(getCoordinates);</script>";
+          drupal_add_js(array(
+            'tpps' => array(
+              'map_buttons' => array(
+                $fid => array(
+                  'wrapper' => $wrapper_id,
+                  'button' => $button_id,
+                  'fid' => $fid,
+                ),
+              ),
+            )
+          ), 'setting');
         }
 
         if (!empty($options['files']['revision_destination'])) {
@@ -625,6 +641,9 @@ function tpps_table_display(array &$state, array $options = array()) {
       $val_str = filter_xss(check_plain($val));
       $parts = explode(" ", substr($matches[0], 1));
       $item_id = implode("_", $parts);
+      if ($item_id == 'Citrus_cinensis_accession_no_header') {
+        dpm('no header');
+      }
       $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
     }
   }

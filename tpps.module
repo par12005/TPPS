@@ -1090,11 +1090,23 @@ function tpps_block_view_alter(&$data, $block) {
                 $parts = explode(" ", $matches[1]);
                 $name = implode("_", $parts);
               }
+              $fid = $val;
+              $wrapper_id = "{$fid}_map_wrapper";
+              $button_id = "{$fid}_map_button";
+              $val_str .= "<div id=\"$wrapper_id\"></div>"
+                . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view trees on map!\"></input>";
 
-              $val_str .= "<div id=\"{$name}map_wrapper\"></div>"
-                . "<input id=\"{$name}map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
-                . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>"
-                . "<script>jQuery('#{$name}map_button').click(getCoordinates);</script>";
+              drupal_add_js(array(
+                'tpps' => array(
+                  'map_buttons' => array(
+                    $fid => array(
+                      'wrapper' => $wrapper_id,
+                      'button' => $button_id,
+                      'fid' => $fid,
+                    ),
+                  ),
+                )
+              ), 'setting');
             }
           }
           elseif (preg_match('/species photo/', $item) and ($file_name = file_load($val)->filename)) {

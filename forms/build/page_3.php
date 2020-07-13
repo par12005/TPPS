@@ -160,11 +160,73 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         'My file does not use coordinates for tree locations',
       ),
       '#states' => $form['tree-accession']["species-$i"]['#states'] ?? NULL,
-      '#suffix' => "<div id=\"{$id_name}_map_wrapper\"></div>"
-      . "<input id=\"{$id_name}_map_button\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>"
-      . "<div id=\"{$id_name}_species_number\" style=\"display:none;\">$i</div>"
-      . "<script>jQuery('#{$id_name}_map_button').click(getCoordinates);</script>",
     );
+
+    $cols = tpps_get_ajax_value($form_state, array(
+      'tree-accession',
+      "species-$i",
+      'file',
+      'columns',
+    ), NULL, 'file');
+
+    $fid = tpps_get_ajax_value($form_state, array(
+      'tree-accession',
+      "species-$i",
+      'file',
+    ), NULL);
+    if (!empty($fid)) {
+      $wrapper_id = "{$fid}_map_wrapper";
+      $button_id = "{$fid}_map_button";
+      $form['tree-accession']["species-$i"]['coord-format']['#suffix'] = "<div id=\"$wrapper_id\"></div>"
+      . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>";
+      $no_header = tpps_get_ajax_value($form_state, array(
+        'tree-accession',
+        "species-$i",
+        'file',
+        'no_header',
+      ), NULL, 'file');
+
+      $id_col = $lat_col = $long_col = NULL;
+      foreach ($cols as $key => $col) {
+        if ($key[0] != '#') {
+          if ((is_array($col) and $col['#value'] == '1') or (!is_array($col) and $col == '1')) {
+            $id_col = $key;
+          }
+          if ((is_array($col) and $col['#value'] == '4') or (!is_array($col) and $col == '4')) {
+            $lat_col = $key;
+          }
+          if ((is_array($col) and $col['#value'] == '5') or (!is_array($col) and $col == '5')) {
+            $long_col = $key;
+          }
+        }
+      }
+
+      drupal_add_js(array(
+        'tpps' => array(
+          'accession_files' => array(
+            $fid => array(
+              'no_header' => $no_header,
+              'id_col' => $id_col,
+              'lat_col' => $lat_col,
+              'long_col' => $long_col,
+              'fid' => $fid,
+            ),
+          ),
+        ),
+      ), 'setting');
+
+      drupal_add_js(array(
+        'tpps' => array(
+          'map_buttons' => array(
+            $fid => array(
+              'wrapper' => $wrapper_id,
+              'button' => $button_id,
+              'fid' => $fid,
+            ),
+          ),
+        )
+      ), 'setting');
+    }
 
     $form['tree-accession']["species-$i"]['pop-group'] = array(
       '#type' => 'hidden',
@@ -177,13 +239,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     $pop_group_show = FALSE;
     $found_lat = FALSE;
     $found_lng = FALSE;
-
-    $cols = tpps_get_ajax_value($form_state, array(
-      'tree-accession',
-      "species-$i",
-      'file',
-      'columns',
-    ), NULL, 'file');
 
     if (!empty($cols)) {
       foreach ($cols as $col_name => $data) {
