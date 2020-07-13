@@ -73,6 +73,10 @@ jQuery(document).ready(function ($) {
   }
 
   var buttons = jQuery('input').filter(function() { return (this.id.match(/map_button/) || this.id.match(/map-button/)); });
+  var map_buttons = Drupal.settings.tpps.map_buttons;
+  jQuery.each(map_buttons, function() {
+    jQuery('#' + this.button).click(getCoordinates);
+  })
   jQuery.each(buttons, function(){
     jQuery(this).attr('type', 'button')
   });
@@ -232,16 +236,16 @@ function detailSearch() {
 var maps = {};
 
 function initMap() {
-  var mapElements = jQuery('div').filter(function() { return this.id.match(/map_wrapper/); });
-  jQuery.each(mapElements, function(){
-    var species_name = this.id.match(/(.*)map_wrapper/)[1];
-    maps[species_name] = new google.maps.Map(document.getElementById(species_name + 'map_wrapper'), {
+  var mapButtons = Drupal.settings.tpps.map_buttons;
+  jQuery.each(mapButtons, function() {
+    var fid = this.fid;
+    maps[fid] = new google.maps.Map(document.getElementById(this.wrapper), {
       center: {lat:0, lng:0},
-      zoom: 5
+      zoom: 5,
     });
-    maps[species_name + 'markers'] = [];
-    maps[species_name + 'total_lat'];
-    maps[species_name + 'total_long'];
+    maps[fid + '_markers'] = [];
+    maps[fid + '_total_lat'];
+    maps[fid + '_total_long'];
   });
 
   var detail_regex = /tpps\/details\/TGDR.*/g;
@@ -251,55 +255,33 @@ function initMap() {
 }
 
 function clearMarkers(prefix) {
-  for (var i = 0; i < maps[prefix + 'markers'].length; i++) {
-    maps[prefix + 'markers'][i].setMap(null);
+  for (var i = 0; i < maps[prefix + '_markers'].length; i++) {
+    maps[prefix + '_markers'][i].setMap(null);
   }
-  maps[prefix + 'markers'] = [];
+  maps[prefix + '_markers'] = [];
 }
 
 function getCoordinates(){
-  var species_name;
-  if (this.id.match(/(.*)map_button/) !== null){
-    species_name = this.id.match(/(.*)map_button/)[1];
-  }
-  else {
-    species_name = "";
-  }
+  var fid = this.id.match(/(.*)_map_button/)[1];
   
   var fid, no_header, id_col, lat_col, long_col;
   try{
-    if (jQuery("#edit-step").length > 0 && jQuery("#edit-step")[0].value == 3){
-      var species_number;
-      if (species_name !== ""){
-        species_number = 'species-' + jQuery('div').filter(function() { return this.id.match(new RegExp(species_name + 'species_number')); })[0].innerHTML;
+    file = Drupal.settings.tpps.accession_files[fid];
+    if (typeof file === 'undefined') {
+      jQuery.each(Drupal.settings.tpps.accession_files, function() {
+        if (this.fid == fid) {
+          file = this;
+        }
+      })
+      if (typeof file === 'undefined') {
+        return;
       }
-      else {
-        species_number = "";
-      }
-      fid = jQuery('input').filter(function() { return this.name.match(new RegExp('tree-accession\\[?' + species_number + '\\]?\\[file\\]\\[fid\\]')); })[0].value;
-      no_header = jQuery('input').filter(function() { return this.name.match(new RegExp('tree-accession\\[?' + species_number + '\\]?\\[file\\]\\[no-header\\]')); })[0].checked;
-      var cols = jQuery('select').filter(function() { return this.id.match(new RegExp('edit-tree-accession-?' + species_number + '-file-columns-')); });
-      jQuery.each(cols, function(){
-        var col_name = this.name.match(new RegExp('tree-accession\\[?' + species_number + '\\]?\\[file\\]\\[columns\\]\\[(.*)\\]'))[1];
-        if (jQuery(this)[0].value === "1"){
-          id_col = col_name;
-        }
-        if (jQuery(this)[0].value === "4"){
-          lat_col = col_name;
-        }
-        if (jQuery(this)[0].value === "5"){
-          long_col = col_name;
-        }
-      });
     }
-    else {
-      fid = jQuery('div').filter(function() { return this.id.match(new RegExp(species_name + 'accession_fid')); })[0].innerHTML;
-      no_header = jQuery('div').filter(function() { return this.id.match(new RegExp(species_name + 'accession_no_header')); })[0].innerHTML;
-      id_col = jQuery('div').filter(function() { return this.id.match(new RegExp(species_name + 'accession_id_col')); })[0].innerHTML;
-      lat_col = jQuery('div').filter(function() { return this.id.match(new RegExp(species_name + 'accession_lat_col')); })[0].innerHTML;
-      long_col = jQuery('div').filter(function() { return this.id.match(new RegExp(species_name + 'accession_long_col')); })[0].innerHTML;
-    }
-    
+
+    no_header = file.no_header;
+    id_col = file.id_col;
+    lat_col = file.lat_col;
+    long_col = file.long_col;
   }
   catch(err){
     console.log(err);
@@ -307,7 +289,7 @@ function getCoordinates(){
   }
   
   if (typeof id_col === 'undefined' || typeof lat_col === 'undefined' || typeof long_col === 'undefined'){
-    jQuery("#" + species_name + "map_wrapper").hide();
+    jQuery("#" + Drupal.settings.tpps.map_buttons[fid].wrapper).hide();
     return;
   }
   
@@ -320,35 +302,35 @@ function getCoordinates(){
   });
   
   request.done(function (data) {
-    jQuery.fn.updateMap(data, species_name);
+    jQuery.fn.updateMap(data, fid);
   });
 }
 
-jQuery.fn.updateMap = function(locations, prefix = "") {
-  jQuery("#" + prefix + "map_wrapper").show();
+jQuery.fn.updateMap = function(locations, fid = "") {
+  jQuery("#" + fid + "_map_wrapper").show();
   var detail_regex = /tpps\/details\/TGDR.*/g;
   if (jQuery("#edit-step").length > 0 && jQuery("#edit-step")[0].value == 3){
-    jQuery("#" + prefix + "map_wrapper").css({"height": "450px"});
-    jQuery("#" + prefix + "map_wrapper").css({"max-width": "800px"});
+    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
+    jQuery("#" + fid + "_map_wrapper").css({"max-width": "800px"});
   }
   else if(jQuery("#tpps_table_display").length > 0) {
-    jQuery("#" + prefix + "map_wrapper").css({"height": "450px"});
+    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
   }
   else if (window.location.pathname.match(detail_regex)) {
-    jQuery("#" + prefix + "map_wrapper").css({"height": "450px"});
+    jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
   }
   else {
-    jQuery("#" + prefix + "map_wrapper").css({"height": "100px"});
+    jQuery("#" + fid + "_map_wrapper").css({"height": "100px"});
   }
   
-  clearMarkers(prefix);
-  maps[prefix + 'total_lat'] = 0;
-  maps[prefix + 'total_long'] = 0;
+  clearMarkers(fid);
+  maps[fid + '_total_lat'] = 0;
+  maps[fid + '_total_long'] = 0;
   timeout = 2000/locations.length;
   
-  maps[prefix + 'markers'] = locations.map(function (location, i) {
-    maps[prefix + 'total_lat'] += parseInt(location[1]);
-    maps[prefix + 'total_long'] += parseInt(location[2]);
+  maps[fid + '_markers'] = locations.map(function (location, i) {
+    maps[fid + '_total_lat'] += parseInt(location[1]);
+    maps[fid + '_total_long'] += parseInt(location[2]);
     var marker = new google.maps.Marker({
       position: new google.maps.LatLng(location[1], location[2])
     });
@@ -358,17 +340,17 @@ jQuery.fn.updateMap = function(locations, prefix = "") {
     });
     
     marker.addListener('click', function() {
-      infowindow.open(maps[prefix], maps[prefix + 'markers'][i]);
+      infowindow.open(maps[fid], maps[fid + '_markers'][i]);
     });
     return marker;
   });
 
-  if (typeof maps[prefix + 'cluster'] !== 'undefined') {
-    maps[prefix + 'cluster'].clearMarkers();
+  if (typeof maps[fid + '_cluster'] !== 'undefined') {
+    maps[fid + '_cluster'].clearMarkers();
   }
 
-  maps[prefix + 'cluster'] = new MarkerClusterer(maps[prefix], maps[prefix + 'markers'], {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
+  maps[fid + '_cluster'] = new MarkerClusterer(maps[fid], maps[fid + '_markers'], {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
 
-  var center = new google.maps.LatLng(maps[prefix + 'total_lat']/locations.length, maps[prefix + 'total_long']/locations.length);
-  maps[prefix].panTo(center);
+  var center = new google.maps.LatLng(maps[fid + '_total_lat']/locations.length, maps[fid + '_total_long']/locations.length);
+  maps[fid].panTo(center);
 };
