@@ -72,11 +72,14 @@ jQuery(document).ready(function ($) {
     }
   }
 
+  if (typeof Drupal.settings.tpps !== 'undefined') {
+    var map_buttons = Drupal.settings.tpps.map_buttons;
+    jQuery.each(map_buttons, function() {
+      jQuery('#' + this.button).click(getCoordinates);
+    })
+  }
+
   var buttons = jQuery('input').filter(function() { return (this.id.match(/map_button/) || this.id.match(/map-button/)); });
-  var map_buttons = Drupal.settings.tpps.map_buttons;
-  jQuery.each(map_buttons, function() {
-    jQuery('#' + this.button).click(getCoordinates);
-  })
   jQuery.each(buttons, function(){
     jQuery(this).attr('type', 'button')
   });
