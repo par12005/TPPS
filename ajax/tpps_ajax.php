@@ -160,7 +160,37 @@ function tpps_species_autocomplete($string) {
     $matches[$row->genus . " " . $row->species] = check_plain($row->genus . " " . $row->species);
   }
 
+  if (empty($matches)) {
+    $matches = tpps_ncbi_species_autocomplete($string);
+  }
+
   drupal_json_output($matches);
+}
+
+/**
+ * NCBI species auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_ncbi_species_autocomplete($string) {
+  $matches = array();
+
+  $taxons = tpps_ncbi_get_taxon_id("$string*", TRUE);
+  $taxons = json_decode(json_encode($taxons))->Id;
+
+  $fetch = new EFetch('taxonomy');
+  $fetch->addParam('id', implode(',', $taxons));
+  $response = $fetch->get()->xml();
+  $species = json_decode(json_encode($response))->Taxon;
+
+  foreach ($species as $info) {
+    $name = $info->ScientificName;
+    if (!empty($name) and $info->Rank == 'species') {
+      $matches[$name] = "$name (autocomplete from NCBI)";
+    }
+  }
+  return $matches;
 }
 
 /**
