@@ -752,21 +752,31 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][files][other]", "Other Marker Spreadsheet: field is required.");
     }
     elseif (!empty($file_type['Other Marker Genotype Spreadsheet'])) {
-      $required_groups = array(
-        'Tree Id' => array(
-          'id' => array(1),
-        ),
-        'Genotype Data' => array(
-          'data' => array(0),
-        ),
-      );
+      if (array_key_exists('columns', $form[$id]['genotype']['files']['other'])) {
+        $required_groups = array(
+          'Tree Id' => array(
+            'id' => array(1),
+          ),
+          'Genotype Data' => array(
+            'data' => array(0),
+          ),
+        );
 
-      $file_element = $form[$id]['genotype']['files']['other'];
-      $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+        $file_element = $form[$id]['genotype']['files']['other'];
+        $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+        // Get Tree Id column name.
+        if (!form_get_errors()) {
+          $id_col_genotype_name = $groups['Tree Id']['1'];
+        }
+      }
+      else {
+        $headers = tpps_file_headers($genotype['files']['other']);
+        if (!form_get_errors()) {
+          $id_col_genotype_name = key($headers);
+        }
+      }
 
       if (!form_get_errors()) {
-        // Get Tree Id column name.
-        $id_col_genotype_name = $groups['Tree Id']['1'];
         $species_index = "species-$org_num";
         if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
           $species_index = "species-1";
@@ -775,7 +785,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
         $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
-        $other_no_header = $genotype['files']['other-no-header'];
+        $other_no_header = $genotype['files']['other-no-header'] ?? FALSE;
         $missing_trees = tpps_compare_files($other_file, $tree_accession_file, $id_col_genotype_name, $id_col_accession_name, $other_no_header, $acc_no_header);
 
         if ($missing_trees !== array()) {

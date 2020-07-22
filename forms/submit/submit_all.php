@@ -1182,13 +1182,16 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     $other_fid = $genotype['files']['other'];
     tpps_add_project_file($form_state, $other_fid);
 
-    $groups = $genotype['files']['other-groups'];
+    $options['headers'] = tpps_file_headers($other_fid);
+    if (!empty($genotype['files']['other-groups'])) {
+      $groups = $genotype['files']['other-groups'];
+      $options['headers'] = tpps_other_marker_headers($other_fid, $groups['Genotype Data'][0]);
+      $options['tree_id'] = $groups['Tree Id'][1];
+    }
 
     $options['type'] = 'other';
-    $options['headers'] = tpps_other_marker_headers($other_fid, $groups['Genotype Data'][0]);
     $options['marker'] = $genotype['other-marker'];
     $options['type_cvterm'] = tpps_load_cvterm('genetic_marker')->cvterm_id;
-    $options['tree_id'] = $groups['Tree Id'][1];
 
     tpps_file_iterator($other_fid, 'tpps_process_genotype_spreadsheet', $options);
 
@@ -1754,7 +1757,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $multi_insert_options = $options['multi_insert'];
   $record_group = variable_get('tpps_record_group', 10000);
   $stock_id = NULL;
-  if ($type == 'other') {
+  if (!empty($options['tree_id'])) {
     $val = $row[$options['tree_id']];
     $stock_id = $tree_info[trim($val)]['stock_id'];
     $current_id = $tree_info[trim($val)]['organism_id'];

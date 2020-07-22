@@ -661,18 +661,33 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#default_value' => $values[$id]['genotype']['files']['other']['empty'] ?? 'NA',
     );
 
-    $fields['files']['other']['columns'] = array(
-      '#description' => 'Please define which columns hold the required data: Tree Identifier, Genotype Data',
+    $default_dynamic = !empty($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['other-columns']);
+    $fields['files']['other']['dynamic'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('This file needs dynamic dropdown options for column data type specification'),
+      '#ajax' => array(
+        'wrapper' => "edit-$id-genotype-files-other-ajax-wrapper",
+        'callback' => 'tpps_page_4_file_dynamic',
+      ),
+      '#description' => t(''),
+      '#default_value' => $default_dynamic,
     );
 
-    $fields['files']['other']['columns-options'] = array(
-      '#type' => 'hidden',
-      '#value' => array(
-        'Genotype Data',
-        'Tree Identifier',
-        'N/A',
-      ),
-    );
+    $dynamic = tpps_get_ajax_value($form_state, array($id, 'genotype', 'files', 'other', 'dynamic'), $default_dynamic, 'other');
+    if ($dynamic) {
+      $fields['files']['other']['columns'] = array(
+        '#description' => 'Please define which columns hold the required data: Tree Identifier, Genotype Data',
+      );
+
+      $fields['files']['other']['columns-options'] = array(
+        '#type' => 'hidden',
+        '#value' => array(
+          'Genotype Data',
+          'Tree Identifier',
+          'N/A',
+        ),
+      );
+    }
 
     $fields['files']['other']['no-header'] = array();
   }
