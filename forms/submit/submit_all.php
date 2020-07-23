@@ -1118,6 +1118,22 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     $options['marker'] = 'SNP';
     $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
 
+    if (!empty($genotype['files']['file-type']['SNPs Associations'])) {
+      $assoc_fid = $genotype['files']['snps-association'];
+      tpps_add_project_file($form_state, $assoc_fid);
+
+      $options['association'] = TRUE;
+      $options['records']['featureloc'] = array();
+
+      // TODO.
+
+      $pop_struct_fid = $genotype['files']['snps-pop-struct'];
+      tpps_add_project_file($form_state, $pop_struct_fid);
+
+      $kinship_fid = $genotype['files']['snps-kinship'];
+      tpps_add_project_file($form_state, $kinship_fid);
+    }
+
     tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
 
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
@@ -1755,8 +1771,11 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $type_cvterm = $options['type_cvterm'];
   $seq_var_cvterm = $options['seq_var_cvterm'];
   $multi_insert_options = $options['multi_insert'];
+  $association = $options['association'] ?? FALSE;
+
   $record_group = variable_get('tpps_record_group', 10000);
   $stock_id = NULL;
+
   if (!empty($options['tree_id'])) {
     $val = $row[$options['tree_id']];
     $stock_id = $tree_info[trim($val)]['stock_id'];
