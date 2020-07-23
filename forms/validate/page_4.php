@@ -616,7 +616,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
             $assay_snps = tpps_file_headers($snps_assay);
             unset($assay_snps[key($assay_snps)]);
-            $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col);
+            $assoc_snps = tpps_parse_file_column($assoc_file, $snps_id_col, $assoc_no_header);
             $missing_snps = array_diff($assoc_snps, $assay_snps);
 
             if ($missing_snps !== array()) {
@@ -646,6 +646,16 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
             if ($missing_phenotypes !== array()) {
               $phenotype_names_str = implode(', ', $missing_phenotypes);
               form_set_error("$id][genotype][files][snps-association", "SNPs Association File: We detected Associated Traits that were not specified in the Phenotype Metadata Section. Please either remove these Traits from your Association file, or add them to your Phenotype Metadata section. The Trait names we foud were: $phenotype_names_str");
+            }
+
+            // Check that position values are correctly formatted
+            $position_col = $groups['Position'][3];
+            $positions = tpps_parse_file_column($assoc_file, $position_col, $assoc_no_header);
+            foreach ($positions as $position) {
+              if (!preg_match('/^(\d+):(\d+)$/', $position)) {
+                form_set_error("$id][genotype][files][snps-association", "SNPs Association File: We detected SNP positions that do not match the required format. The correct format is: \"<start>:<stop>\".");
+                break;
+              }
             }
           }
 
