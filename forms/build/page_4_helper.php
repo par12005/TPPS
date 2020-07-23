@@ -385,6 +385,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     }
     $parents = array_merge($file_type_parents, array('Assay Design'));
     $assay_design_check = tpps_get_ajax_value($form_state, $parents);
+
+    if (!empty($snps_assay_check) and !empty($form[$id]['phenotype'])) {
+      $options['SNPs Associations'] = 'SNPs Associations';
+    }
+    $parents = array_merge($file_type_parents, array('SNPs Associations'));
+    $association_check = tpps_get_ajax_value($form_state, $parents);
   }
   if (!empty($ssrs_check)) {
     $options['SSRs/cpSSRs Genotype Spreadsheet'] = 'SSRs/cpSSRs Genotype Spreadsheet';
@@ -465,6 +471,124 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
   else {
     $fields['files']['assay-design'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+  }
+
+  if (!empty($association_check)) {
+    $fields['files']['snps-association'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('SNPs Association File: *'),
+      '#upload_location' => $genotype_upload_location,
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#description' => "Please upload a spreadsheet file containing SNPs Association data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain columns with the SNP ID, Scaffold, Position (formatted like \"start:stop\"), Allele (formatted like \"major:minor\"), Associated Trait Name (must match a phenotype from the above section), and Confidence Value. Optionally, you can also specify a Gene ID (which should match the gene reference) and a SNP Annotation (non synonymous, coding, etc).",
+      '#tree' => TRUE,
+      'empty' => array(
+        '#default_value' => $values[$id]['genotype']['files']['snps-association']['empty'] ?? 'NA',
+      ),
+      'columns' => array(
+        '#description' => t('Please define which columns hold the required data: SNP ID, Scaffold, Position, Allele, Associated Trait, Confidence Value.'),
+      ),
+      'columns-options' => array(
+        '#type' => 'hidden',
+        '#value' => array(
+          'N/A',
+          'SNP ID',
+          'Scaffold',
+          'Position',
+          'Allele',
+          'Associated Trait',
+          'Confidence Value',
+          'Gene ID',
+          'Annotation',
+        ),
+        'no-header' => array(),
+      ),
+    );
+
+    $fields['files']['snps-association-type'] = array(
+      '#type' => 'select',
+      '#title' => t('Confidence Value Type: *'),
+      '#options' => array(
+        '- Select -',
+        'P value' => 'P value',
+        'GIF' => 'GIF',
+        'P-adjusted (FDR)' => 'P-adjusted (FDR)',
+        'P-adjusted (FWE)' => 'P-adjusted (FWE)',
+        'P-adjusted (Bonferroni)' => 'P-adjusted (Bonferroni)',
+      ),
+    );
+
+    $fields['files']['snps-association-tool'] = array(
+      '#type' => 'select',
+      '#title' => t('Association Analysis Tool: *'),
+      '#options' => array(
+        '- Select -',
+        'GEMMA' => 'GEMMA',
+        'EMMAX' => 'EMMAX',
+        'Plink' => 'Plink',
+        'Tassel' => 'Tassel',
+        'Sambada' => 'Sambada',
+        'Bayenv' => 'Bayenv',
+        'BayeScan' => 'BayeScan',
+        'LFMM' => 'LFMM',
+      ),
+    );
+
+    $fields['files']['snps-pop-struct'] = array(
+      '#type' => 'managed_file',
+      '#title' => 'SNPs Population Structure File: ',
+      '#upload_location' => "$genotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#tree' => TRUE,
+    );
+
+    if (isset($fields['files']['snps-pop-struct']['#value'])) {
+      $fields['files']['snps-pop-struct']['#default_value'] = $fields['files']['snps-pop-struct']['#value'];
+    }
+    if (!empty($fields['files']['snps-pop-struct']['#default_value']) and ($file = file_load($fields['files']['snps-pop-struct']['#default_value']))) {
+      // Stop using the file so it can be deleted if the user clicks 'remove'.
+      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+
+    $fields['files']['snps-kinship'] = array(
+      '#type' => 'managed_file',
+      '#title' => 'SNPs Kinship File: ',
+      '#upload_location' => "$genotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#tree' => TRUE,
+    );
+
+    if (isset($fields['files']['snps-kinship']['#value'])) {
+      $fields['files']['snps-kinship']['#default_value'] = $fields['files']['snps-kinship']['#value'];
+    }
+    if (!empty($fields['files']['snps-kinship']['#default_value']) and ($file = file_load($fields['files']['snps-kinship']['#default_value']))) {
+      // Stop using the file so it can be deleted if the user clicks 'remove'.
+      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+  }
+  else {
+    $fields['files']['snps-association'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+
+    $fields['files']['snps-pop-struct'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+
+    $fields['files']['snps-kinship'] = array(
       '#type' => 'managed_file',
       '#tree' => TRUE,
       '#access' => FALSE,
