@@ -52,7 +52,7 @@ function tpps_details($accession = NULL) {
     $map_api_key = variable_get('tpps_maps_api_key', NULL);
     $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
       async defer></script>"
-      . "<div id=\"map_wrapper\"></div>";
+      . "<div id=\"_map_wrapper\"></div>";
     $tree_info = array();
     if (!empty($state['tree_info'])) {
       foreach ($state['tree_info'] as $name => $info) {
