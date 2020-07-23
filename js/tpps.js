@@ -72,7 +72,7 @@ jQuery(document).ready(function ($) {
     }
   }
 
-  if (typeof Drupal.settings.tpps !== 'undefined') {
+  if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.map_buttons !== 'undefined') {
     var map_buttons = Drupal.settings.tpps.map_buttons;
     jQuery.each(map_buttons, function() {
       jQuery('#' + this.button).click(getCoordinates);
@@ -239,20 +239,29 @@ function detailSearch() {
 var maps = {};
 
 function initMap() {
-  var mapButtons = Drupal.settings.tpps.map_buttons;
-  jQuery.each(mapButtons, function() {
-    var fid = this.fid;
-    maps[fid] = new google.maps.Map(document.getElementById(this.wrapper), {
+  var detail_regex = /tpps\/details\/TGDR.*/g;
+
+  if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.map_buttons !== 'undefined') {
+    var mapButtons = Drupal.settings.tpps.map_buttons;
+    jQuery.each(mapButtons, function() {
+      var fid = this.fid;
+      maps[fid] = new google.maps.Map(document.getElementById(this.wrapper), {
+        center: {lat:0, lng:0},
+        zoom: 5,
+      });
+      maps[fid + '_markers'] = [];
+      maps[fid + '_total_lat'];
+      maps[fid + '_total_long'];
+    });
+  }
+  else if (window.location.pathname.match(detail_regex)) {
+    maps[''] = new google.maps.Map(document.getElementById('_map_wrapper'), {
       center: {lat:0, lng:0},
       zoom: 5,
     });
-    maps[fid + '_markers'] = [];
-    maps[fid + '_total_lat'];
-    maps[fid + '_total_long'];
-  });
-
-  var detail_regex = /tpps\/details\/TGDR.*/g;
-  if (window.location.pathname.match(detail_regex)) {
+    maps['_markers'] = [];
+    maps['_total_lat'];
+    maps['_total_long'];
     jQuery.fn.updateMap(Drupal.settings.tpps.tree_info);
   }
 }
