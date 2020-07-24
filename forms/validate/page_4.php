@@ -653,7 +653,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
             $positions = tpps_parse_file_column($assoc_file, $position_col, $assoc_no_header);
             foreach ($positions as $position) {
               if (!preg_match('/^(\d+):(\d+)$/', $position)) {
-                form_set_error("$id][genotype][files][snps-association", "SNPs Association File: We detected SNP positions that do not match the required format. The correct format is: \"<start>:<stop>\".");
+                form_set_error("$id][genotype][files][snps-association", "SNPs Association File: We detected SNP positions that do not match the required format. The correct format is: \"start:stop\".");
                 break;
               }
             }

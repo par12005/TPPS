@@ -516,8 +516,8 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#options' => array(
         '- Select -',
         'P value' => 'P value',
-        'GIF' => 'GIF',
-        'P-adjusted (FDR)' => 'P-adjusted (FDR)',
+        'Genomic Inflation Factor (GIF)' => 'Genomic Inflation Factor (GIF)',
+        'P-adjusted (FDR) / Q value' => 'P-adjusted (FDR) / Q value',
         'P-adjusted (FWE)' => 'P-adjusted (FWE)',
         'P-adjusted (Bonferroni)' => 'P-adjusted (Bonferroni)',
       ),
