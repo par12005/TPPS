@@ -277,6 +277,9 @@ function tpps_get_cvterms_v1_2() {
     'minimum' => 'ncit:Minimum',
     'maximum' => 'ncit:Maximum',
     'indel' => 'ncit:Indel Mutation',
+    'p_value' => 'ncit:P-Value',
+    'lambda' => 'ncit:Lambda',
+    'bonferroni' => 'ncit:Adjusted Bonferroni Correction',
 
     // PATO terms.
     'pH_level' => 'pato:acidity',
@@ -319,6 +322,7 @@ function tpps_get_cvterms_v1_2() {
     'allelic_frequency' => 'so:allelic_frequency',
     'synonymous' => 'so:synonymous',
     'clone' => 'so:clone',
+    'supercontig' => 'so:supercontig',
 
     // EDAM terms.
     'filter' => 'edam:Sequence contamination filtering',
@@ -331,6 +335,8 @@ function tpps_get_cvterms_v1_2() {
 
     // OBI terms.
     'organism' => 'obi:organism',
+    'q_value' => 'obi:q-value',
+    'p_adj_fwe' => 'obi:FWER adjusted p-value',
 
     // TAXRANK terms.
     'family' => 'taxonomic_rank:family',
