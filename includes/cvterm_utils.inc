@@ -323,6 +323,7 @@ function tpps_get_cvterms_v1_2() {
     'synonymous' => 'so:synonymous',
     'clone' => 'so:clone',
     'supercontig' => 'so:supercontig',
+    'scaffold' => 'so:chromosome',
 
     // EDAM terms.
     'filter' => 'edam:Sequence contamination filtering',
