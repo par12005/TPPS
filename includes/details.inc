@@ -537,7 +537,7 @@ function tpps_details_species(array &$state) {
 
     $name = "{$result->genus} {$result->species}";
     $link = tpps_entity_link($id, $name, 'Organism');
-    $rows[] = array(
+    $rows[$name] = array(
       $order,
       $family,
       $link,
