@@ -1903,21 +1903,23 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         'type_id' => $seq_var_cvterm,
       );
 
-      $records['feature_cvterm'][$assoc_feature_name] = array(
-        'cvterm_id' => $association['trait_attr'],
-        'pub_id' => $options['pub_id'],
-        '#fk' => array(
-          'feature' => $assoc_feature_name,
-        ),
-      );
-
-      if (!empty($association['trait_obs'])) {
-        $records['feature_cvtermprop'][$assoc_feature_name] = array(
-          'type_id' => $association['trait_obs'],
+      if (!empty($association['trait_attr'])) {
+        $records['feature_cvterm'][$assoc_feature_name] = array(
+          'cvterm_id' => $association['trait_attr'],
+          'pub_id' => $options['pub_id'],
           '#fk' => array(
-            'feature_cvterm' => $assoc_feature_name,
+            'feature' => $assoc_feature_name,
           ),
         );
+
+        if (!empty($association['trait_obs'])) {
+          $records['feature_cvtermprop'][$assoc_feature_name] = array(
+            'type_id' => $association['trait_obs'],
+            '#fk' => array(
+              'feature_cvterm' => $assoc_feature_name,
+            ),
+          );
+        }
       }
 
       $records['featureprop'][$assoc_feature_name] = array(
@@ -2024,8 +2026,8 @@ function tpps_process_snp_association($row, array &$options = array()) {
     'stop' => $stop,
     'allele' => $row[$groups['Allele'][4]],
     'trait' => $trait,
-    'trait_attr' => $options['phenotype_meta'][$trait]['attr_id'],
-    'trait_obs' => $options['phenotype_meta'][$trait]['struct_id'] ?? NULL,
+    'trait_attr' => $options['phenotype_meta'][strtolower($trait)]['attr_id'],
+    'trait_obs' => $options['phenotype_meta'][strtolower($trait)]['struct_id'] ?? NULL,
     'confidence' => $row[$groups['Confidence Value'][6]],
   );
 }
