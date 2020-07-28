@@ -2,14 +2,14 @@
 
 /**
  * @file
- * Defines a function which creates stock_relationships for matching trees.
+ * Defines a function which creates stock_relationships for matching plants.
  */
 
 /**
- * Create stock_relationship records for existing trees.
+ * Create stock_relationship records for existing plants.
  *
  * @param string $project_id
- *   The project_id of the submission which has existing trees.
+ *   The project_id of the submission which has existing plants.
  */
 function tpps_matching_trees($project_id) {
   $eps = variable_get('tpps_gps_epsilon', .001);

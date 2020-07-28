@@ -142,6 +142,7 @@ function tpps_submit_page_1(array &$form_state) {
     'pyear' => $firstpage['publication']['year'],
     'uniquename' => implode('; ', $authors) . " {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
   ));
+  $form_state['ids']['pub_id'] = $publication_id;
   tpps_tripal_entity_publish('Publication', array($firstpage['publication']['title'], $publication_id));
   $form_state['pyear'] = $firstpage['publication']['year'];
   $form_state['journal'] = $firstpage['publication']['journal'];
@@ -521,7 +522,7 @@ function tpps_submit_page_2(array &$form_state) {
 }
 
 /**
- * Submits Tree Accession data to the database.
+ * Submits Plant Accession data to the database.
  *
  * @param array $form_state
  *   The state of the form being submitted.
@@ -820,6 +821,9 @@ function tpps_submit_page_4(array &$form_state) {
     }
   }
 
+  $form_state['data']['phenotype'] = array();
+  $form_state['data']['phenotype_meta'] = array();
+
   // Submit raw data.
   for ($i = 1; $i <= $organism_number; $i++) {
     tpps_submit_phenotype($form_state, $i);
@@ -866,6 +870,7 @@ function tpps_submit_phenotype(array &$form_state, $i) {
     'tree_info' => $form_state['tree_info'],
     'suffix' => 0,
     'phenotype_count' => $phenotype_count,
+    'data' => &$form_state['data']['phenotype'],
   );
 
   if (empty($phenotype['iso-check'])) {
@@ -958,6 +963,7 @@ function tpps_submit_phenotype(array &$form_state, $i) {
     $options['file_empty'] = $phenotype['file-empty'];
 
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
+    $form_state['data']['phenotype_meta'] += $phenotypes_meta;
   }
   else {
     $iso_fid = $phenotype['iso'];
@@ -1040,8 +1046,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     'genotype_total' => &$genotype_total,
     'project_id' => $project_id,
     'seq_var_cvterm' => $seq_var_cvterm,
-    'overrides' => $overrides,
-    'multi_insert' => $multi_insert_options,
+    'multi_insert' => &$multi_insert_options,
   );
 
   /*if ($genotype['ref-genome'] == 'bio') {
@@ -1117,6 +1122,80 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     $options['headers'] = tpps_file_headers($snp_fid);
     $options['marker'] = 'SNP';
     $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
+
+    if (!empty($genotype['files']['file-type']['SNPs Associations'])) {
+      $assoc_fid = $genotype['files']['snps-association'];
+      tpps_add_project_file($form_state, $assoc_fid);
+
+      $options['records']['featureloc'] = array();
+      $options['records']['featureprop'] = array();
+      $options['records']['feature_relationship'] = array();
+      $options['records']['feature_cvterm'] = array();
+      $options['records']['feature_cvtermprop'] = array();
+
+      $options['associations'] = array();
+      $options['associations_tool'] = $genotype['files']['snps-association-tool'];
+      $options['associations_groups'] = $genotype['files']['snps-association-groups'];
+      $options['scaffold_cvterm'] = tpps_load_cvterm('scaffold')->cvterm_id;
+      $options['phenotype_meta'] = $form_state['data']['phenotype_meta'];
+      $options['pub_id'] = $form_state['ids']['pub_id'];
+
+      switch($genotype['files']['snps-association-type']) {
+        case 'P value':
+          $options['associations_type'] = tpps_load_cvterm('p_value')->cvterm_id;
+          break;
+
+        case 'Genomic Inflation Factor (GIF)':
+          $options['associations_type'] = tpps_load_cvterm('lambda')->cvterm_id;
+          break;
+
+        case 'P-adjusted (FDR) / Q value':
+          $options['associations_type'] = tpps_load_cvterm('q_value')->cvterm_id;
+          break;
+
+        case 'P-adjusted (FWE)':
+          $options['associations_type'] = tpps_load_cvterm('p_adj_fwe')->cvterm_id;
+          break;
+
+        case 'P-adjusted (Bonferroni)':
+          $options['associations_type'] = tpps_load_cvterm('bonferroni')->cvterm_id;
+          break;
+
+        default:
+          break;
+      }
+
+      tpps_file_iterator($assoc_fid, 'tpps_process_snp_association', $options);
+
+      $multi_insert_options['fk_overrides']['featureloc'] = array(
+        'srcfeature' => array(
+          'table' => 'feature',
+          'columns' => array(
+            'srcfeature_id' => 'feature_id',
+          ),
+        ),
+      );
+      $multi_insert_options['fk_overrides']['feature_relationship'] = array(
+        'subject' => array(
+          'table' => 'feature',
+          'columns' => array(
+            'subject_id' => 'feature_id',
+          ),
+        ),
+        'object' => array(
+          'table' => 'feature',
+          'columns' => array(
+            'object_id' => 'feature_id',
+          ),
+        ),
+      );
+
+      $pop_struct_fid = $genotype['files']['snps-pop-struct'];
+      tpps_add_project_file($form_state, $pop_struct_fid);
+
+      $kinship_fid = $genotype['files']['snps-kinship'];
+      tpps_add_project_file($form_state, $kinship_fid);
+    }
 
     tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
 
@@ -1525,7 +1604,7 @@ function tpps_refine_phenotype_meta(array &$meta) {
     if (!empty($cvt_cache[$data['attr']])) {
       $meta[$name]['attr_id'] = $cvt_cache[$data['attr']];
     }
-    elseif (!$data['env']) {
+    elseif (empty($data['env'])) {
       $attr = chado_select_record('cvterm', array('cvterm_id'), array(
         'name' => array(
           'data' => $data['attr'],
@@ -1639,6 +1718,13 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     $attr_id = $iso ? $meta['attr_id'] : $meta[strtolower($name)]['attr_id'];
     $value = $row[$id];
     $phenotype_name = "$accession-$tree_id-$name-$suffix";
+    $options['data']["$tree_id-$name-$suffix"] = array(
+      'uniquename' => "$tree_id-$name-$suffix",
+      'name' => $name,
+      'stock_id' => $tree_info[$tree_id]['stock_id'],
+      'time' => NULL,
+      'value' => $value,
+    );
 
     $records['phenotype'][$phenotype_name] = array(
       'uniquename' => $phenotype_name,
@@ -1663,6 +1749,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
+      $options['data'][$phenotype_name]['time'] = $meta[strtolower($name)]['time'];
     }
     elseif (isset($meta_headers['time'])) {
       $val = $row[$meta_headers['time']];
@@ -1676,6 +1763,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
+      $options['data'][$phenotype_name]['time'] = $val;
     }
 
     $records['phenotypeprop']["$phenotype_name-desc"] = array(
@@ -1755,8 +1843,11 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $type_cvterm = $options['type_cvterm'];
   $seq_var_cvterm = $options['seq_var_cvterm'];
   $multi_insert_options = $options['multi_insert'];
+  $associations = $options['associations'] ?? array();
+
   $record_group = variable_get('tpps_record_group', 10000);
   $stock_id = NULL;
+
   if (!empty($options['tree_id'])) {
     $val = $row[$options['tree_id']];
     $stock_id = $tree_info[trim($val)]['stock_id'];
@@ -1796,6 +1887,68 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       'type_id' => $seq_var_cvterm,
     );
 
+    if (!empty($associations) and !empty($associations[$variant_name])) {
+      $association = $associations[$variant_name];
+      $assoc_feature_name = "{$variant_name}-{$options['associations_type']}-{$association['trait']}";
+
+      $records['feature'][$association['scaffold']] = array(
+        'organism_id' => $current_id,
+        'uniquename' => $association['scaffold'],
+        'type_id' => $options['scaffold_cvterm'],
+      );
+
+      $records['feature'][$assoc_feature_name] = array(
+        'organism_id' => $current_id,
+        'uniquename' => $assoc_feature_name,
+        'type_id' => $seq_var_cvterm,
+      );
+
+      if (!empty($association['trait_attr'])) {
+        $records['feature_cvterm'][$assoc_feature_name] = array(
+          'cvterm_id' => $association['trait_attr'],
+          'pub_id' => $options['pub_id'],
+          '#fk' => array(
+            'feature' => $assoc_feature_name,
+          ),
+        );
+
+        if (!empty($association['trait_obs'])) {
+          $records['feature_cvtermprop'][$assoc_feature_name] = array(
+            'type_id' => $association['trait_obs'],
+            '#fk' => array(
+              'feature_cvterm' => $assoc_feature_name,
+            ),
+          );
+        }
+      }
+
+      $records['featureprop'][$assoc_feature_name] = array(
+        'type_id' => $options['associations_type'],
+        '#fk' => array(
+          'feature' => $assoc_feature_name,
+        ),
+      );
+
+      $records['featureloc'][$variant_name] = array(
+        'fmin' => $association['start'],
+        'fmax' => $association['stop'],
+        'residue_info' => $association['allele'],
+        '#fk' => array(
+          'feature' => $variant_name,
+          'srcfeature' => $association['scaffold'],
+        ),
+      );
+
+      $records['feature_relationship'][$assoc_feature_name] = array(
+        'type_id' => $options['associations_type'],
+        'value' => $association['confidence'],
+        '#fk' => array(
+          'subject' => $variant_name,
+          'object' => $assoc_feature_name,
+        ),
+      );
+    }
+
     $records['genotype'][$genotype_name] = array(
       'name' => $genotype_name,
       'uniquename' => $genotype_name,
@@ -1828,10 +1981,55 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         'genotype_call' => array(),
         'stock_genotype' => array(),
       );
+      if (!empty($associations)) {
+        $records['featureloc'] = array();
+        $records['featureprop'] = array();
+      }
       $genotype_total += $genotype_count;
       $genotype_count = 0;
     }
   }
+}
+
+/**
+ * This function processes a single row of a genotype association file.
+ *
+ * This function is used for SNP association files. This function is meant to
+ * be used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_snp_association($row, array &$options = array()) {
+  $groups = $options['associations_groups'];
+  $associations = &$options['associations'];
+
+  $id = $row[$groups['SNP ID'][1]];
+
+  preg_match('/^(\d+):(\d+)$/', $row[$groups['Position'][3]], $matches);
+  $start = $matches[1];
+  $stop = $matches[2];
+  if ($start > $stop) {
+    $temp = $start;
+    $start = $stop;
+    $stop = $temp;
+  }
+
+  $trait = $row[$groups['Associated Trait'][5]];
+
+  $associations[$id] = array(
+    'id' => $id,
+    'scaffold' => $row[$groups['Scaffold'][2]],
+    'start' => $start,
+    'stop' => $stop,
+    'allele' => $row[$groups['Allele'][4]],
+    'trait' => $trait,
+    'trait_attr' => $options['phenotype_meta'][strtolower($trait)]['attr_id'],
+    'trait_obs' => $options['phenotype_meta'][strtolower($trait)]['struct_id'] ?? NULL,
+    'confidence' => $row[$groups['Confidence Value'][6]],
+  );
 }
 
 /**
@@ -1961,10 +2159,10 @@ function tpps_other_marker_headers($fid, array $cols) {
 }
 
 /**
- * This function processes a single row of a tree accession file.
+ * This function processes a single row of a plant accession file.
  *
  * This function populates the db with environmental data provided through
- * CartograTree layers. This function is meant to be used with
+ * CartograPlant layers. This function is meant to be used with
  * tpps_file_iterator().
  *
  * @param mixed $row
@@ -2075,14 +2273,14 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 }
 
 /**
- * This function parses and returns a data point from a CartograTree layer.
+ * This function parses and returns a data point from a CartograPlant layer.
  *
  * The data point for the layer at the specified location is obtained by calling
  * tpps_get_env_response, and the resulting response string is parsed to return
  * the specified parameter.
  *
  * @param int $layer_id
- *   The identifier of the CartograTree environmental layer.
+ *   The identifier of the CartograPlant environmental layer.
  * @param float $lat
  *   The latitude coordinate being queried.
  * @param float $long
@@ -2108,10 +2306,10 @@ function tpps_get_environmental_layer_data($layer_id, $lat, $long, $param) {
 }
 
 /**
- * This function loads data for a CartograTree layer at a lat/long coordinate.
+ * This function loads data for a CartograPlant layer at a lat/long coordinate.
  *
  * @param int $layer_id
- *   The identifier of the CartograTree environmental layer.
+ *   The identifier of the CartograPlant environmental layer.
  * @param float $lat
  *   The latitude coordinate being queried.
  * @param float $long

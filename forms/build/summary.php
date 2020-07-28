@@ -151,7 +151,7 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   if (!empty($new_species) and !empty(variable_get('tpps_tree_pics_files_dir', NULL))) {
     $form['tree_pictures'] = array(
       '#type' => 'fieldset',
-      '#title' => t('The following trees are new in the database and will need pictures:'),
+      '#title' => t('The following plants are new in the database and will need pictures:'),
       '#tree' => TRUE,
     );
 

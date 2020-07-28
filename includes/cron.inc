@@ -6,9 +6,9 @@
  */
 
 /**
- * Refreshes TPPS and CartograTree views.
+ * Refreshes TPPS and CartograPlant views.
  *
- * Make a call to CartograTree trees/reload API endpoint.
+ * Make a call to CartograPlant trees/reload API endpoint.
  */
 function tpps_refresh_views() {
   global $base_url;

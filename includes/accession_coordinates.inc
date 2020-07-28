@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Defines Ajax callback for tree accession coordinates.
+ * Defines Ajax callback for plant accession coordinates.
  */
 
 /**
@@ -31,10 +31,10 @@ function tpps_accession_coordinates() {
 }
 
 /**
- * This function processes a single row of a tree accession file.
+ * This function processes a single row of a plant accession file.
  *
  * This function populates the coords attribute of the options array with the
- * standardized coordinates of each tree in the file. This function is meant to
+ * standardized coordinates of each plant in the file. This function is meant to
  * be used with tpps_file_iterator().
  *
  * @param mixed $row

@@ -274,7 +274,14 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
     }
 
     if ($has_fields) {
-      $last_id = $inserts[$table]->execute();
+      if ($table == 'featureloc') {
+        $previous = chado_set_active('chado');
+        $last_id = $inserts[$table]->execute();
+        chado_set_active($previous);
+      }
+      else {
+        $last_id = $inserts[$table]->execute();
+      }
       $fks[$table] += array_combine($fks_to_populate, range($last_id - count($fks_to_populate) + 1, $last_id));
     }
 

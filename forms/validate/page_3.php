@@ -41,7 +41,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
       $file_element = $form['tree-accession']["species-$i"]['file'];
 
       if (empty($values['file'])) {
-        form_set_error("tree-accession][species-$i][file", 'Tree Accession file: field is required.');
+        form_set_error("tree-accession][species-$i][file", 'Plant Accession file: field is required.');
       }
       else {
         $required_groups = array(
@@ -95,7 +95,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
         if (!form_get_errors()) {
           $file = file_load($values['file']);
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          $form_state['file_info'][TPPS_PAGE_3][$file->fid] = 'Tree_Accession';
+          $form_state['file_info'][TPPS_PAGE_3][$file->fid] = 'Plant_Accession';
         }
       }
 
@@ -121,10 +121,10 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
 }
 
 /**
- * This function processes a single row of a tree accession file.
+ * This function processes a single row of a plant accession file.
  *
  * This function validates that the accession file has valid/complete location
- * information for each tree. This function is meant to be used with
+ * information for each plant. This function is meant to be used with
  * tpps_file_iterator().
  *
  * @param mixed $row
@@ -159,7 +159,7 @@ function tpps_accession_valid_locations($row, &$options) {
       }
     }
     if (!$valid_row) {
-      form_set_error("tree-accession][species-$org_num][file", "Tree Accession file: Some location information is missing for tree \"{$row[$id_name]}\".");
+      form_set_error("tree-accession][species-$org_num][file", "Plant Accession file: Some location information is missing for plant \"{$row[$id_name]}\".");
     }
   }
 }

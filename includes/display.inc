@@ -255,7 +255,7 @@ function tpps_flatten(array $state) {
         $organism_name = $data["Species $i"] . ' Accession File';
         $organism_selector = $data["Species $i"] . '_';
         if ($data['#number_organisms'] > 1 and empty($page_3['check'])) {
-          $organism_name = 'Tree Accession File';
+          $organism_name = 'Plant Accession File';
           $organism_selector = "";
         }
   
@@ -283,7 +283,7 @@ function tpps_flatten(array $state) {
     }
   }
 
-  $data["Total number of trees"] = $state['stats']['tree_count'] ?? NULL;
+  $data["Total number of plants"] = $state['stats']['tree_count'] ?? NULL;
   unset($data[TPPS_PAGE_3]);
 
   $page_4 = &$data[TPPS_PAGE_4];
@@ -465,10 +465,10 @@ function tpps_flatten(array $state) {
           $env = &$org['environment'];
   
           if (variable_get('tpps_cartogratree_env', FALSE)) {
-            $data["Cartogratree Layers"] = array();
+            $data["CartograPlant Layers"] = array();
             foreach ($env['env_layers'] as $layer => $layer_id) {
               if (!empty($layer_id)) {
-                $data["Cartogratree Layers"][] = $layer;
+                $data["CartograPlant Layers"][] = $layer;
               }
               if (!empty($layer_id) and !empty($env['env_params'][$layer])) {
                 $params = array();
@@ -477,14 +477,14 @@ function tpps_flatten(array $state) {
                     $params[] = $param;
                   }
                 }
-                $data["Cartogratree Layer: $layer Parameters"] = implode(', ', $params);
+                $data["CartograPlant Layer: $layer Parameters"] = implode(', ', $params);
               }
             }
-            if (!empty($data["Cartogratree Layers"])) {
-              $data["Cartogratree Layers"] = implode(', ', $data["Cartogratree Layers"]);
+            if (!empty($data["CartograPlant Layers"])) {
+              $data["CartograPlant Layers"] = implode(', ', $data["CartograPlant Layers"]);
             }
             else {
-              unset($data["Cartogratree Layers"]);
+              unset($data["CartograPlant Layers"]);
             }
           }
         }
@@ -569,7 +569,7 @@ function tpps_table_display(array &$state, array $options = array()) {
           $wrapper_id = "{$fid}_map_wrapper";
           $button_id = "{$fid}_map_button";
           $val_str .= "<div id=\"$wrapper_id\"></div>"
-            . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view trees on map!\"></input>";
+            . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\"></input>";
 
           drupal_add_js(array(
             'tpps' => array(

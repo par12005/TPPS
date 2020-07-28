@@ -36,8 +36,8 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
   $form['existing_trees'] = array(
     '#type' => 'checkbox',
-    '#title' => t('These trees may have been studied in the past'),
-    '#description' => t('If this box is checked, TPPS will try to find trees with matching ids around the same location as the ones you are providing. If it finds them successfully, it will mark them as the same tree in the database.'),
+    '#title' => t('These plants may have been studied in the past'),
+    '#description' => t('If this box is checked, TPPS will try to find plants with matching ids around the same location as the ones you are providing. If it finds them successfully, it will mark them as the same plant in the database.'),
   );
 
   if (tpps_access('administer tpps module')) {
@@ -49,7 +49,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
   $form['tree-accession'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Tree Accession Information'),
+    '#title' => t('Plant Accession Information'),
     '#tree' => TRUE,
     '#prefix' => '<div id="tpps_accession">',
     '#suffix' => '</div>',
@@ -61,7 +61,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     // Create the single/multiple file checkbox.
     $form['tree-accession']['check'] = array(
       '#type' => 'checkbox',
-      '#title' => t('I would like to upload a separate tree accession file for each species.'),
+      '#title' => t('I would like to upload a separate plant accession file for each species.'),
       '#ajax' => array(
         'wrapper' => 'tpps_accession',
         'callback' => 'tpps_accession_multi_file',
@@ -69,15 +69,15 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     );
   }
 
-  $file_description = "Please upload a spreadsheet file containing tree population data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may omit that drop-down menu. Your file must contain columns with information about at least the Tree Identifier and the Location of the tree (either gps coordinates or country/state).";
+  $file_description = "Please upload a spreadsheet file containing plant population data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may omit that drop-down menu. Your file must contain columns with information about at least the Plant Identifier and the Location of the plant (either gps coordinates or country/state).";
   $file_upload_location = 'public://' . variable_get('tpps_accession_files_dir', 'tpps_accession');
 
   if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] == '4') {
-    $file_description .= ' Location columns should describe the location of the source tree for the Common Garden.';
+    $file_description .= ' Location columns should describe the location of the source plant for the Common Garden.';
   }
 
   if ($species_number > 1) {
-    $file_description .= " If you are uploading a single file with multiple species, your file must also specify the genus and species of each tree.";
+    $file_description .= " If you are uploading a single file with multiple species, your file must also specify the genus and species of each plant.";
   }
 
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
@@ -91,7 +91,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
     $column_options = array(
       '0' => 'N/A',
-      '1' => 'Tree Identifier',
+      '1' => 'Plant Identifier',
       '2' => 'Country',
       '3' => 'State',
       '4' => 'Latitude',
@@ -104,14 +104,14 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
     $title = t("@name Accession File: *", array('@name' => $name)) . "<br>$file_description";
     if ($species_number > 1 and !$check) {
-      $title = t('Tree Accession File: *') . "<br>$file_description";
+      $title = t('Plant Accession File: *') . "<br>$file_description";
       $column_options['6'] = 'Genus';
       $column_options['7'] = 'Species';
       $column_options['10'] = 'Genus + Species';
     }
 
     if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != '1') {
-      $column_options['11'] = 'Source Tree Identifier';
+      $column_options['11'] = 'Source Plant Identifier';
     }
 
     $form['tree-accession']["species-$i"] = array(
@@ -137,7 +137,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
       ),
       'columns' => array(
-        '#description' => 'Please define which columns hold the required data: Tree Identifier and Location. If your trees are located based on a population group, you can provide the population group column and a mapping of population group to location below.',
+        '#description' => 'Please define which columns hold the required data: Plant Identifier and Location. If your plants are located based on a population group, you can provide the population group column and a mapping of population group to location below.',
       ),
       'no-header' => array(),
       'empty' => array(
@@ -157,7 +157,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         'NAD 83',
         'ETRS 89',
         'Other Coordinate Projection',
-        'My file does not use coordinates for tree locations',
+        'My file does not use coordinates for plant locations',
       ),
       '#states' => $form['tree-accession']["species-$i"]['#states'] ?? NULL,
     );
@@ -178,7 +178,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       $wrapper_id = "{$fid}_map_wrapper";
       $button_id = "{$fid}_map_button";
       $form['tree-accession']["species-$i"]['coord-format']['#suffix'] = "<div id=\"$wrapper_id\"></div>"
-      . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>";
+      . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\" class=\"btn btn-primary\"></input>";
       $no_header = tpps_get_ajax_value($form_state, array(
         'tree-accession',
         "species-$i",
@@ -283,7 +283,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         foreach ($pop_groups as $pop_group) {
           $form['tree-accession']["species-$i"]['pop-group'][$pop_group] = array(
             '#type' => 'textfield',
-            '#title' => "Location for $name trees from group $pop_group:",
+            '#title' => "Location for $name plants from group $pop_group:",
           );
         }
       }
@@ -299,7 +299,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         $form['tree-accession']["species-$i"]['coord_precision'] = array(
           '#type' => 'textfield',
           '#title' => t('Coordinates accuracy:'),
-          '#description' => t('The precision of the provided coordinates. For example, if a tree could be up to 10m awa from the provided coordinates, then the accuracy would be "10m".'),
+          '#description' => t('The precision of the provided coordinates. For example, if a plant could be up to 10m awa from the provided coordinates, then the accuracy would be "10m".'),
           '#suffix' => '</div>',
           '#states' => array(
             'visible' => array(

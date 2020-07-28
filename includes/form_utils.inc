@@ -307,4 +307,5 @@ function tpps_form_state_info(&$new, &$old) {
   $new['revised_files'] = $old['revised_files'] ?? NULL;
   $new['admin_comments'] = $old['admin_comments'] ?? NULL;
   $new['alternative_accessions'] = $old['alternative_accessions'] ?? NULL;
+  $new['data'] = $old['data'] ?? NULL;
 }

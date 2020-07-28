@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Define the helper functions for the Tree Accession page.
+ * Define the helper functions for the Plant Accession page.
  */
 
 /**
