@@ -522,7 +522,7 @@ function tpps_submit_page_2(array &$form_state) {
 }
 
 /**
- * Submits Tree Accession data to the database.
+ * Submits Plant Accession data to the database.
  *
  * @param array $form_state
  *   The state of the form being submitted.
@@ -2157,10 +2157,10 @@ function tpps_other_marker_headers($fid, array $cols) {
 }
 
 /**
- * This function processes a single row of a tree accession file.
+ * This function processes a single row of a plant accession file.
  *
  * This function populates the db with environmental data provided through
- * CartograTree layers. This function is meant to be used with
+ * CartograPlant layers. This function is meant to be used with
  * tpps_file_iterator().
  *
  * @param mixed $row
@@ -2271,14 +2271,14 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 }
 
 /**
- * This function parses and returns a data point from a CartograTree layer.
+ * This function parses and returns a data point from a CartograPlant layer.
  *
  * The data point for the layer at the specified location is obtained by calling
  * tpps_get_env_response, and the resulting response string is parsed to return
  * the specified parameter.
  *
  * @param int $layer_id
- *   The identifier of the CartograTree environmental layer.
+ *   The identifier of the CartograPlant environmental layer.
  * @param float $lat
  *   The latitude coordinate being queried.
  * @param float $long
@@ -2304,10 +2304,10 @@ function tpps_get_environmental_layer_data($layer_id, $lat, $long, $param) {
 }
 
 /**
- * This function loads data for a CartograTree layer at a lat/long coordinate.
+ * This function loads data for a CartograPlant layer at a lat/long coordinate.
  *
  * @param int $layer_id
- *   The identifier of the CartograTree environmental layer.
+ *   The identifier of the CartograPlant environmental layer.
  * @param float $lat
  *   The latitude coordinate being queried.
  * @param float $long

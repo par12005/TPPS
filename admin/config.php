@@ -47,7 +47,7 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#type' => 'textfield',
     '#title' => t('TPPS GPS Epsilon'),
     '#default_value' => variable_get('tpps_gps_epsilon', .001),
-    '#description' => t('This is the amount of error TPPS should allow for when trying to match trees. An epsilon value of 1 is around 100km, and an epsilon value of .001 is around 100 m.'),
+    '#description' => t('This is the amount of error TPPS should allow for when trying to match plants. An epsilon value of 1 is around 100km, and an epsilon value of .001 is around 100 m.'),
   );
 
   $form['tpps_zenodo_api_key'] = array(
@@ -85,21 +85,21 @@ function tpps_admin_settings(array $form, array &$form_state) {
 
   $form['tpps_cartogratree_env'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Use environmental layers from CartograTree'),
+    '#title' => t('Use environmental layers from CartograPlant'),
     '#default_value' => $cartogratree_env,
-    '#description' => t("If CartograTree is installed, TPPS can add an optional field to the environment section for environment layers, using the data pulled in through CartograTree."),
+    '#description' => t("If CartograPlant is installed, TPPS can add an optional field to the environment section for environment layers, using the data pulled in through CartograPlant."),
   );
 
   if (module_exists('cartogratree') and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers')) {
     $form['tpps_ct_api_key'] = array(
       '#type' => 'textfield',
-      '#title' => t('TPPS CartograTree API Key'),
+      '#title' => t('TPPS CartograPlant API Key'),
       '#default_value' => variable_get('tpps_ct_api_key', NULL),
     );
 
     $form['layer_groups'] = array(
       '#type' => 'fieldset',
-      '#title' => 'CartograTree Environmental Layer Groups:',
+      '#title' => 'CartograPlant Environmental Layer Groups:',
       '#description' => 'Please select which layer groups will contain environmental data that is relevant to TPPS. TPPS will use the selected groups to decide which layers to present as environmental options to the users.',
       '#states' => array(
         'visible' => array(
@@ -152,14 +152,14 @@ function tpps_admin_settings(array $form, array &$form_state) {
 
   $form['tpps_tree_pics_files_dir'] = array(
     '#type' => 'textfield',
-    '#title' => t('Tree Pictures directory:'),
+    '#title' => t('Plant Pictures directory:'),
     '#default_value' => variable_get('tpps_tree_pics_files_dir', NULL),
-    '#description' => t("The directory of tree pictures on your web server. If you do not have any tree pictures on your web server, you can leave this field blank. Currently points to @path.", array('@path' => drupal_realpath("public://" . variable_get('tpps_tree_pics_files_dir', NULL)))),
+    '#description' => t("The directory of plant pictures on your web server. If you do not have any plant pictures on your web server, you can leave this field blank. Currently points to @path.", array('@path' => drupal_realpath("public://" . variable_get('tpps_tree_pics_files_dir', NULL)))),
   );
 
   $form['tpps_accession_files_dir'] = array(
     '#type' => 'textfield',
-    '#title' => t('Tree Accession files:'),
+    '#title' => t('Plant Accession files:'),
     '#default_value' => $accession,
     '#description' => t("Currently points to @path.", array('@path' => drupal_realpath("public://$accession"))),
   );
@@ -208,10 +208,10 @@ function tpps_admin_settings_validate($form, &$form_state) {
     }
     elseif ($key == 'tpps_cartogratree_env') {
       if (!empty($value) and !module_exists('cartogratree')) {
-        form_set_error("$key", "Error: The CartograTree module is not installed.");
+        form_set_error("$key", "Error: The CartograPlant module is not installed.");
       }
       elseif (!empty($value) and (!db_table_exists('cartogratree_groups') or !db_table_exists('cartogratree_layers') or !db_table_exists('cartogratree_fields'))) {
-        form_set_error("$key", "Error: TPPS was unable to find the required CartograTree tables for environmental layers.");
+        form_set_error("$key", "Error: TPPS was unable to find the required CartograPlant tables for environmental layers.");
       }
     }
     elseif ($key == 'tpps_zenodo_prefix') {

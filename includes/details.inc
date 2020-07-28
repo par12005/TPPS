@@ -36,7 +36,7 @@ function tpps_details($accession = NULL) {
     $tpps_link = "<b><a target=\"blank\" href=\"/tpps\">submit your study</a></b>";
     $output .= "This page reflects community submissions associated with published studies. Each submission is associated with a longterm identifier that connects the genotype, phenotype, and/or environmental metrics assessed. These studies represent diversity assessements, association mapping, and landscape genomics. We accept studies with a variety of marker types. We encourage you to $tpps_link to TreeGenes and utilize the provided accession in your publication. We currently have <b>$num_studies</b> studies representing <b>$num_species</b> species.";
     if (module_exists('cartogratree')) {
-      $output .= " Studies that have georeferenced accessions associated with them can be queried on <b><a href=\"cartogratree\">CartograTree.</a></b>";
+      $output .= " Studies that have georeferenced accessions associated with them can be queried on <b><a href=\"cartogratree\">CartograPlant.</a></b>";
     }
     $form = drupal_get_form('tpps_details_search');
     $output .= render($form);
@@ -94,7 +94,7 @@ function tpps_details($accession = NULL) {
           jQuery('#abstract')[0].innerHTML = \"{$state['abstract']}\";
         }));</script>";
     if (module_exists('cartogratree')) {
-      $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograTree</a><br>";
+      $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograPlant</a><br>";
     }
     $output .= "<a href=\"$base_url/tpps/api/files/$accession\">Download compressed raw files</a><br>";
 
@@ -122,7 +122,7 @@ function tpps_details_tabs(array &$state) {
   $output = '<ul class="nav nav-tabs" role="tablist">
     <li class="nav-item"><a class="nav-link active" role="tab" data-toggle="tab" href="#species">Species</a></li>
     <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#study">Study Details</a></li>
-    <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#trees">Trees</a></li>';
+    <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#trees">Plants</a></li>';
   $p_exist = FALSE;
   $g_exist = FALSE;
   $e_exist = FALSE;
@@ -327,7 +327,7 @@ function tpps_details_top() {
       'Accession',
       'Title',
       'Species',
-      'Tree Count',
+      'Plant Count',
       'Phenotypes Assessed',
       'Phenotypic Measures',
       'Genotype Count',
@@ -636,13 +636,13 @@ function tpps_details_study(array &$state) {
 }
 
 /**
- * Creates the table of individual tree details for a submission.
+ * Creates the table of individual plant details for a submission.
  *
  * @param array $state
  *   The form state of the submission.
  *
  * @return string
- *   The HTML table of trees associated with the submission.
+ *   The HTML table of plants associated with the submission.
  */
 function tpps_details_trees(array &$state) {
   $params = drupal_get_query_parameters($_POST);
@@ -654,7 +654,7 @@ function tpps_details_trees(array &$state) {
   $per_page = 20;
 
   if (empty($state['tree_info'])) {
-    $output = t('The tree information for this study has not been properly updated. Please contact your site administrator.');
+    $output = t('The plant information for this study has not been properly updated. Please contact your site administrator.');
     return $output;
   }
 
@@ -695,13 +695,13 @@ function tpps_details_trees(array &$state) {
 }
 
 /**
- * Creates the table of individual tree phenotype details for a submission.
+ * Creates the table of individual plant phenotype details for a submission.
  *
  * @param array $state
  *   The form state of the submission.
  *
  * @return string
- *   The HTML table of trees and phenotypes associated with the submission.
+ *   The HTML table of plants and phenotypes associated with the submission.
  */
 function tpps_details_phenotype(array &$state) {
   $params = drupal_get_query_parameters($_POST);
@@ -756,7 +756,7 @@ function tpps_details_phenotype(array &$state) {
 
   $vars = array(
     'header' => array(
-      'Tree',
+      'Plant',
       'Name',
       'Attribute',
       'Entity',
@@ -775,13 +775,13 @@ function tpps_details_phenotype(array &$state) {
 }
 
 /**
- * Creates the table of individual tree genotype details for a submission.
+ * Creates the table of individual plant genotype details for a submission.
  *
  * @param array $state
  *   The form state of the submission.
  *
  * @return string
- *   The HTML table of trees and genotypes associated with the submission.
+ *   The HTML table of plants and genotypes associated with the submission.
  */
 function tpps_details_genotype(array &$state) {
   $params = drupal_get_query_parameters($_POST);
@@ -830,7 +830,7 @@ function tpps_details_genotype(array &$state) {
 
   $vars = array(
     'header' => array(
-      'Tree',
+      'Plant',
       'Name',
       'Description',
       'Marker Type',

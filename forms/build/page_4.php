@@ -92,7 +92,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
 
         $form["organism-$i"]['phenotype']['file'] = array(
           '#type' => 'managed_file',
-          '#title' => t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Data: *'),
+          '#title' => t('Phenotype file: Please upload a file containing columns for Plant Identifier, Phenotype Data: *'),
           '#upload_location' => 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype'),
           '#upload_validators' => array(
             'file_validate_extensions' => array('csv tsv xlsx'),
@@ -111,7 +111,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         );
 
         $form["organism-$i"]['phenotype']['file']['columns'] = array(
-          '#description' => 'Please define which columns hold the required data: Tree Identifier, Phenotype name, and Value(s)',
+          '#description' => 'Please define which columns hold the required data: Plant Identifier, Phenotype name, and Value(s)',
         );
 
         $format = tpps_get_ajax_value($form_state, array(
@@ -123,7 +123,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         if ($format == 0) {
           $column_options = array(
             'Phenotype Data',
-            'Tree Identifier',
+            'Plant Identifier',
             'Timepoint',
             'Clone Number',
             'N/A',
@@ -132,13 +132,13 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         else {
           $column_options = array(
             'N/A',
-            'Tree Identifier',
+            'Plant Identifier',
             'Phenotype Name/Identifier',
             'Value(s)',
             'Timepoint',
             'Clone Number',
           );
-          $form["organism-$i"]['phenotype']['file']['#title'] = t('Phenotype file: Please upload a file containing columns for Tree Identifier, Phenotype Name, and value for all of your phenotypic data: *');
+          $form["organism-$i"]['phenotype']['file']['#title'] = t('Phenotype file: Please upload a file containing columns for Plant Identifier, Phenotype Name, and value for all of your phenotypic data: *');
         }
 
         $form["organism-$i"]['phenotype']['file']['columns-options'] = array(

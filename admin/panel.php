@@ -14,10 +14,10 @@
  * If the administrator is looking at one specific TPPS submission, they are
  * provided with options to reject the submission and leave a reason for the
  * rejection, or to approve the submission and start loading the data into the
- * database. If the submission includes CartograTree layers with environmental
+ * database. If the submission includes CartograPlant layers with environmental
  * parameters, the administrator will need to select the kind of parameter the
  * user has selected - an attr_id, or a cvterm. This will be important when the
- * submission is recording the environmental data of the trees.
+ * submission is recording the environmental data of the plants.
  *
  * @param array $form
  *   The form being created.
@@ -402,7 +402,7 @@ function tpps_admin_panel_top(array &$form) {
               break;
 
             case TPPS_PAGE_3:
-              $stage = "Tree Accession";
+              $stage = "Plant Accession";
               break;
 
             case TPPS_PAGE_4:

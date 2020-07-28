@@ -56,7 +56,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => 'Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain isotope or mass spectrometry data.',
+      '#description' => 'Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain isotope or mass spectrometry data.',
     );
 
     return $fields;
@@ -425,12 +425,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   if (!empty($snps_assay_check)) {
     $fields['files']['snps-assay'] = array(
       '#type' => 'managed_file',
-      '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
+      '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => "Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain SNP data.",
+      '#description' => "Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data.",
       '#tree' => TRUE,
     );
 
@@ -603,7 +603,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => t('Please upload a spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Tree Identifier that matches your accession file.'),
+      '#description' => t('Please upload a spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
       '#tree' => TRUE,
     );
 
@@ -683,7 +683,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         '#upload_validators' => array(
           'file_validate_extensions' => array('csv tsv xlsx'),
         ),
-        '#description' => t('Please upload an additional spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Tree Identifier that matches your accession file.'),
+        '#description' => t('Please upload an additional spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
         '#tree' => TRUE,
       );
 
@@ -749,7 +749,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => t('Please upload a spreadsheet containing your Indels data. The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain Indel data.'),
+      '#description' => t('Please upload a spreadsheet containing your Indels data. The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain Indel data.'),
       '#tree' => TRUE,
     );
 
@@ -772,12 +772,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   if (!empty($other_file_check)) {
     $fields['files']['other'] = array(
       '#type' => 'managed_file',
-      '#title' => t('Other Marker Genotype Spreadsheet: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
+      '#title' => t('Other Marker Genotype Spreadsheet: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier.",
+      '#description' => "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Plant Identifier.",
       '#tree' => TRUE,
     );
 
@@ -800,14 +800,14 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     $dynamic = tpps_get_ajax_value($form_state, array($id, 'genotype', 'files', 'other', 'dynamic'), $default_dynamic, 'other');
     if ($dynamic) {
       $fields['files']['other']['columns'] = array(
-        '#description' => 'Please define which columns hold the required data: Tree Identifier, Genotype Data',
+        '#description' => 'Please define which columns hold the required data: Plant Identifier, Genotype Data',
       );
 
       $fields['files']['other']['columns-options'] = array(
         '#type' => 'hidden',
         '#value' => array(
           'Genotype Data',
-          'Tree Identifier',
+          'Plant Identifier',
           'N/A',
         ),
       );
@@ -942,19 +942,19 @@ function tpps_environment(array &$form, array &$form_state, $id) {
 
     $form[$id]['environment']['env_layers_groups'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Cartogratree Environmental Layers: *',
+      '#title' => 'CartograPlant Environmental Layers: *',
       '#collapsible' => TRUE,
     );
 
     $form[$id]['environment']['env_layers'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Cartogratree Environmental Layers: *',
+      '#title' => 'CartograPlant Environmental Layers: *',
       '#collapsible' => TRUE,
     );
 
     $form[$id]['environment']['env_params'] = array(
       '#type' => 'fieldset',
-      '#title' => 'CartograTree Environmental Layer Parameters: *',
+      '#title' => 'CartograPlant Environmental Layer Parameters: *',
       '#collapsible' => TRUE,
     );
 
