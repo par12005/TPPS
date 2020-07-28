@@ -1069,15 +1069,18 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
         'value' => $key,
         'type_id' => $code_cvterm,
       ));
-      $org_query = chado_select_record('organism', array('genus', 'species'), array(
-        'organism_id' => current($org_id_query)->organism_id,
-      ));
-      $result = current($org_query);
 
-      $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
-      foreach ($versions as $item) {
-        $opt_string = $result->genus . " " . $result->species . " " . $item->filename;
-        $ref_genome_arr[$opt_string] = $opt_string;
+      if (!empty($org_id_query)) {
+        $org_query = chado_select_record('organism', array('genus', 'species'), array(
+          'organism_id' => current($org_id_query)->organism_id,
+        ));
+        $result = current($org_query);
+
+        $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
+        foreach ($versions as $item) {
+          $opt_string = $result->genus . " " . $result->species . " " . $item->filename;
+          $ref_genome_arr[$opt_string] = $opt_string;
+        }
       }
     }
   }
