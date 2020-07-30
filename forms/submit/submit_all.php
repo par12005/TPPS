@@ -253,26 +253,24 @@ function tpps_submit_page_1(array &$form_state) {
       ));
     }
 
-    $fam_exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], 'family');
+    $ranks = array(
+      'family',
+      'order',
+      'subkingdom',
+    );
 
-    if (!$fam_exists) {
-      $family = tpps_get_family($firstpage['organism'][$i]);
-      tpps_chado_insert_record('organismprop', array(
-        'organism_id' => $form_state['ids']['organism_ids'][$i],
-        'type_id' => tpps_load_cvterm('family')->cvterm_id,
-        'value' => $family,
-      ));
-    }
-
-    $sub_exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], 'subkingdom');
-
-    if (!$sub_exists) {
-      $subkingdom = tpps_get_subkingdom($firstpage['organism'][$i]);
-      tpps_chado_insert_record('organismprop', array(
-        'organism_id' => $form_state['ids']['organism_ids'][$i],
-        'type_id' => tpps_load_cvterm('subkingdom')->cvterm_id,
-        'value' => $subkingdom,
-      ));
+    foreach ($ranks as $rank) {
+      $exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], $rank);
+      if (!$exists) {
+        $taxon = tpps_get_taxon($firstpage['organism'][$i], $rank);
+        if ($taxon) {
+          tpps_chado_insert_record('organismprop', array(
+            'organism_id' => $form_state['ids']['organism_ids'][$i],
+            'type_id' => tpps_load_cvterm($rank)->cvterm_id,
+            'value' => $taxon,
+          ));
+        }
+      }
     }
 
     tpps_chado_insert_record('project_organism', array(

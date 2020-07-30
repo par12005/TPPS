@@ -6,15 +6,22 @@
  */
 
 /**
- * Retrieves a family based on an organism name.
+ * Retrieves taxonomy information based on an organism name.
  *
  * @param string $organism
  *   The name of the organism.
+ * @param string $rank
+ *   The taxonomic rank (subkingdom, order, family, etc).
  *
  * @return mixed
  *   The name of the family or FALSE on failure.
  */
-function tpps_ncbi_get_family($organism) {
+function tpps_ncbi_get_taxonomy($organism, $rank) {
+  // Subkingdom is a little different.
+  if ($rank == 'subkingdom') {
+    return tpps_ncbi_get_subkingdom($organism);
+  }
+
   $id = tpps_ncbi_get_taxon_id($organism);
   $fetch = new EFetch('taxonomy');
   $fetch->addParam('id', "$id");
@@ -26,11 +33,11 @@ function tpps_ncbi_get_family($organism) {
 
   $lineage = $response->Taxon->LineageEx->Taxon;
   foreach ($lineage as $item) {
-    if ($item->Rank == 'family') {
+    if ($item->Rank == $rank) {
       return $item->ScientificName;
     }
   }
-  drupal_set_message('Unable to determine family from NCBI for organism: ' . $organism);
+  drupal_set_message("Unable to determine $rank from NCBI for organism: $organism");
   return FALSE;
 }
 
