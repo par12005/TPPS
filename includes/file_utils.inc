@@ -765,8 +765,15 @@ function tpps_xlsx_get_strings($strings_location) {
   $reader->open($strings_location);
   $count = 0;
   while ($reader->read()) {
-    if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 't') {
-      $strings[$count++] = $reader->readInnerXml();
+    if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'si') {
+      $string = "";
+
+      while (!($reader->nodeType == XMLReader::END_ELEMENT and $reader->name == 'si') and $reader->read()) {
+        if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 't') {
+          $string .= $reader->readInnerXml();
+        }
+      }
+      $strings[$count++] = $string;
     }
   }
   $reader->close();
