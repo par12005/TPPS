@@ -361,6 +361,12 @@ function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = 
           'entity_id' => $entity_id,
           'record_id' => $id,
         ));
+
+        $entity = tripal_load_entity('TripalEntity', array($entity_id))[$entity_id];
+        $controller = entity_get_controller('TripalEntity');
+        $controller->setAlias($entity);
+        $controller->resetCache();
+
         $entity_id++;
       }
     }
@@ -391,6 +397,11 @@ function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = 
           'record_id' => $vals[1],
         ))
         ->execute();
+
+      $entity = tripal_load_entity('TripalEntity', array($entity_id))[$entity_id];
+      $controller = entity_get_controller('TripalEntity');
+      $controller->setAlias($entity);
+      $controller->resetCache();
     }
   }
 }
