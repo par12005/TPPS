@@ -133,6 +133,12 @@ jQuery(document).ready(function ($) {
   initDetailPages();
 });
 
+jQuery.fn.mapButtonsClick = function (selector) {
+  jQuery(selector).off('click');
+  jQuery(selector).click(getCoordinates);
+  initMap();
+}
+
 function previewFile(element, num_rows = 3) {
   var fid;
   if (element.id.match(/fid_(.*)/) !== null) {
