@@ -160,6 +160,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         'My file does not use coordinates for plant locations',
       ),
       '#states' => $form['tree-accession']["species-$i"]['#states'] ?? NULL,
+      '#prefix' => "<div id=\"population-mapping-species-$i\">",
     );
 
     $cols = tpps_get_ajax_value($form_state, array(
@@ -174,11 +175,12 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       "species-$i",
       'file',
     ), NULL);
+
     if (!empty($fid)) {
       $wrapper_id = "{$fid}_map_wrapper";
       $button_id = "{$fid}_map_button";
       $form['tree-accession']["species-$i"]['coord-format']['#suffix'] = "<div id=\"$wrapper_id\"></div>"
-      . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\" class=\"btn btn-primary\"></input>";
+      . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\" class=\"btn btn-primary map-button\"></input>";
       $no_header = tpps_get_ajax_value($form_state, array(
         'tree-accession',
         "species-$i",
@@ -231,7 +233,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     $form['tree-accession']["species-$i"]['pop-group'] = array(
       '#type' => 'hidden',
       '#title' => 'Population group mapping',
-      '#prefix' => "<div id=\"population-mapping-species-$i\">",
       '#suffix' => '</div>',
       '#tree' => TRUE,
     );
