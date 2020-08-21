@@ -30,10 +30,14 @@ function tpps_front_create_form(array &$form, array $form_state) {
   global $user;
 
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
-  $prefix_text = "<div>Welcome to TPPS!<br><br>The Tripal PopGen Submit (TPPS) workflow provides researchers with a streamlined submission interface for studies resulting from any combination of genotype, phenotype, and environmental data for georeferenced forest trees. ";
-  $prefix_text .= "You can <a href='/tpps/details'><b>view completed studies here</b></a> or pick up where you left off by using the dropdown box found below. Visit the <a href='https://tpps.readthedocs.io/en/latest/index.html'><b>full manual</b></a> for more details and help.<br />";
-  $prefix_text .= "<figure style=\"text-align:center;\"><img style=\"max-height:100%;max-width:100%;\" src=\"{$image_path}TPPS_front_diagram.png\"></figure>";
-  $prefix_text .= "TPPS has documentation to assist users with the process of creating a submission, which can be accessed <a target=\"blank\" href=\"https://tpps.readthedocs.io/en/latest/user.html\">here</a>.<br><br></div>";
+  $prefix_text = "<div><figure style=\"text-align:center;\"><img style=\"max-height:100%;max-width:100%;\" src=\"{$image_path}TPPS_front_image.png\"></figure>";
+  $prefix_text .= "<div id=\"landing-buttons\">";
+  $prefix_text .= "<a href=\"https://tpps.readthedocs.io/en/latest/\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">TPPS Documentation</button></a>";
+  $prefix_text .= "<a href=\"$base_url/tpps/details\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">TPPS Studies</button></a>";
+  if (module_exists('cartogratree')) {
+    $prefix_text .= "<a href=\"$base_url/ct\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">CartograPlant</button></a>";
+  }
+  $prefix_text .= "</div></div>";
 
   $form['description'] = array(
     '#markup' => $prefix_text,
@@ -92,7 +96,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
 
   $form['Next'] = array(
     '#type' => 'submit',
-    '#value' => t('Continue to TPPS'),
+    '#value' => t('Submit Data'),
   );
 
   return $form;

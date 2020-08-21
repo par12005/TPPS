@@ -84,7 +84,7 @@ function tpps_status_bar(array &$form, array $form_state) {
   else {
     $image_fname = 'message-16-warning.png';
   }
-  $form['#prefix'] .= "<div><img src='$base_url/misc/$image_fname'> Tree Accession</div>";
+  $form['#prefix'] .= "<div><img src='$base_url/misc/$image_fname'> Plant Accession</div>";
 
   /**** Page 4 ****/
   if ($form_state['stage'] != TPPS_PAGE_4 and !isset($form_state['saved_values'][TPPS_PAGE_4]['#cleared'])) {

@@ -350,7 +350,7 @@ function tpps_cronapi() {
 
   $freq = variable_get('tpps_refresh_views_job_frequency', '0 */12 * * *');
   $items['tpps_refresh_views'] = array(
-    'title' => t('Refresh TPPS and CartograTree views'),
+    'title' => t('Refresh TPPS and CartograPlant views'),
     'callback' => 'tpps_refresh_views',
     'scheduler' => array(
       'name' => 'crontab',
@@ -394,7 +394,7 @@ function tpps_mail($key, array &$message, array $params) {
   switch ($key) {
     case 'user_recieved':
       $message['body'][] = "Congratulations!<br><br>
-      Your TPPS submission has been received and is pending approval from a TreeGenes administrator! Here's a brief summary of the information you provided:<ul>
+      Your TPPS submission has been received and is pending approval from a site administrator! Here's a brief summary of the information you provided:<ul>
       <li>Primary Author: {$params['author']}</li>
       <li>Organization: {$params['org']}</li>
       <li>Publication title: {$params['title']}</li>
@@ -420,7 +420,7 @@ function tpps_mail($key, array &$message, array $params) {
     case 'user_rejected':
       $message['body'][] =
       "To whom it may concern:<br><br>
-      Unfortunately, your submission to TPPS has been rejected. If you would like, you can log into the TreeGenes website and edit your submission <a href='{$params['base_url']}/user/{$params['uid']}/TPPS'>here</a><br><br>
+      Unfortunately, your submission to TPPS has been rejected. If you would like, you can log into TPPS and edit your submission <a href='{$params['base_url']}/user/{$params['uid']}/TPPS'>here</a><br><br>
       The administrator who rejected your submission provided the following reason:<br>
       <blockquote>
       {$params['reject-reason']}
@@ -754,6 +754,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       tpps_front_create_form($form, $form_state);
 
       drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+      drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
       return $form;
     }
@@ -1086,7 +1087,7 @@ function tpps_block_view_alter(&$data, $block) {
             $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
             if (preg_match('/^(.*)Accession File/', $item, $matches)) {
               $name = "";
-              if ($matches[1] != "Tree ") {
+              if ($matches[1] != "Plant ") {
                 $parts = explode(" ", $matches[1]);
                 $name = implode("_", $parts);
               }
@@ -1094,7 +1095,7 @@ function tpps_block_view_alter(&$data, $block) {
               $wrapper_id = "{$fid}_map_wrapper";
               $button_id = "{$fid}_map_button";
               $val_str .= "<div id=\"$wrapper_id\"></div>"
-                . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view trees on map!\"></input>";
+                . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\"></input>";
 
               drupal_add_js(array(
                 'tpps' => array(
@@ -1160,7 +1161,7 @@ function tpps_block_view_alter(&$data, $block) {
             $step_arr = array(
               1 => 'Author and Species Information',
               2 => 'Experimental Conditions',
-              3 => 'Tree Accession',
+              3 => 'Plant Accession',
               4 => 'Submit Data',
             );
             if ($matches[1] > 1) {

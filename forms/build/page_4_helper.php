@@ -56,7 +56,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => 'Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain isotope or mass spectrometry data.',
+      '#description' => 'Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain isotope or mass spectrometry data.',
     );
 
     return $fields;
@@ -385,6 +385,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     }
     $parents = array_merge($file_type_parents, array('Assay Design'));
     $assay_design_check = tpps_get_ajax_value($form_state, $parents);
+
+    if (!empty($snps_assay_check) and !empty($form[$id]['phenotype'])) {
+      $options['SNPs Associations'] = 'SNPs Associations';
+    }
+    $parents = array_merge($file_type_parents, array('SNPs Associations'));
+    $association_check = tpps_get_ajax_value($form_state, $parents);
   }
   if (!empty($ssrs_check)) {
     $options['SSRs/cpSSRs Genotype Spreadsheet'] = 'SSRs/cpSSRs Genotype Spreadsheet';
@@ -419,12 +425,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   if (!empty($snps_assay_check)) {
     $fields['files']['snps-assay'] = array(
       '#type' => 'managed_file',
-      '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
+      '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => "Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain SNP data.",
+      '#description' => "Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data.",
       '#tree' => TRUE,
     );
 
@@ -471,6 +477,124 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     );
   }
 
+  if (!empty($association_check)) {
+    $fields['files']['snps-association'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('SNPs Association File: *'),
+      '#upload_location' => $genotype_upload_location,
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#description' => "Please upload a spreadsheet file containing SNPs Association data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain columns with the SNP ID, Scaffold, Position (formatted like \"start:stop\"), Allele (formatted like \"major:minor\"), Associated Trait Name (must match a phenotype from the above section), and Confidence Value. Optionally, you can also specify a Gene ID (which should match the gene reference) and a SNP Annotation (non synonymous, coding, etc).",
+      '#tree' => TRUE,
+      'empty' => array(
+        '#default_value' => $values[$id]['genotype']['files']['snps-association']['empty'] ?? 'NA',
+      ),
+      'columns' => array(
+        '#description' => t('Please define which columns hold the required data: SNP ID, Scaffold, Position, Allele, Associated Trait, Confidence Value.'),
+      ),
+      'columns-options' => array(
+        '#type' => 'hidden',
+        '#value' => array(
+          'N/A',
+          'SNP ID',
+          'Scaffold',
+          'Position',
+          'Allele',
+          'Associated Trait',
+          'Confidence Value',
+          'Gene ID',
+          'Annotation',
+        ),
+        'no-header' => array(),
+      ),
+    );
+
+    $fields['files']['snps-association-type'] = array(
+      '#type' => 'select',
+      '#title' => t('Confidence Value Type: *'),
+      '#options' => array(
+        '- Select -',
+        'P value' => 'P value',
+        'Genomic Inflation Factor (GIF)' => 'Genomic Inflation Factor (GIF)',
+        'P-adjusted (FDR) / Q value' => 'P-adjusted (FDR) / Q value',
+        'P-adjusted (FWE)' => 'P-adjusted (FWE)',
+        'P-adjusted (Bonferroni)' => 'P-adjusted (Bonferroni)',
+      ),
+    );
+
+    $fields['files']['snps-association-tool'] = array(
+      '#type' => 'select',
+      '#title' => t('Association Analysis Tool: *'),
+      '#options' => array(
+        '- Select -',
+        'GEMMA' => 'GEMMA',
+        'EMMAX' => 'EMMAX',
+        'Plink' => 'Plink',
+        'Tassel' => 'Tassel',
+        'Sambada' => 'Sambada',
+        'Bayenv' => 'Bayenv',
+        'BayeScan' => 'BayeScan',
+        'LFMM' => 'LFMM',
+      ),
+    );
+
+    $fields['files']['snps-pop-struct'] = array(
+      '#type' => 'managed_file',
+      '#title' => 'SNPs Population Structure File: ',
+      '#upload_location' => "$genotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#tree' => TRUE,
+    );
+
+    if (isset($fields['files']['snps-pop-struct']['#value'])) {
+      $fields['files']['snps-pop-struct']['#default_value'] = $fields['files']['snps-pop-struct']['#value'];
+    }
+    if (!empty($fields['files']['snps-pop-struct']['#default_value']) and ($file = file_load($fields['files']['snps-pop-struct']['#default_value']))) {
+      // Stop using the file so it can be deleted if the user clicks 'remove'.
+      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+
+    $fields['files']['snps-kinship'] = array(
+      '#type' => 'managed_file',
+      '#title' => 'SNPs Kinship File: ',
+      '#upload_location' => "$genotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#tree' => TRUE,
+    );
+
+    if (isset($fields['files']['snps-kinship']['#value'])) {
+      $fields['files']['snps-kinship']['#default_value'] = $fields['files']['snps-kinship']['#value'];
+    }
+    if (!empty($fields['files']['snps-kinship']['#default_value']) and ($file = file_load($fields['files']['snps-kinship']['#default_value']))) {
+      // Stop using the file so it can be deleted if the user clicks 'remove'.
+      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+  }
+  else {
+    $fields['files']['snps-association'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+
+    $fields['files']['snps-pop-struct'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+
+    $fields['files']['snps-kinship'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+  }
+
   if (!empty($ssrs_file_check)) {
     $fields['files']['ssrs'] = array(
       '#type' => 'managed_file',
@@ -479,7 +603,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => t('Please upload a spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Tree Identifier that matches your accession file.'),
+      '#description' => t('Please upload a spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
       '#tree' => TRUE,
     );
 
@@ -559,7 +683,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         '#upload_validators' => array(
           'file_validate_extensions' => array('csv tsv xlsx'),
         ),
-        '#description' => t('Please upload an additional spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Tree Identifier that matches your accession file.'),
+        '#description' => t('Please upload an additional spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
         '#tree' => TRUE,
       );
 
@@ -625,7 +749,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => t('Please upload a spreadsheet containing your Indels data. The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain Indel data.'),
+      '#description' => t('Please upload a spreadsheet containing your Indels data. The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain Indel data.'),
       '#tree' => TRUE,
     );
 
@@ -648,12 +772,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   if (!empty($other_file_check)) {
     $fields['files']['other'] = array(
       '#type' => 'managed_file',
-      '#title' => t('Other Marker Genotype Spreadsheet: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
+      '#title' => t('Other Marker Genotype Spreadsheet: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier.",
+      '#description' => "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Plant Identifier.",
       '#tree' => TRUE,
     );
 
@@ -676,14 +800,14 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     $dynamic = tpps_get_ajax_value($form_state, array($id, 'genotype', 'files', 'other', 'dynamic'), $default_dynamic, 'other');
     if ($dynamic) {
       $fields['files']['other']['columns'] = array(
-        '#description' => 'Please define which columns hold the required data: Tree Identifier, Genotype Data',
+        '#description' => 'Please define which columns hold the required data: Plant Identifier, Genotype Data',
       );
 
       $fields['files']['other']['columns-options'] = array(
         '#type' => 'hidden',
         '#value' => array(
           'Genotype Data',
-          'Tree Identifier',
+          'Plant Identifier',
           'N/A',
         ),
       );
@@ -818,19 +942,19 @@ function tpps_environment(array &$form, array &$form_state, $id) {
 
     $form[$id]['environment']['env_layers_groups'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Cartogratree Environmental Layers: *',
+      '#title' => 'CartograPlant Environmental Layers: *',
       '#collapsible' => TRUE,
     );
 
     $form[$id]['environment']['env_layers'] = array(
       '#type' => 'fieldset',
-      '#title' => 'Cartogratree Environmental Layers: *',
+      '#title' => 'CartograPlant Environmental Layers: *',
       '#collapsible' => TRUE,
     );
 
     $form[$id]['environment']['env_params'] = array(
       '#type' => 'fieldset',
-      '#title' => 'CartograTree Environmental Layer Parameters: *',
+      '#title' => 'CartograPlant Environmental Layer Parameters: *',
       '#collapsible' => TRUE,
     );
 
@@ -945,15 +1069,18 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
         'value' => $key,
         'type_id' => $code_cvterm,
       ));
-      $org_query = chado_select_record('organism', array('genus', 'species'), array(
-        'organism_id' => current($org_id_query)->organism_id,
-      ));
-      $result = current($org_query);
 
-      $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
-      foreach ($versions as $item) {
-        $opt_string = $result->genus . " " . $result->species . " " . $item->filename;
-        $ref_genome_arr[$opt_string] = $opt_string;
+      if (!empty($org_id_query)) {
+        $org_query = chado_select_record('organism', array('genus', 'species'), array(
+          'organism_id' => current($org_id_query)->organism_id,
+        ));
+        $result = current($org_query);
+
+        $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
+        foreach ($versions as $item) {
+          $opt_string = $result->genus . " " . $result->species . " " . $item->filename;
+          $ref_genome_arr[$opt_string] = $opt_string;
+        }
       }
     }
   }

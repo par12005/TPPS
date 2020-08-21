@@ -16,6 +16,11 @@ label figure {
   margin-top: 20px;
   text-align: center;
 }
+#landing-buttons {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
 #edit-tree-accession figure {
   width: 100%;
 }

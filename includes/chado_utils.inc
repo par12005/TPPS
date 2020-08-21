@@ -274,7 +274,14 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
     }
 
     if ($has_fields) {
-      $last_id = $inserts[$table]->execute();
+      if ($table == 'featureloc') {
+        $previous = chado_set_active('chado');
+        $last_id = $inserts[$table]->execute();
+        chado_set_active($previous);
+      }
+      else {
+        $last_id = $inserts[$table]->execute();
+      }
       $fks[$table] += array_combine($fks_to_populate, range($last_id - count($fks_to_populate) + 1, $last_id));
     }
 
@@ -354,6 +361,12 @@ function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = 
           'entity_id' => $entity_id,
           'record_id' => $id,
         ));
+
+        $entity = tripal_load_entity('TripalEntity', array($entity_id))[$entity_id];
+        $controller = entity_get_controller('TripalEntity');
+        $controller->setAlias($entity);
+        $controller->resetCache();
+
         $entity_id++;
       }
     }
@@ -384,6 +397,11 @@ function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = 
           'record_id' => $vals[1],
         ))
         ->execute();
+
+      $entity = tripal_load_entity('TripalEntity', array($entity_id))[$entity_id];
+      $controller = entity_get_controller('TripalEntity');
+      $controller->setAlias($entity);
+      $controller->resetCache();
     }
   }
 }
@@ -453,63 +471,35 @@ function tpps_table_columns($table) {
 }
 
 /**
- * Tries to retrieve family information about an organism from the db.
+ * Tries to retrieve taxonomy information about an organism from the db.
  *
- * If family information for the genus does not already exist, then the
- * function tries to retrieve family information from NCBI.
- *
- * @param string $org_name
- *   The full name (genus, species) of the organism.
- *
- * @return string
- *   The family of the organism.
- */
-function tpps_get_family($org_name) {
-  $parts = explode(' ', $org_name);
-  $genus = $parts[0];
-
-  $fam_query = db_select('chado.organismprop', 'op');
-  $fam_query->join('chado.organism', 'o', 'o.organism_id = op.organism_id');
-  $fam_query->fields('op', array('value'));
-  $fam_query->condition('op.type_id', tpps_load_cvterm('family')->cvterm_id);
-  $fam_query->condition('o.genus', $genus);
-  $fam_query->range(0, 1);
-  $fam_query = $fam_query->execute();
-  $family = $fam_query->fetchObject()->value ?? NULL;
-  if (!empty($family)) {
-    return $family;
-  }
-  return tpps_ncbi_get_family($org_name);
-}
-
-/**
- * Tries to retrieve subkingdom information about an organism from the db.
- *
- * If subkingdom information for the genus does not already exist, then the
- * function tries to retrieve subkingdom information from NCBI.
+ * If taxonomy information for the genus does not already exist, then the
+ * function tries to retrieve taxonomy information from NCBI.
  *
  * @param string $org_name
  *   The full name (genus, species) of the organism.
+ * @param string $rank
+ *   The taxonomic rank (subkingdom, order, family, etc).
  *
  * @return string
- *   The subkingdom of the organism.
+ *   The the taxonomy information of the organism.
  */
-function tpps_get_subkingdom($org_name) {
+function tpps_get_taxon($org_name, $rank) {
   $parts = explode(' ', $org_name);
   $genus = $parts[0];
 
-  $sub_query = db_select('chado.organismprop', 'op');
-  $sub_query->join('chado.organism', 'o', 'o.organism_id = op.organism_id');
-  $sub_query->fields('op', array('value'));
-  $sub_query->condition('op.type_id', tpps_load_cvterm('subkingdom')->cvterm_id);
-  $sub_query->condition('o.genus', $genus);
-  $sub_query->range(0, 1);
-  $sub_query = $sub_query->execute();
-  $subkingom = $sub_query->fetchObject()->value ?? NULL;
-  if (!empty($subkingom)) {
-    return $subkingom;
+  $query = db_select('chado.organismprop', 'op');
+  $query->join('chado.organism', 'o', 'o.organism_id = op.organism_id');
+  $query->fields('op', array('value'));
+  $query->condition('op.type_id', tpps_load_cvterm($rank)->cvterm_id);
+  $query->condition('o.genus', $genus);
+  $query->range(0, 1);
+  $query = $query->execute();
+  $result = $query->fetchObject()->value ?? NULL;
+  if (!empty($result)) {
+    return $result;
   }
-  return tpps_ncbi_get_subkingdom($org_name);
+  return tpps_ncbi_get_taxonomy($org_name, $rank);
 }
 
 /**

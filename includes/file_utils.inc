@@ -387,7 +387,7 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $f
  * This function validates that the file contains all of the required groups.
  *
  * A "required group" is a column type that must be present within the file for
- * the file to be considered valid. For instance, a required group for a tree
+ * the file to be considered valid. For instance, a required group for a plant
  * accession file would be the "Location" group. The required groups array
  * should satisfy the structure:
  *  array(
@@ -765,8 +765,15 @@ function tpps_xlsx_get_strings($strings_location) {
   $reader->open($strings_location);
   $count = 0;
   while ($reader->read()) {
-    if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 't') {
-      $strings[$count++] = $reader->readInnerXml();
+    if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'si') {
+      $string = "";
+
+      while (!($reader->nodeType == XMLReader::END_ELEMENT and $reader->name == 'si') and $reader->read()) {
+        if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 't') {
+          $string .= $reader->readInnerXml();
+        }
+      }
+      $strings[$count++] = $string;
     }
   }
   $reader->close();
