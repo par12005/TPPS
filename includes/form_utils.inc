@@ -42,8 +42,8 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
   $sub_keys = $options['substitute_keys'] ?? array();
   $sub_fields = $options['substitute_fields'] ?? array();
   $replace_pattern = $options['replacement_pattern'] ?? '/!num/';
-  
-  $number = tpps_get_ajax_number($form_state, $number_parents, $up . $name_suffix, $down . $name_suffix, $default, $minimum);
+  $alt_buttons = $options['alternative_buttons'] ?? array();
+  $button_weights = $options['button_weights'] ?? array();
 
   $element = array(
     '#type' => 'fieldset',
@@ -61,6 +61,7 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
         'wrapper' => $list_wrapper,
         'callback' => $button_callback,
       ),
+      '#weight' => $button_weights[$up] ?? NULL,
     ),
     'remove' => array(
       '#type' => 'button',
@@ -71,11 +72,31 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
         'wrapper' => $list_wrapper,
         'callback' => $button_callback,
       ),
+      '#weight' => $button_weights[$down] ?? NULL,
     ),
-    'number' => array(
-      '#type' => 'hidden',
-      '#value' => $number,
-    ),
+  );
+
+  $number_options = array();
+  foreach ($alt_buttons as $button => $inc_value) {
+    $element[$button] = array(
+      '#type' => 'button',
+      '#button_type' => 'button',
+      '#value' => $button,
+      '#name' => $button . $name_suffix,
+      '#ajax' => array(
+        'wrapper' => $list_wrapper,
+        'callback' => $button_callback,
+      ),
+      '#weight' => $button_weights[$button] ?? NULL,
+    );
+    $number_options[$button . $name_suffix] = $inc_value;
+  }
+
+  $number = tpps_get_ajax_number($form_state, $number_parents, $up . $name_suffix, $down . $name_suffix, $default, $minimum, $number_options);
+
+  $element['number'] = array(
+    '#type' => 'hidden',
+    '#value' => $number,
   );
 
   for ($i = 1; $i <= $number; $i++) {
@@ -110,7 +131,10 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
  * Retrieves the value of the number of a tpps_dynamic_list fieldset.
  *
  * This function first checks the values of the form state, then the
- * saved_values, and finally returns the default if it cannot find the nubmer.
+ * saved_values, and finally returns the default if it cannot find the number.
+ * This function also accepts an optional $options array, which contains
+ * alternative increment values, or functions which return a new number. This
+ * can be useful for adding buttons to a dynamic list such as "Add 5 of x".
  *
  * @param array $state
  *   The state of the form.
@@ -124,22 +148,51 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
  *   The default number if the number does not exist.
  * @param int $minimum
  *   The minimum number we are allowed to reach.
+ * @param array $options
+ *   Optional additional increment values.
  *
  * @return int
  *   The ajax number of the dynamic list, or the default number.
  */
-function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $default = 0, $minimum = 0) {
+function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $default = 0, $minimum = 0, array $options = array()) {
   // Get page number.
-  $page = $state['stage'];
+  $page = $state['stage'] ?? '';
 
   // Check form_state values, update if necessary.
   $value_parents = $parents;
-  array_unshift($value_parents, 'values');
+  // If the triggering element is an upload/remove file button, then the
+  // form_state['values'] array will not be loaded correctly, so we will need
+  // to use the 'complete form' array instead.
+  $button_name = $state['triggering_element']['#name'] ?? '';
+  if (preg_match('/^.*_(upload|remove)_button$/', $button_name)) {
+    array_unshift($value_parents, 'complete form');
+    $val = drupal_array_get_nested_value($state, $value_parents);
+    if (isset($val['#type']) and $val['#type'] == 'hidden') {
+      array_push($value_parents, '#value');
+    }
+  }
+  else {
+    array_unshift($value_parents, 'values');
+  }
   $val = drupal_array_get_nested_value($state, $value_parents);
-  if (isset($val) and $state['triggering_element']['#name'] == $up) {
+  if (isset($val) and array_key_exists($button_name, $options)) {
+    $increment = $options[$button_name];
+    $new_val = $val;
+    if (is_int($increment)) {
+      $new_val = $val + $increment;
+      if ($new_val < $minimum) {
+        $new_val = $minimum;
+      }
+    }
+    if (is_string($increment) and function_exists($increment)) {
+      $new_val = $increment($button_name, $val);
+    }
+    drupal_array_set_nested_value($state, $value_parents, $new_val);
+  }
+  elseif (isset($val) and $button_name == $up) {
     drupal_array_set_nested_value($state, $value_parents, $val + 1);
   }
-  elseif (isset($val) and $state['triggering_element']['#name'] == $down and $val > $minimum) {
+  elseif (isset($val) and $button_name == $down and $val > $minimum) {
     drupal_array_set_nested_value($state, $value_parents, $val - 1);
   }
   $val = drupal_array_get_nested_value($state, $value_parents);
@@ -193,6 +246,17 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
     return $val;
   }
 
+  $complete_parents = $parents;
+  array_unshift($complete_parents, 'complete form');
+  $element = drupal_array_get_nested_value($state, $complete_parents);
+  if (isset($element['#type']) and $element['#type'] != 'fieldset') {
+    array_push($complete_parents, '#value');
+  }
+  $val = drupal_array_get_nested_value($state, $complete_parents);
+  if (isset($val)) {
+    return $val;
+  }
+
   $saved_value_parents = $parents;
   if (!empty($file_name)) {
     $saved_value_parents = array();
@@ -211,4 +275,36 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
   array_unshift($saved_value_parents, 'saved_values', $page);
   $saved_val = drupal_array_get_nested_value($state, $saved_value_parents);
   return $saved_val ?? $default;
+}
+
+/**
+ * Migrates necessary information from the old form state to the new one.
+ *
+ * This function is usually only called from tpps_main().
+ *
+ * @param array $new
+ *   The new form state to be populated.
+ * @param array $old
+ *   The old form state with the old information.
+ */
+function tpps_form_state_info(&$new, &$old) {
+  $new['saved_values'] = $old['saved_values'];
+  $new['stage'] = $old['stage'];
+  $new['accession'] = $old['accession'];
+  $new['dbxref_id'] = $old['dbxref_id'];
+  $new['stats'] = $old['stats'] ?? NULL;
+  $new['ids'] = $old['ids'] ?? NULL;
+  $new['tpps_type'] = $old['tpps_type'] ?? NULL;
+  $new['file_info'] = $old['file_info'] ?? NULL;
+  $new['status'] = $old['status'] ?? NULL;
+  $new['updated'] = $old['updated'] ?? time();
+  $new['created'] = $old['created'] ?? NULL;
+  $new['approved'] = $old['approved'] ?? NULL;
+  $new['completed'] = $old['completed'] ?? NULL;
+  $new['loaded'] = $old['loaded'] ?? NULL;
+  $new['submitting_uid'] = $old['submitting_uid'] ?? NULL;
+  $new['job_id'] = $old['job_id'] ?? NULL;
+  $new['revised_files'] = $old['revised_files'] ?? NULL;
+  $new['admin_comments'] = $old['admin_comments'] ?? NULL;
+  $new['alternative_accessions'] = $old['alternative_accessions'] ?? NULL;
 }

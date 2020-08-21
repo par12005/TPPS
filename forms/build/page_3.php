@@ -40,6 +40,13 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     '#description' => t('If this box is checked, TPPS will try to find trees with matching ids around the same location as the ones you are providing. If it finds them successfully, it will mark them as the same tree in the database.'),
   );
 
+  if (tpps_access('administer tpps module')) {
+    $form['skip_validation'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Skip location validation (ignore location information)'),
+    );
+  }
+
   $form['tree-accession'] = array(
     '#type' => 'fieldset',
     '#title' => t('Tree Accession Information'),
@@ -153,11 +160,73 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         'My file does not use coordinates for tree locations',
       ),
       '#states' => $form['tree-accession']["species-$i"]['#states'] ?? NULL,
-      '#suffix' => "<div id=\"{$id_name}_map_wrapper\"></div>"
-      . "<input id=\"{$id_name}_map_button\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>"
-      . "<div id=\"{$id_name}_species_number\" style=\"display:none;\">$i</div>"
-      . "<script>jQuery('#{$id_name}_map_button').click(getCoordinates);</script>",
     );
+
+    $cols = tpps_get_ajax_value($form_state, array(
+      'tree-accession',
+      "species-$i",
+      'file',
+      'columns',
+    ), NULL, 'file');
+
+    $fid = tpps_get_ajax_value($form_state, array(
+      'tree-accession',
+      "species-$i",
+      'file',
+    ), NULL);
+    if (!empty($fid)) {
+      $wrapper_id = "{$fid}_map_wrapper";
+      $button_id = "{$fid}_map_button";
+      $form['tree-accession']["species-$i"]['coord-format']['#suffix'] = "<div id=\"$wrapper_id\"></div>"
+      . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view trees on map!\" class=\"btn btn-primary\"></input>";
+      $no_header = tpps_get_ajax_value($form_state, array(
+        'tree-accession',
+        "species-$i",
+        'file',
+        'no_header',
+      ), NULL, 'file');
+
+      $id_col = $lat_col = $long_col = NULL;
+      foreach ($cols as $key => $col) {
+        if ($key[0] != '#') {
+          if ((is_array($col) and $col['#value'] == '1') or (!is_array($col) and $col == '1')) {
+            $id_col = $key;
+          }
+          if ((is_array($col) and $col['#value'] == '4') or (!is_array($col) and $col == '4')) {
+            $lat_col = $key;
+          }
+          if ((is_array($col) and $col['#value'] == '5') or (!is_array($col) and $col == '5')) {
+            $long_col = $key;
+          }
+        }
+      }
+
+      drupal_add_js(array(
+        'tpps' => array(
+          'accession_files' => array(
+            $fid => array(
+              'no_header' => $no_header,
+              'id_col' => $id_col,
+              'lat_col' => $lat_col,
+              'long_col' => $long_col,
+              'fid' => $fid,
+            ),
+          ),
+        ),
+      ), 'setting');
+
+      drupal_add_js(array(
+        'tpps' => array(
+          'map_buttons' => array(
+            $fid => array(
+              'wrapper' => $wrapper_id,
+              'button' => $button_id,
+              'fid' => $fid,
+            ),
+          ),
+        )
+      ), 'setting');
+    }
 
     $form['tree-accession']["species-$i"]['pop-group'] = array(
       '#type' => 'hidden',
@@ -168,34 +237,40 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     );
 
     $pop_group_show = FALSE;
-
-    $cols = tpps_get_ajax_value($form_state, array(
-      'tree-accession',
-      "species-$i",
-      'file',
-      'columns',
-    ), NULL, 'file');
+    $found_lat = FALSE;
+    $found_lng = FALSE;
 
     if (!empty($cols)) {
       foreach ($cols as $col_name => $data) {
         if ($col_name[0] == '#') {
           continue;
         }
-        if (!empty($data['#value']) and $data['#value'] == '12') {
-          $pop_group_show = TRUE;
-          $pop_col = $col_name;
+        $val = $data;
+        $fid = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'] ?? NULL;
+        if (!empty($data['#value'])) {
           $fid = $form_state['complete form']['tree-accession']["species-$i"]['file']['#value']['fid'];
-          break;
+          $val = $data['#value'];
         }
-        if ($data == '12') {
-          $pop_group_show = TRUE;
-          $pop_col = $col_name;
-          $fid = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['file'];
-          break;
+        switch ($val) {
+          case '4':
+            $found_lat = TRUE;
+            break;
+
+          case '5':
+            $found_lng = TRUE;
+            break;
+
+          case '12':
+            $pop_group_show = TRUE;
+            $pop_col = $col_name;
+            break;
+
+          default:
+            break;
         }
       }
 
-      if (!empty($fid) and ($file = file_load($fid)) and $pop_group_show) {
+      if ($pop_group_show and !empty($fid) and ($file = file_load($fid))) {
         $form['tree-accession']["species-$i"]['pop-group']['#type'] = 'fieldset';
         $pop_groups = array();
         $options = array(
@@ -212,8 +287,28 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           );
         }
       }
-    }
 
+      if ($found_lat and $found_lng) {
+        unset($form['tree-accession']["species-$i"]['pop-group']['#suffix']);
+        $form['tree-accession']["species-$i"]['exact_coords'] = array(
+          '#type' => 'checkbox',
+          '#title' => t('The provided GPS coordinates are exact'),
+          '#default_value' => $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['exact_coords'] ?? TRUE,
+        );
+
+        $form['tree-accession']["species-$i"]['coord_precision'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Coordinates accuracy:'),
+          '#description' => t('The precision of the provided coordinates. For example, if a tree could be up to 10m awa from the provided coordinates, then the accuracy would be "10m".'),
+          '#suffix' => '</div>',
+          '#states' => array(
+            'visible' => array(
+              ":input[name=\"tree-accession[species-$i][exact_coords]\"]" => array('checked' => FALSE),
+            ),
+          ),
+        );
+      }
+    }
   }
 
   $map_api_key = variable_get('tpps_maps_api_key', NULL);

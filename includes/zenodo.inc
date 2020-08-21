@@ -60,7 +60,7 @@ function tpps_generate_doi($accession) {
     'related_identifiers' => array(
       (object) array(
         'relation' => 'isAlternateIdentifier',
-        'identifier' => "$base_url/tpps_details/accession/$accession",
+        'identifier' => "$base_url/tpps/details/$accession",
       ),
     ),
   );

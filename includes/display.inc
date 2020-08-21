@@ -73,10 +73,10 @@ function tpps_flatten(array $state) {
   else {
     $data['#page_2_cleared'] = FALSE;
   }
-  $data['Experiment Starting Month'] = isset($page_2['StartingDate']['month']) ? $page_2['StartingDate']['month'] : NULL;
-  $data['Experiment Starting Year'] = isset($page_2['StartingDate']['year']) ? $page_2['StartingDate']['year'] : NULL;
-  $data['Experiment Ending Month'] = isset($page_2['EndingDate']['month']) ? $page_2['EndingDate']['month'] : NULL;
-  $data['Experiment Ending Year'] = isset($page_2['EndingDate']['year']) ? $page_2['EndingDate']['year'] : NULL;
+  $data['Experiment Starting Month'] = !empty($page_2['StartingDate']['month']) ? $page_2['StartingDate']['month'] : NULL;
+  $data['Experiment Starting Year'] = !empty($page_2['StartingDate']['year']) ? $page_2['StartingDate']['year'] : NULL;
+  $data['Experiment Ending Month'] = !empty($page_2['EndingDate']['month']) ? $page_2['EndingDate']['month'] : NULL;
+  $data['Experiment Ending Year'] = !empty($page_2['EndingDate']['year']) ? $page_2['EndingDate']['year'] : NULL;
   if (!empty($page_2['study_location'])) {
     // Legacy support for old TPPS submissions.
     $legacy_loc = &$page_2['study_location'];
@@ -261,10 +261,19 @@ function tpps_flatten(array $state) {
   
         $data[$organism_name] = $page_3["species-$i"]['file'];
         if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
-          $data["#{$organism_selector}accession_no_header"] = $page_3["species-$i"]['file-no-header'] ?? '0';
-          $data["#{$organism_selector}accession_id_col"] = $page_3["species-$i"]['file-groups']['Tree Id'][1];
-          $data["#{$organism_selector}accession_lat_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4];
-          $data["#{$organism_selector}accession_long_col"] = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5];
+          $fid = $page_3["species-$i"]['file'];
+          drupal_add_js(array(
+            'tpps' => array(
+              'accession_files' => array(
+                $fid => array(
+                  'no_header' => $page_3["species-$i"]['file-no-header'] ?? '0',
+                  'id_col' => $page_3["species-$i"]['file-groups']['Tree Id'][1],
+                  'lat_col' => $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][4],
+                  'long_col' => $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)'][5],
+                ),
+              ),
+            ),
+          ), 'setting');
         }
       }
   
@@ -434,6 +443,14 @@ function tpps_flatten(array $state) {
           if (!empty($geno['files']['ssrs'])) {
             $data["$org_name SSRs/cpSSRs Genotype File"] = $geno['files']['ssrs'];
           }
+
+          if (!empty($geno['files']['ssrs_extra'])) {
+            $data["$org_name SSRs/cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
+          }
+
+          if (!empty($geno['files']['indels'])) {
+            $data["$org_name Indel Genotype File"] = $geno['files']['indels'];
+          }
   
           if (!empty($geno['files']['other'])) {
             $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
@@ -447,7 +464,7 @@ function tpps_flatten(array $state) {
         if (isset($org['environment'])) {
           $env = &$org['environment'];
   
-          if (variable_get('tpps_cartogratree_env', FALSE) and !empty($env['use_layers'])) {
+          if (variable_get('tpps_cartogratree_env', FALSE)) {
             $data["Cartogratree Layers"] = array();
             foreach ($env['env_layers'] as $layer => $layer_id) {
               if (!empty($layer_id)) {
@@ -468,26 +485,6 @@ function tpps_flatten(array $state) {
             }
             else {
               unset($data["Cartogratree Layers"]);
-            }
-          }
-  
-          if (!empty($env['env_manual_check'])) {
-            if (!empty($env['env_manual']['number'])) {
-              $data['#number_manual_env'] = $env['env_manual']['number'];
-              for ($j = 1; $j <= $data['#number_manual_env']; $j++) {
-                $fields = array(
-                  'name' => 'Name',
-                  'description' => 'Description',
-                  'units' => 'Units',
-                  'value' => 'Value',
-                );
-  
-                foreach ($fields as $field => $field_string) {
-                  if (!empty($env['env_manual']["$j"][$field])) {
-                    $data["$org_name Environment Value $j $field_string"] = $env['env_manual'][$j][$field];
-                  }
-                }
-              }
             }
           }
         }
@@ -539,9 +536,9 @@ function tpps_flatten(array $state) {
  * @return string
  *   The TPPS Submission formatted in an HTML table.
  */
-function tpps_table_display(array &$state) {
+function tpps_table_display(array &$state, array $options = array()) {
 
-  $accession = $state['saved_values'][TPPS_PAGE_4]['accession'];
+  $accession = $state['accession'];
   $flat = tpps_flatten($state);
   $map_api_key = variable_get('tpps_maps_api_key', NULL);
 
@@ -552,22 +549,43 @@ function tpps_table_display(array &$state) {
       $key_str = filter_xss(check_plain($key));
       $val_str = filter_xss(check_plain($val));
 
-      if (preg_match('/File/', $key) and ($file_name = file_load($val)->filename)) {
+      if (preg_match('/File/', $key) and ($file = file_load($val))) {
         // Create links to files.
-        $file_url = check_plain(file_create_url(file_load($val)->uri));
+        $file_name = $file->filename;
+        $file_url = check_plain(file_create_url($file->uri));
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
+        if (!empty($state['revised_files'][$val]) and ($revised_file = file_load($state['revised_files'][$val]))) {
+          $val = $state['revised_files'][$val];
+          $file_url = check_plain(file_create_url($revised_file->uri));
+          $file_name = $revised_file->filename;
+          $val_str = "<a href='$file_url' target='blank'>$file_name</a> ( Revised from $val_str )";
+        }
         $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button\" type=\"button\" value=\"Preview file\"></input>";
+        if (tpps_access('administer tpps module')) {
+          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button\" type=\"button\" value=\"Show full file\"></input>";
+        }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
-          $name = "";
-          if ($matches[1] != "Tree ") {
-            $parts = explode(" ", $matches[1]);
-            $name = implode("_", $parts);
-          }
+          $fid = $file->fid;
+          $wrapper_id = "{$fid}_map_wrapper";
+          $button_id = "{$fid}_map_button";
+          $val_str .= "<div id=\"$wrapper_id\"></div>"
+            . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view trees on map!\"></input>";
 
-          $val_str .= "<div id=\"{$name}map_wrapper\"></div>"
-            . "<input id=\"{$name}map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
-            . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>"
-            . "<script>jQuery('#{$name}map_button').click(getCoordinates);</script>";
+          drupal_add_js(array(
+            'tpps' => array(
+              'map_buttons' => array(
+                $fid => array(
+                  'wrapper' => $wrapper_id,
+                  'button' => $button_id,
+                  'fid' => $fid,
+                ),
+              ),
+            )
+          ), 'setting');
+        }
+
+        if (!empty($options['files']['revision_destination'])) {
+          $val_str .= "<div id=\"file_{$file->fid}_options_dest\"></div>";
         }
       }
       elseif (preg_match('/species photo/', $key) and ($file_name = file_load($val)->filename)) {
@@ -623,6 +641,9 @@ function tpps_table_display(array &$state) {
       $val_str = filter_xss(check_plain($val));
       $parts = explode(" ", substr($matches[0], 1));
       $item_id = implode("_", $parts);
+      if ($item_id == 'Citrus_cinensis_accession_no_header') {
+        dpm('no header');
+      }
       $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
     }
   }
@@ -670,7 +691,7 @@ function tpps_completed_display($accession = NULL) {
 
   global $base_url;
   $display = "";
-  $link = "$base_url/tpps_details/accession/$accession";
+  $link = "$base_url/tpps/details/$accession";
 
   $old_form_state = tpps_load_submission($accession);
   $values = $old_form_state['saved_values'];
@@ -834,16 +855,15 @@ function tpps_tab_create($user) {
  */
 function tpps_preview_file() {
   $params = drupal_get_query_parameters($_POST);
-  if (!empty($params['fid'])) {
-    $fid = $params['fid'];
-    $no_header = FALSE;
-  }
-  else {
+  $no_header = FALSE;
+  $fid = $params['fid'] ?? NULL;
+  if (empty($fid)) {
     return;
   }
+  $rows = $params['rows'] ?? 3;
 
   if ((file_load($fid))) {
-    $content = tpps_parse_file($fid, 3, !empty($no_header));
+    $content = tpps_parse_file($fid, $rows, !empty($no_header));
     $rows = array();
     for ($i = 0; $i < count($content) - 1; $i++) {
       $rows[] = $content[$i];

@@ -56,11 +56,13 @@ function tpps_details($accession = NULL) {
     $tree_info = array();
     if (!empty($state['tree_info'])) {
       foreach ($state['tree_info'] as $name => $info) {
-        $tree_info[] = array(
-          $name,
-          $info['lat'],
-          $info['lng'],
-        );
+        if (!empty($info['lat']) and !empty($info['lng'])) {
+          $tree_info[] = array(
+            $name,
+            $info['lat'],
+            $info['lng'],
+          );
+        }
       }
       drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
     }
@@ -68,10 +70,25 @@ function tpps_details($accession = NULL) {
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
-    $output .= "<h2>{$state['title']}</h2>";
+    $pub_link = $state['title'];
+    $pub_id = db_select('chado.project_pub', 'p')
+      ->fields('p', array('pub_id'))
+      ->condition('project_id', $state['ids']['project_id'])
+      ->execute()->fetchObject()->pub_id;
+    if (!empty($pub_id)) {
+      $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
+      $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
+      $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
+    }
+
+    $output .= "<h2>$pub_link</h2>";
     $authors = implode(', ', $state['authors']);
     $output .= "<h4>$authors</h4>";
-    $output .= "<h4>Published {$state['pyear']}, in {$state['journal']}</h4>";
+    $output .= "<h4>Published {$state['pyear']}";
+    if (!empty($state['journal'])) {
+      $output .= ", in {$state['journal']}";
+    }
+    $output .= "</h4>";
     $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
       . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
           jQuery('#abstract')[0].innerHTML = \"{$state['abstract']}\";
@@ -160,6 +177,9 @@ function tpps_details_top() {
   global $base_url;
   $params = drupal_get_query_parameters($_POST);
   $page = 0;
+  if (empty($params)) {
+    $params = drupal_get_query_parameters();
+  }
   if (!empty($params['page'])) {
     $page = $params['page'];
   }
@@ -345,6 +365,7 @@ function tpps_details_top_callback() {
  *   The populated search form.
  */
 function tpps_details_search(array $form, array $form_state) {
+  $params = drupal_get_query_parameters();
   $form['details_type'] = array(
     '#type' => 'select',
     '#options' => array(
@@ -363,6 +384,7 @@ function tpps_details_search(array $form, array $form_state) {
       'callback' => 'tpps_details_form_callback',
     ),
     '#prefix' => '<div id="tpps-details-form">',
+    '#default_value' => $params['type'] ?? NULL,
   );
 
   $ops = array(
@@ -381,13 +403,19 @@ function tpps_details_search(array $form, array $form_state) {
   $form['details_op'] = array(
     '#type' => 'select',
     '#options' => $ops,
+    '#default_value' => $params['op'] ?? NULL,
   );
 
   $form['details_value'] = array(
     '#type' => 'textfield',
     '#suffix' => '</div>',
     '#autocomplete_path' => 'tpps/autocomplete/project_title',
+    '#default_value' => $params['value'] ?? NULL,
   );
+
+  if (empty($form_state['values']['details_type'])) {
+    $form_state['values']['details_type'] = $params['type'] ?? NULL;
+  }
 
   if (!empty($form_state['values']['details_type'])) {
     switch ($form_state['values']['details_type']) {
@@ -487,9 +515,7 @@ function tpps_details_species(array &$state) {
       $family = db_select('chado.organismprop', 'o')
         ->fields('o', array('value'))
         ->condition('organism_id', $id)
-        ->condition('type_id', chado_get_cvterm(array(
-          'name' => 'family',
-        ))->cvterm_id)
+        ->condition('type_id', tpps_load_cvterm('family')->cvterm_id)
         ->execute()->fetchObject()->value;
     }
 
@@ -497,9 +523,7 @@ function tpps_details_species(array &$state) {
       $order = db_select('chado.organismprop', 'o')
         ->fields('o', array('value'))
         ->condition('organism_id', $id)
-        ->condition('type_id', chado_get_cvterm(array(
-          'name' => 'order',
-        ))->cvterm_id)
+        ->condition('type_id', tpps_load_cvterm('order')->cvterm_id)
         ->execute()->fetchObject()->value;
     }
 
@@ -507,9 +531,7 @@ function tpps_details_species(array &$state) {
       $common_name = db_select('chado.organismprop', 'o')
         ->fields('o', array('value'))
         ->condition('organism_id', $id)
-        ->condition('type_id', chado_get_cvterm(array(
-          'name' => 'common name',
-        ))->cvterm_id)
+        ->condition('type_id', tpps_load_cvterm('common name')->cvterm_id)
         ->execute()->fetchObject()->value;
     }
 
@@ -574,8 +596,18 @@ function tpps_details_study(array &$state) {
     $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
   }
 
+  $pub_link = $state['title'];
+  $pub_id = db_select('chado.project_pub', 'p')
+    ->fields('p', array('pub_id'))
+    ->condition('project_id', $state['ids']['project_id'])
+    ->execute()->fetchObject()->pub_id;
+  if (!empty($pub_id)) {
+    $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
+    $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
+    $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
+  }
   $rows[] = array('Accession', $state['accession']);
-  $rows[] = array('Title', $state['title']);
+  $rows[] = array('Title', $pub_link);
   $rows[] = array('Authors', implode(', ', $state['authors']));
   $rows[] = array('Species', implode('<br>', $species));
   $rows[] = array('Data Type', $state['saved_values'][TPPS_PAGE_2]['data_type']);

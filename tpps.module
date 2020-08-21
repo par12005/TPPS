@@ -5,6 +5,8 @@
  * Core of the TPPS module.
  */
 
+define("TPPS_MAJOR_VERSION", 1);
+define("TPPS_MINOR_VERSION", 2);
 define("TPPS_JS_PATH", '/js/tpps.js');
 define("TPPS_CSS_PATH", '/css/tpps.css');
 define("TPPS_PAGE_1", 1);
@@ -13,6 +15,7 @@ define("TPPS_PAGE_3", 3);
 define("TPPS_PAGE_4", 4);
 define("TPPS_TEMP_XLSX", "temporary://tpps_xlsx");
 define("TPPS_TEMP_ZIP", "temporary://tpps_zip");
+define("TPPS_OLS_BASE", "http://www.ebi.ac.uk/ols/api/");
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';
@@ -28,6 +31,7 @@ require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
 require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
+require_once 'includes/cvterm_utils.inc';
 require_once 'api/tpps.api.inc';
 
 /**
@@ -344,24 +348,26 @@ function tpps_access($permission, array $args = array()) {
 function tpps_cronapi() {
   $items = array();
 
+  $freq = variable_get('tpps_refresh_views_job_frequency', '0 */12 * * *');
   $items['tpps_refresh_views'] = array(
     'title' => t('Refresh TPPS and CartograTree views'),
     'callback' => 'tpps_refresh_views',
     'scheduler' => array(
       'name' => 'crontab',
       'crontab' => array(
-        'rules' => array('0 */12 * * *'),
+        'rules' => array($freq),
       ),
     ),
   );
 
+  $freq = variable_get('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
   $items['tpps_delayed_submissions'] = array(
     'title' => t('Check to see if any of the delayed TPPS submissions should be published yet'),
     'callback' => 'tpps_delayed_submissions',
     'scheduler' => array(
       'name' => 'crontab',
       'crontab' => array(
-        'rules' => array('0 */6 * * *'),
+        'rules' => array($freq),
       ),
     ),
   );
@@ -426,7 +432,7 @@ function tpps_mail($key, array &$message, array $params) {
       "Congratulations! Your submission to TPPS has been approved!<br><br>
       You may now refer to your submitted data with accession number {$params['accession']}.<br><br>
       You can still view your submission from your <a href=\"{$params['base_url']}/completed-submission/{$params['accession']}\">TPPS Completed Submissions</a> tab.<br>
-      Your submission should be public on the <a href=\"{$params['base_url']}/tpps_details/main\">TPPS/TGDR Landing Page</a> within the next 24 hours.<br>
+      Your submission should be public on the <a href=\"{$params['base_url']}/tpps/details\">TPPS/TGDR Landing Page</a> within the next 24 hours.<br>
       To generate a DOI for your submission, please click <a href=\"{$params['base_url']}/tpps/doi/{$params['accession']}\">here</a>.";
       break;
 
@@ -757,34 +763,21 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       if (empty($old_form_state)) {
         drupal_goto('tpps');
       }
-      $form_state['saved_values'] = $old_form_state['saved_values'];
-      $form_state['stage'] = $old_form_state['stage'];
-      $form_state['accession'] = $old_form_state['accession'];
-      $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
-      $form_state['stats'] = $old_form_state['stats'] ?? NULL;
-      $form_state['ids'] = $old_form_state['ids'] ?? NULL;
-      $form_state['tpps_type'] = $old_form_state['tpps_type'] ?? NULL;
-      $form_state['file_info'] = $old_form_state['file_info'] ?? NULL;
-      $form_state['status'] = $old_form_state['status'] ?? NULL;
+      tpps_form_state_info($form_state, $old_form_state);
     }
   }
   else {
     // Not first access.
     if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')) {
       // No submissions, or selected to create new submission.
-      tpps_init_project($form_state);
+      if (tpps_access('administer tpps module') and !empty($form_state['saved_values']['frontpage']['custom_accession_check'])) {
+        $accession = $form_state['saved_values']['frontpage']['custom_accession'];
+      }
+      tpps_init_project($form_state, $accession);
       tpps_create_submission($form_state, $user->uid);
     }
     $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
-    $form_state['saved_values'] = $old_form_state['saved_values'];
-    $form_state['stage'] = $old_form_state['stage'];
-    $form_state['accession'] = $old_form_state['accession'];
-    $form_state['dbxref_id'] = $old_form_state['dbxref_id'];
-    $form_state['stats'] = $old_form_state['stats'] ?? NULL;
-    $form_state['ids'] = $old_form_state['ids'] ?? NULL;
-    $form_state['tpps_type'] = $old_form_state['tpps_type'] ?? NULL;
-    $form_state['file_info'] = $old_form_state['file_info'] ?? NULL;
-    $form_state['status'] = $old_form_state['status'] ?? NULL;
+    tpps_form_state_info($form_state, $old_form_state);
   }
 
   $form['step'] = array(
@@ -817,7 +810,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
         ->fieldCondition('local__email', 'value', $user->mail)
         ->range(0, 1)
         ->execute();
-      $entity = array_pop(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
+      $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
       $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) ? $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] : $entity->title;
       $form_state['saved_values'][TPPS_PAGE_1]['organization'] = isset($form_state['saved_values'][TPPS_PAGE_1]['organization']) ? $form_state['saved_values'][TPPS_PAGE_1]['organization'] : $entity->tcontact__organization['und'][0]['value'];
     }
@@ -889,40 +882,42 @@ function tpps_main_validate(&$form, &$form_state) {
   }
 
   switch ($form_state['stage']) {
+    case 'frontpage':
+      require_once 'forms/validate/front.php';
+      tpps_front_page_validate_form($form, $form_state);
+      break;
+
     case TPPS_PAGE_1:
       require_once 'forms/validate/page_1.php';
       tpps_page_1_validate_form($form, $form_state);
-      drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     case TPPS_PAGE_2:
       require_once 'forms/validate/page_2.php';
       tpps_page_2_validate_form($form, $form_state);
-      drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     case TPPS_PAGE_3:
       require_once 'forms/validate/page_3.php';
       tpps_page_3_validate_form($form, $form_state);
-      drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     case TPPS_PAGE_4:
       require_once 'forms/validate/page_4.php';
       tpps_page_4_validate_form($form, $form_state);
-      drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
       break;
 
     default:
       break;
   }
 
+  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+
   if (!form_get_errors()) {
     $form_state['values']['#cleared'] = TRUE;
     if ($form_state['submitted'] == '1') {
       tpps_submission_update_stats($form_state);
     }
-    // dpm($form_state['values']['#cleared']);.
   }
   else {
     $form_state['values']['#cleared'] = FALSE;
@@ -998,6 +993,7 @@ function tpps_main_submit($form, &$form_state) {
       }
       else {
         $form_state['status'] = 'Pending Approval';
+        $form_state['completed'] = time();
         tpps_update_submission($form_state);
         tpps_submit_email($form_state);
         drupal_goto("completed-submission/{$form_state['accession']}");
@@ -1094,11 +1090,23 @@ function tpps_block_view_alter(&$data, $block) {
                 $parts = explode(" ", $matches[1]);
                 $name = implode("_", $parts);
               }
+              $fid = $val;
+              $wrapper_id = "{$fid}_map_wrapper";
+              $button_id = "{$fid}_map_button";
+              $val_str .= "<div id=\"$wrapper_id\"></div>"
+                . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view trees on map!\"></input>";
 
-              $val_str .= "<div id=\"{$name}map_wrapper\"></div>"
-                . "<input id=\"{$name}map_button\" type=\"button\" value=\"Click here to view trees on map!\"></input>"
-                . "<div id=\"{$name}accession_fid\" style=\"display:none;\">$val</div>"
-                . "<script>jQuery('#{$name}map_button').click(getCoordinates);</script>";
+              drupal_add_js(array(
+                'tpps' => array(
+                  'map_buttons' => array(
+                    $fid => array(
+                      'wrapper' => $wrapper_id,
+                      'button' => $button_id,
+                      'fid' => $fid,
+                    ),
+                  ),
+                )
+              ), 'setting');
             }
           }
           elseif (preg_match('/species photo/', $item) and ($file_name = file_load($val)->filename)) {

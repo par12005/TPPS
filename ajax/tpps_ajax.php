@@ -15,8 +15,10 @@
  */
 function tpps_autocomplete($type, $string = "") {
   $function = "tpps_{$type}_autocomplete";
-  $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
-  $function($string);
+  if (function_exists($function)) {
+    $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
+    $function($string);
+  }
 }
 
 /**
@@ -30,12 +32,7 @@ function tpps_author_autocomplete($string) {
 
   $results = chado_select_record('contact', array('name'), array(
     'name' => $string,
-    'type_id' => array(
-      'name' => 'Person',
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-    ),
+    'type_id' => tpps_load_cvterm('person')->cvterm_id,
   ), array(
     'regex_columns' => array('name'),
   ));
@@ -100,12 +97,7 @@ function tpps_organization_autocomplete($string) {
 
   $results = chado_select_record('contact', array('name'), array(
     'name' => $string,
-    'type_id' => array(
-      'name' => 'Organization',
-      'cv_id' => array(
-        'name' => 'tripal_contact',
-      ),
-    ),
+    'type_id' => tpps_load_cvterm('organization')->cvterm_id,
   ), array(
     'regex_columns' => array('name'),
   ));
@@ -168,7 +160,37 @@ function tpps_species_autocomplete($string) {
     $matches[$row->genus . " " . $row->species] = check_plain($row->genus . " " . $row->species);
   }
 
+  if (empty($matches)) {
+    $matches = tpps_ncbi_species_autocomplete($string);
+  }
+
   drupal_json_output($matches);
+}
+
+/**
+ * NCBI species auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_ncbi_species_autocomplete($string) {
+  $matches = array();
+
+  $taxons = tpps_ncbi_get_taxon_id("$string*", TRUE);
+  $taxons = json_decode(json_encode($taxons))->Id;
+
+  $fetch = new EFetch('taxonomy');
+  $fetch->addParam('id', implode(',', $taxons));
+  $response = $fetch->get()->xml();
+  $species = json_decode(json_encode($response))->Taxon;
+
+  foreach ($species as $info) {
+    $name = $info->ScientificName;
+    if (!empty($name) and $info->Rank == 'species') {
+      $matches[$name] = "$name (autocomplete from NCBI)";
+    }
+  }
+  return $matches;
 }
 
 /**
@@ -303,12 +325,7 @@ function tpps_units_autocomplete($string) {
       'data' => $string,
       'op' => '~*',
     ),
-    'type_id' => array(
-      'name' => 'unit',
-      'cv_id' => array(
-        'name' => 'uo',
-      ),
-    ),
+    'type_id' => tpps_load_cvterm('unit')->cvterm_id,
   ));
 
   foreach ($results as $row) {
@@ -343,6 +360,29 @@ function tpps_structure_autocomplete($string) {
 
   foreach ($results as $row) {
     $matches[$row->name] = check_plain($row->name . ': ' . $row->definition);
+  }
+
+  drupal_json_output($matches);
+}
+
+/**
+ * User account auto-complete matching.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_user_autocomplete($string) {
+  $matches = array();
+  $or = db_or()
+    ->condition('mail', $string, '~*')
+    ->condition('name', $string, '~*');
+  $result = db_select('users')
+    ->fields('users', array('uid', 'name'))
+    ->condition($or)
+    ->execute();
+  foreach ($result as $user) {
+    $user = user_load($user->uid);
+    $matches["$user->mail"] = check_plain($user->name);
   }
 
   drupal_json_output($matches);

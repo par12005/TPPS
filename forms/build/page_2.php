@@ -27,19 +27,30 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
 
   tpps_study_date('Ending', $form, $form_state);
 
+  $options = array(
+    0 => '- Select -',
+    'Genotype' => 'Genotype',
+    'Phenotype' => 'Phenotype (and/or manual environmental data)',
+    'Genotype x Phenotype' => 'Genotype x Phenotype (and/or manual environmental data)',
+  );
+
+  if (module_exists('cartogratree') and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers')) {
+    $options = array(
+      0 => '- Select -',
+      'Genotype' => 'Genotype',
+      'Phenotype' => 'Phenotype (and/or manual environmental data)',
+      'Environment' => 'Environmental layers',
+      'Genotype x Phenotype' => 'Genotype x Phenotype (and/or manual environmental data)',
+      'Genotype x Environment' => 'Genotype x Environmental layers',
+      'Phenotype x Environment' => 'Phenotype (and/or manual environmental data) x Environmental layers',
+      'Genotype x Phenotype x Environment' => 'Genotype x Phenotype (and/or manual environmental data) x Environmental layers',
+    );
+  }
+
   $form['data_type'] = array(
     '#type' => 'select',
     '#title' => t('Data Type: *'),
-    '#options' => array(
-      0 => '- Select -',
-      'Genotype' => 'Genotype',
-      'Phenotype' => 'Phenotype',
-      'Environment' => 'Environment',
-      'Genotype x Phenotype' => 'Genotype x Phenotype',
-      'Genotype x Environment' => 'Genotype x Environment',
-      'Phenotype x Environment' => 'Phenotype x Environment',
-      'Genotype x Phenotype x Environment' => 'Genotype x Phenotype x Environment',
-    ),
+    '#options' => $options,
     '#prefix' => '<legend><span class="fieldset-legend"><div class="fieldset-title">Study Design</div></span></legend>',
   );
 

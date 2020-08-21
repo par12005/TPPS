@@ -21,7 +21,7 @@
  * @global stdClass $user
  *   The user trying to access the submission.
  *
- * @return array
+ * @return array|object
  *   The form_state of the TPPS Submission form.
  */
 function tpps_load_submission($accession, $state = TRUE) {
@@ -30,23 +30,40 @@ function tpps_load_submission($accession, $state = TRUE) {
     ->condition('accession', $accession)
     ->range(0, 1)
     ->execute()->fetchObject();
-  // For newer TPPS submissions, $result should be populated.
+
   if ($result) {
     if ($state) {
       return unserialize($result->submission_state);
     }
     return $result;
   }
+
+  // Search for alternative accessions.
+  $query = db_select('tpps_submission', 's');
+  $query->join('tpps_submission_dbxref', 's_dbx', 's.tpps_submission_id = s_dbx.tpps_submission_id');
+  $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
+  $query->fields('s');
+  $query->condition('dbx.accession', $accession);
+  $query->condition('s.status', 'Approved');
+  $query->range(0, 1);
+  $query = $query->execute();
+  $result = $query->fetchObject();
+
+  if ($result) {
+    if ($state) {
+      return unserialize($result->submission_state);
+    }
+    return $result;
+  }
+
   // Provide legacy support for older TPPS submissions.
+  global $user;
+  $state = variable_get('tpps_incomplete_' . $user->mail . $accession, NULL);
+  if (!empty($state)) {
+    return $state;
+  }
   else {
-    global $user;
-    $state = variable_get('tpps_incomplete_' . $user->mail . $accession, NULL);
-    if (!empty($state)) {
-      return $state;
-    }
-    else {
-      return variable_get('tpps_complete_' . $user->mail . $accession, NULL);
-    }
+    return variable_get('tpps_complete_' . $user->mail . $accession, NULL);
   }
 }
 
@@ -68,7 +85,7 @@ function tpps_load_submission($accession, $state = TRUE) {
 function tpps_load_submission_multiple(array $conditions = array(), $state = TRUE) {
   $submissions = array();
   $query = db_select('tpps_submission', 's')
-    ->fields('s', array('accession'));
+    ->fields('s');
 
   if (!empty($conditions)) {
     foreach ($conditions as $key => $cond) {
@@ -87,9 +104,13 @@ function tpps_load_submission_multiple(array $conditions = array(), $state = TRU
     }
   }
 
-  $results = $query->execute()->fetchAll();
-  foreach ($results as $result) {
-    $submissions[] = tpps_load_submission($result->accession, $state);
+  $results = $query->execute();
+  while (($result = $results->fetchObject())) {
+    if ($state) {
+      $submissions[] = unserialize($result->submission_state);
+      continue;
+    }
+    $submissions[] = $result;
   }
   return $submissions;
 }
@@ -131,6 +152,7 @@ function tpps_update_submission(array $state, array $options = array()) {
   if (empty($options['status']) and !empty($state['status'])) {
     $options['status'] = $state['status'];
   }
+  $state['updated'] = time();
   $options['submission_state'] = serialize($state);
 
   db_update('tpps_submission')
@@ -166,6 +188,51 @@ function tpps_delete_submission($accession, $redirect = TRUE) {
 }
 
 /**
+ * Updates alternative accessions of a TPPS Submission.
+ *
+ * @param array $state
+ *   The submission being updated.
+ * @param mixed $alt_accession
+ *   The alternative accessions of the state.
+ */
+function tpps_submission_add_alternative_accession($state, $alt_accession) {
+  $tpps_local_db = variable_get('tpps_local_db');
+  if (!is_array($alt_accession)) {
+    $alt_accession = array($alt_accession);
+  }
+
+  $state_id = tpps_load_submission($state['accession'], FALSE)->tpps_submission_id;
+
+  // Remove the existing alternative accessions
+  db_delete('tpps_submission_dbxref')
+    ->condition('tpps_submission_id', $state_id)
+    ->execute();
+
+  foreach ($alt_accession as $acc) {
+    $dbx = chado_select_record('dbxref', array('*'), array(
+      'db_id' => $tpps_local_db->db_id,
+      'accession' => $acc,
+    ));
+    $dbxref_id = current($dbx)->dbxref_id ?? NULL;
+
+    if (empty($dbxref_id)) {
+      $dbx = chado_insert_record('dbxref', array(
+        'db_id' => $tpps_local_db->db_id,
+        'accession' => $acc,
+      ));
+      $dbxref_id = $dbx['dbxref_id'];
+    }
+
+    db_insert('tpps_submission_dbxref')
+      ->fields(array(
+        'tpps_submission_id' => $state_id,
+        'dbxref_id' => $dbxref_id,
+      ))
+      ->execute();
+  }
+}
+
+/**
  * Gives all files in an accession a standardized name.
  *
  * @param string $accession
@@ -178,9 +245,25 @@ function tpps_submission_rename_files($accession) {
     foreach ($state['file_info'] as $page_files) {
       foreach ($page_files as $fid => $name) {
         $state['files'][] = $fid;
+        $old_file = file_load($fid);
+        $old_path = file_create_url($old_file->uri);
         $file = tpps_rename_file($fid, "{$accession}_{$name}");
         $file->status = FILE_STATUS_PERMANENT;
-        file_save($file);
+        $file = file_save($file);
+        $new_path = file_create_url($file->uri);
+        chado_update_record('projectprop', array(
+          'project_id' => $state['ids']['project_id'],
+          'value' => $old_path,
+        ), array(
+          'value' => $new_path,
+        ));
+        if (!empty($state['revised_files'][$fid])) {
+          $rev_fid = $state['revised_files'][$fid];
+          $state['files'][] = $rev_fid;
+          $file = tpps_rename_file($rev_fid, "{$accession}_{$name}_revised");
+          $file->status = FILE_STATUS_PERMANENT;
+          file_save($file);
+        }
       }
     }
     tpps_update_submission($state);

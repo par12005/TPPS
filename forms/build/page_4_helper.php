@@ -175,6 +175,10 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ),
       ),
     ),
+    'env-check' => array(
+      '#type' => 'checkbox',
+      '#title' => 'Phenotype !num is an environmental phenotype',
+    ),
   );
 
   tpps_dynamic_list($form, $form_state, 'phenotypes-meta', $field, array(
@@ -184,6 +188,18 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     'parents' => array($id, 'phenotype'),
     'wrapper' => "phenotype-main-$id",
     'name_suffix' => $id,
+    'alternative_buttons' => array(
+      "Add 5 Phenotypes" => 5,
+      "Add 10 Phenotypes" => 10,
+      "Clear All Phenotypes" => 'tpps_phenotype_number_clear',
+    ),
+    'button_weights' => array(
+      "Add Phenotype" => -5,
+      "Add 5 Phenotypes" => -4,
+      "Add 10 Phenotypes" => -3,
+      "Remove Phenotype" => -2,
+      "Clear All Phenotypes" => -1,
+    ),
     'substitute_fields' => array(
       array('name', '#title'),
       array('name', '#prefix'),
@@ -199,6 +215,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('max', '#title'),
       array('time-check', '#title'),
       array('time', '#title'),
+      array('env-check', '#title'),
     ),
     'substitute_keys' => array(
       array('structure', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][struct-check]"]'),
@@ -268,6 +285,21 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 }
 
 /**
+ * Returns the phenotype number when the "Clear Phenotypes" button is pressed.
+ *
+ * @param string $button_name
+ *   The button being pressed.
+ * @param int $value
+ *   The value before the button was pressed.
+ *
+ * @return int
+ *   The resulting value from pressing the button.
+ */
+function tpps_phenotype_number_clear($button_name, $value) {
+  return 0;
+}
+
+/**
  * Creates fields describing the genotype data for the submission.
  *
  * @param array $form
@@ -306,6 +338,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   $parents = array_merge($marker_parents, array('SSRs/cpSSRs'));
   $ssrs_check = tpps_get_ajax_value($form_state, $parents);
+
+  $parents = array_merge($marker_parents, array('Indels'));
+  $indel_check = tpps_get_ajax_value($form_state, $parents);
 
   $parents = array_merge($marker_parents, array('Other'));
   $other_marker_check = tpps_get_ajax_value($form_state, $parents);
@@ -356,6 +391,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     $parents = array_merge($file_type_parents, array('SSRs/cpSSRs Genotype Spreadsheet'));
     $ssrs_file_check = tpps_get_ajax_value($form_state, $parents);
   }
+  if (!empty($indel_check)) {
+    $options['Indel Genotype Spreadsheet'] = 'Indel Genotype Spreadsheet';
+    $parents = array_merge($file_type_parents, array('Indel Genotype Spreadsheet'));
+    $indel_file_check = tpps_get_ajax_value($form_state, $parents);
+  }
   if (!empty($other_marker_check)) {
     $options['Other Marker Genotype Spreadsheet'] = 'Other Marker Genotype Spreadsheet';
     $parents = array_merge($file_type_parents, array('Other Marker Genotype Spreadsheet'));
@@ -382,7 +422,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
-        'file_validate_extensions' => array('xlsx'),
+        'file_validate_extensions' => array('csv tsv xlsx'),
       ),
       '#description' => "Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain SNP data.",
       '#tree' => TRUE,
@@ -410,7 +450,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => 'Genotype Assay Design File: *',
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
-        'file_validate_extensions' => array('xlsx'),
+        'file_validate_extensions' => array('csv tsv xlsx'),
       ),
       '#tree' => TRUE,
     );
@@ -437,7 +477,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('SSRs/cpSSRs Spreadsheet: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
-        'file_validate_extensions' => array('xlsx'),
+        'file_validate_extensions' => array('csv tsv xlsx'),
       ),
       '#description' => t('Please upload a spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Tree Identifier that matches your accession file.'),
       '#tree' => TRUE,
@@ -474,9 +514,131 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       // Stop using the file so it can be deleted if the user clicks 'remove'.
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
+
+    $fields['files']['ssr-extra-check'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('I would like to include an additional SSRs/cpSSRs Spreadsheet (this is typically used when the study includes both SSR and cpSSR data)'),
+      '#ajax' => array(
+        'callback' => 'tpps_genotype_files_callback',
+        'wrapper' => "$id-genotype-files",
+      ),
+    );
+
+    $ssrs_extra_check = tpps_get_ajax_value($form_state, array(
+      $id,
+      'genotype',
+      'files',
+      'ssr-extra-check',
+    ));
+
+    if ($ssrs_extra_check) {
+      $fields['files']['extra-ssr-type'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Define Additional SSRs/cpSSRs Type: *'),
+      );
+
+      $fields['files']['extra-ploidy'] = array(
+        '#type' => 'select',
+        '#title' => t('Additional SSRs/cpSSRs Ploidy'),
+        '#options' => array(
+          0 => '- Select -',
+          'Haploid' => 'Haploid',
+          'Diploid' => 'Diploid',
+          'Polyploid' => 'Polyploid',
+        ),
+        '#ajax' => array(
+          'callback' => 'tpps_genotype_files_callback',
+          'wrapper' => "$id-genotype-files",
+        ),
+      );
+
+      $fields['files']['ssrs_extra'] = array(
+        '#type' => 'managed_file',
+        '#title' => t('SSRs/cpSSRs Additional Spreadsheet: *'),
+        '#upload_location' => "$genotype_upload_location",
+        '#upload_validators' => array(
+          'file_validate_extensions' => array('csv tsv xlsx'),
+        ),
+        '#description' => t('Please upload an additional spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Tree Identifier that matches your accession file.'),
+        '#tree' => TRUE,
+      );
+
+      $extra_ploidy = tpps_get_ajax_value($form_state, array(
+        $id,
+        'genotype',
+        'files',
+        'extra-ploidy',
+      ));
+
+      switch ($extra_ploidy) {
+        case 'Haploid':
+          $fields['files']['ssrs_extra']['#description'] .= ' For haploid, TPPS assumes that each remaining column in the spreadsheet is a marker.';
+          break;
+
+        case 'Diploid':
+          $fields['files']['ssrs_extra']['#description'] .= ' For diploid, TPPS will assume that pairs of columns together are describing an individual marker, so the second and third columns would be the first marker, the fourth and fifth columns would be the second marker, etc.';
+          break;
+
+        case 'Polyploid':
+          $fields['files']['ssrs_extra']['#description'] .= ' For polyploid, TPPS will read columns until it arrives at a non-empty column with a different name from the last.';
+          break;
+
+        default:
+          break;
+      }
+
+      if (isset($fields['files']['ssrs_extra']['#value']['fid'])) {
+        $fields['files']['ssrs_extra']['#default_value'] = $fields['files']['ssrs_extra']['#value']['fid'];
+      }
+      if (!empty($fields['files']['ssrs_extra']['#default_value']) and ($file = file_load($fields['files']['ssrs_extra']['#default_value']))) {
+        // Stop using the file so it can be deleted if the user clicks 'remove'.
+        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      }
+    }
+    else {
+      $fields['files']['ssrs-extra'] = array(
+        '#type' => 'managed_file',
+        '#tree' => TRUE,
+        '#access' => FALSE,
+      );
+    }
   }
   else {
     $fields['files']['ssrs'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+
+    $fields['files']['ssrs-extra'] = array(
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    );
+  }
+
+  if (!empty($indel_file_check)) {
+    $fields['files']['indels'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Indel Genotype Spreadsheet: *'),
+      '#upload_location' => "$genotype_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#description' => t('Please upload a spreadsheet containing your Indels data. The first column of your file should contain tree identifiers which match the tree identifiers you provided in your tree accession file, and all of the remaining columns should contain Indel data.'),
+      '#tree' => TRUE,
+    );
+
+    if (isset($fields['files']['indels']['#value']['fid'])) {
+      $fields['files']['indels']['#default_value'] = $fields['files']['indels']['#value']['fid'];
+    }
+    if (!empty($fields['files']['indels']['#default_value']) and ($file = file_load($fields['files']['indels']['#default_value']))) {
+      // Stop using the file so it can be deleted if the user clicks 'remove'.
+      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+  }
+  else {
+    $fields['files']['indels'] = array(
       '#type' => 'managed_file',
       '#tree' => TRUE,
       '#access' => FALSE,
@@ -489,7 +651,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Other Marker Genotype Spreadsheet: please provide a spreadsheet with columns for the Tree ID of genotypes used in this study: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
-        'file_validate_extensions' => array('xlsx'),
+        'file_validate_extensions' => array('csv tsv xlsx'),
       ),
       '#description' => "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Tree Identifier.",
       '#tree' => TRUE,
@@ -499,18 +661,33 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#default_value' => $values[$id]['genotype']['files']['other']['empty'] ?? 'NA',
     );
 
-    $fields['files']['other']['columns'] = array(
-      '#description' => 'Please define which columns hold the required data: Tree Identifier, Genotype Data',
+    $default_dynamic = !empty($form_state['saved_values'][TPPS_PAGE_4][$id]['genotype']['files']['other-columns']);
+    $fields['files']['other']['dynamic'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('This file needs dynamic dropdown options for column data type specification'),
+      '#ajax' => array(
+        'wrapper' => "edit-$id-genotype-files-other-ajax-wrapper",
+        'callback' => 'tpps_page_4_file_dynamic',
+      ),
+      '#description' => t(''),
+      '#default_value' => $default_dynamic,
     );
 
-    $fields['files']['other']['columns-options'] = array(
-      '#type' => 'hidden',
-      '#value' => array(
-        'Genotype Data',
-        'Tree Identifier',
-        'N/A',
-      ),
-    );
+    $dynamic = tpps_get_ajax_value($form_state, array($id, 'genotype', 'files', 'other', 'dynamic'), $default_dynamic, 'other');
+    if ($dynamic) {
+      $fields['files']['other']['columns'] = array(
+        '#description' => 'Please define which columns hold the required data: Tree Identifier, Genotype Data',
+      );
+
+      $fields['files']['other']['columns-options'] = array(
+        '#type' => 'hidden',
+        '#value' => array(
+          'Genotype Data',
+          'Tree Identifier',
+          'N/A',
+        ),
+      );
+    }
 
     $fields['files']['other']['no-header'] = array();
   }
@@ -639,43 +816,22 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       }
     }
 
-    $form[$id]['environment']['use_layers'] = array(
-      '#type' => 'checkbox',
-      '#title' => 'I used environmental layers in my study that are indexed by CartograTree.',
-      '#description' => 'If the layer you used is not in the list below, then the administrator for this site might not have enabled the layer group you used. Please contact them for more information.',
-    );
-
     $form[$id]['environment']['env_layers_groups'] = array(
       '#type' => 'fieldset',
       '#title' => 'Cartogratree Environmental Layers: *',
       '#collapsible' => TRUE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE),
-        ),
-      ),
     );
 
     $form[$id]['environment']['env_layers'] = array(
       '#type' => 'fieldset',
       '#title' => 'Cartogratree Environmental Layers: *',
       '#collapsible' => TRUE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE),
-        ),
-      ),
     );
 
     $form[$id]['environment']['env_params'] = array(
       '#type' => 'fieldset',
       '#title' => 'CartograTree Environmental Layer Parameters: *',
       '#collapsible' => TRUE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[environment][use_layers]"]' => array('checked' => TRUE),
-        ),
-      ),
     );
 
     foreach ($options as $layer_id => $layer_info) {
@@ -722,64 +878,35 @@ function tpps_environment(array &$form, array &$form_state, $id) {
         }
       }
     }
+
+    $form[$id]['environment']['env_layers']['other'] = array(
+      '#type' => 'checkbox',
+      '#title' => "<strong>Other custom layer</strong>",
+      '#return_value' => 'other',
+    );
+
+    $form[$id]['environment']['env_layers']['other_db'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Layer DB URL: *'),
+      '#description' => t('The url of the DB providing this layer'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[environment][env_layers][other]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
+
+    $form[$id]['environment']['env_layers']['other_name'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Layer Name: *'),
+      '#description' => t('The name of the layer'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[environment][env_layers][other]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
   }
-
-  $form[$id]['environment']['env_manual_check'] = array(
-    '#type' => 'checkbox',
-    '#title' => 'I have environmental data that I collected myself.',
-  );
-
-  $field = array(
-    '#type' => 'fieldset',
-    '#tree' => TRUE,
-    'name' => array(
-      '#type' => 'textfield',
-      '#title' => 'Environmental Data !num Name: *',
-      '#prefix' => '<label><b>Environment Data !num:</b></label>',
-      '#description' => 'Please provide the name of Environmental Data !num. Some example environmental data names might include "soil chemistry", "rainfall", "average temperature", etc.',
-    ),
-    'description' => array(
-      '#type' => 'textfield',
-      '#title' => 'Environmental Data !num Description: *',
-      '#description' => 'Please provide a short description of Environmental Data !num.',
-    ),
-    'units' => array(
-      '#type' => 'textfield',
-      '#title' => 'Environmental Data !num Units: *',
-      '#description' => 'Please provide the units of Environmental Data !num.',
-    ),
-    'value' => array(
-      '#type' => 'textfield',
-      '#title' => 'Environmental Data !num Value: *',
-      '#description' => 'Please provide the value of Environmental Data !num.',
-    ),
-  );
-
-  tpps_dynamic_list($form, $form_state, 'env_manual', $field, array(
-    'label' => 'Environmental Data',
-    'title' => "",
-    'callback' => 'tpps_update_environment',
-    'parents' => array($id, 'environment'),
-    'wrapper' => "environment-$id",
-    'name_suffix' => $id,
-    'substitute_fields' => array(
-      array('name', '#title'),
-      array('name', '#prefix'),
-      array('name', '#description'),
-      array('description', '#title'),
-      array('description', '#description'),
-      array('units', '#title'),
-      array('units', '#description'),
-      array('value', '#title'),
-      array('value', '#description'),
-    ),
-  ));
-
-  $form[$id]['environment']['env_manual']['#states'] = array(
-    'visible' => array(
-      ':input[name="' . $id . '[environment][env_manual_check]"]' => array('checked' => TRUE),
-    ),
-  );
 
   return $form[$id]['environment'];
 }
@@ -812,12 +939,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   if ($genome_dir) {
     $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
+    $code_cvterm = tpps_load_cvterm('organism 4 letter code')->cvterm_id;
     foreach ($results as $key => $value) {
       $org_id_query = chado_select_record('organismprop', array('organism_id'), array(
         'value' => $key,
-        'type_id' => array(
-          'name' => 'organism 4 letter code',
-        ),
+        'type_id' => $code_cvterm,
       ));
       $org_query = chado_select_record('organism', array('genus', 'species'), array(
         'organism_id' => current($org_id_query)->organism_id,
@@ -972,6 +1098,7 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#options' => drupal_map_assoc(array(
       t('SNPs'),
       t('SSRs/cpSSRs'),
+      t('Indels'),
       t('Other'),
     )),
   );

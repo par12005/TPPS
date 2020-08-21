@@ -15,6 +15,8 @@ function tpps_install() {
 
   tpps_alter_tpps_submissions();
 
+  tpps_alter_tpps_submission_dbxref();
+
   chado_create_custom_table('genotype_call', array(
     'description' => '',
     'fields' => array(
@@ -259,6 +261,8 @@ function tpps_install() {
 
   tpps_create_genotype_search_views();
 
+  tpps_install_miappe_ontology();
+
   tpps_install_cvterms();
 
   tpps_default_permissions();
@@ -454,66 +458,116 @@ function tpps_schema() {
     );
   }
 
+  $schema['tpps_submission_dbxref'] = array(
+    'description' => '',
+    'fields' => array(
+      'tpps_submission_dbxref_id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'tpps_submission_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'dbxref_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+    ),
+    'foreign keys' => array(
+      'tpps_submission_id' => array(
+        'table' => 'tpps_submission',
+        'columns' => array(
+          'tpps_submission_id' => 'tpps_submission_id',
+        ),
+      ),
+      'dbxref_id' => array(
+        'table' => 'chado.dbxref',
+        'columns' => array(
+          'dbxref_id' => 'dbxref_id',
+        ),
+      ),
+    ),
+    'unique keys' => array(
+      'tpps_submission_dbxref_c1' => array(
+        'tpps_submission_id',
+        'dbxref_id',
+      ),
+    ),
+    'primary key' => array(
+      'tpps_submission_dbxref_id',
+    ),
+  );
+
   return $schema;
+}
+
+/**
+ * Install the MIAPPE ontology using via the obo file and tripal_cv_load_obo().
+ *
+ * The MIAPPE ontology obo file was created using http://robot.obolibrary.org/
+ * on the owl file found here: https://github.com/MIAPPE/MIAPPE-ontology.
+ */
+function tpps_install_miappe_ontology() {
+  module_load_include('inc', 'tripal_chado', 'includes/tripal_chado.cv');
+  $transaction = db_transaction();
+
+  $file_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/includes/lib/ppeo.obo';
+
+  try {
+    $obo_id = db_insert('tripal_cv_obo')
+      ->fields(array(
+        'name' => 'PPEO',
+        'path' => $file_path,
+      ))
+      ->execute();
+    tripal_cv_load_obo($obo_id);
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
 }
 
 /**
  * Adds local TPPS cvterms.
  */
 function tpps_install_cvterms() {
-  $local_cv = chado_get_cv(array('name' => 'local'));
-  $local_db = variable_get('tpps_local_db');
+  $terms_function = "tpps_get_cvterms_v" . TPPS_MAJOR_VERSION . "_" . TPPS_MINOR_VERSION;
+  $terms = $terms_function();
 
-  $terms = array(
-    'study_start' => 'The month and year that the study began.',
-    'study_end' => 'The month and year that the study ended.',
-    'experiment_location' => 'Geographic location of the experiment.',
-    'assession_season' => 'Season the trees were assessed.',
-    'assession_number' => 'Number of times the trees were assessed, on average.',
-    'co2_control' => 'Whether or not the co2 level of the environment was controlled. True or False.',
-    'co2_level' => 'Must have an associated co2_control property. If co2_control is True, this term describes the co2 level the environment was kept at. If co2_control is False, this term describes the average measured co2 value in the environment.',
-    'humidity_control' => 'Whether or not the air humidity level of the environment was controlled. True or False.',
-    'humidity_level' => 'Must have an associated humidity_control property. If humidity_control is True, this term describes the air humidity level the environment was kept at. If humidity_control is False, this term describes the average measured air humidity value in the environment.',
-    'light_control' => 'Whether or not the light intensity level of the environment was controlled. True or False.',
-    'light_level' => 'Must have an associated light_control property. If light_control is True, this term describes the light intensity level the environment was kept at. If light_control is False, this term describes the average measured light intensity value in the environment.',
-    'temperature_high' => 'Average high temperature of the environment.',
-    'temperature_low' => 'Average low temperature of the environment.',
-    'rooting_type' => 'Type of rooting. Aeroponics, Hydroponics, or Soil.',
-    'soil_type' => 'Type of soil. For example: Sand, Peat, Mixed, etc.',
-    'soil_container' => 'Type of soil container.',
-    'pH_control' => 'Whether or not the pH level of the environment was controlled. True or False.',
-    'pH_level' => 'Must have an associated pH_control property. If pH_control is True, this term describes the pH level the environment was kept at. If pH_control is False, this term describes the average measured pH value in the environment.',
-    'treatment' => 'Describes the treatment of the trees during the study. For example, air or soil temperature regimes, chemical administration, fertilizer, non-mineral nutrient, or rainfall regimes, disease status, etc.',
-    'irrigation_type' => 'Describes the type of irrigation. For example, drip irrigation, irrigation from the top, no irrigation, etc.',
-    'salinity_control' => 'Whether or not the salinity level of the environment was controlled. True or False.',
-    'salinity_level' => 'Must have an associated salinity_control property. If salinity_control is True, this term describes the salinity level the environment was kept at. If salinity_control is False, this term describes the average measured salinity value in the environment.',
-    'biotic_environment' => 'Describes the biotic environment.',
-    'study_type' => 'Describes the type of environment the trees were in during the study. Possible values are Natural Population (Landscape), Growth Chamber, Greenhouse, Experimental/Common Garden, Plantation.',
-    'phenotype_binary_type' => 'Describes one type of a binary phenotype.',
-    'file_path' => 'Specifies the path to a file',
-    'contact photo' => 'A profile photo for a contact record',
-    'gps_latitude' => 'Coordinate that specifies north-south position on Earth\'s surface',
-    'gps_longitude' => 'Coordinate that specifies east-west position on Earth\'s surface',
-    'association_results_type' => 'The type of the association results.',
-    'county' => 'A political and administrative division of a state',
-    'district' => 'A distinct area of a geographic entity, such as a country or city',
-    'organism 4 letter code' => '4 letter abbreviation of species. Usually first two letters of genus + first two letters of species, may be different if that code already exists (use next letters from species if possible).',
-    'cpSSR' => 'Chloroplast simple sequence repeats.',
-    'SSR' => 'Simple sequence repeats. Microsatellite.',
-    'time' => 'A quality in which events occur in sequence.',
-    'source_description' => 'A textual description of study type and comments for a source.',
-  );
+  $transaction = db_transaction();
 
-  foreach ($terms as $term_name => $term_definition) {
-    if (!chado_get_cvterm(array('name' => $term_name))) {
-      $term = array(
-        'id' => "{$local_db->name}:$term_name",
-        'name' => $term_name,
-        'definition' => $term_definition,
-        'cv_name' => $local_cv->name,
-      );
-      chado_insert_cvterm($term);
+  try {
+    foreach ($terms as $key => $info) {
+      if (empty($info)) {
+        continue;
+      }
+
+      if ($key == 'new_terms' and is_array($info)) {
+        foreach ($info as $term_info) {
+          tpps_ols_install_term($term_info);
+        }
+        continue;
+      }
+
+      $result = tpps_ols_install_term($info);
+      if ($result === 'local') {
+        tpps_local_install_term($key);
+      }
     }
+    variable_set('tpps_cvterms_version', TPPS_MAJOR_VERSION . '_' . TPPS_MINOR_VERSION);
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
   }
 }
 
@@ -556,6 +610,19 @@ function tpps_alter_tpps_submissions() {
     // Create foreign key for tpps_submission to reference users table.
     db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_uid_fkey FOREIGN KEY (uid) REFERENCES users(uid) ON DELETE CASCADE;');
     db_query('ALTER TABLE tpps_submission ADD CONSTRAINT tpps_submission_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES chado.dbxref(dbxref_id) ON DELETE CASCADE;');
+  }
+}
+
+/**
+ * Add foreign key constraints to the tpps_submission_dbxref table.
+ */
+function tpps_alter_tpps_submission_dbxref() {
+  $results = db_query("SELECT contype "
+    . "FROM pg_catalog.pg_constraint con JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid "
+    . "WHERE rel.relname = 'tpps_submission_dbxref' AND contype like 'f';");
+  if (!$results->rowCount()) {
+    db_query('ALTER TABLE tpps_submission_dbxref ADD CONSTRAINT tpps_submission_dbxref_tpps_submission_id_fkey FOREIGN KEY (tpps_submission_id) REFERENCES tpps_submission(tpps_submission_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE tpps_submission_dbxref ADD CONSTRAINT tpps_submission_dbxref_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES chado.dbxref(dbxref_id) ON DELETE CASCADE;');
   }
 }
 
@@ -751,6 +818,7 @@ function tpps_create_entities() {
   catch (Exception $e) {
     watchdog_exception('tpps', $e);
     $transaction->rollback();
+    throw $e;
   }
 
 }
@@ -761,12 +829,7 @@ function tpps_create_entities() {
 function tpps_create_genotype_entity() {
   $local_db = variable_get('tpps_local_db');
   $local_cv = chado_get_cv(array('name' => 'local'));
-  $genotype_term = chado_get_cvterm(array(
-    'name' => 'genotype',
-    'cv_id' => array(
-      'name' => 'sequence',
-    ),
-  ), array(
+  $genotype_term = tpps_load_cvterm('genotype', array(
     'include_fk' => array(
       'dbxref_id' => 1,
     ),
@@ -904,21 +967,7 @@ function tpps_create_genotype_entity() {
  * Creates the Stock Tripal Entity type.
  */
 function tpps_create_stock_entity() {
-  chado_insert_cvterm(array(
-    'id' => 'PO:0000003',
-    'name' => 'whole plant',
-    'definition' => 'A plant structure (PO:0005679) which is a whole organism. [ POC:curators ]',
-    'db_name' => 'PO',
-  ));
-
-  $stock_term = chado_get_cvterm(array(
-    'name' => 'whole plant',
-    'dbxref_id' => array(
-      'db_id' => array(
-        'name' => 'PO',
-      ),
-    ),
-  ), array(
+  $stock_term = tpps_load_cvterm('whole plant', array(
     'include_fk' => array(
       'dbxref_id' => 1,
     ),
@@ -946,12 +995,7 @@ function tpps_create_stock_entity() {
   $bundle = tripal_load_bundle_entity(array('label' => 'Stock'));
   tripal_save_title_format($bundle, '[data__identifier]');
 
-  $phenotype_term = chado_get_cvterm(array(
-    'name' => 'phenotype',
-    'cv_id' => array(
-      'name' => 'sbo',
-    ),
-  ), array(
+  $phenotype_term = tpps_load_cvterm('phenotype', array(
     'include_fk' => array(
       'dbxref_id' => 1,
     ),
@@ -992,12 +1036,7 @@ function tpps_create_stock_entity() {
     ),
   ));
 
-  $genotype_term = chado_get_cvterm(array(
-    'name' => 'genotype',
-    'cv_id' => array(
-      'name' => 'sequence',
-    ),
-  ), array(
+  $genotype_term = tpps_load_cvterm('genotype', array(
     'include_fk' => array(
       'dbxref_id' => 1,
     ),
@@ -1052,6 +1091,8 @@ function tpps_add_dryad() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Convert old submissions to new form_state structure.
  */
 function tpps_update_7100() {
 
@@ -1086,6 +1127,8 @@ function tpps_update_7100() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Populate top-level state info for old submissions.
  */
 function tpps_update_7101() {
   // TODO.
@@ -1119,12 +1162,8 @@ function tpps_update_7101() {
         $query->fields('lat', array('value'));
         $query->fields('lng', array('value'));
         $query->condition('s.uniquename', db_like($state['accession']) . '%', 'LIKE');
-        $query->condition('lat.type_id', chado_get_cvterm(array(
-          'name' => 'gps_latitude',
-        ))->cvterm_id);
-        $query->condition('lng.type_id', chado_get_cvterm(array(
-          'name' => 'gps_longitude',
-        ))->cvterm_id);
+        $query->condition('lat.type_id', tpps_load_cvterm('gps_latitude', array(), '1_1')->cvterm_id);
+        $query->condition('lng.type_id', tpps_load_cvterm('gps_longitude', array(), '1_1')->cvterm_id);
 
         $query = $query->execute();
 
@@ -1170,6 +1209,8 @@ function tpps_update_7101() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Add dryad db to chado.
  */
 function tpps_update_7102() {
   tpps_add_dryad();
@@ -1177,6 +1218,8 @@ function tpps_update_7102() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Add DOI dbxref to old TPPSc submissions.
  */
 function tpps_update_7103() {
   $transaction = db_transaction();
@@ -1206,6 +1249,8 @@ function tpps_update_7103() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Populate pub_organism table for old TPPS submissions.
  */
 function tpps_update_7104() {
   $transaction = db_transaction();
@@ -1238,7 +1283,126 @@ function tpps_update_7104() {
 
 /**
  * Implements hook_update_N().
+ *
+ * Create materialized views for genotype search functions.
  */
 function tpps_update_7105() {
   tpps_create_genotype_search_views();
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Create last-updated timestamps for old submissions.
+ */
+function tpps_update_7106() {
+  $submissions = tpps_load_submission_multiple();
+  foreach ($submissions as $state) {
+    if (empty($state['updated'])) {
+      tpps_update_submission($state);
+    }
+  }
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Load MIAPPE ontology to chado.
+ */
+function tpps_update_7107() {
+  $cv = chado_get_cv(array('name' => 'PPEO'));
+  if (empty($cv)) {
+    tpps_install_miappe_ontology();
+  }
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Set default cvterms version and migrate to 1.2.
+ */
+function tpps_update_7108() {
+  variable_set('tpps_cvterms_version', '1_1');
+  tpps_migrate_cvterms(1, 1, 1, 2);
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Corrects file path records for renamed files in the db.
+ */
+function tpps_update_7109() {
+  $submissions = tpps_load_submission_multiple(array(
+    'status' => 'Approved',
+  ));
+  $or = db_or()
+    ->condition('type_id', tpps_load_cvterm('file_path')->cvterm_id)
+    ->condition('type_id', tpps_load_cvterm('file_path', array(), '1_1')->cvterm_id);
+  foreach ($submissions as $state) {
+    $files = $state['files'] ?? NULL;
+    if (!empty($files) and !empty($state['file_info'])) {
+      $transaction = db_transaction();
+      try {
+        // Delete files from projectprop
+        $num_files = db_delete('chado.projectprop')
+          ->condition('project_id', $state['ids']['project_id'])
+          ->condition($or)
+          ->execute();
+        $state['file_rank'] = 0;
+        $state_files = count($files);
+        $state_files += count(($state['revised_files'] ?? array()));
+        if ($num_files != $state_files) {
+          throw new \Exception("Improper number of files in db vs files in state: $num_files in db and $state_files in state");
+        }
+        if (!empty($state['revised_files'])) {
+          foreach ($state['revised_files'] as $fid) {
+            $files[] = $fid;
+          }
+        }
+        foreach ($files as $fid) {
+          if ($fid) {
+            $file = file_load($fid);
+            tpps_chado_insert_record('projectprop', array(
+              'project_id' => $state['ids']['project_id'],
+              'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
+              'value' => file_create_url($file->uri),
+              'rank' => $state['file_rank']++,
+            ));
+          }
+        }
+        tpps_update_submission($state);
+      }
+      catch (\Exception $e) {
+        drupal_set_message("skipping accession {$state['accession']}: " . $e->getMessage());
+        $transaction->rollback();
+      }
+      unset($transaction);
+    }
+  }
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Initializes alternative accessions for each submission.
+ */
+function tpps_update_7110() {
+  $transaction = db_transaction();
+  try {
+    $submissions = tpps_load_submission_multiple();
+    foreach ($submissions as $state) {
+      $state['alternative_accessions'] = $state['alternative_accessions'] ?? '';
+      tpps_update_submission($state);
+    }
+
+    if (!db_table_exists('tpps_submission_dbxref')) {
+      $schema = tpps_schema();
+      db_create_table('tpps_submission_dbxref', $schema['tpps_submission_dbxref']);
+      tpps_alter_tpps_submission_dbxref();
+    }
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
 }

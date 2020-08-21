@@ -55,6 +55,10 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           ),
         );
 
+        if (!empty($form_state['values']['skip_validation'])) {
+          unset($required_groups['Location (latitude/longitude or country/state or population group)']);
+        }
+
         if (!$multi_file and $species_number > 1) {
           $required_groups['Genus and Species'] = array(
             'separate' => array(6, 7),
@@ -72,7 +76,11 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           }
         }
 
-        if (!form_get_errors()) {
+        if (isset($values['exact_coords']) and !$values['exact_coords'] and empty($values['coord_precision'])) {
+          form_set_error("tree-accession][species-$i][coord_precision", "Coordinates accuracy: field is required.");
+        }
+
+        if (!form_get_errors() and empty($form_state['values']['skip_validation'])) {
           $options = array(
             'no_header' => !empty($values['file-no-header']),
             'loc_options' => $required_groups['Location (latitude/longitude or country/state or population group)'],
@@ -129,7 +137,7 @@ function tpps_accession_valid_locations($row, &$options) {
   $empty = $options['empty'];
   $location_options = $options['loc_options'];
   $location_columns = $options['loc_cols'];
-  $location_types = $location_columns['#type'];
+  $location_types = $location_columns['#type'] ?? array();
   $org_num = $options['org_num'];
 
   if (gettype($location_types) !== 'array') {

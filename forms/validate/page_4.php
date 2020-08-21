@@ -458,7 +458,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     form_set_error("$id][genotype][other-marker", "Other Genotype marker: field is required.");
   }
 
-  if (empty($file_type['VCF']) and empty($file_type['SNPs Genotype Assay']) and empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and empty($file_type['Other Marker Genotype Spreadsheet'])) {
+  if (preg_match('/^0+$/', implode('', $file_type))) {
     form_set_error("$id][genotype][files][file-type", "Genotype File Type: field is required.");
   }
   else {
@@ -628,6 +628,51 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
           break;
       }
 
+      if (!empty($genotype['files']['ssr-extra-check'])) {
+        if (empty($genotype['files']['extra-ssr-type'])) {
+          form_set_error("$id][genotype][files][extra-ssr-type", "Define Additional SSRs/cpSSRs Type: field is required.");
+        }
+
+        if (!$genotype['files']['ssrs_extra']) {
+          form_set_error("$id][genotype][files][ssrs_extra]", "SSRs/cpSSRs Additional Spreadsheet: field is required.");
+        }
+        elseif (!empty($genotype['files']['extra-ploidy'])) {
+          $headers = tpps_file_headers($genotype['files']['ssrs_extra']);
+          $id_col_name = key($headers);
+          while (($k = array_search(NULL, $headers))) {
+            unset($headers[$k]);
+          }
+          $num_columns = tpps_file_width($genotype['files']['ssrs_extra']) - 1;
+          $num_unique_columns = count(array_unique($headers)) - 1;
+
+          switch ($genotype['files']['extra-ploidy']) {
+            case 'Haploid':
+              if ($num_unique_columns != $num_columns) {
+                form_set_error("$id][genotype][files][ssrs_extra", "SSRs/cpSSRs Additional Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter header values for those columns or remove those columns, then reupload your file.");
+              }
+              break;
+
+            case 'Diploid':
+              if ($num_unique_columns != $num_columns and $num_columns / $num_unique_columns !== 2) {
+                form_set_error("$id][genotype][files][ssrs_extra", "SSRs/cpSSRs Additional Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file.");
+              }
+              elseif ($num_unique_columns == $num_columns and $num_columns % 2 !== 0) {
+                form_set_error("$id][genotype][files][ssrs_extra", "SSRs/cpSSRs Additional Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file.");
+              }
+              break;
+
+            case 'Polyploid':
+              if ($num_columns % $num_unique_columns !== 0) {
+                form_set_error("$id][genotype][files][ssrs_extra", "SSRs/cpSSRs Additional Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file.");
+              }
+              break;
+
+            default:
+              break;
+          }
+        }
+      }
+
       if (!form_get_errors()) {
         $species_index = "species-$org_num";
         if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
@@ -650,6 +695,56 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $file = file_load($genotype['files']['ssrs']);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
         $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Spreadsheet_$org_num";
+        if (!empty($genotype['files']['ssrs_extra'])) {
+          $file = file_load($genotype['files']['ssrs_extra']);
+          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+          $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Additional_Spreadsheet_$org_num";
+        }
+      }
+    }
+
+    if (!empty($file_type['Indel Genotype Spreadsheet']) and !$genotype['files']['indels']) {
+      form_set_error("$id][genotype][files][indels]", "Indel Genotype Spreadsheet: field is required.");
+    }
+    elseif (!empty($file_type['Indel Genotype Spreadsheet'])) {
+      $indel_fid = $genotype['files']['indels'];
+      $headers = tpps_file_headers($indel_fid);
+      $id_col_name = key($headers);
+      while (($k = array_search(NULL, $headers))) {
+        unset($headers[$k]);
+      }
+      $num_columns = tpps_file_width($indel_fid) - 1;
+      $num_unique_columns = count(array_unique($headers)) - 1;
+
+      if ($num_unique_columns != $num_columns) {
+        form_set_error("$id][genotype][files][indels", "Indel Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file.");
+      }
+
+      if (!form_get_errors()) {
+        if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+          $species_index = 'species-1';
+        }
+        else {
+          $num = substr($id, 9);
+          $species_index = "species-$num";
+        }
+        $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
+        $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+
+        $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
+        $missing_trees = tpps_compare_files($indel_fid, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
+
+        if ($missing_trees !== array()) {
+          $tree_id_str = implode(', ', $missing_trees);
+          form_set_error("$id][genotype][files][indels", "Indel Genotype Spreadsheet: We detected Tree Identifiers that were not in your Tree Accession file. Please either remove these trees from your Genotype file, or add them to your Tree Accesison file. The Tree Identifiers we found were: $tree_id_str");
+        }
+      }
+
+      if (!form_get_errors()) {
+        // Preserve file if it is valid.
+        $file = file_load($indel_fid);
+        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Indel_Assay_$org_num";
       }
     }
 
@@ -657,21 +752,31 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][files][other]", "Other Marker Spreadsheet: field is required.");
     }
     elseif (!empty($file_type['Other Marker Genotype Spreadsheet'])) {
-      $required_groups = array(
-        'Tree Id' => array(
-          'id' => array(1),
-        ),
-        'Genotype Data' => array(
-          'data' => array(0),
-        ),
-      );
+      if (array_key_exists('columns', $form[$id]['genotype']['files']['other'])) {
+        $required_groups = array(
+          'Tree Id' => array(
+            'id' => array(1),
+          ),
+          'Genotype Data' => array(
+            'data' => array(0),
+          ),
+        );
 
-      $file_element = $form[$id]['genotype']['files']['other'];
-      $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+        $file_element = $form[$id]['genotype']['files']['other'];
+        $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+        // Get Tree Id column name.
+        if (!form_get_errors()) {
+          $id_col_genotype_name = $groups['Tree Id']['1'];
+        }
+      }
+      else {
+        $headers = tpps_file_headers($genotype['files']['other']);
+        if (!form_get_errors()) {
+          $id_col_genotype_name = key($headers);
+        }
+      }
 
       if (!form_get_errors()) {
-        // Get Tree Id column name.
-        $id_col_genotype_name = $groups['Tree Id']['1'];
         $species_index = "species-$org_num";
         if (empty($form_state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
           $species_index = "species-1";
@@ -680,7 +785,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
         $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
-        $other_no_header = $genotype['files']['other-no-header'];
+        $other_no_header = $genotype['files']['other-no-header'] ?? FALSE;
         $missing_trees = tpps_compare_files($other_file, $tree_accession_file, $id_col_genotype_name, $id_col_accession_name, $other_no_header, $acc_no_header);
 
         if ($missing_trees !== array()) {
@@ -708,81 +813,68 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
  *   The id of the organism fieldset being validated.
  */
 function tpps_validate_environment(array &$environment, $id) {
-  if (!empty($environment['use_layers'])) {
-    // Using cartogratree environment layers.
-    $group_check = '';
-    $new_layers = array();
-    foreach ($environment['env_layers_groups'] as $group_name => $group_id) {
-      if (!empty($group_id)) {
-        $group_check .= "1";
-        if ($group_name == 'WorldClim v.2 (WorldClim)') {
-          $subgroups_query = db_select('cartogratree_layers', 'l')
-            ->distinct()
-            ->fields('l', array('subgroup_id'))
-            ->condition('group_id', $group_id)
-            ->execute();
-          while (($subgroup = $subgroups_query->fetchObject())) {
-            $subgroup_title = db_select('cartogratree_subgroups', 's')
-              ->fields('s', array('subgroup_name'))
-              ->condition('subgroup_id', $subgroup->subgroup_id)
-              ->execute()
-              ->fetchObject()->subgroup_name;
-            if (!empty($environment['env_layers'][$subgroup_title])) {
-              $new_layers[$subgroup_title] = $environment['env_layers'][$subgroup_title];
-            }
-          }
-        }
-        else {
-          $layer_query = db_select('cartogratree_layers', 'l')
-            ->fields('l', array('title'))
-            ->condition('group_id', $group_id)
-            ->execute();
-          while (($layer = $layer_query->fetchObject())) {
-            if (!empty($environment['env_layers'][$layer->title])) {
-              $new_layers[$layer->title] = $environment['env_layers'][$layer->title];
-            }
+  // Using cartogratree environment layers.
+  $group_check = '';
+  $new_layers = array();
+  foreach ($environment['env_layers_groups'] as $group_name => $group_id) {
+    if (!empty($group_id)) {
+      $group_check .= "1";
+      if ($group_name == 'WorldClim v.2 (WorldClim)') {
+        $subgroups_query = db_select('cartogratree_layers', 'l')
+          ->distinct()
+          ->fields('l', array('subgroup_id'))
+          ->condition('group_id', $group_id)
+          ->execute();
+        while (($subgroup = $subgroups_query->fetchObject())) {
+          $subgroup_title = db_select('cartogratree_subgroups', 's')
+            ->fields('s', array('subgroup_name'))
+            ->condition('subgroup_id', $subgroup->subgroup_id)
+            ->execute()
+            ->fetchObject()->subgroup_name;
+          if (!empty($environment['env_layers'][$subgroup_title])) {
+            $new_layers[$subgroup_title] = $environment['env_layers'][$subgroup_title];
           }
         }
       }
       else {
-        $group_check .= "0";
+        $layer_query = db_select('cartogratree_layers', 'l')
+          ->fields('l', array('title'))
+          ->condition('group_id', $group_id)
+          ->execute();
+        while (($layer = $layer_query->fetchObject())) {
+          if (!empty($environment['env_layers'][$layer->title])) {
+            $new_layers[$layer->title] = $environment['env_layers'][$layer->title];
+          }
+        }
       }
     }
-    $environment['env_layers'] = $new_layers;
-
-    if (preg_match('/^0+$/', $group_check)) {
-      form_set_error("$id][environment][env_layers_groups", 'Cartogratree environmental layers groups: field is required.');
-    }
-    elseif (empty($new_layers)) {
-      form_set_error("$id][environment][env_layers", 'CartograTree environmental layers: field is required.');
-    }
-  }
-
-  if ($environment['env_manual_check']) {
-    $env_number = $environment['env_manual']['number'];
-    for ($i = 1; $i <= $env_number; $i++) {
-      $current_env = $environment['env_manual']["$i"];
-      $name = $current_env['name'];
-      $desc = $current_env['description'];
-      $unit = $current_env['units'];
-      $val = $current_env['value'];
-
-      if (empty($name)) {
-        form_set_error("$id][environment][env_manual][$i][name", "Environment Data $i Name: field is required.");
-      }
-      if (empty($desc)) {
-        form_set_error("$id][environment][env_manual][$i][description", "Environment Data $i Description: field is required.");
-      }
-      if (empty($unit)) {
-        form_set_error("$id][environment][env_manual][$i][units", "Environment Data $i Units: field is required.");
-      }
-      if (empty($val)) {
-        form_set_error("$id][environment][env_manual][$i][value", "Environment Data $i Value: field is required.");
-      }
+    else {
+      $group_check .= "0";
     }
   }
 
-  if (empty($environment['env_manual_check']) and empty($environment['use_layers'])) {
-    form_set_error("$id][environment", 'Environment: field is required.');
+  if (!empty($environment['env_layers']['other'])) {
+    if (empty($environment['env_layers']['other_db'])) {
+      form_set_error("$id][environment][env_layers][other_db", 'Cartogratree other environmental layer DB: field is required.');
+    }
+
+    if (empty($environment['env_layers']['other_name'])) {
+      form_set_error("$id][environment][env_layers][other_name", 'Cartogratree other environmental layer name: field is required.');
+    }
+
+    if (!form_get_errors()) {
+      $new_layers['other'] = 'other';
+      $new_layers['other_db'] = $environment['env_layers']['other_db'];
+      $new_layers['other_name'] = $environment['env_layers']['other_name'];
+    }
+  }
+
+  $environment['env_layers'] = $new_layers;
+
+  if (preg_match('/^0+$/', $group_check)) {
+    form_set_error("$id][environment][env_layers_groups", 'Cartogratree environmental layers groups: field is required.');
+  }
+  elseif (empty($new_layers)) {
+    form_set_error("$id][environment][env_layers", 'CartograTree environmental layers: field is required.');
   }
 }

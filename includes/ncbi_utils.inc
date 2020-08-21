@@ -72,7 +72,7 @@ function tpps_ncbi_get_subkingdom($organism) {
  * @return mixed
  *   The NCBI Taxonomy Id, or FALSE on failure.
  */
-function tpps_ncbi_get_taxon_id($organism) {
+function tpps_ncbi_get_taxon_id($organism, $list = FALSE) {
   $formatted_org = implode('+', explode(' ', $organism));
   $search = new ESearch('taxonomy');
   $search->addParam('term', "{$formatted_org}[Scientific+Name]");
@@ -84,7 +84,10 @@ function tpps_ncbi_get_taxon_id($organism) {
       drupal_set_message($err_msg);
       return FALSE;
     }
-    return $response->IdList->Id;
+    if (!$list) {
+      return $response->IdList->Id;
+    }
+    return $response->IdList;
   }
   catch (\Exception $e) {
     drupal_set_message($err_msg . ' EUtils Error: ' . $e->getMessage());

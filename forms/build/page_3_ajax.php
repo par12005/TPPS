@@ -21,7 +21,10 @@
  */
 function tpps_accession_pop_group(array &$form, array $form_state) {
   $species_id = $form_state['triggering_element']['#parents'][1];
-  return $form['tree-accession'][$species_id]['pop-group'];
+  $output = drupal_render($form['tree-accession'][$species_id]['pop-group']);
+  $output .= drupal_render($form['tree-accession'][$species_id]['exact_coords']);
+  $output .= drupal_render($form['tree-accession'][$species_id]['coord_precision']);
+  return $output;
 }
 
 /**
