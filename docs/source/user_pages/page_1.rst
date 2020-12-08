@@ -24,7 +24,7 @@ Publication
 * Publication Abstract: text area - The abstract for the publication.
 * Publication Journal: text field - The journal the publication was published in.
 
-Tree Species
+Species
 ============
 
 * Species **#**: text field - The genus and species of the species studied.

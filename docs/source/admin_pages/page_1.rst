@@ -23,7 +23,7 @@ The first set of fields in TPPS is the publication and species interface, where 
   * Publication Abstract: ``textarea``
   * Publication Journal: ``textfield`` - autocomplete options from ``chado.pub`` table
 
-* Tree Species: ``fieldset``
+* Plant Species: ``fieldset``
 
   * Species **x**: ``textfield`` -  autocomplete options from the ``chado.organism`` table
   * Up to 5 different species are allowed per submission
