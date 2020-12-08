@@ -37,7 +37,7 @@ function tpps_study_date($type, array &$form, array &$form_state) {
     );
   }
   else {
-    $form[$type . 'Date']['#title'] = t('<div class="fieldset-title">Experiment Dates</div>');
+    $form[$type . 'Date']['#title'] = t('<div class="fieldset-title">Experiment/Analysis Dates</div>');
   }
 
   $yearArr = array();
@@ -142,6 +142,7 @@ function tpps_natural_population(array &$form) {
       t('Fall'),
       t('Winter'),
     )),
+    '#description' => t('If you do not know which season your samples were collected, please select all.'),
   );
 
   $num_arr = array();
@@ -300,6 +301,7 @@ function tpps_common_garden(array &$form) {
       t('Fall'),
       t('Winter'),
     )),
+    '#description' => t('If you do not know which season your samples were collected, please select all.'),
   );
 
   $treatment_options = drupal_map_assoc(array(
@@ -374,6 +376,7 @@ function tpps_plantation(array &$form) {
       t('Fall'),
       t('Winter'),
     )),
+    '#description' => t('If you do not know which season your samples were collected, please select all.'),
   );
 
   $num_arr = array();
