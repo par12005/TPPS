@@ -1062,6 +1062,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $ref_genome_arr[0] = '- Select -';
 
   if ($genome_dir) {
+    $existing_genomes = array();
     $results = file_scan_directory($genome_dir, '/^([A-Z][a-z]{3})$/', $options);
     $code_cvterm = tpps_load_cvterm('organism 4 letter code')->cvterm_id;
     foreach ($results as $key => $value) {
@@ -1079,10 +1080,12 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
         $versions = file_scan_directory("$genome_dir/$key", '/^v([0-9]|.)+$/', $options);
         foreach ($versions as $item) {
           $opt_string = $result->genus . " " . $result->species . " " . $item->filename;
-          $ref_genome_arr[$opt_string] = $opt_string;
+          $existing_genomes[$opt_string] = $opt_string;
         }
       }
     }
+    ksort($existing_genomes);
+    $ref_genome_arr += $existing_genomes;
   }
 
   $ref_genome_arr["url"] = 'I can provide a URL to the website of my reference file(s)';
