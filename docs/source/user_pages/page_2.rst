@@ -34,8 +34,8 @@ Natural Population
 
 Natural Population fields are only visible when 'Natural Population' was selected from the 'Study Type' field.
 
-* Season: checkboxes - The season(s) that the trees were assessed.
-* Assessions: drop-down menu - The number of times, on average, the trees were assessed.
+* Season: checkboxes - The season(s) that the plants were assessed.
+* Assessions: drop-down menu - The number of times, on average, the plants were assessed.
 
 Growth Chamber
 --------------
@@ -59,7 +59,7 @@ Growth Chamber fields are only visible when 'Growth Chamber' was selected from t
 
 * PH Control: drop-down menu - Whether the PH level was controlled during the study: 'controlled', 'uncontrolled'
 * PH Value: text field - The PH level during the study. If the level was not controlled, then provide the average PH level.
-* Treatments: checkboxes with textfields - The treatments the trees were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.
+* Treatments: checkboxes with textfields - The treatments the plants were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.
 
 Greenhouse
 ----------
@@ -81,7 +81,7 @@ Greenhouse fields are only visible when 'Greenhouse' was selected from the 'Stud
 
 * PH Control: drop-down menu - Whether the PH level was controlled during the study: 'controlled', 'uncontrolled'
 * PH Value: text field - The PH level during the study. If the level was not controlled, then the PH level is not required.
-* Treatments: checkboxes with textfields - The treatments the trees were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.
+* Treatments: checkboxes with textfields - The treatments the plants were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.
 
 Common Garden
 -------------
@@ -94,17 +94,17 @@ Common Garden fields are only visible when 'Common Garden' was selected from the
 * Salinity Value: text field - The Salinity level during the study. If the level was not controlled, then provide the average Salinity level.
 * Biotic Environment: drop-down menu - The type of biotic environment: 'Herbivores', 'Mutilists', 'Pathogens', 'Endophytes', 'Other', 'None'
 * Custom Biotic Environment Type: text field - Define a custom biotic environment type. Only visible when 'Other' was selected from the 'Biotic Environment' field.
-* Season: checkboxes - The season(s) that the trees were assessed.
-* Treatments: checkboxes with textfields - The treatments the trees were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.
+* Season: checkboxes - The season(s) that the plants were assessed.
+* Treatments: checkboxes with textfields - The treatments the plants were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.
 
 Plantation
 ----------
 
 Plantation fields are only visible when 'Plantation' was selected from the 'Study Type' field.
 
-* Season: checkboxes - The season(s) that the trees were assessed.
-* Assessions: drop-down menu - The number of times, on average, the trees were assessed.
-* Treatments: checkboxes with textfields - The treatments the trees were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.
+* Season: checkboxes - The season(s) that the plants were assessed.
+* Assessions: drop-down menu - The number of times, on average, the plants were assessed.
+* Treatments: checkboxes with textfields - The treatments the plants were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.
 
 A screenshot of the Experimental Conditions page can be seen below:
 

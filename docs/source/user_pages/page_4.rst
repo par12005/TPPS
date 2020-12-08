@@ -2,7 +2,7 @@
 Genotype, Phenotype, and Environment
 ************************************
 
-The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section. Here you will be asked to provide the data and metadata for your phenotypes and genotypes. If you are submitting a study with multiple species, and would like to use the same phenotype/genotype data across multiple species, you can select the ‘<Genotype/Phenotype> information for <organism i> is the same as <genotype/phenotype> information for <organism i-1>.’ box. Each of the fields on this page is asked once per tree species:
+The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section. Here you will be asked to provide the data and metadata for your phenotypes and genotypes. If you are submitting a study with multiple species, and would like to use the same phenotype/genotype data across multiple species, you can select the ‘<Genotype/Phenotype> information for <organism i> is the same as <genotype/phenotype> information for <organism i-1>.’ box. Each of the fields on this page is asked once per species:
 
 Phenotype
 =========
@@ -22,7 +22,7 @@ Phenotype fields are only visible when 'Genotype x Phenotype', 'Genotype x Pheno
 
    * File: Click the 'I would like to upload a phenotype metadata file' checkbox to upload a phenotype file. You will be shown a table with several drop-down menus, along with the names of your column headers, and the first few rows of data in your file. You will then be asked to select what type of data each of your columns holds: 'Name/Identifier', 'Attribute', 'Description', 'Units', 'Structure', 'Minimum Value', 'Maximum Value', or 'N/A'. Columns marked 'N/A' will still be kept in the flat file, but will not be recorded in the database with the other data from the file. Columns that hold 'Name/Identifier', 'Attribute', 'Description', and 'Units' must be defined before continuing.
 
-* Phenotype Data: file upload - The phenotype data. This file should contain the 'Tree Id' of the tree that the phenotype is describing, the 'Name/Identifier' of the phenotype, and the 'Value' that was actually measured for this phenotype.
+* Phenotype Data: file upload - The phenotype data. This file should contain the 'Plant Id' of the plant that the phenotype is describing, the 'Name/Identifier' of the phenotype, and the 'Value' that was actually measured for this phenotype.
 
 A screenshot of the manual phenotype information fields can be seen below:
 
@@ -69,7 +69,7 @@ A screenshot of the genotype reference fields can be seen below:
 .. image:: ../../../images/TPPS_genotype_ref.png
 
 * Genotype File Types: checkboxes - 'Genotype Spreadsheet/Assay', 'Assay Design', 'VCF'. Select all that apply. 'Assay Design' is only visible when 'SNPs' was selected from the 'Genotype Marker Type' field.
-* Genotype Spreadsheet/Assay File: file upload - The genotype assay file. You will be required to specify which of your columns holds the Tree ID and genotype data in each row of your file. Only visible when 'Genotype Spreadsheet/Assay' was selected from the 'Genotype File Types' field.
+* Genotype Spreadsheet/Assay File: file upload - The genotype assay file. You will be required to specify which of your columns holds the Plant ID and genotype data in each row of your file. Only visible when 'Genotype Spreadsheet/Assay' was selected from the 'Genotype File Types' field.
 * Assay Design File: file upload - The assay design file. Only visible when 'Assay Design' was selected from the 'Genotype File Types' field.
 * VCF File: file upload - The VCF file. Only visible when 'VCF' was selected from the 'Genotype File Types' field.
 
@@ -80,9 +80,9 @@ A screenshot of the genotype file fields can be seen below:
 Environment
 ===========
 
-* Use CartograTree Layers: If CartograTree Layers were enabled by your site administrator, you should have the option to use Environmental Layers provided by CartograTree that you used in your study.
-* CartograTree Environmental Layers: checkboxes - All available CartograTree Environmental Layers. From here you can view the names and descriptions of each CartograTree Environmental layer you have to choose from.
-* CartograTree Environmental Layer Parameters: checkboxes - If you selected some CartograTree Environmental Layers, you will need to indicate which variables from the layer you used in your study. Parameter fields will only be visible for layers that you selected.
+* Use CartograPlant Layers: If CartograPlant Layers were enabled by your site administrator, you should have the option to use Environmental Layers provided by CartograPlant that you used in your study.
+* CartograPlant Environmental Layers: checkboxes - All available CartograPlant Environmental Layers. From here you can view the names and descriptions of each CartograPlant Environmental layer you have to choose from.
+* CartograPlant Environmental Layer Parameters: checkboxes - If you selected some CartograPlant Environmental Layers, you will need to indicate which variables from the layer you used in your study. Parameter fields will only be visible for layers that you selected.
 * Custom Environmental Data: Provide custom environmental data that you collected yourself:
 
     * Environmental Data Name: text field - The name of the custom Environmental Data.

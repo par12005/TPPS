@@ -4,7 +4,7 @@ Genotype, Phenotype, and Environment
 
 The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment section, where users upload Genotypic, Phenotypic, and Environmental data and metadata about each organism. In multi-species submissions, users can reuse data from the previous species by checking the '<Genotype/Phenotype/Environmental> information for <organism i> is the same as <genotype/phenotype/environmental> information for <organism i-1>.' box, which is only available after the first organism. The form fields and their properties are as follows:
 
-* Tree Species **x**: ``fieldset``
+* Species **x**: ``fieldset``
 
 Phenotype
 =========
@@ -23,7 +23,7 @@ Phenotype
      * Phenotype Metadata file: ``managed_file`` - spreadsheet of metadata about each phenotype - only visible if the 'I would like to upload a phenotype metadata file' checkbox is checked
      * Phenotype Metadata File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Phenotype Name/Identifier, Phenotype Attribute, Phenotype Description, Phenotype Units, Phenotype Structure, Max/Min Phenotype Values - only visible if the 'I would like to upload a phenotype metadata file' checkbox is checked
      * Phenotype File: ``managed_file`` - spreadsheet of phenotypes
-     * Phenotype File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Tree ID, Phenotype Name/Identifier, and Phenotype value
+     * Phenotype File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Plant ID, Phenotype Name/Identifier, and Phenotype value
 
 A screenshot of the manual phenotype information fields can be seen below:
 
@@ -64,7 +64,7 @@ Genotype
      * Genotype File Type: ``checkboxes`` - options 'Genotype Spreadsheet/Assay', 'Assay Design', 'VCF'. 'Assay Design' only visible if the user selects 'SNPs' from 'Genotype Marker Type'.
      * Genotype VCF File: ``managed_file`` - .VCF file of genotypes - only visible if the user selects 'VCF' from 'Genotype File Type'
      * Genotype File: ``managed_file`` - spreadsheet of genotypes - only visible if the user selects 'Genotype Spreadsheet/Assay' from 'Genotype File Type'
-     * Genotype File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Tree ID and Genotype Data
+     * Genotype File Columns: ``fieldset`` of ``select`` elements - user will define which of their columns contain the Plant ID and Genotype Data
      * Assay Design File: ``managed_file`` - Assay design file - only visible if the user selects 'Assay Design' from 'Genotype File Type'
 
 A screenshot of the genotype marker type fields can be seen below:
@@ -84,13 +84,13 @@ Environment
 
   * Environment Information: ``fieldset`` - only visible if the user selects 'Environment', 'Phenotype x Environment', 'Genotype x Environment', or 'Genotype x Phenotype x Environment' from 'Data Type' in `Study Design`_
 
-     * CartograTree Environmental Layers: ``fieldset`` - only visible if CartograTree Layers are enabled in TPPS admin configuration and the 'I used environmental layers in my study that are indexed by CartograTree.' checkbox is checked.
+     * CartograPlant Environmental Layers: ``fieldset`` - only visible if CartograPlant Layers are enabled in TPPS admin configuration and the 'I used environmental layers in my study that are indexed by CartograPlant.' checkbox is checked.
 
-         * CartograTree Environmental Layer **x**: ``checkbox`` - Indicates if the CartograTree Environmental Layer **x** was used.
+         * CartograPlant Environmental Layer **x**: ``checkbox`` - Indicates if the CartograPlant Environmental Layer **x** was used.
 
-     * CartograTree Environmental Layer Parameters: ``fieldset`` - only visible if CartograTree Layers are enabled in TPPS admin configuration and the 'I used environmental layers in my study that are indexed by CartograTree.' checkbox is checked.
+     * CartograPlant Environmental Layer Parameters: ``fieldset`` - only visible if CartograPlant Layers are enabled in TPPS admin configuration and the 'I used environmental layers in my study that are indexed by CartograPlant.' checkbox is checked.
 
-         * CartograTree Environmental Layer **x** Parameters: ``checkboxes`` - options of possible parameter types for the selected CartograTree Environmental Layer. Each CartograTree Environmental Layer **x** Parameters checkboxes set is only visible if that layer was selected in 'CartograTree Environmental Layers'.
+         * CartograPlant Environmental Layer **x** Parameters: ``checkboxes`` - options of possible parameter types for the selected CartograPlant Environmental Layer. Each CartograPlant Environmental Layer **x** Parameters checkboxes set is only visible if that layer was selected in 'CartograPlant Environmental Layers'.
      
      * Custom Environmental Data: ``fieldset`` - only visible if the 'I have environmental data that I collected myself.' checkbox was checked.
 

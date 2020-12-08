@@ -1,9 +1,9 @@
 File Manipulation
 =================
 
-File Manipulation in TPPS is a complex topic, because TPPS needs to provide file uploads that can be parsed easily, but also need to be very flexible. TPPS achieves this by allowing users to define the data types of each of the columns in a file upload. For example, for the tree accession file, users need to define columns that describe the tree identifier and location of that tree identifier. Creating the file upload field as well as the fields to define column types and show a preview of the data inside the file requires a lot of code, so some parts of it are found in the normal form build files, some parts are found in hooks in the tpps.module file, and some parts of it are found in helper functions in the tpps.module file. Here we will attempt to cover all aspects of the file manipulation process.
+File Manipulation in TPPS is a complex topic, because TPPS needs to provide file uploads that can be parsed easily, but also need to be very flexible. TPPS achieves this by allowing users to define the data types of each of the columns in a file upload. For example, for the plant accession file, users need to define columns that describe the plant identifier and location of that plant identifier. Creating the file upload field as well as the fields to define column types and show a preview of the data inside the file requires a lot of code, so some parts of it are found in the normal form build files, some parts are found in hooks in the tpps.module file, and some parts of it are found in helper functions in the tpps.module file. Here we will attempt to cover all aspects of the file manipulation process.
 
-For reference, we will be using the Tree Accession file field as our example through the entire process.
+For reference, we will be using the Plant Accession file field as our example through the entire process.
 
 Define Drupal Form Element
 --------------------------
@@ -12,7 +12,7 @@ The first part of creating a dynamic TPPS file upload field is specifying it in 
 
     $form['tree-accession']['file'] = array(
       '#type' => 'managed_file',
-      '#title' => t("Tree Accession File: *<br>$file_description"),
+      '#title' => t("Plant Accession File: *<br>$file_description"),
       '#upload_location' => "$file_upload_location",
       '#upload_validators' => array(
         'file_validate_extensions' => array('txt csv xlsx'),
@@ -35,12 +35,12 @@ Now we will add attributes to the file field which will include some additional 
     );
 
     $form['tree-accession']['file']['columns'] = array(
-      '#description' => 'Please define which columns hold the required data: Tree Identifier and Location. If your trees are located based on a population group, you can provide the population group column and a mapping of population group to location below.',
+      '#description' => 'Please define which columns hold the required data: Plant Identifier and Location. If your plants are located based on a population group, you can provide the population group column and a mapping of population group to location below.',
     );
 
     $column_options = array(
       '0' => 'N/A',
-      '1' => 'Tree Identifier',
+      '1' => 'Plant Identifier',
       '2' => 'Country',
       '3' => 'State',
       '4' => 'Latitude',

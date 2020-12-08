@@ -15,7 +15,7 @@ Data Types and Standards
 Data Accessibility
 ------------------
 
-* Data is standardized and stored in the local database so that other tools, for example, `CartograTree`_, can easily collect and analyze it
+* Data is standardized and stored in the local database so that other tools, for example, `CartograPlant`_, can easily collect and analyze it
 * Restricted access to approved users of the site
 * Accepted studies are associated and stored in the database with longterm accessions that can be used in publication
 * The studies can be queried or downloaded (flatfiles) through the Tripal interface
@@ -38,4 +38,4 @@ Administrative Features
 
 .. _NCBI: https://www.ncbi.nlm.nih.gov/
 .. _MIAPPE: http://www.miappe.org/
-.. _CartograTree: https://gitlab.com/TreeGenes/CartograTree
+.. _CartograPlant: https://gitlab.com/TreeGenes/CartograTree
