@@ -1085,7 +1085,7 @@ function tpps_block_view_alter(&$data, $block) {
             // Create links to files.
             $file_url = check_plain(file_create_url(file_load($val)->uri));
             $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
-            if (preg_match('/^(.*)Accession File/', $item, $matches)) {
+            if (!$flat['#skip_loc'] and preg_match('/^(.*)Accession File/', $item, $matches)) {
               $name = "";
               if ($matches[1] != "Plant ") {
                 $parts = explode(" ", $matches[1]);
