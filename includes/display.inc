@@ -238,6 +238,7 @@ function tpps_flatten(array $state) {
     $data['#page_3_cleared'] = FALSE;
   }
 
+  $data['#skip_loc'] = !empty($page_3['skip_validation']);
   $loc = &$page_3['study_location'];
   $data['#location_type'] = (isset($loc['type']) and $loc['type']) ? $loc['type'] : NULL;
 
@@ -565,23 +566,28 @@ function tpps_table_display(array &$state, array $options = array()) {
           $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button\" type=\"button\" value=\"Show full file\"></input>";
         }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
-          $fid = $file->fid;
-          $wrapper_id = "{$fid}_map_wrapper";
-          $button_id = "{$fid}_map_button";
-          $val_str .= "<div id=\"$wrapper_id\"></div>"
-            . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\"></input>";
+          if (!$flat['#skip_loc']) {
+            $fid = $file->fid;
+            $wrapper_id = "{$fid}_map_wrapper";
+            $button_id = "{$fid}_map_button";
+            $val_str .= "<div id=\"$wrapper_id\"></div>"
+              . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\"></input>";
 
-          drupal_add_js(array(
-            'tpps' => array(
-              'map_buttons' => array(
-                $fid => array(
-                  'wrapper' => $wrapper_id,
-                  'button' => $button_id,
-                  'fid' => $fid,
+            drupal_add_js(array(
+              'tpps' => array(
+                'map_buttons' => array(
+                  $fid => array(
+                    'wrapper' => $wrapper_id,
+                    'button' => $button_id,
+                    'fid' => $fid,
+                  ),
                 ),
-              ),
-            )
-          ), 'setting');
+              )
+            ), 'setting');
+          }
+          else {
+            $val_str .= "<br>This submission was submitted without validating location information. As a result, we did not import location information for these plants.";
+          }
         }
 
         if (!empty($options['files']['revision_destination'])) {

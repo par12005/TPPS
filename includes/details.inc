@@ -81,6 +81,11 @@ function tpps_details($accession = NULL) {
       $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
     }
 
+    if (!empty($state['saved_values'][TPPS_PAGE_3]['skip_validation'])) {
+      $image_path = drupal_get_path('module', 'tpps') . '/images/';
+      $pub_link .= "<img title=\"This submission contains no location information\" src=\"/{$image_path}no_location.png\">";
+    }
+
     $output .= "<h2>$pub_link</h2>";
     $authors = implode(', ', $state['authors']);
     $output .= "<h4>$authors</h4>";
@@ -658,6 +663,8 @@ function tpps_details_trees(array &$state) {
     return $output;
   }
 
+  $skip = !empty($state['saved_values'][TPPS_PAGE_3]['skip_validation']);
+
   $_GET['page'] = $page;
   pager_default_initialize(count($state['tree_info']), $per_page);
   $chunks = array_chunk($state['tree_info'], $per_page, TRUE);
@@ -667,21 +674,28 @@ function tpps_details_trees(array &$state) {
     $form_number = array_search($id, $state['ids']['organism_ids']);
     $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$form_number];
     
-    $rows[] = array(
+    $row = array(
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
       tpps_entity_link($id, $species_name, 'Organism'),
-      $info['lat'],
-      $info['lng'],
     );
+    if (!$skip) {
+      $row[] = $info['lat'];
+      $row[] = $info['lng'];
+    }
+    $rows[] = $row;
+  }
+
+  $header = array(
+    'Identifier',
+    'Species',
+  );
+  if (!$skip) {
+    $header[] = 'Latitude';
+    $header[] = 'Longitude';
   }
 
   $vars = array(
-    'header' => array(
-      'Identifier',
-      'Species',
-      'Latitude',
-      'Longitude',
-    ),
+    'header' => $header,
     'rows' => $rows,
     'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
     'caption' => '',

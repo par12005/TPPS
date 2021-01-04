@@ -176,7 +176,11 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       'file',
     ), NULL);
 
-    if (!empty($fid)) {
+    $skip = tpps_get_ajax_value($form_state, array(
+      'skip_validation',
+    ), NULL);
+
+    if (!empty($fid) and empty($skip)) {
       $wrapper_id = "{$fid}_map_wrapper";
       $button_id = "{$fid}_map_button";
       $form['tree-accession']["species-$i"]['coord-format']['#suffix'] = "<div id=\"$wrapper_id\"></div>"
