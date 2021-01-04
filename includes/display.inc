@@ -261,7 +261,8 @@ function tpps_flatten(array $state) {
         }
   
         $data[$organism_name] = $page_3["species-$i"]['file'];
-        if (!empty($page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type']) and $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] == "gps") {
+        $loc_type = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] ?? NULL;
+        if (!empty($loc_type) and ($loc_type == "gps" or (array_search('gps', $loc_type) !== FALSE))) {
           $fid = $page_3["species-$i"]['file'];
           drupal_add_js(array(
             'tpps' => array(
