@@ -808,6 +808,61 @@ function tpps_rmdir($dir) {
 }
 
 /**
+ * Extracts an archive from a path or Drupal file object.
+ *
+ * @param mixed $archive
+ *   The archive to be extracted. Can be a path or Drupal file object.
+ *
+ * @return array
+ *   Array of file names. NULL if extension is not a valid compression
+ *   extension.
+ */
+function tpps_get_archive_files($archive) {
+  $files = array();
+  if (is_object($archive) and !empty($archive->uri)) {
+    $archive = $archive->uri;
+  }
+  $loc = drupal_realpath($archive);
+
+  $ext = tpps_get_path_extension($loc);
+  $unzip_dir = dirname($loc) . '/tmp';
+  if (is_dir($unzip_dir) or mkdir($unzip_dir)) {
+    switch ($ext) {
+      case 'zip':
+        $zip = new \ZipArchive();
+        $zip->open($loc);
+        break;
+
+      case 'gz':
+        $zip = new \PharData($loc);
+        $zip->decompress();
+        break;
+
+      case 'tar':
+        $zip = new \PharData($loc);
+        break;
+
+      default:
+        return;
+    }
+
+    $zip->extractTo($unzip_dir);
+    $dir = $unzip_dir;
+    $files = scandir($dir);
+    if ($files and count($files) == 3 and is_dir($dir . '/' . $files[2])) {
+      $dir .= '/' . $files[2];
+      $files = scandir($dir);
+    }
+  }
+
+  foreach ($files as $key => $name) {
+    $files[$key] = $dir . '/' . $name;
+  }
+
+  return $files;
+}
+
+/**
  * Returns the headers of a TPPS file.
  *
  * @param int $fid
