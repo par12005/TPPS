@@ -139,6 +139,7 @@ function tpps_accession_valid_locations($row, &$options) {
   $location_columns = $options['loc_cols'];
   $location_types = $location_columns['#type'] ?? array();
   $org_num = $options['org_num'];
+  $reason = "";
 
   if (gettype($location_types) !== 'array') {
     $location_types = array($location_types);
@@ -151,6 +152,11 @@ function tpps_accession_valid_locations($row, &$options) {
       foreach ($location_options[$type] as $column) {
         if (empty($row[$location_columns[$column]]) or $row[$location_columns[$column]] == $empty) {
           $valid_combination = FALSE;
+          $reason = "missing";
+        }
+        elseif ($type == 'gps' and abs($row[$location_columns[$column]]) > 180) {
+          $valid_combination = FALSE;
+          $reason = "invalid (invalid coordinate value: {$row[$location_columns[$column]]})";
         }
       }
       if ($valid_combination) {
@@ -159,7 +165,7 @@ function tpps_accession_valid_locations($row, &$options) {
       }
     }
     if (!$valid_row) {
-      form_set_error("tree-accession][species-$org_num][file", "Plant Accession file: Some location information is missing for plant \"{$row[$id_name]}\".");
+      form_set_error("tree-accession-species-$org_num-file-{$row[$id_name]}", "Plant Accession file: Some location information is $reason for plant \"{$row[$id_name]}\".");
     }
   }
 }

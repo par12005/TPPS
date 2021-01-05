@@ -17,9 +17,7 @@
  *   The coordinates in standardized form. False if coordinates were not valid.
  */
 function tpps_standard_coord($raw_coordinate) {
-
   $matches = array();
-  $valid = TRUE;
 
   if (preg_match('/(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([N|S])),? ?(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([E|W]))/', $raw_coordinate, $matches)) {
     $lat = $matches[2] + ($matches[3] / 60) + ($matches[4] / 3600);
@@ -38,17 +36,21 @@ function tpps_standard_coord($raw_coordinate) {
     $long = $matches[3];
   }
   else {
-    $valid = FALSE;
+    return FALSE;
   }
 
-  if (preg_match('/(-).+,/', $raw_coordinate, $matches) and $valid) {
+  if ($lat > 180 or $long > 180) {
+    return FALSE;
+  }
+
+  if (preg_match('/(-).+,/', $raw_coordinate, $matches)) {
     $lat = $lat * -1;
   }
-  if (preg_match('/,.*(-)/', $raw_coordinate, $matches) and $valid) {
+  if (preg_match('/,.*(-)/', $raw_coordinate, $matches)) {
     $long = $long * -1;
   }
 
-  if (preg_match('/([N|S]).+([E|W])/', $raw_coordinate, $matches) and $valid) {
+  if (preg_match('/([N|S]).+([E|W])/', $raw_coordinate, $matches)) {
     if ($matches[1] == 'S') {
       $lat = $lat * -1;
     }
@@ -57,10 +59,5 @@ function tpps_standard_coord($raw_coordinate) {
     }
   }
 
-  if ($valid) {
-    return "$lat,$long";
-  }
-  else {
-    return FALSE;
-  }
+  return "$lat,$long";
 }
