@@ -21,14 +21,12 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
       if (!$form_state['values']['study_location']['type']) {
         form_set_error('study_location][type', 'Location Format: field is required.');
       }
-      elseif ($form_state['values']['study_location']['type'] != '2') {
-        if (!$form_state['values']['study_location']['coordinates']) {
-          form_set_error('study_location][coordinates', 'Coordinates: field is required.');
-        }
-      }
       else {
-        if (!$form_state['values']['study_location']['custom']) {
-          form_set_error('study_location][custom', 'Custom Location: field is required.');
+        $locs = $form_state['values']['study_location']['locations'];
+        for ($i = 1; $i <= $locs['number']; $i++) {
+          if (empty($locs[$i])) {
+            form_set_error("study_location][locations][$i", "Location $i: field is required.");
+          }
         }
       }
     }
