@@ -535,52 +535,61 @@ function tpps_submit_page_3(array &$form_state) {
   $loc_name = 'Location (latitude/longitude or country/state or population group)';
 
   if (!empty($thirdpage['study_location'])) {
-    if ($thirdpage['study_location']['type'] !== '2') {
-      $standard_coordinate = explode(',', tpps_standard_coord($thirdpage['study_location']['coordinates']));
-      $latitude = $standard_coordinate[0];
-      $longitude = $standard_coordinate[1];
+    $type = $thirdpage['study_location']['type'];
+    $locs = $thirdpage['study_location']['locations'];
 
-      tpps_chado_insert_record('projectprop', array(
-        'project_id' => $form_state['ids']['project_id'],
-        'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
-        'value' => $latitude,
-      ));
+    for ($i = 1; $i <= $locs['number']; $i++) {
+      if ($type !== '2') {
+        $standard_coordinate = explode(',', tpps_standard_coord($locs[$i]));
+        $latitude = $standard_coordinate[0];
+        $longitude = $standard_coordinate[1];
 
-      tpps_chado_insert_record('projectprop', array(
-        'project_id' => $form_state['ids']['project_id'],
-        'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
-        'value' => $longitude,
-      ));
-    }
-    else {
-      $location = $thirdpage['study_location']['custom'];
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $form_state['ids']['project_id'],
+          'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
+          'value' => $latitude,
+          'rank' => $i,
+        ));
 
-      tpps_chado_insert_record('projectprop', array(
-        'project_id' => $form_state['ids']['project_id'],
-        'type_id' => tpps_load_cvterm('experiment_location')->cvterm_id,
-        'value' => $location,
-      ));
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $form_state['ids']['project_id'],
+          'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
+          'value' => $longitude,
+          'rank' => $i,
+        ));
+      }
+      else {
+        $loc = $locs[$i];
+        tpps_chado_insert_record('projectprop', array(
+          'project_id' => $form_state['ids']['project_id'],
+          'type_id' => tpps_load_cvterm('experiment_location')->cvterm_id,
+          'value' => $loc,
+          'rank' => $i,
+        ));
 
-      if (isset($geo_api_key)) {
-        $query = urlencode($location);
-        $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-        $response = json_decode(file_get_contents($url));
+        if (isset($geo_api_key)) {
+          $query = urlencode($location);
+          $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
+          $response = json_decode(file_get_contents($url));
 
-        if ($response->total_results) {
-          $result = $response->results[0]->geometry;
-          $form_state['locations'][$location] = $result;
+          if ($response->total_results) {
+            $result = $response->results[0]->geometry;
+            $form_state['locations'][$loc] = $result;
 
-          tpps_chado_insert_record('projectprop', array(
-            'project_id' => $form_state['ids']['project_id'],
-            'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
-            'value' => $result->lat,
-          ));
+            tpps_chado_insert_record('projectprop', array(
+              'project_id' => $form_state['ids']['project_id'],
+              'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
+              'value' => $result->lat,
+              'rank' => $i,
+            ));
 
-          tpps_chado_insert_record('projectprop', array(
-            'project_id' => $form_state['ids']['project_id'],
-            'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
-            'value' => $result->lng,
-          ));
+            tpps_chado_insert_record('projectprop', array(
+              'project_id' => $form_state['ids']['project_id'],
+              'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
+              'value' => $result->lng,
+              'rank' => $i,
+            ));
+          }
         }
       }
     }
