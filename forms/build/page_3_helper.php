@@ -23,7 +23,9 @@ function tpps_study_location(array &$form, array &$form_state) {
     '#title' => t('<div class="fieldset-title">Study Location:</div>'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
-    '#description' => t('This should be the location of your common garden, plantation, etc.'),
+    '#description' => t('This should be the location(s) of your common garden, plantation, etc.'),
+    '#prefix' => '<div id="common-garden-loc">',
+    '#suffix' => '</div>',
   );
 
   $form['study_location']['type'] = array(
@@ -36,6 +38,10 @@ function tpps_study_location(array &$form, array &$form_state) {
       4 => 'ETRS 89',
       2 => 'Custom Location (brief description)',
     ),
+    '#ajax' => array(
+      'callback' => 'tpps_update_locations',
+      'wrapper' => 'common-garden-loc',
+    ),
     '#attributes' => array(
       'data-toggle' => array('tooltip'),
       'data-placement' => array('right'),
@@ -43,84 +49,93 @@ function tpps_study_location(array &$form, array &$form_state) {
     ),
   );
 
-  $form['study_location']['coordinates'] = array(
+  $type = tpps_get_ajax_value($form_state, array(
+    'study_location',
+    'type',
+  ), NULL);
+
+  $field = array(
     '#type' => 'textfield',
-    '#title' => t('Coordinates: *'),
-    '#states' => array(
-      'visible' => array(
-      array(
-      array(':input[name="study_location[type]"]' => array('value' => '1')),
-        'or',
-      array(':input[name="study_location[type]"]' => array('value' => '3')),
-        'or',
-      array(':input[name="study_location[type]"]' => array('value' => '4')),
-      ),
-      ),
-    ),
-    '#description' => 'Accepted formats: <br>'
+    '#title' => 'Location !num: *',
+  );
+
+  if ($type != 2) {
+    $field['#description'] = 'Accepted formats: <br>'
     . 'Degrees Minutes Seconds: 41° 48\' 27.7" N, 72° 15\' 14.4" W<br>'
     . 'Degrees Decimal Minutes: 41° 48.462\' N, 72° 15.24\' W<br>'
-    . 'Decimal Degrees: 41.8077° N, 72.2540° W<br>',
+    . 'Decimal Degrees: 41.8077° N, 72.2540° W<br>';
+  }
+
+  tpps_dynamic_list($form, $form_state, 'locations', $field, array(
+    'label' => 'Location',
+    'title' => 'Study Location(s):',
+    'parents' => array('study_location'),
+    'callback' => 'tpps_update_locations',
+    'default' => 1,
+    'wrapper' => 'common-garden-loc',
+    'substitute_fields' => array(
+      '#title',
+    ),
+  ));
+
+  $form['study_location']['locations']['#states'] = array(
+    'invisible' => array(
+      ':input[name="study_location[type]"]' => array('value' => '0'),
+    ),
   );
 
-  $form['study_location']['custom'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Custom Location: *'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="study_location[type]"]' => array('value' => '2'),
+  if ($type != 2 and $type != 0) {
+    $form['study_location']['map-button'] = array(
+      '#type' => 'button',
+      '#title' => 'Click here to update map',
+      '#value' => 'Click here to update map',
+      '#button_type' => 'button',
+      '#name' => 'study_locations_map_button',
+      '#executes_submit_callback' => FALSE,
+      '#prefix' => '<div id="study_location_map">',
+      '#suffix' => '</div>',
+      '#ajax' => array(
+        'callback' => 'tpps_study_location_map_ajax',
+        'wrapper' => 'study_location_map',
       ),
-    ),
-  );
-
-  $form['study_location']['map-button'] = array(
-    '#type' => 'button',
-    '#title' => 'Click here to update map',
-    '#value' => 'Click here to update map',
-    '#button_type' => 'button',
-    '#executes_submit_callback' => FALSE,
-    '#prefix' => '<div id="study_location_map">',
-    '#suffix' => '</div>',
-    '#ajax' => array(
-      'callback' => 'tpps_study_location_map_ajax',
-      'wrapper' => 'study_location_map',
-    ),
-  );
-
-  if (isset($form_state['values']['study_location'])) {
-    $location = $form_state['values']['study_location'];
-  }
-  elseif (isset($form_state['saved_values'][TPPS_PAGE_3]['study_location'])) {
-    $location = $form_state['saved_values'][TPPS_PAGE_3]['study_location'];
+    );
   }
 
-  if (isset($location)) {
-    if (isset($location['coordinates'])) {
-      $raw_coordinate = $location['coordinates'];
-      $standard_coordinate = tpps_standard_coord($raw_coordinate);
-    }
+  $locs = tpps_get_ajax_value($form_state, array('study_location', 'locations'), NULL);
 
-    if (isset($location['type']) and $location['type'] == '2' and isset($location['custom'])) {
-      $query = $location['custom'];
-    }
-    elseif (isset($location['type']) and $location['type'] != '0') {
+  if ($form_state['triggering_element']['#name'] == 'study_locations_map_button' and $type != 2 and !empty($locs) and !empty($locs['number'])) {
+    $coords = array();
+    $valid_coords = TRUE;
+    for ($i = 1; $i <= $locs['number']; $i++) {
+      if (empty($locs[$i])) {
+        $valid_coords = FALSE;
+        drupal_set_message(t('Location %num is required', array('%num' => $i)), 'error');
+        continue;
+      }
+      $raw_coord = $locs[$i];
+      $standard_coordinate = tpps_standard_coord($raw_coord);
       if ($standard_coordinate) {
-        $query = $standard_coordinate;
+        $parts = explode(',', $standard_coordinate);
+        $coords[] = array(
+          "Location $i",
+          $parts[0],
+          $parts[1],
+        );
+        continue;
       }
-      else {
-        drupal_set_message(t('Invalid coordinates'), 'error');
-      }
+      $valid_coords = FALSE;
+      drupal_set_message(t('Location %num: Invalid coordinates', array('%num' => $i)), 'error');
     }
 
-    $map_api_key = variable_get('tpps_maps_api_key', NULL);
-    if (!empty($query) and !empty($map_api_key)) {
-      $form['study_location']['map-button']['#suffix'] = "
-      <br><iframe
-        width=\"100%\"
-        height=\"450\"
-        frameborder=\"0\" style=\"border:0\"
-        src=\"https://www.google.com/maps?q=$query&output=embed&key=$map_api_key&z=5\" allowfullscreen>
-      </iframe></div>";
+    if (!empty($coords) and $valid_coords) {
+      $map_api_key = variable_get('tpps_maps_api_key', NULL);
+      $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
+      async defer></script>"
+      . "<div id=\"_map_wrapper\"></div>";
+      drupal_add_js(array('tpps' => array('tree_info' => $coords)), 'setting');
+      drupal_add_js(array('tpps' => array('study_locations' => TRUE)), 'setting');
+
+      $form['study_location']['map-button']['#suffix'] = $map_api_tools;
     }
   }
 
