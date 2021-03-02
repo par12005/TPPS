@@ -289,6 +289,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           $form['tree-accession']["species-$i"]['pop-group'][$pop_group] = array(
             '#type' => 'textfield',
             '#title' => "Location for $name plants from group $pop_group:",
+            '#description' => t('The location for this population. This should be GPS coordinates if possbile, otherwise this can be the name of a location.'),
           );
         }
       }
