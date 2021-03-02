@@ -98,7 +98,7 @@ function tpps_details($accession = NULL) {
       . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
           jQuery('#abstract')[0].innerHTML = \"{$state['abstract']}\";
         }));</script>";
-    if (module_exists('cartogratree')) {
+    if (empty($state['saved_values'][TPPS_PAGE_3]['skip_validation']) and module_exists('cartogratree')) {
       $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograPlant</a><br>";
     }
     $output .= "<a href=\"$base_url/tpps/api/files/$accession\">Download compressed raw files</a><br>";
