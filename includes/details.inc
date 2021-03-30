@@ -306,6 +306,7 @@ function tpps_details_top() {
     $query->join('chado.project_pub', 'pp', 'pp.pub_id = po.pub_id');
     $query->fields('o', array('organism_id', 'genus', 'species'));
     $query->condition('pp.project_id', $proj_id);
+    $query->distinct();
     $query = $query->execute();
 
     $species = array();
