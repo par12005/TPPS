@@ -1415,7 +1415,7 @@ function tpps_update_7110() {
 function tpps_update_7111() {
   $transaction = db_transaction();
   try {
-    db_query('delete from project_pub where pub_id not in (select distinct(pub_id) from pub_organism);');
+    db_query('delete from chado.project_pub where pub_id not in (select distinct(pub_id) from chado.pub_organism);');
   }
   catch (\Exception $e) {
     $transaction->rollback();
