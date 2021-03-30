@@ -81,6 +81,7 @@ function tpps_submit_page_1(array &$form_state) {
 
   $dbxref_id = $form_state['dbxref_id'];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   $seconds = $firstpage['publication']['secondaryAuthors'];
 
   tpps_chado_insert_record('project_dbxref', array(
@@ -220,6 +221,35 @@ function tpps_submit_page_1(array &$form_state) {
       $record['type_id'] = tpps_load_cvterm('speciesaggregate')->cvterm_id;
     }
     $form_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
+
+    if ($organism_number != 1) {
+      $found = FALSE;
+      if (empty($thirdpage['tree-accession']['check'])) {
+        $options = array(
+          'cols' => array(),
+          'search' => $firstpage['organism'][$i],
+          'found' => &$found,
+        );
+        $tree_accession = $thirdpage['tree-accession']["species-1"];
+        $groups = $tree_accession['file-groups'];
+        if ($groups['Genus and Species']['#type'] == 'separate') {
+          $options['column_ids']['genus'] = $groups['Genus and Species']['6'];
+          $options['column_ids']['species'] = $groups['Genus and Species']['7'];
+        }
+        else {
+          $options['column_ids']['org'] = $groups['Genus and Species']['10'];
+        }
+        $fid = $tree_accession['file'];
+        tpps_file_iterator($fid, 'tpps_check_organisms', $options);
+      }
+      else {
+        $found = !empty($thirdpage['tree-accession']["species-$i"]['file']);
+      }
+
+      if (!$found) {
+        continue;
+      }
+    }
 
     $code_exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], 'organism 4 letter code');
 
@@ -1564,6 +1594,24 @@ function tpps_submit_environment(array &$form_state, $i) {
     tpps_chado_insert_multi($options['records']);
     unset($options['records']);
     $env_count = 0;
+  }
+}
+
+/**
+ * This function will process a row from an accession file.
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_check_organisms($row, array &$options = array()) {
+  $cols = $options['cols'];
+  $search = &$options['search'];
+  $found = &$options['found'];
+  $org_full_name = $row[$cols['org']] ?? "{$row[$cols['genus']]} {$row[$cols['species']]}";
+  if ($search == $org_full_name) {
+    $found = TRUE;
   }
 }
 
