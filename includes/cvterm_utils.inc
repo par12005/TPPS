@@ -286,6 +286,7 @@ function tpps_get_cvterms_v1_2() {
     'time' => 'pato:time',
     'intensity' => 'pato:intensity',
     'description' => 'pato:description',
+    'humidity_level' => 'pato:humidity',
 
     // PO terms.
     'whole plant' => 'po:whole plant',
@@ -302,11 +303,12 @@ function tpps_get_cvterms_v1_2() {
 
     // ENVO terms.
     'co2_level' => 'envo:atmospheric carbon dioxide',
-    'humidity_level' => 'envo:humidity',
     'light_level' => 'envo:visible spectrum radiation',
     'soil_type' => 'envo:soil',
-    'salinity_level' => 'envo:salt',
     'environment' => 'envo:environmental system',
+
+    // CHEBI terms.
+    'salinity_level' => 'chebi:salt',
 
     // AGRO terms.
     'irrigation_type' => 'agro:irrigation process',
