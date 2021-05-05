@@ -947,6 +947,7 @@ function tpps_file_generator($fid, array $options = array()) {
 
     case 'txt':
     case 'csv':
+    case 'vcf':
       return tpps_flat_generator($location, $options);
 
     default:
