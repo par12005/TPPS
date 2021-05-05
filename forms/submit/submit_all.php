@@ -1296,7 +1296,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
     $vcf_file = file_load($vcf_fid);
-    $location = drupal_realpath($vcf_file->uri);
+    $location = tpps_get_location($vcf_file->uri);
     $vcf_content = fopen($location, 'r');
     $stocks = array();
     $format = "";
