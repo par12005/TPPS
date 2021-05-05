@@ -974,7 +974,11 @@ function tpps_file_generator($fid, array $options = array()) {
       return tpps_flat_generator($location, $options);
 
     default:
-      throw new Exception('Unrecognized file type');
+      if (empty($extension)) {
+        $extension = "NULL";
+      }
+      $msg = "Unrecognized file type: $extension";
+      throw new Exception($msg);
   }
 }
 
