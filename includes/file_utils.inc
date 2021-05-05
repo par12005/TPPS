@@ -63,7 +63,7 @@ function tpps_parse_file_helper($row, &$options) {
  */
 function tpps_file_len($fid) {
   $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
+  $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   $count = 0;
   $options = array(
@@ -113,7 +113,7 @@ function tpps_file_len_helper($row, array &$options = array()) {
  */
 function tpps_file_width($fid) {
   $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
+  $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
     case 'xlsx':
@@ -966,7 +966,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
  */
 function tpps_file_generator($fid, array $options = array()) {
   $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
+  $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
     case 'xlsx':
