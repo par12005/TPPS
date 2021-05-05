@@ -125,6 +125,10 @@ function tpps_file_width($fid) {
       return tpps_flat_width($location);
       break;
 
+    case 'vcf':
+      return tpps_flat_width($location, "\t");
+      break;
+
     default:
       throw new Exception('Unrecognized file type');
   }
