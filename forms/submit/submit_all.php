@@ -1310,7 +1310,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
         $vcf_line = explode("\t", $vcf_line);
         $scaffold_id = &$vcf_line[0];
         $position = &$vcf_line[1];
-        $marker_name = &$vcf_line[2];
+        $variant_name = &$vcf_line[2];
         $ref = &$vcf_line[3];
         $alt = &$vcf_line[4];
         $qual = &$vcf_line[5];
