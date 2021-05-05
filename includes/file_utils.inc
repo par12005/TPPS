@@ -607,6 +607,29 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
 }
 
 /**
+ * Gets true file path from a uri or Drupal file stream.
+ *
+ * If the file is compressed, extracts the archive and returns the path of the
+ * extracted file.
+ *
+ * @param string $location
+ *   The uri or file stream of the file we want the location of.
+ * @return string
+ *   The true path of the file.
+ */
+function tpps_get_location($location) {
+  $location = drupal_realpath($location);
+  $extension = tpps_get_path_extension($location);
+  if ($extension == 'zip' or $extension == 'gz' or $extension == 'tar') {
+    $files = tpps_get_archive_files($location);
+    if ($files and count($files) == 3 and !is_dir($files[2])) {
+      $location = $files[2];
+    }
+  }
+  return $location;
+}
+
+/**
  * Gets the file extension from a path.
  *
  * @param string $path
