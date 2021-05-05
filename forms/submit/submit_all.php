@@ -1335,7 +1335,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
     $vcf_file = file_load($vcf_fid);
-    $location = drupal_realpath($vcf_file->uri);
+    $location = tpps_get_location($vcf_file->uri);
     $vcf_content = fopen($location, 'r');
     $stocks = array();
     $format = "";
@@ -1349,7 +1349,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
         $vcf_line = explode("\t", $vcf_line);
         $scaffold_id = &$vcf_line[0];
         $position = &$vcf_line[1];
-        $marker_name = &$vcf_line[2];
+        $variant_name = &$vcf_line[2];
         $ref = &$vcf_line[3];
         $alt = &$vcf_line[4];
         $qual = &$vcf_line[5];

@@ -63,7 +63,7 @@ function tpps_parse_file_helper($row, &$options) {
  */
 function tpps_file_len($fid) {
   $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
+  $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   $count = 0;
   $options = array(
@@ -113,7 +113,7 @@ function tpps_file_len_helper($row, array &$options = array()) {
  */
 function tpps_file_width($fid) {
   $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
+  $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
     case 'xlsx':
@@ -123,6 +123,10 @@ function tpps_file_width($fid) {
     case 'txt':
     case 'csv':
       return tpps_flat_width($location);
+      break;
+
+    case 'vcf':
+      return tpps_flat_width($location, "\t");
       break;
 
     default:
@@ -607,6 +611,29 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
 }
 
 /**
+ * Gets true file path from a uri or Drupal file stream.
+ *
+ * If the file is compressed, extracts the archive and returns the path of the
+ * extracted file.
+ *
+ * @param string $location
+ *   The uri or file stream of the file we want the location of.
+ * @return string
+ *   The true path of the file.
+ */
+function tpps_get_location($location) {
+  $location = drupal_realpath($location);
+  $extension = tpps_get_path_extension($location);
+  if ($extension == 'zip' or $extension == 'gz' or $extension == 'tar') {
+    $files = tpps_get_archive_files($location);
+    if ($files and count($files) == 3 and !is_dir($files[2])) {
+      $location = $files[2];
+    }
+  }
+  return $location;
+}
+
+/**
  * Gets the file extension from a path.
  *
  * @param string $path
@@ -812,6 +839,61 @@ function tpps_rmdir($dir) {
 }
 
 /**
+ * Extracts an archive from a path or Drupal file object.
+ *
+ * @param mixed $archive
+ *   The archive to be extracted. Can be a path or Drupal file object.
+ *
+ * @return array
+ *   Array of file names. NULL if extension is not a valid compression
+ *   extension.
+ */
+function tpps_get_archive_files($archive) {
+  $files = array();
+  if (is_object($archive) and !empty($archive->uri)) {
+    $archive = $archive->uri;
+  }
+  $loc = drupal_realpath($archive);
+
+  $ext = tpps_get_path_extension($loc);
+  $unzip_dir = dirname($loc) . '/tmp';
+  if (is_dir($unzip_dir) or mkdir($unzip_dir)) {
+    switch ($ext) {
+      case 'zip':
+        $zip = new \ZipArchive();
+        $zip->open($loc);
+        break;
+
+      case 'gz':
+        $zip = new \PharData($loc);
+        $zip->decompress();
+        break;
+
+      case 'tar':
+        $zip = new \PharData($loc);
+        break;
+
+      default:
+        return;
+    }
+
+    $zip->extractTo($unzip_dir);
+    $dir = $unzip_dir;
+    $files = scandir($dir);
+    if ($files and count($files) == 3 and is_dir($dir . '/' . $files[2])) {
+      $dir .= '/' . $files[2];
+      $files = scandir($dir);
+    }
+  }
+
+  foreach ($files as $key => $name) {
+    $files[$key] = $dir . '/' . $name;
+  }
+
+  return $files;
+}
+
+/**
  * Returns the headers of a TPPS file.
  *
  * @param int $fid
@@ -888,7 +970,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
  */
 function tpps_file_generator($fid, array $options = array()) {
   $file = file_load($fid);
-  $location = drupal_realpath($file->uri);
+  $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
     case 'xlsx':
@@ -896,10 +978,15 @@ function tpps_file_generator($fid, array $options = array()) {
 
     case 'txt':
     case 'csv':
+    case 'vcf':
       return tpps_flat_generator($location, $options);
 
     default:
-      throw new Exception('Unrecognized file type');
+      if (empty($extension)) {
+        $extension = "NULL";
+      }
+      $msg = "Unrecognized file type: $extension";
+      throw new Exception($msg);
   }
 }
 
