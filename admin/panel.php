@@ -429,9 +429,9 @@ function tpps_admin_panel_top(array &$form) {
     }
   }
 
-  ksort($pending);
-  ksort($approved);
-  ksort($incomplete);
+  krsort($pending);
+  krsort($approved);
+  krsort($incomplete);
 
   $vars = array(
     'attributes' => array(
