@@ -283,8 +283,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       'Incomplete' => 'Incomplete',
       'Pending Approval' => 'Pending Approval',
       'Submission Job Running' => 'Submission Job Running',
-      'Approved' => 'Approved',
-      'Approved - Delayed Submission Release' => 'Approved - Delayed Submission Release',
     ),
     '#default_value' => $status,
   );
