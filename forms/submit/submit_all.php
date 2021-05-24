@@ -87,6 +87,7 @@ function tpps_submit_page_1(array &$form_state) {
   tpps_chado_insert_record('project_dbxref', array(
     'project_id' => $form_state['ids']['project_id'],
     'dbxref_id' => $dbxref_id,
+    'is_current' => TRUE,
   ));
 
   if (!empty($form_state['tpps_type']) and $form_state['tpps_type'] == 'tppsc' and !empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])) {
@@ -98,6 +99,7 @@ function tpps_submit_page_1(array &$form_state) {
     tpps_chado_insert_record('project_dbxref', array(
       'project_id' => $form_state['ids']['project_id'],
       'dbxref_id' => $dryad_dbxref,
+      'is_current' => TRUE,
     ));
   }
 
