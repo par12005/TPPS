@@ -292,6 +292,7 @@ function tpps_submission_clear_db($accession) {
   }
 
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
+  chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
   chado_query("DELETE FROM chado.project_organism WHERE project_id = $project_id");
   chado_query("DELETE FROM chado.project_pub WHERE project_id = $project_id");
   chado_query("DELETE FROM chado.projectprop WHERE project_id = $project_id");
