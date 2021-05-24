@@ -508,14 +508,15 @@ function tpps_details_species(array &$state) {
   $query = db_select('chado.organism', 'o');
   $query->join('chado.pub_organism', 'po', 'o.organism_id = po.organism_id');
   $query->join('chado.project_pub', 'pp', 'pp.pub_id = po.pub_id');
-  $query->fields('o', array('organism_id', 'genus', 'species'));
+  $query->fields('o', array('organism_id', 'genus', 'species', 'common_name'));
   $query->condition('pp.project_id', $state['ids']['project_id']);
   $query = $query->execute();
   $rows = array();
 
   while (($result = $query->fetchObject())) {
     $id = $result->organism_id;
-    $family = $order = $common_name = "";
+    $common_name = $result->common_name;
+    $family = $order = "";
 
     if (tpps_chado_prop_exists('organism', $id, 'family')) {
       $family = db_select('chado.organismprop', 'o')
@@ -533,7 +534,7 @@ function tpps_details_species(array &$state) {
         ->execute()->fetchObject()->value;
     }
 
-    if (tpps_chado_prop_exists('organism', $id, 'common name')) {
+    if (empty($common_name) and tpps_chado_prop_exists('organism', $id, 'common name')) {
       $common_name = db_select('chado.organismprop', 'o')
         ->fields('o', array('value'))
         ->condition('organism_id', $id)
