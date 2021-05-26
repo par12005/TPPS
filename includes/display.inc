@@ -506,6 +506,9 @@ function tpps_flatten(array $state) {
   }
   if (!empty($sum_page['tree_pictures'])) {
     foreach ($sum_page['tree_pictures'] as $name => $fid) {
+      if (substr($name, -4) == '_url' or substr($name, -12) == '_attribution' or substr($name, -8) == '_license') {
+        continue;
+      }
       if (!$fid) {
         $data["$name species photo"] = t('None provided');
       }
@@ -595,7 +598,7 @@ function tpps_table_display(array &$state, array $options = array()) {
           $val_str .= "<div id=\"file_{$file->fid}_options_dest\"></div>";
         }
       }
-      elseif (preg_match('/species photo/', $key) and ($file_name = file_load($val)->filename)) {
+      elseif (preg_match('/species photo/', $key) and (file_load($val)) and ($file_name = file_load($val)->filename)) {
         $file_url = check_plain(file_create_url(file_load($val)->uri));
         $val_str = "<img src='$file_url' width='100%'>";
         $val_str .= "<br><a href='$file_url' target='blank'>$file_name</a>";

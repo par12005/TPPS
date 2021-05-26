@@ -165,6 +165,38 @@ function tpps_summary_create_form(array &$form, array $form_state) {
         ),
         '#description' => t('Please upload a photo of the species in either .jpeg or .jpg format'),
       );
+
+      if (TRUE) {#db_table_exists('treepictures_metadata')) {
+        $form['tree_pictures']["{$org}_url"] = array(
+          '#type' => 'textfield',
+          '#title' => t('@org Picture source URL:', array('@org' => $org)),
+          '#states' => array(
+            'invisible' => array(
+              ":input[name=\"tree_pictures[{$org}][fid]\"]" => array('value' => 0),
+            ),
+          ),
+        );
+
+        $form['tree_pictures']["{$org}_attribution"] = array(
+          '#type' => 'textfield',
+          '#title' => t('@org Picture Attribution:', array('@org' => $org)),
+          '#states' => array(
+            'invisible' => array(
+              ":input[name=\"tree_pictures[{$org}][fid]\"]" => array('value' => 0),
+            ),
+          ),
+        );
+
+        $form['tree_pictures']["{$org}_license"] = array(
+          '#type' => 'textfield',
+          '#title' => t('@org Picture License:', array('@org' => $org)),
+          '#states' => array(
+            'invisible' => array(
+              ":input[name=\"tree_pictures[{$org}][fid]\"]" => array('value' => 0),
+            ),
+          ),
+        );
+      }
     }
   }
 
