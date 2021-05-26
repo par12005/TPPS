@@ -235,11 +235,11 @@ function tpps_submit_page_1(array &$form_state) {
         $tree_accession = $thirdpage['tree-accession']["species-1"];
         $groups = $tree_accession['file-groups'];
         if ($groups['Genus and Species']['#type'] == 'separate') {
-          $options['column_ids']['genus'] = $groups['Genus and Species']['6'];
-          $options['column_ids']['species'] = $groups['Genus and Species']['7'];
+          $options['cols']['genus'] = $groups['Genus and Species']['6'];
+          $options['cols']['species'] = $groups['Genus and Species']['7'];
         }
         else {
-          $options['column_ids']['org'] = $groups['Genus and Species']['10'];
+          $options['cols']['org'] = $groups['Genus and Species']['10'];
         }
         $fid = $tree_accession['file'];
         tpps_file_iterator($fid, 'tpps_check_organisms', $options);
