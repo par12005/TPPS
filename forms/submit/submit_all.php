@@ -2440,8 +2440,22 @@ function tpps_submit_summary(array &$form_state) {
 
   if (!empty($form_state['saved_values']['summarypage']['tree_pictures'])) {
     foreach ($form_state['saved_values']['summarypage']['tree_pictures'] as $name => $fid) {
+      if (substr($name, -4) == '_url' or substr($name, -12) == '_attribution' or substr($name, -8) == '_license') {
+        continue;
+      }
       if (!empty($fid)) {
         $form_state['file_info']['summarypage'][$fid] = implode('_', explode(' ', $name)) . '.jpg';
+        if (db_table_exists('treepictures_metadata')) {
+          db_insert('treepictures_metadata')
+            ->fields(array('species', 'source', 'attribution', 'license'))
+            ->values(array(
+              'species' => $form_state['file_info']['summarypage'][$fid],
+              'source' => $form_state['saved_values']['summarypage']['tree_pictures']["{$name}_url"],
+              'attribution' => $form_state['saved_values']['summarypage']['tree_pictures']["{$name}_attribution"],
+              'license' => $form_state['saved_values']['summarypage']['tree_pictures']["{$name}_license"],
+            ))
+            ->execute();
+        }
       }
     }
   }
