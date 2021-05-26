@@ -49,6 +49,14 @@ function tpps_details($accession = NULL) {
   $output = "<a href=\"$base_url/tpps/details\">Return to TPPS Details</a>$output";
   $state = tpps_load_submission($accession);
   if (!empty($state)) {
+    if ($state['status'] != 'Approved') {
+      drupal_set_message(t('This submission is still under construction. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
+      if (function_exists('tpps_details_byaccession_page')) {
+        $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
+        drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+        return $output;
+      }
+    }
     $map_api_key = variable_get('tpps_maps_api_key', NULL);
     $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
       async defer></script>"
