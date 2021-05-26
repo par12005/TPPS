@@ -326,6 +326,7 @@ function tpps_get_cvterms_v1_2() {
     'clone' => 'so:clone',
     'supercontig' => 'so:supercontig',
     'scaffold' => 'so:chromosome',
+    'has_part' => 'so:has_part',
 
     // EDAM terms.
     'filter' => 'edam:Sequence contamination filtering',
