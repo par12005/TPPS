@@ -58,8 +58,8 @@ function tpps_flatten(array $state) {
   if (isset($org['number'])) {
     $data['#number_organisms'] = $org['number'];
     for ($i = 1; $i <= $data['#number_organisms']; $i++) {
-      if (isset($org["$i"]) and $org["$i"] != '') {
-        $data["Species $i"] = $org["$i"];
+      if (isset($org["$i"]['name']) and $org["$i"]['name'] != '') {
+        $data["Species $i"] = $org["$i"]['name'];
       }
     }
   }

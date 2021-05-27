@@ -36,7 +36,7 @@ function tpps_generate_doi($accession) {
 
   $keywords = array();
   for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-    $keywords[] = $state['saved_values'][TPPS_PAGE_1]['organism'][$i];
+    $keywords[] = $state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
   }
 
   $study_type_options = array(

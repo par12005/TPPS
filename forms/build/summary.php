@@ -136,7 +136,7 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   $org_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
   $new_species = array();
   for ($i = 1; $i <= $org_number; $i++) {
-    $org = $form_state['saved_values'][TPPS_PAGE_1]['organism'][$i];
+    $org = $form_state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
     $parts = explode(" ", $org);
 
     $org_record = chado_select_record('organism', array('organism_id'), array(

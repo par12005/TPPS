@@ -40,11 +40,17 @@ function tpps_submit_email(array &$form_state) {
     5 => 'Plantation',
   );
 
+  $names = array();
+  for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
+    $names[$i] = $form_state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
+  }
+  $names['number'] = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+
   $params['author'] = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'];
   $params['org'] = $form_state['saved_values'][TPPS_PAGE_1]['organization'];
   $params['title'] = $form_state['saved_values'][TPPS_PAGE_1]['publication']['title'];
   $params['journal'] = $form_state['saved_values'][TPPS_PAGE_1]['publication']['journal'];
-  $params['organisms'] = $form_state['saved_values'][TPPS_PAGE_1]['organism'];
+  $params['organisms'] = $names;
   $params['study_type'] = $study_options[$form_state['saved_values'][TPPS_PAGE_2]['study_type']];
   $params['data_type'] = $form_state['saved_values'][TPPS_PAGE_2]['data_type'];
   $params['accession'] = $form_state['accession'];
