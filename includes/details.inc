@@ -104,7 +104,7 @@ function tpps_details($accession = NULL) {
     $output .= "</h4>";
     $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
       . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
-          jQuery('#abstract')[0].innerHTML = \"{$state['abstract']}\";
+          jQuery('#abstract')[0].innerHTML = `{$state['abstract']}`;
         }));</script>";
     if (empty($state['saved_values'][TPPS_PAGE_3]['skip_validation']) and module_exists('cartogratree')) {
       $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograPlant</a><br>";
