@@ -120,13 +120,21 @@ function tpps_publication(array &$form, array $values, array $form_state) {
 function tpps_organism(array &$form, array &$form_state) {
 
   $field = array(
-    '#type' => 'textfield',
+    '#type' => 'fieldset',
     '#title' => "Species !num",
-    '#autocomplete_path' => 'tpps/autocomplete/species',
-    '#attributes' => array(
-      'data-toggle' => array('tooltip'),
-      'data-placement' => array('right'),
-      'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
+    'name' => array(
+      '#type' => 'textfield',
+      '#autocomplete_path' => 'tpps/autocomplete/species',
+      '#attributes' => array(
+        'data-toggle' => array('tooltip'),
+        'data-placement' => array('right'),
+        'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
+      ),
+    ),
+    'is_tree' => array(
+      '#type' => 'checkbox',
+      '#title' => t('This species is a tree.'),
+      '#default_value' => 1,
     ),
   );
 
