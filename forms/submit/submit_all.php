@@ -224,6 +224,14 @@ function tpps_submit_page_1(array &$form_state) {
     }
     $form_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
 
+    if (!empty(tpps_load_cvterm('Type'))) {
+      tpps_chado_insert_record('organismprop', array(
+        'organism_id' => $form_state['ids']['organism_ids'][$i],
+        'type_id' => tpps_load_cvterm('Type')->cvterm_id,
+        'value' => $firstpage['organism'][$i]['is_tree'] ? 'Tree' : 'Non-tree',
+      ));
+    }
+
     if ($organism_number != 1) {
       $found = FALSE;
       if (empty($thirdpage['tree-accession']['check'])) {
