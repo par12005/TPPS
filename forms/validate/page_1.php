@@ -67,7 +67,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
     }
 
     for ($i = 1; $i <= $organism_number; $i++) {
-      $name = $organism[$i];
+      $name = $organism[$i]['name'];
 
       if ($name == '') {
         form_set_error("organism[$i", "Plant Species $i: field is required.");

@@ -34,7 +34,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
   $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'];
   for ($i = 1; $i <= $organism_number; $i++) {
 
-    $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"];
+    $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"]['name'];
 
     $form["organism-$i"] = array(
       '#type' => 'fieldset',
@@ -47,7 +47,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       if ($i > 1) {
         $form["organism-$i"]['phenotype-repeat-check'] = array(
           '#type' => 'checkbox',
-          '#title' => "Phenotype information for $name is the same as phenotype information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]}.",
+          '#title' => "Phenotype information for $name is the same as phenotype information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
           '#default_value' => isset($values["organism-$i"]['phenotype-repeat-check']) ? $values["organism-$i"]['phenotype-repeat-check'] : 1,
         );
       }
@@ -154,7 +154,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       if ($i > 1) {
         $form["organism-$i"]['genotype-repeat-check'] = array(
           '#type' => 'checkbox',
-          '#title' => "Genotype information for $name is the same as genotype information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]}.",
+          '#title' => "Genotype information for $name is the same as genotype information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
           '#default_value' => isset($values["organism-$i"]['genotype-repeat-check']) ? $values["organism-$i"]['genotype-repeat-check'] : 1,
         );
       }
@@ -175,7 +175,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       if ($i > 1) {
         $form["organism-$i"]['environment-repeat-check'] = array(
           '#type' => 'checkbox',
-          '#title' => "Environmental information for $name is the same as environmental information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]}.",
+          '#title' => "Environmental information for $name is the same as environmental information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
           '#default_value' => isset($values["organism-$i"]['environment-repeat-check']) ? $values["organism-$i"]['environment-repeat-check'] : 1,
         );
       }

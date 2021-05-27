@@ -205,7 +205,7 @@ function tpps_submit_page_1(array &$form_state) {
   $organism_number = $firstpage['organism']['number'];
 
   for ($i = 1; $i <= $organism_number; $i++) {
-    $parts = explode(" ", $firstpage['organism'][$i]);
+    $parts = explode(" ", $firstpage['organism'][$i]['name']);
     $genus = $parts[0];
     $species = implode(" ", array_slice($parts, 1));
     $infra = NULL;
@@ -224,12 +224,20 @@ function tpps_submit_page_1(array &$form_state) {
     }
     $form_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
 
+    if (!empty(tpps_load_cvterm('Type'))) {
+      tpps_chado_insert_record('organismprop', array(
+        'organism_id' => $form_state['ids']['organism_ids'][$i],
+        'type_id' => tpps_load_cvterm('Type')->cvterm_id,
+        'value' => $firstpage['organism'][$i]['is_tree'] ? 'Tree' : 'Non-tree',
+      ));
+    }
+
     if ($organism_number != 1) {
       $found = FALSE;
       if (empty($thirdpage['tree-accession']['check'])) {
         $options = array(
           'cols' => array(),
-          'search' => $firstpage['organism'][$i],
+          'search' => $firstpage['organism'][$i]['name'],
           'found' => &$found,
         );
         $tree_accession = $thirdpage['tree-accession']["species-1"];
@@ -294,7 +302,7 @@ function tpps_submit_page_1(array &$form_state) {
     foreach ($ranks as $rank) {
       $exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], $rank);
       if (!$exists) {
-        $taxon = tpps_get_taxon($firstpage['organism'][$i], $rank);
+        $taxon = tpps_get_taxon($firstpage['organism'][$i]['name'], $rank);
         if ($taxon) {
           tpps_chado_insert_record('organismprop', array(
             'organism_id' => $form_state['ids']['organism_ids'][$i],
@@ -675,6 +683,12 @@ function tpps_submit_page_3(array &$form_state) {
     ),
   );
 
+  $names = array();
+  for ($i = 1; $i <= $organism_number; $i++) {
+    $names[$i] = $firstpage['organism'][$i]['name'];
+  }
+  $names['number'] = $firstpage['organism']['number'];
+
   $options = array(
     'cvterms' => $cvterms,
     'records' => $records,
@@ -682,7 +696,7 @@ function tpps_submit_page_3(array &$form_state) {
     'locations' => &$form_state['locations'],
     'accession' => $form_state['accession'],
     'single_file' => empty($thirdpage['tree-accession']['check']),
-    'org_names' => $firstpage['organism'],
+    'org_names' => $names,
     'saved_ids' => &$form_state['ids'],
     'stock_count' => &$stock_count,
     'multi_insert' => $multi_insert_options,

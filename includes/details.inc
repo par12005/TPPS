@@ -592,7 +592,7 @@ function tpps_details_study(array &$state) {
   $species = array();
   for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
     $id = $state['ids']['organism_ids'][$i];
-    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$i];
+    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
     $species[] = tpps_entity_link($id, $species_name, 'Organism');
   }
 
@@ -682,7 +682,7 @@ function tpps_details_trees(array &$state) {
   foreach ($chunks[$page] as $name => $info) {
     $id = $info['organism_id'];
     $form_number = array_search($id, $state['ids']['organism_ids']);
-    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$form_number];
+    $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$form_number]['name'];
     
     $row = array(
       tpps_entity_link($info['stock_id'], $name, 'Stock'),

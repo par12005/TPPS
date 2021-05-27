@@ -86,7 +86,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
   $check = tpps_get_ajax_value($form_state, array('tree-accession', 'check'), NULL);
 
   for ($i = 1; $i <= $species_number; $i++) {
-    $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"];
+    $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"]['name'];
     $id_name = implode("_", explode(" ", $name));
 
     $column_options = array(
