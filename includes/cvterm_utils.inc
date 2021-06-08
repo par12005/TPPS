@@ -218,7 +218,25 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
       $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
     }
   }
-  return chado_get_cvterm($identifiers, $options);
+  $result = chado_get_cvterm($identifiers, $options);
+  if (empty($result)) {
+    if (!empty($options['job'])) {
+      $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+    }
+    else {
+      $trace = debug_backtrace()[1];
+      $job = NULL;
+      foreach ($trace['args'] as $key => $arg) {
+        if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
+          $job = &$trace['args'][$key];
+        }
+      }
+      if (!empty($job)) {
+        $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+      }
+    }
+  }
+  return $result;
 }
 
 /**
