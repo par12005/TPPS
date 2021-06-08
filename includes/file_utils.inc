@@ -935,7 +935,7 @@ function tpps_file_headers($fid, $no_header = FALSE) {
  *
  * @param int $fid
  *   The Drupal managed file id of the file.
- * @param callable $function
+ * @param string $function
  *   The funciton to be applied to each item returned by the generator.
  * @param array $options
  *   Options that will be passed to both $function and the generator.
