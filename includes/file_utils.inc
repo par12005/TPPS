@@ -857,6 +857,10 @@ function tpps_get_archive_files($archive) {
 
   $ext = tpps_get_path_extension($loc);
   $unzip_dir = dirname($loc) . '/tmp';
+  if (is_dir($unzip_dir)) {
+    tpps_rmdir($unzip_dir);
+  }
+
   if (is_dir($unzip_dir) or mkdir($unzip_dir)) {
     switch ($ext) {
       case 'zip':
