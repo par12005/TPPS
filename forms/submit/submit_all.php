@@ -14,13 +14,19 @@
  *
  * @param string $accession
  *   The accession number of the form being submitted.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_submit_all($accession) {
+function tpps_submit_all($accession, $job = NULL) {
 
+  $job->logMessage('[INFO] Setting up...');
+  $job->setInterval(1);
   $form_state = tpps_load_submission($accession);
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
+  $job->logMessage('[INFO] Clearing Database...');
   tpps_submission_clear_db($accession);
+  $job->logMessage('[INFO] Database Cleared.');
   $project_id = $form_state['ids']['project_id'] ?? NULL;
   $transaction = db_transaction();
 
@@ -31,6 +37,7 @@ function tpps_submit_all($accession) {
     $form_state['file_rank'] = 0;
     $form_state['ids'] = array();
 
+    $job->logMessage('[INFO] Creating project record...');
     $form_state['title'] = $firstpage['publication']['title'];
     $form_state['abstract'] = $firstpage['publication']['abstract'];
     $project_record = array(
@@ -41,32 +48,50 @@ function tpps_submit_all($accession) {
       $project_record['project_id'] = $project_id;
     }
     $form_state['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
+    $job->logMessage("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
 
     tpps_tripal_entity_publish('Project', array($firstpage['publication']['title'], $form_state['ids']['project_id']));
 
-    tpps_submit_page_1($form_state);
+    $job->logMessage("[INFO] Submitting Publication/Species information...");
+    tpps_submit_page_1($form_state, $job);
+    $job->logMessage("[INFO] Publication/Species information submitted!\n");
 
-    tpps_submit_page_2($form_state);
+    $job->logMessage("[INFO] Submitting Study Details...");
+    tpps_submit_page_2($form_state, $job);
+    $job->logMessage("[INFO] Study Details sumbitted!\n");
 
-    tpps_submit_page_3($form_state);
+    $job->logMessage("[INFO] Submitting Accession information...");
+    tpps_submit_page_3($form_state, $job);
+    $job->logMessage("[INFO] Accession information submitted!\n");
 
-    tpps_submit_page_4($form_state);
+    $job->logMessage("[INFO] Submitting Raw data...");
+    tpps_submit_page_4($form_state, $job);
+    $job->logMessage("[INFO] Raw data submitted!\n");
 
+    $job->logMessage("[INFO] Submitting Summary information...");
     tpps_submit_summary($form_state);
+    $job->logMessage("[INFO] Summary information submitted!\n");
 
     tpps_update_submission($form_state);
 
+    $job->logMessage("[INFO] Renaming files...");
     tpps_submission_rename_files($accession);
+    $job->logMessage("[INFO] Files renamed!\n");
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Approved';
     $form_state['loaded'] = time();
+    $job->logMessage("[INFO] Finishing up...");
     tpps_update_submission($form_state, array('status' => 'Approved'));
+    $job->logMessage("[INFO] Complete!");
   }
   catch (Exception $e) {
     $transaction->rollback();
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Pending Approval';
     tpps_update_submission($form_state, array('status' => 'Pending Approval'));
+    $job->logMessage('[ERROR] Job failed', array(), TRIPAL_ERROR);
+    $job->logMessage('[ERROR] Error message: @msg', array('@msg' => $e->getMessage()), TRIPAL_ERROR);
+    $job->logMessage("[ERROR] Trace: \n@trace", array('@trace' => $e->getTraceAsString()), TRIPAL_ERROR);
     watchdog_exception('tpps', $e);
   }
 }
@@ -76,8 +101,10 @@ function tpps_submit_all($accession) {
  *
  * @param array $form_state
  *   The state of the form being submitted.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_submit_page_1(array &$form_state) {
+function tpps_submit_page_1(array &$form_state, &$job = NULL) {
 
   $dbxref_id = $form_state['dbxref_id'];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
@@ -332,8 +359,10 @@ function tpps_submit_page_1(array &$form_state) {
  *
  * @param array $form_state
  *   The state of the form being submitted.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_submit_page_2(array &$form_state) {
+function tpps_submit_page_2(array &$form_state, &$job = NULL) {
 
   $secondpage = $form_state['saved_values'][TPPS_PAGE_2];
 
@@ -564,8 +593,10 @@ function tpps_submit_page_2(array &$form_state) {
  *
  * @param array $form_state
  *   The state of the form being submitted.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_submit_page_3(array &$form_state) {
+function tpps_submit_page_3(array &$form_state, &$job = NULL) {
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   $organism_number = $firstpage['organism']['number'];
@@ -701,6 +732,7 @@ function tpps_submit_page_3(array &$form_state) {
     'stock_count' => &$stock_count,
     'multi_insert' => $multi_insert_options,
     'tree_info' => &$form_state['tree_info'],
+    'job' => &$job,
   );
 
   for ($i = 1; $i <= $organism_number; $i++) {
@@ -772,8 +804,10 @@ function tpps_submit_page_3(array &$form_state) {
  *
  * @param array $form_state
  *   The state of the form being submitted.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_submit_page_4(array &$form_state) {
+function tpps_submit_page_4(array &$form_state, &$job = NULL) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
   $species_codes = array();
@@ -879,7 +913,7 @@ function tpps_submit_page_4(array &$form_state) {
 
   // Submit raw data.
   for ($i = 1; $i <= $organism_number; $i++) {
-    tpps_submit_phenotype($form_state, $i);
+    tpps_submit_phenotype($form_state, $i, $job);
     tpps_submit_genotype($form_state, $species_codes, $i);
     tpps_submit_environment($form_state, $i);
   }
@@ -892,8 +926,10 @@ function tpps_submit_page_4(array &$form_state) {
  *   The TPPS submission object.
  * @param int $i
  *   The organism number we are submitting.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_submit_phenotype(array &$form_state, $i) {
+function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $phenotype = $fourthpage["organism-$i"]['phenotype'] ?? NULL;
   if (empty($phenotype)) {
@@ -924,6 +960,7 @@ function tpps_submit_phenotype(array &$form_state, $i) {
     'suffix' => 0,
     'phenotype_count' => $phenotype_count,
     'data' => &$form_state['data']['phenotype'],
+    'job' => &$job,
   );
 
   if (empty($phenotype['iso-check'])) {
@@ -1046,8 +1083,10 @@ function tpps_submit_phenotype(array &$form_state, $i) {
  *   An array of 4-letter species codes associated with the submission.
  * @param int $i
  *   The organism number we are submitting.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
+function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$job = NULL) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   if (empty($genotype)) {
@@ -1100,6 +1139,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
     'project_id' => $project_id,
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
+    'job' => &$job,
   );
 
   /*if ($genotype['ref-genome'] == 'bio') {
@@ -1530,8 +1570,10 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i) {
  *   The TPPS submission object.
  * @param int $i
  *   The organism number we are submitting.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_submit_environment(array &$form_state, $i) {
+function tpps_submit_environment(array &$form_state, $i, &$job = NULL) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $environment = $fourthpage["organism-$i"]['environment'] ?? NULL;
   if (empty($environment)) {
@@ -1603,6 +1645,7 @@ function tpps_submit_environment(array &$form_state, $i) {
       'env_count' => &$env_count,
       'env_cvterm' => $env_cvterm,
       'suffix' => 0,
+      'job' => &$job,
     );
 
     tpps_file_iterator($tree_acc_fid, 'tpps_process_environment_layers', $options);

@@ -857,6 +857,10 @@ function tpps_get_archive_files($archive) {
 
   $ext = tpps_get_path_extension($loc);
   $unzip_dir = dirname($loc) . '/tmp';
+  if (is_dir($unzip_dir)) {
+    tpps_rmdir($unzip_dir);
+  }
+
   if (is_dir($unzip_dir) or mkdir($unzip_dir)) {
     switch ($ext) {
       case 'zip':
@@ -935,7 +939,7 @@ function tpps_file_headers($fid, $no_header = FALSE) {
  *
  * @param int $fid
  *   The Drupal managed file id of the file.
- * @param callable $function
+ * @param string $function
  *   The funciton to be applied to each item returned by the generator.
  * @param array $options
  *   Options that will be passed to both $function and the generator.
@@ -948,8 +952,16 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
     return FALSE;
   }
 
+  if (!empty($options['job'])) {
+    $options['job']->setTotalItems(tpps_file_len($fid));
+    $options['job']->setItemsHandled(0);
+  }
+
   foreach (tpps_file_generator($fid, $options) as $item) {
     $function($item, $options);
+    if (!empty($options['job'])) {
+      $options['job']->addItemsHandled(1);
+    }
   }
   return TRUE;
 }
