@@ -948,8 +948,16 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
     return FALSE;
   }
 
+  if (!empty($options['job'])) {
+    $options['job']->setTotalItems(tpps_file_len($fid));
+    $options['job']->setItemsHandled(0);
+  }
+
   foreach (tpps_file_generator($fid, $options) as $item) {
     $function($item, $options);
+    if (!empty($options['job'])) {
+      $options['job']->addItemsHandled(1);
+    }
   }
   return TRUE;
 }
