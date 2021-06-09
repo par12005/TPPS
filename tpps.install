@@ -1422,3 +1422,35 @@ function tpps_update_7111() {
     throw $e;
   }
 }
+
+/**
+ * Implements hook_update_N().
+ *
+ * Converts old species page information to new structure.
+ */
+function tpps_update_7112() {
+  $transaction = db_transaction();
+  try {
+    $submissions = tpps_load_submission_multiple();
+    foreach ($submissions as $state) {
+      $org_num = $state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+      $update = FALSE;
+      for ($i = 1; $i <= $org_num; $i++) {
+        if (gettype($state['saved_values'][TPPS_PAGE_1]['organism'][$i]) != 'array') {
+          $update = TRUE;
+          $name = $state['saved_values'][TPPS_PAGE_1]['organism'][$i];
+          $state['saved_values'][TPPS_PAGE_1]['organism'][$i] = array();
+          $state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'] = $name;
+          $state['saved_values'][TPPS_PAGE_1]['organism'][$i]['is_tree'] = TRUE;
+        }
+      }
+      if ($update) {
+        tpps_update_submission($state);
+      }
+    }
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
