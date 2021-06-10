@@ -977,8 +977,9 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
       $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
       $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
       $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
-      if ($phenotype['phenotypes-meta'][$j]['struct-check'] == '1') {
-        $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
+      $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
+      if ($phenotype['phenotypes-meta'][$j]['structure'] == 'other') {
+        $phenotypes_meta[$name]['struct-other'] = $phenotype['phenotypes-meta'][$j]['struct-other'];
       }
       if (!empty($phenotype['phenotypes-meta'][$j]['val-check']) or !empty($phenotype['phenotypes-meta'][$j]['bin-check'])) {
         $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
@@ -1019,7 +1020,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
       tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
     }
 
-    tpps_refine_phenotype_meta($phenotypes_meta);
+    tpps_refine_phenotype_meta($phenotypes_meta, $job);
 
     // Get metadata header values.
     $groups = $phenotype['file-groups'];
@@ -1709,8 +1710,10 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
  *
  * @param array $meta
  *   The existing metadata array.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_refine_phenotype_meta(array &$meta) {
+function tpps_refine_phenotype_meta(array &$meta, &$job = NULL) {
   $cvt_cache = array();
   $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = variable_get('tpps_local_db');
@@ -1743,34 +1746,45 @@ function tpps_refine_phenotype_meta(array &$meta) {
       $meta[$name]['attr_id'] = tpps_load_cvterm('environment')->cvterm_id;
     }
 
-    if (!empty($data['struct'])) {
-      if (!empty($cvt_cache[$data['struct']])) {
-        $meta[$name]['struct_id'] = $cvt_cache[$data['struct']];
+    if ($data['struct'] != 'other') {
+      $meta[$name]['struct_id'] = $data['struct'];
+    }
+    else {
+      if (!empty($cvt_cache[$data['struct-other']])) {
+        $meta[$name]['struct_id'] = $cvt_cache[$data['struct-other']];
       }
       else {
-        $obs = chado_select_record('cvterm', array('cvterm_id'), array(
-          'name' => array(
-            'data' => $data['struct'],
-            'op' => 'LIKE',
-          ),
-        ), array(
-          'limit' => 1,
-        ));
-        $meta[$name]['struct_id'] = current($obs)->cvterm_id ?? NULL;
+        $result = tpps_ols_install_term("po:{$data['struct-other']}");
+        if ($result !== FALSE) {
+          $meta[$name]['struct_id'] = $result->cvterm_id;
+          $job->logMessage("[INFO] New OLS Term po:{$data['struct-other']} installed");
+        }
+
+        if (empty($meta[$name]['struct_id'])) {
+          $obs = chado_select_record('cvterm', array('cvterm_id'), array(
+            'name' => array(
+              'data' => $data['struct-other'],
+              'op' => 'LIKE',
+            ),
+          ), array(
+            'limit' => 1,
+          ));
+          $meta[$name]['struct_id'] = current($obs)->cvterm_id ?? NULL;
+        }
 
         if (empty($meta[$name]['struct_id'])) {
           $meta[$name]['struct_id'] = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$data['struct']}",
-            'name' => $data['struct'],
+            'id' => "{$local_db->name}:{$data['struct-other']}",
+            'name' => $data['struct-other'],
             'definition' => '',
             'cv_name' => $local_cv->name,
           ))->cvterm_id;
+          if (!empty($meta[$name]['struct_id'])) {
+            $job->logMessage("[INFO] New Local Structure Term {$data['struct-other']} installed");
+          }
         }
-        $cvt_cache[$data['struct']] = $meta[$name]['struct_id'];
+        $cvt_cache[$data['struct-other']] = $meta[$name]['struct_id'];
       }
-    }
-    else {
-      $meta[$name]['struct_id'] = NULL;
     }
   }
 }

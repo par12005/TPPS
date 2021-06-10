@@ -62,6 +62,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     return $fields;
   }
 
+  $struct_options = array();
+  $struct_options[tpps_load_cvterm('whole plant')->cvterm_id] = 'Whole Plant';
+  // TODO: Populate structure options
+  $struct_options['other'] = 'My structure term is not in this list';
+
   $field = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
@@ -104,13 +109,15 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       ),
       '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
     ),
-    'struct-check' => array(
-      '#type' => 'checkbox',
-      '#title' => 'Phenotype !num has a structure descriptor',
-    ),
     'structure' => array(
-      '#type' => 'textfield',
+      '#type' => 'select',
       '#title' => 'Phenotype !num Structure: *',
+      '#options' => $struct_options,
+      '#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
+    ),
+    'struct-other' => array(
+      '#type' => 'textfield',
+      '#title' => 'Phenotype !num Custom Structure: *',
       '#autocomplete_path' => 'tpps/autocomplete/structure',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -120,7 +127,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
       '#states' => array(
         'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][struct-check]"]' => array('checked' => TRUE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]' => array('value' => 'other'),
         ),
       ),
     ),
@@ -207,8 +214,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('description', '#title'),
       array('description', '#description'),
       array('units', '#title'),
-      array('struct-check', '#title'),
       array('structure', '#title'),
+      array('struct-other', '#title'),
       array('val-check', '#title'),
       array('bin-check', '#title'),
       array('min', '#title'),
@@ -218,7 +225,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('env-check', '#title'),
     ),
     'substitute_keys' => array(
-      array('structure', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][struct-check]"]'),
+      array('struct-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]'),
       array('val-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
       array('bin-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
       array('min', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),

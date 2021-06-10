@@ -170,8 +170,8 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         form_set_error("$id][phenotype][phenotypes-meta][$i][units", "Phenotype $i Units: field is required.");
       }
 
-      if ($current_phenotype['struct-check'] == '1' and $current_phenotype['structure'] == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][structure", "Phenotype $i Structure: field is required.");
+      if ($current_phenotype['structure'] == 'other' and $current_phenotype['struct-other'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][struct-other", "Phenotype $i Custom Structure: field is required.");
       }
 
       if (($current_phenotype['val-check'] or $current_phenotype['bin-check']) and $current_phenotype['min'] == '') {
