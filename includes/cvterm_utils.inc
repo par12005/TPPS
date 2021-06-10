@@ -226,13 +226,15 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     else {
       $trace = debug_backtrace()[1];
       $job = NULL;
-      foreach ($trace['args'] as $key => $arg) {
-        if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
-          $job = &$trace['args'][$key];
+      if (!empty($trace['args']) and gettype($trace['args']) == 'array') {
+        foreach ($trace['args'] as $key => $arg) {
+          if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
+            $job = &$trace['args'][$key];
+          }
         }
-      }
-      if (!empty($job)) {
-        $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+        if (!empty($job)) {
+          $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+        }
       }
     }
   }
