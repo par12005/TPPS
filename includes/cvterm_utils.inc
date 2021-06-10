@@ -541,6 +541,10 @@ function tpps_ols_install_term($info) {
   ));
   if (!$cvt) {
     $response = tpps_ols_search($term, $ontology)->response;
+    if ($response->numFound == 0) {
+      throw new \Exception('error');
+      return FALSE;
+    }
     if ($response->numFound != 1) {
       throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
       return FALSE;
@@ -724,6 +728,9 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
       }
 
       $new_cvt = tpps_ols_install_term($new_info);
+      if ($new_cvt === FALSE) {
+        throw new \Exception("No OLS terms found for term $new_info");
+      }
       unset($new_terms[$key]);
       tpps_match_cvterms($old_cvt, $new_cvt);
     }
