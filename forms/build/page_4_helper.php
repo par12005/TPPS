@@ -169,19 +169,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ),
       ),
     ),
-    'time-check' => array(
-      '#type' => 'checkbox',
-      '#title' => 'Phenotype !num has a time point/range',
-    ),
-    'time' => array(
-      '#type' => 'textfield',
-      '#title' => 'Phenotype !num Time: *',
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][time-check]"]' => array('checked' => TRUE),
-        ),
-      ),
-    ),
     'env-check' => array(
       '#type' => 'checkbox',
       '#title' => 'Phenotype !num is an environmental phenotype',
@@ -220,8 +207,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('bin-check', '#title'),
       array('min', '#title'),
       array('max', '#title'),
-      array('time-check', '#title'),
-      array('time', '#title'),
       array('env-check', '#title'),
     ),
     'substitute_keys' => array(
@@ -232,7 +217,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('min', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
       array('max', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
       array('max', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
-      array('time', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][time-check]"]'),
     ),
   ));
 
@@ -287,6 +271,64 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   );
 
   $form[$id]['phenotype']['metadata']['no-header'] = array();
+
+  // Get names of manual phenotypes.
+  $meta = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta'));
+  $number = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta', 'number'));
+  $phenotype_names = array();
+  for ($i = 1; $i <= $number; $i++) {
+    if (!empty($meta[$i]['name'])) {
+      $phenotype_names[] = is_array($meta[$i]['name']) ? $meta[$i]['name']['#value'] : $meta[$i]['name'];
+    }
+  }
+
+  // Get names of phenotypes in metadata file.
+  $columns = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'metadata', 'columns'), array(), 'metadata');
+  $meta_fid = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'metadata'));
+  $name_col = NULL;
+  foreach ($columns as $key => $info) {
+    if (preg_match('/^[A-Z]+$/', $key)) {
+      $val = !empty($info['#value']) ? $info['#value'] : $info;
+      if (!empty($val) and $column_options[$val] == 'Phenotype Name/Identifier') {
+        $name_col = $key;
+        break;
+      }
+    }
+  }
+
+  // Merge names.
+  if (!empty($name_col) and !is_array($meta_fid) and !empty(file_load($meta_fid))) {
+    $names = tpps_parse_file_column($meta_fid, $name_col);
+    $phenotype_names = array_merge($phenotype_names, $names);
+  }
+
+  // If name ends in 4 digits (year), then time-check default = TRUE.
+  $time_default = NULL;
+  foreach ($phenotype_names as $name) {
+    if (preg_match('/[0-9]{4}$/', $name)) {
+      $time_default = TRUE;
+    }
+  }
+  $form[$id]['phenotype']['time-check'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Some of my phenotypes are time-based'),
+    '#default_value' => $time_default,
+    '#ajax' => array(
+      'callback' => 'tpps_update_phenotype',
+      'wrapper' => "phenotype-main-$id",
+    ),
+  );
+
+  $time_check = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'time-check'), $time_default);
+  if ($time_check) {
+    $time_options = $phenotype_names;
+    $form[$id]['phenotype']['time_phenotypes'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Time-based Phenotypes: *'),
+      '#options' => $time_options,
+      '#description' => t('Please select the phenotypes which are time-based'),
+    );
+  }
 
   return $form[$id]['phenotype'];
 }
