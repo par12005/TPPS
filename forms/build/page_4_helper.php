@@ -321,7 +321,10 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
   $time_check = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'time-check'), $time_default);
   if ($time_check) {
-    $time_options = $phenotype_names;
+    $time_options = array();
+    foreach ($phenotype_names as $name) {
+      $time_options[$name] = $name;
+    }
     $form[$id]['phenotype']['time_phenotypes'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Time-based Phenotypes: *'),
