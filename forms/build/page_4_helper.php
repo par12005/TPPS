@@ -323,7 +323,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   if ($time_check) {
     $time_options = array();
     foreach ($phenotype_names as $name) {
-      $time_options[$name] = $name;
+      $time_options[strtolower($name)] = $name;
     }
     $form[$id]['phenotype']['time_phenotypes'] = array(
       '#type' => 'checkboxes',
