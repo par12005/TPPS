@@ -181,9 +181,16 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       if (($current_phenotype['val-check'] or $current_phenotype['bin-check']) and $current_phenotype['max'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
       }
+    }
 
-      if ($current_phenotype['time-check'] == '1' and $current_phenotype['time'] == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][time", "Phenotype $i Time: field is required.");
+    if ($phenotype['time-check']) {
+      foreach ($phenotype['time_phenotypes'] as $key => $val) {
+        if (!$val) {
+          unset($form_state['values'][$id]['phenotype']['time_phenotypes'][$key]);
+        }
+      }
+      if (empty($form_state['values'][$id]['phenotype']['time_phenotypes'])) {
+        form_set_error("$id][phenotype][time_phenotypes", "Time-based Phenotypes: field is required.");
       }
     }
 
