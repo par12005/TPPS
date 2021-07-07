@@ -166,7 +166,7 @@ function tpps_summary_create_form(array &$form, array $form_state) {
         '#description' => t('Please upload a photo of the species in either .jpeg or .jpg format'),
       );
 
-      if (TRUE) {#db_table_exists('treepictures_metadata')) {
+      if (db_table_exists('treepictures_metadata')) {
         $form['tree_pictures']["{$org}_url"] = array(
           '#type' => 'textfield',
           '#title' => t('@org Picture source URL:', array('@org' => $org)),
