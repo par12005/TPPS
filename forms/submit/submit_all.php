@@ -67,6 +67,7 @@ function tpps_submit_all($accession, $job = NULL) {
     $job->logMessage("[INFO] Submitting Raw data...");
     tpps_submit_page_4($form_state, $job);
     $job->logMessage("[INFO] Raw data submitted!\n");
+    throw new \Exception('error');
 
     $job->logMessage("[INFO] Submitting Summary information...");
     tpps_submit_summary($form_state);
@@ -948,6 +949,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
   $records = array(
     'phenotype' => array(),
     'phenotypeprop' => array(),
+    'phenotype_cvterm' => array(),
     'stock_phenotype' => array(),
   );
   $phenotype_count = 0;
@@ -985,9 +987,6 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
         $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
         $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
       }
-      if ($phenotype['phenotypes-meta'][$j]['time-check'] == '1') {
-        $phenotypes_meta[$name]['time'] = $phenotype['phenotypes-meta'][$j]['time'];
-      }
       $phenotypes_meta[$name]['env'] = !empty($phenotype['phenotypes-meta'][$j]['env-check']);
     }
 
@@ -1020,7 +1019,12 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
       tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
     }
 
-    tpps_refine_phenotype_meta($phenotypes_meta, $job);
+    $time_options = array();
+    if ($phenotype['time-check']) {
+      $time_options = $phenotype['time_phenotypes'];
+    }
+    tpps_refine_phenotype_meta($phenotypes_meta, $time_options, $job);
+    print_r($phenotypes_meta);
 
     // Get metadata header values.
     $groups = $phenotype['file-groups'];
@@ -1710,10 +1714,12 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
  *
  * @param array $meta
  *   The existing metadata array.
+ * @param array $time_options
+ *   The array of options for time-based phenotypes.
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_refine_phenotype_meta(array &$meta, &$job = NULL) {
+function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(), &$job = NULL) {
   $cvt_cache = array();
   $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = variable_get('tpps_local_db');
@@ -1785,6 +1791,11 @@ function tpps_refine_phenotype_meta(array &$meta, &$job = NULL) {
         }
         $cvt_cache[$data['struct-other']] = $meta[$name]['struct_id'];
       }
+    }
+
+    if (!empty($time_options[strtolower($name)])) {
+      $meta[$name]['time'] = TRUE;
+      print_r("$name\n");
     }
   }
 }
@@ -1869,7 +1880,15 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       ),
     );
 
-    if (isset($meta[strtolower($name)]['time'])) {
+    if (isset($meta[strtolower($name)]['time']) and $meta[strtolower($name)]['time'] === TRUE) {
+      $records['phenotype_cvterm']["$phenotype_name-time"] = array(
+        'cvterm_id' => $cvterms['time'],
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+    }
+    elseif (isset($meta[strtolower($name)]['time'])) {
       $records['phenotypeprop']["$phenotype_name-time"] = array(
         'type_id' => $cvterms['time'],
         'value' => $meta[strtolower($name)]['time'],
