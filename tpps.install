@@ -1463,7 +1463,7 @@ function tpps_update_7112() {
 function tpps_update_7113() {
   $transaction = db_transaction();
   $submissions = tpps_load_submission_multiple(array(
-    'status' => array('Approved', 'Incomplete'),
+    'status' => array('Approved', 'Pending Approval', 'Incomplete'),
   ));
   try {
     foreach ($submissions as $state) {
