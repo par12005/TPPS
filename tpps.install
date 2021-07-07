@@ -1454,3 +1454,54 @@ function tpps_update_7112() {
     throw $e;
   }
 }
+
+/**
+ * Implements hook_update_N().
+ *
+ * Add species names to file_info names for existing submissions.
+ */
+function tpps_update_7113() {
+  $transaction = db_transaction();
+  $submissions = tpps_load_submission_multiple(array(
+    'status' => array('Approved', 'Pending Approval', 'Incomplete'),
+  ));
+  try {
+    foreach ($submissions as $state) {
+      $change = FALSE;
+      $org_num = 1;
+      if (!empty($state['file_info'][TPPS_PAGE_3])) {
+        foreach ($state['file_info'][TPPS_PAGE_3] as $fid => $name) {
+          if ($name == 'Plant_Accession' or $name == 'Tree_Accession') {
+            $species = implode('_', explode(' ', $state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
+            $state['file_info'][TPPS_PAGE_3][$fid] = "{$name}_{$species}";
+            $change = TRUE;
+          }
+          $org_num++;
+        }
+      }
+
+      if (!empty($state['file_info'][TPPS_PAGE_4])) {
+        foreach ($state['file_info'][TPPS_PAGE_4] as $fid => $name) {
+          if (preg_match('/^(.*_)([0-9]+)$/', $name, $matches)) {
+            $prefix = $matches[1];
+            $org_num = $matches[2];
+            $species = implode('_', explode(' ', $state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
+            $state['file_info'][TPPS_PAGE_4][$fid] = "{$prefix}{$species}";
+            $change = TRUE;
+          }
+        }
+      }
+
+      if ($change) {
+        tpps_update_submission($state);
+        if ($state['status'] == 'Approved') {
+          tpps_submission_rename_files($state['accession']);
+        }
+      }
+    }
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
