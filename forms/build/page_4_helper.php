@@ -605,6 +605,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       ),
       '#description' => t('Please upload a spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
       '#tree' => TRUE,
+      'empty' => array(
+        '#default_value' => isset($values["organism-$id"]['genotype']['files']['ssrs']) ? $values["organism-$id"]['genotype']['files']['ssrs'] : 'NA',
+      ),
     );
 
     $ploidy = tpps_get_ajax_value($form_state, array(

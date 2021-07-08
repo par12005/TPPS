@@ -715,6 +715,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
     elseif (!empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and !empty($genotype['files']['ploidy'])) {
       $headers = tpps_file_headers($genotype['files']['ssrs']);
+      $form_state['values']["organism-$org_num"]['genotype']['files']['ssrs-empty'] = $form["organism-$org_num"]['genotype']['files']['ssrs']['#value']['empty'];
+      $genotype['files']['ssrs-empty'] = $form_state['values']["organism-$org_num"]['genotype']['files']['ssrs-empty'];
       $id_col_name = key($headers);
       while (($k = array_search(NULL, $headers))) {
         unset($headers[$k]);
@@ -808,6 +810,14 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
           $tree_id_str = implode(', ', $missing_trees);
           form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
         }
+      }
+
+      if (!form_get_errors()) {
+        $options = array(
+          'empty' => $genotype['files']['ssrs-empty'] ?? NULL,
+          'org_num' => $org_num,
+        );
+        tpps_file_iterator($genotype['files']['ssrs'], 'tpps_ssr_valid_values', $options);
       }
 
       if (!form_get_errors()) {
@@ -1004,5 +1014,27 @@ function tpps_validate_environment(array &$environment, $id) {
   }
   elseif (empty($new_layers)) {
     form_set_error("$id][environment][env_layers", 'CartograPlant environmental layers: field is required.');
+  }
+}
+
+/**
+ * This function processes a single row of a plant accession file.
+ *
+ * This function validates that the values in the provided SSR file are all
+ * either non-negative or equal to the NA value. This function is meant to be
+ * used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_ssr_valid_values($row, &$options) {
+  $id = array_shift($row);
+  foreach ($row as $value) {
+    if ($value < 0 and $value !== $options['empty']) {
+      form_set_error("{$options['org_num']}-genotype-files-ssrs-{$id}", "SSRs Spreadsheet file: Some non-empty values are negative for plant \"{$id}\".");
+      break;
+    }
   }
 }
