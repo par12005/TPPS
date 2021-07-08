@@ -67,7 +67,6 @@ function tpps_submit_all($accession, $job = NULL) {
     $job->logMessage("[INFO] Submitting Raw data...");
     tpps_submit_page_4($form_state, $job);
     $job->logMessage("[INFO] Raw data submitted!\n");
-    throw new \Exception('error');
 
     $job->logMessage("[INFO] Submitting Summary information...");
     tpps_submit_summary($form_state);
@@ -949,7 +948,6 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
   $records = array(
     'phenotype' => array(),
     'phenotypeprop' => array(),
-    'phenotype_cvterm' => array(),
     'stock_phenotype' => array(),
   );
   $phenotype_count = 0;
@@ -1020,11 +1018,10 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
     }
 
     $time_options = array();
-    if ($phenotype['time-check']) {
-      $time_options = $phenotype['time_phenotypes'];
+    if ($phenotype['time']['time-check']) {
+      $time_options = $phenotype['time'];
     }
     tpps_refine_phenotype_meta($phenotypes_meta, $time_options, $job);
-    print_r($phenotypes_meta);
 
     // Get metadata header values.
     $groups = $phenotype['file-groups'];
@@ -1697,7 +1694,8 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $meta[$name]['desc'] = $row[$columns['desc']];
   $meta[$name]['unit'] = $row[$columns['unit']];
   if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
-    $meta[$name]['struct'] = $row[$columns['struct']];
+    $meta[$name]['struct'] = 'other';
+    $meta[$name]['struct-other'] = $row[$columns['struct']];
   }
   if (!empty($columns['min']) and isset($row[$columns['min']]) and $row[$columns['min']] != '') {
     $meta[$name]['min'] = $row[$columns['min']];
@@ -1793,9 +1791,11 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       }
     }
 
-    if (!empty($time_options[strtolower($name)])) {
-      $meta[$name]['time'] = TRUE;
-      print_r("$name\n");
+    if (!empty($time_options['time_phenotypes'][strtolower($name)])) {
+      $meta[$name]['time'] = $time_options['time_values'][strtolower($name)];
+      if (empty($meta[$name]['time'])) {
+        $meta[$name]['time'] = TRUE;
+      }
     }
   }
 }
@@ -1880,15 +1880,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       ),
     );
 
-    if (isset($meta[strtolower($name)]['time']) and $meta[strtolower($name)]['time'] === TRUE) {
-      $records['phenotype_cvterm']["$phenotype_name-time"] = array(
-        'cvterm_id' => $cvterms['time'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-    }
-    elseif (isset($meta[strtolower($name)]['time'])) {
+    if (isset($meta[strtolower($name)]['time'])) {
       $records['phenotypeprop']["$phenotype_name-time"] = array(
         'type_id' => $cvterms['time'],
         'value' => $meta[strtolower($name)]['time'],
