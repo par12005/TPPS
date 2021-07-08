@@ -309,7 +309,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       $time_default = TRUE;
     }
   }
-  $form[$id]['phenotype']['time-check'] = array(
+
+  $form[$id]['phenotype']['time'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Time options'),
+  );
+
+  $form[$id]['phenotype']['time']['time-check'] = array(
     '#type' => 'checkbox',
     '#title' => t('Some of my phenotypes are time-based'),
     '#default_value' => $time_default,
@@ -319,18 +325,35 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     ),
   );
 
-  $time_check = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'time-check'), $time_default);
+  $time_check = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'time', 'time-check'), $time_default);
   if ($time_check) {
     $time_options = array();
     foreach ($phenotype_names as $name) {
       $time_options[strtolower($name)] = $name;
     }
-    $form[$id]['phenotype']['time_phenotypes'] = array(
+    $form[$id]['phenotype']['time']['time_phenotypes'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Time-based Phenotypes: *'),
       '#options' => $time_options,
       '#description' => t('Please select the phenotypes which are time-based'),
     );
+
+    $form[$id]['phenotype']['time']['time_values'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Phenotype Time values:'),
+    );
+
+    foreach ($time_options as $key => $name) {
+      $form[$id]['phenotype']['time']['time_values'][$key] = array(
+        '#type' => 'textfield',
+        '#title' => t('(Optional) @name time:', array('@name' => $name)),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="' . $id . '[phenotype][time][time_phenotypes][' . $key . ']"]' => array('checked' => TRUE),
+          ),
+        ),
+      );
+    }
   }
 
   return $form[$id]['phenotype'];
