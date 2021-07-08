@@ -1031,6 +1031,17 @@ function tpps_environment(array &$form, array &$form_state, $id) {
         ),
       ),
     );
+
+    $form[$id]['environment']['env_layers']['other_params'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Parameters Used: *'),
+      '#description' => t('Comma-delimited list of parameters from the layer used. For example, when using parameters "rainfall" and "humidity", this field should look something like "rainfall,humidity"'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[environment][env_layers][other]"]' => array('checked' => TRUE),
+        ),
+      ),
+    );
   }
 
   return $form[$id]['environment'];
