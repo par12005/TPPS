@@ -986,6 +986,10 @@ function tpps_validate_environment(array &$environment, $id) {
       form_set_error("$id][environment][env_layers][other_name", 'CartograPlant other environmental layer name: field is required.');
     }
 
+    if (empty($environment['env_layers']['other_params'])) {
+      form_set_error("$id][environment][env_layers][other_params", 'CartograPlant other environmental layer parameters: field is required.');
+    }
+
     if (!form_get_errors()) {
       $new_layers['other'] = 'other';
       $new_layers['other_db'] = $environment['env_layers']['other_db'];
