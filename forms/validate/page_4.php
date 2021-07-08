@@ -130,6 +130,9 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
           'Units' => array(
             'units' => array(4),
           ),
+          'Structure' => array(
+            'structure' => array(5),
+          ),
         );
 
         $file_element = $form[$id]['phenotype']['metadata'];
@@ -183,14 +186,15 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       }
     }
 
-    if ($phenotype['time-check']) {
-      foreach ($phenotype['time_phenotypes'] as $key => $val) {
+    if ($phenotype['time']['time-check']) {
+      foreach ($phenotype['time']['time_phenotypes'] as $key => $val) {
         if (!$val) {
-          unset($form_state['values'][$id]['phenotype']['time_phenotypes'][$key]);
+          unset($form_state['values'][$id]['phenotype']['time']['time_phenotypes'][$key]);
+          unset($form_state['values'][$id]['phenotype']['time']['time_values'][$key]);
         }
       }
-      if (empty($form_state['values'][$id]['phenotype']['time_phenotypes'])) {
-        form_set_error("$id][phenotype][time_phenotypes", "Time-based Phenotypes: field is required.");
+      if (empty($form_state['values'][$id]['phenotype']['time']['time_phenotypes'])) {
+        form_set_error("$id][phenotype][time][time_phenotypes", "Time-based Phenotypes: field is required.");
       }
     }
 
