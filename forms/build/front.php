@@ -80,6 +80,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
     $form['custom_accession_check'] = array(
       '#type' => 'checkbox',
       '#title' => t('I would like to use a custom accession number'),
+      '#description' => t('Specify a custom accession number. This feature is available only to users with administrative access, and is generally not required or recommended.'),
     );
 
     $form['custom_accession'] = array(
@@ -90,7 +91,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
           ':input[name="custom_accession_check"]' => array('checked' => TRUE),
         ),
       ),
-      '#description' => t('Must be of the format TGDR###'),
+      '#description' => t('Use this field to specify a custom accession number. Must be of the format TGDR###'),
     );
   }
 
