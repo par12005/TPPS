@@ -811,6 +811,14 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
 
       if (!form_get_errors()) {
+        $options = array(
+          'empty' => $genotype['files']['ssrs-empty'] ?? NULL, // TODO: implement NA field for SSR file upload.
+          'org_num' => $org_num,
+        );
+        tpps_file_iterator($genotype['files']['ssrs'], 'tpps_ssr_valid_values', $options);
+      }
+
+      if (!form_get_errors()) {
         // Preserve file if it is valid.
         $file = file_load($genotype['files']['ssrs']);
         file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
@@ -1004,5 +1012,27 @@ function tpps_validate_environment(array &$environment, $id) {
   }
   elseif (empty($new_layers)) {
     form_set_error("$id][environment][env_layers", 'CartograPlant environmental layers: field is required.');
+  }
+}
+
+/**
+ * This function processes a single row of a plant accession file.
+ *
+ * This function validates that the values in the provided SSR file are all
+ * either non-negative or equal to the NA value. This function is meant to be
+ * used with tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_ssr_valid_values($row, &$options) {
+  $id = array_shift($row);
+  foreach ($row as $value) {
+    if ($value < 0 and $value !== $options['empty']) {
+      form_set_error("{$options['org_num']}-genotype-files-ssrs-{$id}", "SSRs Spreadsheet file: Some non-empty values are negative for plant \"{$id}\".");
+      break;
+    }
   }
 }
