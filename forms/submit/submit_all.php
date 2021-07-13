@@ -1311,6 +1311,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
     $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
     $options['marker'] = $genotype['SSRs/cpSSRs'];
     $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
+    $options['empty'] = $genotype['files']['ssrs-empty'];
 
     tpps_file_iterator($ssr_fid, 'tpps_process_genotype_spreadsheet', $options);
 
@@ -1980,6 +1981,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       continue;
     }
     $genotype_count++;
+
+    if ($type == 'ssrs' and !empty($options['empty']) and $val == $options['empty']) {
+      continue;
+    }
 
     if ($type == 'ssrs' and ($val === 0 or $val === "0")) {
       $val = "NA";
