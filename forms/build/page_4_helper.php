@@ -353,6 +353,14 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#title' => t('Time options'),
   );
 
+  if ($time_default) {
+    $message = t('It looks like some of your phenotypes might be time-based. If this is the case, please indicate which ones are time-based with the section below.');
+    $form[$id]['phenotype']['time']['#prefix'] = "<div class=\"alert alert-block alert-dismissible alert-warning messages warning\">
+      <a class=\"close\" data-dismiss=\"alert\" href=\"#\">×</a>
+      <h4 class=\"element-invisible\">Warning message</h4>
+      {$message}</div>";
+  }
+
   $form[$id]['phenotype']['time']['time-check'] = array(
     '#type' => 'checkbox',
     '#title' => t('Some of my phenotypes are time-based'),
