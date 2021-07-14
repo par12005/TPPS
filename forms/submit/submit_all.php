@@ -975,17 +975,18 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
       $phenotypes_meta[$name] = array();
       $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
+      if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
+        $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
+      }
       $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
       $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
-      if ($phenotype['phenotypes-meta'][$j]['struct-check'] == '1') {
-        $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
+      $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
+      if ($phenotype['phenotypes-meta'][$j]['structure'] == 'other') {
+        $phenotypes_meta[$name]['struct-other'] = $phenotype['phenotypes-meta'][$j]['struct-other'];
       }
       if (!empty($phenotype['phenotypes-meta'][$j]['val-check']) or !empty($phenotype['phenotypes-meta'][$j]['bin-check'])) {
         $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
         $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
-      }
-      if ($phenotype['phenotypes-meta'][$j]['time-check'] == '1') {
-        $phenotypes_meta[$name]['time'] = $phenotype['phenotypes-meta'][$j]['time'];
       }
       $phenotypes_meta[$name]['env'] = !empty($phenotype['phenotypes-meta'][$j]['env-check']);
     }
@@ -1019,7 +1020,11 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
       tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
     }
 
-    tpps_refine_phenotype_meta($phenotypes_meta);
+    $time_options = array();
+    if ($phenotype['time']['time-check']) {
+      $time_options = $phenotype['time'];
+    }
+    tpps_refine_phenotype_meta($phenotypes_meta, $time_options, $job);
 
     // Get metadata header values.
     $groups = $phenotype['file-groups'];
@@ -1693,7 +1698,8 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $meta[$name]['desc'] = $row[$columns['desc']];
   $meta[$name]['unit'] = $row[$columns['unit']];
   if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
-    $meta[$name]['struct'] = $row[$columns['struct']];
+    $meta[$name]['struct'] = 'other';
+    $meta[$name]['struct-other'] = $row[$columns['struct']];
   }
   if (!empty($columns['min']) and isset($row[$columns['min']]) and $row[$columns['min']] != '') {
     $meta[$name]['min'] = $row[$columns['min']];
@@ -1710,68 +1716,103 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
  *
  * @param array $meta
  *   The existing metadata array.
+ * @param array $time_options
+ *   The array of options for time-based phenotypes.
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
  */
-function tpps_refine_phenotype_meta(array &$meta) {
+function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(), &$job = NULL) {
   $cvt_cache = array();
   $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = variable_get('tpps_local_db');
   foreach ($meta as $name => $data) {
-    if (!empty($cvt_cache[$data['attr']])) {
-      $meta[$name]['attr_id'] = $cvt_cache[$data['attr']];
-    }
-    elseif (empty($data['env'])) {
-      $attr = chado_select_record('cvterm', array('cvterm_id'), array(
-        'name' => array(
-          'data' => $data['attr'],
-          'op' => 'LIKE',
-        ),
-      ), array(
-        'limit' => 1,
-      ));
-      $meta[$name]['attr_id'] = current($attr)->cvterm_id ?? NULL;
-
-      if (empty($meta[$name]['attr_id'])) {
-        $meta[$name]['attr_id'] = chado_insert_cvterm(array(
-          'id' => "{$local_db->name}:{$data['attr']}",
-          'name' => $data['attr'],
-          'definition' => '',
-          'cv_name' => $local_cv->name,
-        ))->cvterm_id;
-      }
-      $cvt_cache[$data['attr']] = $meta[$name]['attr_id'];
+    if ($data['attr'] != 'other') {
+      $meta[$name]['attr_id'] = $data['attr'];
     }
     else {
-      $meta[$name]['attr_id'] = tpps_load_cvterm('environment')->cvterm_id;
-    }
-
-    if (!empty($data['struct'])) {
-      if (!empty($cvt_cache[$data['struct']])) {
-        $meta[$name]['struct_id'] = $cvt_cache[$data['struct']];
+      if (!empty($cvt_cache[$data['attr-other']])) {
+        $meta[$name]['attr_id'] = $cvt_cache[$data['attr-other']];
       }
       else {
-        $obs = chado_select_record('cvterm', array('cvterm_id'), array(
-          'name' => array(
-            'data' => $data['struct'],
-            'op' => 'LIKE',
-          ),
-        ), array(
-          'limit' => 1,
-        ));
-        $meta[$name]['struct_id'] = current($obs)->cvterm_id ?? NULL;
+        $result = tpps_ols_install_term("pato:{$data['attr-other']}");
+        if ($result !== FALSE) {
+          $meta[$name]['attr_id'] = $result->cvterm_id;
+          $job->logMessage("[INFO] New OLS Term pato:{$data['attr-other']} installed");
+        }
 
-        if (empty($meta[$name]['struct_id'])) {
-          $meta[$name]['struct_id'] = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$data['struct']}",
-            'name' => $data['struct'],
+        if (empty($meta[$name]['attr_id'])) {
+          $attr = chado_select_record('cvterm', array('cvterm_id'), array(
+            'name' => array(
+              'data' => $data['attr-other'],
+              'op' => 'LIKE',
+            ),
+          ), array(
+            'limit' => 1,
+          ));
+          $meta[$name]['attr_id'] = current($attr)->cvterm_id ?? NULL;
+        }
+
+        if (empty($meta[$name]['attr_id'])) {
+          $meta[$name]['attr_id'] = chado_insert_cvterm(array(
+            'id' => "{$local_db->name}:{$data['attr-other']}",
+            'name' => $data['attr-other'],
             'definition' => '',
             'cv_name' => $local_cv->name,
           ))->cvterm_id;
+          if (!empty($meta[$name]['attr_id'])) {
+            $job->logMessage("[INFO] New Local Attribute Term {$data['attr-other']} installed");
+          }
         }
-        $cvt_cache[$data['struct']] = $meta[$name]['struct_id'];
+        $cvt_cache[$data['attr-other']] = $meta[$name]['attr_id'];
       }
     }
+
+    if ($data['struct'] != 'other') {
+      $meta[$name]['struct_id'] = $data['struct'];
+    }
     else {
-      $meta[$name]['struct_id'] = NULL;
+      if (!empty($cvt_cache[$data['struct-other']])) {
+        $meta[$name]['struct_id'] = $cvt_cache[$data['struct-other']];
+      }
+      else {
+        $result = tpps_ols_install_term("po:{$data['struct-other']}");
+        if ($result !== FALSE) {
+          $meta[$name]['struct_id'] = $result->cvterm_id;
+          $job->logMessage("[INFO] New OLS Term po:{$data['struct-other']} installed");
+        }
+
+        if (empty($meta[$name]['struct_id'])) {
+          $obs = chado_select_record('cvterm', array('cvterm_id'), array(
+            'name' => array(
+              'data' => $data['struct-other'],
+              'op' => 'LIKE',
+            ),
+          ), array(
+            'limit' => 1,
+          ));
+          $meta[$name]['struct_id'] = current($obs)->cvterm_id ?? NULL;
+        }
+
+        if (empty($meta[$name]['struct_id'])) {
+          $meta[$name]['struct_id'] = chado_insert_cvterm(array(
+            'id' => "{$local_db->name}:{$data['struct-other']}",
+            'name' => $data['struct-other'],
+            'definition' => '',
+            'cv_name' => $local_cv->name,
+          ))->cvterm_id;
+          if (!empty($meta[$name]['struct_id'])) {
+            $job->logMessage("[INFO] New Local Structure Term {$data['struct-other']} installed");
+          }
+        }
+        $cvt_cache[$data['struct-other']] = $meta[$name]['struct_id'];
+      }
+    }
+
+    if (!empty($time_options['time_phenotypes'][strtolower($name)])) {
+      $meta[$name]['time'] = $time_options['time_values'][strtolower($name)];
+      if (empty($meta[$name]['time'])) {
+        $meta[$name]['time'] = TRUE;
+      }
     }
   }
 }

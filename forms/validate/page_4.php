@@ -130,6 +130,9 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
           'Units' => array(
             'units' => array(4),
           ),
+          'Structure' => array(
+            'structure' => array(5),
+          ),
         );
 
         $file_element = $form[$id]['phenotype']['metadata'];
@@ -159,8 +162,8 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         form_set_error("$id][phenotype][phenotypes-meta][$i][name", "Phenotype $i Name: field is required.");
       }
 
-      if ($attribute == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][attribute", "Phenotype $i Attribute: field is required.");
+      if ($current_phenotype['attribute'] == 'other' and $current_phenotype['attr-other'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][attr-other", "Phenotype $i Custom Attribute: field is required.");
       }
 
       if ($description == '') {
@@ -171,8 +174,8 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         form_set_error("$id][phenotype][phenotypes-meta][$i][units", "Phenotype $i Units: field is required.");
       }
 
-      if ($current_phenotype['struct-check'] == '1' and $current_phenotype['structure'] == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][structure", "Phenotype $i Structure: field is required.");
+      if ($current_phenotype['structure'] == 'other' and $current_phenotype['struct-other'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][struct-other", "Phenotype $i Custom Structure: field is required.");
       }
 
       if (($current_phenotype['val-check'] or $current_phenotype['bin-check']) and $current_phenotype['min'] == '') {
@@ -182,9 +185,17 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       if (($current_phenotype['val-check'] or $current_phenotype['bin-check']) and $current_phenotype['max'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
       }
+    }
 
-      if ($current_phenotype['time-check'] == '1' and $current_phenotype['time'] == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][time", "Phenotype $i Time: field is required.");
+    if ($phenotype['time']['time-check']) {
+      foreach ($phenotype['time']['time_phenotypes'] as $key => $val) {
+        if (!$val) {
+          unset($form_state['values'][$id]['phenotype']['time']['time_phenotypes'][$key]);
+          unset($form_state['values'][$id]['phenotype']['time']['time_values'][$key]);
+        }
+      }
+      if (empty($form_state['values'][$id]['phenotype']['time']['time_phenotypes'])) {
+        form_set_error("$id][phenotype][time][time_phenotypes", "Time-based Phenotypes: field is required.");
       }
     }
 

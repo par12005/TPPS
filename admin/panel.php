@@ -107,6 +107,29 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   }
   $display .= tpps_table_display($submission_state, $options);
 
+  if ($status == 'Pending Approval') {
+    $new_cvterms = array();
+    for ($i = 1; $i <= $submission_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
+      $phenotype = $submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
+      for ($j = 1; $j <= $phenotype['phenotypes-meta']['number']; $j++) {
+        if ($phenotype['phenotypes-meta'][$j]['structure'] === 'other') {
+          $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['struct-other'];
+        }
+        if ($phenotype['phenotypes-meta'][$j]['attribute'] === 'other') {
+          $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['attr-other'];
+        }
+      }
+    }
+    // TODO: get new/custom cvterms from metadata file.
+    if (count($new_cvterms) > 0) {
+      $message = 'This submission will create the following new local cvterms: ' . implode(', ', $new_cvterms);
+      $display .= "<div class=\"alert alert-block alert-dismissible alert-warning messages warning\">
+        <a class=\"close\" data-dismiss=\"alert\" href=\"#\">×</a>
+        <h4 class=\"element-invisible\">Warning message</h4>
+        {$message}</div>";
+    }
+  }
+
   $form['accession'] = array(
     '#type' => 'hidden',
     '#value' => $accession,
