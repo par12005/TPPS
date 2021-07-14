@@ -62,6 +62,17 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     return $fields;
   }
 
+  $attr_options = array();
+  $terms = array(
+    'composition' => 'Composition',
+    // TODO: populate other attribute options.
+  );
+  foreach ($terms as $term => $label) {
+    $attr_id = tpps_load_cvterm($term)->cvterm_id;
+    $attr_options[$attr_id] = $label;
+  }
+  $attr_options['other'] = 'My attribute term is not in this list';
+
   $struct_options = array();
   $terms = array(
     'whole plant' => 'Whole Plant',
@@ -98,8 +109,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your <a href="@url">Phenotype file</a> below.', array('@url' => url('/tpps', array('fragment' => "edit-$id-phenotype-file-ajax-wrapper")))),
     ),
     'attribute' => array(
-      '#type' => 'textfield',
+      '#type' => 'select',
       '#title' => 'Phenotype !num Attribute: *',
+      '#options' => $attr_options,
+    ),
+    'attr-other' => array(
+      '#type' => 'textfield',
+      '#title' => 'Phenotype !num Custom Attribute: *',
       '#autocomplete_path' => 'tpps/autocomplete/attribute',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -107,6 +123,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]' => array('value' => 'other'),
+        ),
+      ),
     ),
     'description' => array(
       '#type' => 'textfield',
@@ -128,7 +149,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'select',
       '#title' => 'Phenotype !num Structure: *',
       '#options' => $struct_options,
-      '#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
+      #'#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
     ),
     'struct-other' => array(
       '#type' => 'textfield',
@@ -213,6 +234,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('name', '#title'),
       array('name', '#prefix'),
       array('attribute', '#title'),
+      array('attr-other', '#title'),
       array('description', '#title'),
       array('description', '#description'),
       array('units', '#title'),
@@ -225,6 +247,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('env-check', '#title'),
     ),
     'substitute_keys' => array(
+      array('attr-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'),
       array('struct-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]'),
       array('val-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
       array('bin-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),

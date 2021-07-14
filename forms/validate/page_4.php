@@ -161,8 +161,8 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         form_set_error("$id][phenotype][phenotypes-meta][$i][name", "Phenotype $i Name: field is required.");
       }
 
-      if ($attribute == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][attribute", "Phenotype $i Attribute: field is required.");
+      if ($current_phenotype['attribute'] == 'other' and $current_phenotype['attr-other'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][attr-other", "Phenotype $i Custom Attribute: field is required.");
       }
 
       if ($description == '') {
