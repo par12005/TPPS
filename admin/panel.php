@@ -75,6 +75,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     $options['files'] = array(
       'revision_destination' => TRUE,
     );
+    $options['skip_phenotypes'] = TRUE;
 
     foreach ($submission_state['file_info'] as $page => $files) {
       foreach ($files as $fid => $file_type) {
