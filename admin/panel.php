@@ -188,6 +188,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       unset($form['params']);
     }
 
+    tpps_phenotype_editor($form, $form_state, $submission_state);
+
     $form['approve-check'] = array(
       '#type' => 'checkbox',
       '#title' => t('This submission has been reviewed and approved.'),
@@ -320,6 +322,127 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       ),
     ),
   );
+}
+
+/**
+ * Build form for administrators to edit phenotypes.
+ *
+ * @param array $form
+ *   The form element to be populated.
+ * @param array $form_state
+ *   The state of the form element to be populated.
+ * @param array $submission
+ *   The submission being managed.
+ */
+function tpps_phenotype_editor(array &$form, array &$form_state, array &$submission) {
+  $form['phenotypes_edit'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Admin Phenotype Editor'),
+    '#tree' => TRUE,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => t('Note: The phenotype editor does not have any validation measures in place. This means that fields in this section that are left blank will be accepted by TPPS, and they will override any user selections. Please be careful when editing information in this section.'),
+  );
+
+  $phenotypes = array();
+  for ($i = 1; $i <= $submission['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
+    $phenotype = $submission['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
+    for ($j = 1; $j <= $phenotype['phenotypes-meta']['number']; $j++) {
+      $phenotypes[$j] = $phenotype['phenotypes-meta'][$j];
+    }
+  }
+
+  // TODO: get phenotypes from metadata file.
+
+  $attr_options = array();
+  $terms = array(
+    'composition' => 'Composition',
+    // TODO: populate other attribute options.
+  );
+  foreach ($terms as $term => $label) {
+    $attr_id = tpps_load_cvterm($term)->cvterm_id;
+    $attr_options[$attr_id] = $label;
+  }
+  $attr_options['other'] = 'My attribute term is not in this list';
+
+  $struct_options = array();
+  $terms = array(
+    'whole plant' => 'Whole Plant',
+    'nut_fruit' => 'Nut Fruit',
+    'bud' => 'Bud',
+    'flower_fascicle' => 'Flower Fascicle',
+    'flower' => 'Flower',
+    'endocarp' => 'Endocarp',
+    'leaf' => 'Leaf',
+    'leaflet' => 'Leaflet',
+    'leaf_rachis' => 'Leaf Rachis',
+    'branch' => 'Branch',
+    'secondary_xylem' => 'Secondary Xylem (Wood)',
+  );
+  foreach ($terms as $term => $label) {
+    $struct_id = tpps_load_cvterm($term)->cvterm_id;
+    $struct_options[$struct_id] = $label;
+  }
+  $struct_options['other'] = 'My structure term is not in this list';
+
+  foreach ($phenotypes as $num => $info) {
+    $form['phenotypes_edit'][$num] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Phenotype @num (@name):', array('@num' => $num, '@name' => $info['name'])),
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      'name' => array(
+        '#type' => 'textfield',
+        '#title' => t('Name'),
+        '#value' => $info['name'],
+        '#disabled' => TRUE,
+      ),
+      'description' => array(
+        '#type' => 'textfield',
+        '#title' => t('Description'),
+        '#default_value' => $info['description'],
+      ),
+      'attribute' => array(
+        '#type' => 'select',
+        '#title' => t('Attribute'),
+        '#options' => $attr_options,
+        '#default_value' => $info['attribute'],
+      ),
+      'attr-other' => array(
+        '#type' => 'textfield',
+        '#title' => t('Other Attribute'),
+        '#autocomplete_path' => 'tpps/autocomplete/attribute',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="phenotypes_edit[' . $num . '][attribute]"]' => array('value' => 'other'),
+          ),
+        ),
+        '#default_value' => $info['attr-other'],
+      ),
+      'structure' => array(
+        '#type' => 'select',
+        '#title' => t('Structure'),
+        '#options' => $struct_options,
+        '#default_value' => $info['structure'],
+      ),
+      'struct-other' => array(
+        '#type' => 'textfield',
+        '#title' => t('Other Structure'),
+        '#autocomplete_path' => 'tpps/autocomplete/structure',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="phenotypes_edit[' . $num . '][structure]"]' => array('value' => 'other'),
+          ),
+        ),
+        '#default_value' => $info['struct-other'],
+      ),
+      'units' => array(
+        '#type' => 'textfield',
+        '#title' => t('Units'),
+        '#default_value' => $info['units'],
+      ),
+    );
+  }
 }
 
 /**
@@ -701,6 +824,10 @@ function tpps_admin_panel_submit($form, &$form_state) {
             $state['revised_files'][$fid] = $form_state['values']["edit_file_{$fid}_file"];
           }
         }
+      }
+
+      if (!empty($form_state['values']['phenotypes_edit'])) {
+        $state['phenotypes_edit'] = $form_state['values']['phenotypes_edit'];
       }
 
       $includes = array();
