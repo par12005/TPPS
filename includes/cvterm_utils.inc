@@ -201,9 +201,10 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     $info = ":$term";
   }
 
-  preg_match('/^([^:]*):(.*)$/', $info, $matches);
+  preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
   $ontology = $matches[1];
   $name = $matches[2];
+  $alt_ontology = $matches[3] ?? NULL;
   $identifiers = array(
     'name' => $term,
     'is_obsolete' => 0,
@@ -219,6 +220,12 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     }
   }
   $result = chado_get_cvterm($identifiers, $options);
+
+  if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
+    $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
+    $result = chado_get_cvterm($identifiers, $options);
+  }
+
   if (empty($result)) {
     if (!empty($options['job'])) {
       $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
@@ -310,6 +317,7 @@ function tpps_get_cvterms_v1_2() {
 
     // PO terms.
     'whole plant' => 'po:whole plant',
+    'nut_fruit' => 'po:nut fruit:plant_anatomy',
 
     // PECO terms.
     'co2_control' => 'peco:carbon dioxide exposure',
