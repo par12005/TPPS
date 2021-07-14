@@ -358,8 +358,20 @@ function tpps_structure_autocomplete($string) {
     'cvterm_id' => $structures,
   ));
 
+  if (empty($results)) {
+    $results = chado_select_record('cvterm', array('name'), array(
+      'name' => array(
+        'data' => $string,
+        'op' => '~*',
+      ),
+    ));
+  }
+
   foreach ($results as $row) {
-    $matches[$row->name] = check_plain($row->name . ': ' . $row->definition);
+    $matches[$row->name] = check_plain($row->name);
+    if (!empty($row->definition)) {
+      $matches[$row->name] = check_plain($row->name . ': ' . $row->definition);
+    }
   }
 
   drupal_json_output($matches);
