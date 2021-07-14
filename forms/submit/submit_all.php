@@ -975,6 +975,9 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
       $phenotypes_meta[$name] = array();
       $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
+      if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
+        $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
+      }
       $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
       $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
       $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
@@ -1722,32 +1725,45 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
   $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = variable_get('tpps_local_db');
   foreach ($meta as $name => $data) {
-    if (!empty($cvt_cache[$data['attr']])) {
-      $meta[$name]['attr_id'] = $cvt_cache[$data['attr']];
-    }
-    elseif (empty($data['env'])) {
-      $attr = chado_select_record('cvterm', array('cvterm_id'), array(
-        'name' => array(
-          'data' => $data['attr'],
-          'op' => 'LIKE',
-        ),
-      ), array(
-        'limit' => 1,
-      ));
-      $meta[$name]['attr_id'] = current($attr)->cvterm_id ?? NULL;
-
-      if (empty($meta[$name]['attr_id'])) {
-        $meta[$name]['attr_id'] = chado_insert_cvterm(array(
-          'id' => "{$local_db->name}:{$data['attr']}",
-          'name' => $data['attr'],
-          'definition' => '',
-          'cv_name' => $local_cv->name,
-        ))->cvterm_id;
-      }
-      $cvt_cache[$data['attr']] = $meta[$name]['attr_id'];
+    if ($data['attr'] != 'other') {
+      $meta[$name]['attr_id'] = $data['attr'];
     }
     else {
-      $meta[$name]['attr_id'] = tpps_load_cvterm('environment')->cvterm_id;
+      if (!empty($cvt_cache[$data['attr-other']])) {
+        $meta[$name]['attr_id'] = $cvt_cache[$data['attr-other']];
+      }
+      else {
+        $result = tpps_ols_install_term("pato:{$data['attr-other']}");
+        if ($result !== FALSE) {
+          $meta[$name]['attr_id'] = $result->cvterm_id;
+          $job->logMessage("[INFO] New OLS Term pato:{$data['attr-other']} installed");
+        }
+
+        if (empty($meta[$name]['attr_id'])) {
+          $attr = chado_select_record('cvterm', array('cvterm_id'), array(
+            'name' => array(
+              'data' => $data['attr-other'],
+              'op' => 'LIKE',
+            ),
+          ), array(
+            'limit' => 1,
+          ));
+          $meta[$name]['attr_id'] = current($attr)->cvterm_id ?? NULL;
+        }
+
+        if (empty($meta[$name]['attr_id'])) {
+          $meta[$name]['attr_id'] = chado_insert_cvterm(array(
+            'id' => "{$local_db->name}:{$data['attr-other']}",
+            'name' => $data['attr-other'],
+            'definition' => '',
+            'cv_name' => $local_cv->name,
+          ))->cvterm_id;
+          if (!empty($meta[$name]['attr_id'])) {
+            $job->logMessage("[INFO] New Local Attribute Term {$data['attr-other']} installed");
+          }
+        }
+        $cvt_cache[$data['attr-other']] = $meta[$name]['attr_id'];
+      }
     }
 
     if ($data['struct'] != 'other') {
