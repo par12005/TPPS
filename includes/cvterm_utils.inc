@@ -560,7 +560,6 @@ function tpps_ols_install_term($info) {
   if (!$cvt) {
     $response = tpps_ols_search($term, $ontology)->response;
     if ($response->numFound == 0) {
-      throw new \Exception('error');
       return FALSE;
     }
     if ($response->numFound != 1) {

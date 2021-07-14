@@ -967,12 +967,17 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     $phenotypes_meta = array();
     $data_fid = $phenotype['file'];
+    $phenos_edit = $form_state['phenotypes_edit'] ?? NULL;
 
     tpps_add_project_file($form_state, $data_fid);
 
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
+      if (!empty($phenos_edit[$j])) {
+        $result = $phenos_edit[$j] + $phenotype['phenotypes-meta'][$j];
+        $phenotype['phenotypes-meta'][$j] = $result;
+      }
       $phenotypes_meta[$name] = array();
       $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
       if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
