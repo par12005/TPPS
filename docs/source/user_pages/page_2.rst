@@ -10,23 +10,17 @@ Experiment Dates
 * Start Date: two drop-down menus - The month and year that the experiment started
 * End Date: two drop-down menus - The month and year that the experiment ended
 
-Study Location
-==============
-
-* Coordinate Projection: drop-down menu - The coordinate projection of the GPS coordinates of the study location: 'WGS 84', 'NAD 83', 'ETRS 89', or 'Custom Location (street address)'
-* Study Location: text field - The location of the study. If the coordinate projection is not a custom location, TPPS will parse and standardize the coordinates to be sent to the map. After you have provided the study location, you can click 'Click here to update map' to view the location of your study on Google Maps. This can be useful to verify that there is not a drastic error in the location.
-
 Data Type
 =========
 
-* Data Type: drop-down menu - The type of data collected during the study: 'Genotype', 'Genotype x Environment', 'Phenotype x Environment', 'Genotype x Phenotype', 'Genotype x Phenotype x Environment'
+* Data Type: drop-down menu - The type of data collected during the study: 'Genotype', 'Phenotype', 'Environment', 'Genotype x Environment', 'Phenotype x Environment', 'Genotype x Phenotype', 'Genotype x Phenotype x Environment'
 
 Study Type
 ==========
 
-* Study Type: drop-down menu - The type of study: 'Natural Population', 'Growth Chamber', 'Greenhouse', 'Common Garden', 'Plantation'
+* Study Type: drop-down menu - The type of study: 'Natural Population', 'Growth Chamber', 'Greenhouse', 'Experimental/Common Garden', 'Plantation'
 
-Environmental Metadata
+Study Details
 ======================
 
 Natural Population
@@ -83,8 +77,8 @@ Greenhouse fields are only visible when 'Greenhouse' was selected from the 'Stud
 * PH Value: text field - The PH level during the study. If the level was not controlled, then the PH level is not required.
 * Treatments: checkboxes with textfields - The treatments the plants were subject to during the study. If a treatment is checked, a textfield for the description of that treatment will appear below it.
 
-Common Garden
--------------
+Experimental/Common Garden
+--------------------------
 
 Common Garden fields are only visible when 'Common Garden' was selected from the 'Study Type' field.
 
