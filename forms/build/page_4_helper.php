@@ -63,7 +63,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   }
 
   $struct_options = array();
-  $struct_options[tpps_load_cvterm('whole plant')->cvterm_id] = 'Whole Plant';
   $terms = array(
     'whole plant' => 'Whole Plant',
     'nut_fruit' => 'Nut Fruit',
