@@ -318,6 +318,15 @@ function tpps_get_cvterms_v1_2() {
     // PO terms.
     'whole plant' => 'po:whole plant',
     'nut_fruit' => 'po:nut fruit:plant_anatomy',
+    'bud' => 'po:bud:plant_anatomy',
+    'flower_fascicle' => 'po:flower fascicle:plant_anatomy',
+    'flower' => 'po:flower:plant_anatomy',
+    'endocarp' => 'po:endocarp:plant_anatomy',
+    'leaf' => 'po:leaf:plant_anatomy',
+    'leaflet' => 'po:leaflet:plant_anatomy',
+    'leaf_rachis' => 'po:leaf rachis:plant_anatomy',
+    'branch' => 'po:branch:plant_anatomy',
+    'secondary_xylem' => 'po:secondary xylem:plant_anatomy',
 
     // PECO terms.
     'co2_control' => 'peco:carbon dioxide exposure',

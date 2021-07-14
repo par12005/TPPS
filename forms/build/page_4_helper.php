@@ -64,7 +64,23 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
   $struct_options = array();
   $struct_options[tpps_load_cvterm('whole plant')->cvterm_id] = 'Whole Plant';
-  // TODO: Populate structure options
+  $terms = array(
+    'whole plant' => 'Whole Plant',
+    'nut_fruit' => 'Nut Fruit',
+    'bud' => 'Bud',
+    'flower_fascicle' => 'Flower Fascicle',
+    'flower' => 'Flower',
+    'endocarp' => 'Endocarp',
+    'leaf' => 'Leaf',
+    'leaflet' => 'Leaflet',
+    'leaf_rachis' => 'Leaf Rachis',
+    'branch' => 'Branch',
+    'secondary_xylem' => 'Secondary Xylem (Wood)',
+  );
+  foreach ($terms as $term => $label) {
+    $struct_id = tpps_load_cvterm($term)->cvterm_id;
+    $struct_options[$struct_id] = $label;
+  }
   $struct_options['other'] = 'My structure term is not in this list';
 
   $field = array(
