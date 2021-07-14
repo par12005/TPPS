@@ -644,6 +644,9 @@ function tpps_table_display(array &$state, array $options = array()) {
         $link = preg_match('/https?:\/\//', $val_str) ? $val_str : "https://doi.org/$val_str";
         $val_str = "<a href=\"$link\" target=\"blank\">$val_str</a>";
       }
+      elseif (!empty($options['skip_phenotypes']) and preg_match('/Phenotype/', $key)) {
+        continue;
+      }
 
       $rows[] = array($key_str, $val_str);
     }

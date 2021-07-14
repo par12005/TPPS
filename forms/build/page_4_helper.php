@@ -62,6 +62,37 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     return $fields;
   }
 
+  $attr_options = array();
+  $terms = array(
+    'composition' => 'Composition',
+    // TODO: populate other attribute options.
+  );
+  foreach ($terms as $term => $label) {
+    $attr_id = tpps_load_cvterm($term)->cvterm_id;
+    $attr_options[$attr_id] = $label;
+  }
+  $attr_options['other'] = 'My attribute term is not in this list';
+
+  $struct_options = array();
+  $terms = array(
+    'whole plant' => 'Whole Plant',
+    'nut_fruit' => 'Nut Fruit',
+    'bud' => 'Bud',
+    'flower_fascicle' => 'Flower Fascicle',
+    'flower' => 'Flower',
+    'endocarp' => 'Endocarp',
+    'leaf' => 'Leaf',
+    'leaflet' => 'Leaflet',
+    'leaf_rachis' => 'Leaf Rachis',
+    'branch' => 'Branch',
+    'secondary_xylem' => 'Secondary Xylem (Wood)',
+  );
+  foreach ($terms as $term => $label) {
+    $struct_id = tpps_load_cvterm($term)->cvterm_id;
+    $struct_options[$struct_id] = $label;
+  }
+  $struct_options['other'] = 'My structure term is not in this list';
+
   $field = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
@@ -78,8 +109,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your <a href="@url">Phenotype file</a> below.', array('@url' => url('/tpps', array('fragment' => "edit-$id-phenotype-file-ajax-wrapper")))),
     ),
     'attribute' => array(
-      '#type' => 'textfield',
+      '#type' => 'select',
       '#title' => 'Phenotype !num Attribute: *',
+      '#options' => $attr_options,
+    ),
+    'attr-other' => array(
+      '#type' => 'textfield',
+      '#title' => 'Phenotype !num Custom Attribute: *',
       '#autocomplete_path' => 'tpps/autocomplete/attribute',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -87,6 +123,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]' => array('value' => 'other'),
+        ),
+      ),
     ),
     'description' => array(
       '#type' => 'textfield',
@@ -104,13 +145,15 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       ),
       '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
     ),
-    'struct-check' => array(
-      '#type' => 'checkbox',
-      '#title' => 'Phenotype !num has a structure descriptor',
-    ),
     'structure' => array(
-      '#type' => 'textfield',
+      '#type' => 'select',
       '#title' => 'Phenotype !num Structure: *',
+      '#options' => $struct_options,
+      #'#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
+    ),
+    'struct-other' => array(
+      '#type' => 'textfield',
+      '#title' => 'Phenotype !num Custom Structure: *',
       '#autocomplete_path' => 'tpps/autocomplete/structure',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -120,7 +163,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
       '#states' => array(
         'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][struct-check]"]' => array('checked' => TRUE),
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]' => array('value' => 'other'),
         ),
       ),
     ),
@@ -162,19 +205,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ),
       ),
     ),
-    'time-check' => array(
-      '#type' => 'checkbox',
-      '#title' => 'Phenotype !num has a time point/range',
-    ),
-    'time' => array(
-      '#type' => 'textfield',
-      '#title' => 'Phenotype !num Time: *',
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][time-check]"]' => array('checked' => TRUE),
-        ),
-      ),
-    ),
     'env-check' => array(
       '#type' => 'checkbox',
       '#title' => 'Phenotype !num is an environmental phenotype',
@@ -204,28 +234,27 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('name', '#title'),
       array('name', '#prefix'),
       array('attribute', '#title'),
+      array('attr-other', '#title'),
       array('description', '#title'),
       array('description', '#description'),
       array('units', '#title'),
-      array('struct-check', '#title'),
       array('structure', '#title'),
+      array('struct-other', '#title'),
       array('val-check', '#title'),
       array('bin-check', '#title'),
       array('min', '#title'),
       array('max', '#title'),
-      array('time-check', '#title'),
-      array('time', '#title'),
       array('env-check', '#title'),
     ),
     'substitute_keys' => array(
-      array('structure', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][struct-check]"]'),
+      array('attr-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'),
+      array('struct-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]'),
       array('val-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
       array('bin-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
       array('min', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
       array('min', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
       array('max', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
       array('max', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
-      array('time', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][time-check]"]'),
     ),
   ));
 
@@ -242,7 +271,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
   $form[$id]['phenotype']['metadata'] = array(
     '#type' => 'managed_file',
-    '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, description, and units of each of your phenotypes: *'),
+    '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
     '#upload_location' => "$phenotype_upload_location",
     '#upload_validators' => array(
       'file_validate_extensions' => array('csv tsv xlsx'),
@@ -280,6 +309,90 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   );
 
   $form[$id]['phenotype']['metadata']['no-header'] = array();
+
+  // Get names of manual phenotypes.
+  $meta = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta'));
+  $number = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta', 'number'));
+  $phenotype_names = array();
+  for ($i = 1; $i <= $number; $i++) {
+    if (!empty($meta[$i]['name'])) {
+      $phenotype_names[] = is_array($meta[$i]['name']) ? $meta[$i]['name']['#value'] : $meta[$i]['name'];
+    }
+  }
+
+  // Get names of phenotypes in metadata file.
+  $columns = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'metadata', 'columns'), array(), 'metadata');
+  $meta_fid = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'metadata'));
+  $name_col = NULL;
+  foreach ($columns as $key => $info) {
+    if (preg_match('/^[A-Z]+$/', $key)) {
+      $val = !empty($info['#value']) ? $info['#value'] : $info;
+      if (!empty($val) and $column_options[$val] == 'Phenotype Name/Identifier') {
+        $name_col = $key;
+        break;
+      }
+    }
+  }
+
+  // Merge names.
+  if (!empty($name_col) and !is_array($meta_fid) and !empty(file_load($meta_fid))) {
+    $names = tpps_parse_file_column($meta_fid, $name_col);
+    $phenotype_names = array_merge($phenotype_names, $names);
+  }
+
+  // If name ends in 4 digits (year), then time-check default = TRUE.
+  $time_default = NULL;
+  foreach ($phenotype_names as $name) {
+    if (preg_match('/[0-9]{4}$/', $name)) {
+      $time_default = TRUE;
+    }
+  }
+
+  $form[$id]['phenotype']['time'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Time options'),
+  );
+
+  $form[$id]['phenotype']['time']['time-check'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Some of my phenotypes are time-based'),
+    '#default_value' => $time_default,
+    '#ajax' => array(
+      'callback' => 'tpps_update_phenotype',
+      'wrapper' => "phenotype-main-$id",
+    ),
+  );
+
+  $time_check = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'time', 'time-check'), $time_default);
+  if ($time_check) {
+    $time_options = array();
+    foreach ($phenotype_names as $name) {
+      $time_options[strtolower($name)] = $name;
+    }
+    $form[$id]['phenotype']['time']['time_phenotypes'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Time-based Phenotypes: *'),
+      '#options' => $time_options,
+      '#description' => t('Please select the phenotypes which are time-based'),
+    );
+
+    $form[$id]['phenotype']['time']['time_values'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Phenotype Time values:'),
+    );
+
+    foreach ($time_options as $key => $name) {
+      $form[$id]['phenotype']['time']['time_values'][$key] = array(
+        '#type' => 'textfield',
+        '#title' => t('(Optional) @name time:', array('@name' => $name)),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="' . $id . '[phenotype][time][time_phenotypes][' . $key . ']"]' => array('checked' => TRUE),
+          ),
+        ),
+      );
+    }
+  }
 
   return $form[$id]['phenotype'];
 }

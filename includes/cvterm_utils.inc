@@ -201,9 +201,10 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     $info = ":$term";
   }
 
-  preg_match('/^([^:]*):(.*)$/', $info, $matches);
+  preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
   $ontology = $matches[1];
   $name = $matches[2];
+  $alt_ontology = $matches[3] ?? NULL;
   $identifiers = array(
     'name' => $term,
     'is_obsolete' => 0,
@@ -219,6 +220,12 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     }
   }
   $result = chado_get_cvterm($identifiers, $options);
+
+  if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
+    $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
+    $result = chado_get_cvterm($identifiers, $options);
+  }
+
   if (empty($result)) {
     if (!empty($options['job'])) {
       $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
@@ -226,13 +233,15 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     else {
       $trace = debug_backtrace()[1];
       $job = NULL;
-      foreach ($trace['args'] as $key => $arg) {
-        if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
-          $job = &$trace['args'][$key];
+      if (!empty($trace['args']) and gettype($trace['args']) == 'array') {
+        foreach ($trace['args'] as $key => $arg) {
+          if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
+            $job = &$trace['args'][$key];
+          }
         }
-      }
-      if (!empty($job)) {
-        $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+        if (!empty($job)) {
+          $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+        }
       }
     }
   }
@@ -305,9 +314,20 @@ function tpps_get_cvterms_v1_2() {
     'intensity' => 'pato:intensity',
     'description' => 'pato:description',
     'humidity_level' => 'pato:humidity',
+    'composition' => 'pato:composition',
 
     // PO terms.
     'whole plant' => 'po:whole plant',
+    'nut_fruit' => 'po:nut fruit:plant_anatomy',
+    'bud' => 'po:bud:plant_anatomy',
+    'flower_fascicle' => 'po:flower fascicle:plant_anatomy',
+    'flower' => 'po:flower:plant_anatomy',
+    'endocarp' => 'po:endocarp:plant_anatomy',
+    'leaf' => 'po:leaf:plant_anatomy',
+    'leaflet' => 'po:leaflet:plant_anatomy',
+    'leaf_rachis' => 'po:leaf rachis:plant_anatomy',
+    'branch' => 'po:branch:plant_anatomy',
+    'secondary_xylem' => 'po:secondary xylem:plant_anatomy',
 
     // PECO terms.
     'co2_control' => 'peco:carbon dioxide exposure',
@@ -539,6 +559,9 @@ function tpps_ols_install_term($info) {
   ));
   if (!$cvt) {
     $response = tpps_ols_search($term, $ontology)->response;
+    if ($response->numFound == 0) {
+      return FALSE;
+    }
     if ($response->numFound != 1) {
       throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
       return FALSE;
@@ -722,6 +745,9 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
       }
 
       $new_cvt = tpps_ols_install_term($new_info);
+      if ($new_cvt === FALSE) {
+        throw new \Exception("No OLS terms found for term $new_info");
+      }
       unset($new_terms[$key]);
       tpps_match_cvterms($old_cvt, $new_cvt);
     }
