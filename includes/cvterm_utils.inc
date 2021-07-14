@@ -314,6 +314,7 @@ function tpps_get_cvterms_v1_2() {
     'intensity' => 'pato:intensity',
     'description' => 'pato:description',
     'humidity_level' => 'pato:humidity',
+    'composition' => 'pato:composition',
 
     // PO terms.
     'whole plant' => 'po:whole plant',
