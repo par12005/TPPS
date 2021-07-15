@@ -108,6 +108,39 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   }
   $attr_options['other'] = 'My attribute term is not in this list';
 
+  $unit_options = array();
+  $terms = array(
+    'centimeter' => 'Centimeter',
+    'cubic_centimeter' => 'Cubic Centimeter',
+    'day' => 'Day',
+    'degrees_celsius' => 'Degrees Celsius',
+    'degrees_fahrenheit' => 'Degrees Fahrenheit',
+    'grams_per_square_meter' => 'Grams per Square Meter',
+    'gram' => 'Gram',
+    'luminous_intensity_unit' => 'Luminous Intensity Unit',
+    'kilogram' => 'Kilogram',
+    'kilogram_per_cubic_meter' => 'Kilogram per Cubic Meter',
+    'liter' => 'Liter',
+    'cubic_meter' => 'Cubic Meter',
+    'pascal' => 'Pascal',
+    'meter' => 'Meter',
+    'milligram' => 'Milligram',
+    'milliliter' => 'Milliliter',
+    'millimeter' => 'Millimeter',
+    'micrometer' => 'Micrometer',
+    'percent' => 'Percent',
+    'qualitative' => 'Qualitative',
+    'square_micrometer' => 'Square Micrometer',
+    'square_millimeter' => 'Square Millimeter',
+    'watt_per_square_meter' => 'Watt per Square Meter',
+    'year' => 'Year',
+  );
+  foreach ($terms as $term => $label) {
+    $unit_id = tpps_load_cvterm($term)->cvterm_id;
+    $unit_options[$unit_id] = $label;
+  }
+  $unit_options['other'] = 'My unit is not in this list';
+
   $struct_options = array();
   $terms = array(
     'whole plant' => 'Whole Plant',
@@ -188,8 +221,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => 'Please provide a short description of Phenotype !num',
     ),
     'units' => array(
-      '#type' => 'textfield',
+      '#type' => 'select',
       '#title' => 'Phenotype !num Units: *',
+      '#options' => $unit_options,
+    ),
+    'unit-other' => array(
+      '#type' => 'textfield',
+      '#title' => 'Phenotype !num Custom Units: *',
       '#autocomplete_path' => 'tpps/autocomplete/units',
       '#attributes' => array(
         'data-toggle' => array('tooltip'),
@@ -197,6 +235,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
       ),
       '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => 'other'),
+        ),
+      ),
     ),
     'structure' => array(
       '#type' => 'select',
@@ -291,6 +334,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('description', '#title'),
       array('description', '#description'),
       array('units', '#title'),
+      array('unit-other', '#title'),
       array('structure', '#title'),
       array('struct-other', '#title'),
       array('val-check', '#title'),
@@ -301,6 +345,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     ),
     'substitute_keys' => array(
       array('attr-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'),
+      array('unit-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
       array('struct-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]'),
       array('val-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
       array('bin-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),

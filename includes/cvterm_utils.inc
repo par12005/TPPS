@@ -336,6 +336,7 @@ function tpps_get_cvterms_v1_2() {
     'position' => 'pato:position',
     'pressure' => 'pato:pressure',
     'proportionality_to' => 'pato:proportionality to',
+    'qualitative' => 'pato:qualitative',
     'rate' => 'pato:rate',
     'rough' => 'pato:rough',
     'shape' => 'pato:shape',
@@ -421,6 +422,30 @@ function tpps_get_cvterms_v1_2() {
 
     // UO terms.
     'unit' => 'uo:unit',
+    'centimeter' => 'uo:centimeter',
+    'cubic_centimeter' => 'uo:cubic centimeter',
+    'day' => 'uo:day',
+    'degrees_celsius' => 'uo:degree Celsius',
+    'degrees_fahrenheit' => 'uo:degree Fahrenheit',
+    'grams_per_square_meter' => 'uo:gram per square meter',
+    'gram' => 'uo:gram',
+    'luminous_intensity_unit' => 'uo:luminous intensity unit',
+    'kilogram' => 'uo:kilogram',
+    'kilogram_per_cubic_meter' => 'uo:kilogram per cubic meter',
+    'liter' => 'uo:liter',
+    'cubic_meter' => 'uo:cubic meter',
+    'pascal' => 'uo:pascal',
+    'meter' => 'uo:meter',
+    'milligram' => 'uo:milligram',
+    'milliliter' => 'uo:milliliter',
+    'millimeter' => 'uo:millimeter',
+    'micrometer' => 'uo:micrometer',
+    'percent' => 'uo:percent',
+    #'ratio' => 'uo:ratio',
+    'square_micrometer' => 'uo:square micrometer',
+    'square_millimeter' => 'uo:square millimeter',
+    'watt_per_square_meter' => 'uo:watt per square meter',
+    'year' => 'uo:year',
 
     // SBO terms.
     'phenotype' => 'sbo:phenotype',
@@ -597,6 +622,7 @@ function tpps_ols_install_term($info) {
     return 'local';
   }
   $term = $parts[1];
+  $alt_ontology = $parts[2] ?? NULL;
 
   $cv = tpps_load_cv($ontology);
   if (!$cv) {
@@ -607,14 +633,32 @@ function tpps_ols_install_term($info) {
     'name' => $term,
     'cv_id' => $cv->cv_id,
   ));
+
+  if (!$cvt and !empty($alt_ontology)) {
+    $cv = tpps_load_cv($alt_ontology);
+    if ($cv) {
+      $cvt = chado_get_cvterm(array(
+        'name' => $term,
+        'cv_id' => $cv->cv_id,
+      ));
+    }
+  }
+
   if (!$cvt) {
     $response = tpps_ols_search($term, $ontology)->response;
     if ($response->numFound == 0) {
       return FALSE;
     }
     if ($response->numFound != 1) {
-      throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
-      return FALSE;
+      $docs = array();
+      foreach ($response->docs as $doc) {
+        $docs[$doc->iri] = $doc;
+      }
+      if (count($docs) != 1) {
+        throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
+        return FALSE;
+      }
+      $response->docs[0] = current($docs);
     }
     $cvt = tpps_ols_add_cvterm($response->docs[0]);
   }

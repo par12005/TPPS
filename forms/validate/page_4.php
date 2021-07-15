@@ -173,6 +173,9 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       if ($units == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][units", "Phenotype $i Units: field is required.");
       }
+      elseif ($units == 'other' and $current_phenotype['unit-other'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][unit-other", "Phenotype $i Custom Unit: field is required.");
+      }
 
       if ($current_phenotype['structure'] == 'other' and $current_phenotype['struct-other'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][struct-other", "Phenotype $i Custom Structure: field is required.");
