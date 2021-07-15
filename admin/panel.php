@@ -119,6 +119,9 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
         if ($phenotype['phenotypes-meta'][$j]['attribute'] === 'other') {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['attr-other'];
         }
+        if ($phenotype['phenotypes-meta'][$j]['units'] === 'other') {
+          $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['unit-other'];
+        }
       }
     }
     // TODO: get new/custom cvterms from metadata file.
@@ -356,8 +359,43 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
 
   $attr_options = array();
   $terms = array(
+    'age' => 'Age',
+    'alive' => 'Alive',
+    'amount' => 'Amount',
+    'angle' => 'Angle',
+    'area' => 'Area',
+    'bent' => 'Bent',
+    'circumference' => 'Circumerence',
+    'color' => 'Color',
     'composition' => 'Composition',
-    // TODO: populate other attribute options.
+    'concentration_of' => 'Concentration of',
+    'damage' => 'Damage',
+    'description' => 'Description',
+    'diameter' => 'Diameter',
+    'distance' => 'Distance',
+    'growth_quality_of_occurrent' => 'Growth Quality of Occurrent',
+    'growth_rate' => 'Growth Rate',
+    'has_number_of' => 'Has number of',
+    'height' => 'Height',
+    'humidity_level' => 'Humidity Level',
+    'intensity' => 'Intensity',
+    'length' => 'Length',
+    'lesioned' => 'Lesioned',
+    'maturity' => 'Maturity',
+    'position' => 'Position',
+    'pressure' => 'Pressure',
+    'proportionality_to' => 'Proportionality to',
+    'rate' => 'Rate',
+    'rough' => 'Rough',
+    'shape' => 'Shape',
+    'size' => 'Size',
+    'temperature' => 'Temperature',
+    'texture' => 'Texture',
+    'thickness' => 'Thickness',
+    'time' => 'Time',
+    'volume' => 'Volume',
+    'weight' => 'Weight',
+    'width' => 'Width',
   );
   foreach ($terms as $term => $label) {
     $attr_id = tpps_load_cvterm($term)->cvterm_id;
@@ -365,19 +403,70 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
   }
   $attr_options['other'] = 'My attribute term is not in this list';
 
+  $unit_options = array();
+  $terms = array(
+    'centimeter' => 'Centimeter',
+    'cubic_centimeter' => 'Cubic Centimeter',
+    'day' => 'Day',
+    'degrees_celsius' => 'Degrees Celsius',
+    'degrees_fahrenheit' => 'Dgrees Fahrenheit',
+    'grams_per_square_meter' => 'Grams per Square Meter',
+    'gram' => 'Gram',
+    'luminous_intensity_unit' => 'Luminous Intensity Unit',
+    'kilogram' => 'Kilogram',
+    'kilogram_per_cubic_meter' => 'Kilogram per Cubic Meter',
+    'liter' => 'Liter',
+    'cubic_meter' => 'Cubic Meter',
+    'pascal' => 'Pascal',
+    'meter' => 'Meter',
+    'milligram' => 'Milligram',
+    'milliliter' => 'Milliliter',
+    'millimeter' => 'Millimeter',
+    'micrometer' => 'Micrometer',
+    'percent' => 'Percent',
+    'qualitative' => 'Qualitative',
+    'square_micrometer' => 'Square Micrometer',
+    'square_millimeter' => 'Square Millimeter',
+    'watt_per_square_meter' => 'Watt per Square Meter',
+    'year' => 'Year',
+  );
+  foreach ($terms as $term => $label) {
+    $unit_id = tpps_load_cvterm($term)->cvterm_id;
+    $unit_options[$unit_id] = $label;
+  }
+  $unit_options['other'] = 'My unit is not in this list';
+
   $struct_options = array();
   $terms = array(
     'whole plant' => 'Whole Plant',
-    'nut_fruit' => 'Nut Fruit',
-    'bud' => 'Bud',
-    'flower_fascicle' => 'Flower Fascicle',
-    'flower' => 'Flower',
-    'endocarp' => 'Endocarp',
-    'leaf' => 'Leaf',
-    'leaflet' => 'Leaflet',
-    'leaf_rachis' => 'Leaf Rachis',
+    'bark' => 'Bark',
     'branch' => 'Branch',
+    'bud' => 'Bud',
+    'catkin_inflorescence' => 'Catkin Inflorescence',
+    'endocarp' => 'Endocarp',
+    'floral_organ' => 'Floral Organ',
+    'flower' => 'Flower',
+    'flower_bud' => 'Flower Bud',
+    'flower_fascicle' => 'Flower Fascicle',
+    'fruit' => 'Fruit',
+    'leaf' => 'Leaf',
+    'leaf_rachis' => 'Leaf Rachis',
+    'leaflet' => 'Leaflet',
+    'nut_fruit' => 'Nut Fruit (Acorn)',
+    'petal' => 'Petal',
+    'petiole' => 'Petiole',
+    'phloem' => 'Phloem',
+    'plant_callus' => 'Plant Callus (Callus)',
+    'primary_thickening_meristem' => 'Primary Thickening Meristem',
+    'root' => 'Root',
     'secondary_xylem' => 'Secondary Xylem (Wood)',
+    'seed' => 'Seed',
+    'shoot_system' => 'Shoot System (Crown)',
+    'stem' => 'Stem (Trunk, Primary Stem)',
+    'stomatal_complex' => 'Stomatal Complex (Stomata)',
+    'strobilus' => 'Strobilus',
+    'terminal_bud' => 'Terminal Bud',
+    'vascular_leaf' => 'Vascular Leaf (Needle)',
   );
   foreach ($terms as $term => $label) {
     $struct_id = tpps_load_cvterm($term)->cvterm_id;
@@ -437,9 +526,21 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#default_value' => $info['struct-other'],
       ),
       'units' => array(
-        '#type' => 'textfield',
-        '#title' => t('Units'),
+        '#type' => 'select',
+        '#title' => t('Unit'),
+        '#options' => $unit_options,
         '#default_value' => $info['units'],
+      ),
+      'unit-other' => array(
+        '#type' => 'textfield',
+        '#title' => t('Other Unit'),
+        '#autocomplete_path' => 'tpps/autocomplete/unit',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="phenotypes_edit[' . $num . '][units]"]' => array('value' => 'other'),
+          ),
+        ),
+        '#default_value' => $info['unit-other'],
       ),
     );
   }
