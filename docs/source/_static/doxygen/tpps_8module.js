@@ -1,12 +1,16 @@
 var tpps_8module =
 [
     [ "tpps_access", "tpps_8module.html#ab6d360adf17e04ae1e28c082a3f84cc4", null ],
+    [ "tpps_block_info", "tpps_8module.html#a549c8d35ac822980662805bf3962d580", null ],
+    [ "tpps_block_view_alter", "tpps_8module.html#a91ad8d6cb558b0f68177ed99596e42b9", null ],
     [ "tpps_cronapi", "tpps_8module.html#af9633f4d9f11c01e232769eacde8054d", null ],
     [ "tpps_element_info_alter", "tpps_8module.html#ae4c44813280bbbcd31fca001ba77e43b", null ],
     [ "tpps_form_alter", "tpps_8module.html#ae1ec33c4bb4de29dbead18a87bfca6df", null ],
     [ "tpps_leaves", "tpps_8module.html#aad6fac6529d2cbb4d6b458b7ee7e9ee7", null ],
     [ "tpps_mail", "tpps_8module.html#a14c1a2655d706e415f64a3e6dc28bf00", null ],
     [ "tpps_main", "tpps_8module.html#ac5fc3072ea4b7ae0f41539bd51d87d9d", null ],
+    [ "tpps_main_submit", "tpps_8module.html#a3a630695e41525f1e4bd06725279f7be", null ],
+    [ "tpps_main_validate", "tpps_8module.html#a843c12c1ff04c84d62f460b1e455e062", null ],
     [ "tpps_managed_file_process", "tpps_8module.html#a16a9f82fb8fcf6ebba3210f3289c8e28", null ],
     [ "tpps_menu", "tpps_8module.html#a31c623e85cf03e9e96ba9ea93183a61b", null ],
     [ "tpps_page_build", "tpps_8module.html#a802e733581190075e3077a22e4b3b377", null ],
