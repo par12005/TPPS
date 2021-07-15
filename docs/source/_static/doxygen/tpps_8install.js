@@ -25,5 +25,8 @@ var tpps_8install =
     [ "tpps_update_7107", "tpps_8install.html#a1843fe715befbaf5ddaebd9e6c33e8b1", null ],
     [ "tpps_update_7108", "tpps_8install.html#a74020425a21c322635654c75b04367d6", null ],
     [ "tpps_update_7109", "tpps_8install.html#a6fc5c2aed445554dc26a7da7ff6fb3dd", null ],
-    [ "tpps_update_7110", "tpps_8install.html#aa9553402434045f7912c3516b5d4b19e", null ]
+    [ "tpps_update_7110", "tpps_8install.html#aa9553402434045f7912c3516b5d4b19e", null ],
+    [ "tpps_update_7111", "tpps_8install.html#a70b049bffa9bc2b964d20a1398cab948", null ],
+    [ "tpps_update_7112", "tpps_8install.html#a7e160d56c769231786ceb2413f15673f", null ],
+    [ "tpps_update_7113", "tpps_8install.html#ae73f11256a28564ed95706f1fa9da3d6", null ]
 ];
