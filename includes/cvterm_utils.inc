@@ -597,6 +597,7 @@ function tpps_ols_install_term($info) {
     return 'local';
   }
   $term = $parts[1];
+  $alt_ontology = $parts[2];
 
   $cv = tpps_load_cv($ontology);
   if (!$cv) {
@@ -607,6 +608,17 @@ function tpps_ols_install_term($info) {
     'name' => $term,
     'cv_id' => $cv->cv_id,
   ));
+
+  if (!$cvt) {
+    $cv = tpps_load_cv($alt_ontology);
+    if ($cv) {
+      $cvt = chado_get_cvterm(array(
+        'name' => $term,
+        'cv_id' => $cv->cv_id,
+      ));
+    }
+  }
+
   if (!$cvt) {
     $response = tpps_ols_search($term, $ontology)->response;
     if ($response->numFound == 0) {
