@@ -985,6 +985,9 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
       }
       $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
       $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
+      if ($phenotype['phenotypes-meta'][$j]['units'] == 'other') {
+        $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
+      }
       $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
       if ($phenotype['phenotypes-meta'][$j]['structure'] == 'other') {
         $phenotypes_meta[$name]['struct-other'] = $phenotype['phenotypes-meta'][$j]['struct-other'];
@@ -1772,6 +1775,47 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       }
     }
 
+    if ($data['unit'] != 'other') {
+      $meta[$name]['unit_id'] = $data['unit'];
+    }
+    else {
+      if (!empty($cvt_cache[$data['unit-other']])) {
+        $meta[$name]['unit_id'] = $cvt_cache[$data['unit-other']];
+      }
+      else {
+        $result = tpps_ols_install_term("po:{$data['unit-other']}");
+        if ($result !== FALSE) {
+          $meta[$name]['unit_id'] = $result->cvterm_id;
+          $job->logMessage("[INFO] New OLS Term po:{$data['unit-other']} installed");
+        }
+
+        if (empty($meta[$name]['unit_id'])) {
+          $obs = chado_select_record('cvterm', array('cvterm_id'), array(
+            'name' => array(
+              'data' => $data['unit-other'],
+              'op' => 'LIKE',
+            ),
+          ), array(
+            'limit' => 1,
+          ));
+          $meta[$name]['unit_id'] = current($obs)->cvterm_id ?? NULL;
+        }
+
+        if (empty($meta[$name]['unit_id'])) {
+          $meta[$name]['unit_id'] = chado_insert_cvterm(array(
+            'id' => "{$local_db->name}:{$data['unit-other']}",
+            'name' => $data['unit-other'],
+            'definition' => '',
+            'cv_name' => $local_cv->name,
+          ))->cvterm_id;
+          if (!empty($meta[$name]['unit_id'])) {
+            $job->logMessage("[INFO] New Local Unit Term {$data['unit-other']} installed");
+          }
+        }
+        $cvt_cache[$data['unit-other']] = $meta[$name]['unit_id'];
+      }
+    }
+
     if ($data['struct'] != 'other') {
       $meta[$name]['struct_id'] = $data['struct'];
     }
@@ -1937,7 +1981,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
 
     $records['phenotypeprop']["$phenotype_name-unit"] = array(
       'type_id' => $cvterms['unit'],
-      'value' => $iso ? $meta['unit'] : $meta[strtolower($name)]['unit'],
+      'value' => $iso ? $meta['unit'] : $meta[strtolower($name)]['unit_id'],
       '#fk' => array(
         'phenotype' => $phenotype_name,
       ),
