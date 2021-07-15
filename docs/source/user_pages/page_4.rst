@@ -7,20 +7,21 @@ The fourth set of fields in TPPS is the Genotype, Phenotype, and Environment sec
 Phenotype
 =========
 
-Phenotype fields are only visible when 'Genotype x Phenotype', 'Genotype x Phenotype x Environment', or 'Phenotype x Environment' was selected from 'Data type' in `Study Design`_.
-
 * Phenotype Metadata: select one or both of the following methods to provide phenotype metadata:
 
    * Textfields: click the 'Add Phenotype' or 'Remove Phenotype' buttons to add or remove phenotypes, respecitively. The following fields are required once per phenotype:
 
       * Phenotype Name: text field - The name of the phenotype.
-      * Phenotype Attribute: text field - The attribute that the phenotype is describing. For example, "amount", "width", "mass", "age", "density", "color", "time" would be phenotype attributes.
+      * Phenotype Attribute: drop-down menu - The attribute that the phenotype is describing.
+      * Phenotype Custom Attribute: textfield - Custom attribute that was not in the default list.
       * Phenotype Description: text field - A brief description of the phenotype.
       * Phenotype Units: text field - The units of the phenotype. For example, "meters", "cm", "inches", "°C", "Degrees Fahrenheit" would be phenotype units.
-      * Phenotype Structure: text field - The structure that the phenotype is describing. If your phenotype has a structure, you can click 'Phenotype has a structure descriptor' and provide a structure. Structure can refer to a tissue type or to a biological process.
+      * Phenotype Structure: text field - The structure that the phenotype is describing. Structure can refer to a tissue type or to a biological process. Default is 'Whole plant'.
+      * Phenotype Custom Structure: textfield - Custom structure that was not in the default list.
       * Phenotype Value Range: text fields - A maximum and minimum value for the phenotype. If your phenotype is binary or has a range, you can click 'Phenotype has a value range' and provide a value range.
+      * Phenotype is an environmental phenotype: checkbox - Check this box to indicate which phenotypes are environmental.
 
-   * File: Click the 'I would like to upload a phenotype metadata file' checkbox to upload a phenotype file. You will be shown a table with several drop-down menus, along with the names of your column headers, and the first few rows of data in your file. You will then be asked to select what type of data each of your columns holds: 'Name/Identifier', 'Attribute', 'Description', 'Units', 'Structure', 'Minimum Value', 'Maximum Value', or 'N/A'. Columns marked 'N/A' will still be kept in the flat file, but will not be recorded in the database with the other data from the file. Columns that hold 'Name/Identifier', 'Attribute', 'Description', and 'Units' must be defined before continuing.
+   * File: Click the 'I would like to upload a phenotype metadata file' checkbox to upload a phenotype file. You will be shown a table with several drop-down menus, along with the names of your column headers, and the first few rows of data in your file. You will then be asked to select what type of data each of your columns holds: 'Name/Identifier', 'Attribute', 'Description', 'Units', 'Structure', 'Minimum Value', 'Maximum Value', or 'N/A'. Columns marked 'N/A' will still be kept in the flat file, but will not be recorded in the database with the other data from the file. Columns that hold 'Name/Identifier', 'Attribute', 'Description', 'Units', and 'Structure' must be defined before continuing.
 
 * Phenotype Data: file upload - The phenotype data. This file should contain the 'Plant Id' of the plant that the phenotype is describing, the 'Name/Identifier' of the phenotype, and the 'Value' that was actually measured for this phenotype.
 
@@ -39,9 +40,7 @@ A screenshot of the phenotype data file field can be seen below:
 Genotype
 ========
 
-Genotype fields are only visible when 'Genotype', 'Genotype x Phenotype', 'Genotype x Environment', or 'Genotype x Phenotype x Environment' was selected from 'Data Type' in `Study Design`_.
-
-* Genotype Marker Type: checkboxes - The types of genotype markers: 'SNPs', 'SSRs/cpSSRs', 'Other'. Select all that apply.
+* Genotype Marker Type: checkboxes - The types of genotype markers: 'SNPs', 'SSRs/cpSSRs', 'Indels', 'Other'. Select all that apply.
 * SNPs Information fields are only visible and required when 'SNPs' was selected from 'Genotype Marker Type'.
 
    * Experimental Design: drop-down menu - The experimental design: 'GBS', 'Targeted Capture', 'Whole Genome Resequencing', 'RNA-Seq', 'Genotyping Array'
@@ -68,10 +67,27 @@ A screenshot of the genotype reference fields can be seen below:
 
 .. image:: ../../../images/TPPS_genotype_ref.png
 
-* Genotype File Types: checkboxes - 'Genotype Spreadsheet/Assay', 'Assay Design', 'VCF'. Select all that apply. 'Assay Design' is only visible when 'SNPs' was selected from the 'Genotype Marker Type' field.
-* Genotype Spreadsheet/Assay File: file upload - The genotype assay file. You will be required to specify which of your columns holds the Plant ID and genotype data in each row of your file. Only visible when 'Genotype Spreadsheet/Assay' was selected from the 'Genotype File Types' field.
-* Assay Design File: file upload - The assay design file. Only visible when 'Assay Design' was selected from the 'Genotype File Types' field.
-* VCF File: file upload - The VCF file. Only visible when 'VCF' was selected from the 'Genotype File Types' field.
+* Ploidy: drop-down menu - Only visible when 'SSRs/cpSSRs Genotype Spreadsheet' is selected from 'Genotype File Types'
+* Genotype File Types: checkboxes - 'SNPs Genotype Assay', 'Assay Design', 'SNPs Associations', 'SSRs/cpSSRs Genotype Spreadsheet', 'Indel Genotype Spreadsheet', 'Other Marker Genotype Spreadsheet', 'VCF'. Select all that apply. 'SNPs Genotype Assay', 'SSRs/cpSSRs Genotype Spreadsheet', 'Indel Genotype Spreadsheet', 'Other Marker Genotype Spreadsheet' are only available when 'SNPs', 'SSRs/cpSSRs', 'Indels', 'Other' are selected from the 'Genotype Marker Type' field, respectively. 'Assay Design' and 'SNPs Associations' are only available if 'SNPs Genotype Assay' is selected.
+* SNPs Genotype Assay File: file upload - The SNPs genotype assay file. The format of this file is very important! The first column should contain plant identifiers which match the plant identifiers provided in the accession file and all of the remaining columns should contain SNP data.
+* Assay Design File: file upload - design file for SNPs genotype assay.
+* SNPs Associations File: file upload - Spreadsheet containing SNPs Association data. You will be required to specify which of your columns holds the SNP ID, scaffold, position, allele, associated trait, and confidence value.
+
+    * Confidence Value Type: drop-down menu - The type of confidence value, such as P-value, Genomic Inflation Factor, etc.
+    * Association Analysis Tool: drop-down menu - Select analysis tool from list of options.
+    * SNPs Population Structure file: optional file upload.
+    * SNPs Kinship File: optional file upload.
+
+* SSRs/cpSSRs Spreadsheet: file upload - SSRs/cpSSRs genotype file. The format of this file is very important! The first column should contain plant identifiers and each remaining column will be SSR/cpSSR data. The exact format depends on the ploidy selected.
+
+    * Extra SSRs/cpSSRs Spreadsheet: checkbox - Check this box to add an additional SSRs/cpSSRs file.
+    * Additional SSRs/cpSSRs Type: textfield - Marker type of the additional SSRs/cpSSRs marker.
+    * Additional SSRs/cpSSRs Ploidy: Ploidy of the additional SSRs/cpSSRs marker.
+    * SSRs/cpSSRs Additional Spreadsheet: file upload - Additional SSRs/cpSSRs spreadsheet. Same format as the first SSRs/cpSSRs spreadsheet.
+
+* Indel Genotype Spreadsheet: file upload - Indel genotype spreadsheet. The format of this file is very important! The first column should contain plant identifiers and all remaining columns should contain indel data.
+* Other Marker Genotype Spreadsheet: file upload - Other marker genotype spreadsheet.
+* VCF File: file upload - The VCF file. Must be a .zip file.
 
 A screenshot of the genotype file fields can be seen below:
 
@@ -83,13 +99,5 @@ Environment
 * Use CartograPlant Layers: If CartograPlant Layers were enabled by your site administrator, you should have the option to use Environmental Layers provided by CartograPlant that you used in your study.
 * CartograPlant Environmental Layers: checkboxes - All available CartograPlant Environmental Layers. From here you can view the names and descriptions of each CartograPlant Environmental layer you have to choose from.
 * CartograPlant Environmental Layer Parameters: checkboxes - If you selected some CartograPlant Environmental Layers, you will need to indicate which variables from the layer you used in your study. Parameter fields will only be visible for layers that you selected.
-* Custom Environmental Data: Provide custom environmental data that you collected yourself:
-
-    * Environmental Data Name: text field - The name of the custom Environmental Data.
-    * Environmental Data Description: text field - A description of the custom Environmental Data.
-    * Environmental Data Units: text field - The units used to measure the custom Environmental Data.
-    * Environmental Data Value: text field - The value of the measured custom Environmental Data.
-
-.. _`Study Design`: page_2.html
-
+* Custom Environmental Layer: checkbox - Non-CartograPlant environmental layer. Specify the database URL, the name of the layer, and the parameters used.
 
