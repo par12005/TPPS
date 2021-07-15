@@ -613,8 +613,15 @@ function tpps_ols_install_term($info) {
       return FALSE;
     }
     if ($response->numFound != 1) {
-      throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
-      return FALSE;
+      $docs = array();
+      foreach ($response->docs as $doc) {
+        $docs[$doc->iri] = $doc;
+      }
+      if (count($docs) != 1) {
+        throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
+        return FALSE;
+      }
+      $response->docs[0] = current($docs);
     }
     $cvt = tpps_ols_add_cvterm($response->docs[0]);
   }
