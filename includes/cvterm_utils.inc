@@ -597,7 +597,7 @@ function tpps_ols_install_term($info) {
     return 'local';
   }
   $term = $parts[1];
-  $alt_ontology = $parts[2];
+  $alt_ontology = $parts[2] ?? NULL;
 
   $cv = tpps_load_cv($ontology);
   if (!$cv) {
@@ -609,7 +609,7 @@ function tpps_ols_install_term($info) {
     'cv_id' => $cv->cv_id,
   ));
 
-  if (!$cvt) {
+  if (!$cvt and !empty($alt_ontology)) {
     $cv = tpps_load_cv($alt_ontology);
     if ($cv) {
       $cvt = chado_get_cvterm(array(
