@@ -949,6 +949,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
     'phenotype' => array(),
     'phenotypeprop' => array(),
     'stock_phenotype' => array(),
+    'phenotype_cvterm' => array(),
   );
   $phenotype_count = 0;
 
@@ -1979,13 +1980,23 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       ),
     );
 
-    $records['phenotypeprop']["$phenotype_name-unit"] = array(
-      'type_id' => $cvterms['unit'],
-      'value' => $iso ? $meta['unit'] : $meta[strtolower($name)]['unit_id'],
-      '#fk' => array(
-        'phenotype' => $phenotype_name,
-      ),
-    );
+    if ($iso) {
+      $records['phenotypeprop']["$phenotype_name-unit"] = array(
+        'type_id' => $cvterms['unit'],
+        'value' => $meta['unit'],
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+    }
+    else {
+      $records['phenotype_cvterm']["$phenotype_name-unit"] = array(
+        'cvterm_id' => $meta[strtolower($name)]['unit_id'],
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+    }
 
     if (isset($meta[strtolower($name)]['min'])) {
       $records['phenotypeprop']["$phenotype_name-min"] = array(
