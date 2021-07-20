@@ -672,6 +672,45 @@ function tpps_xlsx_get_dimension($location) {
 }
 
 /**
+ * Retrieves rows from array of readers.
+ *
+ * This function recieves an array of XMLReader objects and an array of cached
+ * strings, and returns an array of rows produced by tpps_xlsx_get_row() from
+ * each reader.
+ *
+ * @param array $readers
+ *   The array of XMLReader objects.
+ * @param array $strings
+ *   The cached strings for the current XML file.
+ * @param bool $plain
+ *   Whether or not to attempt to return an array of cell values, or just TRUE.
+ * @param mixed $columns
+ *   An array of columns to return. If NULL, return all columns.
+ *
+ * @return mixed
+ *   If $plain is set to TRUE, an array of cell values. Otherwise TRUE.
+ */
+function tpps_xlsx_get_rows(&$readers, &$strings = array(), $plain = TRUE, $columns = NULL) {
+  $rows = array();
+  $empty = TRUE;
+  foreach ($readers as $key => $r) {
+    $reader = &$readers[$key];
+    $row = tpps_xlsx_get_row($reader, $strings, $plain, $columns);
+    if ($row) {
+      $rows[$key] = $row;
+      $empty = FALSE;
+    }
+    else {
+      $rows[$key] = NULL;
+    }
+  }
+  if ($empty) {
+    return FALSE;
+  }
+  return $rows;
+}
+
+/**
  * Retrieves a single "row" from an XML file.
  *
  * This function recieves an XMLReader object and a location for a strings XML
@@ -1036,51 +1075,78 @@ function tpps_xlsx_generator($location, array $options = array()) {
   $zip->extractTo($dir);
 
   $strings_location = $dir . '/xl/sharedStrings.xml';
-  $data_location = $dir . '/xl/worksheets/sheet1.xml';
 
-  // Get width of the data in the file.
-  $dimension = tpps_xlsx_get_dimension($data_location);
-  preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
-  $left_hex = unpack('H*', $matches[1]);
-  $hex = $left_hex[1];
-  $right_hex = unpack('H*', $matches[2]);
+  // Find all worksheets.
+  $sheets = scandir($dir . '/xl/worksheets');
+  unset($sheets[array_search('.', $sheets)]);
+  unset($sheets[array_search('..', $sheets)]);
 
   $strings = tpps_xlsx_get_strings($strings_location);
-  $reader = new XMLReader();
-  $reader->open($data_location);
 
-  if (!$no_header) {
-    tpps_xlsx_get_row($reader, $strings);
+  // Get dimensions, readers.
+  $first_left = NULL;
+  $last_right = NULL;
+  $dims = array();
+  $readers = array();
+  foreach ($sheets as $sheet) {
+    $loc = $dir . '/xl/worksheets/' . $sheet;
+    $dimension = tpps_xlsx_get_dimension($loc);
+    preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
+    $left_hex = unpack('H*', $matches[1]);
+    $hex = $left_hex[1];
+    $right_hex = unpack('H*', $matches[2]);
+    if ($first_left == NULL) {
+      $first_left = $left_hex[1];
+      $last_right = $left_hex[1] - 1;
+    }
+    while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
+      $hex = tpps_increment_hex($hex);
+      $last_right = tpps_increment_hex($last_right);
+    }
+    $dims[] = array($left_hex[1], $right_hex[1]);
+    $reader = new XMLReader();
+    $reader->open($loc);
+    $readers[] = $reader;
   }
 
+  // If the file has a header row, skip it.
+  if (!$no_header) {
+    tpps_xlsx_get_rows($readers, $strings);
+  }
+
+  // Iterate through file.
   $count = 0;
-  while (($row = tpps_xlsx_get_row($reader, $strings, TRUE, $columns))) {
+  while (($rows = tpps_xlsx_get_rows($readers, $strings, TRUE, $columns))) {
     if (!empty($max_rows) and $count >= $max_rows){
       break;
     }
     $count++;
 
     $values = array();
-
-    if (empty($columns)) {
-      ksort($row);
-      $hex = $left_hex[1];
-      while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
-        $key = pack('H*', $hex);
-        $values[$key] = isset($row[$key]) ? trim($row[$key]) : NULL;
-        $hex = tpps_increment_hex($hex);
+    $key_hex = $first_left;
+    foreach ($readers as $idx => $read) {
+      $row = $rows[$idx];
+      if (!empty($row)) {
+        ksort($row);
       }
-      yield $values;
-      continue;
-    }
-
-    foreach ($columns as $column) {
-      $values[$column] = isset($row[$column]) ? trim($row[$column]) : NULL;
+      $hex = $dims[$idx][0];
+      while (base_convert($hex, 16, 10) <= base_convert($dims[$idx][1], 16, 10)) {
+        $key = pack('H*', $key_hex);
+        $row_key = pack('H*', $hex);
+        if (empty($columns) or array_search($key, $columns) !== FALSE) {
+          $values[$key] = isset($row[$row_key]) ? trim($row[$row_key]) : NULL;
+        }
+        $hex = tpps_increment_hex($hex);
+        $key_hex = tpps_increment_hex($key_hex);
+      }
     }
     yield $values;
   }
 
-  $reader->close();
+  // Close readers.
+  foreach ($readers as $reader) {
+    $reader->close();
+  }
   tpps_rmdir($dir);
 }
 
