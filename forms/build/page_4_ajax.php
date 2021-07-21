@@ -47,6 +47,26 @@ function tpps_update_phenotype(array $form, array &$form_state) {
 }
 
 /**
+ * Ajax callback for phenotype meta fieldset.
+ *
+ * Indicates the element to be updated when changes are made in the manual
+ * phenotype metadata section.
+ *
+ * @param array $form
+ *   The form to be updated.
+ * @param array $form_state
+ *   The state of the form to be updated.
+ *
+ * @return array
+ *   The element in the form to be updated.
+ */
+function tpps_update_phenotype_meta(array $form, array &$form_state) {
+  $id = $form_state['triggering_element']['#parents'][0];
+  $phenotype_num = $form_state['triggering_element']['#parents'][3];
+  return $form[$id]['phenotype']['phenotypes-meta'][$phenotype_num];
+}
+
+/**
  * Ajax callback for phenotype file format.
  *
  * Indicates the element to be updated when the format option of the phenotype

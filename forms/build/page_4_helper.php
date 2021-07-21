@@ -62,7 +62,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     return $fields;
   }
 
-  $attr_options = array();
+  $attr_options = array(0 => '- Select -');
   $terms = array(
     'age' => 'Age',
     'alive' => 'Alive',
@@ -183,6 +183,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   $field = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
+    '#prefix' => "<div id=\"org_{$id}_phenotype_!num_meta\">",
+    '#suffix' => "</div>",
     'name' => array(
       '#type' => 'textfield',
       '#title' => 'Phenotype !num Name: *',
@@ -199,6 +201,10 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'select',
       '#title' => 'Phenotype !num Attribute: *',
       '#options' => $attr_options,
+      '#ajax' => array(
+        'callback' => 'tpps_update_phenotype_meta',
+        'wrapper' => "org_{$id}_phenotype_!num_meta",
+      ),
     ),
     'attr-other' => array(
       '#type' => 'textfield',
@@ -268,8 +274,16 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'checkbox',
       '#title' => 'Phenotype !num has a value range',
       '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => FALSE),
+        'invisible' => array(
+          array(
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
+            ),
+            'or',
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => TRUE),
+            ),
+          ),
         ),
       ),
     ),
@@ -277,8 +291,16 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'checkbox',
       '#title' => 'Phenotype !num is a binary phenotype',
       '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => FALSE),
+        'invisible' => array(
+          array(
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
+            ),
+            'or',
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => TRUE),
+            ),
+          ),
         ),
       ),
     ),
@@ -286,9 +308,20 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'textfield',
       '#title' => 'Phenotype !num Minimum Value (type 1 for binary): *',
       '#states' => array(
-        'invisible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => FALSE),
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => FALSE),
+        'visible' => array(
+          array(
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
+            ),
+            'or',
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => TRUE),
+            ),
+            'or',
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => TRUE),
+            ),
+          ),
         ),
       ),
     ),
@@ -296,9 +329,20 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'textfield',
       '#title' => 'Phenotype !num Maximum Value (type 2 for binary): *',
       '#states' => array(
-        'invisible' => array(
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => FALSE),
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => FALSE),
+        'visible' => array(
+          array(
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
+            ),
+            'or',
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => TRUE),
+            ),
+            'or',
+            array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => TRUE),
+            ),
+          ),
         ),
       ),
     ),
@@ -328,9 +372,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       "Clear All Phenotypes" => -1,
     ),
     'substitute_fields' => array(
+      array('#prefix'),
       array('name', '#title'),
       array('name', '#prefix'),
       array('attribute', '#title'),
+      array('attribute', '#ajax', 'wrapper'),
       array('attr-other', '#title'),
       array('description', '#title'),
       array('description', '#description'),
@@ -348,14 +394,107 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       array('attr-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'),
       array('unit-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
       array('struct-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]'),
-      array('val-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
-      array('bin-check', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
-      array('min', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
-      array('min', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
-      array('max', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
-      array('max', '#states', 'invisible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
+      array('val-check', '#states', 'invisible', 0, 0, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
+      array('val-check', '#states', 'invisible', 0, 2, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
+      array('bin-check', '#states', 'invisible', 0, 0, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
+      array('bin-check', '#states', 'invisible', 0, 2, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
+      array('min', '#states', 'visible', 0, 0, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
+      array('min', '#states', 'visible', 0, 2, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
+      array('min', '#states', 'visible', 0, 4, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
+      array('max', '#states', 'visible', 0, 0, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
+      array('max', '#states', 'visible', 0, 2, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
+      array('max', '#states', 'visible', 0, 4, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
     ),
   ));
+
+  $phenotypes = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta'), NULL);
+  for ($i = 1; $i <= $phenotypes['number']; $i++) {
+    switch ($phenotypes[$i]['attribute']) {
+      case tpps_load_cvterm('alive')->cvterm_id:
+      case tpps_load_cvterm('bent')->cvterm_id:
+      case tpps_load_cvterm('lesioned')->cvterm_id:
+      case tpps_load_cvterm('rough')->cvterm_id:
+        $terms = array(
+          'boolean',
+        );
+        break;
+
+      case tpps_load_cvterm('age')->cvterm_id:
+      case tpps_load_cvterm('time')->cvterm_id:
+        $terms = array(
+          'day',
+          'year',
+        );
+        break;
+
+      case tpps_load_cvterm('area')->cvterm_id:
+        $terms = array(
+          'square_micrometer',
+          'square_millimeter',
+        );
+        break;
+
+      case tpps_load_cvterm('circumference')->cvterm_id:
+      case tpps_load_cvterm('diameter')->cvterm_id:
+      case tpps_load_cvterm('distance')->cvterm_id:
+      case tpps_load_cvterm('height')->cvterm_id:
+      case tpps_load_cvterm('length')->cvterm_id:
+      case tpps_load_cvterm('thickness')->cvterm_id:
+      case tpps_load_cvterm('width')->cvterm_id:
+        $terms = array(
+          'centimeter',
+          'meter',
+          'millimeter',
+          'micrometer',
+        );
+        break;
+
+      case tpps_load_cvterm('volume')->cvterm_id:
+        $terms = array(
+          'cubic_centimeter',
+          'cubic_meter',
+          'liter',
+          'milliliter',
+        );
+        break;
+
+      case tpps_load_cvterm('weight')->cvterm_id:
+        $terms = array(
+          'gram',
+          'kilogram',
+          'milligram',
+        );
+        break;
+
+      case tpps_load_cvterm('temperature')->cvterm_id:
+        $terms = array(
+          'degrees_celsius',
+          'degrees_fahrenheit',
+        );
+        break;
+
+      case tpps_load_cvterm('pressure')->cvterm_id:
+        $terms = array(
+          'grams_per_square_meter',
+          'pascal',
+        );
+        break;
+
+      default:
+        $terms = array();
+        break;
+    }
+
+    $new_options = array();
+    foreach ($terms as $term) {
+      $new_options[tpps_load_cvterm($term)->cvterm_id] = $unit_options[tpps_load_cvterm($term)->cvterm_id];
+    }
+
+    if (!empty($new_options)) {
+      $new_options['other'] = 'My unit is not in this list';
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['units']['#options'] = $new_options;
+    }
+  }
 
   $form[$id]['phenotype']['check'] = array(
     '#type' => 'checkbox',
