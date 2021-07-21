@@ -1588,3 +1588,93 @@ function tpps_update_7114() {
     throw $e;
   }
 }
+
+/**
+ * Implements hook_update_N().
+ *
+ * Populate tpps_project_file_managed for approved submissions.
+ */
+function tpps_update_7115() {
+  $transaction = db_transaction();
+  $submissions = tpps_load_submission_multiple(array(
+    'status' => 'Approved',
+  ));
+  try {
+    foreach ($submissions as $state) {
+      $firstpage = $state['saved_values'][TPPS_PAGE_1];
+      $thirdpage = $state['saved_values'][TPPS_PAGE_3];
+      $fourthpage = $state['saved_values'][TPPS_PAGE_4];
+
+      $fids = array(
+        $firstpage['photo'] ?? NULL,
+      );
+
+      for ($i = 1; $i <= $firstpage['organism']['number']; $i++) {
+        $fids[] = $thirdpage['tree-accession']["species-$i"]['file'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['phenotype']['file'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['phenotype']['metadata'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['phenotype']['iso'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['tripal_fasta']['file_upload'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['tripal_fasta']['file_upload_existing'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['snps-assay'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['snps-association'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['snps-pop-struct'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['snps-kinship'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['assay-design'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['ssrs'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['ssrs_extra'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['indels'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['other'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['vcf'] ?? NULL;
+      }
+
+      foreach ($state['saved_values']['summarypage']['analysis'] as $key => $info) {
+        if (substr($key, -5) == '_file' and file_load($info)) {
+          $fids[] = $info;
+        }
+      }
+
+      foreach ($fids as $fid) {
+        if (!empty($fid) and file_load($fid)) {
+          $query = db_select('tpps_project_file_managed', 't')
+            ->fields('t')
+            ->condition('fid', $fid)
+            ->condition('project_id', $state['ids']['project_id'])
+            ->execute();
+          $result = $query->fetchObject() ?? NULL;
+
+          if (empty($result)) {
+            db_insert('tpps_project_file_managed')
+              ->fields(array(
+                'project_id' => $state['ids']['project_id'],
+                'fid' => $fid,
+              ))
+              ->execute();
+          }
+
+          if (!empty($state['revised_files'][$fid]) and ($file = file_load($state['revised_files'][$fid]))) {
+            $query = db_select('tpps_project_file_managed', 't')
+              ->fields('t')
+              ->condition('fid', $state['revised_files'][$fid])
+              ->condition('project_id', $state['ids']['project_id'])
+              ->execute();
+            $result = $query->fetchObject() ?? NULL;
+
+            if (empty($result)) {
+              db_insert('tpps_project_file_managed')
+                ->fields(array(
+                  'project_id' => $state['ids']['project_id'],
+                  'fid' => $state['revised_files'][$fid],
+                ))
+                ->execute();
+            }
+          }
+        }
+      }
+    }
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
