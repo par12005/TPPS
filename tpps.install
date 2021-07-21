@@ -530,10 +530,6 @@ function tpps_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'type' => array(
-        'description' => '',
-        'type' => 'text',
-      ),
     ),
     'foreign keys' => array(
       'project_id' => array(
