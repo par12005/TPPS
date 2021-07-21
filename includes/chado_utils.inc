@@ -519,6 +519,12 @@ function tpps_add_project_file(array &$state, &$fid) {
       'value' => file_create_url($file->uri),
       'rank' => $state['file_rank'],
     ));
+    db_insert('tpps_project_file_managed')
+      ->fields(array(
+        'project_id' => $state['ids']['project_id'],
+        'fid' => $fid,
+      ))
+      ->execute();
     $state['file_rank']++;
   }
 
