@@ -307,6 +307,7 @@ function tpps_get_cvterms_v1_2() {
     'p_value' => 'ncit:P-Value',
     'lambda' => 'ncit:Lambda',
     'bonferroni' => 'ncit:Adjusted Bonferroni Correction',
+    'boolean' => 'ncit:Boolean',
 
     // PATO terms.
     'age' => 'pato:age',

@@ -110,6 +110,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
   $unit_options = array();
   $terms = array(
+    'boolean' => 'Boolean (Binary)',
     'centimeter' => 'Centimeter',
     'cubic_centimeter' => 'Cubic Centimeter',
     'day' => 'Day',

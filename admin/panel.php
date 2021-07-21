@@ -405,6 +405,7 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
 
   $unit_options = array();
   $terms = array(
+    'boolean' => 'Boolean (Binary)',
     'centimeter' => 'Centimeter',
     'cubic_centimeter' => 'Cubic Centimeter',
     'day' => 'Day',
