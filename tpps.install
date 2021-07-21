@@ -1572,3 +1572,23 @@ function tpps_update_7113() {
     throw $e;
   }
 }
+
+/**
+ * Implements hook_update_N().
+ *
+ * Add tpps_project_file_managed table if it does not exist.
+ */
+function tpps_update_7114() {
+  $transaction = db_transaction();
+  try {
+    if (!db_table_exists('tpps_project_file_managed')) {
+      $schema = tpps_schema();
+      db_create_table('tpps_project_file_managed', $schema['tpps_project_file_managed']);
+      tpps_alter_tpps_project_file_managed();
+    }
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
