@@ -993,7 +993,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
       if ($phenotype['phenotypes-meta'][$j]['structure'] == 'other') {
         $phenotypes_meta[$name]['struct-other'] = $phenotype['phenotypes-meta'][$j]['struct-other'];
       }
-      if (!empty($phenotype['phenotypes-meta'][$j]['val-check']) or !empty($phenotype['phenotypes-meta'][$j]['bin-check'])) {
+      if (!empty($phenotype['phenotypes-meta'][$j]['val-check']) or !empty($phenotype['phenotypes-meta'][$j]['bin-check'] or $phenotype['phenotypes-meta'][$j]['units'] == tpps_load_cvterm('boolean')->cvterm_id)) {
         $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
         $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
       }
