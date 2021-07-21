@@ -836,6 +836,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       // Stop using the file so it can be deleted if the user clicks 'remove'.
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
+
+    $fields['files']['assay-citation'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Genotype Assay Design Citation (Optional):'),
+      '#description' => t('If your assay design file is from a different paper, please include the citation for that paper here.'),
+    );
   }
   else {
     $fields['files']['assay-design'] = array(
