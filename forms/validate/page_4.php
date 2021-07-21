@@ -717,15 +717,24 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
 
-    if (!empty($file_type['Assay Design']) and !$genotype['files']['assay-design']) {
+    if (!empty($file_type['Assay Design']) and !$genotype['files']['assay-load']) {
+      form_set_error("$id][genotype][files][assay-load", "Assay Design: field is required.");
+    }
+    elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] == 'new' and !$genotype['files']['assay-design']) {
       form_set_error("$id][genotype][files][assay-design", "Assay Design file: field is required.");
     }
-    elseif (!empty($file_type['Assay Design']) and !form_get_errors()) {
+    elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] == 'new' and !form_get_errors()) {
       // Preserve file if it is valid.
       $file = file_load($genotype['files']['assay-design']);
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
       $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
       $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Assay_Design_$species";
+    }
+    elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] != 'new') {
+      $file = file_load($genotype['files']['assay-load']);
+      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      // Don't add loaded assay file to file_info -> this will cause it to be
+      // renamed.
     }
 
     if (!empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and !$genotype['files']['ssrs']) {
