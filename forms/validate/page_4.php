@@ -162,6 +162,10 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         form_set_error("$id][phenotype][phenotypes-meta][$i][name", "Phenotype $i Name: field is required.");
       }
 
+      if (!$current_phenotype['attribute']) {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][attribute", "Phenotype $i Attribute: field is required.");
+      }
+
       if ($current_phenotype['attribute'] == 'other' and $current_phenotype['attr-other'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][attr-other", "Phenotype $i Custom Attribute: field is required.");
       }
@@ -181,11 +185,11 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         form_set_error("$id][phenotype][phenotypes-meta][$i][struct-other", "Phenotype $i Custom Structure: field is required.");
       }
 
-      if (($current_phenotype['val-check'] or $current_phenotype['bin-check']) and $current_phenotype['min'] == '') {
+      if (($current_phenotype['val-check'] or $current_phenotype['bin-check'] or $current_phenotype['units'] == tpps_load_cvterm('boolean')->cvterm_id) and $current_phenotype['min'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][min", "Phenotype $i Minimum Value: field is required.");
       }
 
-      if (($current_phenotype['val-check'] or $current_phenotype['bin-check']) and $current_phenotype['max'] == '') {
+      if (($current_phenotype['val-check'] or $current_phenotype['bin-check'] or $current_phenotype['units'] == tpps_load_cvterm('boolean')->cvterm_id) and $current_phenotype['max'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][max", "Phenotype $i Maximum Value: field is required.");
       }
     }
