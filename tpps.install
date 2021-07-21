@@ -17,6 +17,8 @@ function tpps_install() {
 
   tpps_alter_tpps_submission_dbxref();
 
+  tpps_alter_tpps_project_file_managed();
+
   chado_create_custom_table('genotype_call', array(
     'description' => '',
     'fields' => array(
@@ -506,6 +508,58 @@ function tpps_schema() {
     ),
   );
 
+  $schema['tpps_project_file_managed'] = array(
+    'description' => '',
+    'fields' => array(
+      'tpps_project_file_managed_id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'project_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'fid' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'type' => array(
+        'description' => '',
+        'type' => 'text',
+      ),
+    ),
+    'foreign keys' => array(
+      'project_id' => array(
+        'table' => 'chado.project',
+        'columns' => array(
+          'project_id' => 'project_id',
+        ),
+      ),
+      'fid' => array(
+        'table' => 'file_managed',
+        'columns' => array(
+          'fid' => 'fid',
+        ),
+      ),
+    ),
+    'unique keys' => array(
+      'tpps_project_file_managed_c1' => array(
+        'project_id',
+        'fid',
+      ),
+    ),
+    'primary key' => array(
+      'tpps_project_file_managed_id'
+    ),
+  );
+
   return $schema;
 }
 
@@ -623,6 +677,19 @@ function tpps_alter_tpps_submission_dbxref() {
   if (!$results->rowCount()) {
     db_query('ALTER TABLE tpps_submission_dbxref ADD CONSTRAINT tpps_submission_dbxref_tpps_submission_id_fkey FOREIGN KEY (tpps_submission_id) REFERENCES tpps_submission(tpps_submission_id) ON DELETE CASCADE;');
     db_query('ALTER TABLE tpps_submission_dbxref ADD CONSTRAINT tpps_submission_dbxref_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES chado.dbxref(dbxref_id) ON DELETE CASCADE;');
+  }
+}
+
+/**
+ * Add foreign key constraints to the tpps_project_file_managed table.
+ */
+function tpps_alter_tpps_project_file_managed() {
+  $results = db_query("SELECT contype "
+    . "FROM pg_catalog.pg_constraint con JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid "
+    . "WHERE rel.relname = 'tpps_project_file_managed' AND contype like 'f';");
+  if (!$results->rowCount()) {
+    db_query('ALTER TABLE tpps_project_file_managed ADD CONSTRAINT tpps_project_file_managed_fid_fkey FOREIGN KEY (fid) REFERENCES file_managed(fid) ON DELETE CASCADE;');
+    db_query('ALTER TABLE tpps_project_file_managed ADD CONSTRAINT tpps_project_file_managed_project_id_fkey FOREIGN KEY (project_id) REFERENCES chado.project(project_id) ON DELETE CASCADE');
   }
 }
 
