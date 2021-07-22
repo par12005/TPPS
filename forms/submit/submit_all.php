@@ -1313,7 +1313,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
   }
 
   if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
-    $design_fid = $genotype['files']['assay-design'];
+    if ($genotype['files']['assay-load'] == 'new') {
+      $design_fid = $genotype['files']['assay-design'];
+    }
+    else {
+      $design_fid = $genotype['files']['assay-load'];
+    }
     tpps_add_project_file($form_state, $design_fid);
   }
 
