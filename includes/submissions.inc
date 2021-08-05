@@ -245,6 +245,9 @@ function tpps_submission_rename_files($accession) {
     foreach ($state['file_info'] as $page_files) {
       foreach ($page_files as $fid => $name) {
         $state['files'][] = $fid;
+        if ($name === '#NO_RENAME') {
+          continue;
+        }
         $old_file = file_load($fid);
         $old_path = file_create_url($old_file->uri);
         $file = tpps_rename_file($fid, "{$accession}_{$name}");
@@ -296,6 +299,7 @@ function tpps_submission_clear_db($accession) {
   chado_query("DELETE FROM chado.project_organism WHERE project_id = $project_id");
   chado_query("DELETE FROM chado.project_pub WHERE project_id = $project_id");
   chado_query("DELETE FROM chado.projectprop WHERE project_id = $project_id");
+  db_query("DELETE FROM public.tpps_project_file_managed WHERE project_id = $project_id");
   chado_query("DELETE FROM chado.phenotype_cvterm WHERE phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE stock_id in ($stocks_sql))");
   chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
   chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");

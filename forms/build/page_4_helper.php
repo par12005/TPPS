@@ -819,6 +819,33 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
 
   if (!empty($assay_design_check)) {
+    $design_options = array(0 => '- Select -');
+    $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
+    for ($i = 1; $i <= $firstpage['organism']['number']; $i++) {
+      $parts = explode(" ", $firstpage['organism'][$i]['name']);
+      $genus = $parts[0];
+      $query = db_select('chado.organism', 'o');
+      $query->join('chado.project_organism', 'po', 'o.organism_id = po.organism_id');
+      $query->join('public.tpps_project_file_managed', 'pf', 'pf.project_id = po.project_id');
+      $query->join('public.file_managed', 'f', 'f.fid = pf.fid');
+      $query->join('chado.project', 'p', 'p.project_id = po.project_id');
+      $query->fields('f');
+      $query->fields('p');
+      $query->condition('o.genus', $genus);
+      $query->condition('f.filename', '%assay_design%', 'ILIKE');
+      $results = $query->execute();
+      while (($record = $results->fetchObject())) {
+        $design_options[$record->fid] = "{$record->filename} (from \"{$record->name}\")";
+      }
+    }
+    $design_options['new'] = 'I would like to upload a new assay design file';
+    $fields['files']['assay-load'] = array(
+      '#type' => 'select',
+      '#title' => 'Genotype Assay Design: *',
+      '#options' => $design_options,
+      '#description' => t('Please select an assay design. Some design files from the same genus as this species are available, or you can choose to upload your own assay design file.'),
+    );
+
     $fields['files']['assay-design'] = array(
       '#type' => 'managed_file',
       '#title' => 'Genotype Assay Design File: *',
@@ -827,6 +854,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
       '#tree' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[genotype][files][assay-load]"]' => array('value' => 'new'),
+        ),
+      ),
     );
 
     if (isset($fields['files']['assay-design']['#value'])) {
@@ -836,6 +868,17 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       // Stop using the file so it can be deleted if the user clicks 'remove'.
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
+
+    $fields['files']['assay-citation'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Genotype Assay Design Citation (Optional):'),
+      '#description' => t('If your assay design file is from a different paper, please include the citation for that paper here.'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[genotype][files][assay-load]"]' => array('value' => 'new'),
+        ),
+      ),
+    );
   }
   else {
     $fields['files']['assay-design'] = array(

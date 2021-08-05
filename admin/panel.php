@@ -108,7 +108,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   }
   $display .= tpps_table_display($submission_state, $options);
 
-  if ($status == 'Pending Approval') {
+  if ($status == 'Pending Approval' and preg_match('/P/', $submission_state['saved_values'][TPPS_PAGE_2]['data_type'])) {
     $new_cvterms = array();
     for ($i = 1; $i <= $submission_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
       $phenotype = $submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
@@ -191,7 +191,9 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       unset($form['params']);
     }
 
-    tpps_phenotype_editor($form, $form_state, $submission_state);
+    if (preg_match('/P/', $submission_state['saved_values'][TPPS_PAGE_2]['data_type'])) {
+      tpps_phenotype_editor($form, $form_state, $submission_state);
+    }
 
     $form['approve-check'] = array(
       '#type' => 'checkbox',
