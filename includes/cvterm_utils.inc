@@ -396,6 +396,7 @@ function tpps_get_cvterms_v1_2() {
     'light_level' => 'envo:visible spectrum radiation',
     'soil_type' => 'envo:soil',
     'environment' => 'envo:environmental system',
+    'atmosphere' => 'envo:atmosphere',
 
     // CHEBI terms.
     'salinity_level' => 'chebi:salt',

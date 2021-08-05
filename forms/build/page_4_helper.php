@@ -414,6 +414,9 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
   $phenotypes = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta'), NULL);
   for ($i = 1; $i <= $phenotypes['number']; $i++) {
+    if (empty($phenotypes[$i])) {
+      continue;
+    }
     switch ($phenotypes[$i]['attribute']) {
       case tpps_load_cvterm('alive')->cvterm_id:
       case tpps_load_cvterm('bent')->cvterm_id:
@@ -501,7 +504,18 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
 
     if ($phenotypes[$i]['env-check']) {
-      // TODO: short list of structures for environmental phenotypes.
+      $terms = array(
+        'whole plant' => 'Whole Plant',
+        'soil_type' => 'Soil',
+        'atmosphere' => 'Atmosphere',
+      );
+
+      $new_options = array();
+      foreach ($terms as $term => $label) {
+        $new_options[tpps_load_cvterm($term)->cvterm_id] = $label;
+      }
+
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['structure']['#options'] = $new_options;\
     }
   }
 
