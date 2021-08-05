@@ -1601,6 +1601,9 @@ function tpps_update_7115() {
   ));
   try {
     foreach ($submissions as $state) {
+      if (empty($state['ids']['project_id'])) {
+        continue;
+      }
       $firstpage = $state['saved_values'][TPPS_PAGE_1];
       $thirdpage = $state['saved_values'][TPPS_PAGE_3];
       $fourthpage = $state['saved_values'][TPPS_PAGE_4];
