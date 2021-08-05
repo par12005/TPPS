@@ -55,7 +55,7 @@ function tpps_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_main', 1),
     'access callback' => 'tpps_access',
-    'access arguments' => array('access tpps form'),
+    'access arguments' => array('access tpps form', 1),
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -80,12 +80,12 @@ function tpps_menu() {
   $items['tpps/details/%/%']['page callback'] = 'tpps_details_tab';
   $items['tpps/details/%/%']['type'] = MENU_CALLBACK;
 
-  $items['user/%user/tpps'] = array(
+  $items['user/%/tpps'] = array(
     'title' => 'TPPS Submissions',
     'page callback' => 'tpps_tab_create',
     'page arguments' => array(1),
     'access callback' => 'tpps_access',
-    'access arguments' => array('user tpps submissions', array(1)),
+    'access arguments' => array('user tpps submissions', 1),
     'type' => MENU_LOCAL_TASK,
   );
 
@@ -94,7 +94,7 @@ function tpps_menu() {
     'page callback' => 'tpps_delete_submission',
     'page arguments' => array(1),
     'access callback' => 'tpps_access',
-    'access arguments' => array('tpps delete submission', array(1)),
+    'access arguments' => array('tpps delete submission', 1),
     'type' => MENU_CALLBACK,
   );
 
@@ -103,7 +103,7 @@ function tpps_menu() {
     'page callback' => 'tpps_completed_display',
     'page arguments' => array(1),
     'access callback' => 'tpps_access',
-    'access arguments' => array('view own tpps submission'),
+    'access arguments' => array('view own tpps submission', 1),
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -232,111 +232,71 @@ function tpps_permission() {
 /**
  * Determine whether the current user has a specific permission.
  *
- * @param string $permission
- *   The permission in question.
- * @param array $args
- *   Additional arguments to be used to determine if the user has permission.
- *
  * @global stdClass $user
  *   The user in question.
  *
  * @return bool
  *   Whether or not the user has the permission.
  */
-function tpps_access($permission, array $args = array()) {
+function tpps_access() {
   global $user;
 
   if ($user->uid == 1) {
     return TRUE;
   }
-  $params = drupal_get_query_parameters(NULL, array());
-  if (!empty($args['accession'])) {
-    $accession = $args['accession'];
-  }
-  elseif (preg_match('/tpps\/(TGDR.*)/', $params['q'], $matches)) {
-    $accession = $matches[1];
-  }
-  elseif ($params['q'] == 'tpps' and !empty($params['accession'])) {
-    $accession = $params['accession'];
-  }
-  elseif (preg_match('/completed-submission\/(TGDR.*)/', $params['q'], $matches)) {
-    $accession = $matches[1];
-  }
 
-  if ($params['q'] == 'tpps' and empty($accession)) {
-    return TRUE;
-  }
-
-  if (!$user->uid) {
-    if ($params['q'] == 'tpps-admin-panel') {
-      drupal_goto('user/login', array('query' => drupal_get_destination()));
-    }
-    elseif ($params['q'] == 'tpps' and !empty($accession)) {
-      drupal_goto('user/login', array('query' => drupal_get_destination()));
-    }
-  }
-
-  if (user_access($permission)) {
-    switch ($permission) {
-      case 'access tpps form':
-        if (tpps_access('administer tpps module')) {
-          return TRUE;
-        }
-
-        if ($accession == 'new') {
-          return TRUE;
-        }
-
-        if (($state = tpps_load_submission($accession, FALSE))) {
-          if ($state->status == "Incomplete" and $state->uid == $user->uid) {
-            return TRUE;
-          }
-        }
-        return FALSE;
-
-      case 'user tpps submissions':
-        if (tpps_access('administer tpps module')) {
-          return TRUE;
-        }
-
-        if (!empty($args[0]) and $args[0] == $user->uid) {
-          return TRUE;
-        }
-
-        return FALSE;
-
-      case 'view own tpps submission':
-        if (tpps_access('administer tpps module')) {
-          return TRUE;
-        }
-
-        if (($state = tpps_load_submission($accession, FALSE))) {
-          if ($state->uid == $user->uid) {
-            return TRUE;
-          }
-        }
-        return FALSE;
-
-      case 'tpps delete submission':
-        if (tpps_access('administer tpps module')) {
-          return TRUE;
-        }
-
-        if (preg_match('/tpps-submission\/(.*)\/delete/', $params['q'], $matches)) {
-          if (($state = tpps_load_submission($matches[1], FALSE))) {
-            if ($state->status == 'Pending Approval' and $user->uid == $state->uid) {
-              return TRUE;
-            }
-          }
-        }
-        return FALSE;
-
-      default:
-        return TRUE;
-    }
-  }
-  else {
+  $args = func_get_args();
+  $permission = $args[0] ?? NULL;
+  if (gettype($permission) != 'string') {
     return FALSE;
+  }
+
+  if (!user_access($permission)) {
+    return FALSE;
+  }
+
+  switch ($permission) {
+    case 'access tpps form':
+      $accession = $args[1] ?? NULL;
+      if (empty($accession) or $accession == 'new') {
+        return TRUE;
+      }
+
+      if (($state = tpps_load_submission($accession, FALSE))) {
+        if ($state->status == "Incomplete" and $state->uid == $user->uid) {
+          return TRUE;
+        }
+      }
+      return FALSE;
+
+    case 'user tpps submissions':
+      $uid = $args[1] ?? NULL;
+      if (!empty($uid) and $uid == $user->uid) {
+        return TRUE;
+      }
+
+      return FALSE;
+
+    case 'view own tpps submission':
+      $accession = $args[1] ?? NULL;
+      if (($state = tpps_load_submission($accession, FALSE))) {
+        if ($state->status != "Incomplete" and $state->uid == $user->uid) {
+          return TRUE;
+        }
+      }
+      return FALSE;
+
+    case 'tpps delete submission':
+      $accession = $args[1] ?? NULL;
+      if (($state = tpps_load_submission($accession, FALSE))) {
+        if ($state->status == "Incomplete" and $user->uid == $state->uid) {
+          return TRUE;
+        }
+      }
+      return FALSE;
+
+    default:
+      return TRUE;
   }
 }
 
@@ -796,9 +756,9 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     tpps_init_project($form_state);
   }
 
-  if (!tpps_access('access tpps form', array('accession' => $form_state['accession']))) {
-    throw new Exception('Insufficient permissions. Please log in and reload this page.');
-  }
+  #if (!tpps_access('access tpps form', array('accession' => $form_state['accession']))) {
+  #  throw new Exception('Insufficient permissions. Please log in and reload this page.');
+  #}
 
   tpps_status_bar($form, $form_state);
 
