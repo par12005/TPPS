@@ -515,7 +515,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         $new_options[tpps_load_cvterm($term)->cvterm_id] = $label;
       }
 
-      $form[$id]['phenotype']['phenotypes-meta'][$i]['structure']['#options'] = $new_options;\
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['structure']['#options'] = $new_options;
     }
   }
 
