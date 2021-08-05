@@ -504,7 +504,18 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
 
     if ($phenotypes[$i]['env-check']) {
-      // TODO: short list of structures for environmental phenotypes.
+      $terms = array(
+        'whole plant' => 'Whole Plant',
+        'soil_type' => 'Soil',
+        'atmosphere' => 'Atmosphere',
+      );
+
+      $new_options = array();
+      foreach ($terms as $term => $label) {
+        $new_options[tpps_load_cvterm($term)->cvterm_id] = $label;
+      }
+
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['structure']['#options'] = $new_options;\
     }
   }
 
