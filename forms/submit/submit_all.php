@@ -1421,7 +1421,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
     // dpm('start: ' . date('r'));.
     while (($vcf_line = fgets($vcf_content)) !== FALSE) {
       if ($vcf_line[0] != '#') {
-        $genotype_count++;
+        $genotype_count += count($stocks);
         $vcf_line = explode("\t", $vcf_line);
         $scaffold_id = &$vcf_line[0];
         $position = &$vcf_line[1];
