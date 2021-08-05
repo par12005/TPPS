@@ -733,8 +733,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] != 'new') {
       $file = file_load($genotype['files']['assay-load']);
       file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      // Don't add loaded assay file to file_info -> this will cause it to be
-      // renamed.
+      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = '#NO_RENAME';
     }
 
     if (!empty($file_type['SSRs/cpSSRs Genotype Spreadsheet']) and !$genotype['files']['ssrs']) {

@@ -245,6 +245,9 @@ function tpps_submission_rename_files($accession) {
     foreach ($state['file_info'] as $page_files) {
       foreach ($page_files as $fid => $name) {
         $state['files'][] = $fid;
+        if ($name === '#NO_RENAME') {
+          continue;
+        }
         $old_file = file_load($fid);
         $old_path = file_create_url($old_file->uri);
         $file = tpps_rename_file($fid, "{$accession}_{$name}");
