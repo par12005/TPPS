@@ -135,6 +135,13 @@ function tpps_create_submission(array $state, $uid) {
   db_insert('tpps_submission')
     ->fields($values)
     ->execute();
+
+  if ((!isset($state['tpps_type']) or $state['tpps_type'] != 'tppsc')) {
+    tpps_submission_add_tag($state['accession'], 'TPPS');
+  }
+  else {
+    tpps_submission_add_tag($state['accession'], 'TPPSc');
+  }
 }
 
 /**
@@ -230,6 +237,76 @@ function tpps_submission_add_alternative_accession($state, $alt_accession) {
       ))
       ->execute();
   }
+}
+
+/**
+ * Returns array of tags associated with a submission.
+ *
+ * @param string $accession
+ *   The accession of the desired submission.
+ *
+ * @return array
+ *   Array of tags associated with the submission.
+ */
+function tpps_submission_get_tags($accession) {
+  $query = db_select('tpps_submission_tag', 'st');
+  $query->join('tpps_submission', 's', 's.tpps_submission_id = st.tpps_submission_id');
+  $query->join('tpps_tag', 't', 't.tpps_tag_id = st.tpps_tag_id');
+  $query->fields('t');
+  $query->condition('s.accession', $accession);
+  $query = $query->execute();
+  $results = array();
+  while (($result = $query->fetchObject())) {
+    $results[] = array(
+      'id' => $result->tpps_tag_id,
+      'name' => $result->name,
+      'color' => $result->color,
+    );
+  }
+  return $results;
+}
+
+/**
+ * Adds a tag to a submission.
+ *
+ * @param string $accession
+ *   The accession of the desired submission.
+ * @param mixed $tag
+ *   The name or id of the tag to be added.
+ */
+function tpps_submission_add_tag($accession, $tag) {
+  if (gettype($tag) == 'string') {
+    $tag = tpps_get_tag_id($tag);
+  }
+
+  db_insert('tpps_submission_tag')
+    ->fields(array(
+      'tpps_submission_id' => tpps_load_submission($accession, FALSE)->tpps_submission_id,
+      'tpps_tag_id' => $tag,
+    ))
+    ->execute();
+}
+
+/**
+ * Returns the id of a tag based on the name.
+ *
+ * @param string $name
+ *   The name of the desired tag.
+ *
+ * @return int
+ *   The id of the tag.
+ */
+function tpps_get_tag_id($name) {
+  $result = db_select('tpps_tag', 't')
+    ->fields('t', array('tpps_tag_id'))
+    ->condition('name', $name)
+    ->range(0, 1)
+    ->execute()->fetchObject();
+
+  if ($result) {
+    return $result->tpps_tag_id;
+  }
+  return FALSE;
 }
 
 /**
