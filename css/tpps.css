@@ -80,6 +80,14 @@ th > div.form-type-select > .ajax-progress {
 .hide-me {
   display: none !important;
 }
+.tag {
+  border: 1px solid;
+  border-radius: 0.75rem;
+}
+.tag-text {
+  padding-left: .5rem;
+  padding-right: .5rem;
+}
 #tpps_table_display,
 .tpps_table {
   background: #ffffff;
