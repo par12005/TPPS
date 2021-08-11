@@ -95,6 +95,7 @@ function tpps_details($accession = NULL) {
     }
 
     $output .= "<h2>$pub_link</h2>";
+    $output .= tpps_show_tags(tpps_submission_get_tags($state['accession']));
     $authors = implode(', ', $state['authors']);
     $output .= "<h4>$authors</h4>";
     $output .= "<h4>Published {$state['pyear']}";
