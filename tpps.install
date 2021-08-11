@@ -19,6 +19,8 @@ function tpps_install() {
 
   tpps_alter_tpps_project_file_managed();
 
+  tpps_alter_tpps_submission_tag();
+
   chado_create_custom_table('genotype_call', array(
     'description' => '',
     'fields' => array(
@@ -556,6 +558,81 @@ function tpps_schema() {
     ),
   );
 
+  $schema['tpps_tag'] = array(
+    'description' => '',
+    'fields' => array(
+      'tpps_tag_id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'name' => array(
+        'description' => '',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'color' => array(
+        'description' => '',
+        'type' => 'varchar',
+        'size' => 'normal',
+      ),
+    ),
+    'primary key' => array(
+      'tpps_tag_id'
+    ),
+  );
+
+  $schema['tpps_submission_tag'] = array(
+    'description' => '',
+    'fields' => array(
+      'tpps_submission_tag_id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'tpps_submission_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'tpps_tag_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+    ),
+    'foreign keys' => array(
+      'tpps_submission_id' => array(
+        'table' => 'tpps_submission',
+        'columns' => array(
+          'tpps_submission_id' => 'tpps_submission_id',
+        ),
+      ),
+      'tpps_tag_id' => array(
+        'table' => 'tpps_tag',
+        'columns' => array(
+          'tpps_tag_id' => 'tpps_tag_id',
+        ),
+      ),
+    ),
+    'unique keys' => array(
+      'tpps_submission_tag_c1' => array(
+        'tpps_submission_id',
+        'tpps_tag_id',
+      ),
+    ),
+    'primary key' => array(
+      'tpps_submission_tag_id',
+    ),
+  );
+
   return $schema;
 }
 
@@ -686,6 +763,19 @@ function tpps_alter_tpps_project_file_managed() {
   if (!$results->rowCount()) {
     db_query('ALTER TABLE tpps_project_file_managed ADD CONSTRAINT tpps_project_file_managed_fid_fkey FOREIGN KEY (fid) REFERENCES file_managed(fid) ON DELETE CASCADE;');
     db_query('ALTER TABLE tpps_project_file_managed ADD CONSTRAINT tpps_project_file_managed_project_id_fkey FOREIGN KEY (project_id) REFERENCES chado.project(project_id) ON DELETE CASCADE');
+  }
+}
+
+/**
+ *
+ */
+function tpps_alter_tpps_submission_tag() {
+  $results = db_query("SELECT contype "
+    . "FROM pg_catalog.pg_constraint con JOIN pg_catalog.pg_class rel ON rel.oid = con.conrelid "
+    . "WHERE rel.relname = 'tpps_submission_tag' AND contype like 'f';");
+  if (!$results->rowCount()) {
+    db_query('ALTER TABLE tpps_submission_tag ADD CONSTRAINT tpps_submission_tag_tpps_tag_id_fkey FOREIGN KEY (tpps_tag_id) REFERENCES tpps_tag(tpps_tag_id) ON DELETE CASCADE;');
+    db_query('ALTER TABLE tpps_submission_tag ADD CONSTRAINT tpps_submission_tag_tpps_submission_id_fkey FOREIGN KEY (tpps_submission_id) REFERENCES tpps_submission(tpps_submission_id) ON DELETE CASCADE;');
   }
 }
 
@@ -1674,6 +1764,30 @@ function tpps_update_7115() {
           }
         }
       }
+    }
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
+
+/**
+ * Implements hook_update_N().
+ *
+ * Add TPPS tag tables if they do not exist.
+ */
+function tpps_update_7116() {
+  $transaction = db_transaction();
+  try {
+    if (!db_table_exists('tpps_tag')) {
+      $schema = tpps_schema();
+      db_create_table('tpps_tag', $schema['tpps_tag']);
+    }
+    if (!db_table_exists('tpps_submission_tag')) {
+      $schema = tpps_schema();
+      db_create_table('tpps_submission_tag', $schema['tpps_submission_tag']);
+      tpps_alter_tpps_submission_tag();
     }
   }
   catch (\Exception $e) {
