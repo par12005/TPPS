@@ -249,6 +249,11 @@ function tpps_access($permission, array $args = array()) {
   if ($user->uid == 1) {
     return TRUE;
   }
+
+  if (!user_access($permission)) {
+    return FALSE;
+  }
+
   $params = drupal_get_query_parameters(NULL, array());
   if (!empty($args['accession'])) {
     $accession = $args['accession'];
