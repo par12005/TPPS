@@ -332,6 +332,7 @@ function tpps_details_top() {
     $row = array(
       "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->accession}</a>",
       "$warning<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->title}</a>",
+      tpps_show_tags(tpps_submission_get_tags($sub->accession)),
       implode('<br>', $species),
       $sub->tree_count,
       $sub->phenotypes_assessed,
@@ -347,6 +348,7 @@ function tpps_details_top() {
     'header' => array(
       'Accession',
       'Title',
+      'Tags',
       'Species',
       'Plant Count',
       'Phenotypes Assessed',
