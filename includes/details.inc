@@ -115,6 +115,8 @@ function tpps_details($accession = NULL) {
     return $output;
   }
 
+  drupal_set_message(t('This submission is pending resubmission through the new TPPS pipeline. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
+
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
