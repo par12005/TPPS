@@ -617,6 +617,7 @@ function tpps_admin_panel_top(array &$form) {
             $submitting_user,
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             !empty($state['completed']) ? date("F j, Y, g:i a", $state['completed']) : "Unknown",
+            tpps_show_tags(tpps_submission_get_tags($state['accession'])),
           );
           $pending[(int) substr($state['accession'], 4)] = $row;
           break;
@@ -636,6 +637,7 @@ function tpps_admin_panel_top(array &$form) {
             $submitting_user,
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             $status_label,
+            tpps_show_tags(tpps_submission_get_tags($state['accession'])),
           );
           $approved[(int) substr($state['accession'], 4)] = $row;
           break;
@@ -673,6 +675,7 @@ function tpps_admin_panel_top(array &$form) {
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? 'Title not provided yet',
             $stage,
             !empty($state['updated']) ? date("F j, Y, g:i a", $state['updated']) : "Unknown",
+            tpps_show_tags(tpps_submission_get_tags($state['accession'])),
           );
           $incomplete[(int) substr($state['accession'], 4)] = $row;
           break;
@@ -699,6 +702,7 @@ function tpps_admin_panel_top(array &$form) {
     'Submitting User',
     'Title',
     'Date Submitted',
+    'Tags',
   );
   $vars['rows'] = $pending;
   $pending_table = theme_table($vars);
@@ -708,6 +712,7 @@ function tpps_admin_panel_top(array &$form) {
     'Submitting User',
     'Title',
     'Status',
+    'Tags',
   );
   $vars['rows'] = $approved;
   $approved_table = theme_table($vars);
@@ -718,6 +723,7 @@ function tpps_admin_panel_top(array &$form) {
     'Title',
     'Stage',
     'Last Updated',
+    'Tags',
   );
   $vars['rows'] = $incomplete;
   $incomplete_table = theme_table($vars);
