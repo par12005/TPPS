@@ -324,9 +324,14 @@ function tpps_details_top() {
       $species[] = tpps_entity_link($result->organism_id, "{$result->genus} {$result->species}", 'Organism');
     }
 
+    $warning = "";
+    if (empty(tpps_load_submission($sub->accession))) {
+      $warning = "<img src='$base_url/misc/message-16-warning.png' title='This study has not yet been resubmitted through the new TPPS pipeline'> ";
+    }
+
     $row = array(
       "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->accession}</a>",
-      "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->title}</a>",
+      "$warning<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->title}</a>",
       implode('<br>', $species),
       $sub->tree_count,
       $sub->phenotypes_assessed,
