@@ -267,6 +267,25 @@ function tpps_submission_get_tags($accession) {
 }
 
 /**
+ * Edit submission tags.
+ *
+ * @param string $type
+ *   Either 'add' or 'remove'.
+ * @param string $accession
+ *   The accession of the desired submission.
+ * @param mixed $tag
+ *   The name or id of the tag to be added or removed.
+ */
+function tpps_submission_edit_tag($type, $accession, $tag) {
+  if ($type == 'add') {
+    tpps_submission_add_tag($accession, $tag);
+  }
+  if ($type == 'remove') {
+    tpps_submission_remove_tag($accession, $tag);
+  }
+}
+
+/**
  * Adds a tag to a submission.
  *
  * @param string $accession
@@ -276,7 +295,10 @@ function tpps_submission_get_tags($accession) {
  */
 function tpps_submission_add_tag($accession, $tag) {
   if (gettype($tag) == 'string') {
-    $tag = tpps_get_tag_id($tag);
+    $id = tpps_get_tag_id($tag);
+    if (!empty($id)) {
+      $tag = $id;
+    }
   }
 
   db_insert('tpps_submission_tag')
@@ -284,6 +306,27 @@ function tpps_submission_add_tag($accession, $tag) {
       'tpps_submission_id' => tpps_load_submission($accession, FALSE)->tpps_submission_id,
       'tpps_tag_id' => $tag,
     ))
+    ->execute();
+}
+
+/**
+ * Removes a tag from a submission.
+ *
+ * @param string $accession
+ *   The accession of the desired submission.
+ * @param mixed $tag
+ *   The name or id of the tag to be removed.
+ */
+function tpps_submission_remove_tag($accession, $tag) {
+  if (gettype($tag) == 'string') {
+    $id = tpps_get_tag_id($tag);
+    if (!empty($id)) {
+      $tag = $id;
+    }
+  }
+  db_delete('tpps_submission_tag')
+    ->condition('tpps_submission_id', tpps_load_submission($accession, FALSE)->tpps_submission_id)
+    ->condition('tpps_tag_id', $tag)
     ->execute();
 }
 
