@@ -178,6 +178,15 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['tpps-tag/%/%/%'] = array(
+    'title' => 'TPPS Edit Tag',
+    'page callback' => 'tpps_submission_edit_tag',
+    'page arguments' => array(1, 2, 3),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('approve tpps submissions'),
+    'type' => MENU_CALLBACK,
+  );
+
   $items = array_merge($items, tpps_api_paths());
 
   return $items;
