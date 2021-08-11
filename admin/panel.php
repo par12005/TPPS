@@ -755,6 +755,35 @@ function tpps_admin_panel_top(array &$form) {
     );
   }
 
+  $subquery = db_select('tpps_submission', 's');
+  $subquery->fields('s', array('accession'));
+  $query = db_select('chado.dbxref', 'dbx');
+  $query->join('chado.project_dbxref', 'pd', 'pd.dbxref_id = dbx.dbxref_id');
+  $query->condition('dbx.accession', $subquery, 'NOT IN');
+  $query->condition('dbx.accession', 'TGDR%', 'ILIKE');
+  $query->fields('dbx', array('accession'));
+  $query->orderBy('dbx.accession');
+  $query = $query->execute();
+  $to_resubmit = array();
+  while (($result = $query->fetchObject())) {
+    $to_resubmit[] = array($result->accession);
+  }
+  if (!empty($to_resubmit)) {
+    $vars['header'] = array(
+      'Accession',
+    );
+    $vars['rows'] = $to_resubmit;
+    $to_resubmit_table = theme_table($vars);
+    $form['resubmit'] = array(
+      '#type' => 'fieldset',
+      '#title' => "<img src='$base_url/misc/message-16-warning.png'> " . t('Old TGDR Submissions to be resubmitted'),
+      '#collapsible' => TRUE,
+      'table' => array(
+        '#markup' => $to_resubmit_table,
+      ),
+    );
+  }
+
   $tpps_new_orgs = variable_get('tpps_new_organisms', NULL);
   $db = chado_get_db(array('name' => 'NCBI Taxonomy'));
   if (!empty($db)) {
