@@ -182,7 +182,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $tags_markup .= "</div>";
   $tags_markup .= "<a href=\"/tpps-tag\">Manage TPPS Submission Tags</a>";
   $form['tags'] = array(
-    '#markup' => $tags_markup,
+    '#markup' => "<div id=\"tags\">$tags_markup</div>",
   );
 
   if ($status == "Pending Approval") {
