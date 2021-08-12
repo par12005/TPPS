@@ -935,6 +935,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
   if (empty($phenotype)) {
     return;
   }
+  tpps_submission_add_tag($form_state['accession'], 'Phenotype');
 
   // Get appropriate cvterms.
   $phenotype_cvterms = array(
@@ -1106,6 +1107,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
   if (empty($genotype)) {
     return;
   }
+  tpps_submission_add_tag($form_state['accession'], 'Genotype');
+
   $project_id = $form_state['ids']['project_id'];
   $record_group = variable_get('tpps_record_group', 10000);
 
@@ -1599,6 +1602,7 @@ function tpps_submit_environment(array &$form_state, $i, &$job = NULL) {
   if (empty($environment)) {
     return;
   }
+  tpps_submission_add_tag($form_state['accession'], 'Environment');
 
   $env_layers = isset($environment['env_layers']) ? $environment['env_layers'] : FALSE;
   $env_params = isset($environment['env_params']) ? $environment['env_params'] : FALSE;
