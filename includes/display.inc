@@ -958,10 +958,7 @@ function tpps_entity_link($id, $name, $label) {
 function tpps_show_tags($tags) {
   $display = "";
   foreach ($tags as $tag) {
-    $color = $tag['color'];
-    if (empty($color)) {
-      $color = 'white';
-    }
+    $color = !empty($tag['color']) ? $tag['color'] : 'white';
     $display .= "<span class=\"tag\" style=\"background-color:$color\"><span class=\"tag-text\">{$tag['name']}</span></span>";
   }
   return $display;
