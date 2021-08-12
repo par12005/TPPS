@@ -101,6 +101,9 @@ th > div.form-type-select > .ajax-progress {
 .tag-close:hover {
   cursor: pointer;
 }
+.add-tag:hover {
+  cursor: pointer;
+}
 #tpps_table_display,
 .tpps_table {
   background: #ffffff;
