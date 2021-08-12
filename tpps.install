@@ -1829,16 +1829,15 @@ function tpps_update_7116() {
 
     tpps_default_tags();
 
-    $submissions = tpps_load_submission_multiple(array(), FALSE);
-    foreach ($submissions as $record) {
-      $state = tpps_load_submission($record->accession);
-      $tags = tpps_submission_get_tags($record->accession);
+    $submissions = tpps_load_submission_multiple(array());
+    foreach ($submissions as $state) {
+      $tags = tpps_submission_get_tags($state['accession']);
       if (count($tags) == 0) {
         if ((!isset($state['tpps_type']) or $state['tpps_type'] != 'tppsc')) {
-          tpps_submission_add_tag($record->accession, 'TPPS');
+          tpps_submission_add_tag($state['accession'], 'TPPS');
         }
         else {
-          tpps_submission_add_tag($record->accession, 'TPPSc');
+          tpps_submission_add_tag($state['accession'], 'TPPSc');
         }
       }
     }
