@@ -146,21 +146,16 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $submission_tags = tpps_submission_get_tags($submission_state['accession']);
 
   // Show current tags.
-  $tags_markup = "";
+  $tags_markup = "<label class=\"control-label\">Current Tags:</label><br>";
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
   $query = db_select('tpps_tag', 't')
     ->fields('t')
     ->execute();
   while (($result = $query->fetchObject())) {
-    $color = $result->color;
-    if (empty($color)) {
-      $color = 'white';
-    }
-    $style = "";
-    if (!array_key_exists($result->tpps_tag_id, $submission_tags)) {
-      $style = 'display: none';
-    }
-    $tags_markup .= "<span class=\"tag\" style=\"background-color:$color; $style\"><span class=\"tag-text\">{$result->name}</span>";
+    $color = !empty($result->color) ? $result->color : 'white';
+    $style = !array_key_exists($result->tpps_tag_id, $submission_tags) ? "display: none" : "";
+    $tooltip = $result->static ? "This tag cannot be removed" : "";
+    $tags_markup .= "<span title=\"$tooltip\" class=\"tag\" style=\"background-color:$color; $style\"><span class=\"tag-text\">{$result->name}</span>";
     if (!$result->static) {
       $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-remove\" class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
     }
@@ -168,7 +163,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   }
 
   // Show available tags.
-  $tags_markup .= "<br><label class=\"control-label\">Add Tags:</label><br><div id=\"available-tags\">";
+  $tags_markup .= "<br><label class=\"control-label\">Available Tags:</label><br><div id=\"available-tags\">";
   $query = db_select('tpps_tag', 't')
     ->fields('t')
     ->condition('static', 0)
@@ -185,6 +180,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-add\" class=\"tag add-tag\" style=\"background-color:{$color}; $style\"><span class=\"tag-text\">{$result->name}</span></span>";
   }
   $tags_markup .= "</div>";
+  $tags_markup .= "<a href=\"/tpps-tag\">Manage TPPS Submission Tags</a>";
   $form['tags'] = array(
     '#markup' => $tags_markup,
   );
