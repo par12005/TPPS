@@ -1847,7 +1847,6 @@ function tpps_update_7116() {
       'status' => 'Approved',
     ));
     foreach ($submissions as $state) {
-      $state = tpps_load_submission($state['accession']);
       $data_type = $state['saved_values'][TPPS_PAGE_2]['data_type'];
       if (preg_match('/G/', $data_type)) {
         tpps_submission_add_tag($state['accession'], 'Genotype');
