@@ -163,7 +163,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   }
 
   // Show available tags.
-  $tags_markup .= "<br><label class=\"control-label\">Available Tags:</label><br><div id=\"available-tags\">";
+  $tags_markup .= "<br><label class=\"control-label\">Available Tags (click to add):</label><br><div id=\"available-tags\">";
   $query = db_select('tpps_tag', 't')
     ->fields('t')
     ->condition('static', 0)
