@@ -257,10 +257,11 @@ function tpps_submission_get_tags($accession) {
   $query = $query->execute();
   $results = array();
   while (($result = $query->fetchObject())) {
-    $results[] = array(
+    $results[$result->tpps_tag_id] = array(
       'id' => $result->tpps_tag_id,
       'name' => $result->name,
       'color' => $result->color,
+      'static' => $result->static,
     );
   }
   return $results;

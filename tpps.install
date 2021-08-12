@@ -581,6 +581,13 @@ function tpps_schema() {
         'type' => 'varchar',
         'size' => 'normal',
       ),
+      'static' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
     ),
     'primary key' => array(
       'tpps_tag_id'
@@ -970,6 +977,7 @@ function tpps_default_tags() {
       ->fields(array(
         'name' => $name,
         'color' => $color,
+        'static' => 1,
       ))
       ->execute();
   }
