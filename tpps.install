@@ -1829,7 +1829,7 @@ function tpps_update_7116() {
 
     tpps_default_tags();
 
-    $submissions = tpps_load_submission_multiple(array());
+    $submissions = tpps_load_submission_multiple();
     foreach ($submissions as $state) {
       $tags = tpps_submission_get_tags($state['accession']);
       if (count($tags) == 0) {
@@ -1839,22 +1839,19 @@ function tpps_update_7116() {
         else {
           tpps_submission_add_tag($state['accession'], 'TPPSc');
         }
-      }
-    }
 
-    $submissions = tpps_load_submission_multiple(array(
-      'status' => 'Approved',
-    ));
-    foreach ($submissions as $state) {
-      $data_type = $state['saved_values'][TPPS_PAGE_2]['data_type'];
-      if (preg_match('/G/', $data_type)) {
-        tpps_submission_add_tag($state['accession'], 'Genotype');
-      }
-      if (preg_match('/P/', $data_type)) {
-        tpps_submission_add_tag($state['accession'], 'Phenotype');
-      }
-      if (preg_match('/E/', $data_type)) {
-        tpps_submission_add_tag($state['accession'], 'Environment');
+        if ($state['status'] == 'Approved') {
+          $data_type = $state['saved_values'][TPPS_PAGE_2]['data_type'];
+          if (preg_match('/G/', $data_type)) {
+            tpps_submission_add_tag($state['accession'], 'Genotype');
+          }
+          if (preg_match('/P/', $data_type)) {
+            tpps_submission_add_tag($state['accession'], 'Phenotype');
+          }
+          if (preg_match('/E/', $data_type)) {
+            tpps_submission_add_tag($state['accession'], 'Environment');
+          }
+        }
       }
     }
   }
