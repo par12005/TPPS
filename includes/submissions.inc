@@ -240,6 +240,188 @@ function tpps_submission_add_alternative_accession($state, $alt_accession) {
 }
 
 /**
+ * Display TPPS submission tags.
+ *
+ * @return string
+ *   String of renderable HTML.
+ */
+function tpps_submission_tag_manage() {
+
+  $query = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->execute();
+
+  $rows = array();
+  while (($result = $query->fetchObject())) {
+    $color = !empty($result->color) ? $result->color : 'white';
+    $edit_link = $result->static ? "" : "<a href=\"tpps-tag/edit/{$result->tpps_tag_id}\">edit</a>";
+    $rows[$result->tpps_tag_id] = array(
+      "<span class=\"tag\" style=\"background-color:$color\"><span class=\"tag-text\">{$result->name}</span></span>",
+      $result->name,
+      $color,
+      $edit_link,
+    );
+  }
+
+  ksort($rows);
+
+  $vars = array(
+    'header' => array(
+      'Tag',
+      'Name',
+      'Color',
+      '',
+    ),
+    'rows' => $rows,
+    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  );
+
+  $output = theme_table($vars);
+
+  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+
+  return $output;
+}
+
+/**
+ * Form to create a new submission tag.
+ *
+ * @param array $form
+ *   The form object to be populated.
+ * @param array $form_state
+ *   The state of the form object to be populated.
+ *
+ * @return array
+ *   The populated form object.
+ */
+function tpps_submission_tag_create(array $form, array &$form_state) {
+
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Name'),
+    '#description' => t('The name of the new tag'),
+    '#required' => TRUE,
+    '#prefix' => '<a href="/tpps-tag">Back to TPPS Submission Tags page</a>'
+  );
+
+  $form['color'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Color'),
+    '#description' => t('The color of the new tag. Can be the name of a color, like "red" or "blue", or can be a hexidecimal color like "#FFFFFF" or "#A2C32F". Hexidecimal colors must start with the "#" character.'),
+    '#required' => TRUE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  return $form;
+}
+
+/**
+ * Implements hook_form_validate().
+ */
+function tpps_submission_tag_create_validate(&$form, &$form_state) {
+  $result = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('name', $form_state['values']['name'], 'ILIKE')
+    ->range(0, 1)
+    ->execute()->fetchObject();
+  if (!empty($result)) {
+    form_set_error('name', "A tag already exists with this name. Please select a different name or use the existing tag.");
+  }
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function tpps_submission_tag_create_submit($form, &$form_state) {
+  db_insert('tpps_tag')
+    ->fields(array(
+      'name' => $form_state['values']['name'],
+      'color' => $form_state['values']['color'],
+    ))
+    ->execute();
+  drupal_goto('tpps-tag');
+}
+
+/**
+ * Form to edit a submission tag.
+ *
+ * @param array $form
+ *   The form object to be populated.
+ * @param array $form_state
+ *   The state of the form object to be populated.
+ * @param mixed $tag_id
+ *   The id of the tag being edited.
+ *
+ * @return array
+ *   The populated form object.
+ */
+function tpps_submission_tag_edit(array $form, array &$form_state, $tag_id = NULL) {
+  if (empty($tag_id)) {
+    drupal_goto('tpps-tag');
+  }
+
+  $tag = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('tpps_tag_id', $tag_id)
+    ->range(0, 1)
+    ->execute()->fetchObject();
+
+  if (empty($tag) or $tag->static) {
+    drupal_goto('tpps-tag');
+  }
+
+  $form = tpps_submission_tag_create($form, $form_state);
+
+  $form['name']['#default_value'] = $tag->name;
+  $form['color']['#default_value'] = $tag->color;
+
+  $form['id'] = array(
+    '#type' => 'hidden',
+    '#value' => $tag_id,
+  );
+
+  return $form;
+}
+
+/**
+ * Implements hook_form_validate().
+ */
+function tpps_submission_tag_edit_validate(&$form, &$form_state) {
+  $result = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('name', $form_state['values']['name'], 'ILIKE')
+    ->condition('tpps_tag_id', $form_state['values']['id'], '!=')
+    ->range(0, 1)
+    ->execute()->fetchObject();
+  if (!empty($result)) {
+    form_set_error('name', "A tag already exists with this name. Please select a different name or use the existing tag.");
+  }
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function tpps_submission_tag_edit_submit($form, &$form_state) {
+  db_update('tpps_tag')
+    ->fields(array(
+      'name' => $form_state['values']['name'],
+      'color' => $form_state['values']['color'],
+    ))
+    ->condition('tpps_tag_id', $form_state['values']['id'])
+    ->execute();
+  drupal_goto('tpps-tag');
+}
+
+/**
  * Returns array of tags associated with a submission.
  *
  * @param string $accession
@@ -277,7 +459,17 @@ function tpps_submission_get_tags($accession) {
  * @param mixed $tag
  *   The name or id of the tag to be added or removed.
  */
-function tpps_submission_edit_tag($type, $accession, $tag) {
+function tpps_submission_add_remove_tag($type, $accession, $tag) {
+  $result = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('tpps_tag_id', $tag)
+    ->range(0, 1)
+    ->execute()->fetchObject();
+
+  if ($result->static) {
+    drupal_goto('tpps-tag');
+  }
+
   if ($type == 'add') {
     tpps_submission_add_tag($accession, $tag);
   }
