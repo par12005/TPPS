@@ -143,6 +143,52 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#markup' => $display,
   );
 
+  $submission_tags = tpps_submission_get_tags($submission_state['accession']);
+
+  // Show current tags.
+  $tags_markup = "";
+  $image_path = drupal_get_path('module', 'tpps') . '/images/';
+  $query = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->execute();
+  while (($result = $query->fetchObject())) {
+    $color = $result->color;
+    if (empty($color)) {
+      $color = 'white';
+    }
+    $style = "";
+    if (!array_key_exists($result->tpps_tag_id, $submission_tags)) {
+      $style = 'display: none';
+    }
+    $tags_markup .= "<span class=\"tag\" style=\"background-color:$color; $style\"><span class=\"tag-text\">{$result->name}</span>";
+    if (!$result->static) {
+      $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-remove\" class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
+    }
+    $tags_markup .= "</span>";
+  }
+
+  // Show available tags.
+  $tags_markup .= "<br><label class=\"control-label\">Add Tags:</label><br><div id=\"available-tags\">";
+  $query = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('static', 0)
+    ->execute();
+  while (($result = $query->fetchObject())) {
+    $color = $result->color;
+    if (empty($color)) {
+      $color = 'white';
+    }
+    $style = "";
+    if (array_key_exists($result->tpps_tag_id, $submission_tags)) {
+      $style = 'display: none';
+    }
+    $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-add\" class=\"tag add-tag\" style=\"background-color:{$color}; $style\"><span class=\"tag-text\">{$result->name}</span></span>";
+  }
+  $tags_markup .= "</div>";
+  $form['tags'] = array(
+    '#markup' => $tags_markup,
+  );
+
   if ($status == "Pending Approval") {
 
     $form['params'] = array(
