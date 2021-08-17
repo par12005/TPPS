@@ -297,8 +297,15 @@ function tpps_access() {
         return TRUE;
       }
 
+      $params = drupal_get_query_parameters(NULL, array());
+      $path = $params['q'];
+      preg_match('/^([^\/]+)\/?.*$/', $path, $matches);
+      $form_type = $matches[1] ?? NULL;
+      $full_state = tpps_load_submission($accession);
+      $submission_type = $full_state['tpps_type'] ?? 'tpps';
+
       if (($state = tpps_load_submission($accession, FALSE))) {
-        if ($state->status == "Incomplete" and $state->uid == $user->uid) {
+        if ($state->status == "Incomplete" and $state->uid == $user->uid and $submission_type == $form_type) {
           return TRUE;
         }
       }
