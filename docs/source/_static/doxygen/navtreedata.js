@@ -15,7 +15,7 @@ var NAVTREE =
 var NAVTREEINDEX =
 [
 "accession__coordinates_8inc.html",
-"summary_8php_source.html"
+"submit__all_8php.html#a727356d5f38ea9530c633f889aef0bea"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

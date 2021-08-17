@@ -117,7 +117,7 @@ $(document).ready(function(){initNavTree('globals.html','');});
 
 <h3><a class="anchor" id="index_t"></a>- t -</h3><ul>
 <li>tpps_access()
-: <a class="el" href="tpps_8module.html#ab6d360adf17e04ae1e28c082a3f84cc4">tpps.module</a>
+: <a class="el" href="tpps_8module.html#ab4bbafcb0ab2cd492a724b6176781a2b">tpps.module</a>
 </li>
 <li>tpps_accession_coordinates()
 : <a class="el" href="accession__coordinates_8inc.html#aacc8cb67af84b1ab481843726381694d">accession_coordinates.inc</a>
@@ -164,8 +164,14 @@ $(document).ready(function(){initNavTree('globals.html','');});
 <li>tpps_alter_genotype_call()
 : <a class="el" href="tpps_8install.html#a82a5dcceee2e96b4e0429c765e96096c">tpps.install</a>
 </li>
+<li>tpps_alter_tpps_project_file_managed()
+: <a class="el" href="tpps_8install.html#ae35e32a9ae469f5e0f00c3052975bacc">tpps.install</a>
+</li>
 <li>tpps_alter_tpps_submission_dbxref()
 : <a class="el" href="tpps_8install.html#a557fb393a50f0354b7c2710287ea4390">tpps.install</a>
+</li>
+<li>tpps_alter_tpps_submission_tag()
+: <a class="el" href="tpps_8install.html#a458fa5c104cc751b8c1e8c88dd1b44f2">tpps.install</a>
 </li>
 <li>tpps_alter_tpps_submissions()
 : <a class="el" href="tpps_8install.html#ab261d40c1fe72dbdc136832dd32d7b3f">tpps.install</a>
@@ -313,6 +319,9 @@ $(document).ready(function(){initNavTree('globals.html','');});
 </li>
 <li>tpps_default_permissions()
 : <a class="el" href="tpps_8install.html#a3923dcc7d0012e8eed67f3547d248b85">tpps.install</a>
+</li>
+<li>tpps_default_tags()
+: <a class="el" href="tpps_8install.html#a66184567cd3d4c36d08fe5a968bc650d">tpps.install</a>
 </li>
 <li>tpps_delayed_submissions()
 : <a class="el" href="cron_8inc.html#a402532732afe24e83f3c56a3fd6bd178">cron.inc</a>
@@ -472,6 +481,9 @@ $(document).ready(function(){initNavTree('globals.html','');});
 </li>
 <li>tpps_get_path_extension()
 : <a class="el" href="file__utils_8inc.html#aab568bce2ab8f3f321b3379fab168421">file_utils.inc</a>
+</li>
+<li>tpps_get_tag_id()
+: <a class="el" href="submissions_8inc.html#a823a4567c9fe050d053ba0f007bc928d">submissions.inc</a>
 </li>
 <li>tpps_get_taxon()
 : <a class="el" href="chado__utils_8inc.html#a32510acf7177b9adcb53575b09b1749a">chado_utils.inc</a>
@@ -758,6 +770,9 @@ $(document).ready(function(){initNavTree('globals.html','');});
 <li>tpps_secondary_authors()
 : <a class="el" href="page__1__helper_8php.html#a43ae7fd382ae4dc3ea176bd12efeffa9">page_1_helper.php</a>
 </li>
+<li>tpps_show_tags()
+: <a class="el" href="display_8inc.html#aee0aa7048a90fe8e49239123d3419270">display.inc</a>
+</li>
 <li>tpps_species_autocomplete()
 : <a class="el" href="tpps__ajax_8php.html#a8ca4c7abd46d089588b15ddcd07e5ee5">tpps_ajax.php</a>
 </li>
@@ -791,11 +806,47 @@ $(document).ready(function(){initNavTree('globals.html','');});
 <li>tpps_submission_add_alternative_accession()
 : <a class="el" href="submissions_8inc.html#a5792a5f8cc45c0ba8bf26c02be6e9d07">submissions.inc</a>
 </li>
+<li>tpps_submission_add_remove_tag()
+: <a class="el" href="submissions_8inc.html#aea65755acddaef859d0acfd931335f85">submissions.inc</a>
+</li>
+<li>tpps_submission_add_tag()
+: <a class="el" href="submissions_8inc.html#a416b086e078666817d3130c813db89d3">submissions.inc</a>
+</li>
 <li>tpps_submission_clear_db()
 : <a class="el" href="submissions_8inc.html#a440867f9bb57fd1bbbd404c5c46ccce2">submissions.inc</a>
 </li>
+<li>tpps_submission_clear_default_tags()
+: <a class="el" href="submissions_8inc.html#a3b38a8f0cc9df0422237f40b76aea28f">submissions.inc</a>
+</li>
+<li>tpps_submission_get_tags()
+: <a class="el" href="submissions_8inc.html#af41443707f58cb1e7857bcf8522388cd">submissions.inc</a>
+</li>
+<li>tpps_submission_remove_tag()
+: <a class="el" href="submissions_8inc.html#a5d4dddccdbb860821a698620ec955b6a">submissions.inc</a>
+</li>
 <li>tpps_submission_rename_files()
 : <a class="el" href="submissions_8inc.html#a66bd586fbe5fef386c7115cc0a677ba3">submissions.inc</a>
+</li>
+<li>tpps_submission_tag_create()
+: <a class="el" href="submissions_8inc.html#a379f922c305b8d6c5e043209dd40626a">submissions.inc</a>
+</li>
+<li>tpps_submission_tag_create_submit()
+: <a class="el" href="submissions_8inc.html#af61f09a97f36798f3b46f07cc628747c">submissions.inc</a>
+</li>
+<li>tpps_submission_tag_create_validate()
+: <a class="el" href="submissions_8inc.html#a055dbc3640efa9b0609941afa62153e0">submissions.inc</a>
+</li>
+<li>tpps_submission_tag_edit()
+: <a class="el" href="submissions_8inc.html#a3ed73d93fc8724a4e36cb040307c6934">submissions.inc</a>
+</li>
+<li>tpps_submission_tag_edit_submit()
+: <a class="el" href="submissions_8inc.html#a79280c8286bcdf8eb0cfcbe1ae173bc8">submissions.inc</a>
+</li>
+<li>tpps_submission_tag_edit_validate()
+: <a class="el" href="submissions_8inc.html#a11b14239e0084922d1d5f6af1627517b">submissions.inc</a>
+</li>
+<li>tpps_submission_tag_manage()
+: <a class="el" href="submissions_8inc.html#a685a9194e359ef2887f9673848d1b4ad">submissions.inc</a>
 </li>
 <li>tpps_submission_update_all_stats()
 : <a class="el" href="submissions_8inc.html#a5317a26005ac4a00c559d2936aa1457f">submissions.inc</a>
@@ -837,7 +888,7 @@ $(document).ready(function(){initNavTree('globals.html','');});
 : <a class="el" href="summary_8php.html#a741093a59e6c301ba9033c8c2700f4bd">summary.php</a>
 </li>
 <li>tpps_tab_create()
-: <a class="el" href="display_8inc.html#ace40bd9076880b807af2e3c7e18343e4">display.inc</a>
+: <a class="el" href="display_8inc.html#ab37b1eb7ad7007f39fc74a63c6710946">display.inc</a>
 </li>
 <li>tpps_table_columns()
 : <a class="el" href="chado__utils_8inc.html#a68e5adbe9c2c69f23984f87909fe08b1">chado_utils.inc</a>
@@ -902,6 +953,15 @@ $(document).ready(function(){initNavTree('globals.html','');});
 <li>tpps_update_7113()
 : <a class="el" href="tpps_8install.html#ae73f11256a28564ed95706f1fa9da3d6">tpps.install</a>
 </li>
+<li>tpps_update_7114()
+: <a class="el" href="tpps_8install.html#a9543543887f56045e3499f47365b7236">tpps.install</a>
+</li>
+<li>tpps_update_7115()
+: <a class="el" href="tpps_8install.html#afb8dcdeb4bbb682731d0651fa03256c0">tpps.install</a>
+</li>
+<li>tpps_update_7116()
+: <a class="el" href="tpps_8install.html#a2a5299787fa4e5ab51c05aa98bf994cf">tpps.install</a>
+</li>
 <li>tpps_update_locations()
 : <a class="el" href="page__3__ajax_8php.html#a0892ac701091f34949d949364a53c3b7">page_3_ajax.php</a>
 </li>
@@ -910,6 +970,9 @@ $(document).ready(function(){initNavTree('globals.html','');});
 </li>
 <li>tpps_update_phenotype()
 : <a class="el" href="page__4__ajax_8php.html#a9dd8b062f076c8d683062ecbd7881345">page_4_ajax.php</a>
+</li>
+<li>tpps_update_phenotype_meta()
+: <a class="el" href="page__4__ajax_8php.html#a87c773e3888ce468d1adf618177e4098">page_4_ajax.php</a>
 </li>
 <li>tpps_update_submission()
 : <a class="el" href="submissions_8inc.html#a3ebff14eec8c6c0220fe809e07679eeb">submissions.inc</a>
@@ -941,6 +1004,9 @@ $(document).ready(function(){initNavTree('globals.html','');});
 <li>tpps_xlsx_get_row()
 : <a class="el" href="file__utils_8inc.html#ac918f4fcada1230489f270904c4c0e63">file_utils.inc</a>
 </li>
+<li>tpps_xlsx_get_rows()
+: <a class="el" href="file__utils_8inc.html#a25959c1e5bdea2a2091d588f73921aba">file_utils.inc</a>
+</li>
 <li>tpps_xlsx_get_strings()
 : <a class="el" href="file__utils_8inc.html#aeb48dfcbe1da9e76d38c6eee361bc230">file_utils.inc</a>
 </li>
@@ -959,7 +1025,7 @@ $(document).ready(function(){initNavTree('globals.html','');});
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Thu Jul 15 2021 12:24:47 for Tripal Plant PopGen Submit by
+    <li class="footer">Generated on Tue Aug 17 2021 13:51:57 for Tripal Plant PopGen Submit by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.11 </li>
   </ul>
