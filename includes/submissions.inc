@@ -450,6 +450,23 @@ function tpps_submission_get_tags($accession) {
 }
 
 /**
+ * Removes default tags associated with a submission.
+ *
+ * @param string $accession
+ *   The accession of the desired submission.
+ */
+function tpps_submission_clear_default_tags($accession) {
+  $tags = array(
+    'Genotype',
+    'Phenotype',
+    'Environment',
+  );
+  foreach ($tags as $tag) {
+    tpps_submission_remove_tag($accession, $tag);
+  }
+}
+
+/**
  * Edit submission tags.
  *
  * @param string $type

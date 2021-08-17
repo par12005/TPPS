@@ -33,6 +33,7 @@ function tpps_submit_all($accession, $job = NULL) {
   try {
     $form_state = tpps_load_submission($accession);
     tpps_clean_state($form_state);
+    tpps_submission_clear_default_tags($accession);
     $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
     $form_state['file_rank'] = 0;
     $form_state['ids'] = array();
