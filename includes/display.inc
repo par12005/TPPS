@@ -732,7 +732,7 @@ function tpps_completed_display($accession = NULL) {
 /**
  * This function populates the TPPS Submissions user tab.
  *
- * @param int $user
+ * @param int $uid
  *   The id of the user.
  *
  * @global string $base_url
@@ -741,7 +741,12 @@ function tpps_completed_display($accession = NULL) {
  * @return string
  *   The HTML of the TPPS user tab.
  */
-function tpps_tab_create($user) {
+function tpps_tab_create($uid) {
+
+  $user = user_load($uid);
+  if (empty($user)) {
+    drupal_goto('user');
+  }
 
   global $base_url;
   $params = drupal_get_query_parameters();
