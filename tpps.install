@@ -1843,13 +1843,25 @@ function tpps_update_7116() {
 
         if ($state['status'] == 'Approved') {
           $data_type = $state['saved_values'][TPPS_PAGE_2]['data_type'];
+          $env_phenotypes = FALSE;
           if (preg_match('/G/', $data_type)) {
             tpps_submission_add_tag($state['accession'], 'Genotype');
           }
           if (preg_match('/P/', $data_type)) {
             tpps_submission_add_tag($state['accession'], 'Phenotype');
+            $org_num = $state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+            for ($i = 1; $i <= $org_num; $i++) {
+              $phenotype_num = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['phenotypes-meta']['number'];
+              for ($j = 1; $j <= $phenotype_num; $j++) {
+                $info = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['phenotypes-meta'][$j];
+                if ($info['env-check']) {
+                  $env_phenotypes = TRUE;
+                  break;
+                }
+              }
+            }
           }
-          if (preg_match('/E/', $data_type)) {
+          if (preg_match('/E/', $data_type) or $env_phenotypes) {
             tpps_submission_add_tag($state['accession'], 'Environment');
           }
         }
