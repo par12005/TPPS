@@ -2,7 +2,9 @@ var tpps_8install =
 [
     [ "tpps_add_dryad", "tpps_8install.html#ab55319e6f85a30f02b4be315c58df641", null ],
     [ "tpps_alter_genotype_call", "tpps_8install.html#a82a5dcceee2e96b4e0429c765e96096c", null ],
+    [ "tpps_alter_tpps_project_file_managed", "tpps_8install.html#ae35e32a9ae469f5e0f00c3052975bacc", null ],
     [ "tpps_alter_tpps_submission_dbxref", "tpps_8install.html#a557fb393a50f0354b7c2710287ea4390", null ],
+    [ "tpps_alter_tpps_submission_tag", "tpps_8install.html#a458fa5c104cc751b8c1e8c88dd1b44f2", null ],
     [ "tpps_alter_tpps_submissions", "tpps_8install.html#ab261d40c1fe72dbdc136832dd32d7b3f", null ],
     [ "tpps_create_entities", "tpps_8install.html#a7f5b32d08fa124ea193bd072f4527279", null ],
     [ "tpps_create_genotype_entity", "tpps_8install.html#a94034abbbdbab45b800e6ed00399c7ef", null ],
@@ -10,6 +12,7 @@ var tpps_8install =
     [ "tpps_create_plusgeno_view", "tpps_8install.html#aea3c483e75d1a955bdb40a5aff9b30b6", null ],
     [ "tpps_create_stock_entity", "tpps_8install.html#a88affee5ff56034a85ca26499676167e", null ],
     [ "tpps_default_permissions", "tpps_8install.html#a3923dcc7d0012e8eed67f3547d248b85", null ],
+    [ "tpps_default_tags", "tpps_8install.html#a66184567cd3d4c36d08fe5a968bc650d", null ],
     [ "tpps_install", "tpps_8install.html#a9ba4183733270b3e4235542e0c319a9e", null ],
     [ "tpps_install_cvterms", "tpps_8install.html#a39c2d09e05b4dada711721c2439da2ff", null ],
     [ "tpps_install_miappe_ontology", "tpps_8install.html#a11118b80489fe771d844fa39e0eec913", null ],
@@ -28,5 +31,8 @@ var tpps_8install =
     [ "tpps_update_7110", "tpps_8install.html#aa9553402434045f7912c3516b5d4b19e", null ],
     [ "tpps_update_7111", "tpps_8install.html#a70b049bffa9bc2b964d20a1398cab948", null ],
     [ "tpps_update_7112", "tpps_8install.html#a7e160d56c769231786ceb2413f15673f", null ],
-    [ "tpps_update_7113", "tpps_8install.html#ae73f11256a28564ed95706f1fa9da3d6", null ]
+    [ "tpps_update_7113", "tpps_8install.html#ae73f11256a28564ed95706f1fa9da3d6", null ],
+    [ "tpps_update_7114", "tpps_8install.html#a9543543887f56045e3499f47365b7236", null ],
+    [ "tpps_update_7115", "tpps_8install.html#afb8dcdeb4bbb682731d0651fa03256c0", null ],
+    [ "tpps_update_7116", "tpps_8install.html#a2a5299787fa4e5ab51c05aa98bf994cf", null ]
 ];

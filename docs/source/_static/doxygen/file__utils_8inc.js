@@ -26,6 +26,7 @@ var file__utils_8inc =
     [ "tpps_xlsx_get_cell_value", "file__utils_8inc.html#a7b81987f3b85a902ea5542b66345398c", null ],
     [ "tpps_xlsx_get_dimension", "file__utils_8inc.html#afe0df5b92f8425efc2d3cd9940bc1e51", null ],
     [ "tpps_xlsx_get_row", "file__utils_8inc.html#ac918f4fcada1230489f270904c4c0e63", null ],
+    [ "tpps_xlsx_get_rows", "file__utils_8inc.html#a25959c1e5bdea2a2091d588f73921aba", null ],
     [ "tpps_xlsx_get_strings", "file__utils_8inc.html#aeb48dfcbe1da9e76d38c6eee361bc230", null ],
     [ "tpps_xlsx_translate_date", "file__utils_8inc.html#a65da39eb37cedbb6c9fce5c088bbf665", null ],
     [ "tpps_xlsx_width", "file__utils_8inc.html#a381868684e1030cc0c461c25a5789b7d", null ]
