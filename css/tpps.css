@@ -80,6 +80,30 @@ th > div.form-type-select > .ajax-progress {
 .hide-me {
   display: none !important;
 }
+.tag {
+  display: inline-flex;
+  border: 1px solid;
+  border-radius: 0.75rem;
+  margin-top: 4px;
+  margin-right: 4px;
+}
+.tag-text {
+  padding-left: .5rem;
+  padding-right: .5rem;
+  padding-top: .25rem;
+  padding-bottom: .25rem;
+}
+.tag-close {
+  padding-left: .5rem;
+  padding-right: .5rem;
+  padding-top: .125rem;
+}
+.tag-close:hover {
+  cursor: pointer;
+}
+.add-tag:hover {
+  cursor: pointer;
+}
 #tpps_table_display,
 .tpps_table {
   background: #ffffff;

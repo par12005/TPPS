@@ -874,6 +874,24 @@ function tpps_preview_file() {
     return;
   }
   $rows = $params['rows'] ?? 3;
+  $file = file_load($fid);
+  $location = tpps_get_location($file->uri);
+  $extension = tpps_get_path_extension($location);
+
+  if ($extension == 'vcf') {
+    $display = "";
+    $count = 0;
+    $vcf_content = fopen($location, 'r');
+    while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+      $display .= $vcf_line . "<br>";
+      $count++;
+      if ($count > $rows) {
+        break;
+      }
+    }
+    print(render($display));
+    return;
+  }
 
   if ((file_load($fid))) {
     $content = tpps_parse_file($fid, $rows, !empty($no_header));
@@ -926,4 +944,22 @@ function tpps_entity_link($id, $name, $label) {
     return "<a href=\"$base_url/bio_data/$entity_id\">$name</a>";
   }
   return $name;
+}
+
+/**
+ * Displays tags with proper styling.
+ *
+ * @param array $tags
+ *   The array of tags to display.
+ *
+ * @return string
+ *   HTML string displaying all of the tags.
+ */
+function tpps_show_tags($tags) {
+  $display = "";
+  foreach ($tags as $tag) {
+    $color = !empty($tag['color']) ? $tag['color'] : 'white';
+    $display .= "<span class=\"tag\" style=\"background-color:$color\"><span class=\"tag-text\">{$tag['name']}</span></span>";
+  }
+  return $display;
 }

@@ -33,6 +33,7 @@ function tpps_submit_all($accession, $job = NULL) {
   try {
     $form_state = tpps_load_submission($accession);
     tpps_clean_state($form_state);
+    tpps_submission_clear_default_tags($accession);
     $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
     $form_state['file_rank'] = 0;
     $form_state['ids'] = array();
@@ -935,6 +936,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
   if (empty($phenotype)) {
     return;
   }
+  tpps_submission_add_tag($form_state['accession'], 'Phenotype');
 
   // Get appropriate cvterms.
   $phenotype_cvterms = array(
@@ -943,6 +945,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
     'unit' => tpps_load_cvterm('unit')->cvterm_id,
     'min' => tpps_load_cvterm('minimum')->cvterm_id,
     'max' => tpps_load_cvterm('maximum')->cvterm_id,
+    'environment' => tpps_load_cvterm('environment')->cvterm_id,
   );
 
   $records = array(
@@ -972,6 +975,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
 
     tpps_add_project_file($form_state, $data_fid);
 
+    $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
@@ -998,6 +1002,12 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
         $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
       }
       $phenotypes_meta[$name]['env'] = !empty($phenotype['phenotypes-meta'][$j]['env-check']);
+      if ($phenotypes_meta[$name]['env']) {
+        $env_phenotypes = TRUE;
+      }
+    }
+    if ($env_phenotypes) {
+      tpps_submission_add_tag($form_state['accession'], 'Environment');
     }
 
     if ($phenotype['check'] == '1') {
@@ -1106,6 +1116,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
   if (empty($genotype)) {
     return;
   }
+  tpps_submission_add_tag($form_state['accession'], 'Genotype');
+
   $project_id = $form_state['ids']['project_id'];
   $record_group = variable_get('tpps_record_group', 10000);
 
@@ -1599,6 +1611,7 @@ function tpps_submit_environment(array &$form_state, $i, &$job = NULL) {
   if (empty($environment)) {
     return;
   }
+  tpps_submission_add_tag($form_state['accession'], 'Environment');
 
   $env_layers = isset($environment['env_layers']) ? $environment['env_layers'] : FALSE;
   $env_params = isset($environment['env_params']) ? $environment['env_params'] : FALSE;
@@ -1708,9 +1721,11 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
 
   $name = strtolower($row[$columns['name']]);
   $meta[$name] = array();
-  $meta[$name]['attr'] = $row[$columns['attr']];
+  $meta[$name]['attr'] = 'other';
+  $meta[$name]['attr-other'] = $row[$columns['attr']];
   $meta[$name]['desc'] = $row[$columns['desc']];
-  $meta[$name]['unit'] = $row[$columns['unit']];
+  $meta[$name]['unit'] = 'other';
+  $meta[$name]['unit-other'] = $row[$columns['unit']];
   if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
     $meta[$name]['struct'] = 'other';
     $meta[$name]['struct-other'] = $row[$columns['struct']];
@@ -2017,6 +2032,15 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       $records['phenotypeprop']["$phenotype_name-max"] = array(
         'type_id' => $cvterms['max'],
         'value' => $meta[strtolower($name)]['max'],
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+    }
+
+    if (!empty($meta[strtolower($name)]['env'])) {
+      $records['phenotype_cvterm']["$phenotype_name-env"] = array(
+        'cvterm_id' => $cvterms['environment'],
         '#fk' => array(
           'phenotype' => $phenotype_name,
         ),

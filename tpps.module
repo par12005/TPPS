@@ -178,6 +178,41 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['tpps-tag'] = array(
+    'title' => 'TPPS Submission Tags',
+    'page callback' => 'tpps_submission_tag_manage',
+    'access callback' => 'tpps_access',
+    'access arguments' => array('administer tpps module'),
+    'type' => MENU_NORMAL_ITEM
+  );
+
+  $items['tpps-tag/create'] = array(
+    'title' => 'Create new TPPS Submission Tag',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tpps_submission_tag_create'),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('administer tpps module'),
+    'type' => MENU_LOCAL_ACTION,
+  );
+
+  $items['tpps-tag/edit/%'] = array(
+    'title' => 'TPPS Edit Tag',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tpps_submission_tag_edit', 2),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('administer tpps module'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  $items['tpps-tag/%/%/%'] = array(
+    'title' => 'TPPS Add/Remove Tag',
+    'page callback' => 'tpps_submission_add_remove_tag',
+    'page arguments' => array(1, 2, 3),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('administer tpps module'),
+    'type' => MENU_CALLBACK,
+  );
+
   $items = array_merge($items, tpps_api_paths());
 
   return $items;
