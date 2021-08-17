@@ -781,7 +781,7 @@ function tpps_alter_tpps_project_file_managed() {
 }
 
 /**
- *
+ * Add foreign key constraints to the tpps_submission_tag table.
  */
 function tpps_alter_tpps_submission_tag() {
   $results = db_query("SELECT contype "
