@@ -944,6 +944,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
     'unit' => tpps_load_cvterm('unit')->cvterm_id,
     'min' => tpps_load_cvterm('minimum')->cvterm_id,
     'max' => tpps_load_cvterm('maximum')->cvterm_id,
+    'environment' => tpps_load_cvterm('environment')->cvterm_id,
   );
 
   $records = array(
