@@ -950,3 +950,21 @@ function tpps_entity_link($id, $name, $label) {
   }
   return $name;
 }
+
+/**
+ * Displays tags with proper styling.
+ *
+ * @param array $tags
+ *   The array of tags to display.
+ *
+ * @return string
+ *   HTML string displaying all of the tags.
+ */
+function tpps_show_tags($tags) {
+  $display = "";
+  foreach ($tags as $tag) {
+    $color = !empty($tag['color']) ? $tag['color'] : 'white';
+    $display .= "<span class=\"tag\" style=\"background-color:$color\"><span class=\"tag-text\">{$tag['name']}</span></span>";
+  }
+  return $display;
+}

@@ -131,6 +131,43 @@ jQuery(document).ready(function ($) {
   });
 
   initDetailPages();
+
+  var admin_panel_regex = /tpps-admin-panel\/TGDR.*/g;
+  if (window.location.pathname.match(admin_panel_regex)) {
+    var tag_buttons = jQuery('span').filter(function() { return (this.id.match(/TGDR[0-9]+-tag-[0-9]*-add|remove/) && !this.disabled); });
+    jQuery.each(tag_buttons, function() {
+      jQuery(this).click(function() {
+        var tag_button = this;
+        var info = this.id.match(/(TGDR[0-9]+)-tag-([0-9]*)-(add|remove)/);
+        if (info.length == 4) {
+          var request = jQuery.get('/tpps-tag/' + info[3] + '/' + info[1] + '/' + info[2]);
+          request.done(function (data) {
+            if (info[3] == 'remove') {
+              jQuery(tag_button).parent().hide();
+              var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-add');
+              jQuery('span').filter(function() { return this.id.match(pattern); }).show();
+            }
+            else {
+              jQuery(tag_button).hide();
+              var pattern = new RegExp('TGDR[0-9]+-tag-' + info[2] + '-remove');
+              jQuery('span.tag-close').filter(function() { return this.id.match(pattern); }).parent().show();
+            }
+          });
+        }
+        else {
+          console.log('Could not parse accession/tag id/edit type from button id');
+          console.log(info);
+        }
+      });
+    });
+
+    var add_tags = jQuery('span').filter(function() { return this.id.match(/TGDR[0-9]+-add-tags/); });
+    jQuery.each(add_tags, function() {
+      jQuery(this).click(function() {
+        console.log(this);
+      })
+    })
+  }
 });
 
 jQuery.fn.mapButtonsClick = function (selector) {

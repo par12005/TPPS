@@ -143,6 +143,48 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#markup' => $display,
   );
 
+  $submission_tags = tpps_submission_get_tags($submission_state['accession']);
+
+  // Show current tags.
+  $tags_markup = "<label class=\"control-label\">Current Tags:</label><br>";
+  $image_path = drupal_get_path('module', 'tpps') . '/images/';
+  $query = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->execute();
+  while (($result = $query->fetchObject())) {
+    $color = !empty($result->color) ? $result->color : 'white';
+    $style = !array_key_exists($result->tpps_tag_id, $submission_tags) ? "display: none" : "";
+    $tooltip = $result->static ? "This tag cannot be removed" : "";
+    $tags_markup .= "<span title=\"$tooltip\" class=\"tag\" style=\"background-color:$color; $style\"><span class=\"tag-text\">{$result->name}</span>";
+    if (!$result->static) {
+      $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-remove\" class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
+    }
+    $tags_markup .= "</span>";
+  }
+
+  // Show available tags.
+  $tags_markup .= "<br><label class=\"control-label\">Available Tags (click to add):</label><br><div id=\"available-tags\">";
+  $query = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('static', 0)
+    ->execute();
+  while (($result = $query->fetchObject())) {
+    $color = $result->color;
+    if (empty($color)) {
+      $color = 'white';
+    }
+    $style = "";
+    if (array_key_exists($result->tpps_tag_id, $submission_tags)) {
+      $style = 'display: none';
+    }
+    $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-add\" class=\"tag add-tag\" style=\"background-color:{$color}; $style\"><span class=\"tag-text\">{$result->name}</span></span>";
+  }
+  $tags_markup .= "</div>";
+  $tags_markup .= "<a href=\"/tpps-tag\">Manage TPPS Submission Tags</a>";
+  $form['tags'] = array(
+    '#markup' => "<div id=\"tags\">$tags_markup</div>",
+  );
+
   if ($status == "Pending Approval") {
 
     $form['params'] = array(
@@ -617,6 +659,7 @@ function tpps_admin_panel_top(array &$form) {
             $submitting_user,
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             !empty($state['completed']) ? date("F j, Y, g:i a", $state['completed']) : "Unknown",
+            tpps_show_tags(tpps_submission_get_tags($state['accession'])),
           );
           $pending[(int) substr($state['accession'], 4)] = $row;
           break;
@@ -636,6 +679,7 @@ function tpps_admin_panel_top(array &$form) {
             $submitting_user,
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             $status_label,
+            tpps_show_tags(tpps_submission_get_tags($state['accession'])),
           );
           $approved[(int) substr($state['accession'], 4)] = $row;
           break;
@@ -673,6 +717,7 @@ function tpps_admin_panel_top(array &$form) {
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? 'Title not provided yet',
             $stage,
             !empty($state['updated']) ? date("F j, Y, g:i a", $state['updated']) : "Unknown",
+            tpps_show_tags(tpps_submission_get_tags($state['accession'])),
           );
           $incomplete[(int) substr($state['accession'], 4)] = $row;
           break;
@@ -699,6 +744,7 @@ function tpps_admin_panel_top(array &$form) {
     'Submitting User',
     'Title',
     'Date Submitted',
+    'Tags',
   );
   $vars['rows'] = $pending;
   $pending_table = theme_table($vars);
@@ -708,6 +754,7 @@ function tpps_admin_panel_top(array &$form) {
     'Submitting User',
     'Title',
     'Status',
+    'Tags',
   );
   $vars['rows'] = $approved;
   $approved_table = theme_table($vars);
@@ -718,6 +765,7 @@ function tpps_admin_panel_top(array &$form) {
     'Title',
     'Stage',
     'Last Updated',
+    'Tags',
   );
   $vars['rows'] = $incomplete;
   $incomplete_table = theme_table($vars);

@@ -135,6 +135,13 @@ function tpps_create_submission(array $state, $uid) {
   db_insert('tpps_submission')
     ->fields($values)
     ->execute();
+
+  if ((!isset($state['tpps_type']) or $state['tpps_type'] != 'tppsc')) {
+    tpps_submission_add_tag($state['accession'], 'TPPS');
+  }
+  else {
+    tpps_submission_add_tag($state['accession'], 'TPPSc');
+  }
 }
 
 /**
@@ -230,6 +237,332 @@ function tpps_submission_add_alternative_accession($state, $alt_accession) {
       ))
       ->execute();
   }
+}
+
+/**
+ * Display TPPS submission tags.
+ *
+ * @return string
+ *   String of renderable HTML.
+ */
+function tpps_submission_tag_manage() {
+
+  $query = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->execute();
+
+  $rows = array();
+  while (($result = $query->fetchObject())) {
+    $color = !empty($result->color) ? $result->color : 'white';
+    $edit_link = $result->static ? "" : "<a href=\"tpps-tag/edit/{$result->tpps_tag_id}\">edit</a>";
+    $rows[$result->tpps_tag_id] = array(
+      "<span class=\"tag\" style=\"background-color:$color\"><span class=\"tag-text\">{$result->name}</span></span>",
+      $result->name,
+      $color,
+      $edit_link,
+    );
+  }
+
+  ksort($rows);
+
+  $vars = array(
+    'header' => array(
+      'Tag',
+      'Name',
+      'Color',
+      '',
+    ),
+    'rows' => $rows,
+    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  );
+
+  $output = theme_table($vars);
+
+  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+
+  return $output;
+}
+
+/**
+ * Form to create a new submission tag.
+ *
+ * @param array $form
+ *   The form object to be populated.
+ * @param array $form_state
+ *   The state of the form object to be populated.
+ *
+ * @return array
+ *   The populated form object.
+ */
+function tpps_submission_tag_create(array $form, array &$form_state) {
+
+  $form['name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Name'),
+    '#description' => t('The name of the new tag'),
+    '#required' => TRUE,
+    '#prefix' => '<a href="/tpps-tag">Back to TPPS Submission Tags page</a>'
+  );
+
+  $form['color'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Color'),
+    '#description' => t('The color of the new tag. Can be the name of a color, like "red" or "blue", or can be a hexidecimal color like "#FFFFFF" or "#A2C32F". Hexidecimal colors must start with the "#" character.'),
+    '#required' => TRUE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  return $form;
+}
+
+/**
+ * Implements hook_form_validate().
+ */
+function tpps_submission_tag_create_validate(&$form, &$form_state) {
+  $result = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('name', $form_state['values']['name'], 'ILIKE')
+    ->range(0, 1)
+    ->execute()->fetchObject();
+  if (!empty($result)) {
+    form_set_error('name', "A tag already exists with this name. Please select a different name or use the existing tag.");
+  }
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function tpps_submission_tag_create_submit($form, &$form_state) {
+  db_insert('tpps_tag')
+    ->fields(array(
+      'name' => $form_state['values']['name'],
+      'color' => $form_state['values']['color'],
+    ))
+    ->execute();
+  drupal_goto('tpps-tag');
+}
+
+/**
+ * Form to edit a submission tag.
+ *
+ * @param array $form
+ *   The form object to be populated.
+ * @param array $form_state
+ *   The state of the form object to be populated.
+ * @param mixed $tag_id
+ *   The id of the tag being edited.
+ *
+ * @return array
+ *   The populated form object.
+ */
+function tpps_submission_tag_edit(array $form, array &$form_state, $tag_id = NULL) {
+  if (empty($tag_id)) {
+    drupal_goto('tpps-tag');
+  }
+
+  $tag = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('tpps_tag_id', $tag_id)
+    ->range(0, 1)
+    ->execute()->fetchObject();
+
+  if (empty($tag) or $tag->static) {
+    drupal_goto('tpps-tag');
+  }
+
+  $form = tpps_submission_tag_create($form, $form_state);
+
+  $form['name']['#default_value'] = $tag->name;
+  $form['color']['#default_value'] = $tag->color;
+
+  $form['id'] = array(
+    '#type' => 'hidden',
+    '#value' => $tag_id,
+  );
+
+  return $form;
+}
+
+/**
+ * Implements hook_form_validate().
+ */
+function tpps_submission_tag_edit_validate(&$form, &$form_state) {
+  $result = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('name', $form_state['values']['name'], 'ILIKE')
+    ->condition('tpps_tag_id', $form_state['values']['id'], '!=')
+    ->range(0, 1)
+    ->execute()->fetchObject();
+  if (!empty($result)) {
+    form_set_error('name', "A tag already exists with this name. Please select a different name or use the existing tag.");
+  }
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function tpps_submission_tag_edit_submit($form, &$form_state) {
+  db_update('tpps_tag')
+    ->fields(array(
+      'name' => $form_state['values']['name'],
+      'color' => $form_state['values']['color'],
+    ))
+    ->condition('tpps_tag_id', $form_state['values']['id'])
+    ->execute();
+  drupal_goto('tpps-tag');
+}
+
+/**
+ * Returns array of tags associated with a submission.
+ *
+ * @param string $accession
+ *   The accession of the desired submission.
+ *
+ * @return array
+ *   Array of tags associated with the submission.
+ */
+function tpps_submission_get_tags($accession) {
+  $query = db_select('tpps_submission_tag', 'st');
+  $query->join('tpps_submission', 's', 's.tpps_submission_id = st.tpps_submission_id');
+  $query->join('tpps_tag', 't', 't.tpps_tag_id = st.tpps_tag_id');
+  $query->fields('t');
+  $query->condition('s.accession', $accession);
+  $query = $query->execute();
+  $results = array();
+  while (($result = $query->fetchObject())) {
+    $results[$result->tpps_tag_id] = array(
+      'id' => $result->tpps_tag_id,
+      'name' => $result->name,
+      'color' => $result->color,
+      'static' => $result->static,
+    );
+  }
+  return $results;
+}
+
+/**
+ * Removes default tags associated with a submission.
+ *
+ * @param string $accession
+ *   The accession of the desired submission.
+ */
+function tpps_submission_clear_default_tags($accession) {
+  $tags = array(
+    'Genotype',
+    'Phenotype',
+    'Environment',
+  );
+  foreach ($tags as $tag) {
+    tpps_submission_remove_tag($accession, $tag);
+  }
+}
+
+/**
+ * Edit submission tags.
+ *
+ * @param string $type
+ *   Either 'add' or 'remove'.
+ * @param string $accession
+ *   The accession of the desired submission.
+ * @param mixed $tag
+ *   The name or id of the tag to be added or removed.
+ */
+function tpps_submission_add_remove_tag($type, $accession, $tag) {
+  $result = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->condition('tpps_tag_id', $tag)
+    ->range(0, 1)
+    ->execute()->fetchObject();
+
+  if ($result->static) {
+    drupal_goto('tpps-tag');
+  }
+
+  if ($type == 'add') {
+    tpps_submission_add_tag($accession, $tag);
+  }
+  if ($type == 'remove') {
+    tpps_submission_remove_tag($accession, $tag);
+  }
+}
+
+/**
+ * Adds a tag to a submission.
+ *
+ * @param string $accession
+ *   The accession of the desired submission.
+ * @param mixed $tag
+ *   The name or id of the tag to be added.
+ */
+function tpps_submission_add_tag($accession, $tag) {
+  if (gettype($tag) == 'string') {
+    $id = tpps_get_tag_id($tag);
+    if (!empty($id)) {
+      $tag = $id;
+    }
+  }
+
+  $tags = tpps_submission_get_tags($accession);
+  if (!array_key_exists($tag, $tags)) {
+    db_insert('tpps_submission_tag')
+      ->fields(array(
+        'tpps_submission_id' => tpps_load_submission($accession, FALSE)->tpps_submission_id,
+        'tpps_tag_id' => $tag,
+      ))
+      ->execute();
+  }
+}
+
+/**
+ * Removes a tag from a submission.
+ *
+ * @param string $accession
+ *   The accession of the desired submission.
+ * @param mixed $tag
+ *   The name or id of the tag to be removed.
+ */
+function tpps_submission_remove_tag($accession, $tag) {
+  if (gettype($tag) == 'string') {
+    $id = tpps_get_tag_id($tag);
+    if (!empty($id)) {
+      $tag = $id;
+    }
+  }
+  db_delete('tpps_submission_tag')
+    ->condition('tpps_submission_id', tpps_load_submission($accession, FALSE)->tpps_submission_id)
+    ->condition('tpps_tag_id', $tag)
+    ->execute();
+}
+
+/**
+ * Returns the id of a tag based on the name.
+ *
+ * @param string $name
+ *   The name of the desired tag.
+ *
+ * @return int
+ *   The id of the tag.
+ */
+function tpps_get_tag_id($name) {
+  $result = db_select('tpps_tag', 't')
+    ->fields('t', array('tpps_tag_id'))
+    ->condition('name', $name)
+    ->range(0, 1)
+    ->execute()->fetchObject();
+
+  if ($result) {
+    return $result->tpps_tag_id;
+  }
+  return FALSE;
 }
 
 /**
