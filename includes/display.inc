@@ -879,6 +879,24 @@ function tpps_preview_file() {
     return;
   }
   $rows = $params['rows'] ?? 3;
+  $file = file_load($fid);
+  $location = tpps_get_location($file->uri);
+  $extension = tpps_get_path_extension($location);
+
+  if ($extension == 'vcf') {
+    $display = "";
+    $count = 0;
+    $vcf_content = fopen($location, 'r');
+    while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+      $display .= $vcf_line . "<br>";
+      $count++;
+      if ($count > $rows) {
+        break;
+      }
+    }
+    print(render($display));
+    return;
+  }
 
   if ((file_load($fid))) {
     $content = tpps_parse_file($fid, $rows, !empty($no_header));

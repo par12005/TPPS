@@ -413,7 +413,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   ));
 
   $phenotypes = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta'), NULL);
-  for ($i = 1; $i <= $phenotypes['number']; $i++) {
+  $phenotype_number = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta', 'number'), NULL);
+  for ($i = 1; $i <= $phenotype_number; $i++) {
     if (empty($phenotypes[$i])) {
       continue;
     }

@@ -115,6 +115,8 @@ function tpps_details($accession = NULL) {
     return $output;
   }
 
+  drupal_set_message(t('This submission is pending resubmission through the new TPPS pipeline. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
+
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
@@ -322,9 +324,14 @@ function tpps_details_top() {
       $species[] = tpps_entity_link($result->organism_id, "{$result->genus} {$result->species}", 'Organism');
     }
 
+    $warning = "";
+    if (empty(tpps_load_submission($sub->accession))) {
+      $warning = "<img src='$base_url/misc/message-16-warning.png' title='This study has not yet been resubmitted through the new TPPS pipeline'> ";
+    }
+
     $row = array(
       "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->accession}</a>",
-      "<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->title}</a>",
+      "$warning<a href=\"$base_url/tpps/details/{$sub->accession}\">{$sub->title}</a>",
       implode('<br>', $species),
       $sub->tree_count,
       $sub->phenotypes_assessed,

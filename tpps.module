@@ -835,6 +835,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
  * if the input is not valid.
  */
 function tpps_main_validate(&$form, &$form_state) {
+  global $user;
 
   if ($form_state['triggering_element']['#value'] == 'Back' or $form_state['triggering_element']['#value'] == 'Save') {
 
@@ -874,7 +875,7 @@ function tpps_main_validate(&$form, &$form_state) {
 
   drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
 
-  if (!form_get_errors()) {
+  if ($user->uid !== 0 and !form_get_errors()) {
     $form_state['values']['#cleared'] = TRUE;
     if ($form_state['submitted'] == '1') {
       tpps_submission_update_stats($form_state);
