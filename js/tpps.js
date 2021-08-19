@@ -115,8 +115,11 @@ jQuery(document).ready(function ($) {
     var accession = jQuery(':input[name="accession"]')[0].value;
     var request = jQuery.get('/tpps/' + accession + '/pre-validate/' + jid + '/status');
     request.done(function(job) {
+      if (job === null || typeof job !== 'object' || !job.hasOwnProperty('status')) {
+        jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">There was a problem checking the status of job with id " + jid + "</div>");
+      }
       // If this job is completed, check all the other jobs.
-      if (job.status === "Completed") {
+      else if (job.status === "Completed") {
         // This job is no longer pending.
         pending_jobs[jid] = false;
         var jobs_complete = true;
@@ -182,13 +185,21 @@ jQuery(document).ready(function ($) {
       // Initialize vcf jobs and begin checkVCFJob routines.
       var request = jQuery.get('/tpps/' + accession + '/pre-validate', {"vcfs": vcfs});
       request.done(function(jobs) {
-        console.log('jobs initialized!');
-        console.log(jobs);
-        for (job of jobs) {
-          checkVCFJob(job);
-          pending_jobs[job] = true;
+        if (typeof jobs === 'string') {
+          jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">" + jobs + "</div>");
         }
-        jQuery('#pre-validate-message').html('<img src="/misc/throbber-active.gif"> Pre-validating VCF files. This may take some time...');
+        else if (!Array.isArray(jobs) || jobs.length == 0) {
+          jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">There was a problem with pre-validating your VCF files. Please reload the page and try again</div>");
+        }
+        else {
+          console.log('jobs initialized!');
+          console.log(jobs);
+          for (job of jobs) {
+            checkVCFJob(job);
+            pending_jobs[job] = true;
+          }
+          jQuery('#pre-validate-message').html('<img src="/misc/throbber-active.gif"> Pre-validating VCF files. This may take some time...');
+        }
       });
     }
     else {
