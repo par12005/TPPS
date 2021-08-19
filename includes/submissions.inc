@@ -318,6 +318,7 @@ function tpps_submission_tag_create(array $form, array &$form_state) {
     '#title' => t('Color'),
     '#description' => t('The color of the new tag. Can be the name of a color, like "red" or "blue", or can be a hexidecimal color like "#FFFFFF" or "#A2C32F". Hexidecimal colors must start with the "#" character.'),
     '#required' => TRUE,
+    '#suffix' => '<div id="color-picker"><a>Toggle Color Picker</a></div>',
   );
 
   $form['submit'] = array(
