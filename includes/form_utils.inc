@@ -310,3 +310,155 @@ function tpps_form_state_info(&$new, &$old) {
   $new['data'] = $old['data'] ?? NULL;
   $new['phenotypes_edit'] = $old['phenotypes_edit'] ?? NULL;
 }
+
+/**
+ * Initializes TPPS VCF file pre-validation jobs.
+ *
+ * This function also requires that the body of the pre-validation request
+ * contains the file ids of all of the VCF files that need to be pre-validated.
+ *
+ * @param string $accession
+ *   The accession of the submission to pre-validate.
+ */
+function tpps_pre_validate_init($accession = NULL) {
+  $state = tpps_load_submission($accession);
+  if (empty($accession) or empty($state)) {
+    drupal_json_output("Submission could not be loaded from accession");
+    return;
+  }
+  $params = drupal_get_query_parameters(NULL, array());
+  $vcfs = $params['vcfs'] ?? NULL;
+  if (!is_array($vcfs) or empty($vcfs)) {
+    drupal_json_output("No VCF file ids were provided");
+    return;
+  }
+  foreach ($vcfs as $fid) {
+    if (!file_load($fid)) {
+      drupal_json_output("Could not load one or more VCFs from file ID");
+      return;
+    }
+  }
+
+  $state['vcf_val_errors'] = array();
+  $state['vcf_validated'] = FALSE;
+  tpps_update_submission($state);
+
+  global $user;
+
+  $jobs = array();
+  foreach ($vcfs as $org_num => $fid) {
+    $includes = array();
+    $includes[] = module_load_include('inc', 'tpps', 'includes/form_utils');
+    $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+    $args = array($accession, $fid, $org_num);
+    $jobs[] = tripal_add_job("{$accession} Pre-validate VCF {$fid}", 'tpps', 'tpps_pre_validate', $args, $user->uid, 10, $includes, TRUE);
+  }
+  drupal_get_messages('status', TRUE);
+
+  drupal_json_output($jobs);
+}
+
+/**
+ * Check the status of a TPPS pre-validation job.
+ *
+ * @param string $accession
+ *   The accession of the submission being pre-validated.
+ * @param int $jid
+ *   The id of the pre-validation job.
+ */
+function tpps_pre_validate_status($accession = NULL, $jid = NULL) {
+  $job = tripal_get_job($jid);
+
+  if ($job->status == 'Completed') {
+    $state = tpps_load_submission($accession);
+    $job->val_errors = $state['vcf_val_errors'] ?? array();
+    if (empty($job->val_errors)) {
+      $state['vcf_validated'] = TRUE;
+      tpps_update_submission($state);
+    }
+  }
+
+  drupal_json_output($job);
+}
+
+/**
+ * Executes a TPPS pre-validation job.
+ *
+ * @param string $accession
+ *   The accession of the submission being pre-validated.
+ * @param int $fid
+ *   The id of the file to be pre-validated.
+ * @param int $org_num
+ *   The organism number that this file is associated with.
+ * @param mixed $job
+ *   The TripalJob object of the current job.
+ */
+function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
+  if (empty($job)) {
+    return;
+  }
+  $job->logMessage("[INFO] TGDR Accession: $accession");
+  $job->logMessage("[INFO] VCF File ID: $fid");
+  $job->logMessage("[INFO] Organism Number: $org_num");
+  $vcf_file = file_load($fid);
+  if (!$vcf_file) {
+    $job->logMessage("[ERROR] VCF File failed to load", array(), TRIPAL_ERROR);
+    return;
+  }
+  $job->logMessage("[INFO] VCF File Location: {$vcf_file->uri}");
+
+  $state = tpps_load_submission($accession);
+  if (empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+    $species_index = 'species-1';
+  }
+  else {
+    $species_index = "species-$org_num";
+  }
+  $tree_accession_file = $state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
+  $id_col_accession_name = $state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+  $accession_ids = tpps_parse_file_column($tree_accession_file, $id_col_accession_name);
+
+  $job->logMessage("[INFO] Extracting VCF archive...");
+  $location = tpps_get_location($vcf_file->uri);
+  $job->logMessage("[INFO] Opening $location...");
+  $vcf_content = fopen($location, 'r');
+  $stocks = array();
+  while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+    if (preg_match('/#CHROM/', $vcf_line)) {
+      $vcf_line = explode("\t", $vcf_line);
+      for ($j = 9; $j < count($vcf_line); $j++) {
+        $stocks[] = trim($vcf_line[$j]);
+      }
+      break;
+    }
+  }
+
+  $state_errors = $state['vcf_val_errors'] ?? array();
+  if (count($stocks) == 0) {
+    $message = "unable to parse Plant Identifiers. The format of your VCF file must be invalid";
+    $job->logMessage("[ERROR] $message", array(), TRIPAL_ERROR);
+    $state_errors[] = "Genotype VCF File: $message";
+  }
+  else {
+    $missing_plants = array();
+    foreach ($stocks as $stock_id) {
+      if (array_search($stock_id, $accession_ids) === FALSE) {
+        $missing_plants[] = $stock_id;
+      }
+    }
+    if (count($missing_plants) > 0) {
+      $missing_plants = implode(', ', $missing_plants);
+      $message = "We found Plant Identifiers in your VCF file that were not present in your accession file. Please either add these plants to your accession file or remove them from your VCF file. The missing plants are: {$missing_plants}.";
+      $job->logMessage("[ERROR] $message", array(), TRIPAL_ERROR);
+      $state_errors[] = "Genotype VCF File: $message";
+    }
+  }
+
+  if (empty($state_errors)) {
+    $job->logMessage("[INFO] VCF Validated successfully - no errors!");
+  }
+  else {
+    $state['vcf_val_errors'] = $state_errors;
+    tpps_update_submission($state);
+  }
+}
