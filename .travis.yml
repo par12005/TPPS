@@ -20,4 +20,5 @@ script:
   - docker exec -it tripal bash -c "cd /modules/ && git clone https://github.com/statonlab/tripal_manage_analyses.git && drush pm-enable -y tripal_manage_analyses"
   - docker exec -it tripal bash -c "cd /modules/ && git clone https://github.com/NAL-i5K/tripal_eutils.git && drush pm-enable -y tripal_eutils"
   - docker exec -it tripal drush pm-enable -y tpps
+  - docker exec -it tripal drush updatedb -y
   - docker exec -it tripal bash -c "cd /modules/tpps && composer install && DRUPAL_ROOT=/var/www/html ./vendor/bin/phpunit"
