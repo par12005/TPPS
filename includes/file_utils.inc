@@ -626,7 +626,7 @@ function tpps_get_location($location) {
   $extension = tpps_get_path_extension($location);
   if ($extension == 'zip' or $extension == 'gz' or $extension == 'tar') {
     $files = tpps_get_archive_files($location);
-    if ($files and count($files) == 3 and !is_dir($files[2])) {
+    if ($files and (count($files) == 3 or (count($files) == 4 and substr($files[3], -9) === '/__MACOSX')) and !is_dir($files[2])) {
       $location = $files[2];
     }
   }
