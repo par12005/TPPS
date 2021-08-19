@@ -1,15 +1,16 @@
 jQuery(document).ready(function ($) {
-  var picker = false;
+  var picker = true;
+  $('#edit-color').colorPicker({
+    opacity: false, // disables opacity slider
+  });
   $('#color-picker').click(function() {
     if (!picker) {
-      console.log('adding color picker');
       $('#edit-color').colorPicker({
         opacity: false, // disables opacity slider
       });
       picker = true;
     }
     else {
-      console.log('removing color picker');
       $('.cp-color-picker').remove();
       picker = false;
     }
