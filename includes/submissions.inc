@@ -300,7 +300,8 @@ function tpps_submission_tag_manage() {
  *   The populated form object.
  */
 function tpps_submission_tag_create(array $form, array &$form_state) {
-  // This will add the color picker to the TPPS submission tags edit-color field id
+  // This will add the color picker to the TPPS submission tags edit-color
+  // field id.
   drupal_add_js('https://cdnjs.cloudflare.com/ajax/libs/tinyColorPicker/1.1.1/jqColorPicker.min.js', 'external');
   drupal_add_js(drupal_get_path('module', 'tpps') . '/js/tag_colorpicker.js');
 
