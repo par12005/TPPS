@@ -219,7 +219,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#states' => array(
         'invisible' => $pre_valid_states,
       ),
-      '#description' => t('Sometimes large VCF files can cause problems during the validation step. If your VCF file is very large, you can click this button to validate your VCF file in the background, before clicking "Review Information and Submit".'),
+      '#suffix' => '<div>Sometimes large VCF files can cause problems during the validation step. If your VCF file is very large, you can click the "Pre-validate my VCF files" button to validate your VCF file in the background, before clicking "Review Information and Submit".</div>',
     );
 
     $form['Back']['#prefix'] .= "<div id=\"pre-validate-message\"></div>";
