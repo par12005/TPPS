@@ -1883,27 +1883,44 @@ function tpps_update_7117() {
   $transaction = db_transaction();
 
   try {
-    db_insert('tpps_tag')
-      ->fields(array(
-        'name' => 'No Location Information',
-        'color' => 'pink',
-        'static' => 1,
-      ))
-      ->execute();
+    $id = tpps_get_tag_id('No Location Information');
+    if (!$id) {
+      db_insert('tpps_tag')
+        ->fields(array(
+          'name' => 'No Location Information',
+          'color' => 'pink',
+          'static' => 1,
+        ))
+        ->execute();
+    }
 
-    db_insert('tpps_tag')
-      ->fields(array(
-        'name' => 'Approximate Coordinates',
-        'color' => 'gray',
-        'static' => 1,
-      ))
-      ->execute();
+    $id = tpps_get_tag_id('Approximate Coordinates');
+    if (!$id) {
+      db_insert('tpps_tag')
+        ->fields(array(
+          'name' => 'Approximate Coordinates',
+          'color' => 'gray',
+          'static' => 1,
+        ))
+        ->execute();
+    }
 
     $submissions = tpps_load_submission_multiple(array(), FALSE);
     foreach ($submissions as $record) {
       $state = tpps_load_submission($record->accession);
 
-      // TODO: add approx/none location tags to old submissions.
+      if (!empty($state['saved_values'][TPPS_PAGE_3]['skip_validation'])) {
+        tpps_submission_add_tag($state['accession'], 'No Location Information');
+      }
+
+      $org_num = $state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+      for ($i = 1; $i <= $org_num; $i++) {
+        $species_i = $state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"];
+        if (isset($species_i['exact_coords']) and !$species_i['exact_coords']) {
+          tpps_submission_add_tag($state['accession'], 'Approximate Coordinates');
+          break;
+        }
+      }
     }
   }
   catch (\Exception $e) {
