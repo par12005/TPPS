@@ -1877,7 +1877,9 @@ function tpps_update_7116() {
 }
 
 /**
+ * Implements hook_update_N().
  *
+ * Adds approx/none coordinate tags to old submissions.
  */
 function tpps_update_7117() {
   $transaction = db_transaction();
