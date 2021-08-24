@@ -909,9 +909,8 @@ function tpps_get_archive_files($archive) {
         break;
 
       case 'gz':
-        $zip = new \PharData($loc);
-        $zip->decompress();
-        $zip->extractTo($unzip_dir);
+        $zip = new \Archive_Tar($loc, 'gz');
+        $zip->extract($unzip_dir);
         break;
 
       case 'tar':
