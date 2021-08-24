@@ -1258,8 +1258,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Genotype VCF File: *'),
       '#upload_location' => "$genotype_upload_location",
       '#upload_validators' => array(
-        #'file_validate_extensions' => array('gz tar zip'),
-        'file_validate_extensions' => array('zip tar'),
+        'file_validate_extensions' => array('gz tar zip'),
       ),
       '#tree' => TRUE,
     );
