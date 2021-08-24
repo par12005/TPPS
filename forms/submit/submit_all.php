@@ -606,6 +606,10 @@ function tpps_submit_page_3(array &$form_state, &$job = NULL) {
   $stock_count = 0;
   $loc_name = 'Location (latitude/longitude or country/state or population group)';
 
+  if (!empty($thirdpage['skip_validation'])) {
+    tpps_submission_add_tag($form_state['accession'], 'No Location Information');
+  }
+
   if (!empty($thirdpage['study_location'])) {
     $type = $thirdpage['study_location']['type'];
     $locs = $thirdpage['study_location']['locations'];
@@ -753,6 +757,7 @@ function tpps_submit_page_3(array &$form_state, &$job = NULL) {
     $options['precision'] = NULL;
     if (!$options['exact']) {
       $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
+      tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
     }
     $county = array_search('8', $column_vals);
     $district = array_search('9', $column_vals);

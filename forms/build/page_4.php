@@ -207,4 +207,21 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     '#type' => 'submit',
     '#value' => t('Review Information and Submit'),
   );
+
+  if (preg_match('/G/', $data_type)) {
+    $pre_valid_states = array();
+    for ($i = 1; $i <= $organism_number; $i++) {
+      $pre_valid_states["input[name=\"organism-{$i}[genotype][files][file-type][VCF]\"]"] = array('checked' => FALSE);
+    }
+    $form['pre_validate'] = array(
+      '#type' => 'button',
+      '#value' => t('Pre-validate my VCF files'),
+      '#states' => array(
+        'invisible' => $pre_valid_states,
+      ),
+      '#suffix' => '<div>Sometimes large VCF files can cause problems during the validation step. If your VCF file is very large, you can click the "Pre-validate my VCF files" button to validate your VCF file in the background, before clicking "Review Information and Submit".</div>',
+    );
+
+    $form['Back']['#prefix'] .= "<div id=\"pre-validate-message\"></div>";
+  }
 }

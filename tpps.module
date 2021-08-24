@@ -59,6 +59,24 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
+  $items['tpps/%/pre-validate'] = array(
+    'title' => 'TPPS File Pre-Validation',
+    'page callback' => 'tpps_pre_validate_init',
+    'page arguments' => array(1),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['tpps/%/pre-validate/%/status'] = array(
+    'title' => 'TPPS File Pre-Validation',
+    'page callback' => 'tpps_pre_validate_status',
+    'page arguments' => array(1, 3),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );
+
   $items['tpps/details'] = array(
     'title' => 'TPPS Details',
     'page callback' => 'tpps_details',

@@ -110,6 +110,103 @@ jQuery(document).ready(function ($) {
     });
   });
 
+  var pending_jobs = {};
+  function checkVCFJob(jid) {
+    var accession = jQuery(':input[name="accession"]')[0].value;
+    var request = jQuery.get('/tpps/' + accession + '/pre-validate/' + jid + '/status');
+    request.done(function(job) {
+      if (job === null || typeof job !== 'object' || !job.hasOwnProperty('status')) {
+        jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">There was a problem checking the status of job with id " + jid + "</div>");
+      }
+      // If this job is completed, check all the other jobs.
+      else if (job.status === "Completed") {
+        // This job is no longer pending.
+        pending_jobs[jid] = false;
+        var jobs_complete = true;
+        // Iterate through pending jobs.
+        for (jid in pending_jobs) {
+          if (pending_jobs[jid]) {
+            jobs_complete = false;
+          }
+        }
+        // If no jobs are pending, enable the submit button.
+        if (jobs_complete) {
+          jQuery('#edit-pre-validate')[0].disabled = false;
+          console.log('jobs completed!');
+          var message = "<div class=\"alert alert-block alert-success messages status\">VCF File pre-validation completed!</div>";
+          var errors = job.val_errors;
+          if (errors.length > 0) {
+            for (error of errors) {
+              message = message + "<div class=\"alert alert-block alert-danger messages error\">" + error + "</div>";
+            }
+          }
+          else {
+            jQuery('#edit-submit')[0].disabled = false;
+          }
+          jQuery('#pre-validate-message').html(message);
+        }
+        // Otherwise, log the pending jobs.
+        else {
+          console.log(pending_jobs);
+        }
+      }
+      // Otherwise, wait 5 seconds and check again.
+      else {
+        console.log('job ' + jid + ' status: ' + job.status);
+        setTimeout(() => {
+          checkVCFJob(job.job_id);
+        }, 5000);
+      }
+    });
+  }
+
+  jQuery('#edit-pre-validate').attr('type', 'button');
+  jQuery('#edit-pre-validate').click(function() {
+    var accession = jQuery(':input[name="accession"]')[0].value;
+    console.log('initializing jobs...');
+
+    // Get array of vcf fids.
+    var fids = jQuery('input').filter(function () { return this.name.match(/organism-[0-9]+\[genotype\]\[files\]\[vcf\]\[fid\]/); });
+    var missing_vcf = false;
+    vcfs = {};
+    jQuery.each(fids, function() {
+      if (this.value === "0") {
+        missing_vcf = true;
+      }
+      var org_num = this.name.match(/organism-([0-9]+)\[genotype\]\[files\]\[vcf\]\[fid\]/)[1];
+      vcfs[org_num] = this.value;
+    });
+
+    if (!missing_vcf) {
+      jQuery('#edit-submit')[0].disabled = true;
+      jQuery('#edit-pre-validate')[0].disabled = true;
+      jQuery.makeArray(vcfs).map((element) => { return element.value; });
+
+      // Initialize vcf jobs and begin checkVCFJob routines.
+      var request = jQuery.get('/tpps/' + accession + '/pre-validate', {"vcfs": vcfs});
+      request.done(function(jobs) {
+        if (typeof jobs === 'string') {
+          jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">" + jobs + "</div>");
+        }
+        else if (!Array.isArray(jobs) || jobs.length == 0) {
+          jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">There was a problem with pre-validating your VCF files. Please reload the page and try again</div>");
+        }
+        else {
+          console.log('jobs initialized!');
+          console.log(jobs);
+          for (job of jobs) {
+            checkVCFJob(job);
+            pending_jobs[job] = true;
+          }
+          jQuery('#pre-validate-message').html('<img src="/misc/throbber-active.gif"> Pre-validating VCF files. This may take some time...');
+        }
+      });
+    }
+    else {
+      jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">Please upload your VCF file before clicking the pre-validate button</div>");
+    }
+  });
+
   jQuery('#edit-save-comments').attr('type', 'button');
 
   var details_tabs = jQuery('.nav-tabs > .nav-item > .nav-link');
