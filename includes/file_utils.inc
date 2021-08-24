@@ -905,22 +905,24 @@ function tpps_get_archive_files($archive) {
       case 'zip':
         $zip = new \ZipArchive();
         $zip->open($loc);
+        $zip->extractTo($unzip_dir);
         break;
 
       case 'gz':
         $zip = new \PharData($loc);
         $zip->decompress();
+        $zip->extractTo($unzip_dir);
         break;
 
       case 'tar':
-        $zip = new \PharData($loc);
+        $zip = new \Archive_Tar($loc);
+        $zip->extract($unzip_dir);
         break;
 
       default:
         return;
     }
 
-    $zip->extractTo($unzip_dir);
     $dir = $unzip_dir;
     $files = scandir($dir);
     if ($files and count($files) == 3 and is_dir($dir . '/' . $files[2])) {
