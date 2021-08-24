@@ -1089,6 +1089,9 @@ function tpps_xlsx_generator($location, array $options = array()) {
   $dims = array();
   $readers = array();
   foreach ($sheets as $sheet) {
+    if (tpps_get_path_extension($dir . '/xl/worksheets/' . $sheet) !== 'xml') {
+      continue;
+    }
     $loc = $dir . '/xl/worksheets/' . $sheet;
     $dimension = tpps_xlsx_get_dimension($loc);
     preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
