@@ -57,24 +57,27 @@ function tpps_details($accession = NULL) {
         return $output;
       }
     }
-    $map_api_key = variable_get('tpps_maps_api_key', NULL);
-    $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-      async defer></script>"
-      . "<div id=\"_map_wrapper\"></div>";
-    $tree_info = array();
-    if (!empty($state['tree_info'])) {
-      foreach ($state['tree_info'] as $name => $info) {
-        if (!empty($info['lat']) and !empty($info['lng'])) {
-          $tree_info[] = array(
-            $name,
-            $info['lat'],
-            $info['lng'],
-          );
+
+    if (empty($state['saved_values'][TPPS_PAGE_3]['skip_validation'])) {
+      $map_api_key = variable_get('tpps_maps_api_key', NULL);
+      $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
+        async defer></script>"
+        . "<div id=\"_map_wrapper\"></div>";
+      $tree_info = array();
+      if (!empty($state['tree_info'])) {
+        foreach ($state['tree_info'] as $name => $info) {
+          if (!empty($info['lat']) and !empty($info['lng'])) {
+            $tree_info[] = array(
+              $name,
+              $info['lat'],
+              $info['lng'],
+            );
+          }
         }
+        drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
       }
-      drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
+      $output .= $map_api_tools;
     }
-    $output .= $map_api_tools;
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
