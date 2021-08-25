@@ -757,7 +757,9 @@ function tpps_submit_page_3(array &$form_state, &$job = NULL) {
     $options['precision'] = NULL;
     if (!$options['exact']) {
       $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
-      tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
+      if (!array_key_exists(tpps_get_tag_id('No Location Information'), tpps_submission_get_tags($form_state['accession']))) {
+        tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
+      }
     }
     $county = array_search('8', $column_vals);
     $district = array_search('9', $column_vals);
