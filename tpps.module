@@ -655,7 +655,7 @@ function tpps_form_alter(&$form, &$form_state, $form_id) {
  */
 function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
   foreach ($elements as $key => &$element) {
-    if ($key[0] != '#' and isset($element['#type'])) {
+    if ((gettype($key) != 'string' or $key[0] != '#') and isset($element['#type'])) {
 
       // If #tree is not set in the current element, and #tree is set and false
       // in the parent element, then set #tree to false in the current element.
