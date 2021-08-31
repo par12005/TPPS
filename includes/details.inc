@@ -99,11 +99,18 @@ function tpps_details($accession = NULL) {
 
     $output .= "<h2>$pub_link</h2>";
     $output .= tpps_show_tags(tpps_submission_get_tags($state['accession']));
-    $authors = implode(', ', $state['authors']);
-    $output .= "<h4>$authors</h4>";
-    $output .= "<h4>Published {$state['pyear']}";
+    $primary_author = $state['authors'][0];
+    if (preg_match('/,/', $primary_author)) {
+      $parts = explode(',', $primary_author);
+      $lastname = trim($parts[0]);
+    }
+    else {
+      $parts = explode(' ', $primary_author);
+      $lastname = $parts[count($parts) - 1];
+    }
+    $output .= "<h4>$lastname et al {$state['pyear']}";
     if (!empty($state['journal'])) {
-      $output .= ", in {$state['journal']}";
+      $output .= " published in {$state['journal']}";
     }
     $output .= "</h4>";
     $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
