@@ -187,6 +187,23 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   if ($status == "Pending Approval") {
 
+    if ($submission_state['saved_values'][TPPS_PAGE_2]['study_type'] != 1) {
+      module_load_include('php', 'tpps', 'forms/build/page_3_helper');
+      module_load_include('php', 'tpps', 'forms/build/page_3_ajax');
+      $submission_state['values'] = $form_state['values'] ?? $submission_state['values'];
+      $submission_state['complete form'] = $form_state['complete form'] ?? $submission_state['complete form'];
+      tpps_study_location($form, $submission_state);
+      $study_location = $submission_state['saved_values'][TPPS_PAGE_3]['study_location'];
+      $form['study_location']['type']['#default_value'] = $study_location['type'] ?? NULL;
+      for ($i = 1; $i <= $study_location['locations']['number']; $i++) {
+        $form['study_location']['locations'][$i]['#default_value'] = $study_location['locations'][$i];
+      }
+      unset($form['study_location']['locations']['add']);
+      unset($form['study_location']['locations']['remove']);
+
+      $form['study_location']['#collapsed'] = TRUE;
+    }
+
     $form['params'] = array(
       '#type' => 'fieldset',
       '#title' => 'Select Environmental parameter types:',
@@ -908,6 +925,14 @@ function tpps_admin_panel_validate($form, &$form_state) {
           }
         }
       }
+
+      if (!empty($form_state['values']['study_location'])) {
+        for ($i = 1; $i <= $form_state['values']['study_location']['locations']['number']; $i++) {
+          if (empty($form_state['values']['study_location']['locations'][$i])) {
+            form_set_error("study_location][locations][$i", "Study location $i: field is required.");
+          }
+        }
+      }
     }
 
     if ($form_state['triggering_element']['#value'] == 'Save Alternative Accessions') {
@@ -1009,6 +1034,13 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
       if (!empty($form_state['values']['phenotypes_edit'])) {
         $state['phenotypes_edit'] = $form_state['values']['phenotypes_edit'];
+      }
+
+      if (!empty($form_state['values']['study_location'])) {
+        $state['saved_values'][TPPS_PAGE_3]['study_location']['type'] = $form_state['values']['study_location']['type'];
+        for ($i = 1; $i <= $form_state['values']['study_location']['locations']['number']; $i++) {
+          $state['saved_values'][TPPS_PAGE_3]['study_location']['locations'][$i] = $form_state['values']['study_location']['locations'][$i];
+        }
       }
 
       $includes = array();
