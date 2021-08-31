@@ -49,7 +49,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   ), NULL);
 
   if (!empty($iso_check)) {
-    $fields['iso'] = array(
+    $form[$id]['phenotype']['iso'] = array(
       '#type' => 'managed_file',
       '#title' => t('Phenotype Isotope/Mass Spectrometry file: *'),
       '#upload_location' => $phenotype_upload_location,
@@ -59,7 +59,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => 'Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain isotope or mass spectrometry data.',
     );
 
-    return $fields;
+    return $form[$id]['phenotype'];
   }
 
   $attr_options = array(0 => '- Select -');

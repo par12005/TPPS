@@ -362,9 +362,12 @@ function tpps_tripal_entity_publish($bundle_name, array $vals, array $options = 
           'record_id' => $id,
         ));
 
-        $entity = tripal_load_entity('TripalEntity', array($entity_id))[$entity_id];
+        $entity = new stdClass();
+        $entity->id = $entity_id;
+        $entity->bundle = 'bio_dat_' . $bundle->id;
+        $alias = str_replace(' ', '', $bundle->term->name) . '/' . $entity_id;
         $controller = entity_get_controller('TripalEntity');
-        $controller->setAlias($entity);
+        $controller->setAlias($entity, $alias);
         $controller->resetCache();
 
         $entity_id++;
