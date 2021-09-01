@@ -484,6 +484,22 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     form_set_error("$id][genotype][files][file-type", "Genotype File Type: field is required.");
   }
   else {
+    $loaded_state = tpps_load_submission($form_state['accession']);
+
+    if (!empty($loaded_state['vcf_replace'])) {
+      foreach ($loaded_state['vcf_replace'] as $org_num => $fid) {
+        if (file_load($fid)) {
+          $form_state['values']["organism-$org_num"]['genotype']['files']['vcf'] = $fid;
+          $vcf = $fid;
+          $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf_check'] = NULL;
+          $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf'] = NULL;
+        }
+        else {
+          form_set_error("$org_num][genotype][files][local_vcf", "Local VCF File: File could not be loaded properly.");
+        }
+      }
+    }
+
     if (!empty($file_type['VCF']) and !$vcf) {
       form_set_error("$id][genotype][files][vcf", "Genotype VCF File: field is required.");
     }
@@ -545,8 +561,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         }
 
       }
-
-      $loaded_state = tpps_load_submission($form_state['accession']);
 
       if (!empty($loaded_state['vcf_validated']) and $loaded_state['vcf_validated'] === TRUE and empty($loaded_state['vcf_val_errors'])) {
         drupal_set_message('VCF files pre-validated. Skipping VCF file validation');
