@@ -243,6 +243,11 @@ jQuery(document).ready(function ($) {
 
   initDetailPages();
 
+  var tags = jQuery('#tpps-tags-filter').children('.tag');
+  jQuery.each(tags, function() {
+    jQuery(this).click(detailTagSearch);
+  });
+
   var admin_panel_regex = /tpps-admin-panel\/TGDR.*/g;
   if (window.location.pathname.match(admin_panel_regex)) {
     var tag_buttons = jQuery('span').filter(function() { return (this.id.match(/TGDR[0-9]+-tag-[0-9]*-add|remove/) && !this.disabled); });
@@ -367,11 +372,6 @@ function initDetailPages() {
       jQuery(this).click(detailSearch);
     });
   }
-
-  var tags = jQuery('#tpps-tags-filter').children('.tag');
-  jQuery.each(tags, function() {
-    jQuery(this).click(detailTagSearch);
-  });
 }
 
 function detailSearch() {
@@ -412,6 +412,7 @@ function detailTagSearch() {
 
   request.done(function (data) {
     jQuery('#tpps-details-table')[0].innerHTML = data;
+    initDetailPages();
   });
 }
 
