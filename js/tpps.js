@@ -199,9 +199,11 @@ jQuery(document).ready(function ($) {
       request.done(function(jobs) {
         if (typeof jobs === 'string') {
           jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">" + jobs + "</div>");
+          jQuery('#edit-pre-validate')[0].disabled = false;
         }
         else if (!Array.isArray(jobs) || jobs.length == 0) {
           jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">There was a problem with pre-validating your VCF files. Please reload the page and try again</div>");
+          jQuery('#edit-pre-validate')[0].disabled = false;
         }
         else {
           console.log('jobs initialized!');
