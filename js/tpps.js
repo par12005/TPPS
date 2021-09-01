@@ -199,9 +199,11 @@ jQuery(document).ready(function ($) {
       request.done(function(jobs) {
         if (typeof jobs === 'string') {
           jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">" + jobs + "</div>");
+          jQuery('#edit-pre-validate')[0].disabled = false;
         }
         else if (!Array.isArray(jobs) || jobs.length == 0) {
           jQuery('#pre-validate-message').html("<div class=\"alert alert-block alert-danger messages error\">There was a problem with pre-validating your VCF files. Please reload the page and try again</div>");
+          jQuery('#edit-pre-validate')[0].disabled = false;
         }
         else {
           console.log('jobs initialized!');
@@ -365,6 +367,11 @@ function initDetailPages() {
       jQuery(this).click(detailSearch);
     });
   }
+
+  var tags = jQuery('#tpps-tags-filter').children('.tag');
+  jQuery.each(tags, function() {
+    jQuery(this).click(detailTagSearch);
+  });
 }
 
 function detailSearch() {
@@ -385,6 +392,26 @@ function detailSearch() {
   request.done(function (data) {
     jQuery('#tpps-details-table')[0].innerHTML = data;
     initDetailPages();
+  });
+}
+
+function detailTagSearch() {
+  var path = '/tpps/details/top';
+  var page = 0;
+  if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
+    page = this.hash.match(/#.*:(.*)/)[1];
+  }
+
+  jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
+  var request = jQuery.post(path, {
+    type: 'tags',
+    value: jQuery(this).text(),
+    op: '=',
+    page: page
+  });
+
+  request.done(function (data) {
+    jQuery('#tpps-details-table')[0].innerHTML = data;
   });
 }
 
