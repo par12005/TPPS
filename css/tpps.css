@@ -87,6 +87,9 @@ th > div.form-type-select > .ajax-progress {
   margin-top: 4px;
   margin-right: 4px;
 }
+#tpps-tags-filter {
+  margin-bottom: .5rem;
+}
 #tpps-tags-filter > .tag:hover {
   cursor: pointer;
 }
