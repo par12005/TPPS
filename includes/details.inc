@@ -40,6 +40,7 @@ function tpps_details($accession = NULL) {
     }
     $form = drupal_get_form('tpps_details_search');
     $output .= render($form);
+    $output .= tpps_details_tags_sort();
     $output .= "<div id='tpps-details-table'>" . tpps_details_top() . "</div>";
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
@@ -250,6 +251,13 @@ function tpps_details_top() {
         $query->condition('g.name', $params['value'], $params['op']);
         break;
 
+      case 'tags':
+        $query->innerJoin('public.tpps_submission', 'ts', 'ts.accession = pg.accession');
+        $query->innerJoin('public.tpps_submission_tag', 'st', 'st.tpps_submission_id = ts.tpps_submission_id');
+        $query->innerJoin('public.tpps_tag', 'tt', 'tt.tpps_tag_id = st.tpps_tag_id');
+        $query->condition('tt.name', $params['value'], $params['op']);
+        break;
+
       default:
         break;
     }
@@ -299,6 +307,13 @@ function tpps_details_top() {
       case 'genotype_marker':
         $submissions->innerJoin('chado.tpps_search_genotype_marker', 'g', 'g.project_id = pg.project_id');
         $submissions->condition('g.name', $params['value'], $params['op']);
+        break;
+
+      case 'tags':
+        $submissions->innerJoin('public.tpps_submission', 'ts', 'ts.accession = pg.accession');
+        $submissions->innerJoin('public.tpps_submission_tag', 'st', 'st.tpps_submission_id = ts.tpps_submission_id');
+        $submissions->innerJoin('public.tpps_tag', 'tt', 'tt.tpps_tag_id = st.tpps_tag_id');
+        $submissions->condition('tt.name', $params['value'], $params['op']);
         break;
 
       default:
@@ -502,6 +517,35 @@ function tpps_details_search(array $form, array $form_state) {
   );
 
   return $form;
+}
+
+/**
+ * Display TPPS tags to sort Details page.
+ *
+ * @return string
+ *   Tag options as rendered HTML.
+ */
+function tpps_details_tags_sort() {
+  $output = "";
+
+  $query = db_select('tpps_tag', 't')
+    ->fields('t')
+    ->orderBy('static', 'DESC')
+    ->orderBy('tpps_tag_id')
+    ->execute();
+  $tags = array();
+  while (($result = $query->fetchObject())) {
+    $tags[$result->tpps_tag_id] = array(
+      'id' => $result->tpps_tag_id,
+      'name' => $result->name,
+      'color' => $result->color,
+      'static' => $result->static,
+    );
+  }
+
+  $output .= tpps_show_tags($tags);
+
+  return "<label for=\"tpps-tags-filter\">Sort by tags:</label><div id=\"tpps-tags-filter\">" . $output . "</div>";
 }
 
 /**

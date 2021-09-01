@@ -367,6 +367,11 @@ function initDetailPages() {
       jQuery(this).click(detailSearch);
     });
   }
+
+  var tags = jQuery('#tpps-tags-filter').children('.tag');
+  jQuery.each(tags, function() {
+    jQuery(this).click(detailTagSearch);
+  });
 }
 
 function detailSearch() {
@@ -387,6 +392,26 @@ function detailSearch() {
   request.done(function (data) {
     jQuery('#tpps-details-table')[0].innerHTML = data;
     initDetailPages();
+  });
+}
+
+function detailTagSearch() {
+  var path = '/tpps/details/top';
+  var page = 0;
+  if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
+    page = this.hash.match(/#.*:(.*)/)[1];
+  }
+
+  jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
+  var request = jQuery.post(path, {
+    type: 'tags',
+    value: jQuery(this).text(),
+    op: '=',
+    page: page
+  });
+
+  request.done(function (data) {
+    jQuery('#tpps-details-table')[0].innerHTML = data;
   });
 }
 
