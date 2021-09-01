@@ -895,7 +895,7 @@ function tpps_get_archive_files($archive) {
   $loc = drupal_realpath($archive);
 
   $ext = tpps_get_path_extension($loc);
-  $unzip_dir = dirname($loc) . '/tmp';
+  $unzip_dir = drupal_realpath('temporary://tpps_tmp');
   if (is_dir($unzip_dir)) {
     tpps_rmdir($unzip_dir);
   }
