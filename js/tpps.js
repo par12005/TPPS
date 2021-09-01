@@ -403,6 +403,9 @@ function detailTagSearch() {
   }
 
   jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
+  jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value = 'tags';
+  jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value = jQuery(this).text();
+  jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value = '=';
   var request = jQuery.post(path, {
     type: 'tags',
     value: jQuery(this).text(),

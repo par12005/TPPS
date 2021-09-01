@@ -427,6 +427,7 @@ function tpps_details_search(array $form, array $form_state) {
       'phenotype_ontology' => 'Phenotype Ontology Name',
       'genotype_name' => 'Genotype Name',
       'genotype_marker' => 'Genotype Marker Type',
+      'tags' => 'Tags',
     ),
     '#ajax' => array(
       'wrapper' => 'tpps-details-form',
