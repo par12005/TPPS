@@ -171,7 +171,19 @@ jQuery(document).ready(function ($) {
     vcfs = {};
     jQuery.each(fids, function() {
       if (this.value === "0") {
-        missing_vcf = true;
+        var check = jQuery('input[name="' + this.name.substring(0, this.name.length - 9) + 'local_vcf_check]"]')[0];
+        if (check.value === "1") {
+          path = jQuery('#' + check.id.substring(0, check.id.length - 6))[0].value;
+          if (typeof path === 'string' && path.length != 0) {
+            this.value = path;
+          }
+          else {
+            missing_vcf = true;
+          }
+        }
+        else {
+          missing_vcf = true;
+        }
       }
       var org_num = this.name.match(/organism-([0-9]+)\[genotype\]\[files\]\[vcf\]\[fid\]/)[1];
       vcfs[org_num] = this.value;
