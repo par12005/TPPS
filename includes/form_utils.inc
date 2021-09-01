@@ -332,18 +332,47 @@ function tpps_pre_validate_init($accession = NULL) {
     drupal_json_output("No VCF file ids were provided");
     return;
   }
-  foreach ($vcfs as $fid) {
+
+  global $user;
+  $state['vcf_replace'] = array();
+  foreach ($vcfs as $org_num => $fid) {
     if (!file_load($fid)) {
-      drupal_json_output("Could not load one or more VCFs from file ID");
-      return;
+      if (!is_string($fid)) {
+        drupal_json_output("Could not load one or more VCFs from file ID");
+        return;
+      }
+      elseif (!file_exists($fid)) {
+        drupal_json_output("One or more VCF local paths was invalid");
+        return;
+      }
+      else {
+        $dir = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+        $basename = basename($fid);
+        $uri = file_create_filename($basename, $dir);
+        if (file_exists($fid) and !file_exists(drupal_realpath($uri))) {
+          copy($fid, drupal_realpath($uri));
+        }
+        $file = new stdClass();
+        $file->fid = NULL;
+        $file->uri = $uri;
+        $file->filename = drupal_basename($uri);
+        $file->filemime = file_get_mimetype($file->uri);
+        $file->uid = $user->uid;
+        $file->status = 0;
+        $file = file_save($file);
+
+        $vcfs[$org_num] = $file->fid;
+        $state['vcf_replace'][$org_num] = $file->fid;
+      }
     }
+  }
+  if (empty($state['vcf_replace'])) {
+    unset($state['vcf_replace']);
   }
 
   $state['vcf_val_errors'] = array();
   $state['vcf_validated'] = FALSE;
   tpps_update_submission($state);
-
-  global $user;
 
   $jobs = array();
   foreach ($vcfs as $org_num => $fid) {
