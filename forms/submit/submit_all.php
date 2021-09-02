@@ -1431,14 +1431,14 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
 
     $vcf_file = file_load($vcf_fid);
     $location = tpps_get_location($vcf_file->uri);
-    $vcf_content = fopen($location, 'r');
+    $vcf_content = gzopen($location, 'r');
     $stocks = array();
     $format = "";
     $current_id = $form_state['ids']['organism_ids'][$i];
     $species_code = $species_codes[$current_id];
 
     // dpm('start: ' . date('r'));.
-    while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+    while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
       if ($vcf_line[0] != '#') {
         $genotype_count += count($stocks);
         $vcf_line = explode("\t", $vcf_line);

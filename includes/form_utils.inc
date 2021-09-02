@@ -450,9 +450,9 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   $job->logMessage("[INFO] Extracting VCF archive...");
   $location = tpps_get_location($vcf_file->uri);
   $job->logMessage("[INFO] Opening $location...");
-  $vcf_content = fopen($location, 'r');
+  $vcf_content = gzopen($location, 'r');
   $stocks = array();
-  while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+  while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
     if (preg_match('/#CHROM/', $vcf_line)) {
       $vcf_line = explode("\t", $vcf_line);
       for ($j = 9; $j < count($vcf_line); $j++) {

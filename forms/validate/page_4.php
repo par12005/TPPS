@@ -505,17 +505,17 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
     elseif (!empty($file_type['VCF'])) {
       if (($ref_genome === 'manual' or $ref_genome === 'manual2' or $ref_genome === 'url') and isset($assembly) and $assembly and !form_get_errors()) {
-        $vcf_content = fopen(file_load($vcf)->uri, 'r');
-        $assembly_content = fopen(file_load($assembly)->uri, 'r');
+        $vcf_content = gzopen(file_load($vcf)->uri, 'r');
+        $assembly_content = gzopen(file_load($assembly)->uri, 'r');
 
-        while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+        while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
           if ($vcf_line[0] != '#') {
 
             $vcf_values = explode("\t", $vcf_line);
             $scaffold_id = $vcf_values[0];
             $match = FALSE;
 
-            while (($assembly_line = fgets($assembly_content)) !== FALSE) {
+            while (($assembly_line = gzgets($assembly_content)) !== FALSE) {
               if ($assembly_line[0] != '>') {
                 continue;
               }
@@ -534,8 +534,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
             }
             if (!$match) {
               fclose($assembly_content);
-              $assembly_content = fopen(file_load($assembly)->uri, 'r');
-              while (($assembly_line = fgets($assembly_content)) !== FALSE) {
+              $assembly_content = gzopen(file_load($assembly)->uri, 'r');
+              while (($assembly_line = gzgets($assembly_content)) !== FALSE) {
                 if ($assembly_line[0] != '>') {
                   continue;
                 }
@@ -580,9 +580,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
           $vcf_file = file_load($vcf);
           $location = tpps_get_location($vcf_file->uri);
-          $vcf_content = fopen($location, 'r');
+          $vcf_content = gzopen($location, 'r');
           $stocks = array();
-          while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+          while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
             if (preg_match('/#CHROM/', $vcf_line)) {
               $vcf_line = explode("\t", $vcf_line);
               for ($j = 9; $j < count($vcf_line); $j++) {

@@ -886,8 +886,8 @@ function tpps_preview_file() {
   if ($extension == 'vcf') {
     $display = "";
     $count = 0;
-    $vcf_content = fopen($location, 'r');
-    while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+    $vcf_content = gzopen($location, 'r');
+    while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
       $display .= $vcf_line . "<br>";
       $count++;
       if ($count > $rows) {
