@@ -420,7 +420,7 @@ function tpps_get_cvterms_v1_2() {
     'has_part' => 'so:has_part',
 
     // EDAM terms.
-    'filter' => 'edam:Sequence contamination filtering',
+    'filter' => 'edam:Sequence contamination filtering:operation',
 
     // UO terms.
     'unit' => 'uo:unit',
