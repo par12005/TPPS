@@ -1023,7 +1023,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
       drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
 
-      $state['revised_files'] = array();
+      $state['revised_files'] = $state['revised_files'] ?? array();
       foreach ($state['file_info'] as $page => $files) {
         foreach ($files as $fid => $file_type) {
           if (!empty($form_state['values']["edit_file_{$fid}_check"])) {
