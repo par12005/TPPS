@@ -346,16 +346,10 @@ function tpps_pre_validate_init($accession = NULL) {
         return;
       }
       else {
-        $dir = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
-        $basename = basename($fid);
-        $uri = file_create_filename($basename, $dir);
-        if (file_exists($fid) and !file_exists(drupal_realpath($uri))) {
-          copy($fid, drupal_realpath($uri));
-        }
         $file = new stdClass();
         $file->fid = NULL;
-        $file->uri = $uri;
-        $file->filename = drupal_basename($uri);
+        $file->uri = $fid;
+        $file->filename = drupal_basename($fid);
         $file->filemime = file_get_mimetype($file->uri);
         $file->uid = $user->uid;
         $file->status = 0;
@@ -450,9 +444,9 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   $job->logMessage("[INFO] Extracting VCF archive...");
   $location = tpps_get_location($vcf_file->uri);
   $job->logMessage("[INFO] Opening $location...");
-  $vcf_content = fopen($location, 'r');
+  $vcf_content = gzopen($location, 'r');
   $stocks = array();
-  while (($vcf_line = fgets($vcf_content)) !== FALSE) {
+  while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
     if (preg_match('/#CHROM/', $vcf_line)) {
       $vcf_line = explode("\t", $vcf_line);
       for ($j = 9; $j < count($vcf_line); $j++) {

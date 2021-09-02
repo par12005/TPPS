@@ -126,6 +126,7 @@ function tpps_file_width($fid) {
       break;
 
     case 'vcf':
+    case 'gz':
       return tpps_flat_width($location, "\t");
       break;
 
@@ -184,9 +185,10 @@ function tpps_flat_width($location, $delim = ',') {
   }
 
   $longest = 0;
-  $handle = fopen($location, 'r');
+  $handle = gzopen($location, 'r');
 
-  while (($line = fgetcsv($handle, 0, $delim))) {
+  while (($line = gzgets($handle))) {
+    $line = str_getcsv($line, $delim);
     $longest = max($longest, count($line));
   }
 
@@ -624,7 +626,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
 function tpps_get_location($location) {
   $location = drupal_realpath($location);
   $extension = tpps_get_path_extension($location);
-  if ($extension == 'zip' or $extension == 'gz' or $extension == 'tar') {
+  if ($extension == 'zip' or $extension == 'tar') {
     $files = tpps_get_archive_files($location);
     if ($files and (count($files) == 3 or (count($files) == 4 and substr($files[3], -9) === '/__MACOSX')) and !is_dir($files[2])) {
       $location = $files[2];
@@ -1031,6 +1033,7 @@ function tpps_file_generator($fid, array $options = array()) {
     case 'txt':
     case 'csv':
     case 'vcf':
+    case 'gz':
       return tpps_flat_generator($location, $options);
 
     default:
@@ -1181,14 +1184,15 @@ function tpps_flat_generator($location, array $options = array()) {
 
   $delim = ',';
   $longest = tpps_flat_width($location, $delim);
-  $handle = fopen($location, 'r');
+  $handle = gzopen($location, 'r');
 
   if (!$no_header) {
-    fgetcsv($handle);
+    gzgets($handle);
   }
   $count = 0;
 
-  while (($vals = fgetcsv($handle, 0, $delim))) {
+  while (($line = gzgets($handle))) {
+    $vals = str_getcsv($line, $delim);
     if (!empty($max_rows) and $count >= $max_rows) {
       break;
     }

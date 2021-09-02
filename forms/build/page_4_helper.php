@@ -1276,24 +1276,26 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
 
-    global $base_url;
-    $parts = explode('://', $base_url);
-    $hostname = $parts[1];
-    $fields['files']['local_vcf_check'] = array(
-      '#type' => 'checkbox',
-      '#title' => t("My VCF file is stored locally on {$hostname}"),
-    );
+    if (isset($form_state['tpps_type']) and $form_state['tpps_type'] == 'tppsc') {
+      global $base_url;
+      $parts = explode('://', $base_url);
+      $hostname = $parts[1];
+      $fields['files']['local_vcf_check'] = array(
+        '#type' => 'checkbox',
+        '#title' => t("My VCF file is stored locally on {$hostname}"),
+      );
 
-    $fields['files']['local_vcf'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Path to local VCF File: *'),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[genotype][files][local_vcf_check]"]' => array('checked' => TRUE),
+      $fields['files']['local_vcf'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Path to local VCF File: *'),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="' . $id . '[genotype][files][local_vcf_check]"]' => array('checked' => TRUE),
+          ),
         ),
-      ),
-      '#description' => t("Please provide the full path to your vcf file stored locally on {$hostname}"),
-    );
+        '#description' => t("Please provide the full path to your vcf file stored locally on {$hostname}"),
+      );
+    }
   }
   else {
     $fields['files']['vcf'] = array(
