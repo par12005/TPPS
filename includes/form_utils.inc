@@ -346,16 +346,10 @@ function tpps_pre_validate_init($accession = NULL) {
         return;
       }
       else {
-        $dir = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
-        $basename = basename($fid);
-        $uri = file_create_filename($basename, $dir);
-        if (file_exists($fid) and !file_exists(drupal_realpath($uri))) {
-          copy($fid, drupal_realpath($uri));
-        }
         $file = new stdClass();
         $file->fid = NULL;
-        $file->uri = $uri;
-        $file->filename = drupal_basename($uri);
+        $file->uri = $fid;
+        $file->filename = drupal_basename($fid);
         $file->filemime = file_get_mimetype($file->uri);
         $file->uid = $user->uid;
         $file->status = 0;
