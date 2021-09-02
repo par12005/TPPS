@@ -126,6 +126,7 @@ function tpps_file_width($fid) {
       break;
 
     case 'vcf':
+    case 'gz':
       return tpps_flat_width($location, "\t");
       break;
 
@@ -1032,6 +1033,7 @@ function tpps_file_generator($fid, array $options = array()) {
     case 'txt':
     case 'csv':
     case 'vcf':
+    case 'gz':
       return tpps_flat_generator($location, $options);
 
     default:
