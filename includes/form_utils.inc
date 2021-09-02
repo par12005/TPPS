@@ -346,14 +346,20 @@ function tpps_pre_validate_init($accession = NULL) {
         return;
       }
       else {
-        $file = new stdClass();
-        $file->fid = NULL;
-        $file->uri = $fid;
-        $file->filename = drupal_basename($fid);
-        $file->filemime = file_get_mimetype($file->uri);
-        $file->uid = $user->uid;
-        $file->status = 0;
-        $file = file_save($file);
+        $existing_files = file_load_multiple(FALSE, array('uri' => $fid));
+        if (!empty($existing_files)) {
+          $file = current($existing_files);
+        }
+        else {
+          $file = new stdClass();
+          $file->fid = NULL;
+          $file->uri = $fid;
+          $file->filename = drupal_basename($fid);
+          $file->filemime = file_get_mimetype($file->uri);
+          $file->uid = $user->uid;
+          $file->status = 0;
+          $file = file_save($file);
+        }
 
         $vcfs[$org_num] = $file->fid;
         $state['vcf_replace'][$org_num] = $file->fid;
