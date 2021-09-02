@@ -323,7 +323,8 @@ function tpps_access() {
       $submission_type = $full_state['tpps_type'] ?? 'tpps';
 
       if (($state = tpps_load_submission($accession, FALSE))) {
-        if ($state->status == "Incomplete" and $state->uid == $user->uid and $submission_type == $form_type) {
+        $type_pass = ($submission_type == $form_type) || preg_match('/^tpps\/TGDR[0-9]+\/.+$/', $path);
+        if ($state->status == "Incomplete" and $state->uid == $user->uid and $type_pass) {
           return TRUE;
         }
       }
