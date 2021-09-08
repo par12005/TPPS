@@ -305,40 +305,45 @@ function tpps_flatten(array $state) {
         if (isset($org['phenotype'])) {
           $pheno = &$org['phenotype'];
   
-          if (isset($pheno['phenotypes-meta']['number'])) {
-            $data['#number_phenotypes'] = $pheno['phenotypes-meta']['number'];
-            $pheno_meta = &$pheno['phenotypes-meta'];
-            for ($j = 1; $j <= $data['#number_phenotypes']; $j++) {
-              $fields = array(
-                'name' => 'Name',
-                'attribute' => 'Attribute',
-                'description' => 'Description',
-                'units' => 'Units',
-              );
-              if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
-                $fields['structure'] = 'Structure';
-              }
-              if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
-                $fields['min'] = 'Minimum Value';
-                $fields['max'] = 'Maximum Value';
-              }
-  
-              foreach ($fields as $field => $field_string) {
-                if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
-                  $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
+          if (!empty($pheno['iso-check'])) {
+            $data["$org_name Phenotype Isotope/Mass Spectrometry File"] = $pheno['iso'];
+          }
+          else {
+            if (isset($pheno['phenotypes-meta']['number'])) {
+              $data['#number_phenotypes'] = $pheno['phenotypes-meta']['number'];
+              $pheno_meta = &$pheno['phenotypes-meta'];
+              for ($j = 1; $j <= $data['#number_phenotypes']; $j++) {
+                $fields = array(
+                  'name' => 'Name',
+                  'attribute' => 'Attribute',
+                  'description' => 'Description',
+                  'units' => 'Units',
+                );
+                if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
+                  $fields['structure'] = 'Structure';
+                }
+                if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
+                  $fields['min'] = 'Minimum Value';
+                  $fields['max'] = 'Maximum Value';
+                }
+    
+                foreach ($fields as $field => $field_string) {
+                  if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
+                    $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
+                  }
                 }
               }
             }
+    
+            if (isset($pheno['check']) and $pheno['check'] and isset($pheno['metadata']) and $pheno['metadata']) {
+              $data["$org_name Phenotype Metadata File"] = $pheno['metadata'];
+            }
+    
+            if (isset($pheno['file']) and $pheno['file']) {
+              $data["$org_name Phenotype File"] = $pheno['file'];
+            }
+            $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
           }
-  
-          if (isset($pheno['check']) and $pheno['check'] and isset($pheno['metadata']) and $pheno['metadata']) {
-            $data["$org_name Phenotype Metadata File"] = $pheno['metadata'];
-          }
-  
-          if (isset($pheno['file']) and $pheno['file']) {
-            $data["$org_name Phenotype File"] = $pheno['file'];
-          }
-          $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
         }
   
         if (isset($org['genotype'])) {
