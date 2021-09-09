@@ -20,6 +20,7 @@
  */
 function tpps_details($accession = NULL) {
   global $base_url;
+  global $user;
   $output = "";
 
   if (empty($accession)) {
@@ -122,6 +123,9 @@ function tpps_details($accession = NULL) {
       $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograPlant</a><br>";
     }
     $output .= "<a href=\"$base_url/tpps/api/files/$accession\">Download compressed raw files</a><br>";
+    if ($state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published' and $user->uid == tpps_load_submission($accession, FALSE)->uid) {
+      $output .= "<a href=\"$base_url/tpps/$accession/edit-publication\">Edit publication information</a>";
+    }
 
     $output .= tpps_details_tabs($state);
     return $output;
