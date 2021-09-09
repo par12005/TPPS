@@ -708,6 +708,7 @@ function tpps_table_display(array &$state, array $options = array()) {
 function tpps_completed_display($accession = NULL) {
 
   global $base_url;
+  global $user;
   $display = "";
   $link = "$base_url/tpps/details/$accession";
 
@@ -725,6 +726,9 @@ function tpps_completed_display($accession = NULL) {
   drupal_add_css($css, 'inline');
 
   $display .= "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
+  if ($values['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published' and $user->uid == tpps_load_submission($accession, FALSE)->uid) {
+    $display .= "<a href=\"$base_url/tpps/$accession/edit-publication\">Edit publication information</a>";
+  }
 
   $display .= tpps_table_display($old_form_state);
 

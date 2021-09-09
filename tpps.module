@@ -77,6 +77,15 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['tpps/%/edit-publication'] = array(
+    'title' => 'TPPS Edit Publication Information',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tpps_submission_edit_publication', 1),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('view own tpps submission', 1),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
   $items['tpps/details'] = array(
     'title' => 'TPPS Details',
     'page callback' => 'tpps_details',
