@@ -741,3 +741,117 @@ function tpps_submission_update_stats(array &$form_state) {
       break;
   }
 }
+
+/**
+ * Form to edit submission publication information.
+ *
+ * @param array $form
+ *   The form object to be populated.
+ * @param array $form_state
+ *   The state of the form object to be populated.
+ * @param mixed $accession
+ *   The accession of the submission being edited.
+ *
+ * @return array
+ *   The populated form object.
+ */
+function tpps_submission_edit_publication(array $form, array &$form_state, $accession = NULL) {
+  global $base_url;
+  $state = tpps_load_submission($accession);
+
+  $form['accession'] = array(
+    '#type' => 'hidden',
+    '#value' => $accession,
+  );
+
+  $form['status'] = array(
+    '#type' => 'select',
+    '#title' => t('Publication Status'),
+    '#options' => array(
+      0 => t('- Select -'),
+      'In Preparation or Submitted' => t('In Preparation or Submitted'),
+      'In Press' => t('In Press'),
+      'Published' => t('Published'),
+    ),
+    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['status'],
+    '#required' => TRUE,
+    '#prefix' => "<a href=\"$base_url/tpps/details/$accession\">Back to TPPS Details Page</a>",
+  );
+
+  $year_options = array(0 => '- Select -');
+  for ($i = 1990; $i <= date('Y'); $i++) {
+    $year_options[$i] = "$i";
+  }
+
+  $form['year'] = array(
+    '#type' => 'select',
+    '#title' => t('Year of Publication'),
+    '#options' => $year_options,
+    '#description' => t('If your publication has not been published yet, please choose the expected year of publication.'),
+    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['year'],
+    '#required' => TRUE,
+  );
+
+  $form['journal'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Journal'),
+    '#autocomplete_path' => 'tpps/autocomplete/journal',
+    '#default_value' => $state['saved_values'][TPPS_PAGE_1]['publication']['journal'],
+    '#required' => TRUE,
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit'),
+  );
+
+  return $form;
+}
+
+/**
+ * Implements hook_form_validate().
+ */
+function tpps_submission_edit_publication_validate(&$form, &$form_state) {
+  if (empty($form_state['values']['status'])) {
+    form_set_error('status', 'Publication Status: field is required.');
+  }
+  if (empty($form_state['values']['year'])) {
+    form_set_error('year', 'Publication Year: field is required.');
+  }
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function tpps_submission_edit_publication_submit($form, &$form_state) {
+  $accession = $form_state['values']['accession'];
+  $state = tpps_load_submission($accession);
+  $submit_job = FALSE;
+
+  if ($state['saved_values'][TPPS_PAGE_1]['publication']['status'] != $form_state['values']['status']) {
+    $state['saved_values'][TPPS_PAGE_1]['publication']['status'] = $form_state['values']['status'];
+    $submit_job = TRUE;
+  }
+
+  if ($state['saved_values'][TPPS_PAGE_1]['publication']['year'] != $form_state['values']['year']) {
+    $state['saved_values'][TPPS_PAGE_1]['publication']['year'] = $form_state['values']['year'];
+    $submit_job = TRUE;
+  }
+
+  if ($state['saved_values'][TPPS_PAGE_1]['publication']['journal'] != $form_state['values']['journal']) {
+    $state['saved_values'][TPPS_PAGE_1]['publication']['journal'] = $form_state['values']['journal'];
+    $submit_job = TRUE;
+  }
+
+  if ($submit_job) {
+    module_load_include('php', 'tpps', 'forms/submit/submit_all');
+
+    $includes = array();
+    $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+    $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+    $args = array($accession);
+    $jid = tripal_add_job("Update Publication Information - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+    $state['job_id'] = $jid;
+    tpps_update_submission($state);
+  }
+}

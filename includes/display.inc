@@ -305,40 +305,45 @@ function tpps_flatten(array $state) {
         if (isset($org['phenotype'])) {
           $pheno = &$org['phenotype'];
   
-          if (isset($pheno['phenotypes-meta']['number'])) {
-            $data['#number_phenotypes'] = $pheno['phenotypes-meta']['number'];
-            $pheno_meta = &$pheno['phenotypes-meta'];
-            for ($j = 1; $j <= $data['#number_phenotypes']; $j++) {
-              $fields = array(
-                'name' => 'Name',
-                'attribute' => 'Attribute',
-                'description' => 'Description',
-                'units' => 'Units',
-              );
-              if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
-                $fields['structure'] = 'Structure';
-              }
-              if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
-                $fields['min'] = 'Minimum Value';
-                $fields['max'] = 'Maximum Value';
-              }
-  
-              foreach ($fields as $field => $field_string) {
-                if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
-                  $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
+          if (!empty($pheno['iso-check'])) {
+            $data["$org_name Phenotype Isotope/Mass Spectrometry File"] = $pheno['iso'];
+          }
+          else {
+            if (isset($pheno['phenotypes-meta']['number'])) {
+              $data['#number_phenotypes'] = $pheno['phenotypes-meta']['number'];
+              $pheno_meta = &$pheno['phenotypes-meta'];
+              for ($j = 1; $j <= $data['#number_phenotypes']; $j++) {
+                $fields = array(
+                  'name' => 'Name',
+                  'attribute' => 'Attribute',
+                  'description' => 'Description',
+                  'units' => 'Units',
+                );
+                if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
+                  $fields['structure'] = 'Structure';
+                }
+                if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
+                  $fields['min'] = 'Minimum Value';
+                  $fields['max'] = 'Maximum Value';
+                }
+    
+                foreach ($fields as $field => $field_string) {
+                  if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
+                    $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
+                  }
                 }
               }
             }
+    
+            if (isset($pheno['check']) and $pheno['check'] and isset($pheno['metadata']) and $pheno['metadata']) {
+              $data["$org_name Phenotype Metadata File"] = $pheno['metadata'];
+            }
+    
+            if (isset($pheno['file']) and $pheno['file']) {
+              $data["$org_name Phenotype File"] = $pheno['file'];
+            }
+            $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
           }
-  
-          if (isset($pheno['check']) and $pheno['check'] and isset($pheno['metadata']) and $pheno['metadata']) {
-            $data["$org_name Phenotype Metadata File"] = $pheno['metadata'];
-          }
-  
-          if (isset($pheno['file']) and $pheno['file']) {
-            $data["$org_name Phenotype File"] = $pheno['file'];
-          }
-          $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
         }
   
         if (isset($org['genotype'])) {
@@ -703,6 +708,7 @@ function tpps_table_display(array &$state, array $options = array()) {
 function tpps_completed_display($accession = NULL) {
 
   global $base_url;
+  global $user;
   $display = "";
   $link = "$base_url/tpps/details/$accession";
 
@@ -720,6 +726,9 @@ function tpps_completed_display($accession = NULL) {
   drupal_add_css($css, 'inline');
 
   $display .= "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
+  if ($values['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published' and $user->uid == tpps_load_submission($accession, FALSE)->uid) {
+    $display .= "<a href=\"$base_url/tpps/$accession/edit-publication\">Edit publication information</a>";
+  }
 
   $display .= tpps_table_display($old_form_state);
 

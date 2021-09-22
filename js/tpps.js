@@ -238,7 +238,12 @@ jQuery(document).ready(function ($) {
 
   var file_options = jQuery('div').filter(function() { return this.id.match(/^file_.*_options$/); });
   jQuery.each(file_options, function() {
-    jQuery(this).prependTo('#' + this.id + '_dest');
+    if (jQuery('#' + this.id + '_dest').length > 0) {
+      jQuery(this).prependTo('#' + this.id + '_dest');
+    }
+    else {
+      jQuery(this).hide();
+    }
   });
 
   initDetailPages();

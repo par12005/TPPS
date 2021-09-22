@@ -90,6 +90,19 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           tpps_file_iterator($values['file'], 'tpps_accession_valid_locations', $options);
         }
 
+        if (!form_get_errors() and (!$multi_file and $species_number > 1)) {
+          $options = array(
+            'no_header' => !empty($values['file-no-header']),
+            'species_options' => $required_groups['Genus and Species'],
+            'id_col' => $groups['Tree Id']['1'],
+            'species_cols' => $groups['Genus and Species'],
+            'empty' => $values['file-empty'],
+            'org_num' => $i,
+            'page_1_species' => $form_state['saved_values'][TPPS_PAGE_1]['organism'],
+          );
+          tpps_file_iterator($values['file'], 'tpps_accession_valid_species', $options);
+        }
+
         if (!form_get_errors()) {
           $file = file_load($values['file']);
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
@@ -165,6 +178,53 @@ function tpps_accession_valid_locations($row, &$options) {
     }
     if (!$valid_row) {
       form_set_error("tree-accession-species-$org_num-file-{$row[$id_name]}", "Plant Accession file: Some location information is $reason for plant \"{$row[$id_name]}\".");
+    }
+  }
+}
+
+/**
+ * This function processes a single row of a plant accession file.
+ *
+ * This function validates that the accession file has valid/complete species
+ * information for each plant. This function is meant to be used with
+ * tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_accession_valid_species($row, &$options) {
+  $id_name = $options['id_col'];
+  $species_options = $options['species_options'];
+  $species_columns = $options['species_cols'];
+  $species_type = $species_columns['#type'];
+  $org_num = $options['org_num'];
+  $organisms = $options['page_1_species'];
+
+  if (!empty($row[$id_name])) {
+    $valid_row = FALSE;
+
+    if ($species_type == 'separate') {
+      $species = array();
+      foreach ($species_options[$species_type] as $column) {
+        $species[] = $row[$species_columns[$column]];
+      }
+      $species = implode(' ', $species);
+    }
+    else {
+      $species = $row[$species_columns[current($species_options[$species_type])]];
+    }
+
+    for ($i = 1; $i <= $organisms['number']; $i++) {
+      if ($species == $organisms[$i]['name']) {
+        $valid_row = TRUE;
+        break;
+      }
+    }
+
+    if (!$valid_row) {
+      form_set_error("tree-accession-species-$org_num-file-{$row[$id_name]}", "Plant Accession file: Some species information is invalid for plant \"{$row[$id_name]}\". The species name, \"$species\", does not match any species name supplied on the Author and Species information page. Please correct the file or add the correct species name.");
     }
   }
 }
