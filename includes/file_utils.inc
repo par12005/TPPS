@@ -576,7 +576,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
 
     if (isset($form['organism-1']['phenotype'])) {
       for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-        if (!isset($form["organism-$i"]['phenotype']['iso'])) {
+        if (!empty($form_state['values']["organism-$i"]['phenotype']['normal-check'])) {
           if (($file = file_load($form_state['values']["organism-$i"]['phenotype']['file'])) and $form_state['values']["organism-$i"]['phenotype']['file'] != 0) {
             file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
           }

@@ -145,13 +145,14 @@ function tpps_doi_upload_files($id, array &$state) {
   for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
     if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'])) {
       $phenotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
-      if (empty($phenotype['iso-check'])) {
+      if (!empty($phenotype['normal-check'])) {
         $files[] = $phenotype['file'];
         if ($phenotype['check']) {
           $files[] = $phenotype['metadata'];
         }
       }
-      else {
+
+      if (!empty($phenotype['iso-check'])) {
         $files[] = $phenotype['iso'];
       }
     }

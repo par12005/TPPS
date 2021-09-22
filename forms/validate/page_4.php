@@ -103,10 +103,15 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
  *   The state of the form being validated.
  */
 function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array &$form_state) {
+  $normal_check = $phenotype['normal-check'];
   $iso_check = $phenotype['iso-check'];
   $id = "organism-$org_num";
 
-  if (empty($iso_check)) {
+  if (empty($normal_check) and empty($iso_check)) {
+    form_set_error("$id][phenotype][normal-check", "Please choose at least one category of phenotypes to upload");
+  }
+
+  if ($normal_check) {
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     $phenotype_check = $phenotype['check'];
     $phenotype_meta = $phenotype['metadata'];
@@ -287,7 +292,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
 
           if ($missing_trees !== array()) {
             $tree_id_str = implode(', ', $missing_trees);
-            form_set_error("$id][phenotype][file", "Phenotype file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Phenotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+            form_set_error("$id][phenotype][file", "Phenotype file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Phenotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
           }
         }
       }
@@ -302,17 +307,24 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
 
     }
   }
-  else {
-    $headers = tpps_file_headers($phenotype['iso']);
-    $id_col_name = key($headers);
-    while (($k = array_search(NULL, $headers))) {
-      unset($headers[$k]);
-    }
-    $num_columns = tpps_file_width($phenotype['iso']) - 1;
-    $num_unique_columns = count(array_unique($headers)) - 1;
 
-    if ($num_unique_columns != $num_columns) {
-      form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file.");
+  if ($iso_check) {
+    if (empty($phenotype['iso'])) {
+      form_set_error("$id][phenotype][iso", "Phenotype Isotope/Mass Spectrometry File: field is required.");
+    }
+
+    if (!form_get_errors()) {
+      $headers = tpps_file_headers($phenotype['iso']);
+      $id_col_name = key($headers);
+      while (($k = array_search(NULL, $headers))) {
+        unset($headers[$k]);
+      }
+      $num_columns = tpps_file_width($phenotype['iso']) - 1;
+      $num_unique_columns = count(array_unique($headers)) - 1;
+
+      if ($num_unique_columns != $num_columns) {
+        form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file.");
+      }
     }
 
     if (!form_get_errors()) {
@@ -328,7 +340,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
 
       if ($missing_trees !== array()) {
         $tree_id_str = implode(', ', $missing_trees);
-        form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+        form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
       }
     }
 
@@ -655,7 +667,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
         }
       }
 
@@ -898,7 +910,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
         }
       }
 
@@ -958,7 +970,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][indels", "Indel Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][indels", "Indel Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
         }
       }
 
@@ -1013,7 +1025,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][other", "Other Marker Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][other", "Other Marker Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
         }
       }
 

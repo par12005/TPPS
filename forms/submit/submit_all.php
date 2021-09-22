@@ -974,7 +974,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
     'job' => &$job,
   );
 
-  if (empty($phenotype['iso-check'])) {
+  if (!empty($phenotype['normal-check'])) {
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
     $phenotypes_meta = array();
     $data_fid = $phenotype['file'];
@@ -1085,8 +1085,10 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
 
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
+    tpps_chado_insert_multi($options['records']);
   }
-  else {
+
+  if (!empty($phenotype['iso-check'])) {
     $iso_fid = $phenotype['iso'];
     tpps_add_project_file($form_state, $iso_fid);
 
@@ -1101,8 +1103,8 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
     );
 
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
+    tpps_chado_insert_multi($options['records']);
   }
-  tpps_chado_insert_multi($options['records']);
 }
 
 /**
