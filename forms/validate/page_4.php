@@ -340,7 +340,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
 
       if ($missing_trees !== array()) {
         $tree_id_str = implode(', ', $missing_trees);
-        form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+        form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
       }
     }
 
@@ -667,7 +667,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][snps-assay", "SNPs Assay file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
         }
       }
 
@@ -910,7 +910,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][ssrs", "SSRs/cpSSRs Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
         }
       }
 
@@ -970,7 +970,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][indels", "Indel Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][indels", "Indel Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
         }
       }
 
@@ -1025,7 +1025,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
         if ($missing_trees !== array()) {
           $tree_id_str = implode(', ', $missing_trees);
-          form_set_error("$id][genotype][files][other", "Other Marker Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+          form_set_error("$id][genotype][files][other", "Other Marker Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
         }
       }
 
