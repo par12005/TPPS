@@ -292,7 +292,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
 
           if ($missing_trees !== array()) {
             $tree_id_str = implode(', ', $missing_trees);
-            form_set_error("$id][phenotype][file", "Phenotype file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Phenotype file, or add them to your Plant Accesison file. The Plant Identifiers we found were: $tree_id_str");
+            form_set_error("$id][phenotype][file", "Phenotype file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Phenotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
           }
         }
       }
