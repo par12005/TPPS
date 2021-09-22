@@ -62,7 +62,13 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         );
       }
 
-      if (!isset($form["organism-$i"]['phenotype']['iso'])) {
+      $normal_check = tpps_get_ajax_value($form_state, array(
+        "organism-$i",
+        'phenotype',
+        'normal-check',
+      ), NULL);
+
+      if (!empty($normal_check)) {
         $image_path = drupal_get_path('module', 'tpps') . '/images/';
         $form["organism-$i"]['phenotype']['format'] = array(
           '#type' => 'radios',
