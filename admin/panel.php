@@ -641,6 +641,7 @@ function tpps_admin_panel_top(array &$form) {
   $pending = array();
   $approved = array();
   $incomplete = array();
+  $unpublished_old = array();
 
   $submitting_user_cache = array();
   $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
@@ -683,6 +684,20 @@ function tpps_admin_panel_top(array &$form) {
 
         case 'Approved':
           $status_label = !empty($state['loaded']) ? "Approved - load completed on " . date("F j, Y, \a\t g:i a", $state['loaded']) : "Approved";
+          $days_since_load = (time() - $state['loaded']) / (60 * 60 * 24);
+          $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
+          if ($state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published' and $days_since_load >= $unpublished_threshold) {
+            $row = array(
+              l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
+              round($days_since_load),
+              $state['saved_values'][TPPS_PAGE_1]['publication']['status'],
+              $submitting_user,
+            );
+            if (tpps_access('view own tpps submission', $state['accession'])) {
+              $row[] = l('Edit publication information', "tpps/{$state['accession']}/edit-publication");
+            }
+            $unpublished_old[(int) substr($state['accession'], 4)] = $row;
+          }
         case 'Submission Job Running':
           $status_label = $status_label ?? (!empty($state['approved']) ? ("Submission Job Running - job started on " . date("F j, Y, \a\t g:i a", $state['approved'])) : "Submission Job Running");
         case 'Approved - Delayed Submission Release':
@@ -758,6 +773,15 @@ function tpps_admin_panel_top(array &$form) {
 
   $vars['header'] = array(
     'Accession Number',
+    'Days since approval date',
+    'Publication Status',
+    'Submission Owner',
+  );
+  $vars['rows'] = $unpublished_old;
+  $unpublished_table = theme_table($vars);
+
+  $vars['header'] = array(
+    'Accession Number',
     'Submitting User',
     'Title',
     'Date Submitted',
@@ -786,6 +810,17 @@ function tpps_admin_panel_top(array &$form) {
   );
   $vars['rows'] = $incomplete;
   $incomplete_table = theme_table($vars);
+
+  if (!empty($unpublished_old)) {
+    $form['unpublished_old'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Unpublished Approved TPPS Submissions'),
+      '#collapsible' => TRUE,
+      'table' => array(
+        '#markup' => $unpublished_table,
+      ),
+    );
+  }
 
   if (!empty($pending)) {
     $form['pending'] = array(
