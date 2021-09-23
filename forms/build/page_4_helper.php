@@ -1417,8 +1417,14 @@ function tpps_environment(array &$form, array &$form_state, $id) {
 
     $form[$id]['environment']['env_layers_groups'] = array(
       '#type' => 'fieldset',
-      '#title' => 'CartograPlant Environmental Layers: *',
+      '#title' => 'CartograPlant Environmental Layer Groups: *',
       '#collapsible' => TRUE,
+    );
+
+    $form[$id]['environment']['layer_search'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Layers Search'),
+      '#description' => t('You can use this field to filter the layers in the following section.'),
     );
 
     $form[$id]['environment']['env_layers'] = array(
