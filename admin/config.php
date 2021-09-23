@@ -43,6 +43,12 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_geocode_api_key', NULL),
   );
 
+  $form['tpps_unpublished_days_threshold'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Number of days before an unpublished study gets highlighted in TPPS Admin panel'),
+    '#default_value' => variable_get('tpps_unpublished_days_threshold', 180),
+  );
+
   $form['tpps_gps_epsilon'] = array(
     '#type' => 'textfield',
     '#title' => t('TPPS GPS Epsilon'),
@@ -217,6 +223,11 @@ function tpps_admin_settings_validate($form, &$form_state) {
     elseif ($key == 'tpps_zenodo_prefix') {
       if ($value and $value != 'sandbox.') {
         form_set_error("$key", "Error: Zenodo Prefix must either be empty or 'sandbox.'");
+      }
+    }
+    elseif ($key == 'tpps_unpublished_days_threshold') {
+      if (empty($value) or !preg_match('/^[0-9]+$/', $value)) {
+        form_set_error("$key", "Error: please enter a valid number of days");
       }
     }
     elseif ($key == 'tpps_update_old_submissions' and !empty($value)) {
