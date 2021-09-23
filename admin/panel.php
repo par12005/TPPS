@@ -683,7 +683,7 @@ function tpps_admin_panel_top(array &$form) {
           break;
 
         case 'Approved':
-          $status_label = !empty($state['loaded']) ? "Approved - load completed on " . date("F j, Y, \a\t g:i a", $state['loaded']) : "Approved";
+          $status_label = !empty($state['loaded']) ? "Approved - load completed on " . date("F j, Y, \a\\t g:i a", $state['loaded']) : "Approved";
           if (!empty($state['loaded'])) {
             $days_since_load = (time() - $state['loaded']) / (60 * 60 * 24);
             $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
