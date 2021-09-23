@@ -1930,3 +1930,44 @@ function tpps_update_7117() {
     throw $e;
   }
 }
+
+/**
+ * Implements hook_update_N().
+ *
+ * Adds normal-check field to old submissions where applicable.
+ */
+function tpps_update_7118() {
+  $transaction = db_transaction();
+  $submissions = tpps_load_submission_multiple(array(), FALSE);
+
+  try {
+    foreach ($submissions as $record) {
+      $state = tpps_load_submission($record->accession);
+
+      $org_num = $state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+      for ($i = 1; $i <= $org_num; $i++) {
+        $phenotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'] ?? NULL;
+        if (!empty($phenotype)) {
+          // If the submission doesn't have iso/mass spec data, then it must be
+          // normal phenotype data.
+          if (empty($phenotype['iso-check']) and !empty($phenotype['file'])) {
+            $phenotype['normal-check'] = TRUE;
+          }
+
+          // If the submission does have iso/mass spec data and doesn't have
+          // the normal-check field, then it must not have normal phenotypes.
+          if (!empty($phenotype['iso-check']) and !array_key_exists('normal-check', $phenotype)) {
+            $phenotype['normal-check'] = FALSE;
+          }
+        }
+      };
+
+      tpps_update_submission($state);
+    }
+
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
