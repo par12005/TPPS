@@ -686,11 +686,12 @@ function tpps_admin_panel_top(array &$form) {
           $status_label = !empty($state['loaded']) ? "Approved - load completed on " . date("F j, Y, \a\t g:i a", $state['loaded']) : "Approved";
           $days_since_load = (time() - $state['loaded']) / (60 * 60 * 24);
           $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
-          if ($state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published' and $days_since_load >= $unpublished_threshold) {
+          $pub_status = $state['saved_values'][TPPS_PAGE_1]['publication']['status'] ?? NULL;
+          if (!empty($pub_status) and $pub_status != 'Published' and $days_since_load >= $unpublished_threshold) {
             $row = array(
               l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
               round($days_since_load),
-              $state['saved_values'][TPPS_PAGE_1]['publication']['status'],
+              $pub_status,
               $submitting_user,
             );
             if (tpps_access('view own tpps submission', $state['accession'])) {
