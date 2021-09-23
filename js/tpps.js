@@ -52,10 +52,10 @@ jQuery(document).ready(function ($) {
     });
     
   }
-  
-  jQuery("#edit-step").hide();
 
-  if (jQuery("#edit-step").length > 0){
+  if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.stage !== 'undefined') {
+    var stage = Drupal.settings.tpps.stage;
+
     var status_block = jQuery(".tpps-status-block");
     jQuery(".region-sidebar-second").empty();
     status_block.prependTo(".region-sidebar-second");
@@ -63,7 +63,7 @@ jQuery(document).ready(function ($) {
     jQuery("#progress").css('font-size', '1.5rem');
     jQuery("#progress").css('margin-bottom', '30px');
 
-    if (jQuery("#edit-step")[0].value === 'summarypage'){
+    if (stage === 'summarypage'){
       Supplemental_Files();
       jQuery("#tpps-status").insertAfter(".tgdr_form_status");
       jQuery("#edit-next").on('click', function(){
@@ -509,7 +509,7 @@ function getCoordinates(){
 jQuery.fn.updateMap = function(locations, fid = "") {
   jQuery("#" + fid + "_map_wrapper").show();
   var detail_regex = /tpps\/details\/TGDR.*/g;
-  if (jQuery("#edit-step").length > 0 && jQuery("#edit-step")[0].value == 3){
+  if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.stage !== 'undefined' && Drupal.settings.tpps.stage == 3) {
     jQuery("#" + fid + "_map_wrapper").css({"height": "450px"});
     jQuery("#" + fid + "_map_wrapper").css({"max-width": "800px"});
   }
