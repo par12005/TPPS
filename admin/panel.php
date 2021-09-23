@@ -691,7 +691,7 @@ function tpps_admin_panel_top(array &$form) {
             if (!empty($pub_status) and $pub_status != 'Published' and $days_since_load >= $unpublished_threshold) {
               $row = array(
                 l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
-                round($days_since_load),
+                date("F j, Y", $state['loaded']) . " (". round($days_since_load) . " days ago)",
                 $pub_status,
                 $submitting_user,
               );
@@ -776,7 +776,7 @@ function tpps_admin_panel_top(array &$form) {
 
   $vars['header'] = array(
     'Accession Number',
-    'Days since approval date',
+    'Approval date',
     'Publication Status',
     'Submission Owner',
   );
