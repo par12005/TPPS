@@ -689,11 +689,33 @@ function tpps_admin_panel_top(array &$form) {
             $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
             $pub_status = $state['saved_values'][TPPS_PAGE_1]['publication']['status'] ?? NULL;
             if (!empty($pub_status) and $pub_status != 'Published' and $days_since_load >= $unpublished_threshold) {
+              $owner = $submitting_user;
+              $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
+
+              // If Tripal Contact Profile is available, we want to link to the
+              // profile of the owner instead of just displaying the name.
+              if ($contact_bundle) {
+                $owner_mail = user_load($submission->uid)->mail;
+                $query = new EntityFieldQuery();
+                $results = $query->entityCondition('entity_type', 'TripalEntity')
+                  ->entityCondition('bundle', $contact_bundle->name)
+                  ->fieldCondition('local__email', 'value', $owner_mail)
+                  ->range(0, 1)
+                  ->execute();
+                $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
+                $owner = "<a href=\"$base_url/TripalContactProfile/{$entity->id}\">$submitting_user</a>";
+              }
+              else {
+                $owner_mail = user_load($submission->uid)->mail;
+                if ($owner_mail != $owner) {
+                  $owner = "$submitting_user ($owner_mail)";
+                }
+              }
               $row = array(
                 l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
                 date("F j, Y", $state['loaded']) . " (". round($days_since_load) . " days ago)",
                 $pub_status,
-                $submitting_user,
+                $owner,
               );
               if (tpps_access('view own tpps submission', $state['accession'])) {
                 $row[] = l('Edit publication information', "tpps/{$state['accession']}/edit-publication");
