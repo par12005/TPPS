@@ -1,5 +1,5 @@
 # Tripal Plant PopGen Submit (TPPS) pipeline
-[![Build Status](https://travis-ci.org/par12005/TPPS.svg?branch=master)](https://travis-ci.org/par12005/TPPS)
+[![Build Status](https://app.travis-ci.com/par12005/TPPS.svg?branch=7.x-1.x)](https://app.travis-ci.com/par12005/TPPS)
 [![Documentation Status](https://readthedocs.org/projects/tpps/badge/?version=latest)](https://tpps.readthedocs.io/en/latest/?badge=latest)
 [![Tripal Rating Silver Status](https://tripal.readthedocs.io/en/7.x-3.x/_images/Tripal-Silver.png)](https://tripal.readthedocs.io/en/7.x-3.x/extensions/module_rating.html#Silver)
 [![DOI](https://zenodo.org/badge/189632031.svg)](https://zenodo.org/badge/latestdoi/189632031)
