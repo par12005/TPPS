@@ -53,8 +53,9 @@ jQuery(document).ready(function ($) {
     
   }
 
+  var stage;
   if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.stage !== 'undefined') {
-    var stage = Drupal.settings.tpps.stage;
+    stage = Drupal.settings.tpps.stage;
 
     var status_block = jQuery(".tpps-status-block");
     jQuery(".region-sidebar-second").empty();
@@ -70,6 +71,26 @@ jQuery(document).ready(function ($) {
         jQuery("#tpps-status").html("<label>Loading... </label><br>This step may take several minutes.");
       });
     }
+  }
+
+  if (typeof stage !== 'undefined' && stage == 4) {
+    var layer_search_buttons = jQuery('input').filter(function() { return this.id.match(/edit-organism-[0-9]+-environment-layer-search/); });
+    layer_search_buttons.keyup(function() {
+      var button_value = new RegExp(jQuery(this).val(), 'i');
+      var org_num = this.id.match(/edit-organism-([0-9]+)-environment-layer-search/)[1];
+      var pattern = new RegExp('edit-organism-' + org_num + '-environment-env-layers-');
+      var group_pattern = new RegExp('edit-organism-' + org_num + '-environment-env-layers-groups-');
+      var layers = jQuery('input').filter(function() { return this.id.match(pattern) && !this.id.match(group_pattern); });
+      jQuery.each(layers, function() {
+        var label = jQuery(this).parent().children('label')[0].innerText;
+        if (label.match(button_value)) {
+          jQuery(this).parent().show();
+        }
+        else {
+          jQuery(this).parent().hide();
+        }
+      });
+    });
   }
 
   if (typeof Drupal.settings.tpps !== 'undefined' && typeof Drupal.settings.tpps.map_buttons !== 'undefined') {
