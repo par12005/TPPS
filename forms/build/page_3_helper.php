@@ -154,7 +154,7 @@ function tpps_study_location(array &$form, array &$form_state) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_accession_pop_groups($row, &$options) {
+function tpps_accession_pop_groups($row, array &$options) {
   $groups = &$options['pop_groups'];
   $col = current($options['columns']);
   if (array_search($row[$col], $groups) === FALSE) {

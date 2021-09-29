@@ -144,7 +144,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_accession_valid_locations($row, &$options) {
+function tpps_accession_valid_locations($row, array &$options) {
   $id_name = $options['id_col'];
   $empty = $options['empty'];
   $location_options = $options['loc_options'];
@@ -194,7 +194,7 @@ function tpps_accession_valid_locations($row, &$options) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_accession_valid_species($row, &$options) {
+function tpps_accession_valid_species($row, array &$options) {
   $id_name = $options['id_col'];
   $species_options = $options['species_options'];
   $species_columns = $options['species_cols'];

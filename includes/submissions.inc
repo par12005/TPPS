@@ -202,7 +202,7 @@ function tpps_delete_submission($accession, $redirect = TRUE) {
  * @param mixed $alt_accession
  *   The alternative accessions of the state.
  */
-function tpps_submission_add_alternative_accession($state, $alt_accession) {
+function tpps_submission_add_alternative_accession(array $state, $alt_accession) {
   $tpps_local_db = variable_get('tpps_local_db');
   if (!is_array($alt_accession)) {
     $alt_accession = array($alt_accession);
@@ -210,7 +210,7 @@ function tpps_submission_add_alternative_accession($state, $alt_accession) {
 
   $state_id = tpps_load_submission($state['accession'], FALSE)->tpps_submission_id;
 
-  // Remove the existing alternative accessions
+  // Remove the existing alternative accessions.
   db_delete('tpps_submission_dbxref')
     ->condition('tpps_submission_id', $state_id)
     ->execute();
@@ -273,7 +273,10 @@ function tpps_submission_tag_manage() {
       '',
     ),
     'rows' => $rows,
-    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_table_display',
+    ),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
@@ -310,7 +313,7 @@ function tpps_submission_tag_create(array $form, array &$form_state) {
     '#title' => t('Name'),
     '#description' => t('The name of the new tag'),
     '#required' => TRUE,
-    '#prefix' => '<a href="/tpps-tag">Back to TPPS Submission Tags page</a>'
+    '#prefix' => '<a href="/tpps-tag">Back to TPPS Submission Tags page</a>',
   );
 
   $form['color'] = array(

@@ -313,7 +313,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#type' => 'select',
         '#title' => 'Phenotype !num Structure: *',
         '#options' => $struct_options,
-        #'#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
+        '#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
       ),
       'struct-other' => array(
         '#type' => 'textfield',
@@ -415,24 +415,118 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('max', '#title'),
       ),
       'substitute_keys' => array(
-        array('attr-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'),
-        array('unit-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
-        array('val-check', '#states', 'invisible', 0, 0, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
-        array('val-check', '#states', 'invisible', 0, 2, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
-        array('bin-check', '#states', 'invisible', 0, 0, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
-        array('bin-check', '#states', 'invisible', 0, 2, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
-        array('struct-other', '#states', 'visible', ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]'),
-        array('min', '#states', 'visible', 0, 0, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
-        array('min', '#states', 'visible', 0, 2, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
-        array('min', '#states', 'visible', 0, 4, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
-        array('max', '#states', 'visible', 0, 0, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'),
-        array('max', '#states', 'visible', 0, 2, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'),
-        array('max', '#states', 'visible', 0, 4, ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]'),
+        array(
+          'attr-other',
+          '#states',
+          'visible',
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]',
+        ),
+        array(
+          'unit-other',
+          '#states',
+          'visible',
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
+        ),
+        array(
+          'val-check',
+          '#states',
+          'invisible',
+          0,
+          0,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
+        ),
+        array(
+          'val-check',
+          '#states',
+          'invisible',
+          0,
+          2,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
+        ),
+        array(
+          'bin-check',
+          '#states',
+          'invisible',
+          0,
+          0,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
+        ),
+        array(
+          'bin-check',
+          '#states',
+          'invisible',
+          0,
+          2,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]',
+        ),
+        array(
+          'struct-other',
+          '#states',
+          'visible',
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]',
+        ),
+        array(
+          'min',
+          '#states',
+          'visible',
+          0,
+          0,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
+        ),
+        array(
+          'min',
+          '#states',
+          'visible',
+          0,
+          2,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]',
+        ),
+        array(
+          'min',
+          '#states',
+          'visible',
+          0,
+          4,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
+        ),
+        array(
+          'max',
+          '#states',
+          'visible',
+          0,
+          0,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
+        ),
+        array(
+          'max',
+          '#states',
+          'visible',
+          0,
+          2,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]',
+        ),
+        array(
+          'max',
+          '#states',
+          'visible',
+          0,
+          4,
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
+        ),
       ),
     ));
 
-    $phenotypes = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta'), NULL);
-    $phenotype_number = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta', 'number'), NULL);
+    $phenotypes = tpps_get_ajax_value($form_state, array(
+      $id,
+      'phenotype',
+      'phenotypes-meta',
+    ), NULL);
+    $phenotype_number = tpps_get_ajax_value($form_state, array(
+      $id,
+      'phenotype',
+      'phenotypes-meta',
+      'number',
+    ), NULL);
     for ($i = 1; $i <= $phenotype_number; $i++) {
       if (empty($phenotypes[$i])) {
         continue;
@@ -592,8 +686,17 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     $form[$id]['phenotype']['metadata']['no-header'] = array();
 
     // Get names of manual phenotypes.
-    $meta = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta'));
-    $number = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'phenotypes-meta', 'number'));
+    $meta = tpps_get_ajax_value($form_state, array(
+      $id,
+      'phenotype',
+      'phenotypes-meta',
+    ));
+    $number = tpps_get_ajax_value($form_state, array(
+      $id,
+      'phenotype',
+      'phenotypes-meta',
+      'number',
+    ));
     $phenotype_names = array();
     for ($i = 1; $i <= $number; $i++) {
       if (!empty($meta[$i]['name'])) {
@@ -602,8 +705,17 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
 
     // Get names of phenotypes in metadata file.
-    $columns = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'metadata', 'columns'), array(), 'metadata');
-    $meta_fid = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'metadata'));
+    $columns = tpps_get_ajax_value($form_state, array(
+      $id,
+      'phenotype',
+      'metadata',
+      'columns',
+    ), array(), 'metadata');
+    $meta_fid = tpps_get_ajax_value($form_state, array(
+      $id,
+      'phenotype',
+      'metadata',
+    ));
     $name_col = NULL;
     foreach ($columns as $key => $info) {
       if (preg_match('/^[A-Z]+$/', $key)) {
@@ -652,7 +764,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       ),
     );
 
-    $time_check = tpps_get_ajax_value($form_state, array($id, 'phenotype', 'time', 'time-check'), $time_default);
+    $time_check = tpps_get_ajax_value($form_state, array(
+      $id,
+      'phenotype',
+      'time',
+      'time-check',
+    ), $time_default);
     if ($time_check) {
       $time_options = array();
       foreach ($phenotype_names as $name) {
@@ -960,7 +1077,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'select',
       '#title' => t('Confidence Value Type: *'),
       '#options' => array(
-        '- Select -',
+        0 => '- Select -',
         'P value' => 'P value',
         'Genomic Inflation Factor (GIF)' => 'Genomic Inflation Factor (GIF)',
         'P-adjusted (FDR) / Q value' => 'P-adjusted (FDR) / Q value',
@@ -973,7 +1090,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'select',
       '#title' => t('Association Analysis Tool: *'),
       '#options' => array(
-        '- Select -',
+        0 => '- Select -',
         'GEMMA' => 'GEMMA',
         'EMMAX' => 'EMMAX',
         'Plink' => 'Plink',
@@ -1242,11 +1359,16 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'wrapper' => "edit-$id-genotype-files-other-ajax-wrapper",
         'callback' => 'tpps_page_4_file_dynamic',
       ),
-      '#description' => t(''),
       '#default_value' => $default_dynamic,
     );
 
-    $dynamic = tpps_get_ajax_value($form_state, array($id, 'genotype', 'files', 'other', 'dynamic'), $default_dynamic, 'other');
+    $dynamic = tpps_get_ajax_value($form_state, array(
+      $id,
+      'genotype',
+      'files',
+      'other',
+      'dynamic',
+    ), $default_dynamic, 'other');
     if ($dynamic) {
       $fields['files']['other']['columns'] = array(
         '#description' => 'Please define which columns hold the required data: Plant Identifier, Genotype Data',
@@ -1302,7 +1424,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       $hostname = $parts[1];
       $fields['files']['local_vcf_check'] = array(
         '#type' => 'checkbox',
-        '#title' => t("My VCF file is stored locally on {$hostname}"),
+        '#title' => t("My VCF file is stored locally on @hostname", array('@hostname' => $hostname)),
       );
 
       $fields['files']['local_vcf'] = array(
@@ -1313,7 +1435,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
             ':input[name="' . $id . '[genotype][files][local_vcf_check]"]' => array('checked' => TRUE),
           ),
         ),
-        '#description' => t("Please provide the full path to your vcf file stored locally on {$hostname}"),
+        '#description' => t("Please provide the full path to your vcf file stored locally on @hostname", array('@hostname' => $hostname)),
       );
     }
   }
@@ -1606,7 +1728,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $eutils['accession']['#description'] = t('Valid examples: 12384, 394253, 66853, PRJNA185471');
   $eutils['db'] = array(
     '#type' => 'hidden',
-    '#value' => 'bioproject'
+    '#value' => 'bioproject',
   );
   unset($eutils['options']);
   $eutils['options']['linked_records'] = array(
@@ -1636,7 +1758,8 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
             break;
           }
         }
-      } catch (\Exception $e) {
+      }
+      catch (\Exception $e) {
         tripal_set_message($e->getMessage(), TRIPAL_ERROR);
       }
     }

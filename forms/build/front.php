@@ -48,7 +48,10 @@ function tpps_front_create_form(array &$form, array $form_state) {
     $options_arr = array();
     $options_arr['new'] = 'Create new TPPS Submission';
 
-    $states = tpps_load_submission_multiple(array('status' => 'Incomplete', 'uid' => $user->uid));
+    $states = tpps_load_submission_multiple(array(
+      'status' => 'Incomplete',
+      'uid' => $user->uid,
+    ));
 
     foreach ($states as $state) {
       if (empty($state['tpps_type']) or $state['tpps_type'] != 'tppsc') {

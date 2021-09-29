@@ -230,7 +230,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
               'fid' => $fid,
             ),
           ),
-        )
+        ),
       ), 'setting');
     }
 

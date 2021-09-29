@@ -61,7 +61,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
  */
 function tpps_manage_submission_form(array &$form, array &$form_state, $accession = NULL) {
   global $base_url;
-  $submission = tpps_load_submission($accession, False);
+  $submission = tpps_load_submission($accession, FALSE);
   $status = $submission->status;
   $submission_state = unserialize($submission->submission_state);
   if (empty($submission_state['status'])) {
@@ -124,7 +124,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
         }
       }
     }
-    // TODO: get new/custom cvterms from metadata file.
+    // @todo get new/custom cvterms from metadata file.
     if (count($new_cvterms) > 0) {
       $message = 'This submission will create the following new local cvterms: ' . implode(', ', $new_cvterms);
       $display .= "<div class=\"alert alert-block alert-dismissible alert-warning messages warning\">
@@ -416,8 +416,7 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
     }
   }
 
-  // TODO: get phenotypes from metadata file.
-
+  // @todo get phenotypes from metadata file.
   $attr_options = array();
   $terms = array(
     'age' => 'Age',
@@ -539,7 +538,10 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
   foreach ($phenotypes as $num => $info) {
     $form['phenotypes_edit'][$num] = array(
       '#type' => 'fieldset',
-      '#title' => t('Phenotype @num (@name):', array('@num' => $num, '@name' => $info['name'])),
+      '#title' => t('Phenotype @num (@name):', array(
+        '@num' => $num,
+        '@name' => $info['name'],
+      )),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
       'name' => array(
@@ -661,7 +663,7 @@ function tpps_admin_panel_top(array &$form) {
       $query->condition('cp.value', $mail);
       $query->condition('cp.type_id', $mail_cvterm);
       $query->fields('c', array('name'));
-      $query->range(0,1);
+      $query->range(0, 1);
       $query = $query->execute();
       $name = $query->fetchObject()->name ?? NULL;
 
@@ -713,12 +715,12 @@ function tpps_admin_panel_top(array &$form) {
               }
               $row = array(
                 l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
-                date("F j, Y", $state['loaded']) . " (". round($days_since_load) . " days ago)",
+                date("F j, Y", $state['loaded']) . " (" . round($days_since_load) . " days ago)",
                 $pub_status,
                 $owner,
               );
               if (tpps_access('view own tpps submission', $state['accession'])) {
-                $row[] = l('Edit publication information', "tpps/{$state['accession']}/edit-publication");
+                $row[] = l(t('Edit publication information'), "tpps/{$state['accession']}/edit-publication");
               }
               $unpublished_old[(int) substr($state['accession'], 4)] = $row;
             }

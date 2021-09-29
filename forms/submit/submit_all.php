@@ -17,7 +17,7 @@
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_submit_all($accession, $job = NULL) {
+function tpps_submit_all($accession, TripalJob $job = NULL) {
 
   $job->logMessage('[INFO] Setting up...');
   $job->setInterval(1);
@@ -51,7 +51,10 @@ function tpps_submit_all($accession, $job = NULL) {
     $form_state['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
     $job->logMessage("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
 
-    tpps_tripal_entity_publish('Project', array($firstpage['publication']['title'], $form_state['ids']['project_id']));
+    tpps_tripal_entity_publish('Project', array(
+      $firstpage['publication']['title'],
+      $form_state['ids']['project_id'],
+    ));
 
     $job->logMessage("[INFO] Submitting Publication/Species information...");
     tpps_submit_page_1($form_state, $job);
@@ -105,7 +108,7 @@ function tpps_submit_all($accession, $job = NULL) {
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_submit_page_1(array &$form_state, &$job = NULL) {
+function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
 
   $dbxref_id = $form_state['dbxref_id'];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
@@ -174,7 +177,10 @@ function tpps_submit_page_1(array &$form_state, &$job = NULL) {
     'uniquename' => implode('; ', $authors) . " {$firstpage['publication']['title']}. {$firstpage['publication']['journal']}; {$firstpage['publication']['year']}",
   ));
   $form_state['ids']['pub_id'] = $publication_id;
-  tpps_tripal_entity_publish('Publication', array($firstpage['publication']['title'], $publication_id));
+  tpps_tripal_entity_publish('Publication', array(
+    $firstpage['publication']['title'],
+    $publication_id,
+  ));
   $form_state['pyear'] = $firstpage['publication']['year'];
   $form_state['journal'] = $firstpage['publication']['journal'];
 
@@ -351,7 +357,10 @@ function tpps_submit_page_1(array &$form_state, &$job = NULL) {
       'pub_id' => $publication_id,
     ));
 
-    tpps_tripal_entity_publish('Organism', array("$genus $species", $form_state['ids']['organism_ids'][$i]));
+    tpps_tripal_entity_publish('Organism', array(
+      "$genus $species",
+      $form_state['ids']['organism_ids'][$i],
+    ));
   }
 }
 
@@ -363,7 +372,7 @@ function tpps_submit_page_1(array &$form_state, &$job = NULL) {
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_submit_page_2(array &$form_state, &$job = NULL) {
+function tpps_submit_page_2(array &$form_state, TripalJob &$job = NULL) {
 
   $secondpage = $form_state['saved_values'][TPPS_PAGE_2];
 
@@ -597,7 +606,7 @@ function tpps_submit_page_2(array &$form_state, &$job = NULL) {
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_submit_page_3(array &$form_state, &$job = NULL) {
+function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   $organism_number = $firstpage['organism']['number'];
@@ -815,7 +824,7 @@ function tpps_submit_page_3(array &$form_state, &$job = NULL) {
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_submit_page_4(array &$form_state, &$job = NULL) {
+function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
   $species_codes = array();
@@ -901,7 +910,7 @@ function tpps_submit_page_4(array &$form_state, &$job = NULL) {
           'importer_class' => $class,
           'db' => $eutils['db'],
           'accession' => $eutils['accession'],
-          'linked_records' => $eutils['options']['linked_records']
+          'linked_records' => $eutils['options']['linked_records'],
         );
 
         try {
@@ -937,7 +946,7 @@ function tpps_submit_page_4(array &$form_state, &$job = NULL) {
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
+function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $phenotype = $fourthpage["organism-$i"]['phenotype'] ?? NULL;
   if (empty($phenotype)) {
@@ -1119,7 +1128,7 @@ function tpps_submit_phenotype(array &$form_state, $i, &$job = NULL) {
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$job = NULL) {
+function tpps_submit_genotype(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   if (empty($genotype)) {
@@ -1177,40 +1186,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
     'job' => &$job,
   );
 
-  /*if ($genotype['ref-genome'] == 'bio') {
-
-    $bioproject_id = tpps_chado_insert_record('dbxref', array(
-      'db_id' => array(
-        'name' => 'NCBI BioProject',
-      ),
-      'accession' => $genotype['BioProject-id'],
-    ));
-
-    $project_dbxref_id = tpps_chado_insert_record('project_dbxref', array(
-      'project_id' => $project_id,
-      'dbxref_id' => $bioproject_id,
-    ));
-
-    $bioproject_assembly_file_ids = array();
-    foreach ($genotype['assembly-auto'] as $key => $val) {
-      if ($val == '1') {
-        array_push($bioproject_assembly_file_ids, tpps_chado_insert_record('projectprop', array(
-          'project_id' => $project_id,
-          'type_id' => array(
-            'cv_id' => array(
-              'name' => 'schema',
-            ),
-            'name' => 'url',
-            'is_obsolete' => 0,
-          ),
-          'value' => "https://www.ncbi.nlm.nih.gov/nuccore/$key",
-          'rank' => $file_rank,
-        )));
-        $file_rank++;
-      }
-    }
-  }
-  else*/
   if ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url') {
     if ($genotype['tripal_fasta']['file_upload']) {
       // Uploaded new file.
@@ -1268,7 +1243,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
       $options['phenotype_meta'] = $form_state['data']['phenotype_meta'];
       $options['pub_id'] = $form_state['ids']['pub_id'];
 
-      switch($genotype['files']['snps-association-type']) {
+      switch ($genotype['files']['snps-association-type']) {
         case 'P value':
           $options['associations_type'] = tpps_load_cvterm('p_value')->cvterm_id;
           break;
@@ -1414,8 +1389,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
   }
 
   if (!empty($genotype['files']['file-type']['VCF'])) {
-    // TODO: we probably want to use tpps_file_iterator to parse vcf files.
-
+    // @todo we probably want to use tpps_file_iterator to parse vcf files.
     $vcf_fid = $genotype['files']['vcf'];
     tpps_add_project_file($form_state, $vcf_fid);
 
@@ -1614,7 +1588,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, &$jo
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_submit_environment(array &$form_state, $i, &$job = NULL) {
+function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $environment = $fourthpage["organism-$i"]['environment'] ?? NULL;
   if (empty($environment)) {
@@ -1759,7 +1733,7 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
-function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(), &$job = NULL) {
+function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(), TripalJob &$job = NULL) {
   $cvt_cache = array();
   $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = variable_get('tpps_local_db');
@@ -2344,7 +2318,7 @@ function tpps_ssrs_headers($fid, $ploidy) {
           $results[$key] = $last . "_B";
           break;
         }
-        
+
         if ($num_headers == $row_len) {
           // All of the marker column names are filled out.
           if ($num_headers != $num_unique_headers) {
@@ -2444,7 +2418,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 
   $gps_query = chado_select_record('stockprop', array('value'), array(
     'stock_id' => $stock_id,
-    'type_id' =>tpps_load_cvterm('gps_latitude')->cvterm_id,
+    'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
   ), array(
     'limit' => 1,
   ));

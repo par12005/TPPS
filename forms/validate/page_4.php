@@ -401,20 +401,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     catch (\Exception $e) {
       form_set_error("$id][genotype][tripal_eutils][accession", $e->getMessage());
     }
-    /*if (!$genotype['BioProject-id']) {
-      form_set_error("$id][genotype][Bioproject-id", 'BioProject Id: field is required.');
-    }
-    else {
-      $assembly_auto_check = '';
-
-      foreach ($genotype['assembly-auto'] as $item) {
-        $assembly_auto_check += $item;
-      }
-
-      if (preg_match('/^0*$/', $assembly_auto_check)) {
-        form_set_error("$id][genotype][assembly-auto", 'Assembly file(s): field is required.');
-      }
-    }*/
   }
   elseif ($ref_genome === 'url' or $ref_genome === 'manual' or $ref_genome === 'manual2') {
 
@@ -747,7 +733,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
               form_set_error("$id][genotype][files][snps-association", "SNPs Association File: We detected Associated Traits that were not specified in the Phenotype Metadata Section. Please either remove these Traits from your Association file, or add them to your Phenotype Metadata section. The Trait names we foud were: $phenotype_names_str");
             }
 
-            // Check that position values are correctly formatted
+            // Check that position values are correctly formatted.
             $position_col = $groups['Position'][3];
             $positions = tpps_parse_file_column($assoc_file, $position_col, $assoc_no_header);
             foreach ($positions as $position) {
@@ -1131,7 +1117,7 @@ function tpps_validate_environment(array &$environment, $id) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_ssr_valid_values($row, &$options) {
+function tpps_ssr_valid_values($row, array &$options) {
   $id = array_shift($row);
   foreach ($row as $value) {
     if ($value < 0 and $value !== $options['empty']) {

@@ -556,7 +556,7 @@ function tpps_schema() {
       ),
     ),
     'primary key' => array(
-      'tpps_project_file_managed_id'
+      'tpps_project_file_managed_id',
     ),
   );
 
@@ -595,7 +595,7 @@ function tpps_schema() {
       ),
     ),
     'primary key' => array(
-      'tpps_tag_id'
+      'tpps_tag_id',
     ),
   );
 
@@ -869,7 +869,7 @@ function tpps_create_genotype_search_views() {
         inner join chado.genotype g
       on (g.genotype_id = gc.genotype_id);');
   }
-  
+
   $query = db_select('pg_class', 'p')
     ->fields('p')
     ->condition('relname', 'tpps_search_genotype_marker')
@@ -964,7 +964,10 @@ function tpps_default_permissions() {
       ))
       ->execute();
 
-    drupal_set_message(t('Attention: @t default permissions have been set. Go to @p to manage and customize @t permissions.', array('@t' => 'TPPS', '@p' => 'admin/people/permissions')), 'status');
+    drupal_set_message(t('Attention: @t default permissions have been set. Go to @p to manage and customize @t permissions.', array(
+      '@t' => 'TPPS',
+      '@p' => 'admin/people/permissions',
+    )), 'status');
   }
 }
 
@@ -1323,7 +1326,6 @@ function tpps_update_7100() {
  * Populate top-level state info for old submissions.
  */
 function tpps_update_7101() {
-  // TODO.
   $transaction = db_transaction();
   try {
     $submissions = tpps_load_submission_multiple(array(
@@ -1456,7 +1458,7 @@ function tpps_update_7104() {
         $pub_id = db_select('chado.project_pub', 'p')
           ->fields('p', array('pub_id'))
           ->condition('project_id', $proj_id)
-          ->range(0,1)
+          ->range(0, 1)
           ->execute()->fetchObject()->pub_id;
         foreach ($state['ids']['organism_ids'] as $org_id) {
           tpps_chado_insert_record('pub_organism', array(
@@ -1535,7 +1537,7 @@ function tpps_update_7109() {
     if (!empty($files) and !empty($state['file_info'])) {
       $transaction = db_transaction();
       try {
-        // Delete files from projectprop
+        // Delete files from projectprop.
         $num_files = db_delete('chado.projectprop')
           ->condition('project_id', $state['ids']['project_id'])
           ->condition($or)

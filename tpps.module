@@ -210,7 +210,7 @@ function tpps_menu() {
     'page callback' => 'tpps_submission_tag_manage',
     'access callback' => 'tpps_access',
     'access arguments' => array('administer tpps module'),
-    'type' => MENU_NORMAL_ITEM
+    'type' => MENU_NORMAL_ITEM,
   );
 
   $items['tpps-tag/create'] = array(
@@ -831,10 +831,6 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     tpps_init_project($form_state);
   }
 
-  #if (!tpps_access('access tpps form', array('accession' => $form_state['accession']))) {
-  #  throw new Exception('Insufficient permissions. Please log in and reload this page.');
-  #}
-
   tpps_status_bar($form, $form_state);
 
   if ((!isset($form_state['tpps_type']) or $form_state['tpps_type'] != 'tppsc') and (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization']))) {
@@ -1142,7 +1138,7 @@ function tpps_block_view_alter(&$data, $block) {
                       'fid' => $fid,
                     ),
                   ),
-                )
+                ),
               ), 'setting');
             }
           }

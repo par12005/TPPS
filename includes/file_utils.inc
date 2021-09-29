@@ -48,7 +48,7 @@ function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE, $columns = NUL
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_parse_file_helper($row, &$options) {
+function tpps_parse_file_helper($row, array &$options) {
   $options['content'][] = $row;
 }
 
@@ -118,17 +118,14 @@ function tpps_file_width($fid) {
   switch ($extension) {
     case 'xlsx':
       return tpps_xlsx_width($location);
-      break;
 
     case 'txt':
     case 'csv':
       return tpps_flat_width($location);
-      break;
 
     case 'vcf':
     case 'gz':
       return tpps_flat_width($location, "\t");
-      break;
 
     default:
       throw new Exception('Unrecognized file type');
@@ -328,7 +325,7 @@ function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
  * This function processes a single row of a file.
  *
  * This function populates the content attribute of the options array with the
- * data in a single column. This function is meant to be used with 
+ * data in a single column. This function is meant to be used with
  * tpps_file_iterator().
  *
  * @param mixed $row
@@ -336,7 +333,7 @@ function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_parse_file_column_helper($row, &$options) {
+function tpps_parse_file_column_helper($row, array &$options) {
   $options['content'][] = $row[current($options['columns'])];
 }
 
@@ -620,6 +617,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
  *
  * @param string $location
  *   The uri or file stream of the file we want the location of.
+ *
  * @return string
  *   The true path of the file.
  */
@@ -692,7 +690,7 @@ function tpps_xlsx_get_dimension($location) {
  * @return mixed
  *   If $plain is set to TRUE, an array of cell values. Otherwise TRUE.
  */
-function tpps_xlsx_get_rows(&$readers, &$strings = array(), $plain = TRUE, $columns = NULL) {
+function tpps_xlsx_get_rows(array &$readers, array &$strings = array(), $plain = TRUE, $columns = NULL) {
   $rows = array();
   $empty = TRUE;
   foreach ($readers as $key => $r) {
@@ -733,7 +731,7 @@ function tpps_xlsx_get_rows(&$readers, &$strings = array(), $plain = TRUE, $colu
  * @return mixed
  *   If $plain is set to TRUE, an array of cell values. Otherwise TRUE.
  */
-function tpps_xlsx_get_row(&$reader, &$strings = array(), $plain = TRUE, $columns = NULL) {
+function tpps_xlsx_get_row(&$reader, array &$strings = array(), $plain = TRUE, $columns = NULL) {
   while ($reader->read()) {
     if ($reader->nodeType == XMLReader::ELEMENT and $reader->name == 'row') {
       if ($plain) {
@@ -828,7 +826,7 @@ function tpps_xlsx_get_cell_value(&$reader, $cell_type, array &$strings = array(
  * @param string $strings_location
  *   The location of the strings XML file.
  *
- * @return string
+ * @return array
  *   The strings from the strings XML file.
  */
 function tpps_xlsx_get_strings($strings_location) {
@@ -921,7 +919,7 @@ function tpps_get_archive_files($archive) {
         break;
 
       default:
-        return;
+        return array();
     }
 
     $dir = $unzip_dir;
@@ -1124,7 +1122,7 @@ function tpps_xlsx_generator($location, array $options = array()) {
   // Iterate through file.
   $count = 0;
   while (($rows = tpps_xlsx_get_rows($readers, $strings, TRUE, $columns))) {
-    if (!empty($max_rows) and $count >= $max_rows){
+    if (!empty($max_rows) and $count >= $max_rows) {
       break;
     }
     $count++;
