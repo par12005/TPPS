@@ -58,12 +58,12 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#type' => 'select',
     '#title' => t('Study Type: *'),
     '#options' => array(
-      0 => '- Select -',
-      1 => 'Natural Population (Landscape)',
-      2 => 'Growth Chamber',
-      3 => 'Greenhouse',
-      4 => 'Experimental/Common Garden',
-      5 => 'Plantation',
+      0 => t('- Select -'),
+      1 => t('Natural Population (Landscape)'),
+      2 => t('Growth Chamber'),
+      3 => t('Greenhouse'),
+      4 => t('Experimental/Common Garden'),
+      5 => t('Plantation'),
     ),
     '#ajax' => array(
       'wrapper' => 'study_info',

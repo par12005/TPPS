@@ -898,7 +898,7 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
 
         }
         catch (Exception $ex) {
-          drupal_set_message('Cannot submit import: ' . $ex->getMessage(), 'error');
+          drupal_set_message(t('Cannot submit import: @msg', array('@msg' => $ex->getMessage())), 'error');
         }
       }
       elseif ($ref_genome === 'bio') {
@@ -919,7 +919,7 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
           $importer->submitJob();
         }
         catch (Exception $ex) {
-          drupal_set_message('Cannot submit BioProject: ' . $ex->getMessage(), 'error');
+          drupal_set_message(t('Cannot submit BioProject: @msg', array('@msg' => $ex->getMessage())), 'error');
         }
       }
     }
@@ -1200,7 +1200,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     if ($genotype['tripal_fasta']['file_remote']) {
       // Provided url to file.
       $assembly_user = $genotype['tripal_fasta']['file_remote'];
-      $assembly_user_id = tpps_chado_insert_record('projectprop', array(
+      tpps_chado_insert_record('projectprop', array(
         'project_id' => $project_id,
         'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
         'value' => $assembly_user,
@@ -1210,7 +1210,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     }
   }
   elseif ($genotype['ref-genome'] != 'none') {
-    $reference_genome_id = tpps_chado_insert_record('projectprop', array(
+    tpps_chado_insert_record('projectprop', array(
       'project_id' => $project_id,
       'type_id' => tpps_load_cvterm('reference_genome')->cvterm_id,
       'value' => $genotype['ref-genome'],

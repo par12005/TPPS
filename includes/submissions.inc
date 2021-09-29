@@ -283,7 +283,7 @@ function tpps_submission_tag_manage() {
     'empty' => '',
   );
 
-  $output = theme_table($vars);
+  $output = theme('table', $vars);
 
   drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
@@ -342,7 +342,7 @@ function tpps_submission_tag_create_validate(&$form, &$form_state) {
     ->range(0, 1)
     ->execute()->fetchObject();
   if (!empty($result)) {
-    form_set_error('name', "A tag already exists with this name. Please select a different name or use the existing tag.");
+    form_set_error('name', t("A tag already exists with this name. Please select a different name or use the existing tag."));
   }
 }
 
@@ -411,7 +411,7 @@ function tpps_submission_tag_edit_validate(&$form, &$form_state) {
     ->range(0, 1)
     ->execute()->fetchObject();
   if (!empty($result)) {
-    form_set_error('name', "A tag already exists with this name. Please select a different name or use the existing tag.");
+    form_set_error('name', t("A tag already exists with this name. Please select a different name or use the existing tag."));
   }
 }
 
@@ -816,10 +816,10 @@ function tpps_submission_edit_publication(array $form, array &$form_state, $acce
  */
 function tpps_submission_edit_publication_validate(&$form, &$form_state) {
   if (empty($form_state['values']['status'])) {
-    form_set_error('status', 'Publication Status: field is required.');
+    form_set_error('status', t('Publication Status: field is required.'));
   }
   if (empty($form_state['values']['year'])) {
-    form_set_error('year', 'Publication Year: field is required.');
+    form_set_error('year', t('Publication Year: field is required.'));
   }
 }
 

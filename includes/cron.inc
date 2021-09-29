@@ -13,7 +13,7 @@
 function tpps_refresh_views() {
   global $base_url;
   if (module_exists('cartogratree') and ($ct_api_key = variable_get('tpps_ct_api_key', NULL))) {
-    $response = file_get_contents("$base_url/cartogratree/api/v2/trees/reload?api_key=$ct_api_key");
+    file_get_contents("$base_url/cartogratree/api/v2/trees/reload?api_key=$ct_api_key");
   }
   db_query('refresh materialized view chado.tpps_search_genotype_name;');
   db_query('refresh materialized view chado.tpps_search_genotype_marker;');

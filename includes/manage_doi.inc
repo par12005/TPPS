@@ -39,7 +39,6 @@ function tpps_manage_doi($accession) {
     $doi = $doi_object->doi;
     $url = $doi_object->doi_url;
     $badge = $doi_object->links->badge;
-    $edit = $doi_object->links->html;
     $output .= "DOI: <a target=\"blank\" href=\"$url\">$doi</a><br>"
     . "DOI Badge: <a target=\"blank\" href=\"$badge\"><img src=\"$badge\"></a><br>";
   }

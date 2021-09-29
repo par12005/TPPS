@@ -32,11 +32,11 @@ function tpps_study_location(array &$form, array &$form_state) {
     '#type' => 'select',
     '#title' => t('Coordinate Projection: *'),
     '#options' => array(
-      0 => '- Select -',
-      1 => 'WGS 84',
-      3 => 'NAD 83',
-      4 => 'ETRS 89',
-      2 => 'Custom Location (brief description)',
+      0 => t('- Select -'),
+      1 => t('WGS 84'),
+      3 => t('NAD 83'),
+      4 => t('ETRS 89'),
+      2 => t('Custom Location (brief description)'),
     ),
     '#ajax' => array(
       'callback' => 'tpps_update_locations',
@@ -60,10 +60,7 @@ function tpps_study_location(array &$form, array &$form_state) {
   );
 
   if ($type != 2) {
-    $field['#description'] = 'Accepted formats: <br>'
-    . 'Degrees Minutes Seconds: 41° 48\' 27.7" N, 72° 15\' 14.4" W<br>'
-    . 'Degrees Decimal Minutes: 41° 48.462\' N, 72° 15.24\' W<br>'
-    . 'Decimal Degrees: 41.8077° N, 72.2540° W<br>';
+    $field['#description'] = t('Accepted formats: <br>Degrees Minutes Seconds: 41° 48\' 27.7" N, 72° 15\' 14.4" W<br>Degrees Decimal Minutes: 41° 48.462\' N, 72° 15.24\' W<br>Decimal Degrees: 41.8077° N, 72.2540° W<br>');
   }
 
   tpps_dynamic_list($form, $form_state, 'locations', $field, array(

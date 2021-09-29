@@ -66,7 +66,7 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#type' => 'textfield',
     '#title' => t('TPPS Zenodo Prefix'),
     '#default_value' => variable_get('tpps_zenodo_prefix', ''),
-    '#description' => 'For testing and development purposes. Set this field to "sandbox." to create dois in the Zenodo sandbox rather than the real site. Please keep in mind that you will need a separate API key for sandbox.zenodo.org.',
+    '#description' => t('For testing and development purposes. Set this field to "sandbox." to create dois in the Zenodo sandbox rather than the real site. Please keep in mind that you will need a separate API key for sandbox.zenodo.org.'),
   );
 
   $form['tpps_admin_email'] = array(
@@ -106,7 +106,7 @@ function tpps_admin_settings(array $form, array &$form_state) {
     $form['layer_groups'] = array(
       '#type' => 'fieldset',
       '#title' => 'CartograPlant Environmental Layer Groups:',
-      '#description' => 'Please select which layer groups will contain environmental data that is relevant to TPPS. TPPS will use the selected groups to decide which layers to present as environmental options to the users.',
+      '#description' => t('Please select which layer groups will contain environmental data that is relevant to TPPS. TPPS will use the selected groups to decide which layers to present as environmental options to the users.'),
       '#states' => array(
         'visible' => array(
           ':input[name="tpps_cartogratree_env"]' => array('checked' => TRUE),
@@ -131,14 +131,14 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#type' => 'textfield',
     '#title' => t('TPPS Record max group'),
     '#default_value' => variable_get('tpps_record_group', 10000),
-    '#description' => 'Some files are very large. TPPS tries to submit as many entries together as possible, in order to speed up the process of writing data to the database. However, very large size entries can cause errors within the Tripal Job daemon. This number is the maximum number of entries that may be submitted at once. Larger numbers will make the process faster, but are more likely to cause errors. Defaults to 10,000.',
+    '#description' => t('Some files are very large. TPPS tries to submit as many entries together as possible, in order to speed up the process of writing data to the database. However, very large size entries can cause errors within the Tripal Job daemon. This number is the maximum number of entries that may be submitted at once. Larger numbers will make the process faster, but are more likely to cause errors. Defaults to 10,000.'),
   );
 
   $form['tpps_local_genome_dir'] = array(
     '#type' => 'textfield',
     '#title' => t('Reference Genome file directory:'),
     '#default_value' => variable_get('tpps_local_genome_dir', NULL),
-    '#description' => 'The directory of local genome files on your web server. If left blank, tpps will skip the searching for local genomes step in the tpps genotype section. Local genome files should be organized according to the following structure: <br>[file directory]/[species code]/[version number]/[genome data] where: <br>&emsp;&emsp;[file directory] is the full path to the genome files provided above <br>&emsp;&emsp;[species code] is the 4-letter standard species code - this must match the species code entry in the "chado.organismprop" table<br>&emsp;&emsp;[version number] is the reference genome version, of the format "v#.#"<br>&emsp;&emsp;[genome data] is the actual reference genome files - these can be any format or structure<br>More information is available <a href="https://tpps.rtfd.io/en/latest/config.html" target="blank">here</a>.',
+    '#description' => t('The directory of local genome files on your web server. If left blank, tpps will skip the searching for local genomes step in the tpps genotype section. Local genome files should be organized according to the following structure: <br>[file directory]/[species code]/[version number]/[genome data] where: <br>&emsp;&emsp;[file directory] is the full path to the genome files provided above <br>&emsp;&emsp;[species code] is the 4-letter standard species code - this must match the species code entry in the "chado.organismprop" table<br>&emsp;&emsp;[version number] is the reference genome version, of the format "v#.#"<br>&emsp;&emsp;[genome data] is the actual reference genome files - these can be any format or structure<br>More information is available <a href="https://tpps.rtfd.io/en/latest/config.html" target="blank">here</a>.'),
   );
 
   $form['tpps_author_files_dir'] = array(
@@ -204,30 +204,30 @@ function tpps_admin_settings_validate($form, &$form_state) {
     if (substr($key, -10) == '_files_dir') {
       $location = "public://$value";
       if (!file_prepare_directory($location, FILE_CREATE_DIRECTORY)) {
-        form_set_error("$key", "Error: path must be valid and current user must have permissions to access that path.");
+        form_set_error("$key", t("Error: path must be valid and current user must have permissions to access that path."));
       }
     }
     elseif ($key == 'tpps_admin_email') {
       if (!valid_email_address($value)) {
-        form_set_error("$key", "Error: please enter a valid email address.");
+        form_set_error("$key", t("Error: please enter a valid email address."));
       }
     }
     elseif ($key == 'tpps_cartogratree_env') {
       if (!empty($value) and !module_exists('cartogratree')) {
-        form_set_error("$key", "Error: The CartograPlant module is not installed.");
+        form_set_error("$key", t("Error: The CartograPlant module is not installed."));
       }
       elseif (!empty($value) and (!db_table_exists('cartogratree_groups') or !db_table_exists('cartogratree_layers') or !db_table_exists('cartogratree_fields'))) {
-        form_set_error("$key", "Error: TPPS was unable to find the required CartograPlant tables for environmental layers.");
+        form_set_error("$key", t("Error: TPPS was unable to find the required CartograPlant tables for environmental layers."));
       }
     }
     elseif ($key == 'tpps_zenodo_prefix') {
       if ($value and $value != 'sandbox.') {
-        form_set_error("$key", "Error: Zenodo Prefix must either be empty or 'sandbox.'");
+        form_set_error("$key", t("Error: Zenodo Prefix must either be empty or 'sandbox.'"));
       }
     }
     elseif ($key == 'tpps_unpublished_days_threshold') {
       if (empty($value) or !preg_match('/^[0-9]+$/', $value)) {
-        form_set_error("$key", "Error: please enter a valid number of days");
+        form_set_error("$key", t("Error: please enter a valid number of days"));
       }
     }
     elseif ($key == 'tpps_update_old_submissions' and !empty($value)) {

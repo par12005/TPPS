@@ -34,7 +34,7 @@ function tpps_summary_create_form(array &$form, array $form_state) {
     '#type' => 'fieldset',
     '#tree' => TRUE,
     '#title' => t('<div class="fieldset-title">Additional Files</div>'),
-    '#description' => 'If there are any additional files you would like to include with your submission, please upload up to 10 files here.',
+    '#description' => t('If there are any additional files you would like to include with your submission, please upload up to 10 files here.'),
     '#collapsible' => TRUE,
   );
 

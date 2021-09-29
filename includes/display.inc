@@ -254,10 +254,8 @@ function tpps_flatten(array $state) {
     for ($i = 1; $i <= $data['#number_organisms']; $i++) {
       if (!empty($page_3["species-$i"]['file'])) {
         $organism_name = $data["Species $i"] . ' Accession File';
-        $organism_selector = $data["Species $i"] . '_';
         if ($data['#number_organisms'] > 1 and empty($page_3['check'])) {
           $organism_name = 'Plant Accession File';
-          $organism_selector = "";
         }
 
         $data[$organism_name] = $page_3["species-$i"]['file'];
@@ -348,7 +346,6 @@ function tpps_flatten(array $state) {
 
         if (isset($org['genotype'])) {
           $geno = &$org['genotype'];
-          $files = &$geno['files'];
 
           $marker_types = array();
           foreach ($geno['marker-type'] as $key => $val) {
@@ -548,7 +545,6 @@ function tpps_flatten(array $state) {
  */
 function tpps_table_display(array &$state, array $options = array()) {
 
-  $accession = $state['accession'];
   $flat = tpps_flatten($state);
   $map_api_key = variable_get('tpps_maps_api_key', NULL);
 
@@ -691,7 +687,7 @@ function tpps_table_display(array &$state, array $options = array()) {
     $photo = "<img src=\"$url\" style=\"display: block; margin-left: auto; margin-right: auto;\"></img>";
   }
 
-  $display = $photo . theme_table($vars) . $content;
+  $display = $photo . theme('table', $vars) . $content;
 
   return $display;
 }
@@ -827,7 +823,7 @@ function tpps_tab_create($uid) {
     'empty' => '',
   );
 
-  $final = isset($state) ? "<div class='tpps_table'><label for='tpps_incomplete_table'>Incomplete Submissions</label>" . theme_table($vars) . '</div>' : "";
+  $final = isset($state) ? "<div class='tpps_table'><label for='tpps_incomplete_table'>Incomplete Submissions</label>" . theme('table', $vars) . '</div>' : "";
   $state = NULL;
 
   $states = tpps_load_submission_multiple(array(
@@ -869,7 +865,7 @@ function tpps_tab_create($uid) {
   $vars['rows'] = $rows;
   $vars['attributes']['id'] = 'tpps_complete_table';
 
-  $final .= isset($state) ? "<div class='tpps_table'><label for='tpps_complete_table'>Complete Submissions</label>" . theme_table($vars) . '</div>' : "";
+  $final .= isset($state) ? "<div class='tpps_table'><label for='tpps_complete_table'>Complete Submissions</label>" . theme('table', $vars) . '</div>' : "";
 
   if (empty($final)) {
     $final .= "<h2>Could not find any Submissions</h2>";
@@ -934,7 +930,7 @@ function tpps_preview_file() {
       'sticky' => FALSE,
       'empty' => '',
     );
-    $display = render(theme_table($vars));
+    $display = render(theme('table', $vars));
     print($display);
     return;
   }

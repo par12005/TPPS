@@ -76,50 +76,50 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => 'Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain isotope or mass spectrometry data.',
+      '#description' => t('Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain isotope or mass spectrometry data.'),
     );
   }
 
   if (!empty($normal_check)) {
     $attr_options = array(0 => '- Select -');
     $terms = array(
-      'age' => 'Age',
-      'alive' => 'Alive',
-      'amount' => 'Amount',
-      'angle' => 'Angle',
-      'area' => 'Area',
-      'bent' => 'Bent',
-      'circumference' => 'Circumerence',
-      'color' => 'Color',
-      'composition' => 'Composition',
-      'concentration_of' => 'Concentration of',
-      'damage' => 'Damage',
-      'description' => 'Description',
-      'diameter' => 'Diameter',
-      'distance' => 'Distance',
-      'growth_quality_of_occurrent' => 'Growth Quality of Occurrent',
-      'growth_rate' => 'Growth Rate',
-      'has_number_of' => 'Has number of',
-      'height' => 'Height',
-      'humidity_level' => 'Humidity Level',
-      'intensity' => 'Intensity',
-      'length' => 'Length',
-      'lesioned' => 'Lesioned',
-      'maturity' => 'Maturity',
-      'position' => 'Position',
-      'pressure' => 'Pressure',
-      'proportionality_to' => 'Proportionality to',
-      'rate' => 'Rate',
-      'rough' => 'Rough',
-      'shape' => 'Shape',
-      'size' => 'Size',
-      'temperature' => 'Temperature',
-      'texture' => 'Texture',
-      'thickness' => 'Thickness',
-      'time' => 'Time',
-      'volume' => 'Volume',
-      'weight' => 'Weight',
-      'width' => 'Width',
+      'age' => t('Age'),
+      'alive' => t('Alive'),
+      'amount' => t('Amount'),
+      'angle' => t('Angle'),
+      'area' => t('Area'),
+      'bent' => t('Bent'),
+      'circumference' => t('Circumerence'),
+      'color' => t('Color'),
+      'composition' => t('Composition'),
+      'concentration_of' => t('Concentration of'),
+      'damage' => t('Damage'),
+      'description' => t('Description'),
+      'diameter' => t('Diameter'),
+      'distance' => t('Distance'),
+      'growth_quality_of_occurrent' => t('Growth Quality of Occurrent'),
+      'growth_rate' => t('Growth Rate'),
+      'has_number_of' => t('Has number of'),
+      'height' => t('Height'),
+      'humidity_level' => t('Humidity Level'),
+      'intensity' => t('Intensity'),
+      'length' => t('Length'),
+      'lesioned' => t('Lesioned'),
+      'maturity' => t('Maturity'),
+      'position' => t('Position'),
+      'pressure' => t('Pressure'),
+      'proportionality_to' => t('Proportionality to'),
+      'rate' => t('Rate'),
+      'rough' => t('Rough'),
+      'shape' => t('Shape'),
+      'size' => t('Size'),
+      'temperature' => t('Temperature'),
+      'texture' => t('Texture'),
+      'thickness' => t('Thickness'),
+      'time' => t('Time'),
+      'volume' => t('Volume'),
+      'weight' => t('Weight'),
+      'width' => t('Width'),
     );
     foreach ($terms as $term => $label) {
       $attr_id = tpps_load_cvterm($term)->cvterm_id;
@@ -129,31 +129,31 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
     $unit_options = array();
     $terms = array(
-      'boolean' => 'Boolean (Binary)',
-      'centimeter' => 'Centimeter',
-      'cubic_centimeter' => 'Cubic Centimeter',
-      'day' => 'Day',
-      'degrees_celsius' => 'Degrees Celsius',
-      'degrees_fahrenheit' => 'Degrees Fahrenheit',
-      'grams_per_square_meter' => 'Grams per Square Meter',
-      'gram' => 'Gram',
-      'luminous_intensity_unit' => 'Luminous Intensity Unit',
-      'kilogram' => 'Kilogram',
-      'kilogram_per_cubic_meter' => 'Kilogram per Cubic Meter',
-      'liter' => 'Liter',
-      'cubic_meter' => 'Cubic Meter',
-      'pascal' => 'Pascal',
-      'meter' => 'Meter',
-      'milligram' => 'Milligram',
-      'milliliter' => 'Milliliter',
-      'millimeter' => 'Millimeter',
-      'micrometer' => 'Micrometer',
-      'percent' => 'Percent',
-      'qualitative' => 'Qualitative',
-      'square_micrometer' => 'Square Micrometer',
-      'square_millimeter' => 'Square Millimeter',
-      'watt_per_square_meter' => 'Watt per Square Meter',
-      'year' => 'Year',
+      'boolean' => t('Boolean (Binary)'),
+      'centimeter' => t('Centimeter'),
+      'cubic_centimeter' => t('Cubic Centimeter'),
+      'day' => t('Day'),
+      'degrees_celsius' => t('Degrees Celsius'),
+      'degrees_fahrenheit' => t('Degrees Fahrenheit'),
+      'grams_per_square_meter' => t('Grams per Square Meter'),
+      'gram' => t('Gram'),
+      'luminous_intensity_unit' => t('Luminous Intensity Unit'),
+      'kilogram' => t('Kilogram'),
+      'kilogram_per_cubic_meter' => t('Kilogram per Cubic Meter'),
+      'liter' => t('Liter'),
+      'cubic_meter' => t('Cubic Meter'),
+      'pascal' => t('Pascal'),
+      'meter' => t('Meter'),
+      'milligram' => t('Milligram'),
+      'milliliter' => t('Milliliter'),
+      'millimeter' => t('Millimeter'),
+      'micrometer' => t('Micrometer'),
+      'percent' => t('Percent'),
+      'qualitative' => t('Qualitative'),
+      'square_micrometer' => t('Square Micrometer'),
+      'square_millimeter' => t('Square Millimeter'),
+      'watt_per_square_meter' => t('Watt per Square Meter'),
+      'year' => t('Year'),
     );
     foreach ($terms as $term => $label) {
       $unit_id = tpps_load_cvterm($term)->cvterm_id;
@@ -163,35 +163,35 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
     $struct_options = array();
     $terms = array(
-      'whole plant' => 'Whole Plant',
-      'bark' => 'Bark',
-      'branch' => 'Branch',
-      'bud' => 'Bud',
-      'catkin_inflorescence' => 'Catkin Inflorescence',
-      'endocarp' => 'Endocarp',
-      'floral_organ' => 'Floral Organ',
-      'flower' => 'Flower',
-      'flower_bud' => 'Flower Bud',
-      'flower_fascicle' => 'Flower Fascicle',
-      'fruit' => 'Fruit',
-      'leaf' => 'Leaf',
-      'leaf_rachis' => 'Leaf Rachis',
-      'leaflet' => 'Leaflet',
-      'nut_fruit' => 'Nut Fruit (Acorn)',
-      'petal' => 'Petal',
-      'petiole' => 'Petiole',
-      'phloem' => 'Phloem',
-      'plant_callus' => 'Plant Callus (Callus)',
-      'primary_thickening_meristem' => 'Primary Thickening Meristem',
-      'root' => 'Root',
-      'secondary_xylem' => 'Secondary Xylem (Wood)',
-      'seed' => 'Seed',
-      'shoot_system' => 'Shoot System (Crown)',
-      'stem' => 'Stem (Trunk, Primary Stem)',
-      'stomatal_complex' => 'Stomatal Complex (Stomata)',
-      'strobilus' => 'Strobilus',
-      'terminal_bud' => 'Terminal Bud',
-      'vascular_leaf' => 'Vascular Leaf (Needle)',
+      'whole plant' => t('Whole Plant'),
+      'bark' => t('Bark'),
+      'branch' => t('Branch'),
+      'bud' => t('Bud'),
+      'catkin_inflorescence' => t('Catkin Inflorescence'),
+      'endocarp' => t('Endocarp'),
+      'floral_organ' => t('Floral Organ'),
+      'flower' => t('Flower'),
+      'flower_bud' => t('Flower Bud'),
+      'flower_fascicle' => t('Flower Fascicle'),
+      'fruit' => t('Fruit'),
+      'leaf' => t('Leaf'),
+      'leaf_rachis' => t('Leaf Rachis'),
+      'leaflet' => t('Leaflet'),
+      'nut_fruit' => t('Nut Fruit (Acorn)'),
+      'petal' => t('Petal'),
+      'petiole' => t('Petiole'),
+      'phloem' => t('Phloem'),
+      'plant_callus' => t('Plant Callus (Callus)'),
+      'primary_thickening_meristem' => t('Primary Thickening Meristem'),
+      'root' => t('Root'),
+      'secondary_xylem' => t('Secondary Xylem (Wood)'),
+      'seed' => t('Seed'),
+      'shoot_system' => t('Shoot System (Crown)'),
+      'stem' => t('Stem (Trunk, Primary Stem)'),
+      'stomatal_complex' => t('Stomatal Complex (Stomata)'),
+      'strobilus' => t('Strobilus'),
+      'terminal_bud' => t('Terminal Bud'),
+      'vascular_leaf' => t('Vascular Leaf (Needle)'),
     );
     foreach ($terms as $term => $label) {
       $struct_id = tpps_load_cvterm($term)->cvterm_id;
@@ -252,7 +252,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'description' => array(
         '#type' => 'textfield',
         '#title' => 'Phenotype !num Description: *',
-        '#description' => 'Please provide a short description of Phenotype !num',
+        '#description' => t('Please provide a short description of Phenotype !num'),
       ),
       'units' => array(
         '#type' => 'select',
@@ -664,7 +664,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     );
 
     $form[$id]['phenotype']['metadata']['columns'] = array(
-      '#description' => 'Please define which columns hold the required data: Phenotype name',
+      '#description' => t('Please define which columns hold the required data: Phenotype name'),
     );
 
     $column_options = array(
@@ -876,10 +876,10 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'select',
       '#title' => t('Ploidy'),
       '#options' => array(
-        0 => '- Select -',
-        'Haploid' => 'Haploid',
-        'Diploid' => 'Diploid',
-        'Polyploid' => 'Polyploid',
+        0 => t('- Select -'),
+        'Haploid' => t('Haploid'),
+        'Diploid' => t('Diploid'),
+        'Polyploid' => t('Polyploid'),
       ),
       '#ajax' => array(
         'callback' => 'tpps_genotype_files_callback',
@@ -950,7 +950,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => "Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data.",
+      '#description' => t("Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
       '#tree' => TRUE,
     );
 
@@ -1048,7 +1048,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => "Please upload a spreadsheet file containing SNPs Association data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain columns with the SNP ID, Scaffold, Position (formatted like \"start:stop\"), Allele (formatted like \"major:minor\"), Associated Trait Name (must match a phenotype from the above section), and Confidence Value. Optionally, you can also specify a Gene ID (which should match the gene reference) and a SNP Annotation (non synonymous, coding, etc).",
+      '#description' => t('Please upload a spreadsheet file containing SNPs Association data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to "N/A". Your file must contain columns with the SNP ID, Scaffold, Position (formatted like "start:stop"), Allele (formatted like "major:minor"), Associated Trait Name (must match a phenotype from the above section), and Confidence Value. Optionally, you can also specify a Gene ID (which should match the gene reference) and a SNP Annotation (non synonymous, coding, etc).'),
       '#tree' => TRUE,
       'empty' => array(
         '#default_value' => $values[$id]['genotype']['files']['snps-association']['empty'] ?? 'NA',
@@ -1077,12 +1077,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'select',
       '#title' => t('Confidence Value Type: *'),
       '#options' => array(
-        0 => '- Select -',
-        'P value' => 'P value',
-        'Genomic Inflation Factor (GIF)' => 'Genomic Inflation Factor (GIF)',
-        'P-adjusted (FDR) / Q value' => 'P-adjusted (FDR) / Q value',
-        'P-adjusted (FWE)' => 'P-adjusted (FWE)',
-        'P-adjusted (Bonferroni)' => 'P-adjusted (Bonferroni)',
+        0 => t('- Select -'),
+        'P value' => t('P value'),
+        'Genomic Inflation Factor (GIF)' => t('Genomic Inflation Factor (GIF)'),
+        'P-adjusted (FDR) / Q value' => t('P-adjusted (FDR) / Q value'),
+        'P-adjusted (FWE)' => t('P-adjusted (FWE)'),
+        'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
       ),
     );
 
@@ -1090,15 +1090,15 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'select',
       '#title' => t('Association Analysis Tool: *'),
       '#options' => array(
-        0 => '- Select -',
-        'GEMMA' => 'GEMMA',
-        'EMMAX' => 'EMMAX',
-        'Plink' => 'Plink',
-        'Tassel' => 'Tassel',
-        'Sambada' => 'Sambada',
-        'Bayenv' => 'Bayenv',
-        'BayeScan' => 'BayeScan',
-        'LFMM' => 'LFMM',
+        0 => t('- Select -'),
+        'GEMMA' => t('GEMMA'),
+        'EMMAX' => t('EMMAX'),
+        'Plink' => t('Plink'),
+        'Tassel' => t('Tassel'),
+        'Sambada' => t('Sambada'),
+        'Bayenv' => t('Bayenv'),
+        'BayeScan' => t('BayeScan'),
+        'LFMM' => t('LFMM'),
       ),
     );
 
@@ -1231,10 +1231,10 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         '#type' => 'select',
         '#title' => t('Additional SSRs/cpSSRs Ploidy'),
         '#options' => array(
-          0 => '- Select -',
-          'Haploid' => 'Haploid',
-          'Diploid' => 'Diploid',
-          'Polyploid' => 'Polyploid',
+          0 => t('- Select -'),
+          'Haploid' => t('Haploid'),
+          'Diploid' => t('Diploid'),
+          'Polyploid' => t('Polyploid'),
         ),
         '#ajax' => array(
           'callback' => 'tpps_genotype_files_callback',
@@ -1343,7 +1343,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => "Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to \"N/A\". Your file must contain one column with the Plant Identifier.",
+      '#description' => t('Please upload a spreadsheet file containing Genotype data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may set that drop-down menu to "N/A". Your file must contain one column with the Plant Identifier.'),
       '#tree' => TRUE,
     );
 
@@ -1371,7 +1371,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     ), $default_dynamic, 'other');
     if ($dynamic) {
       $fields['files']['other']['columns'] = array(
-        '#description' => 'Please define which columns hold the required data: Plant Identifier, Genotype Data',
+        '#description' => t('Please define which columns hold the required data: Plant Identifier, Genotype Data'),
       );
 
       $fields['files']['other']['columns-options'] = array(
@@ -1587,7 +1587,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
         $form[$id]['environment']['env_params']["$layer_title"] = array(
           '#type' => 'fieldset',
           '#title' => "$layer_title Parameters",
-          '#description' => "Please select the parameters you used from the $layer_title layer.",
+          '#description' => t('Please select the parameters you used from the @title layer.', array('@title' => $layer_title)),
           '#states' => array(
             'visible' => array(
               ':input[name="' . $id . '[environment][env_layers_groups][' . $layer_group . ']"]' => array('checked' => TRUE),
@@ -1800,7 +1800,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $upload = array(
     '#type' => 'managed_file',
     '#title' => '',
-    '#description' => 'Remember to click the "Upload" button below to send your file to the server.  This interface is capable of uploading very large files.  If you are disconnected you can return, reload the file and it will resume where it left off.  Once the file is uploaded the "Upload Progress" will indicate "Complete".  If the file is already present on the server then the status will quickly update to "Complete".',
+    '#description' => t('Remember to click the "Upload" button below to send your file to the server.  This interface is capable of uploading very large files.  If you are disconnected you can return, reload the file and it will resume where it left off.  Once the file is uploaded the "Upload Progress" will indicate "Complete".  If the file is already present on the server then the status will quickly update to "Complete".'),
     '#upload_validators' => array(
       'file_validate_extensions' => array(implode(' ', $class::$file_types)),
     ),
@@ -1868,12 +1868,12 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#type' => 'select',
     '#title' => t('Define Experimental Design: *'),
     '#options' => array(
-      0 => '- Select -',
-      1 => 'GBS',
-      2 => 'Targeted Capture',
-      3 => 'Whole Genome Resequencing',
-      4 => 'RNA-Seq',
-      5 => 'Genotyping Array',
+      0 => t('- Select -'),
+      1 => t('GBS'),
+      2 => t('Targeted Capture'),
+      3 => t('Whole Genome Resequencing'),
+      4 => t('RNA-Seq'),
+      5 => t('Genotyping Array'),
     ),
   );
 
@@ -1881,12 +1881,12 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#type' => 'select',
     '#title' => t('GBS Type: *'),
     '#options' => array(
-      0 => '- Select -',
-      1 => 'RADSeq',
-      2 => 'ddRAD-Seq',
-      3 => 'NextRAD',
-      4 => 'RAPTURE',
-      5 => 'Other',
+      0 => t('- Select -'),
+      1 => t('RADSeq'),
+      2 => t('ddRAD-Seq'),
+      3 => t('NextRAD'),
+      4 => t('RAPTURE'),
+      5 => t('Other'),
     ),
     '#states' => array(
       'visible' => array(
@@ -1909,9 +1909,9 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#type' => 'select',
     '#title' => t('Targeted Capture Type: *'),
     '#options' => array(
-      0 => '- Select -',
-      1 => 'Exome Capture',
-      2 => 'Other',
+      0 => t('- Select -'),
+      1 => t('Exome Capture'),
+      2 => t('Other'),
     ),
     '#states' => array(
       'visible' => array(

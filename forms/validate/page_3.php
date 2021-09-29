@@ -19,7 +19,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
 
     if (!empty($form_state['values']['study_location'])) {
       if (!$form_state['values']['study_location']['type']) {
-        form_set_error('study_location][type', 'Location Format: field is required.');
+        form_set_error('study_location][type', t('Location Format: field is required.'));
       }
       else {
         $locs = $form_state['values']['study_location']['locations'];
@@ -39,7 +39,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
       $file_element = $form['tree-accession']["species-$i"]['file'];
 
       if (empty($values['file'])) {
-        form_set_error("tree-accession][species-$i][file", 'Plant Accession file: field is required.');
+        form_set_error("tree-accession][species-$i][file", t('Plant Accession file: field is required.'));
       }
       else {
         $required_groups = array(
@@ -75,7 +75,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
         }
 
         if (isset($values['exact_coords']) and !$values['exact_coords'] and empty($values['coord_precision'])) {
-          form_set_error("tree-accession][species-$i][coord_precision", "Coordinates accuracy: field is required.");
+          form_set_error("tree-accession][species-$i][coord_precision", t("Coordinates accuracy: field is required."));
         }
 
         if (!form_get_errors() and empty($form_state['values']['skip_validation'])) {

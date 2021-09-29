@@ -287,12 +287,12 @@ function tpps_install() {
 function tpps_uninstall() {
 
   // Remove all incomplete submissions connected to user profiles.
-  $results = db_delete('public.variable')
+  db_delete('public.variable')
     ->condition('name', db_like('tpps_incomplete_') . '%', 'LIKE')
     ->execute();
 
   // Remove all complete submissions connected to user profiles.
-  $results = db_delete('public.variable')
+  db_delete('public.variable')
     ->condition('name', db_like('tpps_complete_') . '%', 'LIKE')
     ->execute();
 
@@ -1609,7 +1609,9 @@ function tpps_update_7110() {
 function tpps_update_7111() {
   $transaction = db_transaction();
   try {
-    db_query('delete from chado.project_pub where pub_id not in (select distinct(pub_id) from chado.pub_organism);');
+    db_delete('chado.project_pub')
+      ->condition('pub_id', db_query('select distinct(pub_id) from chado.pub_organism'), 'NOT IN')
+      ->execute();
   }
   catch (\Exception $e) {
     $transaction->rollback();
