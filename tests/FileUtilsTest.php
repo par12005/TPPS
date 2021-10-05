@@ -1,11 +1,16 @@
 <?php
+
 namespace Tests;
 
 use StatonLab\TripalTestSuite\DBTransaction;
 use StatonLab\TripalTestSuite\TripalTestCase;
-use stdClass;
-use ZipArchive;
 
+/**
+ * Creates a test class for TPPS File Utils functions.
+ *
+ * This class is an extension of the TripalTestCase class, so it will be
+ * included in phpunit tests and will be able to use the Tripal Test Suite.
+ */
 class FileUtilsTest extends TripalTestCase {
   use DBTransaction;
 
@@ -13,10 +18,13 @@ class FileUtilsTest extends TripalTestCase {
    * Constructs a test case with the given name and creates some file paths.
    *
    * @param string $name
-   * @param array  $data
+   *   The name of the test case.
+   * @param array $data
+   *   An array of data providers.
    * @param string $dataName
+   *   A description of the data providers.
    */
-  function __construct($name = null, array $data = [], $dataName = '') {
+  public function __construct($name = NULL, array $data = [], $dataName = '') {
     parent::__construct($name, $data, $dataName);
     $this->path1 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test_1.xlsx';
     $this->path2 = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps') . '/tests/test_files/tpps_accession_test_2.xlsx';
@@ -41,14 +49,14 @@ class FileUtilsTest extends TripalTestCase {
     $dir = drupal_realpath(TPPS_TEMP_XLSX);
 
     // Test first file dimension.
-    $zip = new ZipArchive();
+    $zip = new \ZipArchive();
     $zip->open($this->path1);
     $zip->extractTo($dir);
     $data_location = $dir . '/xl/worksheets/sheet1.xml';
     $this->assertTrue(tpps_xlsx_get_dimension($data_location) === 'A1:D7');
-  
+
     // Test second file dimension.
-    $zip = new ZipArchive();
+    $zip = new \ZipArchive();
     $zip->open($this->path2);
     $zip->extractTo($dir);
     $data_location = $dir . '/xl/worksheets/sheet1.xml';
@@ -85,7 +93,7 @@ class FileUtilsTest extends TripalTestCase {
   public function testFileLength() {
     $file1 = $this->initializeTestFile($this->path1);
     $this->assertEquals(6, tpps_file_len($file1->fid));
-    
+
     $file2 = $this->initializeTestFile($this->path3);
     $this->assertEquals(2, tpps_file_len($file2->fid));
   }
@@ -110,11 +118,11 @@ class FileUtilsTest extends TripalTestCase {
    * @param string $path
    *   The test file path.
    *
-   * @return stdClass
+   * @return object
    *   The resulting Drupal file object.
    */
   public function initializeTestFile($path) {
-    return file_save((object)array(
+    return file_save((object) array(
       'filename' => basename($path),
       'uri' => $path,
       'status' => 0,

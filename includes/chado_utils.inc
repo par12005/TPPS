@@ -74,10 +74,10 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
     $unique['primary'] = array($primary);
 
     $exists = FALSE;
-    foreach ($unique as $name => $fields) {
+    foreach ($unique as $fields) {
       $u_cols = array($primary);
       $u_vals = array();
-      foreach ($fields as $index => $field) {
+      foreach ($fields as $field) {
         $u_cols[] = $field;
         if (!array_key_exists($field, $insert_values)) {
           if (array_key_exists('default', $table_desc['fields'][$field])) {

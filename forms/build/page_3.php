@@ -87,7 +87,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
   for ($i = 1; $i <= $species_number; $i++) {
     $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"]['name'];
-    $id_name = implode("_", explode(" ", $name));
 
     $column_options = array(
       '0' => 'N/A',
@@ -137,7 +136,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
         '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
       ),
       'columns' => array(
-        '#description' => 'Please define which columns hold the required data: Plant Identifier and Location. If your plants are located based on a population group, you can provide the population group column and a mapping of population group to location below.',
+        '#description' => t('Please define which columns hold the required data: Plant Identifier and Location. If your plants are located based on a population group, you can provide the population group column and a mapping of population group to location below.'),
       ),
       'no-header' => array(),
       'empty' => array(
@@ -230,7 +229,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
               'fid' => $fid,
             ),
           ),
-        )
+        ),
       ), 'setting');
     }
 

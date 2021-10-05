@@ -287,7 +287,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
  * @param array $old
  *   The old form state with the old information.
  */
-function tpps_form_state_info(&$new, &$old) {
+function tpps_form_state_info(array &$new, array &$old) {
   $new['saved_values'] = $old['saved_values'];
   $new['stage'] = $old['stage'];
   $new['accession'] = $old['accession'];

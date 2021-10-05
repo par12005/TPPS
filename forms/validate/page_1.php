@@ -31,39 +31,39 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
     $organism_number = $form_values['organism']['number'];
 
     if ($primary_author == '') {
-      form_set_error('primaryAuthor', 'Primary Author: field is required.');
+      form_set_error('primaryAuthor', t('Primary Author: field is required.'));
     }
 
     if ($organization == '') {
-      form_set_error('organization', 'Organization: field is required.');
+      form_set_error('organization', t('Organization: field is required.'));
     }
 
     if (!$publication_status) {
-      form_set_error('publication][status', 'Publication Status: field is required.');
+      form_set_error('publication][status', t('Publication Status: field is required.'));
     }
 
     if ($second_num > 0) {
       for ($i = 1; $i <= $second_num; $i++) {
         if (empty($second[$i])) {
-          form_set_error("publication][secondaryAuthors][$i", "Secondary Author $i: field is required.");
+          form_set_error("publication][secondaryAuthors][$i", t("Secondary Author @i: field is required.", array('@i' => $i)));
         }
       }
     }
 
     if (!$year) {
-      form_set_error('publication][year', 'Year of Publication: field is required.');
+      form_set_error('publication][year', t('Year of Publication: field is required.'));
     }
 
     if ($publication_title == '') {
-      form_set_error('publication][title', 'Title of Publication: field is required.');
+      form_set_error('publication][title', t('Title of Publication: field is required.'));
     }
 
     if ($publication_abstract == '') {
-      form_set_error('publication][abstract', 'Abstract: field is required.');
+      form_set_error('publication][abstract', t('Abstract: field is required.'));
     }
 
     if ($publication_journal == '') {
-      form_set_error('publication][journal', 'Journal: field is required.');
+      form_set_error('publication][journal', t('Journal: field is required.'));
     }
 
     for ($i = 1; $i <= $organism_number; $i++) {

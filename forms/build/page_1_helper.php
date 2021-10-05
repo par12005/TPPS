@@ -199,7 +199,7 @@ function tpps_year(array &$form, array $values, array $form_state) {
         ':input[name="publication[status]"]' => array('value' => '0'),
       ),
     ),
-    '#description' => 'If your publication has not been published yet, please choose the expected year of publication.',
+    '#description' => t('If your publication has not been published yet, please choose the expected year of publication.'),
     '#prefix' => '<div id="pubyear">',
     '#suffix' => '</div>',
   );

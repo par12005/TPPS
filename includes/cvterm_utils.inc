@@ -15,7 +15,7 @@
  * @param bool $exact
  *   Whether or not we should be looking for an exact match.
  *
- * @return stdClass
+ * @return object
  *   Decoded JSON object returned by the OLS API.
  */
 function tpps_ols_search($query, $ontology = NULL, $exact = TRUE) {
@@ -72,7 +72,7 @@ function tpps_ols_ontology_info($id) {
  * @param array $args
  *   Optional additional args to pass to tpps_ols_url().
  *
- * @return stdClass
+ * @return object
  *   Decoded JSON object returned by the OLS API.
  */
 function tpps_ols_call($type, array $args = array()) {
@@ -117,7 +117,7 @@ function tpps_ols_url($types, array $args = array()) {
  * @param array|string $info
  *   Either an OLS ontology id or a cv_info object.
  *
- * @return stdClass|NULL
+ * @return object|null
  *   The resulting cv object or NULL on failure.
  */
 function tpps_load_cv($info) {
@@ -188,7 +188,7 @@ function tpps_load_cv($info) {
  * @param string $version
  *   Optional TPPS cvterm version.
  *
- * @return stdClass|FALSE
+ * @return object|false
  *   The resulting cvterm object, or FALSE on failure.
  */
 function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
@@ -371,7 +371,7 @@ function tpps_get_cvterms_v1_2() {
     'phloem' => 'po:phloem:plant_anatomy',
     'plant_callus' => 'po:plant callus:plant_anatomy',
     'primary_thickening_meristem' => 'po:primary thickening meristem:plant_anatomy',
-    #'root' => 'po:root:plant_anatomy',
+    // 'root' => 'po:root:plant_anatomy',
     'secondary_xylem' => 'po:secondary xylem:plant_anatomy',
     'seed' => 'po:seed:plant_anatomy',
     'shoot_system' => 'po:shoot system:plant_anatomy',
@@ -443,7 +443,7 @@ function tpps_get_cvterms_v1_2() {
     'millimeter' => 'uo:millimeter',
     'micrometer' => 'uo:micrometer',
     'percent' => 'uo:percent',
-    #'ratio' => 'uo:ratio',
+    // 'ratio' => 'uo:ratio',
     'square_micrometer' => 'uo:square micrometer',
     'square_millimeter' => 'uo:square millimeter',
     'watt_per_square_meter' => 'uo:watt per square meter',
@@ -537,7 +537,7 @@ function tpps_get_cvterms_v1_1() {
  * @param string $ontology_id
  *   The OLS ontology id we will be adding.
  *
- * @return stdClass|bool
+ * @return object|bool
  *   The resulting cv object, or FALSE on failure.
  */
 function tpps_ols_add_cv($ontology_id) {
@@ -575,10 +575,10 @@ function tpps_ols_add_cv($ontology_id) {
 /**
  * Adds a controlled vocabulary term to chado based on an OLS term object.
  *
- * @param stdClass $term
+ * @param object $term
  *   The decoded OLS JSON term object returned by the OLS API.
  *
- * @return stdClass|bool
+ * @return object|bool
  *   The resulting cvterm object, or FALSE on failure
  */
 function tpps_ols_add_cvterm($term) {
@@ -614,7 +614,7 @@ function tpps_ols_add_cvterm($term) {
  * @param string $info
  *   String of the format '<ontology>:<term name>'.
  *
- * @return stdClass|string|bool
+ * @return object|string|bool
  *   The resulting cvterm object, or "local", or FALSE on failure.
  */
 function tpps_ols_install_term($info) {
@@ -658,7 +658,6 @@ function tpps_ols_install_term($info) {
       }
       if (count($docs) != 1) {
         throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
-        return FALSE;
       }
       $response->docs[0] = current($docs);
     }
@@ -720,9 +719,9 @@ function tpps_local_install_term($key, $version = NULL) {
  *
  * This is useful for migrating from an older TPPS cvterm version to a new one.
  *
- * @param stdClass $old_cvt
+ * @param object $old_cvt
  *   The old cvterm object returned by chado_get_cvterm().
- * @param stdClass $new_cvt
+ * @param object $new_cvt
  *   The new cvterm object returned by chado_get_cvterm().
  */
 function tpps_match_cvterms($old_cvt, $new_cvt) {
@@ -733,7 +732,7 @@ function tpps_match_cvterms($old_cvt, $new_cvt) {
     ->fields('cs', array('cvtermsynonym_id'))
     ->condition('cvterm_id', $new_cvt->cvterm_id)
     ->condition('synonym', $old_cvt->name)
-    ->range(0,1)
+    ->range(0, 1)
     ->execute()->fetchObject() ?? NULL;
 
   if (empty($result)) {
@@ -761,7 +760,7 @@ function tpps_match_cvterms($old_cvt, $new_cvt) {
       ->fields('cs', array('cvtermsynonym_id'))
       ->condition('cvterm_id', $new_cvt->cvterm_id)
       ->condition('synonym', $syn->synonym)
-      ->range(0,1)
+      ->range(0, 1)
       ->execute()->fetchObject() ?? NULL;
 
     if (empty($result)) {

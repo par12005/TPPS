@@ -117,7 +117,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         );
 
         $form["organism-$i"]['phenotype']['file']['columns'] = array(
-          '#description' => 'Please define which columns hold the required data: Plant Identifier, Phenotype name, and Value(s)',
+          '#description' => t('Please define which columns hold the required data: Plant Identifier, Phenotype name, and Value(s)'),
         );
 
         $format = tpps_get_ajax_value($form_state, array(

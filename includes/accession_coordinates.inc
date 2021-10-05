@@ -42,7 +42,7 @@ function tpps_accession_coordinates() {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_get_coordinates($row, &$options) {
+function tpps_get_coordinates($row, array &$options) {
   $id_col = $options['columns']['id_col'];
   $lat_col = $options['columns']['lat_col'];
   $long_col = $options['columns']['long_col'];

@@ -24,11 +24,6 @@
  * @param array $form_state
  *   The state of the form being created.
  *
- * @global stdClass $user
- *   The user accessing the administrative panel.
- * @global string $base_url
- *   The base url of the site.
- *
  * @return array
  *   The administrative panel form.
  */
@@ -61,7 +56,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
  */
 function tpps_manage_submission_form(array &$form, array &$form_state, $accession = NULL) {
   global $base_url;
-  $submission = tpps_load_submission($accession, False);
+  $submission = tpps_load_submission($accession, FALSE);
   $status = $submission->status;
   $submission_state = unserialize($submission->submission_state);
   if (empty($submission_state['status'])) {
@@ -77,7 +72,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     );
     $options['skip_phenotypes'] = TRUE;
 
-    foreach ($submission_state['file_info'] as $page => $files) {
+    foreach ($submission_state['file_info'] as $files) {
       foreach ($files as $fid => $file_type) {
         $file = file_load($fid) ?? NULL;
 
@@ -124,7 +119,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
         }
       }
     }
-    // TODO: get new/custom cvterms from metadata file.
+    // @todo get new/custom cvterms from metadata file.
     if (count($new_cvterms) > 0) {
       $message = 'This submission will create the following new local cvterms: ' . implode(', ', $new_cvterms);
       $display .= "<div class=\"alert alert-block alert-dismissible alert-warning messages warning\">
@@ -217,7 +212,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       if (!empty($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment'])) {
         foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_layers'] as $layer => $layer_id) {
           if (!empty($layer_id)) {
-            foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_params'][$layer] as $param_name => $param_id) {
+            foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_params'][$layer] as $param_id) {
               if (!empty($param_id)) {
                 $type = variable_get("tpps_param_{$param_id}_type", NULL);
                 if (empty($type)) {
@@ -232,8 +227,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
                     '#type' => 'radios',
                     '#title' => "Select Type for environmental layer parameter \"$name\":",
                     '#options' => array(
-                      'attr_id' => 'attr_id',
-                      'cvterm' => 'cvterm',
+                      'attr_id' => t('@attr_id', array('@attr_id' => 'attr_id')),
+                      'cvterm' => t('@cvterm', array('@cvterm' => 'cvterm')),
                     ),
                     '#required' => TRUE,
                   );
@@ -370,9 +365,9 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#title' => t('Change state status'),
     '#description' => t('Warning: This feature is experimental and may cause unforseen issues. Please do not change the status of this submission unless you are willing to risk the loss of existing data. The current status of the submission is @status.', array('@status' => $status)),
     '#options' => array(
-      'Incomplete' => 'Incomplete',
-      'Pending Approval' => 'Pending Approval',
-      'Submission Job Running' => 'Submission Job Running',
+      'Incomplete' => t('Incomplete'),
+      'Pending Approval' => t('Pending Approval'),
+      'Submission Job Running' => t('Submission Job Running'),
     ),
     '#default_value' => $status,
   );
@@ -416,8 +411,7 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
     }
   }
 
-  // TODO: get phenotypes from metadata file.
-
+  // @todo get phenotypes from metadata file.
   $attr_options = array();
   $terms = array(
     'age' => 'Age',
@@ -539,7 +533,10 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
   foreach ($phenotypes as $num => $info) {
     $form['phenotypes_edit'][$num] = array(
       '#type' => 'fieldset',
-      '#title' => t('Phenotype @num (@name):', array('@num' => $num, '@name' => $info['name'])),
+      '#title' => t('Phenotype @num (@name):', array(
+        '@num' => $num,
+        '@name' => $info['name'],
+      )),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
       'name' => array(
@@ -661,7 +658,7 @@ function tpps_admin_panel_top(array &$form) {
       $query->condition('cp.value', $mail);
       $query->condition('cp.type_id', $mail_cvterm);
       $query->fields('c', array('name'));
-      $query->range(0,1);
+      $query->range(0, 1);
       $query = $query->execute();
       $name = $query->fetchObject()->name ?? NULL;
 
@@ -713,12 +710,12 @@ function tpps_admin_panel_top(array &$form) {
               }
               $row = array(
                 l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
-                date("F j, Y", $state['loaded']) . " (". round($days_since_load) . " days ago)",
+                date("F j, Y", $state['loaded']) . " (" . round($days_since_load) . " days ago)",
                 $pub_status,
                 $owner,
               );
               if (tpps_access('view own tpps submission', $state['accession'])) {
-                $row[] = l('Edit publication information', "tpps/{$state['accession']}/edit-publication");
+                $row[] = l(t('Edit publication information'), "tpps/{$state['accession']}/edit-publication");
               }
               $unpublished_old[(int) substr($state['accession'], 4)] = $row;
             }
@@ -803,7 +800,7 @@ function tpps_admin_panel_top(array &$form) {
     'Submission Owner',
   );
   $vars['rows'] = $unpublished_old;
-  $unpublished_table = theme_table($vars);
+  $unpublished_table = theme('table', $vars);
 
   $vars['header'] = array(
     'Accession Number',
@@ -813,7 +810,7 @@ function tpps_admin_panel_top(array &$form) {
     'Tags',
   );
   $vars['rows'] = $pending;
-  $pending_table = theme_table($vars);
+  $pending_table = theme('table', $vars);
 
   $vars['header'] = array(
     'Accession Number',
@@ -823,7 +820,7 @@ function tpps_admin_panel_top(array &$form) {
     'Tags',
   );
   $vars['rows'] = $approved;
-  $approved_table = theme_table($vars);
+  $approved_table = theme('table', $vars);
 
   $vars['header'] = array(
     'Accession Number',
@@ -834,7 +831,7 @@ function tpps_admin_panel_top(array &$form) {
     'Tags',
   );
   $vars['rows'] = $incomplete;
-  $incomplete_table = theme_table($vars);
+  $incomplete_table = theme('table', $vars);
 
   if (!empty($unpublished_old)) {
     $form['unpublished_old'] = array(
@@ -898,7 +895,7 @@ function tpps_admin_panel_top(array &$form) {
       'Accession',
     );
     $vars['rows'] = $to_resubmit;
-    $to_resubmit_table = theme_table($vars);
+    $to_resubmit_table = theme('table', $vars);
     $form['resubmit'] = array(
       '#type' => 'fieldset',
       '#title' => "<img src='$base_url/misc/message-16-warning.png'> " . t('Old TGDR Submissions to be resubmitted'),
@@ -953,7 +950,7 @@ function tpps_admin_panel_top(array &$form) {
         'empty' => '',
       );
 
-      $form['new_species']['#markup'] = "<div class='tpps_table'><label for='new_species'>New Species: the species listed below likely need to be updated, because they do not have NCBI Taxonomy identifiers in the database.</label>" . theme_table($vars) . "</div>";
+      $form['new_species']['#markup'] = "<div class='tpps_table'><label for='new_species'>New Species: the species listed below likely need to be updated, because they do not have NCBI Taxonomy identifiers in the database.</label>" . theme('table', $vars) . "</div>";
     }
     variable_set('tpps_new_organisms', $tpps_new_orgs);
   }
@@ -968,16 +965,16 @@ function tpps_admin_panel_top(array &$form) {
 function tpps_admin_panel_validate($form, &$form_state) {
   if ($form_state['submitted'] == '1') {
     if (isset($form_state['values']['reject-reason']) and $form_state['values']['reject-reason'] == '' and $form_state['triggering_element']['#value'] == 'Reject') {
-      form_set_error('reject-reason', 'Please explain why the submission was rejected.');
+      form_set_error('reject-reason', t('Please explain why the submission was rejected.'));
     }
 
     if ($form_state['triggering_element']['#value'] == 'Approve') {
       $accession = $form_state['values']['accession'];
       $state = tpps_load_submission($accession);
-      foreach ($state['file_info'] as $page => $files) {
+      foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
           if (!empty($form_state['values']["edit_file_{$fid}_check"]) and empty($form_state['values']["edit_file_{$fid}_file"])) {
-            form_set_error("edit_file_{$fid}_file", 'Please upload a revised version fo the user-provided file.');
+            form_set_error("edit_file_{$fid}_file", t('Please upload a revised version fo the user-provided file.'));
           }
           if (!empty($form_state['values']["edit_file_{$fid}_file"])) {
             $file = file_load($form_state['values']["edit_file_{$fid}_file"]);
@@ -1016,7 +1013,7 @@ function tpps_admin_panel_validate($form, &$form_state) {
     if ($form_state['triggering_element']['#value'] == 'Change Submission Owner') {
       $new_user = user_load_by_mail($form_state['values']['change_owner']);
       if (empty($new_user)) {
-        form_set_error('change_owner', 'Invalid user account');
+        form_set_error('change_owner', t('Invalid user account'));
       }
     }
 
@@ -1040,15 +1037,15 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
   $accession = $form_state['values']['accession'];
   $submission = tpps_load_submission($accession, FALSE);
-  $user = user_load($submission->uid);
-  $to = $user->mail;
+  $owner = user_load($submission->uid);
+  $to = $owner->mail;
   $state = unserialize($submission->submission_state);
   $state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
   $params = array();
 
   $from = variable_get('site_mail', '');
   $params['subject'] = "$type_label Submission Rejected: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-  $params['uid'] = $user->uid;
+  $params['uid'] = $owner->uid;
   $params['reject-reason'] = $form_state['values']['reject-reason'] ?? NULL;
   $params['base_url'] = $base_url;
   $params['title'] = $state['saved_values'][TPPS_PAGE_1]['publication']['title'];
@@ -1065,7 +1062,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
   switch ($form_state['triggering_element']['#value']) {
     case 'Reject':
-      drupal_mail($type, 'user_rejected', $to, user_preferred_language($user), $params, $from, TRUE);
+      drupal_mail($type, 'user_rejected', $to, user_preferred_language($owner), $params, $from, TRUE);
       $state['status'] = 'Incomplete';
       tpps_update_submission($state);
       drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
@@ -1084,7 +1081,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
 
       $state['revised_files'] = $state['revised_files'] ?? array();
-      foreach ($state['file_info'] as $page => $files) {
+      foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
           if (!empty($form_state['values']["edit_file_{$fid}_check"])) {
             $state['revised_files'][$fid] = $form_state['values']["edit_file_{$fid}_file"];

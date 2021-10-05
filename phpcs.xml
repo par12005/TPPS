@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="tpps">
+  <description>TPPS custom php code sniffer ruleset</description>
+
+  <!-- Sniff in current directory. -->
+  <file>.</file>
+
+  <!-- Exclude composer files. -->
+  <exclude-pattern>*/vendor</exclude-pattern>
+
+  <!-- Exclude documentation files. -->
+  <exclude-pattern>*/docs</exclude-pattern>
+
+  <!-- Exclude TripalTestSuite files. -->
+  <exclude-pattern>*/tests/DatabaseSeeders</exclude-pattern>
+  <exclude-pattern>*/tests/DataFactory.php</exclude-pattern>
+
+  <!-- Extensions to sniff. -->
+  <arg name="extensions" value="php,module,inc,install,test,profile,theme,css,info,txt,md,yml"/>
+
+  <!-- Set Drupal installation version. -->
+  <config name="drupal_core_version" value="7"/>
+
+  <rule ref="Drupal"></rule>
+  <!-- Ignore errors for version number in tpps.info. -->
+  <rule ref="Drupal.InfoFiles.AutoAddedKeys.Version">
+    <exclude-pattern>*/tpps.info</exclude-pattern>
+  </rule>
+
+  <rule ref="DrupalPractice"></rule>
+</ruleset>

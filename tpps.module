@@ -210,7 +210,7 @@ function tpps_menu() {
     'page callback' => 'tpps_submission_tag_manage',
     'access callback' => 'tpps_access',
     'access arguments' => array('administer tpps module'),
-    'type' => MENU_NORMAL_ITEM
+    'type' => MENU_NORMAL_ITEM,
   );
 
   $items['tpps-tag/create'] = array(
@@ -611,7 +611,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
         'sticky' => FALSE,
         'empty' => '',
       );
-      $table = theme_table($vars);
+      $table = theme('table', $vars);
       preg_match('/(*UTF8)\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/us', $table, $matches);
 
       $element['columns'][$first_col]['#prefix'] = "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>" . $element['columns'][$first_col]['#prefix'];
@@ -626,7 +626,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     $element['empty']['#type'] = 'textfield';
     $element['empty']['#title'] = t('File Upload empty field:');
     $element['empty']['#states'] = isset($element['#states']) ? $element['#states'] : NULL;
-    $element['empty']['#description'] = 'By default, TPPS will treat cells with the value "NA" as empty. If you used a different empty value indicator, please provide it here.';
+    $element['empty']['#description'] = t('By default, TPPS will treat cells with the value "NA" as empty. If you used a different empty value indicator, please provide it here.');
   }
 
   return $element;
@@ -734,7 +734,7 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
  * Adds the side bar to TPPS form pages before they are rendered.
  */
 function tpps_page_build(&$page) {
-  $js_settings = drupal_add_js()['settings']['data'] ?? array();
+  $js_settings = drupal_static('drupal_add_js', array())['settings']['data'] ?? array();
   $step = NULL;
   foreach ($js_settings as $info) {
     if (array_key_exists('tpps', $info)) {
@@ -831,10 +831,6 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     tpps_init_project($form_state);
   }
 
-  #if (!tpps_access('access tpps form', array('accession' => $form_state['accession']))) {
-  #  throw new Exception('Insufficient permissions. Please log in and reload this page.');
-  #}
-
   tpps_status_bar($form, $form_state);
 
   if ((!isset($form_state['tpps_type']) or $form_state['tpps_type'] != 'tppsc') and (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization']))) {
@@ -847,8 +843,8 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
         ->range(0, 1)
         ->execute();
       $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
-      $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) ? $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] : $entity->title;
-      $form_state['saved_values'][TPPS_PAGE_1]['organization'] = isset($form_state['saved_values'][TPPS_PAGE_1]['organization']) ? $form_state['saved_values'][TPPS_PAGE_1]['organization'] : $entity->tcontact__organization['und'][0]['value'];
+      $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] ?? $entity->title;
+      $form_state['saved_values'][TPPS_PAGE_1]['organization'] = $form_state['saved_values'][TPPS_PAGE_1]['organization'] ?? $entity->tcontact__organization[LANGUAGE_NONE][0]['value'];
     }
   }
 
@@ -969,8 +965,6 @@ function tpps_main_validate(&$form, &$form_state) {
  */
 function tpps_main_submit($form, &$form_state) {
 
-  global $user;
-
   $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
   $persist = TRUE;
 
@@ -1090,7 +1084,6 @@ function tpps_block_view_alter(&$data, $block) {
 
       $data['subject'] = t('TPPS Status');
       $content = "<div class='tgdr_status_block'>";
-      global $user;
       $params = drupal_get_query_parameters(NULL, array());
       if (preg_match('/tppsc?\/(TGDR.*)/', $params['q'], $matches)) {
         $accession = $matches[1];
@@ -1122,11 +1115,6 @@ function tpps_block_view_alter(&$data, $block) {
             $file_url = check_plain(file_create_url(file_load($val)->uri));
             $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
             if (!$flat['#skip_loc'] and preg_match('/^(.*)Accession File/', $item, $matches)) {
-              $name = "";
-              if ($matches[1] != "Plant ") {
-                $parts = explode(" ", $matches[1]);
-                $name = implode("_", $parts);
-              }
               $fid = $val;
               $wrapper_id = "{$fid}_map_wrapper";
               $button_id = "{$fid}_map_button";
@@ -1142,7 +1130,7 @@ function tpps_block_view_alter(&$data, $block) {
                       'fid' => $fid,
                     ),
                   ),
-                )
+                ),
               ), 'setting');
             }
           }

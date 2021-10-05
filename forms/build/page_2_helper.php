@@ -244,12 +244,12 @@ function tpps_common_garden(array &$form) {
     '#type' => 'select',
     '#title' => t('Irrigation Type: *'),
     '#options' => array(
-      0 => '- Select -',
-      'Irrigation from top' => 'Irrigation from top',
-      'Irrigation from bottom' => 'Irrigation from bottom',
-      'Drip Irrigation' => 'Drip Irrigation',
-      'Other' => 'Other',
-      'No Irrigation' => 'No Irrigation',
+      0 => t('- Select -'),
+      'Irrigation from top' => t('Irrigation from top'),
+      'Irrigation from bottom' => t('Irrigation from bottom'),
+      'Drip Irrigation' => t('Drip Irrigation'),
+      'Other' => t('Other'),
+      'No Irrigation' => t('No Irrigation'),
     ),
   );
 
@@ -334,7 +334,7 @@ function tpps_common_garden(array &$form) {
     '#title' => t('My Common Garden experiment used treatments/regimes/perturbations.'),
   );
 
-  foreach ($treatment_options as $key => $option) {
+  foreach ($treatment_options as $option) {
     $form['treatment']["$option"] = array(
       '#type' => 'checkbox',
       '#title' => t("@opt", array('@opt' => $option)),
@@ -421,7 +421,7 @@ function tpps_plantation(array &$form) {
     '#title' => t('My Plantation experiment used treatments/regimes/perturbations.'),
   );
 
-  foreach ($treatment_options as $key => $option) {
+  foreach ($treatment_options as $option) {
     $form['treatment']["$option"] = array(
       '#type' => 'checkbox',
       '#title' => t("@opt", array('@opt' => $option)),
@@ -462,10 +462,10 @@ function tpps_rooting(array &$form) {
     '#type' => 'select',
     '#title' => t('Rooting Type: *'),
     '#options' => array(
-      0 => '- Select -',
-      'Aeroponics' => 'Aeroponics',
-      'Hydroponics' => 'Hydroponics',
-      'Soil' => 'Soil',
+      0 => t('- Select -'),
+      'Aeroponics' => t('Aeroponics'),
+      'Hydroponics' => t('Hydroponics'),
+      'Soil' => t('Soil'),
     ),
   );
 
@@ -482,12 +482,12 @@ function tpps_rooting(array &$form) {
     '#type' => 'select',
     '#title' => t('Soil Type: *'),
     '#options' => array(
-      0 => '- Select -',
-      'Sand' => 'Sand',
-      'Peat' => 'Peat',
-      'Clay' => 'Clay',
-      'Mixed' => 'Mixed',
-      'Other' => 'Other',
+      0 => t('- Select -'),
+      'Sand' => t('Sand'),
+      'Peat' => t('Peat'),
+      'Clay' => t('Clay'),
+      'Mixed' => t('Mixed'),
+      'Other' => t('Other'),
     ),
   );
 
@@ -537,7 +537,7 @@ function tpps_rooting(array &$form) {
     '#title' => t('<div class="fieldset-title">Treatments: *</div>'),
   );
 
-  foreach ($treatment_options as $key => $option) {
+  foreach ($treatment_options as $option) {
     $form['rooting']['treatment']["$option"] = array(
       '#type' => 'checkbox',
       '#title' => t("@opt", array('@opt' => $option)),
@@ -576,9 +576,9 @@ function tpps_control(array &$form, $type, $label) {
     '#type' => 'select',
     '#title' => t('@label controlled or uncontrolled: *', array('@label' => $label)),
     '#options' => array(
-      0 => '- Select -',
-      1 => 'Controlled',
-      2 => 'Uncontrolled',
+      0 => t('- Select -'),
+      1 => t('Controlled'),
+      2 => t('Uncontrolled'),
     ),
   );
 

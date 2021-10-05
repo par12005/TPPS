@@ -254,12 +254,10 @@ function tpps_flatten(array $state) {
     for ($i = 1; $i <= $data['#number_organisms']; $i++) {
       if (!empty($page_3["species-$i"]['file'])) {
         $organism_name = $data["Species $i"] . ' Accession File';
-        $organism_selector = $data["Species $i"] . '_';
         if ($data['#number_organisms'] > 1 and empty($page_3['check'])) {
           $organism_name = 'Plant Accession File';
-          $organism_selector = "";
         }
-  
+
         $data[$organism_name] = $page_3["species-$i"]['file'];
         $loc_type = $page_3["species-$i"]['file-groups']['Location (latitude/longitude or country/state or population group)']['#type'] ?? NULL;
         if (!empty($loc_type) and ($loc_type == "gps" or (array_search('gps', $loc_type) !== FALSE))) {
@@ -278,7 +276,7 @@ function tpps_flatten(array $state) {
           ), 'setting');
         }
       }
-  
+
       if (empty($page_3['check'])) {
         break;
       }
@@ -301,10 +299,10 @@ function tpps_flatten(array $state) {
       if (isset($page_4["organism-$i"])) {
         $org = &$page_4["organism-$i"];
         $org_name = isset($data["Species $i"]) ? $data["Species $i"] : NULL;
-  
+
         if (isset($org['phenotype'])) {
           $pheno = &$org['phenotype'];
-  
+
           if (!empty($pheno['iso-check'])) {
             $data["$org_name Phenotype Isotope/Mass Spectrometry File"] = $pheno['iso'];
           }
@@ -326,7 +324,7 @@ function tpps_flatten(array $state) {
                   $fields['min'] = 'Minimum Value';
                   $fields['max'] = 'Maximum Value';
                 }
-    
+
                 foreach ($fields as $field => $field_string) {
                   if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
                     $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
@@ -334,22 +332,21 @@ function tpps_flatten(array $state) {
                 }
               }
             }
-    
+
             if (isset($pheno['check']) and $pheno['check'] and isset($pheno['metadata']) and $pheno['metadata']) {
               $data["$org_name Phenotype Metadata File"] = $pheno['metadata'];
             }
-    
+
             if (isset($pheno['file']) and $pheno['file']) {
               $data["$org_name Phenotype File"] = $pheno['file'];
             }
             $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
           }
         }
-  
+
         if (isset($org['genotype'])) {
           $geno = &$org['genotype'];
-          $files = &$geno['files'];
-  
+
           $marker_types = array();
           foreach ($geno['marker-type'] as $key => $val) {
             if ($val) {
@@ -357,7 +354,7 @@ function tpps_flatten(array $state) {
             }
           }
           $data["$org_name Genotype Marker Types"] = isset($marker_types) ? implode(', ', $marker_types) : NULL;
-  
+
           if (isset($geno['marker-type']['SNPs']) and $geno['marker-type']['SNPs']) {
             $snp = $geno['SNPs'];
             if (isset($snp['genotyping-design']) and $snp['genotyping-design']) {
@@ -371,7 +368,7 @@ function tpps_flatten(array $state) {
               if (isset($geno_design_options[$snp['genotyping-design']])) {
                 $data["$org_name Genotyping Design"] = $geno_design_options[$snp['genotyping-design']];
               }
-  
+
               if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'GBS' and isset($snp['GBS']) and $snp['GBS']) {
                 $gbs_options = array(
                   1 => 'RADSeq',
@@ -383,12 +380,12 @@ function tpps_flatten(array $state) {
                 if (isset($gbs_options[$snp['GBS']])) {
                   $data["$org_name GBS Type"] = $gbs_options[$snp['GBS']];
                 }
-  
+
                 if (isset($data["$org_name GBS Type"]) and $data["$org_name GBS Type"] == 'Other' and isset($snp['GBS-other']) and $snp['GBS-other'] != '') {
                   $data["$org_name Custom GBS Type"] = $snp['GBS-other'];
                 }
               }
-  
+
               if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'Targeted Capture' and isset($snp['targeted-capture']) and $snp['targeted-capture']) {
                 $targeted_capture_options = array(
                   1 => 'Exome Capture',
@@ -397,7 +394,7 @@ function tpps_flatten(array $state) {
                 if (isset($targeted_capture_options[$snp['targeted-capture']])) {
                   $data["$org_name Targeted Capture Type"] = $targeted_capture_options[$snp['targeted-capture']];
                 }
-  
+
                 if (isset($data["$org_name Targeted Capture Type"]) and $data["$org_name Targeted Capture Type"] == 'Other' and isset($snp['targeted-capture-other']) and $snp['targeted-capture-other'] != '') {
                   $data["$org_name Custom Targeted Capture Type"] = $snp['targeted-capture-other'];
                 }
@@ -410,10 +407,10 @@ function tpps_flatten(array $state) {
           if (isset($geno['marker-type']['Other']) and $geno['marker-type']['Other'] and isset($geno['other-marker']) and $geno['other-marker'] != '') {
             $data["$org_name Other Marker Type"] = $geno['other-marker'];
           }
-  
+
           if (isset($geno['ref-genome']) and $geno['ref-genome'] === 'bio' and isset($geno['BioProject-id']) and $geno['BioProject-id'] != '') {
             $data["$org_name BioProject Id"] = $geno['BioProject-id'];
-  
+
             if (isset($geno['assembly-auto']) and gettype($geno['assembly-auto']) === 'array') {
               $count = 1;
               foreach ($geno['assembly-auto'] as $id => $check) {
@@ -438,15 +435,15 @@ function tpps_flatten(array $state) {
           elseif (isset($geno['ref-genome']) and $geno['ref-genome']) {
             $data["$org_name Reference Genome"] = $geno['ref-genome'];
           }
-  
+
           if (!empty($geno['files']['snps-assay'])) {
             $data["$org_name SNPs Genotype Assay File"] = $geno['files']['snps-assay'];
           }
-  
+
           if (!empty($geno['files']['assay-design'])) {
             $data["$org_name Assay Design File"] = $geno['files']['assay-design'];
           }
-  
+
           if (!empty($geno['files']['ssrs'])) {
             $data["$org_name SSRs/cpSSRs Genotype File"] = $geno['files']['ssrs'];
           }
@@ -458,19 +455,19 @@ function tpps_flatten(array $state) {
           if (!empty($geno['files']['indels'])) {
             $data["$org_name Indel Genotype File"] = $geno['files']['indels'];
           }
-  
+
           if (!empty($geno['files']['other'])) {
             $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
           }
-  
+
           if (!empty($geno['files']['vcf'])) {
             $data["$org_name VCF File"] = $geno['files']['vcf'];
           }
         }
-  
+
         if (isset($org['environment'])) {
           $env = &$org['environment'];
-  
+
           if (variable_get('tpps_cartogratree_env', FALSE)) {
             $data["CartograPlant Layers"] = array();
             foreach ($env['env_layers'] as $layer => $layer_id) {
@@ -548,7 +545,6 @@ function tpps_flatten(array $state) {
  */
 function tpps_table_display(array &$state, array $options = array()) {
 
-  $accession = $state['accession'];
   $flat = tpps_flatten($state);
   $map_api_key = variable_get('tpps_maps_api_key', NULL);
 
@@ -591,7 +587,7 @@ function tpps_table_display(array &$state, array $options = array()) {
                     'fid' => $fid,
                   ),
                 ),
-              )
+              ),
             ), 'setting');
           }
           else {
@@ -659,9 +655,6 @@ function tpps_table_display(array &$state, array $options = array()) {
       $val_str = filter_xss(check_plain($val));
       $parts = explode(" ", substr($matches[0], 1));
       $item_id = implode("_", $parts);
-      if ($item_id == 'Citrus_cinensis_accession_no_header') {
-        dpm('no header');
-      }
       $content .= "<div id=\"$item_id\" style=\"display:none;\">$val_str</div>";
     }
   }
@@ -678,7 +671,10 @@ function tpps_table_display(array &$state, array $options = array()) {
   $vars = array(
     'header' => $headers,
     'rows' => $rows,
-    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_table_display',
+    ),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
@@ -691,7 +687,7 @@ function tpps_table_display(array &$state, array $options = array()) {
     $photo = "<img src=\"$url\" style=\"display: block; margin-left: auto; margin-right: auto;\"></img>";
   }
 
-  $display = $photo . theme_table($vars) . $content;
+  $display = $photo . theme('table', $vars) . $content;
 
   return $display;
 }
@@ -764,7 +760,10 @@ function tpps_tab_create($uid) {
     tpps_delete_submission($params['accession']);
   }
 
-  $states = tpps_load_submission_multiple(array('status' => 'Incomplete', 'uid' => $user->uid));
+  $states = tpps_load_submission_multiple(array(
+    'status' => 'Incomplete',
+    'uid' => $user->uid,
+  ));
 
   $rows = array();
   foreach ($states as $state) {
@@ -814,14 +813,17 @@ function tpps_tab_create($uid) {
   $vars = array(
     'header' => $headers,
     'rows' => $rows,
-    'attributes' => array('class' => array('view'), 'id' => 'tpps_incomplete_table'),
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_incomplete_table',
+    ),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
   );
 
-  $final = isset($state) ? "<div class='tpps_table'><label for='tpps_incomplete_table'>Incomplete Submissions</label>" . theme_table($vars) . '</div>' : "";
+  $final = isset($state) ? "<div class='tpps_table'><label for='tpps_incomplete_table'>Incomplete Submissions</label>" . theme('table', $vars) . '</div>' : "";
   $state = NULL;
 
   $states = tpps_load_submission_multiple(array(
@@ -863,7 +865,7 @@ function tpps_tab_create($uid) {
   $vars['rows'] = $rows;
   $vars['attributes']['id'] = 'tpps_complete_table';
 
-  $final .= isset($state) ? "<div class='tpps_table'><label for='tpps_complete_table'>Complete Submissions</label>" . theme_table($vars) . '</div>' : "";
+  $final .= isset($state) ? "<div class='tpps_table'><label for='tpps_complete_table'>Complete Submissions</label>" . theme('table', $vars) . '</div>' : "";
 
   if (empty($final)) {
     $final .= "<h2>Could not find any Submissions</h2>";
@@ -928,7 +930,7 @@ function tpps_preview_file() {
       'sticky' => FALSE,
       'empty' => '',
     );
-    $display = render(theme_table($vars));
+    $display = render(theme('table', $vars));
     print($display);
     return;
   }
@@ -969,7 +971,7 @@ function tpps_entity_link($id, $name, $label) {
  * @return string
  *   HTML string displaying all of the tags.
  */
-function tpps_show_tags($tags) {
+function tpps_show_tags(array $tags) {
   $display = "";
   foreach ($tags as $tag) {
     $color = !empty($tag['color']) ? $tag['color'] : 'white';

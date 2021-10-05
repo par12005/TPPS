@@ -27,7 +27,7 @@ function tpps_ncbi_get_taxonomy($organism, $rank) {
   $fetch->addParam('id', "$id");
   $response = $fetch->get()->xml();
   if (empty($response->Taxon->LineageEx->Taxon)) {
-    drupal_set_message('Unable to load Lineage information from NCBI for organism: ' . $organism);
+    drupal_set_message(t('Unable to load Lineage information from NCBI for organism: @org', array('@org' => $organism)));
     return FALSE;
   }
 
@@ -56,7 +56,7 @@ function tpps_ncbi_get_subkingdom($organism) {
   $fetch->addParam('id', "$id");
   $response = $fetch->get()->xml();
   if (empty($response->Taxon->Lineage)) {
-    drupal_set_message('Unable to load Lineage information from NCBI for organism: ' . $organism);
+    drupal_set_message(t('Unable to load Lineage information from NCBI for organism: @org', array('@org' => $organism)));
     return FALSE;
   }
 
@@ -66,7 +66,7 @@ function tpps_ncbi_get_subkingdom($organism) {
       return $matches[1];
     }
   }
-  drupal_set_message('Unable to determine subkingdom from NCBI for organism: ' . $organism);
+  drupal_set_message(t('Unable to determine subkingdom from NCBI for organism: @org', array('@org' => $organism)));
   return FALSE;
 }
 

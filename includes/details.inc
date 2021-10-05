@@ -156,16 +156,12 @@ function tpps_details_tabs(array &$state) {
     <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#trees">Plants</a></li>';
   $p_exist = FALSE;
   $g_exist = FALSE;
-  $e_exist = FALSE;
   for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
     if (!empty($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'])) {
       $p_exist = TRUE;
     }
     if (!empty($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])) {
       $g_exist = TRUE;
-    }
-    if (!empty($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment'])) {
-      $e_exist = TRUE;
     }
   }
   $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes / Environments</a></li>' : "";
@@ -195,7 +191,6 @@ function tpps_details_tab($accession, $type) {
   $function = "tpps_details_$type";
   $state = tpps_load_submission($accession);
   print($function($state));
-  return;
 }
 
 /**
@@ -386,14 +381,17 @@ function tpps_details_top() {
       'Genotype Count',
     ),
     'rows' => $rows,
-    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_table_display',
+    ),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
   );
 
-  $output = theme_table($vars);
+  $output = theme('table', $vars);
   $pager = theme('pager', array('quantity', $total));
   return $pager . $output;
 }
@@ -403,7 +401,6 @@ function tpps_details_top() {
  */
 function tpps_details_top_callback() {
   print(tpps_details_top());
-  return;
 }
 
 /**
@@ -422,16 +419,16 @@ function tpps_details_search(array $form, array $form_state) {
   $form['details_type'] = array(
     '#type' => 'select',
     '#options' => array(
-      'title' => 'Title',
-      'species' => 'Species',
-      'accession' => 'Accession',
-      'author' => 'Primary Author',
-      'year' => 'Publication Year',
-      'phenotype_name' => 'Phenotype Name',
-      'phenotype_ontology' => 'Phenotype Ontology Name',
-      'genotype_name' => 'Genotype Name',
-      'genotype_marker' => 'Genotype Marker Type',
-      'tags' => 'Tags',
+      'title' => t('Title'),
+      'species' => t('Species'),
+      'accession' => t('Accession'),
+      'author' => t('Primary Author'),
+      'year' => t('Publication Year'),
+      'phenotype_name' => t('Phenotype Name'),
+      'phenotype_ontology' => t('Phenotype Ontology Name'),
+      'genotype_name' => t('Genotype Name'),
+      'genotype_marker' => t('Genotype Marker Type'),
+      'tags' => t('Tags'),
     ),
     '#ajax' => array(
       'wrapper' => 'tpps-details-form',
@@ -446,13 +443,6 @@ function tpps_details_search(array $form, array $form_state) {
     'LIKE' => 'LIKE',
     '=' => '=',
   );
-
-  if (!empty($form_state['values']['details_type'])) {
-    switch ($form_state['values']['details_type']) {
-      default:
-        break;
-    }
-  }
 
   $form['details_op'] = array(
     '#type' => 'select',
@@ -501,10 +491,10 @@ function tpps_details_search(array $form, array $form_state) {
         $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/genotype';
         break;
 
-        case 'genotype_marker':
-          $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/genotype_marker';
-          break;
-  
+      case 'genotype_marker':
+        $form['details_value']['#autocomplete_path'] = 'tpps/autocomplete/genotype_marker';
+        break;
+
       default:
         $form['details_value']['#autocomplete_path'] = NULL;
         break;
@@ -637,13 +627,16 @@ function tpps_details_species(array &$state) {
       'Common Name',
     ),
     'rows' => $rows,
-    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_table_display',
+    ),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
   );
-  return theme_table($vars);
+  return theme('table', $vars);
 }
 
 /**
@@ -695,7 +688,10 @@ function tpps_details_study(array &$state) {
   $rows[] = array('Authors', implode(', ', $state['authors']));
   $rows[] = array('Species', implode('<br>', $species));
   $rows[] = array('Data Type', $state['saved_values'][TPPS_PAGE_2]['data_type']);
-  $rows[] = array('Study Type', $study_types[$state['saved_values'][TPPS_PAGE_2]['study_type']]);
+  $rows[] = array(
+    'Study Type',
+    $study_types[$state['saved_values'][TPPS_PAGE_2]['study_type']],
+  );
   $rows[] = array('File Downloads', implode('<br>', $files));
   $rows[] = array('Population Size', $state['stats']['tree_count']);
   if (!empty($state['stats']['phenotype_count'])) {
@@ -704,19 +700,21 @@ function tpps_details_study(array &$state) {
   if (!empty($state['stats']['unique_phenotypes'])) {
     $rows[] = array('Unique Phenotypes', $state['stats']['unique_phenotypes']);
   }
-  // TODO.
-  //$rows[] = array('Genotype Count', $state['stats']['genotype_count']);
-  
+  // @todo genotype counts.
+  // $rows[] = array('Genotype Count', $state['stats']['genotype_count']);
   $vars = array(
     'header' => array(),
     'rows' => $rows,
-    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_table_display',
+    ),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
   );
-  return theme_table($vars);
+  return theme('table', $vars);
 }
 
 /**
@@ -752,7 +750,7 @@ function tpps_details_trees(array &$state) {
     $id = $info['organism_id'];
     $form_number = array_search($id, $state['ids']['organism_ids']);
     $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$form_number]['name'];
-    
+
     $row = array(
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
       tpps_entity_link($id, $species_name, 'Organism'),
@@ -776,13 +774,16 @@ function tpps_details_trees(array &$state) {
   $vars = array(
     'header' => $header,
     'rows' => $rows,
-    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_table_display',
+    ),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
   );
-  $table = theme_table($vars);
+  $table = theme('table', $vars);
   $pager = theme('pager', array('quantity', count($state['tree_info'])));
   return $pager . $table;
 }
@@ -822,7 +823,13 @@ function tpps_details_phenotype(array &$state) {
   $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
-  $query->fields('p', array('phenotype_id', 'name', 'attr_id', 'observable_id', 'value'));
+  $query->fields('p', array(
+    'phenotype_id',
+    'name',
+    'attr_id',
+    'observable_id',
+    'value',
+  ));
   $query->fields('s', array('uniquename', 'stock_id'));
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query->range($start, $per_page);
@@ -853,16 +860,19 @@ function tpps_details_phenotype(array &$state) {
       'Name',
       'Attribute',
       'Entity',
-      'Value'
+      'Value',
     ),
     'rows' => $rows,
-    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_table_display',
+    ),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
   );
-  $table = theme_table($vars);
+  $table = theme('table', $vars);
   $pager = theme('pager', array('quantity', $total));
   return $pager . $table;
 }
@@ -901,7 +911,13 @@ function tpps_details_genotype(array &$state) {
   $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sg.stock_id');
-  $query->fields('g', array('genotype_id', 'name', 'uniquename', 'description', 'type_id'));
+  $query->fields('g', array(
+    'genotype_id',
+    'name',
+    'uniquename',
+    'description',
+    'type_id',
+  ));
   $query->fields('s', array('uniquename', 'stock_id'));
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query->range($start, $per_page);
@@ -929,13 +945,16 @@ function tpps_details_genotype(array &$state) {
       'Marker Type',
     ),
     'rows' => $rows,
-    'attributes' => array('class' => array('view'), 'id' => 'tpps_table_display'),
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_table_display',
+    ),
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
   );
-  $table = theme_table($vars);
+  $table = theme('table', $vars);
   $pager = theme('pager', array('quantity', $total));
   return $pager . $table;
 }
