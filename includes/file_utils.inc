@@ -426,16 +426,14 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   $new_end_no_header = end($parents) . "-no-header";
   $new_end_empty = end($parents) . "-empty";
   $group_path = array_pop($parents) . "-groups";
-  $values = &$form_state['values'];
-  foreach ($parents as $item) {
-    $values = &$values[$item];
-  }
+  $values = drupal_array_get_nested_value($form_state['values'], $parents);
   // Initialize form column values in form state.
   $values[$new_end_columns] = array();
   // Hold onto the location of the columns in form state.
   $state_column_values = &$values[$new_end_columns];
   $values[$new_end_no_header] = isset($file_element['#value']['no-header']) ? $file_element['#value']['no-header'] : NULL;
   $values[$new_end_empty] = isset($file_element['#value']['empty']) ? $file_element['#value']['empty'] : NULL;
+  drupal_array_set_nested_value($form_state['values'], $parents, $values);
 
   $title_parts = explode(':', $file_element['#title']);
   $error_prompt = $title_parts[0];
