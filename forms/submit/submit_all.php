@@ -1673,115 +1673,57 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
   $cvt_cache = array();
   $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = variable_get('tpps_local_db');
+  $term_types = array(
+    'attr' => array(
+      'label' => 'Attribute',
+      'ontology' => 'pato',
+    ),
+    'unit' => array(
+      'label' => 'Unit',
+      'ontology' => 'po',
+    ),
+    'struct' => array(
+      'label' => 'Structure',
+      'ontology' => 'po',
+    ),
+  );
   foreach ($meta as $name => $data) {
-    $meta[$name]['attr_id'] = $data['attr'];
-    if ($data['attr'] == 'other') {
-      $meta[$name]['attr_id'] = $cvt_cache[$data['attr-other']] ?? NULL;
-      if (empty($meta[$name]['attr_id'])) {
-        $result = tpps_ols_install_term("pato:{$data['attr-other']}");
-        if ($result !== FALSE) {
-          $meta[$name]['attr_id'] = $result->cvterm_id;
-          $job->logMessage("[INFO] New OLS Term pato:{$data['attr-other']} installed");
-        }
-
-        if (empty($meta[$name]['attr_id'])) {
-          $attr = chado_select_record('cvterm', array('cvterm_id'), array(
-            'name' => array(
-              'data' => $data['attr-other'],
-              'op' => 'LIKE',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $meta[$name]['attr_id'] = current($attr)->cvterm_id ?? NULL;
-        }
-
-        if (empty($meta[$name]['attr_id'])) {
-          $meta[$name]['attr_id'] = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$data['attr-other']}",
-            'name' => $data['attr-other'],
-            'definition' => '',
-            'cv_name' => $local_cv->name,
-          ))->cvterm_id;
-          if (!empty($meta[$name]['attr_id'])) {
-            $job->logMessage("[INFO] New Local Attribute Term {$data['attr-other']} installed");
+    foreach ($term_types as $type => $info) {
+      $meta[$name]["{$type}_id"] = $data["{$type}"];
+      if ($data["{$type}"] == 'other') {
+        $meta[$name]["{$type}_id"] = $cvt_cache[$data["{$type}-other"]] ?? NULL;
+        if (empty($meta[$name]["{$type}_id"])) {
+          $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
+          if ($result !== FALSE) {
+            $meta[$name]["{$type}_id"] = $result->cvterm_id;
+            $job->logMessage("[INFO] New OLS Term {$info['ontology']}:{$data["{$type}-other"]} installed");
           }
-        }
-        $cvt_cache[$data['attr-other']] = $meta[$name]['attr_id'];
-      }
-    }
 
-    $meta[$name]['unit_id'] = $data['unit'];
-    if ($data['unit'] == 'other') {
-      $meta[$name]['unit_id'] = $cvt_cache[$data['unit-other']] ?? NULL;
-      if (empty($meta[$name]['unit_id'])) {
-        $result = tpps_ols_install_term("po:{$data['unit-other']}");
-        if ($result !== FALSE) {
-          $meta[$name]['unit_id'] = $result->cvterm_id;
-          $job->logMessage("[INFO] New OLS Term po:{$data['unit-other']} installed");
-        }
-
-        if (empty($meta[$name]['unit_id'])) {
-          $obs = chado_select_record('cvterm', array('cvterm_id'), array(
-            'name' => array(
-              'data' => $data['unit-other'],
-              'op' => 'LIKE',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $meta[$name]['unit_id'] = current($obs)->cvterm_id ?? NULL;
-        }
-
-        if (empty($meta[$name]['unit_id'])) {
-          $meta[$name]['unit_id'] = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$data['unit-other']}",
-            'name' => $data['unit-other'],
-            'definition' => '',
-            'cv_name' => $local_cv->name,
-          ))->cvterm_id;
-          if (!empty($meta[$name]['unit_id'])) {
-            $job->logMessage("[INFO] New Local Unit Term {$data['unit-other']} installed");
+          if (empty($meta[$name]["{$type}_id"])) {
+            $term = chado_select_record('cvterm', array('cvterm_id'), array(
+              'name' => array(
+                'data' => $data["{$type}-other"],
+                'op' => 'LIKE',
+              ),
+            ), array(
+              'limit' => 1,
+            ));
+            $meta[$name]["{$type}_id"] = current($term)->cvterm_id ?? NULL;
           }
-        }
-        $cvt_cache[$data['unit-other']] = $meta[$name]['unit_id'];
-      }
-    }
 
-    $meta[$name]['struct_id'] = $data['struct'];
-    if ($data['struct'] == 'other') {
-      $meta[$name]['struct_id'] = $cvt_cache[$data['struct-other']] ?? NULL;
-      if (empty($meta[$name]['struct_id'])) {
-        $result = tpps_ols_install_term("po:{$data['struct-other']}");
-        if ($result !== FALSE) {
-          $meta[$name]['struct_id'] = $result->cvterm_id;
-          $job->logMessage("[INFO] New OLS Term po:{$data['struct-other']} installed");
-        }
-
-        if (empty($meta[$name]['struct_id'])) {
-          $obs = chado_select_record('cvterm', array('cvterm_id'), array(
-            'name' => array(
-              'data' => $data['struct-other'],
-              'op' => 'LIKE',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $meta[$name]['struct_id'] = current($obs)->cvterm_id ?? NULL;
-        }
-
-        if (empty($meta[$name]['struct_id'])) {
-          $meta[$name]['struct_id'] = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$data['struct-other']}",
-            'name' => $data['struct-other'],
-            'definition' => '',
-            'cv_name' => $local_cv->name,
-          ))->cvterm_id;
-          if (!empty($meta[$name]['struct_id'])) {
-            $job->logMessage("[INFO] New Local Structure Term {$data['struct-other']} installed");
+          if (empty($meta[$name]["{$type}_id"])) {
+            $meta[$name]["{$type}_id"] = chado_insert_cvterm(array(
+              'id' => "{$local_db->name}:{$data["{$type}-other"]}",
+              'name' => $data["{$type}-other"],
+              'definition' => '',
+              'cv_name' => $local_cv->name,
+            ))->cvterm_id;
+            if (!empty($meta[$name]["{$type}_id"])) {
+              $job->logMessage("[INFO] New Local {$info['label']} Term {$data["{$type}-other"]} installed");
+            }
           }
+          $cvt_cache[$data["{$type}-other"]] = $meta[$name]["{$type}_id"];
         }
-        $cvt_cache[$data['struct-other']] = $meta[$name]['struct_id'];
       }
     }
 
