@@ -267,12 +267,15 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     }
 
     if ($organism_number != 1) {
-      $found = FALSE;
+      if (!empty($thirdpage['tree-accession']['check']) and empty($thirdpage['tree-accession']["species-$i"]['file'])) {
+        continue;
+      }
+
       if (empty($thirdpage['tree-accession']['check'])) {
         $options = array(
           'cols' => array(),
           'search' => $firstpage['organism'][$i]['name'],
-          'found' => &$found,
+          'found' => FALSE,
         );
         $tree_accession = $thirdpage['tree-accession']["species-1"];
         $groups = $tree_accession['file-groups'];
@@ -285,13 +288,9 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
         }
         $fid = $tree_accession['file'];
         tpps_file_iterator($fid, 'tpps_check_organisms', $options);
-      }
-      else {
-        $found = !empty($thirdpage['tree-accession']["species-$i"]['file']);
-      }
-
-      if (!$found) {
-        continue;
+        if (!$options['found']) {
+          continue;
+        }
       }
     }
 
@@ -1621,10 +1620,9 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
 function tpps_check_organisms($row, array &$options = array()) {
   $cols = $options['cols'];
   $search = &$options['search'];
-  $found = &$options['found'];
   $org_full_name = $row[$cols['org']] ?? "{$row[$cols['genus']]} {$row[$cols['species']]}";
   if ($search == $org_full_name) {
-    $found = TRUE;
+    $options['found'] = TRUE;
   }
 }
 
@@ -1676,10 +1674,8 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
   $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = variable_get('tpps_local_db');
   foreach ($meta as $name => $data) {
-    if ($data['attr'] != 'other') {
-      $meta[$name]['attr_id'] = $data['attr'];
-    }
-    else {
+    $meta[$name]['attr_id'] = $data['attr'];
+    if ($data['attr'] == 'other') {
       $meta[$name]['attr_id'] = $cvt_cache[$data['attr-other']] ?? NULL;
       if (empty($meta[$name]['attr_id'])) {
         $result = tpps_ols_install_term("pato:{$data['attr-other']}");
@@ -1715,14 +1711,10 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       }
     }
 
-    if ($data['unit'] != 'other') {
-      $meta[$name]['unit_id'] = $data['unit'];
-    }
-    else {
-      if (!empty($cvt_cache[$data['unit-other']])) {
-        $meta[$name]['unit_id'] = $cvt_cache[$data['unit-other']];
-      }
-      else {
+    $meta[$name]['unit_id'] = $data['unit'];
+    if ($data['unit'] == 'other') {
+      $meta[$name]['unit_id'] = $cvt_cache[$data['unit-other']] ?? NULL;
+      if (empty($meta[$name]['unit_id'])) {
         $result = tpps_ols_install_term("po:{$data['unit-other']}");
         if ($result !== FALSE) {
           $meta[$name]['unit_id'] = $result->cvterm_id;
@@ -1756,10 +1748,8 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       }
     }
 
-    if ($data['struct'] != 'other') {
-      $meta[$name]['struct_id'] = $data['struct'];
-    }
-    else {
+    $meta[$name]['struct_id'] = $data['struct'];
+    if ($data['struct'] == 'other') {
       $meta[$name]['struct_id'] = $cvt_cache[$data['struct-other']] ?? NULL;
       if (empty($meta[$name]['struct_id'])) {
         $result = tpps_ols_install_term("po:{$data['struct-other']}");
@@ -1926,7 +1916,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
         ),
       );
     }
-    else {
+
+    if (!$iso) {
       $records['phenotype_cvterm']["$phenotype_name-unit"] = array(
         'cvterm_id' => $meta[strtolower($name)]['unit_id'],
         '#fk' => array(
@@ -2284,10 +2275,10 @@ function tpps_ssrs_headers($fid, $ploidy) {
         if (array_key_exists($key, $results)) {
           $last = $results[$key];
           $results[$key] .= "_$ploidy_suffix";
+          $marker_num++;
+          continue;
         }
-        else {
-          $results[$key] = "{$last}_$ploidy_suffix";
-        }
+        $results[$key] = "{$last}_$ploidy_suffix";
         $marker_num++;
         break;
 
@@ -2728,7 +2719,8 @@ function tpps_process_accession($row, array &$options) {
       $lat = $parts[0];
       $lng = $parts[1];
     }
-    else {
+
+    if (!$coord) {
       $records['stockprop']["$tree_id-location"] = array(
         'type_id' => $cvterm['loc'],
         'value' => $location,
@@ -2740,15 +2732,13 @@ function tpps_process_accession($row, array &$options) {
       $tree_info[$tree_id]['location'] = $location;
 
       if (isset($geo_api_key)) {
-        if (!array_key_exists($location, $options['locations'])) {
+        $result = $options['locations'][$location] ?? NULL;
+        if (empty($result)) {
           $query = urlencode($location);
           $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
           $response = json_decode(file_get_contents($url));
           $result = ($response->total_results) ? $response->results[0]->geometry : NULL;
           $options['locations'][$location] = $result;
-        }
-        else {
-          $result = $options['locations'][$location];
         }
 
         if (!empty($result)) {
