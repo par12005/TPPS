@@ -41,6 +41,9 @@ plugins:
       standard: "Drupal"
   phpmd:
     enabled: true
+    checks:
+      CleanCode/MissingImport:
+        enabled: false
     config:
       file_extensions:
         - php
