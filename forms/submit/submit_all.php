@@ -2620,36 +2620,23 @@ function tpps_process_accession($row, array &$options) {
 
     $tree_info[$tree_id]['location'] = $location;
 
-    if (isset($geo_api_key)) {
-      if (!array_key_exists($location, $options['locations'])) {
-        $query = urlencode($location);
-        $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-        $response = json_decode(file_get_contents($url));
+    if (isset($geo_api_key) and !array_key_exists($location, $options['locations'])) {
+      $query = urlencode($location);
+      $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
+      $response = json_decode(file_get_contents($url));
+      $options['locations'][$location] = $response->results[0]->geometry ?? NULL;
 
-        if ($response->total_results) {
-          $results = $response->results;
-          $result = $results[0]->geometry;
-          if ($response->total_results > 1 and !isset($cols['district']) and !isset($cols['county'])) {
-            foreach ($results as $item) {
-              if ($item->components->_type == 'state') {
-                $result = $item->geometry;
-                break;
-              }
-            }
+      if ($response->total_results and $response->total_results > 1 and !isset($cols['district']) and !isset($cols['county'])) {
+        foreach ($response->results as $item) {
+          if ($item->components->_type == 'state') {
+            $options['locations'][$location] = $item->geometry;
+            break;
           }
         }
-        $options['locations'][$location] = $result ?? NULL;
-      }
-
-      if (array_key_exists($location, $options['locations'])) {
-        $result = $options['locations'][$location];
-      }
-
-      if (!empty($result)) {
-        $lat = $result->lat;
-        $lng = $result->lng;
       }
     }
+    $lat = $options['locations'][$location]->lat ?? NULL;
+    $lng = $options['locations'][$location]->lng ?? NULL;
   }
   elseif (!empty($row[$cols['pop_group']])) {
     $site_based = TRUE;
