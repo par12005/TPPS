@@ -534,52 +534,6 @@ function tpps_submit_page_2(array &$form_state, TripalJob &$job = NULL) {
       $description = FALSE;
     }
   }
-
-  if (!empty($form_state['values']['study_info']['irrigation'])) {
-    $irrigation = $form_state['values']['study_info']['irrigation'];
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'type_id' => tpps_load_cvterm('irrigation_type')->cvterm_id,
-      'value' => ($irrigation['option'] == 'Other') ? $irrigation['other'] : $irrigation['option'],
-    ));
-  }
-
-  if (!empty($form_state['values']['study_info']['biotic_env']['option'])) {
-    foreach ($form_state['values']['study_info']['biotic_env']['option'] as $key => $check) {
-      if ($check) {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $form_state['ids']['project_id'],
-          'type_id' => tpps_load_cvterm('biotic_environment')->cvterm_id,
-          'value' => ($key == 'Other') ? $form_state['values']['study_info']['biotic_env']['other'] : $key,
-        ));
-      }
-    }
-  }
-
-  if (!empty($form_state['values']['study_info']['treatment']) and $form_state['values']['study_info']['treatment']['check']) {
-    $description = FALSE;
-    $rank = 0;
-
-    foreach ($treatment as $field => $value) {
-      if ($field != 'check') {
-        if (!$description) {
-          $description = TRUE;
-          $record_next = $value;
-          continue;
-        }
-        elseif ($record_next) {
-          tpps_chado_insert_record('projectprop', array(
-            'project_id' => $form_state['ids']['project_id'],
-            'type_id' => tpps_load_cvterm('treatment')->cvterm_id,
-            'value' => $value,
-            'rank' => $rank,
-          ));
-          $rank++;
-        }
-        $description = FALSE;
-      }
-    }
-  }
 }
 
 /**
