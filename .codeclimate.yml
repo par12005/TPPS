@@ -44,6 +44,10 @@ plugins:
     checks:
       CleanCode/MissingImport:
         enabled: false
+      Design/NpathComplexity:
+        enabled: false
+      Design/LongMethod:
+        enabled: false
     config:
       file_extensions:
         - php
