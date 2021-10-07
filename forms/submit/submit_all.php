@@ -581,39 +581,38 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
           'value' => $longitude,
           'rank' => $i,
         ));
+        continue;
       }
-      else {
-        $loc = $locs[$i];
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $form_state['ids']['project_id'],
-          'type_id' => tpps_load_cvterm('experiment_location')->cvterm_id,
-          'value' => $loc,
-          'rank' => $i,
-        ));
+      $loc = $locs[$i];
+      tpps_chado_insert_record('projectprop', array(
+        'project_id' => $form_state['ids']['project_id'],
+        'type_id' => tpps_load_cvterm('experiment_location')->cvterm_id,
+        'value' => $loc,
+        'rank' => $i,
+      ));
 
-        if (isset($geo_api_key)) {
-          $query = urlencode($loc);
-          $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-          $response = json_decode(file_get_contents($url));
+      if (isset($geo_api_key)) {
+        $query = urlencode($loc);
+        $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
+        $response = json_decode(file_get_contents($url));
 
-          if ($response->total_results) {
-            $result = $response->results[0]->geometry;
-            $form_state['locations'][$loc] = $result;
+        if ($response->total_results) {
+          $result = $response->results[0]->geometry;
+          $form_state['locations'][$loc] = $result;
 
-            tpps_chado_insert_record('projectprop', array(
-              'project_id' => $form_state['ids']['project_id'],
-              'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
-              'value' => $result->lat,
-              'rank' => $i,
-            ));
+          tpps_chado_insert_record('projectprop', array(
+            'project_id' => $form_state['ids']['project_id'],
+            'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
+            'value' => $result->lat,
+            'rank' => $i,
+          ));
 
-            tpps_chado_insert_record('projectprop', array(
-              'project_id' => $form_state['ids']['project_id'],
-              'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
-              'value' => $result->lng,
-              'rank' => $i,
-            ));
-          }
+          tpps_chado_insert_record('projectprop', array(
+            'project_id' => $form_state['ids']['project_id'],
+            'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
+            'value' => $result->lng,
+            'rank' => $i,
+          ));
         }
       }
     }
@@ -729,7 +728,7 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
         $options['column_ids']['genus'] = $groups['Genus and Species']['6'];
         $options['column_ids']['species'] = $groups['Genus and Species']['7'];
       }
-      else {
+      if ($groups['Genus and Species']['#type'] != 'separate') {
         $options['column_ids']['org'] = $groups['Genus and Species']['10'];
       }
     }
@@ -1681,10 +1680,8 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       $meta[$name]['attr_id'] = $data['attr'];
     }
     else {
-      if (!empty($cvt_cache[$data['attr-other']])) {
-        $meta[$name]['attr_id'] = $cvt_cache[$data['attr-other']];
-      }
-      else {
+      $meta[$name]['attr_id'] = $cvt_cache[$data['attr-other']] ?? NULL;
+      if (empty($meta[$name]['attr_id'])) {
         $result = tpps_ols_install_term("pato:{$data['attr-other']}");
         if ($result !== FALSE) {
           $meta[$name]['attr_id'] = $result->cvterm_id;
@@ -1763,10 +1760,8 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       $meta[$name]['struct_id'] = $data['struct'];
     }
     else {
-      if (!empty($cvt_cache[$data['struct-other']])) {
-        $meta[$name]['struct_id'] = $cvt_cache[$data['struct-other']];
-      }
-      else {
+      $meta[$name]['struct_id'] = $cvt_cache[$data['struct-other']] ?? NULL;
+      if (empty($meta[$name]['struct_id'])) {
         $result = tpps_ols_install_term("po:{$data['struct-other']}");
         if ($result !== FALSE) {
           $meta[$name]['struct_id'] = $result->cvterm_id;
@@ -2464,7 +2459,8 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 function tpps_get_environmental_layer_data($layer_id, $lat, $long, $param) {
 
   $response = tpps_get_env_response($layer_id, $lat, $long);
-  if (($response = explode("\n", $response))) {
+  $response = explode("\n", $response);
+  if ($response) {
     $response = array_slice($response, 2, -2);
     foreach ($response as $line) {
       $item = explode("=", $line);
