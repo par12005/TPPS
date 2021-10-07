@@ -280,7 +280,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
           $options['cols']['genus'] = $groups['Genus and Species']['6'];
           $options['cols']['species'] = $groups['Genus and Species']['7'];
         }
-        else {
+        if ($groups['Genus and Species']['#type'] != 'separate') {
           $options['cols']['org'] = $groups['Genus and Species']['10'];
         }
         $fid = $tree_accession['file'];
@@ -298,27 +298,16 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     $code_exists = tpps_chado_prop_exists('organism', $form_state['ids']['organism_ids'][$i], 'organism 4 letter code');
 
     if (!$code_exists) {
-      $g_offset = 0;
-      $s_offset = 0;
-      do {
-        if (isset($trial_code)) {
-          if ($s_offset < strlen($species) - 2) {
-            $s_offset++;
-          }
-          elseif ($g_offset < strlen($genus) - 2) {
-            $s_offset = 0;
-            $g_offset++;
-          }
-          else {
-            throw new Exception("TPPS was unable to create a 4 letter species code for the species '$genus $species'.");
-          }
-        }
-        $trial_code = substr($genus, $g_offset, 2) . substr($species, $s_offset, 2);
+      foreach (tpps_get_species_codes($genus, $species) as $trial_code) {
         $new_code_query = chado_select_record('organismprop', array('value'), array(
           'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
           'value' => $trial_code,
         ));
-      } while (!empty($new_code_query));
+
+        if (empty($new_code_query)) {
+          break;
+        }
+      }
 
       tpps_chado_insert_record('organismprop', array(
         'organism_id' => $form_state['ids']['organism_ids'][$i],
@@ -529,16 +518,11 @@ function tpps_submit_page_2(array &$form_state, TripalJob &$job = NULL) {
     $rank = 0;
     foreach ($root['treatment'] as $value) {
       if (!$description) {
-        if ($value) {
-          $record_next = TRUE;
-        }
-        else {
-          $record_next = FALSE;
-        }
+        $record_next = ((bool) $value);
         $description = TRUE;
         continue;
       }
-      elseif ($record_next) {
+      if ($record_next) {
         tpps_chado_insert_record('projectprop', array(
           'project_id' => $form_state['ids']['project_id'],
           'type_id' => tpps_load_cvterm('treatment')->cvterm_id,
@@ -622,6 +606,7 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
   if (!empty($thirdpage['study_location'])) {
     $type = $thirdpage['study_location']['type'];
     $locs = $thirdpage['study_location']['locations'];
+    $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
 
     for ($i = 1; $i <= $locs['number']; $i++) {
       if ($type !== '2') {
@@ -653,7 +638,7 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
         ));
 
         if (isset($geo_api_key)) {
-          $query = urlencode($location);
+          $query = urlencode($loc);
           $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
           $response = json_decode(file_get_contents($url));
 
@@ -1312,7 +1297,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     if ($genotype['files']['assay-load'] == 'new') {
       $design_fid = $genotype['files']['assay-design'];
     }
-    else {
+    if ($genotype['files']['assay-load'] != 'new') {
       $design_fid = $genotype['files']['assay-load'];
     }
     tpps_add_project_file($form_state, $design_fid);
@@ -1606,7 +1591,7 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
   }
   $tree_accession = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index];
   $tree_acc_fid = $tree_accession['file'];
-  if (!empty($form_state['revised_files'][$tree_acc_fid]) and ($file = file_load($form_state['revised_files'][$tree_acc_fid]))) {
+  if (!empty($form_state['revised_files'][$tree_acc_fid]) and (file_load($form_state['revised_files'][$tree_acc_fid]))) {
     $tree_acc_fid = $form_state['revised_files'][$tree_acc_fid];
   }
 
@@ -1913,7 +1898,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       $tree_id .= "-" . $row[$clone_col];
     }
   }
-  else {
+  if ($iso) {
     foreach ($row as $id => $value) {
       if (empty($tree_id)) {
         $tree_id = $value;
@@ -2529,7 +2514,8 @@ function tpps_get_environmental_layer_data($layer_id, $lat, $long, $param) {
   if (($response = explode("\n", $response))) {
     $response = array_slice($response, 2, -2);
     foreach ($response as $line) {
-      if (($item = explode("=", $line)) and trim($item[0]) == $param) {
+      $item = explode("=", $line);
+      if ($item and trim($item[0]) == $param) {
         return trim($item[1]);
       }
     }
@@ -2784,7 +2770,8 @@ function tpps_process_accession($row, array &$options) {
         }
         $options['locations'][$location] = $result ?? NULL;
       }
-      else {
+
+      if (array_key_exists($location, $options['locations'])) {
         $result = $options['locations'][$location];
       }
 
@@ -2911,4 +2898,43 @@ function tpps_clean_state(array &$form_state) {
   unset($form_state['ids']);
   tpps_form_state_info($new, $form_state);
   $form_state = $new;
+}
+
+/**
+ * Generate all possible 4-letter TreeGenes organism codes.
+ *
+ * @param string $genus
+ *   The genus of the organism.
+ * @param string $species
+ *   The species of the organism.
+ *
+ * @return Generator|array
+ *   Yields each possible organism code in the desired order.
+ */
+function tpps_get_species_codes($genus, $species) {
+  $codes = array();
+
+  for ($g1 = 0; $g1 <= strlen($genus) - 2; $g1++) {
+    for ($g2 = $g1 + 1; $g2 <= strlen($genus) - 1; $g2++) {
+      // Genus codes should not repeat letters.
+      if ($genus[$g1] == $genus[$g2]) {
+        continue;
+      }
+
+      for ($s1 = 0; $s1 <= strlen($species) - 2; $s1++) {
+        for ($s2 = $s1 + 1; $s2 <= strlen($species) - 1; $s2++) {
+          // Species codes should not repeat letters.
+          if ($species[$s1] == $species[$s2]) {
+            continue;
+          }
+
+          $code = ucfirst(strtolower($genus[$g1] . $genus[$g2] . $species[$s1] . $species[$s2]));
+          if (!array_key_exists($code, $codes)) {
+            yield $code;
+            $codes[$code] = TRUE;
+          }
+        }
+      }
+    }
+  }
 }
