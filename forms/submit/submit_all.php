@@ -2050,7 +2050,6 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $tree_info = &$options['tree_info'];
   $species_codes = $options['species_codes'];
   $genotype_count = &$options['genotype_count'];
-  $genotype_total = &$options['genotype_total'];
   $project_id = $options['project_id'];
   $marker = $options['marker'];
   $type_cvterm = $options['type_cvterm'];
@@ -2202,7 +2201,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         $records['featureloc'] = array();
         $records['featureprop'] = array();
       }
-      $genotype_total += $genotype_count;
+      $options['genotype_total'] += $genotype_count;
       $genotype_count = 0;
     }
   }
