@@ -106,6 +106,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
   $normal_check = $phenotype['normal-check'];
   $iso_check = $phenotype['iso-check'];
   $id = "organism-$org_num";
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
 
   if (empty($normal_check) and empty($iso_check)) {
     form_set_error("$id][phenotype][normal-check", t("Please choose at least one category of phenotypes to upload"));
