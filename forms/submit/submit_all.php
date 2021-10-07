@@ -280,7 +280,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
           $options['cols']['genus'] = $groups['Genus and Species']['6'];
           $options['cols']['species'] = $groups['Genus and Species']['7'];
         }
-        else {
+        if ($groups['Genus and Species']['#type'] != 'separate') {
           $options['cols']['org'] = $groups['Genus and Species']['10'];
         }
         $fid = $tree_accession['file'];
@@ -310,7 +310,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
             $g_offset++;
           }
           else {
-            throw new Exception("TPPS was unable to create a 4 letter species code for the species '$genus $species'.");
+            throw new \Exception("TPPS was unable to create a 4 letter species code for the species '$genus $species'.");
           }
         }
         $trial_code = substr($genus, $g_offset, 2) . substr($species, $s_offset, 2);
@@ -622,6 +622,7 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
   if (!empty($thirdpage['study_location'])) {
     $type = $thirdpage['study_location']['type'];
     $locs = $thirdpage['study_location']['locations'];
+    $geo_api_key = variable_get('tpps_geocode_api_key', NULL);
 
     for ($i = 1; $i <= $locs['number']; $i++) {
       if ($type !== '2') {
@@ -653,7 +654,7 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
         ));
 
         if (isset($geo_api_key)) {
-          $query = urlencode($location);
+          $query = urlencode($loc);
           $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
           $response = json_decode(file_get_contents($url));
 
@@ -1312,7 +1313,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     if ($genotype['files']['assay-load'] == 'new') {
       $design_fid = $genotype['files']['assay-design'];
     }
-    else {
+    if ($genotype['files']['assay-load'] != 'new') {
       $design_fid = $genotype['files']['assay-load'];
     }
     tpps_add_project_file($form_state, $design_fid);
@@ -1606,7 +1607,7 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
   }
   $tree_accession = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index];
   $tree_acc_fid = $tree_accession['file'];
-  if (!empty($form_state['revised_files'][$tree_acc_fid]) and ($file = file_load($form_state['revised_files'][$tree_acc_fid]))) {
+  if (!empty($form_state['revised_files'][$tree_acc_fid]) and (file_load($form_state['revised_files'][$tree_acc_fid]))) {
     $tree_acc_fid = $form_state['revised_files'][$tree_acc_fid];
   }
 
@@ -1913,7 +1914,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       $tree_id .= "-" . $row[$clone_col];
     }
   }
-  else {
+  if ($iso) {
     foreach ($row as $id => $value) {
       if (empty($tree_id)) {
         $tree_id = $value;
