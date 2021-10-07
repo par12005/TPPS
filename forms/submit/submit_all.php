@@ -2385,37 +2385,25 @@ function tpps_process_environment_layers($row, array &$options = array()) {
       $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
       $type = variable_get("tpps_param_{$param_id}_type", 'attr_id');
 
+      $records['phenotype'][$phenotype_name] = array(
+        'uniquename' => $phenotype_name,
+        'name' => "$param_name",
+        'value' => "$value",
+      );
+
+      $records['stock_phenotype'][$phenotype_name] = array(
+        'stock_id' => $stock_id,
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+
       if ($type == 'attr_id') {
-        $records['phenotype'][$phenotype_name] = array(
-          'uniquename' => $phenotype_name,
-          'name' => $param_name,
-          'attr_id' => $env_cvterm,
-          'value' => $value,
-        );
-
-        $records['stock_phenotype'][$phenotype_name] = array(
-          'stock_id' => $stock_id,
-          '#fk' => array(
-            'phenotype' => $phenotype_name,
-          ),
-        );
+        $records['phenotype'][$phenotype_name]['attr_id'] = $env_cvterm;
       }
-      else {
-        $records['phenotype'][$phenotype_name] = array(
-          'uniquename' => $phenotype_name,
-          'name' => "$param_name",
-          'value' => "$value",
-        );
-
+      if ($type != 'attr_id') {
         $records['phenotype_cvterm'][$phenotype_name] = array(
           'cvterm_id' => $env_cvterm,
-          '#fk' => array(
-            'phenotype' => $phenotype_name,
-          ),
-        );
-
-        $records['stock_phenotype'][$phenotype_name] = array(
-          'stock_id' => $stock_id,
           '#fk' => array(
             'phenotype' => $phenotype_name,
           ),
