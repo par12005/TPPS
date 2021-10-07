@@ -433,7 +433,6 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   $state_column_values = &$values[$new_end_columns];
   $values[$new_end_no_header] = isset($file_element['#value']['no-header']) ? $file_element['#value']['no-header'] : NULL;
   $values[$new_end_empty] = isset($file_element['#value']['empty']) ? $file_element['#value']['empty'] : NULL;
-  drupal_array_set_nested_value($form_state['values'], $parents, $values);
 
   $title_parts = explode(':', $file_element['#title']);
   $error_prompt = $title_parts[0];
@@ -497,6 +496,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   }
 
   $values[$group_path] = $groups;
+  drupal_array_set_nested_value($form_state['values'], $parents, $values);
 
   return $groups;
 }
