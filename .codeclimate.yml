@@ -1,25 +1,25 @@
 version: "2"
 checks:
   argument-count:
-    enabled: false
+    enabled: true
   complex-logic:
-    enabled: false
+    enabled: true
   file-lines:
     enabled: false
   method-complexity:
-    enabled: false
+    enabled: true
   method-count:
-    enabled: false
+    enabled: true
   method-lines:
     enabled: false
   nested-control-flow:
-    enabled: false
+    enabled: true
   return-statements:
-    enabled: false
+    enabled: true
   similar-code:
-    enabled: false
+    enabled: true
   identical-code:
-    enabled: false
+    enabled: true
 plugins:
   duplication:
     enabled: true
@@ -48,3 +48,7 @@ plugins:
         - module
         - install
       rulesets: "unusedcode,codesize,design,cleancode"
+exclude_patterns:
+- "docs/"
+- "vendor/"
+- "tests/"
