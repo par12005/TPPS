@@ -2222,7 +2222,7 @@ function tpps_ssrs_headers($fid, $ploidy) {
   $num_headers = count($results);
   $num_unique_headers = count(array_unique($results));
 
-  foreach ($headers as $key => $val) {
+  foreach (array_keys($headers) as $key) {
     next($headers);
     $next_key = key($headers);
     if ($first) {
@@ -2364,7 +2364,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 
     $layer_name = $layer_query->fetchObject()->title;
 
-    foreach ($params as $param_id => $param) {
+    foreach (array_keys($params) as $param_id) {
       $param_query = db_select('cartogratree_fields', 'f')
         ->fields('f', array('field_name'))
         ->condition('field_id', $param_id)
