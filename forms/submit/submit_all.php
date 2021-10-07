@@ -2218,7 +2218,7 @@ function tpps_ssrs_headers($fid, $ploidy) {
           $last = $results[$key];
           $results[$key] .= "_$ploidy_suffix";
           $marker_num++;
-          continue;
+          break;
         }
         $results[$key] = "{$last}_$ploidy_suffix";
         $marker_num++;
@@ -2783,27 +2783,37 @@ function tpps_clean_state(array &$form_state) {
 function tpps_get_species_codes($genus, $species) {
   $codes = array();
 
-  for ($g1 = 0; $g1 <= strlen($genus) - 2; $g1++) {
-    for ($g2 = $g1 + 1; $g2 <= strlen($genus) - 1; $g2++) {
-      // Genus codes should not repeat letters.
-      if ($genus[$g1] == $genus[$g2]) {
+  foreach (tpps_get_code_parts($genus) as $genus_part) {
+    foreach (tpps_get_code_parts($species) as $species_part) {
+      $code = ucfirst($genus_part . $species_part);
+      if (!array_key_exists($code, $codes)) {
+        yield $code;
+        $codes[$code] = TRUE;
+      }
+    }
+  }
+}
+
+/**
+ * Helper function for tpps_get_species_codes().
+ *
+ * Generate all possible 2-letter organism code parts.
+ *
+ * @param string $part
+ *   The part of the organism name, either genus or species.
+ *
+ * @return Generator|array
+ *   Yields each possible code part in the desired order.
+ */
+function tpps_get_code_parts($part) {
+  for ($char1 = 0; $char1 <= strlen($part) - 2; $char1++) {
+    for ($char2 = $char1 + 1; $char2 <= strlen($part) - 1; $char2++) {
+      // Code parts should not repeat letters.
+      if ($part[$char1] == $part[$char2]) {
         continue;
       }
 
-      for ($s1 = 0; $s1 <= strlen($species) - 2; $s1++) {
-        for ($s2 = $s1 + 1; $s2 <= strlen($species) - 1; $s2++) {
-          // Species codes should not repeat letters.
-          if ($species[$s1] == $species[$s2]) {
-            continue;
-          }
-
-          $code = ucfirst(strtolower($genus[$g1] . $genus[$g2] . $species[$s1] . $species[$s2]));
-          if (!array_key_exists($code, $codes)) {
-            yield $code;
-            $codes[$code] = TRUE;
-          }
-        }
-      }
+      yield strtolower($part[$char1] . $part[$char2]);
     }
   }
 }
