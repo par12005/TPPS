@@ -21,17 +21,18 @@
  * @return array
  *   An array containing the content headers and content body.
  */
-function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE, $columns = NULL) {
+function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE, $columns = NULL, $user_delimiter = '') {
   $content = array();
   $options = array(
     'no_header' => $no_header,
     'columns' => $columns,
     'max_rows' => $max_rows,
     'content' => &$content,
+    'user-delimiter' => $user_delimiter
   );
 
   tpps_file_iterator($fid, 'tpps_parse_file_helper', $options);
-  $content['headers'] = tpps_file_headers($fid, $no_header);
+  $content['headers'] = tpps_file_headers($fid, $no_header, $user_delimiter);
   return $content;
 }
 
@@ -50,6 +51,7 @@ function tpps_parse_file($fid, $max_rows = 0, $no_header = FALSE, $columns = NUL
  */
 function tpps_parse_file_helper($row, array &$options) {
   $options['content'][] = $row;
+
 }
 
 /**
@@ -497,7 +499,6 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
 
   $values[$group_path] = $groups;
   drupal_array_set_nested_value($form_state['values'], $parents, $values);
-
   return $groups;
 }
 
@@ -946,7 +947,7 @@ function tpps_get_archive_files($archive) {
  * @return array
  *   An array of headers for the file.
  */
-function tpps_file_headers($fid, $no_header = FALSE) {
+function tpps_file_headers($fid, $no_header = FALSE, $user_delimiter = '') {
   $headers = array();
   if ($no_header) {
     $hex = unpack('H*', 'A')[1];
@@ -964,6 +965,7 @@ function tpps_file_headers($fid, $no_header = FALSE) {
     'no_header' => TRUE,
     'max_rows' => 1,
     'content' => &$content,
+    'user-delimiter' => $user_delimiter
   );
   tpps_file_iterator($fid, 'tpps_parse_file_helper', $options);
   return current($content);
@@ -994,7 +996,6 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
     $options['job']->setTotalItems(tpps_file_len($fid));
     $options['job']->setItemsHandled(0);
   }
-
   foreach (tpps_file_generator($fid, $options) as $item) {
     $function($item, $options);
     if (!empty($options['job'])) {
@@ -1173,12 +1174,21 @@ function tpps_flat_generator($location, array $options = array()) {
   if (!$original) {
     ini_set('auto_detect_line_endings', TRUE);
   }
-
   $no_header = $options['no_header'] ?? FALSE;
   $columns = $options['columns'] ?? NULL;
   $max_rows = $options['max_rows'] ?? NULL;
-
-  $delim = ',';
+  if(array_key_exists('user-delimiter', $options)) {
+    if ($options['user-delimiter'] != '') {
+      $delim = $options['user-delimiter'];
+    }
+    else {
+      $delim = ';';
+    }
+    unset($options['user-delimiter']);
+  }
+  else {
+    $delim = ';';
+  }
   $longest = tpps_flat_width($location, $delim);
   $handle = gzopen($location, 'r');
 
@@ -1209,9 +1219,10 @@ function tpps_flat_generator($location, array $options = array()) {
       yield $values;
       continue;
     }
-
-    foreach ($columns as $column) {
-      $values[$column] = $vals[tpps_convert_colname($column)] ?? NULL;
+    if(is_array($columns)) {
+      foreach ($columns as $column) {
+        $values[$column] = $vals[tpps_convert_colname($column)] ?? NULL;
+      }
     }
 
     yield $values;

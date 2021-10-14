@@ -138,6 +138,9 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       'columns' => array(
         '#description' => t('Please define which columns hold the required data: Plant Identifier and Location. If your plants are located based on a population group, you can provide the population group column and a mapping of population group to location below.'),
       ),
+      'user-selected-delimiter' => array(
+        '#default_value' => isset($values['tree-accession']["species-$i"]['file']['user-selected-delimiter']) ? $values['tree-accession']["species-$i"]['file']['user-selected-delimiter'] : ';',
+      ),
       'no-header' => array(),
       'empty' => array(
         '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
@@ -273,15 +276,16 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
             break;
         }
       }
-
       if ($pop_group_show and !empty($fid) and ($file = file_load($fid))) {
         $form['tree-accession']["species-$i"]['pop-group']['#type'] = 'fieldset';
+        $user_delimitor = $form_state['input']['tree-accession']["species-$i"]['file']['user-selected-delimiter'] ?? NULL;
         $pop_groups = array();
         $options = array(
           'columns' => array(
             $pop_col,
           ),
           'pop_groups' => &$pop_groups,
+          'user-selected-delimiter' => $user_delimitor
         );
         tpps_file_iterator($fid, 'tpps_accession_pop_groups', $options);
         foreach ($pop_groups as $pop_group) {
