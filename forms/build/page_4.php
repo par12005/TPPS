@@ -66,7 +66,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         "organism-$i",
         'phenotype',
         'normal-check',
-      ), NULL);
+      ), TRUE);
 
       if (!empty($normal_check)) {
         $image_path = drupal_get_path('module', 'tpps') . '/images/';
