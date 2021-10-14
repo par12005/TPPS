@@ -478,7 +478,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf_check'] = NULL;
         $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf'] = NULL;
       }
-      else {
+      if (!file_load($fid)) {
         form_set_error("$org_num][genotype][files][local_vcf", t("Local VCF File: File could not be loaded properly."));
       }
     }
@@ -545,41 +545,40 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     if (!empty($loaded_state['vcf_validated']) and $loaded_state['vcf_validated'] === TRUE and empty($loaded_state['vcf_val_errors'])) {
       drupal_set_message(t('VCF files pre-validated. Skipping VCF file validation'));
     }
-    else {
-      if (!form_get_errors()) {
-        $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-        $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
-        $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
-        $accession_ids = tpps_parse_file_column($tree_accession_file, $id_col_accession_name);
+    elseif (!form_get_errors()) {
+      $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+      $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
+      $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+      $accession_ids = tpps_parse_file_column($tree_accession_file, $id_col_accession_name);
 
-        $vcf_file = file_load($vcf);
-        $location = tpps_get_location($vcf_file->uri);
-        $vcf_content = gzopen($location, 'r');
-        $stocks = array();
-        while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
-          if (preg_match('/#CHROM/', $vcf_line)) {
-            $vcf_line = explode("\t", $vcf_line);
-            for ($j = 9; $j < count($vcf_line); $j++) {
-              $stocks[] = trim($vcf_line[$j]);
-            }
-            break;
+      $vcf_file = file_load($vcf);
+      $location = tpps_get_location($vcf_file->uri);
+      $vcf_content = gzopen($location, 'r');
+      $stocks = array();
+      while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
+        if (preg_match('/#CHROM/', $vcf_line)) {
+          $vcf_line = explode("\t", $vcf_line);
+          for ($j = 9; $j < count($vcf_line); $j++) {
+            $stocks[] = trim($vcf_line[$j]);
+          }
+          break;
+        }
+      }
+
+      if (count($stocks) == 0) {
+        form_set_error("$id][genotype][files][vcf", t("Genotype VCF File: unable to parse Plant Identifiers. The format of your VCF file must be invalid"));
+      }
+
+      if (count($stocks) != 0) {
+        $missing_plants = array();
+        foreach ($stocks as $stock_id) {
+          if (array_search($stock_id, $accession_ids) === FALSE) {
+            $missing_plants[] = $stock_id;
           }
         }
-
-        if (count($stocks) == 0) {
-          form_set_error("$id][genotype][files][vcf", t("Genotype VCF File: unable to parse Plant Identifiers. The format of your VCF file must be invalid"));
-        }
-        else {
-          $missing_plants = array();
-          foreach ($stocks as $stock_id) {
-            if (array_search($stock_id, $accession_ids) === FALSE) {
-              $missing_plants[] = $stock_id;
-            }
-          }
-          if (count($missing_plants) > 0) {
-            $missing_plants = implode(', ', $missing_plants);
-            form_set_error("$id][genotype][files][vcf", t("Genotype VCF File: We found Plant Identifiers in your VCF file that were not present in your accession file. Please either add these plants to your accession file or remove them from your VCF file. The missing plants are: @missing_plants.", array('@missing_plants' => $missing_plants)));
-          }
+        if (count($missing_plants) > 0) {
+          $missing_plants = implode(', ', $missing_plants);
+          form_set_error("$id][genotype][files][vcf", t("Genotype VCF File: We found Plant Identifiers in your VCF file that were not present in your accession file. Please either add these plants to your accession file or remove them from your VCF file. The missing plants are: @missing_plants.", array('@missing_plants' => $missing_plants)));
         }
       }
 
@@ -951,7 +950,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $id_col_genotype_name = $groups['Tree Id']['1'];
       }
     }
-    else {
+    if (!array_key_exists('columns', $form[$id]['genotype']['files']['other'])) {
       $headers = tpps_file_headers($genotype['files']['other']);
       if (!form_get_errors()) {
         $id_col_genotype_name = key($headers);
