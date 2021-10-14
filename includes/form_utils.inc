@@ -312,6 +312,32 @@ function tpps_form_state_info(array &$new, array &$old) {
 }
 
 /**
+ * If there have been no form errors, then the file is valid, so preserve it.
+ *
+ * Also adds the standardized name and fid to the submission state file_info.
+ *
+ * @param array $form_state
+ *   The form state being validated.
+ * @param int $fid
+ *   The Drupal file ID.
+ * @param mixed $org_num
+ *   The species number to get the species name from the form state array.
+ * @param mixed $prefix
+ *   The standardized file name prefix.
+ */
+function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
+  if (!form_get_errors()) {
+    $file = file_load($fid);
+    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+
+    if (!empty($org_num) and !empty($prefix)) {
+      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
+      $form_state['file_info'][TPPS_PAGE_3][$file->fid] = "{$prefix}_{$species}";
+    }
+  }
+}
+
+/**
  * Initializes TPPS VCF file pre-validation jobs.
  *
  * This function also requires that the body of the pre-validation request

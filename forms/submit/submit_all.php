@@ -267,12 +267,15 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     }
 
     if ($organism_number != 1) {
-      $found = FALSE;
+      if (!empty($thirdpage['tree-accession']['check']) and empty($thirdpage['tree-accession']["species-$i"]['file'])) {
+        continue;
+      }
+
       if (empty($thirdpage['tree-accession']['check'])) {
         $options = array(
           'cols' => array(),
           'search' => $firstpage['organism'][$i]['name'],
-          'found' => &$found,
+          'found' => FALSE,
         );
         $tree_accession = $thirdpage['tree-accession']["species-1"];
         $groups = $tree_accession['file-groups'];
@@ -285,13 +288,9 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
         }
         $fid = $tree_accession['file'];
         tpps_file_iterator($fid, 'tpps_check_organisms', $options);
-      }
-      else {
-        $found = !empty($thirdpage['tree-accession']["species-$i"]['file']);
-      }
-
-      if (!$found) {
-        continue;
+        if (!$options['found']) {
+          continue;
+        }
       }
     }
 
@@ -534,52 +533,6 @@ function tpps_submit_page_2(array &$form_state, TripalJob &$job = NULL) {
       $description = FALSE;
     }
   }
-
-  if (!empty($form_state['values']['study_info']['irrigation'])) {
-    $irrigation = $form_state['values']['study_info']['irrigation'];
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'type_id' => tpps_load_cvterm('irrigation_type')->cvterm_id,
-      'value' => ($irrigation['option'] == 'Other') ? $irrigation['other'] : $irrigation['option'],
-    ));
-  }
-
-  if (!empty($form_state['values']['study_info']['biotic_env']['option'])) {
-    foreach ($form_state['values']['study_info']['biotic_env']['option'] as $key => $check) {
-      if ($check) {
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $form_state['ids']['project_id'],
-          'type_id' => tpps_load_cvterm('biotic_environment')->cvterm_id,
-          'value' => ($key == 'Other') ? $form_state['values']['study_info']['biotic_env']['other'] : $key,
-        ));
-      }
-    }
-  }
-
-  if (!empty($form_state['values']['study_info']['treatment']) and $form_state['values']['study_info']['treatment']['check']) {
-    $description = FALSE;
-    $rank = 0;
-
-    foreach ($treatment as $field => $value) {
-      if ($field != 'check') {
-        if (!$description) {
-          $description = TRUE;
-          $record_next = $value;
-          continue;
-        }
-        elseif ($record_next) {
-          tpps_chado_insert_record('projectprop', array(
-            'project_id' => $form_state['ids']['project_id'],
-            'type_id' => tpps_load_cvterm('treatment')->cvterm_id,
-            'value' => $value,
-            'rank' => $rank,
-          ));
-          $rank++;
-        }
-        $description = FALSE;
-      }
-    }
-  }
 }
 
 /**
@@ -627,39 +580,38 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
           'value' => $longitude,
           'rank' => $i,
         ));
+        continue;
       }
-      else {
-        $loc = $locs[$i];
-        tpps_chado_insert_record('projectprop', array(
-          'project_id' => $form_state['ids']['project_id'],
-          'type_id' => tpps_load_cvterm('experiment_location')->cvterm_id,
-          'value' => $loc,
-          'rank' => $i,
-        ));
+      $loc = $locs[$i];
+      tpps_chado_insert_record('projectprop', array(
+        'project_id' => $form_state['ids']['project_id'],
+        'type_id' => tpps_load_cvterm('experiment_location')->cvterm_id,
+        'value' => $loc,
+        'rank' => $i,
+      ));
 
-        if (isset($geo_api_key)) {
-          $query = urlencode($loc);
-          $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-          $response = json_decode(file_get_contents($url));
+      if (isset($geo_api_key)) {
+        $query = urlencode($loc);
+        $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
+        $response = json_decode(file_get_contents($url));
 
-          if ($response->total_results) {
-            $result = $response->results[0]->geometry;
-            $form_state['locations'][$loc] = $result;
+        if ($response->total_results) {
+          $result = $response->results[0]->geometry;
+          $form_state['locations'][$loc] = $result;
 
-            tpps_chado_insert_record('projectprop', array(
-              'project_id' => $form_state['ids']['project_id'],
-              'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
-              'value' => $result->lat,
-              'rank' => $i,
-            ));
+          tpps_chado_insert_record('projectprop', array(
+            'project_id' => $form_state['ids']['project_id'],
+            'type_id' => tpps_load_cvterm('gps_latitude')->cvterm_id,
+            'value' => $result->lat,
+            'rank' => $i,
+          ));
 
-            tpps_chado_insert_record('projectprop', array(
-              'project_id' => $form_state['ids']['project_id'],
-              'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
-              'value' => $result->lng,
-              'rank' => $i,
-            ));
-          }
+          tpps_chado_insert_record('projectprop', array(
+            'project_id' => $form_state['ids']['project_id'],
+            'type_id' => tpps_load_cvterm('gps_longitude')->cvterm_id,
+            'value' => $result->lng,
+            'rank' => $i,
+          ));
         }
       }
     }
@@ -775,7 +727,7 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
         $options['column_ids']['genus'] = $groups['Genus and Species']['6'];
         $options['column_ids']['species'] = $groups['Genus and Species']['7'];
       }
-      else {
+      if ($groups['Genus and Species']['#type'] != 'separate') {
         $options['column_ids']['org'] = $groups['Genus and Species']['10'];
       }
     }
@@ -1606,7 +1558,7 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
     );
 
     foreach ($env_layers as $layer_name => $layer_id) {
-      if ($layer_name == 'other' or $layer_name == 'other_db' or $layer_name = 'other_name' or $layer_name == 'other_params') {
+      if ($layer_name == 'other' or $layer_name == 'other_db' or $layer_name == 'other_name' or $layer_name == 'other_params') {
         continue;
       }
       if (!empty($layer_id) and !empty($env_params[$layer_name])) {
@@ -1668,10 +1620,9 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
 function tpps_check_organisms($row, array &$options = array()) {
   $cols = $options['cols'];
   $search = &$options['search'];
-  $found = &$options['found'];
   $org_full_name = $row[$cols['org']] ?? "{$row[$cols['genus']]} {$row[$cols['species']]}";
   if ($search == $org_full_name) {
-    $found = TRUE;
+    $options['found'] = TRUE;
   }
 }
 
@@ -1722,127 +1673,57 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
   $cvt_cache = array();
   $local_cv = chado_get_cv(array('name' => 'local'));
   $local_db = variable_get('tpps_local_db');
+  $term_types = array(
+    'attr' => array(
+      'label' => 'Attribute',
+      'ontology' => 'pato',
+    ),
+    'unit' => array(
+      'label' => 'Unit',
+      'ontology' => 'po',
+    ),
+    'struct' => array(
+      'label' => 'Structure',
+      'ontology' => 'po',
+    ),
+  );
   foreach ($meta as $name => $data) {
-    if ($data['attr'] != 'other') {
-      $meta[$name]['attr_id'] = $data['attr'];
-    }
-    else {
-      if (!empty($cvt_cache[$data['attr-other']])) {
-        $meta[$name]['attr_id'] = $cvt_cache[$data['attr-other']];
-      }
-      else {
-        $result = tpps_ols_install_term("pato:{$data['attr-other']}");
-        if ($result !== FALSE) {
-          $meta[$name]['attr_id'] = $result->cvterm_id;
-          $job->logMessage("[INFO] New OLS Term pato:{$data['attr-other']} installed");
-        }
-
-        if (empty($meta[$name]['attr_id'])) {
-          $attr = chado_select_record('cvterm', array('cvterm_id'), array(
-            'name' => array(
-              'data' => $data['attr-other'],
-              'op' => 'LIKE',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $meta[$name]['attr_id'] = current($attr)->cvterm_id ?? NULL;
-        }
-
-        if (empty($meta[$name]['attr_id'])) {
-          $meta[$name]['attr_id'] = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$data['attr-other']}",
-            'name' => $data['attr-other'],
-            'definition' => '',
-            'cv_name' => $local_cv->name,
-          ))->cvterm_id;
-          if (!empty($meta[$name]['attr_id'])) {
-            $job->logMessage("[INFO] New Local Attribute Term {$data['attr-other']} installed");
+    foreach ($term_types as $type => $info) {
+      $meta[$name]["{$type}_id"] = $data["{$type}"];
+      if ($data["{$type}"] == 'other') {
+        $meta[$name]["{$type}_id"] = $cvt_cache[$data["{$type}-other"]] ?? NULL;
+        if (empty($meta[$name]["{$type}_id"])) {
+          $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
+          if ($result !== FALSE) {
+            $meta[$name]["{$type}_id"] = $result->cvterm_id;
+            $job->logMessage("[INFO] New OLS Term {$info['ontology']}:{$data["{$type}-other"]} installed");
           }
-        }
-        $cvt_cache[$data['attr-other']] = $meta[$name]['attr_id'];
-      }
-    }
 
-    if ($data['unit'] != 'other') {
-      $meta[$name]['unit_id'] = $data['unit'];
-    }
-    else {
-      if (!empty($cvt_cache[$data['unit-other']])) {
-        $meta[$name]['unit_id'] = $cvt_cache[$data['unit-other']];
-      }
-      else {
-        $result = tpps_ols_install_term("po:{$data['unit-other']}");
-        if ($result !== FALSE) {
-          $meta[$name]['unit_id'] = $result->cvterm_id;
-          $job->logMessage("[INFO] New OLS Term po:{$data['unit-other']} installed");
-        }
-
-        if (empty($meta[$name]['unit_id'])) {
-          $obs = chado_select_record('cvterm', array('cvterm_id'), array(
-            'name' => array(
-              'data' => $data['unit-other'],
-              'op' => 'LIKE',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $meta[$name]['unit_id'] = current($obs)->cvterm_id ?? NULL;
-        }
-
-        if (empty($meta[$name]['unit_id'])) {
-          $meta[$name]['unit_id'] = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$data['unit-other']}",
-            'name' => $data['unit-other'],
-            'definition' => '',
-            'cv_name' => $local_cv->name,
-          ))->cvterm_id;
-          if (!empty($meta[$name]['unit_id'])) {
-            $job->logMessage("[INFO] New Local Unit Term {$data['unit-other']} installed");
+          if (empty($meta[$name]["{$type}_id"])) {
+            $term = chado_select_record('cvterm', array('cvterm_id'), array(
+              'name' => array(
+                'data' => $data["{$type}-other"],
+                'op' => 'LIKE',
+              ),
+            ), array(
+              'limit' => 1,
+            ));
+            $meta[$name]["{$type}_id"] = current($term)->cvterm_id ?? NULL;
           }
-        }
-        $cvt_cache[$data['unit-other']] = $meta[$name]['unit_id'];
-      }
-    }
 
-    if ($data['struct'] != 'other') {
-      $meta[$name]['struct_id'] = $data['struct'];
-    }
-    else {
-      if (!empty($cvt_cache[$data['struct-other']])) {
-        $meta[$name]['struct_id'] = $cvt_cache[$data['struct-other']];
-      }
-      else {
-        $result = tpps_ols_install_term("po:{$data['struct-other']}");
-        if ($result !== FALSE) {
-          $meta[$name]['struct_id'] = $result->cvterm_id;
-          $job->logMessage("[INFO] New OLS Term po:{$data['struct-other']} installed");
-        }
-
-        if (empty($meta[$name]['struct_id'])) {
-          $obs = chado_select_record('cvterm', array('cvterm_id'), array(
-            'name' => array(
-              'data' => $data['struct-other'],
-              'op' => 'LIKE',
-            ),
-          ), array(
-            'limit' => 1,
-          ));
-          $meta[$name]['struct_id'] = current($obs)->cvterm_id ?? NULL;
-        }
-
-        if (empty($meta[$name]['struct_id'])) {
-          $meta[$name]['struct_id'] = chado_insert_cvterm(array(
-            'id' => "{$local_db->name}:{$data['struct-other']}",
-            'name' => $data['struct-other'],
-            'definition' => '',
-            'cv_name' => $local_cv->name,
-          ))->cvterm_id;
-          if (!empty($meta[$name]['struct_id'])) {
-            $job->logMessage("[INFO] New Local Structure Term {$data['struct-other']} installed");
+          if (empty($meta[$name]["{$type}_id"])) {
+            $meta[$name]["{$type}_id"] = chado_insert_cvterm(array(
+              'id' => "{$local_db->name}:{$data["{$type}-other"]}",
+              'name' => $data["{$type}-other"],
+              'definition' => '',
+              'cv_name' => $local_cv->name,
+            ))->cvterm_id;
+            if (!empty($meta[$name]["{$type}_id"])) {
+              $job->logMessage("[INFO] New Local {$info['label']} Term {$data["{$type}-other"]} installed");
+            }
           }
+          $cvt_cache[$data["{$type}-other"]] = $meta[$name]["{$type}_id"];
         }
-        $cvt_cache[$data['struct-other']] = $meta[$name]['struct_id'];
       }
     }
 
@@ -1977,7 +1858,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
         ),
       );
     }
-    else {
+
+    if (!$iso) {
       $records['phenotype_cvterm']["$phenotype_name-unit"] = array(
         'cvterm_id' => $meta[strtolower($name)]['unit_id'],
         '#fk' => array(
@@ -2050,7 +1932,6 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $tree_info = &$options['tree_info'];
   $species_codes = $options['species_codes'];
   $genotype_count = &$options['genotype_count'];
-  $genotype_total = &$options['genotype_total'];
   $project_id = $options['project_id'];
   $marker = $options['marker'];
   $type_cvterm = $options['type_cvterm'];
@@ -2202,7 +2083,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         $records['featureloc'] = array();
         $records['featureprop'] = array();
       }
-      $genotype_total += $genotype_count;
+      $options['genotype_total'] += $genotype_count;
       $genotype_count = 0;
     }
   }
@@ -2283,7 +2164,7 @@ function tpps_ssrs_headers($fid, $ploidy) {
   $num_headers = count($results);
   $num_unique_headers = count(array_unique($results));
 
-  foreach ($headers as $key => $val) {
+  foreach (array_keys($headers) as $key) {
     next($headers);
     $next_key = key($headers);
     if ($first) {
@@ -2336,10 +2217,10 @@ function tpps_ssrs_headers($fid, $ploidy) {
         if (array_key_exists($key, $results)) {
           $last = $results[$key];
           $results[$key] .= "_$ploidy_suffix";
+          $marker_num++;
+          break;
         }
-        else {
-          $results[$key] = "{$last}_$ploidy_suffix";
-        }
+        $results[$key] = "{$last}_$ploidy_suffix";
         $marker_num++;
         break;
 
@@ -2425,7 +2306,7 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 
     $layer_name = $layer_query->fetchObject()->title;
 
-    foreach ($params as $param_id => $param) {
+    foreach (array_keys($params) as $param_id) {
       $param_query = db_select('cartogratree_fields', 'f')
         ->fields('f', array('field_name'))
         ->condition('field_id', $param_id)
@@ -2437,37 +2318,25 @@ function tpps_process_environment_layers($row, array &$options = array()) {
       $value = tpps_get_environmental_layer_data($layer_id, $lat, $long, $param_name);
       $type = variable_get("tpps_param_{$param_id}_type", 'attr_id');
 
+      $records['phenotype'][$phenotype_name] = array(
+        'uniquename' => $phenotype_name,
+        'name' => "$param_name",
+        'value' => "$value",
+      );
+
+      $records['stock_phenotype'][$phenotype_name] = array(
+        'stock_id' => $stock_id,
+        '#fk' => array(
+          'phenotype' => $phenotype_name,
+        ),
+      );
+
       if ($type == 'attr_id') {
-        $records['phenotype'][$phenotype_name] = array(
-          'uniquename' => $phenotype_name,
-          'name' => $param_name,
-          'attr_id' => $env_cvterm,
-          'value' => $value,
-        );
-
-        $records['stock_phenotype'][$phenotype_name] = array(
-          'stock_id' => $stock_id,
-          '#fk' => array(
-            'phenotype' => $phenotype_name,
-          ),
-        );
+        $records['phenotype'][$phenotype_name]['attr_id'] = $env_cvterm;
       }
-      else {
-        $records['phenotype'][$phenotype_name] = array(
-          'uniquename' => $phenotype_name,
-          'name' => "$param_name",
-          'value' => "$value",
-        );
-
+      if ($type != 'attr_id') {
         $records['phenotype_cvterm'][$phenotype_name] = array(
           'cvterm_id' => $env_cvterm,
-          '#fk' => array(
-            'phenotype' => $phenotype_name,
-          ),
-        );
-
-        $records['stock_phenotype'][$phenotype_name] = array(
-          'stock_id' => $stock_id,
           '#fk' => array(
             'phenotype' => $phenotype_name,
           ),
@@ -2511,7 +2380,8 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 function tpps_get_environmental_layer_data($layer_id, $lat, $long, $param) {
 
   $response = tpps_get_env_response($layer_id, $lat, $long);
-  if (($response = explode("\n", $response))) {
+  $response = explode("\n", $response);
+  if ($response) {
     $response = array_slice($response, 2, -2);
     foreach ($response as $line) {
       $item = explode("=", $line);
@@ -2750,36 +2620,23 @@ function tpps_process_accession($row, array &$options) {
 
     $tree_info[$tree_id]['location'] = $location;
 
-    if (isset($geo_api_key)) {
-      if (!array_key_exists($location, $options['locations'])) {
-        $query = urlencode($location);
-        $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
-        $response = json_decode(file_get_contents($url));
+    if (isset($geo_api_key) and !array_key_exists($location, $options['locations'])) {
+      $query = urlencode($location);
+      $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
+      $response = json_decode(file_get_contents($url));
+      $options['locations'][$location] = $response->results[0]->geometry ?? NULL;
 
-        if ($response->total_results) {
-          $results = $response->results;
-          $result = $results[0]->geometry;
-          if ($response->total_results > 1 and !isset($cols['district']) and !isset($cols['county'])) {
-            foreach ($results as $item) {
-              if ($item->components->_type == 'state') {
-                $result = $item->geometry;
-                break;
-              }
-            }
+      if ($response->total_results and $response->total_results > 1 and !isset($cols['district']) and !isset($cols['county'])) {
+        foreach ($response->results as $item) {
+          if ($item->components->_type == 'state') {
+            $options['locations'][$location] = $item->geometry;
+            break;
           }
         }
-        $options['locations'][$location] = $result ?? NULL;
-      }
-
-      if (array_key_exists($location, $options['locations'])) {
-        $result = $options['locations'][$location];
-      }
-
-      if (!empty($result)) {
-        $lat = $result->lat;
-        $lng = $result->lng;
       }
     }
+    $lat = $options['locations'][$location]->lat ?? NULL;
+    $lng = $options['locations'][$location]->lng ?? NULL;
   }
   elseif (!empty($row[$cols['pop_group']])) {
     $site_based = TRUE;
@@ -2791,7 +2648,8 @@ function tpps_process_accession($row, array &$options) {
       $lat = $parts[0];
       $lng = $parts[1];
     }
-    else {
+
+    if (!$coord) {
       $records['stockprop']["$tree_id-location"] = array(
         'type_id' => $cvterm['loc'],
         'value' => $location,
@@ -2803,15 +2661,13 @@ function tpps_process_accession($row, array &$options) {
       $tree_info[$tree_id]['location'] = $location;
 
       if (isset($geo_api_key)) {
-        if (!array_key_exists($location, $options['locations'])) {
+        $result = $options['locations'][$location] ?? NULL;
+        if (empty($result)) {
           $query = urlencode($location);
           $url = "https://api.opencagedata.com/geocode/v1/json?q=$query&key=$geo_api_key";
           $response = json_decode(file_get_contents($url));
           $result = ($response->total_results) ? $response->results[0]->geometry : NULL;
           $options['locations'][$location] = $result;
-        }
-        else {
-          $result = $options['locations'][$location];
         }
 
         if (!empty($result)) {
@@ -2914,27 +2770,37 @@ function tpps_clean_state(array &$form_state) {
 function tpps_get_species_codes($genus, $species) {
   $codes = array();
 
-  for ($g1 = 0; $g1 <= strlen($genus) - 2; $g1++) {
-    for ($g2 = $g1 + 1; $g2 <= strlen($genus) - 1; $g2++) {
-      // Genus codes should not repeat letters.
-      if ($genus[$g1] == $genus[$g2]) {
+  foreach (tpps_get_code_parts($genus) as $genus_part) {
+    foreach (tpps_get_code_parts($species) as $species_part) {
+      $code = ucfirst($genus_part . $species_part);
+      if (!array_key_exists($code, $codes)) {
+        yield $code;
+        $codes[$code] = TRUE;
+      }
+    }
+  }
+}
+
+/**
+ * Helper function for tpps_get_species_codes().
+ *
+ * Generate all possible 2-letter organism code parts.
+ *
+ * @param string $part
+ *   The part of the organism name, either genus or species.
+ *
+ * @return Generator|array
+ *   Yields each possible code part in the desired order.
+ */
+function tpps_get_code_parts($part) {
+  for ($char1 = 0; $char1 <= strlen($part) - 2; $char1++) {
+    for ($char2 = $char1 + 1; $char2 <= strlen($part) - 1; $char2++) {
+      // Code parts should not repeat letters.
+      if ($part[$char1] == $part[$char2]) {
         continue;
       }
 
-      for ($s1 = 0; $s1 <= strlen($species) - 2; $s1++) {
-        for ($s2 = $s1 + 1; $s2 <= strlen($species) - 1; $s2++) {
-          // Species codes should not repeat letters.
-          if ($species[$s1] == $species[$s2]) {
-            continue;
-          }
-
-          $code = ucfirst(strtolower($genus[$g1] . $genus[$g2] . $species[$s1] . $species[$s2]));
-          if (!array_key_exists($code, $codes)) {
-            yield $code;
-            $codes[$code] = TRUE;
-          }
-        }
-      }
+      yield strtolower($part[$char1] . $part[$char2]);
     }
   }
 }

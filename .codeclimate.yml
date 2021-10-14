@@ -7,7 +7,7 @@ checks:
   file-lines:
     enabled: false
   method-complexity:
-    enabled: true
+    enabled: false
   method-count:
     enabled: true
   method-lines:
@@ -43,6 +43,10 @@ plugins:
     enabled: true
     checks:
       CleanCode/MissingImport:
+        enabled: false
+      Design/NpathComplexity:
+        enabled: false
+      Design/LongMethod:
         enabled: false
     config:
       file_extensions:
