@@ -103,12 +103,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           tpps_file_iterator($values['file'], 'tpps_accession_valid_species', $options);
         }
 
-        if (!form_get_errors()) {
-          $file = file_load($values['file']);
-          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name']));
-          $form_state['file_info'][TPPS_PAGE_3][$file->fid] = "Plant_Accession_$species";
-        }
+        tpps_preserve_valid_file($form_state, $values['file'], $i, "Plant_Accession");
       }
 
       if (!$multi_file) {

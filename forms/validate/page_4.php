@@ -149,10 +149,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         $phenotype_name_col = $groups['Phenotype Id']['1'];
 
         // Preserve file if it is valid.
-        $file = file_load($form_state['values'][$id]['phenotype']['metadata']);
-        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Metadata_$species";
+        tpps_preserve_valid_file($form_state, $form_state['values'][$id]['phenotype']['metadata'], $org_num, "Phenotype_Metadata");
       }
     }
 
@@ -291,13 +288,8 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         }
       }
 
-      if (!form_get_errors()) {
-        // Preserve file if it is valid.
-        $file = file_load($form_state['values'][$id]['phenotype']['file']);
-        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$species";
-      }
+      // Preserve file if it is valid.
+      tpps_preserve_valid_file($form_state, $form_state['values'][$id]['phenotype']['file'], $org_num, "Phenotype_Data");
     }
   }
 
@@ -334,13 +326,8 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       }
     }
 
-    if (!form_get_errors()) {
-      // Preserve file if it is valid.
-      $file = file_load($phenotype['iso']);
-      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Phenotype_Data_$species";
-    }
+    // Preserve file if it is valid.
+    tpps_preserve_valid_file($form_state, $phenotype['iso'], $org_num, "Phenotype_Data");
   }
 }
 
@@ -587,13 +574,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
 
-    if (!form_get_errors()) {
-      // Preserve file if it is valid.
-      $file = file_load($vcf);
-      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_VCF_$species";
-    }
+    // Preserve file if it is valid.
+    tpps_preserve_valid_file($form_state, $vcf, $org_num, "Genotype_VCF");
   }
 
   if (!empty($file_type['SNPs Genotype Assay']) and !$snps_assay) {
@@ -622,13 +604,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
 
-    if (!form_get_errors()) {
-      // Preserve file if it is valid.
-      $file = file_load($snps_assay);
-      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SNPs_Assay_$species";
-    }
+    // Preserve file if it is valid.
+    tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
 
     if (!form_get_errors()) {
       if (!empty($file_type['SNPs Associations']) and !$assoc_file) {
@@ -709,13 +686,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
           }
         }
 
-        if (!form_get_errors()) {
-          // Preserve file if it is valid.
-          $file = file_load($assoc_file);
-          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-          $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "SNPs_Association_$species";
-        }
+        // Preserve file if it is valid.
+        tpps_preserve_valid_file($form_state, $assoc_file, $org_num, "SNPs_Association");
 
         if (empty($genotype['files']['snps-association-type'])) {
           form_set_error("$id][genotype][files][snps-association-type", t("SNPs Association Type: field is required."));
@@ -725,20 +697,14 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
           form_set_error("$id][genotype][files][snps-association-tool", t("SNPs Association Tool: field is required."));
         }
 
-        if (!form_get_errors() and !empty($genotype['files']['snps-pop-struct'])) {
+        if (!empty($genotype['files']['snps-pop-struct'])) {
           // Preserve file if it is valid.
-          $file = file_load($genotype['files']['snps-pop-struct']);
-          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-          $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "SNPs_Population_Structure_$species";
+          tpps_preserve_valid_file($form_state, $genotype['files']['snps-pop-struct'], $org_num, "SNPs_Population_Structure");
         }
 
-        if (!form_get_errors() and !empty($genotype['files']['snps-kinship'])) {
+        if (!empty($genotype['files']['snps-kinship'])) {
           // Preserve file if it is valid.
-          $file = file_load($genotype['files']['snps-kinship']);
-          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-          $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "SNPs_Population_Structure_$species";
+          tpps_preserve_valid_file($form_state, $genotype['files']['snps-kinship'], $org_num, "SNPs_Kinship");
         }
       }
     }
@@ -750,12 +716,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] == 'new' and !$genotype['files']['assay-design']) {
     form_set_error("$id][genotype][files][assay-design", t("Assay Design file: field is required."));
   }
-  elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] == 'new' and !form_get_errors()) {
+  elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] == 'new') {
     // Preserve file if it is valid.
-    $file = file_load($genotype['files']['assay-design']);
-    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-    $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-    $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Assay_Design_$species";
+    tpps_preserve_valid_file($form_state, $genotype['files']['assay-design'], $org_num, "Genotype_Assay_Design");
   }
   elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] != 'new') {
     $file = file_load($genotype['files']['assay-load']);
@@ -818,18 +781,10 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       tpps_file_iterator($genotype['files']['ssrs'], 'tpps_ssr_valid_values', $options);
     }
 
-    if (!form_get_errors()) {
-      // Preserve file if it is valid.
-      $file = file_load($genotype['files']['ssrs']);
-      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Spreadsheet_$species";
-      if (!empty($genotype['files']['ssrs_extra'])) {
-        $file = file_load($genotype['files']['ssrs_extra']);
-        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-        $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-        $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_SSR_Additional_Spreadsheet_$species";
-      }
+    // Preserve file if it is valid.
+    tpps_preserve_valid_file($form_state, $genotype['files']['ssrs'], $org_num, "Genotype_SSR_Spreadsheet");
+    if (!empty($genotype['files']['ssrs_extra'])) {
+      tpps_preserve_valid_file($form_state, $genotype['files']['ssrs_extra'], $org_num, "Genotype_SSR_Additional_Spreadsheet");
     }
   }
 
@@ -860,13 +815,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
 
-    if (!form_get_errors()) {
-      // Preserve file if it is valid.
-      $file = file_load($indel_fid);
-      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Indel_Assay_$species";
-    }
+    // Preserve file if it is valid.
+    tpps_preserve_valid_file($form_state, $indel_fid, $org_num, "Genotype_Indel_Assay");
   }
 
   if (!empty($file_type['Other Marker Genotype Spreadsheet']) and !$genotype['files']['other']) {
@@ -908,13 +858,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
 
-    if (!form_get_errors()) {
-      // Preserve file if it is valid.
-      $file = file_load($other_file);
-      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-      $form_state['file_info'][TPPS_PAGE_4][$file->fid] = "Genotype_Other_Marker_Spreadsheet_$species";
-    }
+    // Preserve file if it is valid.
+    tpps_preserve_valid_file($form_state, $other_file, $org_num, "Genotype_Other_Marker_Spreadsheet");
   }
 }
 
