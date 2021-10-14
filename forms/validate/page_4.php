@@ -366,6 +366,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   $assoc_file = $genotype['files']['snps-association'] ?? 0;
   $other_file = isset($genotype['files']['other']) ? $genotype['files']['other'] : 0;
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+  $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
+  $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
   if (!$ref_genome) {
     form_set_error("$id][genotype][ref-genome", t("Reference Genome: field is required."));
@@ -546,9 +549,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       drupal_set_message(t('VCF files pre-validated. Skipping VCF file validation'));
     }
     elseif (!form_get_errors()) {
-      $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-      $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
-      $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
       $accession_ids = tpps_parse_file_column($tree_accession_file, $id_col_accession_name);
 
       $vcf_file = file_load($vcf);
@@ -613,10 +613,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
 
     if (!form_get_errors()) {
-      $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-      $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
-      $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
-
       $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
       $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
@@ -853,10 +849,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
 
     if (!form_get_errors()) {
-      $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-      $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
-      $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
-
       $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
       $missing_trees = tpps_compare_files($genotype['files']['ssrs'], $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
@@ -907,10 +899,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
 
     if (!form_get_errors()) {
-      $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-      $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
-      $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
-
       $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
       $missing_trees = tpps_compare_files($indel_fid, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
@@ -958,10 +946,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
 
     if (!form_get_errors()) {
-      $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-      $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
-      $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
-
       $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
       $other_no_header = $genotype['files']['other-no-header'] ?? FALSE;
       $missing_trees = tpps_compare_files($other_file, $tree_accession_file, $id_col_genotype_name, $id_col_accession_name, $other_no_header, $acc_no_header);
