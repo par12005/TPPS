@@ -777,31 +777,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     $num_columns = tpps_file_width($genotype['files']['ssrs']) - 1;
     $num_unique_columns = count(array_unique($headers)) - 1;
 
-    switch ($genotype['files']['ploidy']) {
-      case 'Haploid':
-        if ($num_unique_columns != $num_columns) {
-          form_set_error("$id][genotype][files][ssrs", t("SSRs/cpSSRs Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter header values for those columns or remove those columns, then reupload your file."));
-        }
-        break;
-
-      case 'Diploid':
-        if ($num_unique_columns != $num_columns and $num_columns / $num_unique_columns !== 2) {
-          form_set_error("$id][genotype][files][ssrs", t("SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
-        }
-        elseif ($num_unique_columns == $num_columns and $num_columns % 2 !== 0) {
-          form_set_error("$id][genotype][files][ssrs", t("SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
-        }
-        break;
-
-      case 'Polyploid':
-        if ($num_columns % $num_unique_columns !== 0) {
-          form_set_error("$id][genotype][files][ssrs", t("SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
-        }
-        break;
-
-      default:
-        break;
-    }
+    tpps_ssr_valid_ploidy($genotype['files']['ploidy'], $num_columns, $num_unique_columns, "$id][genotype][files][ssrs");
 
     if (!empty($genotype['files']['ssr-extra-check'])) {
       if (empty($genotype['files']['extra-ssr-type'])) {
@@ -820,31 +796,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $num_columns = tpps_file_width($genotype['files']['ssrs_extra']) - 1;
         $num_unique_columns = count(array_unique($headers)) - 1;
 
-        switch ($genotype['files']['extra-ploidy']) {
-          case 'Haploid':
-            if ($num_unique_columns != $num_columns) {
-              form_set_error("$id][genotype][files][ssrs_extra", t("SSRs/cpSSRs Additional Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter header values for those columns or remove those columns, then reupload your file."));
-            }
-            break;
-
-          case 'Diploid':
-            if ($num_unique_columns != $num_columns and $num_columns / $num_unique_columns !== 2) {
-              form_set_error("$id][genotype][files][ssrs_extra", t("SSRs/cpSSRs Additional Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
-            }
-            elseif ($num_unique_columns == $num_columns and $num_columns % 2 !== 0) {
-              form_set_error("$id][genotype][files][ssrs_extra", t("SSRs/cpSSRs Additional Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
-            }
-            break;
-
-          case 'Polyploid':
-            if ($num_columns % $num_unique_columns !== 0) {
-              form_set_error("$id][genotype][files][ssrs_extra", t("SSRs/cpSSRs Additional Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
-            }
-            break;
-
-          default:
-            break;
-        }
+        tpps_ssr_valid_ploidy($genotype['files']['extra-ploidy'], $num_columns, $num_unique_columns, "$id][genotype][files][ssrs_extra");
       }
     }
 
@@ -1061,5 +1013,48 @@ function tpps_ssr_valid_values($row, array &$options) {
       form_set_error("{$options['org_num']}-genotype-files-ssrs-{$id}", "SSRs Spreadsheet file: Some non-empty values are negative for plant \"{$id}\".");
       break;
     }
+  }
+}
+
+/**
+ * This function validates column counts for an SSR file based on ploidy.
+ *
+ * Form errors are thrown if the column counts are invalid for the specified
+ * ploidy.
+ *
+ * @param string $ploidy
+ *   The ploidy we are checking.
+ * @param int $num_columns
+ *   The total column count.
+ * @param int $num_unique_columns
+ *   The unique column count.
+ * @param string $name
+ *   The field name for use in form_set_error().
+ */
+function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $name) {
+  switch ($ploidy) {
+    case 'Haploid':
+      if ($num_unique_columns != $num_columns) {
+        form_set_error($name, t("SSRs/cpSSRs Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter header values for those columns or remove those columns, then reupload your file."));
+      }
+      break;
+
+    case 'Diploid':
+      if ($num_unique_columns != $num_columns and $num_columns / $num_unique_columns !== 2) {
+        form_set_error($name, t("SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
+      }
+      elseif ($num_unique_columns == $num_columns and $num_columns % 2 !== 0) {
+        form_set_error($name, t("SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
+      }
+      break;
+
+    case 'Polyploid':
+      if ($num_columns % $num_unique_columns !== 0) {
+        form_set_error($name, t("SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
+      }
+      break;
+
+    default:
+      break;
   }
 }
