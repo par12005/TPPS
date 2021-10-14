@@ -357,7 +357,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
   $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
   $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
-  $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
 
   if (!$ref_genome) {
     form_set_error("$id][genotype][ref-genome", t("Reference Genome: field is required."));
@@ -596,7 +595,15 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][files][snps-assay", t("SNPs Assay file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file."));
     }
 
-    tpps_check_missing_trees($tree_accession_file, $snps_assay, $id_col_accession_name, $id_col_name, $acc_no_header, FALSE, $id);
+    if (!form_get_errors()) {
+      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
+      $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
+
+      if ($missing_trees !== array()) {
+        $tree_id_str = implode(', ', $missing_trees);
+        form_set_error("$id][genotype][files][snps-assay", t("SNPs Assay file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: @tree_id_str", array('@tree_id_str' => $tree_id_str)));
+      }
+    }
 
     // Preserve file if it is valid.
     tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
@@ -758,6 +765,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
 
     if (!form_get_errors()) {
+      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
       $missing_trees = tpps_compare_files($genotype['files']['ssrs'], $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
       if ($missing_trees !== array()) {
@@ -798,7 +806,15 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][files][indels", t("Indel Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file."));
     }
 
-    tpps_check_missing_trees($tree_accession_file, $indel_fid, $id_col_accession_name, $id_col_name, $acc_no_header, FALSE, $id);
+    if (!form_get_errors()) {
+      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
+      $missing_trees = tpps_compare_files($indel_fid, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
+
+      if ($missing_trees !== array()) {
+        $tree_id_str = implode(', ', $missing_trees);
+        form_set_error("$id][genotype][files][indels", t("Indel Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: @tree_id_str", array('@tree_id_str' => $tree_id_str)));
+      }
+    }
 
     // Preserve file if it is valid.
     tpps_preserve_valid_file($form_state, $indel_fid, $org_num, "Genotype_Indel_Assay");
@@ -832,7 +848,16 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
 
-    tpps_check_missing_trees($tree_accession_file, $other_file, $id_col_accession_name, $id_col_genotype_name, $acc_no_header, ($genotype['files']['other-no-header'] ?? FALSE), $id);
+    if (!form_get_errors()) {
+      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
+      $other_no_header = $genotype['files']['other-no-header'] ?? FALSE;
+      $missing_trees = tpps_compare_files($other_file, $tree_accession_file, $id_col_genotype_name, $id_col_accession_name, $other_no_header, $acc_no_header);
+
+      if ($missing_trees !== array()) {
+        $tree_id_str = implode(', ', $missing_trees);
+        form_set_error("$id][genotype][files][other", "Other Marker Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
+      }
+    }
 
     // Preserve file if it is valid.
     tpps_preserve_valid_file($form_state, $other_file, $org_num, "Genotype_Other_Marker_Spreadsheet");
@@ -977,34 +1002,5 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $name
 
     default:
       break;
-  }
-}
-
-/**
- * Compares the tree id column from the accession file to another file column.
- *
- * @param int $acc_fid
- *   Accession file fid.
- * @param int $other_fid
- *   Other file fid.
- * @param string $acc_col_name
- *   Name of tree id column in accession file.
- * @param string $other_col_name
- *   Name of tree id column in other file.
- * @param mixed $acc_no_header
- *   No header selection for accession file.
- * @param mixed $other_no_header
- *   No header selection for other file.
- * @param string $org_num
- *   Species id to be used by form_set_error if necessary.
- */
-function tpps_check_missing_trees($acc_fid, $other_fid, $acc_col_name, $other_col_name, $acc_no_header, $other_no_header, $org_num) {
-  if (!form_get_errors()) {
-    $missing_trees = tpps_compare_files($other_fid, $acc_fid, $other_col_name, $acc_col_name, $other_no_header, $acc_no_header);
-
-    if ($missing_trees !== array()) {
-      $tree_id_str = implode(', ', $missing_trees);
-      form_set_error("$org_num][genotype][files][indels", t("Indel Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: @tree_id_str", array('@tree_id_str' => $tree_id_str)));
-    }
   }
 }
