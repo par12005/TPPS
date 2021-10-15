@@ -1177,17 +1177,13 @@ function tpps_flat_generator($location, array $options = array()) {
   $no_header = $options['no_header'] ?? FALSE;
   $columns = $options['columns'] ?? NULL;
   $max_rows = $options['max_rows'] ?? NULL;
-  if(array_key_exists('user-delimiter', $options)) {
+  // Use comma as default delimiter unless one is provided.
+  $delim = ',';
+  if (array_key_exists('user-delimiter', $options)) {
     if ($options['user-delimiter'] != '') {
       $delim = $options['user-delimiter'];
     }
-    else {
-      $delim = ';';
-    }
     unset($options['user-delimiter']);
-  }
-  else {
-    $delim = ';';
   }
   $longest = tpps_flat_width($location, $delim);
   $handle = gzopen($location, 'r');
