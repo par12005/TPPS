@@ -158,10 +158,14 @@ function tpps_load_cv($info) {
   $cv = chado_generate_var('cv', $query);
   if (!$cv and !empty($cv_info['namespace'])) {
     $query['name']['data'] = $cv_info['namespace'];
-    $cv = chado_generate_var('cv', $query);
+    $cv = chado_generate_var('cv', $query);    
   }
 
   if (is_array($cv)) {
+    // This is a critical temporary patch until confirmation from Emily (slack: 10/19/2021 with Rish)
+    if($query['name']['data'] == 'OBI') {
+      $query['name']['data'] = strtolower($query['name']['data']); // for the use of lowercase OBI
+    } 
     $query['name']['op'] = 'LIKE';
     $cv = chado_generate_var('cv', $query);
   }
@@ -240,7 +244,7 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
           }
         }
         if (!empty($job)) {
-          $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+          $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);             
         }
       }
     }
