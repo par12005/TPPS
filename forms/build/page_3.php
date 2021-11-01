@@ -132,17 +132,15 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       ),
       '#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv xlsx</span>',
       '#suffix' => '<style>figure {}</style>',
+      'user-selected-delimiter' => array(),
+      'table-refresh' => array(),
       'empty' => array(
         '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
       ),
       'columns' => array(
         '#description' => t('Please define which columns hold the required data: Plant Identifier and Location. If your plants are located based on a population group, you can provide the population group column and a mapping of population group to location below.'),
       ),
-      'user-selected-delimiter' => array(),
       'no-header' => array(),
-      'empty' => array(
-        '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
-      ),
       'columns-options' => array(
         '#type' => 'hidden',
         '#value' => $column_options,
@@ -305,12 +303,13 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           '#type' => 'textfield',
           '#title' => t('Coordinates accuracy:'),
           '#description' => t('The precision of the provided coordinates. For example, if a plant could be up to 10m awa from the provided coordinates, then the accuracy would be "10m".'),
+          '#required' => TRUE,
           '#suffix' => '</div>',
-          '#states' => array(
-            'visible' => array(
-              ":input[name=\"tree-accession[species-$i][exact_coords]\"]" => array('checked' => FALSE),
-            ),
-          ),
+          // '#states' => array(
+          //   'visible' => array(
+          //     ":input[name=\"tree-accession[species-$i][exact_coords]\"]" => array('checked' => FALSE),
+          //   ),
+          // ),
         );
       }
     }

@@ -524,8 +524,18 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     $element['user-selected-delimiter'] = array(
       '#type' => 'textfield',
       '#title' => t('User-selected Delimiter:'),
+      '#attributes' => array(
+        'class' => array('user-delimiter')
+      ),
     );
-
+    $element['table-refresh'] = array(
+      '#type' => 'button',
+      '#value' => t('Refresh'),
+      '#ajax' => array(
+        'wrapper' => $wrapper,
+        'callback' => 'tpps_no_header_callback',
+      ),
+    );
     $element['no-header'] = array(
       '#type' => 'checkbox',
       '#title' => 'My file has no header row',

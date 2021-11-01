@@ -5,9 +5,9 @@ jQuery(document).ready(function ($) {
     var number_object = jQuery('#edit-files div input:hidden');
     var files_number = number_object[0].value;
     var files = jQuery('#edit-files div div.form-type-managed-file');
-    
+
     files.hide();
-    
+
     if (files_number > 0){
       for (var i = 0; i < files_number; i++){
         jQuery(files[i]).show();
@@ -17,7 +17,7 @@ jQuery(document).ready(function ($) {
         jQuery(files[i]).hide();
       }
     }
-    
+
     files_add.attr('type', 'button');
     files_remove.attr('type', 'button');
 
@@ -25,7 +25,7 @@ jQuery(document).ready(function ($) {
       if (files_number < 10){
         files_number++;
         number_object[0].value = files_number;
-        
+
         for (var i = 0; i < files_number; i++){
           jQuery(files[i]).show();
         }
@@ -35,12 +35,12 @@ jQuery(document).ready(function ($) {
         }
       }
     });
-    
+
     files_remove.on('click', function(){
       if (files_number > 0){
         files_number--;
         number_object[0].value = files_number;
-        
+
         for (var i = 0; i < files_number; i++){
           jQuery(files[i]).show();
         }
@@ -50,7 +50,7 @@ jQuery(document).ready(function ($) {
         }
       }
     });
-    
+
   }
 
   var stage;
@@ -310,6 +310,10 @@ jQuery(document).ready(function ($) {
       })
     })
   }
+  jQuery(document).on('keyup', '.user-delimiter', function() {
+    jQuery('input[value="Refresh"]').css('color','red');
+  });
+
 });
 
 jQuery.fn.mapButtonsClick = function (selector) {
@@ -484,7 +488,7 @@ function clearMarkers(prefix) {
 
 function getCoordinates(){
   var fid = this.id.match(/(.*)_map_button/)[1];
-  
+
   var fid, no_header, id_col, lat_col, long_col;
   try{
     file = Drupal.settings.tpps.accession_files[fid];
@@ -508,12 +512,12 @@ function getCoordinates(){
     console.log(err);
     return;
   }
-  
+
   if (typeof id_col === 'undefined' || typeof lat_col === 'undefined' || typeof long_col === 'undefined'){
     jQuery("#" + Drupal.settings.tpps.map_buttons[fid].wrapper).hide();
     return;
   }
-  
+
   var request = jQuery.post('/tpps-accession', {
     fid: fid,
     no_header: no_header,
@@ -521,7 +525,7 @@ function getCoordinates(){
     lat_col: lat_col,
     long_col: long_col
   });
-  
+
   request.done(function (data) {
     jQuery.fn.updateMap(data, fid);
   });
@@ -543,23 +547,23 @@ jQuery.fn.updateMap = function(locations, fid = "") {
   else {
     jQuery("#" + fid + "_map_wrapper").css({"height": "100px"});
   }
-  
+
   clearMarkers(fid);
   maps[fid + '_total_lat'] = 0;
   maps[fid + '_total_long'] = 0;
   timeout = 2000/locations.length;
-  
+
   maps[fid + '_markers'] = locations.map(function (location, i) {
     maps[fid + '_total_lat'] += parseInt(location[1]);
     maps[fid + '_total_long'] += parseInt(location[2]);
     var marker = new google.maps.Marker({
       position: new google.maps.LatLng(location[1], location[2])
     });
-    
+
     var infowindow = new google.maps.InfoWindow({
       content: location[0] + '<br>Location: ' + location[1] + ', ' + location[2]
     });
-    
+
     marker.addListener('click', function() {
       infowindow.open(maps[fid], maps[fid + '_markers'][i]);
     });
