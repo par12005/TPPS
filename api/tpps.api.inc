@@ -33,6 +33,17 @@ require_once 'tpps.queries.api.inc';
 function tpps_api_paths() {
   $items = array();
 
+  // tpps/api/refresh_views calls tpps_api_refresh_views which will
+  // update the tpps specific views used in particular for details pages
+  $items['tpps/api/refresh_views'] = array(
+    'title' => 'TPPS Refresh Views',
+    'page callback' => 'tpps_api_refresh_views',
+    'page arguments' => array(),
+    'access arguments' => array('access content'),
+    'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  );  
+
   // tpps/api/check_accession calls tpps_api_check_accession on a provided
   // accession number. It will return TRUE for accessions with a valid
   // TPPS submission and FALSE for all other accessions.
@@ -192,4 +203,11 @@ function tpps_api_compress_files($accession = NULL) {
 
   readfile("$zip_loc");
   exit;
+}
+
+
+function tpps_api_refresh_views() {
+  db_query('refresh materialized view chado.tpps_search_genotype_name;');
+  db_query('refresh materialized view chado.tpps_search_genotype_marker;');
+  return TRUE;
 }
