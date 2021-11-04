@@ -156,6 +156,9 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
       continue;
     }
     $schemas[$table] = chado_get_schema($table);
+    if($table == 'phenotypeprop') {
+      print_r($schemas[$table]);
+    }
     if (!$schemas[$table]) {
       return FALSE;
     }

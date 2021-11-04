@@ -900,6 +900,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     'max' => tpps_load_cvterm('maximum')->cvterm_id,
     'environment' => tpps_load_cvterm('environment')->cvterm_id,
   );
+  print_r($phenotype_cvterms);
 
   $records = array(
     'phenotype' => array(),
@@ -1047,8 +1048,12 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       'unit' => "intensity (arbitrary units)",
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
     );
-
+    print_r($iso_fid);
+    print_r('TEST1');
+    print_r($options['records']);
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
+    print_r('TEST2');
+    print_r($options['records']);
     tpps_chado_insert_multi($options['records']);
   }
 }
