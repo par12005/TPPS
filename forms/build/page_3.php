@@ -305,11 +305,11 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           '#description' => t('The precision of the provided coordinates. For example, if a plant could be up to 10m awa from the provided coordinates, then the accuracy would be "10m".'),
           '#required' => TRUE,
           '#suffix' => '</div>',
-          // '#states' => array(
-          //   'visible' => array(
-          //     ":input[name=\"tree-accession[species-$i][exact_coords]\"]" => array('checked' => FALSE),
-          //   ),
-          // ),
+           '#states' => array(
+             'visible' => array(
+               ":input[name=\"tree-accession[species-$i][exact_coords]\"]" => array('checked' => FALSE),
+             ),
+           ),
         );
       }
     }
