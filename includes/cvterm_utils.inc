@@ -288,6 +288,10 @@ function tpps_get_cvterms_v1_2() {
     'state' => 'tripal_contact:State',
     'analysis_type' => 'analysis_property:Analysis Type',
 
+
+    // TREEGENES TO specific
+    'gravity' => 'tree_genes_to:specific gravity',
+
     // PPEO terms.
     'experiment_location' => 'ppeo:location',
     'file_path' => 'ppeo:data file',
@@ -353,6 +357,7 @@ function tpps_get_cvterms_v1_2() {
     'volume' => 'pato:volume',
     'weight' => 'pato:weight',
     'width' => 'pato:width',
+    'sex' => 'pato:phenotypic sex',
 
     // PO terms.
     'whole plant' => 'po:whole plant',
