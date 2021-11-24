@@ -346,19 +346,20 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       '#value' => t('Save Alternative Accessions'),
     );
 
-    $submitting_user = user_load($submission_state['submitting_uid']);
-    $form['change_owner'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Choose a new owner for the submission'),
-      '#default_value' => $submitting_user->mail,
-      '#autocomplete_path' => 'tpps/autocomplete/user',
-    );
-
-    $form['CHANGE_OWNER'] = array(
-      '#type' => 'submit',
-      '#value' => t('Change Submission Owner'),
-    );
   }
+
+  $submitting_user = user_load($submission_state['submitting_uid']);
+  $form['change_owner'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Choose a new owner for the submission'),
+    '#default_value' => $submitting_user->mail,
+    '#autocomplete_path' => 'tpps/autocomplete/user',
+  );
+
+  $form['CHANGE_OWNER'] = array(
+    '#type' => 'submit',
+    '#value' => t('Change Submission Owner'),
+  );  
 
   $form['state-status'] = array(
     '#type' => 'select',
