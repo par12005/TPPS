@@ -33,7 +33,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
 
     $species_number = $form_state['stats']['species_count'];
     $multi_file = !empty($form_state['values']['tree-accession']['check']);
-
+    unset($_SESSION['uploaded_accession_data']);
     for ($i = 1; $i <= $species_number; $i++) {
       $values = &$form_state['values']['tree-accession']["species-$i"];
       $file_element = $form['tree-accession']["species-$i"]['file'];
@@ -102,7 +102,8 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           );
           tpps_file_iterator($values['file'], 'tpps_accession_valid_species', $options);
         }
-
+        // Validate if the upload file has unique tree ids.
+        tpps_file_iterator($values['file'], 'tpps_accession_unique_tree_ids', $groups);
         tpps_preserve_valid_file($form_state, $values['file'], $i, "Plant_Accession");
       }
 
@@ -111,6 +112,19 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
       }
     }
 
+    if (array_key_exists('uploaded_accession_data', $_SESSION)) {
+      // Check if the there were duplicate tree ids.
+      $uploaded_tree_ids = $_SESSION['uploaded_accession_data'];
+      // Get unique tree ids.
+      $unique_tree_ids = array_unique($_SESSION['uploaded_accession_data']);
+      $duplicates = array_diff_assoc($uploaded_tree_ids, $unique_tree_ids);
+      // If there are duplicate tree ids.
+      if (!empty($duplicates)) {
+        form_set_error("tree-accession", t('Plant Accession file: Uploaded file has non-unique tree ids %tree_ids.', array('%tree_ids' => implode(', ', $duplicates))));
+      }
+      // Remove data from session variable.
+      unset($_SESSION['uploaded_accession_data']);
+    }
     if (form_get_errors()) {
       $form_state['rebuild'] = TRUE;
       $new_form = drupal_rebuild_form('tpps_main', $form_state, $form);
@@ -220,6 +234,32 @@ function tpps_accession_valid_species($row, array &$options) {
 
     if (!$valid_row) {
       form_set_error("tree-accession-species-$org_num-file-{$row[$id_name]}", "Plant Accession file: Some species information is invalid for plant \"{$row[$id_name]}\". The species name, \"$species\", does not match any species name supplied on the Author and Species information page. Please correct the file or add the correct species name.");
+    }
+  }
+}
+
+/**
+ * This function processes a single row of a plant accession file.
+ *
+ * This function validates that the accession file has unique tree
+ * ids for each plant. This function is meant to be used with
+ * tpps_file_iterator().
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_accession_unique_tree_ids($row, $groups) {
+  if (!array_key_exists('uploaded_accession_data', $_SESSION)) {
+    $_SESSION['uploaded_accession_data'] = array();
+  }
+  $key = count($_SESSION['uploaded_accession_data']) + 1;
+  if (array_key_exists('Tree Id', $groups)) {
+    if (array_key_exists('1', $groups['Tree Id'])) {
+      if ($groups['Tree Id']['1'] != NULL) {
+        $_SESSION['uploaded_accession_data'][$key] = $row[$groups['Tree Id']['1']];
+      }
     }
   }
 }

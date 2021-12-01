@@ -642,7 +642,9 @@ function tpps_get_location($location) {
  */
 function tpps_get_path_extension($path) {
   preg_match('/\.([a-zA-Z0-9]*)$/', $path, $matches);
-  return strtolower($matches[1]);
+  if(array_key_exists(1, $matches)) {
+    return strtolower($matches[1]);
+  }
 }
 
 /**
