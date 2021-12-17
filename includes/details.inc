@@ -166,6 +166,7 @@ function tpps_details_tabs(array &$state) {
   }
   $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes / Environments</a></li>' : "";
   $output .= $g_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
+  $output .= '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#mass_spectrometry">Mass Spectrometry</a></li>';
   $output .= '</ul><div id="tab-content" class="tab-content">';
 
   $output .= "<div id=\"species\" role=\"tabpanel\" class=\"tab-pane fade in active\"></div>";
@@ -174,6 +175,7 @@ function tpps_details_tabs(array &$state) {
 
   $output .= $p_exist ? "<div id=\"phenotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
   $output .= $g_exist ? "<div id=\"genotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
+  $output .= "<div id=\"mass_spectrometry\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
 
   $output .= '</div>';
   return $output;
@@ -618,7 +620,7 @@ function tpps_details_species(array &$state) {
       $common_name,
     );
   }
-
+  
   $vars = array(
     'header' => array(
       'Order',
@@ -943,6 +945,96 @@ function tpps_details_genotype(array &$state) {
       'Name',
       'Description',
       'Marker Type',
+    ),
+    'rows' => $rows,
+    'attributes' => array(
+      'class' => array('view'),
+      'id' => 'tpps_table_display',
+    ),
+    'caption' => '',
+    'colgroups' => NULL,
+    'sticky' => FALSE,
+    'empty' => '',
+  );
+  $table = theme('table', $vars);
+  $pager = theme('pager', array('quantity', $total));
+  return $pager . $table;
+}
+
+
+/**
+ * Creates the table for mass spectrometry details for a submission.
+ *
+ * @param array $state
+ *   The form state of the submission.
+ *
+ * @return string
+ *   The HTML table of plants and genotypes associated with the submission.
+ */
+function tpps_details_mass_spectrometry(array &$state) {
+  $params = drupal_get_query_parameters($_POST);
+  $page = 0;
+  if (!empty($params['page'])) {
+    $page = $params['page'];
+  }
+  $rows = array();
+  $per_page = 20;
+  $start = $page * $per_page;
+
+  $query = db_select('chado.phenotype', 'p');
+  $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
+  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
+  $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
+  $query->addExpression('count(p.phenotype_id)', 'count');
+  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query = $query->execute();
+  $total = $query->fetchObject()->count;
+
+  $_GET['page'] = $page;
+  pager_default_initialize($total, $per_page);
+
+  $query = db_select('chado.phenotype', 'p');
+  $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
+  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
+  $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
+  $query->fields('p', array(
+    'phenotype_id',
+    'name',
+    'attr_id',
+    'observable_id',
+    'value',
+  ));
+  $query->fields('s', array('uniquename', 'stock_id'));
+  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->range($start, $per_page);
+  $query = $query->execute();
+
+  while (($result = $query->fetchObject())) {
+    preg_match('/^TGDR...-(.*)$/', $result->uniquename, $matches);
+    $tree = $matches[1];
+    $obs = chado_get_cvterm(array(
+      'cvterm_id' => $result->observable_id,
+    ))->name ?? "";
+    $attr = chado_get_cvterm(array(
+      'cvterm_id' => $result->attr_id,
+    ))->name ?? "";
+
+    $rows[] = array(
+      tpps_entity_link($result->stock_id, $tree, 'Stock'),
+      tpps_entity_link($result->phenotype_id, $result->name, 'Phenotype'),
+      $attr,
+      $obs,
+      $result->value,
+    );
+  }
+
+  $vars = array(
+    'header' => array(
+      'Plant',
+      'Name',
+      'Attribute',
+      'Entity',
+      'Value',
     ),
     'rows' => $rows,
     'attributes' => array(

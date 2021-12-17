@@ -364,7 +364,6 @@ function detailsTab() {
     }
   }
   jQuery('#' + detail_type)[0].innerHTML = "Loading...";
-
   var request = jQuery.post(path + '/' + detail_type, {
     page: page
   });
