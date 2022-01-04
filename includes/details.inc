@@ -537,7 +537,14 @@ function tpps_details_tags_sort() {
       'static' => $result->static,
     );
   }
-
+  // Hide example tags
+  if (!empty($tags)) {
+    foreach($tags as $key => $tag) {
+      if ($tag['name'] == 'Example Tag' || $tag['name'] == 'Example Tag 2') {
+        unset($tags[$key]);
+      }
+    }
+  }
   $output .= tpps_show_tags($tags);
 
   return "<label for=\"tpps-tags-filter\">Sort by tags:</label><div id=\"tpps-tags-filter\">" . $output . "</div>";

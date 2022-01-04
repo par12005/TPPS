@@ -1975,3 +1975,24 @@ function tpps_update_7118() {
     throw $e;
   }
 }
+
+/**
+ * Implements hook_update_n().
+ *
+ * Update default tag labels.
+ */
+function tpps_update_7119() {
+  db_update('tpps_tag')
+    ->fields(array(
+      'name' => 'No Locations',
+    ))
+    ->condition('name', 'No Location Information')
+    ->execute();
+
+  db_update('tpps_tag')
+      ->fields(array(
+        'color' => 'gold',
+      ))
+      ->condition('name', 'Approximate Coordinates')
+      ->execute();
+}
