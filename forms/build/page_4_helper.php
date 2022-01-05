@@ -132,6 +132,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     foreach ($terms as $term => $label) {
       $attr_id = tpps_load_cvterm($term)->cvterm_id;
       $attr_options[$attr_id] = $label;
+      // drupal_set_message($term . "," . $label . "," . $attr_id);
     }
     $attr_options['other'] = 'My attribute term is not in this list';
 
@@ -153,8 +154,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'kilogram_per_cubic_meter' => t('Kilogram per Cubic Meter'),
       'kilograms per meter cubed' => t('Kilograms per Meter Cubed'),
       'liter' => t('Liter'),
-      'log(centimeters per day)' => t('Log (Centimeters per day'),
-      'log(centimeters cube per day)' => t('Log (Centimeters cubed per day'),
+      'log(centimeters per day)' => t('Log (Centimeters per day)'),
+      'log(centimeters cubed per day)' => t('Log (Centimeters cubed per day)'),
       'luminous_intensity_unit' => t('Luminous Intensity Unit'),
       'meter' => t('Meter'),
       'milligram' => t('Milligram'),
@@ -182,6 +183,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     foreach ($terms as $term => $label) {
       $unit_id = tpps_load_cvterm($term)->cvterm_id;
       $unit_options[$unit_id] = $label;
+      // drupal_set_message($term . "," . $label . "," . $unit_id);
     }
     $unit_options['other'] = 'My unit is not in this list';
 

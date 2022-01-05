@@ -200,15 +200,38 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
   $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
   $terms = $get_cvt();
   $info = $terms[$term] ?? NULL;
+  // dpm($info);
 
   if (empty($info)) {
     $info = ":$term";
   }
 
   preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
-  $ontology = $matches[1];
-  $name = $matches[2];
-  $alt_ontology = $matches[3] ?? NULL;
+  // dpm($matches);
+  $matches_count = count($matches);
+  if($matches_count >= 4) {
+    $ontology = "";
+    for ($i=1; $i < ($matches_count - 1); $i++) {
+      if($i==1) {
+        $ontology .= $matches[$i];
+      }
+      else {
+        $ontology .= ':' . $matches[$i];
+      }
+    }
+    $name = $matches[$matches_count -1];
+    $alt_ontology = $matches[$matches_count] ?? NULL;
+  }
+  else {
+    $ontology = $matches[1];
+    $name = $matches[2];
+    $alt_ontology = $matches[3] ?? NULL;
+  }
+  // dpm('Data after match:');
+  // dpm($ontology);
+  // dpm($name);
+  // dpm($alt_ontology);
+
   $identifiers = array(
     'name' => $term,
     'is_obsolete' => 0,
@@ -224,6 +247,9 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     }
   }
   $result = chado_get_cvterm($identifiers, $options);
+  
+  // echo var_dump($result);
+
 
   if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
     $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
@@ -842,14 +868,14 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
   $old_term_func = 'tpps_get_cvterms_v' . $old_v;
   $new_term_func = 'tpps_get_cvterms_v' . $new_v;
   $old_terms = $old_term_func();
+  // print_r($old_terms);
   $new_terms = $new_term_func();
-
+  // print_r($new_terms);
   $transaction = db_transaction();
 
   try {
     foreach ($old_terms as $key => $old_info) {
       $new_info = $new_terms[$key] ?? NULL;
-
       if (!isset($new_info) or !isset($old_info)) {
         continue;
       }
@@ -884,6 +910,8 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
     }
     foreach ($new_terms as $key => $info) {
       if (!empty($info)) {
+        // print_r($info);
+        // echo "\n";
         $result = tpps_ols_install_term($info);
         if ($result === 'local') {
           tpps_local_install_term($key, $new_v);
