@@ -200,15 +200,38 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
   $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
   $terms = $get_cvt();
   $info = $terms[$term] ?? NULL;
+  // dpm($info);
 
   if (empty($info)) {
     $info = ":$term";
   }
 
   preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
-  $ontology = $matches[1];
-  $name = $matches[2];
-  $alt_ontology = $matches[3] ?? NULL;
+  // dpm($matches);
+  $matches_count = count($matches);
+  if($matches_count >= 4) {
+    $ontology = "";
+    for ($i=1; $i < ($matches_count - 1); $i++) {
+      if($i==1) {
+        $ontology .= $matches[$i];
+      }
+      else {
+        $ontology .= ':' . $matches[$i];
+      }
+    }
+    $name = $matches[$matches_count -1];
+    $alt_ontology = $matches[$matches_count] ?? NULL;
+  }
+  else {
+    $ontology = $matches[1];
+    $name = $matches[2];
+    $alt_ontology = $matches[3] ?? NULL;
+  }
+  // dpm('Data after match:');
+  // dpm($ontology);
+  // dpm($name);
+  // dpm($alt_ontology);
+
   $identifiers = array(
     'name' => $term,
     'is_obsolete' => 0,
@@ -224,6 +247,9 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     }
   }
   $result = chado_get_cvterm($identifiers, $options);
+  
+  // echo var_dump($result);
+
 
   if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
     $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
@@ -276,6 +302,33 @@ function tpps_get_cvterms_v1_2() {
     'number_samples' => 'local:Number of samples',
     'gps_type' => 'local:Type of GPS coordinates. Exact, Approximate, or Site-based.',
     'gps_precision' => 'local:Precision of GPS coordinates.',
+
+    // PAG 2022 request by Emily
+    'precipitation' => 'ncit:preciptation',
+    'absorbance' => 'ncit:absorbance',
+    'water use efficiency' => 'ncit:water use efficiency',
+    'delta' => 'ncit:delta',
+    'carbon-13' => 'ncit:carbon-13',
+    'rate' => 'pato:rate',
+    'chlorophyll' => 'chebi:chlorophyll',
+    'transpiration' => 'GO: Biological Process:transpiration',
+    'photosynthesis' => 'GO: Biological Process:photosynthesis',
+    'degrees celsius per millimeter' => 'local:degrees celsius per millimeter',
+    'centimeters per day' => 'local:centimeters per day',
+    'kilograms per meter cubed' => 'local:kilograms per meter cubed',
+    'no unit' => 'local:no unit',
+    'log(centimeters per day)' => 'local:log(centimeters per day)',
+    'log(centimeters cubed per day)' => 'local:log(centimeters cubed per day)',
+    'micromoles carbon dioxide per meter squared per second' => 'local:micromoles carbon dioxide per meter squared per second',
+    'micromoles carbon dioxide per gram per second' => 'local:micromoles carbon dioxide per gram per second',
+    'absorbance unit' => 'local:absorbance unit',
+    'number' => 'local:number',
+    'milligrams per millimeter' => 'local:milligrams per millimeter',
+    'milligrams per millimeter squared' => 'local:milligrams per millimeter squared',
+    'milligrams per milligram' => 'local:milligrams per milligram',
+    'micromoles carbon dioxide per gram Nitrogen per second' => 'local:micromoles carbon dioxide per gram Nitrogen per second', 
+    'micromoles carbon dioxide per millimole water' => 'local:micromoles carbon dioxide per millimole water',
+    'moles water per meter squared per second' => 'local:moles water per meter squared per second',
 
     // Tripal terms.
     'article' => 'tripal_pub:Journal Article',
@@ -815,14 +868,14 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
   $old_term_func = 'tpps_get_cvterms_v' . $old_v;
   $new_term_func = 'tpps_get_cvterms_v' . $new_v;
   $old_terms = $old_term_func();
+  // print_r($old_terms);
   $new_terms = $new_term_func();
-
+  // print_r($new_terms);
   $transaction = db_transaction();
 
   try {
     foreach ($old_terms as $key => $old_info) {
       $new_info = $new_terms[$key] ?? NULL;
-
       if (!isset($new_info) or !isset($old_info)) {
         continue;
       }
@@ -857,6 +910,8 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
     }
     foreach ($new_terms as $key => $info) {
       if (!empty($info)) {
+        // print_r($info);
+        // echo "\n";
         $result = tpps_ols_install_term($info);
         if ($result === 'local') {
           tpps_local_install_term($key, $new_v);
