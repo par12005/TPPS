@@ -196,84 +196,101 @@ function tpps_load_cv($info) {
  *   The resulting cvterm object, or FALSE on failure.
  */
 function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
-  $cvt_v = variable_get('tpps_cvterms_version', '1_1');
-  $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
-  $terms = $get_cvt();
-  $info = $terms[$term] ?? NULL;
-  // dpm($info);
 
-  if (empty($info)) {
-    $info = ":$term";
+  $check_cache = variable_get('tpps_load_cvterm_' . md5($term), null);
+  if ($_GET['refresh_cache'] == 'true') {
+    $check_cache = null;
   }
+  if ($check_cache == null) {
+    $cvt_v = variable_get('tpps_cvterms_version', '1_1');
+    $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
+    $terms = $get_cvt();
+    $info = $terms[$term] ?? NULL;
+    
 
-  preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
-  // dpm($matches);
-  $matches_count = count($matches);
-  if($matches_count >= 4) {
-    $ontology = "";
-    for ($i=1; $i < ($matches_count - 1); $i++) {
-      if($i==1) {
-        $ontology .= $matches[$i];
+    if (empty($info)) {
+      $info = ":$term";
+    }
+    // dpm($info);
+
+    preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
+    // dpm($matches);
+    $matches_count = count($matches);
+    if($matches_count >= 4) {
+      $ontology = "";
+      for ($i=1; $i < ($matches_count - 1); $i++) {
+        if($i==1) {
+          $ontology .= $matches[$i];
+        }
+        else {
+          $ontology .= ':' . $matches[$i];
+        }
+      }
+      $name = $matches[$matches_count -1];
+      $alt_ontology = $matches[$matches_count] ?? NULL;
+    }
+    else {
+      $ontology = $matches[1];
+      $name = $matches[2];
+      $alt_ontology = $matches[3] ?? NULL;
+    }
+    // drupal_set_message('Data after match:'. $ontology . ',' . $name . ',' . $alt_ontology);
+
+    $identifiers = array(
+      'name' => $term,
+      'is_obsolete' => 0,
+    );
+
+    if (!empty($ontology)) {
+      if ($ontology == 'local') {
+        $identifiers['definition'] = $name;   
       }
       else {
-        $ontology .= ':' . $matches[$i];
+        $identifiers['name'] = $name;
+        $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
       }
     }
-    $name = $matches[$matches_count -1];
-    $alt_ontology = $matches[$matches_count] ?? NULL;
-  }
-  else {
-    $ontology = $matches[1];
-    $name = $matches[2];
-    $alt_ontology = $matches[3] ?? NULL;
-  }
-  // dpm('Data after match:');
-  // dpm($ontology);
-  // dpm($name);
-  // dpm($alt_ontology);
-
-  $identifiers = array(
-    'name' => $term,
-    'is_obsolete' => 0,
-  );
-
-  if (!empty($ontology)) {
-    if ($ontology == 'local') {
-      $identifiers['definition'] = $name;
-    }
-    else {
-      $identifiers['name'] = $name;
-      $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
-    }
-  }
-  $result = chado_get_cvterm($identifiers, $options);
-  
-  // echo var_dump($result);
-
-
-  if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
-    $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
     $result = chado_get_cvterm($identifiers, $options);
-  }
-
-  if (empty($result)) {
-    if (!empty($options['job'])) {
-      $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+    if(empty($result) && $ontology == 'local') {
+        // Added by Rish (1/5/2022)
+        unset($identifiers['definition']);
+        $identifiers['name'] = $name;
+        $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id; 
+        $result = chado_get_cvterm($identifiers, $options);  
     }
-    else {
-      $trace = debug_backtrace()[1];
-      $job = NULL;
-      if (!empty($trace['args']) and gettype($trace['args']) == 'array') {
-        foreach ($trace['args'] as $key => $arg) {
-          if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
-            $job = &$trace['args'][$key];
+    // drupal_set_message('Identifiers: ' . var_export($identifiers,true));
+    // drupal_set_message('CVTERM_ID: ' . $result->cvterm_id);
+    // echo var_dump($result);
+
+
+    if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
+      $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
+      $result = chado_get_cvterm($identifiers, $options);
+    }
+
+    if (empty($result)) {
+      if (!empty($options['job'])) {
+        $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+      }
+      else {
+        $trace = debug_backtrace()[1];
+        $job = NULL;
+        if (!empty($trace['args']) and gettype($trace['args']) == 'array') {
+          foreach ($trace['args'] as $key => $arg) {
+            if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
+              $job = &$trace['args'][$key];
+            }
+          }
+          if (!empty($job)) {
+            $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);             
           }
         }
-        if (!empty($job)) {
-          $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);             
-        }
       }
     }
+    variable_set('tpps_load_cvterm_' . md5($term), serialize($result));
+  }
+  else {
+    $result = unserialize($check_cache);
   }
   return $result;
 }
@@ -304,11 +321,11 @@ function tpps_get_cvterms_v1_2() {
     'gps_precision' => 'local:Precision of GPS coordinates.',
 
     // PAG 2022 request by Emily
-    'precipitation' => 'ncit:preciptation',
-    'absorbance' => 'ncit:absorbance',
-    'water use efficiency' => 'ncit:water use efficiency',
-    'delta' => 'ncit:delta',
-    'carbon-13' => 'ncit:carbon-13',
+    'precipitation' => 'local:precipitation',
+    'absorbance' => 'local:absorbance',
+    'water use efficiency' => 'local:water use efficiency',
+    'delta' => 'ncit:Delta',
+    'carbon-13 atom' => 'chebi_ontology:carbon-13 atom',
     'rate' => 'pato:rate',
     'chlorophyll' => 'chebi:chlorophyll',
     'transpiration' => 'GO: Biological Process:transpiration',
