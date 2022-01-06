@@ -261,6 +261,7 @@ function tpps_details_top() {
         break;
     }
   }
+  
   $query = $query->execute();
   $total = $query->fetchObject()->count;
 
@@ -439,8 +440,7 @@ function tpps_details_search(array $form, array $form_state) {
   );
 
   $ops = array(
-    '~*' => '~*',
-    'LIKE' => 'LIKE',
+    '~*' => 'LIKE',
     '=' => '=',
   );
 
