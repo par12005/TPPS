@@ -207,34 +207,15 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     $terms = $get_cvt();
     $info = $terms[$term] ?? NULL;
     
-
     if (empty($info)) {
       $info = ":$term";
     }
     // dpm($info);
-
+    // drupal_set_message('info:'. $info);
     preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
-    // dpm($matches);
-    $matches_count = count($matches);
-    if($matches_count >= 4) {
-      $ontology = "";
-      for ($i=1; $i < ($matches_count - 1); $i++) {
-        if($i==1) {
-          $ontology .= $matches[$i];
-        }
-        else {
-          $ontology .= ':' . $matches[$i];
-        }
-      }
-      $name = $matches[$matches_count -1];
-      $alt_ontology = $matches[$matches_count] ?? NULL;
-    }
-    else {
-      $ontology = $matches[1];
-      $name = $matches[2];
-      $alt_ontology = $matches[3] ?? NULL;
-    }
-    // drupal_set_message('Data after match:'. $ontology . ',' . $name . ',' . $alt_ontology);
+    $ontology = $matches[1];
+    $name = $matches[2];
+    $alt_ontology = $matches[3] ?? NULL;
 
     $identifiers = array(
       'name' => $term,
@@ -251,6 +232,29 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
       }
     }
     $result = chado_get_cvterm($identifiers, $options);
+
+    // Cater for CV types like GO: Biological Process
+    if(empty($result)) {
+      preg_match('/^([\w]*):([\s]+[\w\s]*):([\s\w]*):?([\s\w]*)?$/', $info, $matches2);
+      if(count($matches2) > 0) {
+        // dpm($matches2);
+        $ontology = $matches2[1] . ":" . $matches2[2];
+        // drupal_set_message('ONTOLOGY:' . $ontology);
+        $name = $matches2[3];
+        $alt_ontology = $matches2[4] ?? NULL;
+        if (!empty($ontology)) {
+          if ($ontology == 'local') {
+            $identifiers['definition'] = $name;   
+          }
+          else {
+            $identifiers['name'] = $name;
+            $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
+          }
+        }
+        $result = chado_get_cvterm($identifiers, $options);  
+      }  
+    }
+
     if(empty($result) && $ontology == 'local') {
         // Added by Rish (1/5/2022)
         unset($identifiers['definition']);
@@ -261,7 +265,6 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     // drupal_set_message('Identifiers: ' . var_export($identifiers,true));
     // drupal_set_message('CVTERM_ID: ' . $result->cvterm_id);
     // echo var_dump($result);
-
 
     if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
       $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;

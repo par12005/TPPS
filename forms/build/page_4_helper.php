@@ -224,6 +224,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     foreach ($terms as $term => $label) {
       $struct_id = tpps_load_cvterm($term)->cvterm_id;
       $struct_options[$struct_id] = $label;
+      // drupal_set_message($term . "," . $label . "," . $struct_id);
     }
     $struct_options['other'] = 'My structure term is not in this list';
 
