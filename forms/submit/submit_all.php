@@ -1248,11 +1248,23 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
     if ($genotype['files']['assay-load'] == 'new') {
       $design_fid = $genotype['files']['assay-design'];
+      tpps_add_project_file($form_state, $design_fid);
+
+      // I hope this is the best place to process this file
+      $job->logMessage("[INFO] Processing Genotype Assay Design...");
+      $assay_design_options = array(
+        'nothing' => 'nothing',
+      );
+      tpps_file_iterator($design_fid, 'tpps_process_genotype_assay_design', $assay_design_options);
+      $job->logMessage("[INFO] Completed processing Genotype Assay Design...");
+      // throw new Exception('Incomplete work - tpps_process_genotype_assay_design');
     }
     if ($genotype['files']['assay-load'] != 'new') {
       $design_fid = $genotype['files']['assay-load'];
+      tpps_add_project_file($form_state, $design_fid);
     }
-    tpps_add_project_file($form_state, $design_fid);
+    // Altered on 1/12/2022
+    // tpps_add_project_file($form_state, $design_fid);
   }
 
   if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
@@ -1324,6 +1336,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $options['records'] = $records;
     $genotype_count = 0;
   }
+
+
 
   if (!empty($genotype['files']['file-type']['VCF'])) {
     // @todo we probably want to use tpps_file_iterator to parse vcf files.
@@ -1911,6 +1925,184 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   }
   $suffix++;
 }
+
+/**
+ * This function processes a single row of a genotype assay design 
+ * spreadsheet.
+ *
+ * This function is used for SNP assay design files
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_process_genotype_assay_design($row, array &$options = array()) {
+  print_r($row);
+  // $type = $options['type'];
+  // $records = &$options['records'];
+  // $headers = $options['headers'];
+  // $tree_info = &$options['tree_info'];
+  // $species_codes = $options['species_codes'];
+  // $genotype_count = &$options['genotype_count'];
+  // $project_id = $options['project_id'];
+  // $marker = $options['marker'];
+  // $type_cvterm = $options['type_cvterm'];
+  // $seq_var_cvterm = $options['seq_var_cvterm'];
+  // $multi_insert_options = $options['multi_insert'];
+  // $associations = $options['associations'] ?? array();
+
+  // $record_group = variable_get('tpps_record_group', 10000);
+  // $stock_id = NULL;
+
+  // if (!empty($options['tree_id'])) {
+  //   $val = $row[$options['tree_id']];
+  //   $stock_id = $tree_info[trim($val)]['stock_id'];
+  //   $current_id = $tree_info[trim($val)]['organism_id'];
+  //   $species_code = $species_codes[$current_id];
+  // }
+  // foreach ($row as $key => $val) {
+  //   if (empty($headers[$key])) {
+  //     continue;
+  //   }
+
+  //   if (!isset($stock_id)) {
+  //     $stock_id = $tree_info[trim($val)]['stock_id'];
+  //     $current_id = $tree_info[trim($val)]['organism_id'];
+  //     $species_code = $species_codes[$current_id];
+  //     continue;
+  //   }
+  //   $genotype_count++;
+
+  //   if ($type == 'ssrs' and !empty($options['empty']) and $val == $options['empty']) {
+  //     continue;
+  //   }
+
+  //   if ($type == 'ssrs' and ($val === 0 or $val === "0")) {
+  //     $val = "NA";
+  //   }
+
+  //   $variant_name = $headers[$key];
+  //   $marker_name = $variant_name . $marker;
+  //   $genotype_name = "$marker-$variant_name-$species_code-$val";
+
+  //   $records['feature'][$marker_name] = array(
+  //     'organism_id' => $current_id,
+  //     'uniquename' => $marker_name,
+  //     'type_id' => $seq_var_cvterm,
+  //   );
+
+  //   $records['feature'][$variant_name] = array(
+  //     'organism_id' => $current_id,
+  //     'uniquename' => $variant_name,
+  //     'type_id' => $seq_var_cvterm,
+  //   );
+
+  //   if (!empty($associations) and !empty($associations[$variant_name])) {
+  //     $association = $associations[$variant_name];
+  //     $assoc_feature_name = "{$variant_name}-{$options['associations_type']}-{$association['trait']}";
+
+  //     $records['feature'][$association['scaffold']] = array(
+  //       'organism_id' => $current_id,
+  //       'uniquename' => $association['scaffold'],
+  //       'type_id' => $options['scaffold_cvterm'],
+  //     );
+
+  //     $records['feature'][$assoc_feature_name] = array(
+  //       'organism_id' => $current_id,
+  //       'uniquename' => $assoc_feature_name,
+  //       'type_id' => $seq_var_cvterm,
+  //     );
+
+  //     if (!empty($association['trait_attr'])) {
+  //       $records['feature_cvterm'][$assoc_feature_name] = array(
+  //         'cvterm_id' => $association['trait_attr'],
+  //         'pub_id' => $options['pub_id'],
+  //         '#fk' => array(
+  //           'feature' => $assoc_feature_name,
+  //         ),
+  //       );
+
+  //       if (!empty($association['trait_obs'])) {
+  //         $records['feature_cvtermprop'][$assoc_feature_name] = array(
+  //           'type_id' => $association['trait_obs'],
+  //           '#fk' => array(
+  //             'feature_cvterm' => $assoc_feature_name,
+  //           ),
+  //         );
+  //       }
+  //     }
+
+  //     $records['featureprop'][$assoc_feature_name] = array(
+  //       'type_id' => $options['associations_type'],
+  //       '#fk' => array(
+  //         'feature' => $assoc_feature_name,
+  //       ),
+  //     );
+
+  //     $records['featureloc'][$variant_name] = array(
+  //       'fmin' => $association['start'],
+  //       'fmax' => $association['stop'],
+  //       'residue_info' => $association['allele'],
+  //       '#fk' => array(
+  //         'feature' => $variant_name,
+  //         'srcfeature' => $association['scaffold'],
+  //       ),
+  //     );
+
+  //     $records['feature_relationship'][$assoc_feature_name] = array(
+  //       'type_id' => $options['associations_type'],
+  //       'value' => $association['confidence'],
+  //       '#fk' => array(
+  //         'subject' => $variant_name,
+  //         'object' => $assoc_feature_name,
+  //       ),
+  //     );
+  //   }
+
+  //   $records['genotype'][$genotype_name] = array(
+  //     'name' => $genotype_name,
+  //     'uniquename' => $genotype_name,
+  //     'description' => $val,
+  //     'type_id' => $type_cvterm,
+  //   );
+
+  //   $records['genotype_call']["$stock_id-$genotype_name"] = array(
+  //     'project_id' => $project_id,
+  //     'stock_id' => $stock_id,
+  //     '#fk' => array(
+  //       'genotype' => $genotype_name,
+  //       'variant' => $variant_name,
+  //       'marker' => $marker_name,
+  //     ),
+  //   );
+
+  //   $records['stock_genotype']["$stock_id-$genotype_name"] = array(
+  //     'stock_id' => $stock_id,
+  //     '#fk' => array(
+  //       'genotype' => $genotype_name,
+  //     ),
+  //   );
+
+  //   if ($genotype_count >= $record_group) {
+  //     tpps_chado_insert_multi($records, $multi_insert_options);
+  //     $records = array(
+  //       'feature' => array(),
+  //       'genotype' => array(),
+  //       'genotype_call' => array(),
+  //       'stock_genotype' => array(),
+  //     );
+  //     if (!empty($associations)) {
+  //       $records['featureloc'] = array();
+  //       $records['featureprop'] = array();
+  //     }
+  //     $options['genotype_total'] += $genotype_count;
+  //     $genotype_count = 0;
+  //   }
+  // }
+}
+
+
 
 /**
  * This function processes a single row of a genotype spreadsheet.
