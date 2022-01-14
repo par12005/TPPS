@@ -1252,9 +1252,14 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
       // I hope this is the best place to process this file
       $job->logMessage("[INFO] Processing Genotype Assay Design...");
+
+
+
       $assay_design_options = array(
         'nothing' => 'nothing',
       );
+      global $tpps_process_genotype_assay_design_row_count;
+      $tpps_process_genotype_assay_design_row_count = 0;
       tpps_file_iterator($design_fid, 'tpps_process_genotype_assay_design', $assay_design_options);
       $job->logMessage("[INFO] Completed processing Genotype Assay Design...");
       // throw new Exception('Incomplete work - tpps_process_genotype_assay_design');
@@ -1938,7 +1943,21 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
  *   Additional options set when calling tpps_file_iterator().
  */
 function tpps_process_genotype_assay_design($row, array &$options = array()) {
-  print_r($row);
+  global $tpps_process_genotype_assay_design_row_count;
+  $tpps_process_genotype_assay_design_row_count = $tpps_process_genotype_assay_design_row_count+1;
+
+  if($tpps_process_genotype_assay_design_row_count == 1) {
+      print_r($row);
+
+      // WARNING! WARNING! This is in the wrong spot so just for testing
+      $options['headers'] = tpps_file_headers(12526);
+      print_r($options);
+      
+      // We need to check to make sure an analysis exists for feature
+      // since it does not make sense to do this per feature I would think
+      // $result = chado_query("SELECT * FROM analysis", array());
+  }
+  
   // $type = $options['type'];
   // $records = &$options['records'];
   // $headers = $options['headers'];

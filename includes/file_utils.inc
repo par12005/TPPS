@@ -989,7 +989,6 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
   if (!function_exists($function)) {
     return FALSE;
   }
-
   if (!empty($options['job'])) {
     $options['job']->setTotalItems(tpps_file_len($fid));
     $options['job']->setItemsHandled(0);
