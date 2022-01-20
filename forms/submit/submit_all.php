@@ -1957,6 +1957,9 @@ function tpps_process_genotype_assay_design($row, array &$options = array()) {
       // since it does not make sense to do this per feature I would think
       // $result = chado_query("SELECT * FROM analysis", array());
   }
+  else {
+    throw new Exception('DEVELOPMENTAL EXCEPTION: TO BE REMOVED AFTER TESTING');
+  }
   
   // $type = $options['type'];
   // $records = &$options['records'];
