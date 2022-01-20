@@ -1042,6 +1042,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       ),
     );
 
+    // WARNING: We may need to remove this for the columns to work properly
     if (isset($fields['files']['assay-design']['#value'])) {
       $fields['files']['assay-design']['#default_value'] = $fields['files']['assay-design']['#value'];
     }
@@ -1049,6 +1050,32 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       // Stop using the file so it can be deleted if the user clicks 'remove'.
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
+
+    // https://tpps.readthedocs.io/en/latest/dev/files.html
+    $fields['files']['assay-design']['empty'] = array(
+      '#default_value' => isset($values['files']['assay-design']['empty']) ? $values['files']['assay-design']['empty'] : 'NA',
+    );
+    
+    $fields['files']['assay-design']['columns'] = array(
+      '#description' => 'Please define which columns hold the required data: V2 Genome SNP ID, V3 Chromosome, V3 Position',
+    );
+
+    // These are the options to be selected per column of the design file
+    $assay_design_file_column_options = array(
+      '0' => 'N/A',
+      '1' => 'V2 Genome SNP ID',
+      '2' => 'V3 Chromosome',
+      '3' => 'V3 Position',
+      '4' => 'V3 Allele',
+      '5' => 'Segregating Bases'
+    );
+
+    $fields['files']['assay-design']['columns-options'] = array(
+      '#type' => 'hidden',
+      '#value' => $assay_design_file_column_options,
+    );    
+    
+    $fields['files']['assay-design']['no-header'] = array(); 
 
     $fields['files']['assay-citation'] = array(
       '#type' => 'textfield',

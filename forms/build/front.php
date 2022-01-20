@@ -28,7 +28,6 @@ function tpps_front_create_form(array &$form, array $form_state) {
 
   global $base_url;
   global $user;
-
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
   $prefix_text = "<div><figure style=\"text-align:center;\"><img style=\"max-height:100%;max-width:100%;\" src=\"{$image_path}TPPS_front_image.png\"></figure>";
   $prefix_text .= "<div id=\"landing-buttons\">";
@@ -52,7 +51,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
       'status' => 'Incomplete',
       'uid' => $user->uid,
     ));
-
+   
     foreach ($states as $state) {
       if (empty($state['tpps_type']) or $state['tpps_type'] != 'tppsc') {
         if ($state != NULL and isset($state['saved_values'][TPPS_PAGE_1]['publication']['title'])) {
