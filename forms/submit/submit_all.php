@@ -1246,17 +1246,17 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   }
 
   if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
-    if ($genotype['files']['assay-load'] == 'new') {
+    if ($genotype['files']['assay-design'] == 'new') {
       $design_fid = $genotype['files']['assay-design'];
       tpps_add_project_file($form_state, $design_fid);
 
       // I hope this is the best place to process this file
       $job->logMessage("[INFO] Processing Genotype Assay Design...");
 
-
+      print_r($genotype['files']['assay-design']);
 
       $assay_design_options = array(
-        'nothing' => 'nothing',
+        'headers' => tpps_file_headers($design_fid),
       );
       global $tpps_process_genotype_assay_design_row_count;
       $tpps_process_genotype_assay_design_row_count = 0;
@@ -1264,8 +1264,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $job->logMessage("[INFO] Completed processing Genotype Assay Design...");
       // throw new Exception('Incomplete work - tpps_process_genotype_assay_design');
     }
-    if ($genotype['files']['assay-load'] != 'new') {
-      $design_fid = $genotype['files']['assay-load'];
+
+    if ($genotype['files']['assay-design'] != 'new') {
+      $design_fid = $genotype['files']['assay-design'];
       tpps_add_project_file($form_state, $design_fid);
     }
     // Altered on 1/12/2022
@@ -1947,11 +1948,15 @@ function tpps_process_genotype_assay_design($row, array &$options = array()) {
   $tpps_process_genotype_assay_design_row_count = $tpps_process_genotype_assay_design_row_count+1;
 
   if($tpps_process_genotype_assay_design_row_count == 1) {
+      // WARNING! WARNING! This is in the wrong spot so just for testing
+      // $options['headers'] = tpps_file_headers(12526);
+      print_r($options['headers']);
+
+      // This is correcly here
       print_r($row);
 
-      // WARNING! WARNING! This is in the wrong spot so just for testing
-      $options['headers'] = tpps_file_headers(12526);
-      print_r($options);
+
+      
       
       // We need to check to make sure an analysis exists for feature
       // since it does not make sense to do this per feature I would think

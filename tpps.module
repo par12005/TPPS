@@ -34,6 +34,16 @@ require_once 'includes/details.inc';
 require_once 'includes/cvterm_utils.inc';
 require_once 'api/tpps.api.inc';
 
+if(isset($_GET['debug'])) {
+  if(function_exists('dpm')) { 
+    drupal_set_message('GOOD! DPM function from DEVEL module found, you should see all output correctly');
+    // good to go, DPM can be used to output debug information
+  }
+  else {
+    drupal_set_message('WARNING!!! You need to enable devel to see all debug output');
+  }
+}
+
 /**
  * Implements hook_menu().
  */
@@ -964,7 +974,8 @@ function tpps_main_validate(&$form, &$form_state) {
  * input to persistent variables so they can be reloaded later.
  */
 function tpps_main_submit($form, &$form_state) {
-
+  drupal_set_message('This happens on submit:');
+  dpm($form_state['values']);
   $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
   $persist = TRUE;
 

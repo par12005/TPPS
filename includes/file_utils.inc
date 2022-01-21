@@ -513,7 +513,9 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
  *   The state of the form being validated.
  */
 function tpps_save_file_columns(array &$form, array &$form_state) {
-
+  if(isset($_GET['debug'])) {
+    drupal_set_message('[ FN:tpps_save_file_columns | FILE:file_utils.inc ] This saves file columns selection for TPPS file managed fields');
+  }
   if ($form_state['stage'] == TPPS_PAGE_3) {
     for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
       if (($file = file_load($form_state['values']['tree-accession']["species-$i"]['file'])) and $form_state['values']['tree-accession']["species-$i"]['file'] != 0) {
@@ -551,6 +553,19 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
               }
             }
           }
+        }
+
+        // RISH: This is for the assay design file
+        if (!empty($form_state['values']["organism-$i"]['genotype']['files']['assay-design']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['assay-design']))) {
+          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+          $form_state['values']["organism-$i"]['genotype']['files']['assay-design-columns'] = array();
+          if (isset($form["organism-$i"]['genotype']['files']['assay-design']['#value']['columns'])) {
+            foreach ($form["organism-$i"]['genotype']['files']['assay-design']['#value']['columns'] as $col => $val) {
+              if ($col[0] != '#') {
+                $form_state['values']["organism-$i"]['genotype']['files']['assay-design-columns'][$col] = $form["organism-$i"]['genotype']['files']['assay-design']['#value']['columns'][$col];
+              }
+            }
+          }          
         }
 
         if (!empty($form_state['values']["organism-$i"]['genotype']['files']['other']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['other']))) {

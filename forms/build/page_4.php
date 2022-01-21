@@ -27,6 +27,14 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
   else {
     $values = array();
   }
+  if(isset($_GET['debug'])) {
+    drupal_set_message('<hr />');
+    drupal_set_message('[ FN tpps_page_4_create_form FILE: page_4.php ] Creating form with saved values below:');
+    if(function_exists('dpm')) {
+      dpm($form_state['saved_values'], 'form_state[saved_values]');
+    }
+    drupal_set_message('<hr />');
+  }
 
   $form['#tree'] = TRUE;
 

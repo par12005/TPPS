@@ -156,6 +156,13 @@ function tpps_create_submission(array $state, $uid) {
  *   Additional submission attributes to update.
  */
 function tpps_update_submission(array $state, array $options = array()) {
+  if(isset($_GET['debug'])) {
+    drupal_set_message('<hr />');
+    drupal_set_message('[ FN:tpps_update_submission FILE: submission.inc ] TPPS Updating the submission with new state');
+    dpm(array_keys($state), 'array_keys(state)');
+    dpm($state['values'], 'state[values]');
+    drupal_set_message('<hr />');
+  }
   if (empty($options['status']) and !empty($state['status'])) {
     $options['status'] = $state['status'];
   }
