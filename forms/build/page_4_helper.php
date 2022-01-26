@@ -83,20 +83,25 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
   if (!empty($normal_check)) {
     $attr_options = array(0 => '- Select -');
     $terms = array(
+      'absorbance' => t('Absorbance'),
       'age' => t('Age'),
       'alive' => t('Alive'),
       'amount' => t('Amount'),
       'angle' => t('Angle'),
       'area' => t('Area'),
       'bent' => t('Bent'),
+      'carbon-13 atom' => t('Carbon-13 Atom'),
+      'chlorophyll' => t('Chlorophyll'),
       'circumference' => t('Circumerence'),
       'color' => t('Color'),
       'composition' => t('Composition'),
       'concentration_of' => t('Concentration of'),
       'damage' => t('Damage'),
+      'delta' => t('Delta'),
       'description' => t('Description'),
       'diameter' => t('Diameter'),
       'distance' => t('Distance'),
+      'gravity' => t('Gravity'),
       'growth_quality_of_occurrent' => t('Growth Quality of Occurrent'),
       'growth_rate' => t('Growth Rate'),
       'has_number_of' => t('Has number of'),
@@ -106,48 +111,70 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'length' => t('Length'),
       'lesioned' => t('Lesioned'),
       'maturity' => t('Maturity'),
+      'photosynthesis' => t('Photosynthesis'),
       'position' => t('Position'),
+      'precipitation' => t('Precipitation'),
       'pressure' => t('Pressure'),
       'proportionality_to' => t('Proportionality to'),
       'rate' => t('Rate'),
       'rough' => t('Rough'),
+      'sex' => t('Sex'),
       'shape' => t('Shape'),
       'size' => t('Size'),
       'temperature' => t('Temperature'),
       'texture' => t('Texture'),
       'thickness' => t('Thickness'),
       'time' => t('Time'),
+      'transpiration' => t('Transpiration'),
       'volume' => t('Volume'),
+      'water use efficiency' => t('Water use efficiency'),
       'weight' => t('Weight'),
       'width' => t('Width'),
     );
     foreach ($terms as $term => $label) {
       $attr_id = tpps_load_cvterm($term)->cvterm_id;
       $attr_options[$attr_id] = $label;
+      // drupal_set_message($term . "," . $label . "," . $attr_id);
     }
     $attr_options['other'] = 'My attribute term is not in this list';
 
     $unit_options = array();
     $terms = array(
+      'absorbance unit' => t('Absorbance Unit'),
       'boolean' => t('Boolean (Binary)'),
       'centimeter' => t('Centimeter'),
+      'centimeters per day' => t('Centimeters per Day'),
       'cubic_centimeter' => t('Cubic Centimeter'),
+      'cubic_meter' => t('Cubic Meter'),
       'day' => t('Day'),
       'degrees_celsius' => t('Degrees Celsius'),
+      'degrees celsius per millimeter' => t('Degrees Celsius per Millimeter'),
       'degrees_fahrenheit' => t('Degrees Fahrenheit'),
       'grams_per_square_meter' => t('Grams per Square Meter'),
       'gram' => t('Gram'),
-      'luminous_intensity_unit' => t('Luminous Intensity Unit'),
       'kilogram' => t('Kilogram'),
       'kilogram_per_cubic_meter' => t('Kilogram per Cubic Meter'),
+      'kilograms per meter cubed' => t('Kilograms per Meter Cubed'),
       'liter' => t('Liter'),
-      'cubic_meter' => t('Cubic Meter'),
-      'pascal' => t('Pascal'),
+      'log(centimeters per day)' => t('Log (Centimeters per day)'),
+      'log(centimeters cubed per day)' => t('Log (Centimeters cubed per day)'),
+      'luminous_intensity_unit' => t('Luminous Intensity Unit'),
       'meter' => t('Meter'),
       'milligram' => t('Milligram'),
+      'milligrams per millimeter' => t('Milligrams per Millimeter'),
+      'milligrams per millimeter squared' => t('Milligrams per Millimeter Squared'),
+      'milligrams per milligram' => t('Milligrams per Milligram'),
       'milliliter' => t('Milliliter'),
       'millimeter' => t('Millimeter'),
       'micrometer' => t('Micrometer'),
+      'micromoles carbon dioxide per meter squared per second' => t('Micromoles Carbon Dioxide per Meter Squared per Second'),
+      'micromoles carbon dioxide per gram per second' => t('Micromoles Carbon Dioxide per Gram per Second'),
+      'micromoles carbon dioxide per gram Nitrogen per second' => t('Micromoles Carbon Dioxide per Gram Nitrogen per Second'),
+      'micromoles carbon dioxide per millimole water' => t('Micromoles Carbon Dioxide per Millimole Water'),
+      'moles water per meter squared per second' => t('Moles Water per Meter Squared per Second'),
+      'no unit' => t('No Unit'),
+      'number' => t('Number'),
+      'pascal' => t('Pascal'),
       'percent' => t('Percent'),
       'qualitative' => t('Qualitative'),
       'square_micrometer' => t('Square Micrometer'),
@@ -158,6 +185,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     foreach ($terms as $term => $label) {
       $unit_id = tpps_load_cvterm($term)->cvterm_id;
       $unit_options[$unit_id] = $label;
+      // drupal_set_message($term . "," . $label . "," . $unit_id);
     }
     $unit_options['other'] = 'My unit is not in this list';
 
@@ -196,6 +224,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     foreach ($terms as $term => $label) {
       $struct_id = tpps_load_cvterm($term)->cvterm_id;
       $struct_options[$struct_id] = $label;
+      // drupal_set_message($term . "," . $label . "," . $struct_id);
     }
     $struct_options['other'] = 'My structure term is not in this list';
 

@@ -196,58 +196,104 @@ function tpps_load_cv($info) {
  *   The resulting cvterm object, or FALSE on failure.
  */
 function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
-  $cvt_v = variable_get('tpps_cvterms_version', '1_1');
-  $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
-  $terms = $get_cvt();
-  $info = $terms[$term] ?? NULL;
 
-  if (empty($info)) {
-    $info = ":$term";
+  $check_cache = variable_get('tpps_load_cvterm_' . md5($term), null);
+  if ($_GET['refresh_cache'] == 'true') {
+    $check_cache = null;
   }
-
-  preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
-  $ontology = $matches[1];
-  $name = $matches[2];
-  $alt_ontology = $matches[3] ?? NULL;
-  $identifiers = array(
-    'name' => $term,
-    'is_obsolete' => 0,
-  );
-
-  if (!empty($ontology)) {
-    if ($ontology == 'local') {
-      $identifiers['definition'] = $name;
+  if ($check_cache == null) {
+    $cvt_v = variable_get('tpps_cvterms_version', '1_1');
+    $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
+    $terms = $get_cvt();
+    $info = $terms[$term] ?? NULL;
+    
+    if (empty($info)) {
+      $info = ":$term";
     }
-    else {
-      $identifiers['name'] = $name;
-      $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
-    }
-  }
-  $result = chado_get_cvterm($identifiers, $options);
+    // dpm($info);
+    // drupal_set_message('info:'. $info);
+    preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
+    $ontology = $matches[1];
+    $name = $matches[2];
+    $alt_ontology = $matches[3] ?? NULL;
 
-  if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
-    $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
+    $identifiers = array(
+      'name' => $term,
+      'is_obsolete' => 0,
+    );
+
+    if (!empty($ontology)) {
+      if ($ontology == 'local') {
+        $identifiers['definition'] = $name;   
+      }
+      else {
+        $identifiers['name'] = $name;
+        $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
+      }
+    }
     $result = chado_get_cvterm($identifiers, $options);
-  }
 
-  if (empty($result)) {
-    if (!empty($options['job'])) {
-      $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
-    }
-    else {
-      $trace = debug_backtrace()[1];
-      $job = NULL;
-      if (!empty($trace['args']) and gettype($trace['args']) == 'array') {
-        foreach ($trace['args'] as $key => $arg) {
-          if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
-            $job = &$trace['args'][$key];
+    // Cater for CV types like GO: Biological Process
+    if(empty($result)) {
+      preg_match('/^([\w]*):([\s]+[\w\s]*):([\s\w]*):?([\s\w]*)?$/', $info, $matches2);
+      if(count($matches2) > 0) {
+        // dpm($matches2);
+        $ontology = $matches2[1] . ":" . $matches2[2];
+        // drupal_set_message('ONTOLOGY:' . $ontology);
+        $name = $matches2[3];
+        $alt_ontology = $matches2[4] ?? NULL;
+        if (!empty($ontology)) {
+          if ($ontology == 'local') {
+            $identifiers['definition'] = $name;   
+          }
+          else {
+            $identifiers['name'] = $name;
+            $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
           }
         }
-        if (!empty($job)) {
-          $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);             
+        $result = chado_get_cvterm($identifiers, $options);  
+      }  
+    }
+
+    if(empty($result) && $ontology == 'local') {
+        // Added by Rish (1/5/2022)
+        unset($identifiers['definition']);
+        $identifiers['name'] = $name;
+        $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id; 
+        $result = chado_get_cvterm($identifiers, $options);  
+    }
+    // drupal_set_message('Identifiers: ' . var_export($identifiers,true));
+    // drupal_set_message('CVTERM_ID: ' . $result->cvterm_id);
+    // echo var_dump($result);
+
+    if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
+      $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
+      $result = chado_get_cvterm($identifiers, $options);
+    }
+
+    if (empty($result)) {
+      if (!empty($options['job'])) {
+        $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+      }
+      else {
+        $trace = debug_backtrace()[1];
+        $job = NULL;
+        if (!empty($trace['args']) and gettype($trace['args']) == 'array') {
+          foreach ($trace['args'] as $key => $arg) {
+            if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
+              $job = &$trace['args'][$key];
+            }
+          }
+          if (!empty($job)) {
+            $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);             
+          }
         }
       }
     }
+    variable_set('tpps_load_cvterm_' . md5($term), serialize($result));
+  }
+  else {
+    $result = unserialize($check_cache);
   }
   return $result;
 }
@@ -276,6 +322,33 @@ function tpps_get_cvterms_v1_2() {
     'number_samples' => 'local:Number of samples',
     'gps_type' => 'local:Type of GPS coordinates. Exact, Approximate, or Site-based.',
     'gps_precision' => 'local:Precision of GPS coordinates.',
+
+    // PAG 2022 request by Emily
+    'precipitation' => 'local:precipitation',
+    'absorbance' => 'local:absorbance',
+    'water use efficiency' => 'local:water use efficiency',
+    'delta' => 'ncit:Delta',
+    'carbon-13 atom' => 'chebi_ontology:carbon-13 atom',
+    'rate' => 'pato:rate',
+    'chlorophyll' => 'chebi:chlorophyll',
+    'transpiration' => 'GO: Biological Process:transpiration',
+    'photosynthesis' => 'GO: Biological Process:photosynthesis',
+    'degrees celsius per millimeter' => 'local:degrees celsius per millimeter',
+    'centimeters per day' => 'local:centimeters per day',
+    'kilograms per meter cubed' => 'local:kilograms per meter cubed',
+    'no unit' => 'local:no unit',
+    'log(centimeters per day)' => 'local:log(centimeters per day)',
+    'log(centimeters cubed per day)' => 'local:log(centimeters cubed per day)',
+    'micromoles carbon dioxide per meter squared per second' => 'local:micromoles carbon dioxide per meter squared per second',
+    'micromoles carbon dioxide per gram per second' => 'local:micromoles carbon dioxide per gram per second',
+    'absorbance unit' => 'local:absorbance unit',
+    'number' => 'local:number',
+    'milligrams per millimeter' => 'local:milligrams per millimeter',
+    'milligrams per millimeter squared' => 'local:milligrams per millimeter squared',
+    'milligrams per milligram' => 'local:milligrams per milligram',
+    'micromoles carbon dioxide per gram Nitrogen per second' => 'local:micromoles carbon dioxide per gram Nitrogen per second', 
+    'micromoles carbon dioxide per millimole water' => 'local:micromoles carbon dioxide per millimole water',
+    'moles water per meter squared per second' => 'local:moles water per meter squared per second',
 
     // Tripal terms.
     'article' => 'tripal_pub:Journal Article',
@@ -815,14 +888,14 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
   $old_term_func = 'tpps_get_cvterms_v' . $old_v;
   $new_term_func = 'tpps_get_cvterms_v' . $new_v;
   $old_terms = $old_term_func();
+  // print_r($old_terms);
   $new_terms = $new_term_func();
-
+  // print_r($new_terms);
   $transaction = db_transaction();
 
   try {
     foreach ($old_terms as $key => $old_info) {
       $new_info = $new_terms[$key] ?? NULL;
-
       if (!isset($new_info) or !isset($old_info)) {
         continue;
       }
@@ -857,6 +930,8 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
     }
     foreach ($new_terms as $key => $info) {
       if (!empty($info)) {
+        // print_r($info);
+        // echo "\n";
         $result = tpps_ols_install_term($info);
         if ($result === 'local') {
           tpps_local_install_term($key, $new_v);

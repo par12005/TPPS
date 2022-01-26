@@ -586,12 +586,16 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     $headers = tpps_file_headers($snps_assay);
     $id_col_name = key($headers);
     while (($k = array_search(NULL, $headers))) {
+      drupal_set_message(t('Following header column is Null which needs to be fixed. %data', array('%data' => $k)), 'error');
       unset($headers[$k]);
     }
     $num_columns = tpps_file_width($snps_assay) - 1;
     $num_unique_columns = count(array_unique($headers)) - 1;
-
     if ($num_unique_columns != $num_columns) {
+      $duplicates = array_diff_assoc($headers, array_unique($headers));
+      if (!empty($duplicates)) {
+        drupal_set_message(t('Following header values are duplicate in provided snp file. %data', array('%data' => implode(',', $duplicates))), 'error');
+      }
       form_set_error("$id][genotype][files][snps-assay", t("SNPs Assay file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file."));
     }
 
