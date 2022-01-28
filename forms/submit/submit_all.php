@@ -1245,28 +1245,28 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $genotype_count = 0;
   }
 
-  if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
-    if ($genotype['files']['assay-design'] == 'new') {
-      $design_fid = $genotype['files']['assay-design'];
+  if (!empty($genotype['files']['assaydesign']) and !empty($genotype['marker-type']['SNPs'])) {
+    // if ($genotype['files']['assaydesign'] == 'new') {
+      $design_fid = $genotype['files']['assaydesign'];
       tpps_add_project_file($form_state, $design_fid);
 
       // I hope this is the best place to process this file
-      $job->logMessage("[INFO] Processing Genotype Assay Design...");
+      echo("[INFO] Processing Genotype Assay Design...\n");
 
-      print_r($genotype['files']['assay-design']);
+      print_r($genotype['files']['assaydesign']);
 
-      $assay_design_options = array(
+      $assaydesign_options = array(
         'headers' => tpps_file_headers($design_fid),
       );
-      global $tpps_process_genotype_assay_design_row_count;
-      $tpps_process_genotype_assay_design_row_count = 0;
-      tpps_file_iterator($design_fid, 'tpps_process_genotype_assay_design', $assay_design_options);
-      $job->logMessage("[INFO] Completed processing Genotype Assay Design...");
-      // throw new Exception('Incomplete work - tpps_process_genotype_assay_design');
-    }
+      global $tpps_process_genotype_assaydesign_row_count;
+      $tpps_process_genotype_assaydesign_row_count = 0;
+      tpps_file_iterator($design_fid, 'tpps_process_genotype_assaydesign', $assaydesign_options);
+      echo("[INFO] Completed processing Genotype Assay Design...\n");
+      // throw new Exception('Incomplete work - tpps_process_genotype_assaydesign');
+    // }
 
-    if ($genotype['files']['assay-design'] != 'new') {
-      $design_fid = $genotype['files']['assay-design'];
+    if ($genotype['files']['assaydesign'] != 'new') {
+      $design_fid = $genotype['files']['assaydesign'];
       tpps_add_project_file($form_state, $design_fid);
     }
     // Altered on 1/12/2022
@@ -1943,11 +1943,11 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_process_genotype_assay_design($row, array &$options = array()) {
-  global $tpps_process_genotype_assay_design_row_count;
-  $tpps_process_genotype_assay_design_row_count = $tpps_process_genotype_assay_design_row_count+1;
+function tpps_process_genotype_assaydesign($row, array &$options = array()) {
+  global $tpps_process_genotype_assaydesign_row_count;
+  $tpps_process_genotype_assaydesign_row_count = $tpps_process_genotype_assaydesign_row_count+1;
 
-  if($tpps_process_genotype_assay_design_row_count == 1) {
+  if($tpps_process_genotype_assaydesign_row_count == 1) {
       // WARNING! WARNING! This is in the wrong spot so just for testing
       // $options['headers'] = tpps_file_headers(12526);
       print_r($options['headers']);

@@ -440,8 +440,8 @@ function tpps_flatten(array $state) {
             $data["$org_name SNPs Genotype Assay File"] = $geno['files']['snps-assay'];
           }
 
-          if (!empty($geno['files']['assay-design'])) {
-            $data["$org_name Assay Design File"] = $geno['files']['assay-design'];
+          if (!empty($geno['files']['assaydesign'])) {
+            $data["$org_name Assay Design File"] = $geno['files']['assaydesign'];
           }
 
           if (!empty($geno['files']['ssrs'])) {

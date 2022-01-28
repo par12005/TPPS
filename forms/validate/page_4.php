@@ -714,12 +714,12 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   if (!empty($file_type['Assay Design']) and !$genotype['files']['assay-load']) {
     form_set_error("$id][genotype][files][assay-load", t("Assay Design: field is required."));
   }
-  elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] == 'new' and !$genotype['files']['assay-design']) {
+  elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] == 'new' and !$genotype['files']['assaydesign']) {
     form_set_error("$id][genotype][files][assay-design", t("Assay Design file: field is required."));
   }
   elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] == 'new') {
     // Preserve file if it is valid.
-    tpps_preserve_valid_file($form_state, $genotype['files']['assay-design'], $org_num, "Genotype_Assay_Design");
+    tpps_preserve_valid_file($form_state, $genotype['files']['assaydesign'], $org_num, "Genotype_Assay_Design");
   }
   elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] != 'new') {
     $file = file_load($genotype['files']['assay-load']);

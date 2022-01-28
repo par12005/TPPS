@@ -1027,7 +1027,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => t('Please select an assay design. Some design files from the same genus as this species are available, or you can choose to upload your own assay design file.'),
     );
 
-    $fields['files']['assay-design'] = array(
+    $fields['files']['assaydesign'] = array(
       '#type' => 'managed_file',
       '#title' => 'Genotype Assay Design File: *',
       '#upload_location' => "$genotype_upload_location",
@@ -1043,25 +1043,25 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     );
 
     // WARNING: We may need to remove this for the columns to work properly
-    if (isset($fields['files']['assay-design']['#value'])) {
-      $fields['files']['assay-design']['#default_value'] = $fields['files']['assay-design']['#value'];
+    if (isset($fields['files']['assaydesign']['#value'])) {
+      $fields['files']['assaydesign']['#default_value'] = $fields['files']['assaydesign']['#value'];
     }
-    if (!empty($fields['files']['assay-design']['#default_value']) and ($file = file_load($fields['files']['assay-design']['#default_value']))) {
+    if (!empty($fields['files']['assaydesign']['#default_value']) and ($file = file_load($fields['files']['assaydesign']['#default_value']))) {
       // Stop using the file so it can be deleted if the user clicks 'remove'.
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
 
     // https://tpps.readthedocs.io/en/latest/dev/files.html
-    $fields['files']['assay-design']['empty'] = array(
-      '#default_value' => isset($values['files']['assay-design']['empty']) ? $values['files']['assay-design']['empty'] : 'NA',
+    $fields['files']['assaydesign']['empty'] = array(
+      '#default_value' => isset($values['files']['assaydesign']['empty']) ? $values['files']['assaydesign']['empty'] : 'NA',
     );
     
-    $fields['files']['assay-design']['columns'] = array(
+    $fields['files']['assaydesign']['columns'] = array(
       '#description' => 'Please define which columns hold the required data: V2 Genome SNP ID, V3 Chromosome, V3 Position',
     );
 
     // These are the options to be selected per column of the design file
-    $assay_design_file_column_options = array(
+    $assaydesign_file_column_options = array(
       '0' => 'N/A',
       '1' => 'V2 Genome SNP ID',
       '2' => 'V3 Chromosome',
@@ -1070,12 +1070,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '5' => 'Segregating Bases'
     );
 
-    $fields['files']['assay-design']['columns-options'] = array(
+    $fields['files']['assaydesign']['columns-options'] = array(
       '#type' => 'hidden',
-      '#value' => $assay_design_file_column_options,
+      '#value' => $assaydesign_file_column_options,
     );    
     
-    $fields['files']['assay-design']['no-header'] = array(); 
+    $fields['files']['assaydesign']['no-header'] = array(); 
 
     $fields['files']['assay-citation'] = array(
       '#type' => 'textfield',
@@ -1089,7 +1089,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     );
   }
   else {
-    $fields['files']['assay-design'] = array(
+    $fields['files']['assaydesign'] = array(
       '#type' => 'managed_file',
       '#tree' => TRUE,
       '#access' => FALSE,

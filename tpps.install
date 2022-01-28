@@ -1379,7 +1379,7 @@ function tpps_update_7101() {
         $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['file'] ?? NULL;
         $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['metadata'] ?? NULL;
         $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['snps-assay'] ?? NULL;
-        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['assay-design'] ?? NULL;
+        $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['assaydesign'] ?? NULL;
         $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['ssrs'] ?? NULL;
         $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['other'] ?? NULL;
         $state['files'][] = $state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['files']['vcf'] ?? NULL;
@@ -1756,7 +1756,7 @@ function tpps_update_7115() {
         $fids[] = $fourthpage["organism-$i"]['genotype']['files']['snps-association'] ?? NULL;
         $fids[] = $fourthpage["organism-$i"]['genotype']['files']['snps-pop-struct'] ?? NULL;
         $fids[] = $fourthpage["organism-$i"]['genotype']['files']['snps-kinship'] ?? NULL;
-        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['assay-design'] ?? NULL;
+        $fids[] = $fourthpage["organism-$i"]['genotype']['files']['assaydesign'] ?? NULL;
         $fids[] = $fourthpage["organism-$i"]['genotype']['files']['ssrs'] ?? NULL;
         $fids[] = $fourthpage["organism-$i"]['genotype']['files']['ssrs_extra'] ?? NULL;
         $fids[] = $fourthpage["organism-$i"]['genotype']['files']['indels'] ?? NULL;

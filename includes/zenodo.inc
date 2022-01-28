@@ -177,7 +177,7 @@ function tpps_doi_upload_files($id, array &$state) {
       }
 
       if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
-        $files[] = $genotype['files']['assay-design'];
+        $files[] = $genotype['files']['assaydesign'];
       }
 
       if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
