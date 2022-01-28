@@ -47,7 +47,6 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     }
 
     if (form_get_errors() and !$form_state['rebuild']) {
-      dpm('form_get_errors()');
       $form_state['rebuild'] = TRUE;
       $new_form = drupal_rebuild_form('tpps_main', $form_state, $form);
 
