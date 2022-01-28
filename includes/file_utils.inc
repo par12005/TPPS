@@ -556,6 +556,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
         }
 
         // RISH: This is for the assay design file
+        // TRY 1
         if (!empty($form_state['values']["organism-$i"]['genotype']['files']['assaydesign']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['assaydesign']))) {
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
           $form_state['values']["organism-$i"]['genotype']['files']['assaydesign-columns'] = array();
@@ -567,6 +568,21 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
             }
           }          
         }
+
+        // TRY 2
+        // if (($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['assaydesign'])) and $form_state['values']["organism-$i"]['genotype']['files']['assaydesign'] != 0) {
+        //   file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        // }
+
+        // $form_state['values']["organism-$i"]['genotype']['files']['assaydesign'] = array();
+
+        // if (isset($form["organism-$i"]['genotype']['files']['assaydesign']['#value']['columns'])) {
+        //   foreach ($form["organism-$i"]['genotype']['files']['assaydesign']['#value']['columns'] as $col => $val) {
+        //     if ($col[0] != '#') {
+        //       $form_state['values']["organism-$i"]['genotype']['files']['assaydesign-columns'][$col] = $form["organism-$i"]['genotype']['files']['assaydesign']['#value']['columns'][$col];
+        //     }
+        //   }
+        // }        
 
         if (!empty($form_state['values']["organism-$i"]['genotype']['files']['other']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['other']))) {
           file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
