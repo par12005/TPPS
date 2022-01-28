@@ -974,8 +974,16 @@ function tpps_main_validate(&$form, &$form_state) {
  * input to persistent variables so they can be reloaded later.
  */
 function tpps_main_submit($form, &$form_state) {
-  drupal_set_message('This happens on submit:');
-  dpm($form_state['values']);
+  if(isset($_GET['debug'])) {
+    drupal_set_message('values');
+    if(function_exists('dpm')) { 
+      dpm($form_state['values']);    
+    }
+    drupal_set_message('saved_values');
+    if(function_exists('dpm')) { 
+      dpm($form_state['saved_values']); 
+    } 
+  }
   $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
   $persist = TRUE;
 
