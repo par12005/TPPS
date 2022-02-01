@@ -156,6 +156,7 @@ function tpps_details_tabs(array &$state) {
     <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#trees">Plants</a></li>';
   $p_exist = FALSE;
   $g_exist = FALSE;
+  $mass_spectro_exist = FALSE;
   for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
     if (!empty($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'])) {
       $p_exist = TRUE;
@@ -163,10 +164,14 @@ function tpps_details_tabs(array &$state) {
     if (!empty($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])) {
       $g_exist = TRUE;
     }
+    if ($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['iso-check'] == TRUE) {
+      $mass_spectro_exist = TRUE;
+    }
   }
+  
   $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes / Environments</a></li>' : "";
   $output .= $g_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
-  $output .= '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#mass_spectrometry">Mass Spectrometry</a></li>';
+  $output .= $mass_spectro_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#mass_spectrometry">Mass Spectrometry</a></li>' : "";
   $output .= '</ul><div id="tab-content" class="tab-content">';
 
   $output .= "<div id=\"species\" role=\"tabpanel\" class=\"tab-pane fade in active\"></div>";
@@ -175,7 +180,7 @@ function tpps_details_tabs(array &$state) {
 
   $output .= $p_exist ? "<div id=\"phenotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
   $output .= $g_exist ? "<div id=\"genotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
-  $output .= "<div id=\"mass_spectrometry\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
+  $output .= $mass_spectro_exist ? "<div id=\"mass_spectrometry\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
 
   $output .= '</div>';
   return $output;
