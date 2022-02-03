@@ -33,6 +33,16 @@ require_once 'tpps.queries.api.inc';
 function tpps_api_paths() {
   $items = array();
 
+  $items['tpps/api/debug/state/%'] = array(
+    'title' => 'TPPS Show Submission State',
+    'page callback' => 'tpps_api_debug_state',
+    'page arguments' => array(4),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('administer tpps module'),
+    // 'delivery callback' => 'drupal_json_output',
+    'type' => MENU_CALLBACK,
+  );
+
   // tpps/api/refresh_views calls tpps_api_refresh_views which will
   // update the tpps specific views used in particular for details pages
   $items['tpps/api/refresh_views'] = array(
@@ -111,6 +121,27 @@ function tpps_api_paths() {
 
   return $items;
 }
+
+/**
+ * Performs a TPPS API call that will return JSON formatted submission_state
+ * 
+ * @param string $accession
+ *  The accession to search for in the tpps_submissions database table
+ * 
+ * @return string
+ *  Prints the array using print_r which can be seen using viewsource in browser
+ *  Example: view-source:https://tgwebdev.cam.uchc.edu/tpps/api/debug/state/TGDR493
+ */
+function tpps_api_debug_state($accession) {
+  $results = chado_query('SELECT submission_state FROM tpps_submission WHERE accession ILIKE :accession', array(
+    ':accession' => $accession
+  ));
+  foreach ($results as $row) {
+    print_r(unserialize($row->submission_state));
+  }
+}
+
+
 
 /**
  * Performs a TPPS API call.

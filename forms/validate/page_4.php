@@ -718,6 +718,13 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     form_set_error("$id][genotype][files][assay-design", t("Assay Design file: field is required."));
   }
   elseif (!empty($file_type['Assay Design']) and $genotype['files']['assay-load'] == 'new') {
+    // Begin with an empty $required_groups_assaydesign
+    // Because the required groups is empty - this doesn't do much
+    // Consider it boilerplate code until saving columns correctly is resolved.
+    $required_groups_assaydesign = array();
+    $file_element = $form[$id]['genotype']['files']['assaydesign'];
+    $groups = tpps_file_validate_columns($form_state, $required_groups_assaydesign, $file_element);
+
     // Preserve file if it is valid.
     tpps_preserve_valid_file($form_state, $genotype['files']['assaydesign'], $org_num, "Genotype_Assay_Design");
   }
