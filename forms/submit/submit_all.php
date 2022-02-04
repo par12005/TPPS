@@ -1246,24 +1246,58 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   }
 
   if (!empty($genotype['files']['assaydesign']) and !empty($genotype['marker-type']['SNPs'])) {
-    // if ($genotype['files']['assaydesign'] == 'new') {
-      $design_fid = $genotype['files']['assaydesign'];
-      tpps_add_project_file($form_state, $design_fid);
 
-      // I hope this is the best place to process this file
-      echo("[INFO] Processing Genotype Assay Design...\n");
+    $design_fid = $genotype['files']['assaydesign'];
+    tpps_add_project_file($form_state, $design_fid);
 
-      print_r($genotype['files']['assaydesign']);
+    // I hope this is the best place to process this file
+    echo("[INFO] Processing Genotype Assay Design...\n");
 
-      $assaydesign_options = array(
-        'headers' => tpps_file_headers($design_fid),
-      );
-      global $tpps_process_genotype_assaydesign_row_count;
-      $tpps_process_genotype_assaydesign_row_count = 0;
-      tpps_file_iterator($design_fid, 'tpps_process_genotype_assaydesign', $assaydesign_options);
-      echo("[INFO] Completed processing Genotype Assay Design...\n");
-      // throw new Exception('Incomplete work - tpps_process_genotype_assaydesign');
-    // }
+    print_r($genotype['files']['assaydesign']);
+
+
+    $selected_options_raw = $genotype['files']['assaydesign-columns'];
+    $selected_options = array();
+    foreach ($selected_options_raw as $option => $value) {
+      // the $option would be letter columns A,B,C,D,E etc
+      // $value == 0 this means the column $option was unselected (letter)
+      // $value == 1 is v2_genome_snp_id
+      // $value == 2 is v3_chromosome
+      // $value == 3 is v3_position
+      // $value == 4 is v3_allele
+      // $value == 5 is segregating_bases
+      switch($value) {
+        case 1:
+          $selected_options['v2_genome_snp_id'] = $option;
+          break;
+        case 2:
+          $selected_options['v3_chromosome'] = $option;
+          break;
+        case 3:
+          $selected_options['v3_position'] = $option;
+          break;
+        case 4:
+          $selected_options['v3_allele'] = $option;
+          break;
+        case 5:
+          $selected_options['segregating_bases'] = $option;
+          break;
+      }
+    }
+
+    // We need to reuse the $options variable which contains the ['records']
+    // $assaydesign_options = array(
+    //   'assaydesign_headers' => tpps_file_headers($design_fid),
+    //   'assaydesign_selected_options' => $selected_options,
+    // );
+
+    $options['assaydesign_headers'] = tpps_file_headers($design_fid);
+    $options['assaydesign_selected_options'] = $selected_options;
+
+    global $tpps_process_genotype_assaydesign_row_count;
+    $tpps_process_genotype_assaydesign_row_count = 0;
+    tpps_file_iterator($design_fid, 'tpps_process_genotype_assaydesign', $options);
+    echo("[INFO] Completed processing Genotype Assay Design...\n");
 
     if ($genotype['files']['assaydesign'] != 'new') {
       $design_fid = $genotype['files']['assaydesign'];
@@ -1950,8 +1984,8 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
   if($tpps_process_genotype_assaydesign_row_count == 1) {
       // WARNING! WARNING! This is in the wrong spot so just for testing
       // $options['headers'] = tpps_file_headers(12526);
-      print_r($options['headers']);
-
+      print_r($options['assaydesign_headers']);
+      print_r($options['assaydesign_selected_options']);
       // This is correcly here
       print_r($row);
 
