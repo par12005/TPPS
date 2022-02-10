@@ -1252,73 +1252,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $genotype_count = 0;
   }
 
-  if (!empty($genotype['files']['assaydesign']) and !empty($genotype['marker-type']['SNPs'])) {
-
-    $ref_genome = $genotype['ref-genome'];
-    if(!isset($ref_genome)) {
-      throw new Exception('Could not load reference genome which is needed to process assaydesign file');
-    }
-
-    $design_fid = $genotype['files']['assaydesign'];
-    tpps_add_project_file($form_state, $design_fid);
-
-    // I hope this is the best place to process this file
-    echo("[INFO] Processing Genotype Assay Design...\n");
-
-    print_r($genotype['files']['assaydesign']);
-
-
-    $selected_options_raw = $genotype['files']['assaydesign-columns'];
-    $selected_options = array();
-    foreach ($selected_options_raw as $option => $value) {
-      // the $option would be letter columns A,B,C,D,E etc
-      // $value == 0 this means the column $option was unselected (letter)
-      // $value == 1 is v2_genome_snp_id
-      // $value == 2 is v3_chromosome
-      // $value == 3 is v3_position
-      // $value == 4 is v3_allele
-      // $value == 5 is segregating_bases
-      switch($value) {
-        case 1:
-          $selected_options['v2_genome_snp_id'] = $option;
-          break;
-        case 2:
-          $selected_options['v3_chromosome'] = $option;
-          break;
-        case 3:
-          $selected_options['v3_position'] = $option;
-          break;
-        case 4:
-          $selected_options['v3_allele'] = $option;
-          break;
-        case 5:
-          $selected_options['segregating_bases'] = $option;
-          break;
-      }
-    }
-
-    // We need to reuse the $options variable which contains the ['records']
-    // $assaydesign_options = array(
-    //   'assaydesign_headers' => tpps_file_headers($design_fid),
-    //   'assaydesign_selected_options' => $selected_options,
-    // );
-
-    $options['assaydesign_headers'] = tpps_file_headers($design_fid);
-    $options['assaydesign_selected_options'] = $selected_options;
-    $options['assaydesign_ref_genome'] = $ref_genome;
-
-    global $tpps_process_genotype_assaydesign_row_count;
-    $tpps_process_genotype_assaydesign_row_count = 0;
-    tpps_file_iterator($design_fid, 'tpps_process_genotype_assaydesign', $options);
-    echo("[INFO] Completed processing Genotype Assay Design...\n");
-
-    if ($genotype['files']['assaydesign'] != 'new') {
-      $design_fid = $genotype['files']['assaydesign'];
-      tpps_add_project_file($form_state, $design_fid);
-    }
-    // Altered on 1/12/2022
-    // tpps_add_project_file($form_state, $design_fid);
-  }
 
   if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
     $ssr_fid = $genotype['files']['ssrs'];
@@ -1390,6 +1323,79 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $genotype_count = 0;
   }
 
+  if (!empty($genotype['files']['assaydesign']) and !empty($genotype['marker-type']['SNPs'])) {
+
+    $ref_genome = $genotype['ref-genome'];
+    if(!isset($ref_genome)) {
+      throw new Exception('Could not load reference genome which is needed to process assaydesign file');
+    }
+
+    $design_fid = $genotype['files']['assaydesign'];
+    tpps_add_project_file($form_state, $design_fid);
+
+    // I hope this is the best place to process this file
+    echo("[INFO] Processing Genotype Assay Design...\n");
+
+    print_r($genotype['files']['assaydesign']);
+
+
+    $selected_options_raw = $genotype['files']['assaydesign-columns'];
+    $selected_options = array();
+    foreach ($selected_options_raw as $option => $value) {
+      // the $option would be letter columns A,B,C,D,E etc
+      // $value == 0 this means the column $option was unselected (letter)
+      // $value == 1 is v2_genome_snp_id
+      // $value == 2 is v3_chromosome
+      // $value == 3 is v3_position
+      // $value == 4 is v3_allele
+      // $value == 5 is segregating_bases
+      switch($value) {
+        case 1:
+          $selected_options['v2_genome_snp_id'] = $option;
+          break;
+        case 2:
+          $selected_options['v3_chromosome'] = $option;
+          break;
+        case 3:
+          $selected_options['v3_position'] = $option;
+          break;
+        case 4:
+          $selected_options['v3_allele'] = $option;
+          break;
+        case 5:
+          $selected_options['segregating_bases'] = $option;
+          break;
+      }
+    }
+
+    // We need to reuse the $options variable which contains the ['records']
+    // $assaydesign_options = array(
+    //   'assaydesign_headers' => tpps_file_headers($design_fid),
+    //   'assaydesign_selected_options' => $selected_options,
+    // );
+
+    $options['assaydesign_headers'] = tpps_file_headers($design_fid);
+    $options['assaydesign_selected_options'] = $selected_options;
+    $options['assaydesign_ref_genome'] = $ref_genome;
+
+    global $tpps_process_genotype_assaydesign_row_count;
+    $tpps_process_genotype_assaydesign_row_count = 0;
+    tpps_file_iterator($design_fid, 'tpps_process_genotype_assaydesign', $options);
+
+    tpps_chado_insert_multi($options['records'], $multi_insert_options);
+    echo("[INFO] Completed processing Genotype Assay Design...\n");
+
+    if ($genotype['files']['assaydesign'] != 'new') {
+      $design_fid = $genotype['files']['assaydesign'];
+    }
+    else {
+      tpps_add_project_file($form_state, $design_fid);
+    }
+
+    throw new Exception('STOPPED HERE FOR DEBUGGING PURPOSES');
+    // Altered on 1/12/2022
+    // tpps_add_project_file($form_state, $design_fid);
+  }
 
 
   if (!empty($genotype['files']['file-type']['VCF'])) {
@@ -2006,11 +2012,13 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
       print_r($options['assaydesign_ref_genome']);
 
       if(!isset($tpps_process_genotype_assaydesign_global)) {
+        print_r("Initialize the assaydesign global variable\n");
         $tpps_process_genotype_assaydesign_global = array();
         // REFERENCE GENOME STRING TO USE FOR QUERYING ANALYSIS TABLE TO GET ANALYSIS ID
         $ref_genome = $options['assaydesign_ref_genome'];
         
         preg_match('/[^v\d.]+/', $ref_genome, $ref_genome_matches);
+        print_r("Reference genome matches\n");
         print_r($ref_genome_matches);
         if(count($ref_genome_matches) < 1) {
           throw new Exception('Reference genome string seems invalid. This should have been the organism name space version number which could not be detected');
@@ -2019,9 +2027,9 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
         $organism_species = trim($ref_genome_matches[0]);
 
         // Check to see whether v3 chromosome, v3 position and v3 allele columns were selected
-        if(isset($options['assaydesign_selected_options']['v3_chromosome']) &&
-          isset($options['assaydesign_selected_options']['v3_position']) &&
-          isset($options['assaydesign_selected_options']['v3_allele'])
+        if(!empty($options['assaydesign_selected_options']['v3_chromosome']) &&
+          !empty($options['assaydesign_selected_options']['v3_position']) &&
+          !empty($options['assaydesign_selected_options']['v3_allele'])
         ) {
           // Storing genome v3.x information
           $tpps_process_genotype_assaydesign_global['genome_version_partial_search'] = 'v3';
@@ -2040,15 +2048,18 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
 
         $tpps_process_genotype_assaydesign_global['analysis_id'] = null;
         foreach ($results_analysis as $results_analysis_row) {
+          print_r("results_analysis_row for loop");
+          print_r($results_analysis_row);
           // This happens only once due to LIMIT 1 in the SQL statement
           $tpps_process_genotype_assaydesign_global['analysis_id'] = $results_analysis_row->analysis_id;
         }
       }
 
       // If analysis_id has been found, we can proceed to next step;
-      if(isset($tpps_process_genotype_assaydesign_global['analysis_id'])) {
+      if(!empty($tpps_process_genotype_assaydesign_global['analysis_id'])) {
+        print_r("Analysis ID:\n");
         print_r($tpps_process_genotype_assaydesign_global['analysis_id']);
-
+        print_r("\n");
         // Perform lookup of feature_id using v3_chromosome value and analysis_id
         $results_feature_id = chado_query("select feature_id from chado.feature where uniquename " . 
           "ilike :chromosome and feature_id in " . 
@@ -2063,9 +2074,11 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
         foreach($results_feature_id as $results_feature_id_row) {
           $feature_id = $results_feature_id_row->feature_id;
         }
-        if(isset($feature_id)) {
+        if(!empty($feature_id)) {
           print_r($feature_id);
           // Good we can continue by getting the feature_id of the SNP (v2_genome_snp_id)
+          // SQL
+          print_r($row[$options['assaydesign_selected_options']['v2_genome_snp_id']] . "\n");
           $results_snp_feature_id = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename ILIKE :snp_id LIMIT 1', array(
             ':snp_id' => $row[$options['assaydesign_selected_options']['v2_genome_snp_id']]
           ));
@@ -2075,7 +2088,7 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
             $snp_feature_id = $results_snp_feature_id_row->feature_id;
           }
 
-          if(isset($snp_feature_id)) {
+          if(!empty($snp_feature_id)) {
             print_r($snp_feature_id);
             // perform insert by adding to option records
             // make sure there's a featureloc key in options['records]
@@ -2118,7 +2131,8 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
 
   }
   else {
-    throw new Exception('DEVELOPMENTAL EXCEPTION: TO BE REMOVED AFTER TESTING');
+    echo ".";
+    // throw new Exception('DEVELOPMENTAL EXCEPTION: TO BE REMOVED AFTER TESTING');
   }
   
   // $type = $options['type'];
