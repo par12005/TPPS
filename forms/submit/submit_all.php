@@ -1173,6 +1173,13 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $options['records']['feature_cvterm'] = array();
       $options['records']['feature_cvtermprop'] = array();
 
+      // Add the following tables for (tpps_process_genotype_assaydesign)
+      // Make sure it doesn't already exist before creating since this would reset
+      // previous records which we do not want happen.
+      if(!isset($options['records']['genotype'])) {
+        $options['records']['genotype'] = array();
+      }
+
       $options['associations'] = array();
       $options['associations_tool'] = $genotype['files']['snps-association-tool'];
       $options['associations_groups'] = $genotype['files']['snps-association-groups'];
@@ -1247,6 +1254,11 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
   if (!empty($genotype['files']['assaydesign']) and !empty($genotype['marker-type']['SNPs'])) {
 
+    $ref_genome = $genotype['ref-genome'];
+    if(!isset($ref_genome)) {
+      throw new Exception('Could not load reference genome which is needed to process assaydesign file');
+    }
+
     $design_fid = $genotype['files']['assaydesign'];
     tpps_add_project_file($form_state, $design_fid);
 
@@ -1293,6 +1305,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
     $options['assaydesign_headers'] = tpps_file_headers($design_fid);
     $options['assaydesign_selected_options'] = $selected_options;
+    $options['assaydesign_ref_genome'] = $ref_genome;
 
     global $tpps_process_genotype_assaydesign_row_count;
     $tpps_process_genotype_assaydesign_row_count = 0;
@@ -1980,21 +1993,129 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
 function tpps_process_genotype_assaydesign($row, array &$options = array()) {
   global $tpps_process_genotype_assaydesign_row_count;
   $tpps_process_genotype_assaydesign_row_count = $tpps_process_genotype_assaydesign_row_count+1;
+  global $tpps_process_genotype_assaydesign_global;
+
 
   if($tpps_process_genotype_assaydesign_row_count == 1) {
       // WARNING! WARNING! This is in the wrong spot so just for testing
       // $options['headers'] = tpps_file_headers(12526);
-      print_r($options['assaydesign_headers']);
-      print_r($options['assaydesign_selected_options']);
+      print_r($options['assaydesign_headers']); // This isn't so useful for actual processing
+      print_r($options['assaydesign_selected_options']); // This is column_select -> letter
       // This is correcly here
-      print_r($row);
+      print_r($row); // letter -> value
+      print_r($options['assaydesign_ref_genome']);
+
+      if(!isset($tpps_process_genotype_assaydesign_global)) {
+        $tpps_process_genotype_assaydesign_global = array();
+        // REFERENCE GENOME STRING TO USE FOR QUERYING ANALYSIS TABLE TO GET ANALYSIS ID
+        $ref_genome = $options['assaydesign_ref_genome'];
+        
+        preg_match('/[^v\d.]+/', $ref_genome, $ref_genome_matches);
+        print_r($ref_genome_matches);
+        if(count($ref_genome_matches) < 1) {
+          throw new Exception('Reference genome string seems invalid. This should have been the organism name space version number which could not be detected');
+        }
+
+        $organism_species = trim($ref_genome_matches[0]);
+
+        // Check to see whether v3 chromosome, v3 position and v3 allele columns were selected
+        if(isset($options['assaydesign_selected_options']['v3_chromosome']) &&
+          isset($options['assaydesign_selected_options']['v3_position']) &&
+          isset($options['assaydesign_selected_options']['v3_allele'])
+        ) {
+          // Storing genome v3.x information
+          $tpps_process_genotype_assaydesign_global['genome_version_partial_search'] = 'v3';
+        }
+        else {
+          // Since no version of data could be determined, throw exception and stop processing
+          throw new Exception("assaydesign genome version is not supported at this time");
+        }
+
+        // We need to check to make sure an analysis exists for feature
+        // since it does not make sense to do this per feature I would think
+        $name_search_string = $organism_species . "%" . $tpps_process_genotype_assaydesign_global['genome_version_partial_search'] . '%';
+        $results_analysis = chado_query("SELECT * FROM chado.analysis where name ILIKE :name ORDER BY name DESC LIMIT 1", array(
+          ':name' => $name_search_string
+        ));
+
+        $tpps_process_genotype_assaydesign_global['analysis_id'] = null;
+        foreach ($results_analysis as $results_analysis_row) {
+          // This happens only once due to LIMIT 1 in the SQL statement
+          $tpps_process_genotype_assaydesign_global['analysis_id'] = $results_analysis_row->analysis_id;
+        }
+      }
+
+      // If analysis_id has been found, we can proceed to next step;
+      if(isset($tpps_process_genotype_assaydesign_global['analysis_id'])) {
+        print_r($tpps_process_genotype_assaydesign_global['analysis_id']);
+
+        // Perform lookup of feature_id using v3_chromosome value and analysis_id
+        $results_feature_id = chado_query("select feature_id from chado.feature where uniquename " . 
+          "ilike :chromosome and feature_id in " . 
+          "(select feature_id from chado.analysisfeature where analysis_id = :analysis_id) LIMIT 1;", 
+          array(
+            ':chromosome' => $row[$options['assaydesign_selected_options']['v3_chromosome']],
+            ':analysis_id' => $tpps_process_genotype_assaydesign_global['analysis_id']
+          )
+        );
+
+        $feature_id = null;
+        foreach($results_feature_id as $results_feature_id_row) {
+          $feature_id = $results_feature_id_row->feature_id;
+        }
+        if(isset($feature_id)) {
+          print_r($feature_id);
+          // Good we can continue by getting the feature_id of the SNP (v2_genome_snp_id)
+          $results_snp_feature_id = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename ILIKE :snp_id LIMIT 1', array(
+            ':snp_id' => $row[$options['assaydesign_selected_options']['v2_genome_snp_id']]
+          ));
+
+          $snp_feature_id = null;
+          foreach($results_snp_feature_id as $results_snp_feature_id_row) {
+            $snp_feature_id = $results_snp_feature_id_row->feature_id;
+          }
+
+          if(isset($snp_feature_id)) {
+            print_r($snp_feature_id);
+            // perform insert by adding to option records
+            // make sure there's a featureloc key in options['records]
+            if (!isset($options['records']['featureloc'])) {
+              $options['records']['featureloc'] = array();
+            }
+            // Create new record array for snp data
+            $unique_str = 'assaydesign-' . $snp_feature_id . '-' . $feature_id;
+            $new_record = array(
+              //'featureloc_id' => 'default', //probably don't need this
+              'feature_id' => $snp_feature_id, 
+              'srcfeature_id' => $feature_id, 
+              'fmin' => $row[$options['assaydesign_selected_options']['v3_position']], 
+              'locgroup' => 0, 
+              'rank' => 0
+            );
+            print_r($unique_str);
+            print_r($new_record);
+            $options['records']['featureloc'][$unique_str] = $new_record; // add the new record to the featureloc table
+            
+
+          }
+          else {
+            throw new Exception('assaydesign SNP Feature ID could not be found within the database, aborting submission');
+          }
+
+        }
+        else {
+          throw new Exception('assaydesign feature_id could not be found for chromosome ' . 
+            $options['assaydesign_selected_options']['v3_chromosome'] .
+            ' with analysis_id ' . $tpps_process_genotype_assaydesign_global['analysis_id']
+          );
+        }
+
+      }
+      else {
+        throw new Exception('Analysis ID could not be found based on name search string:' . $name_search_string);
+      }
 
 
-      
-      
-      // We need to check to make sure an analysis exists for feature
-      // since it does not make sense to do this per feature I would think
-      // $result = chado_query("SELECT * FROM analysis", array());
   }
   else {
     throw new Exception('DEVELOPMENTAL EXCEPTION: TO BE REMOVED AFTER TESTING');
