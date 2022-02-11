@@ -1330,6 +1330,13 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       throw new Exception('Could not load reference genome which is needed to process assaydesign file');
     }
 
+    // if ($genotype['files']['assaydesign'] != 'new') {
+    //   $design_fid = $genotype['files']['assaydesign'];
+    // }
+    // else {
+    //   tpps_add_project_file($form_state, $design_fid);
+    // }
+
     $design_fid = $genotype['files']['assaydesign'];
     tpps_add_project_file($form_state, $design_fid);
 
@@ -1382,15 +1389,31 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $tpps_process_genotype_assaydesign_row_count = 0;
     tpps_file_iterator($design_fid, 'tpps_process_genotype_assaydesign', $options);
 
+    print_r($options['records']['featureloc']);
+    print_r("\n");
+
+
+
+    // $multi_insert_options['fk_overrides']['featureloc'] = array(
+    //   'srcfeature_id' => array(
+    //     'table' => 'feature',
+    //     'columns' => array(
+    //       'srcfeature_id' => 'feature_id',
+    //     ),
+    //   ),
+    //   'feature_id' => array(
+    //     'table' => 'feature',
+    //     'columns' => array(
+    //       'feature_id' => 'feature_id',
+    //     ),
+    //   ),      
+    // );
+    $options['devel'] = true;
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
+    $options['records'] = $records;
     echo("[INFO] Completed processing Genotype Assay Design...\n");
 
-    if ($genotype['files']['assaydesign'] != 'new') {
-      $design_fid = $genotype['files']['assaydesign'];
-    }
-    else {
-      tpps_add_project_file($form_state, $design_fid);
-    }
+
 
     throw new Exception('STOPPED HERE FOR DEBUGGING PURPOSES');
     // Altered on 1/12/2022
@@ -2095,10 +2118,12 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
             if (!isset($options['records']['featureloc'])) {
               $options['records']['featureloc'] = array();
             }
+
+
             // Create new record array for snp data
             $unique_str = 'assaydesign-' . $snp_feature_id . '-' . $feature_id;
             $new_record = array(
-              //'featureloc_id' => 'default', //probably don't need this
+              'featureloc_id' => 'default', //probably don't need this
               'feature_id' => $snp_feature_id, 
               'srcfeature_id' => $feature_id, 
               'fmin' => $row[$options['assaydesign_selected_options']['v3_position']], 
