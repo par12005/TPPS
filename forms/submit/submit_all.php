@@ -2123,7 +2123,7 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
             // Create new record array for snp data
             $unique_str = 'assaydesign-' . $snp_feature_id . '-' . $feature_id;
             $new_record = array(
-              'featureloc_id' => 'default', //probably don't need this
+              //'featureloc_id' => 'default', //probably don't need this
               'feature_id' => $snp_feature_id, 
               'srcfeature_id' => $feature_id, 
               'fmin' => $row[$options['assaydesign_selected_options']['v3_position']], 
