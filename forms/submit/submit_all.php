@@ -1414,13 +1414,13 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     echo("[INFO] Completed processing Genotype Assay Design...\n");
 
     // DEBUG / PERFORM CHECK TO SEE IF IT WORKS
-    $test_results = chado_query("SELECT * FROM chado.featureloc WHERE feature_id = 13400230");
+    $test_results = chado_query("SELECT * FROM chado.featureloc WHERE feature_id = 13400230 LIMIT 1");
     foreach($test_results as $test_results_row) {
       echo "Test Results row for assaydesign";
       print_r($test_results_row);
     }
 
-    throw new Exception('STOPPED HERE FOR DEBUGGING PURPOSES');
+    // throw new Exception('STOPPED HERE FOR DEBUGGING PURPOSES');
     // Rish: Altered on 1/12/2022
     // tpps_add_project_file($form_state, $design_fid);
   }
@@ -2167,13 +2167,13 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
             
           }
           else {
-            throw new Exception("assaydesign SNP Feature ID could not be found within the database, aborting submission." .
-              'Chromosome: ' . $row[$options['assaydesign_selected_options']['v3_chromosome']] . "\n" .
-              'Analysis: ' . $tpps_process_genotype_assaydesign_global['analysis_id'] . "\n" .
-              'SNP ID from Excel: ' . $row[$options['assaydesign_selected_options']['v2_genome_snp_id']] . "\n"
-            );
+            // throw new Exception("assaydesign SNP Feature ID could not be found within the database, aborting submission." .
+            //   'Chromosome: ' . $row[$options['assaydesign_selected_options']['v3_chromosome']] . "\n" .
+            //   'Analysis: ' . $tpps_process_genotype_assaydesign_global['analysis_id'] . "\n" .
+            //   'SNP ID from Excel: ' . $row[$options['assaydesign_selected_options']['v2_genome_snp_id']] . "\n"
+            // );
+            print_r("\n " . $row[$options['assaydesign_selected_options']['v2_genome_snp_id']] . " could not be found (ignoring)\n");
           }
-
         }
         else {
           throw new Exception('assaydesign feature_id could not be found for chromosome ' . 
