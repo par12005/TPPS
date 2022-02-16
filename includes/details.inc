@@ -1010,7 +1010,8 @@ function tpps_details_mass_spectrometry(array &$state) {
     'value',
   ));
   $query->fields('s', array('uniquename', 'stock_id'));
-  $query->condition('ps.project_id', $state['ids']['project_id']);
+  $query->condition('p.attr_id', tpps_load_cvterm('Intensity')->cvterm_id);
+  //$query->condition('ps.project_id', $state['ids']['project_id']);
   $query->range($start, $per_page);
   $query = $query->execute();
 
