@@ -39,9 +39,16 @@ function tpps_front_create_form(array &$form, array $form_state) {
   }
   $prefix_text .= "</div></div>";
 
+
+  if(!isset($user->mail)) {
+    $prefix_text .= "<div style='text-align: center'>To begin submitting your data, please ensure that you're logged in to access upload features on this page.</div>";
+    $prefix_text .= "<div style='text-align: center'>If you do not have an account <a style='color: #e2b448;' href='/user/register'>register one here</a> or <a style='color: #e2b448' href='/user/login'>click here to login</a></div>";
+  }
+
   $form['description'] = array(
     '#markup' => $prefix_text,
   );
+
 
   if (isset($user->mail)) {
     // Logged in.
@@ -98,10 +105,12 @@ function tpps_front_create_form(array &$form, array $form_state) {
     );
   }
 
-  $form['Next'] = array(
-    '#type' => 'submit',
-    '#value' => t('Submit Data'),
-  );
+  if (isset($user->mail)) {
+    $form['Next'] = array(
+      '#type' => 'submit',
+      '#value' => t('Submit Data'),
+    );
+  }
 
   return $form;
 }

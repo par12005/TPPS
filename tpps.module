@@ -45,8 +45,9 @@ function tpps_menu() {
     'title' => 'Tripal Plant PopGen Submit',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_main'),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('access tpps form'),
+    'access arguments' => array('access content'),
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form'),
     'type' => MENU_NORMAL_ITEM,
   );
 
