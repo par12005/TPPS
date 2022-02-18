@@ -2107,7 +2107,7 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
         }
         // Perform lookup of feature_id using v3_chromosome value and analysis_id
         $results_feature_id = chado_query("select feature_id from chado.feature where uniquename " . 
-          "ilike :chromosome and feature_id in " . 
+          "like :chromosome and feature_id in " . 
           "(select feature_id from chado.analysisfeature where analysis_id = :analysis_id) LIMIT 1;", 
           array(
             ':chromosome' => $row[$options['assaydesign_selected_options']['v3_chromosome']],
