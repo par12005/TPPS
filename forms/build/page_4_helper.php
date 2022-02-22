@@ -972,24 +972,44 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $vcf_file_check = tpps_get_ajax_value($form_state, $parents);
 
   if (!empty($snps_assay_check)) {
-    $fields['files']['snps-assay'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
-      '#upload_location' => "$genotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
-      ),
-      '#description' => t("Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
-      '#tree' => TRUE,
+    $fields['files']['snp_files_fieldset'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('SNP Files'),
+      '#prefix' => '<div id="snp-upload-fieldset-wrapper">',
+      '#suffix' => '</div>',
     );
+    if (empty($form_state['snp_files_count'])) {
+      $form_state['snp_files_count'] = 0;
+    }
+    for ($files_count = 0; $files_count <= $form_state['snp_files_count']; $files_count++) {
+      $fields['files']['snp_files_fieldset']['snps-assay'][$files_count] = array(
+        '#type' => 'managed_file',
+        '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
+        '#upload_location' => "$genotype_upload_location",
+        '#upload_validators' => array(
+          'file_validate_extensions' => array('csv tsv xlsx'),
+        ),
+        '#description' => t("Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
+        '#tree' => TRUE,
+      );
 
-    if (isset($fields['files']['snps-assay']['#value']['fid'])) {
-      $fields['files']['snps-assay']['#default_value'] = $fields['files']['snps-assay']['#value']['fid'];
+      if (isset($fields['files']['snps-assay']['#value']['fid'])) {
+        $fields['files']['snps-assay']['#default_value'] = $fields['files']['snps-assay']['#value']['fid'];
+      }
+      if (!empty($fields['files']['snps-assay']['#default_value']) and ($file = file_load($fields['files']['snps-assay']['#default_value']))) {
+        // Stop using the file so it can be deleted if the user clicks 'remove'.
+        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      }
     }
-    if (!empty($fields['files']['snps-assay']['#default_value']) and ($file = file_load($fields['files']['snps-assay']['#default_value']))) {
-      // Stop using the file so it can be deleted if the user clicks 'remove'.
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-    }
+    $fields['files']['snp_files_fieldset']['add_more'] = array(
+      '#type' => 'button',
+      '#value' => t('Add another SNP file'),
+      '#submit' => array('snp_file_add_more_add_one'),
+      '#ajax' => array(
+        'callback' => 'tpps_genotype_files_callback',
+        'wrapper' => "$id-genotype-files",
+      ),
+  );
   }
   else {
     $fields['files']['snps-assay'] = array(
@@ -1477,6 +1497,29 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
 
   return $fields;
+}
+
+/**
+ * Submit handler for the "add-more" SNP button.
+ *
+ * Increments the max counter and causes a rebuild.
+ */
+function snp_file_add_more_add_one($form, &$form_state) {
+  if (!isset($form_state['snp_files_count'])) {
+      $form_state['snp_files_count'] = 0;
+      $form_state['snp_files_count']++;
+  }
+  $form_state['snp_files_count']++;
+  $form_state['rebuild'] = TRUE;
+}
+
+/**
+ * Callback for both ajax-enabled buttons.
+ *
+ * Selects and returns the fieldset with the names in it.
+ */
+function snp_file_add_more_callback($form, $form_state) {
+  return $form['files']['snp_files_fieldset'];
 }
 
 /**
