@@ -1387,9 +1387,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
     global $tpps_process_genotype_assaydesign_row_count;
     $tpps_process_genotype_assaydesign_row_count = 0;
+    $assaydesign_process_time_start = microtime(true);
     tpps_file_iterator($design_fid, 'tpps_process_genotype_assaydesign', $options);
-
-    print_r($options['records']['featureloc']);
+    $assaydesign_process_time_end = microtime(true);
+    $assaydesign_process_time = $assaydesign_process_time_end - $assaydesign_process_time_start;
+    // print_r($options['records']['featureloc']);
+    print_r("FEATURE LOC RECORDS IN ARRAY:" . count($options['records']['featureloc']));
     print_r("\n");
 
 
@@ -1409,7 +1412,10 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     //   ),      
     // );
     $options['devel'] = true;
+    $assaydesign_insert_time_start = microtime(true);
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
+    $assaydesign_insert_time_end = microtime(true);
+    $assaydesign_insert_time = $assaydesign_insert_time_end - $assaydesign_insert_time_start;
     $options['records'] = $records;
     echo("[INFO] Completed processing Genotype Assay Design...\n");
 
@@ -1420,7 +1426,10 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       print_r($test_results_row);
     }
 
-    // throw new Exception('STOPPED HERE FOR DEBUGGING PURPOSES');
+    throw new Exception("STOPPED HERE FOR DEBUGGING PURPOSES\n" 
+    . 'FILE PROCESS TIME:' . $assaydesign_process_time . " ms\n" 
+    . 'INSERT PROCESS TIME:' . $assaydesign_insert_time . " ms\n"
+    );
     // Rish: Altered on 1/12/2022
     // tpps_add_project_file($form_state, $design_fid);
   }
@@ -2106,14 +2115,19 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
           print_r("\n");
         }
         // Perform lookup of feature_id using v3_chromosome value and analysis_id
-        $results_feature_id = chado_query("select feature_id from chado.feature where uniquename " . 
-          "like :chromosome and feature_id in " . 
-          "(select feature_id from chado.analysisfeature where analysis_id = :analysis_id) LIMIT 1;", 
-          array(
-            ':chromosome' => $row[$options['assaydesign_selected_options']['v3_chromosome']],
-            ':analysis_id' => $tpps_process_genotype_assaydesign_global['analysis_id']
-          )
+        $sql = "select feature_id from chado.feature where uniquename " . 
+        "like :chromosome and feature_id in " . 
+        "(select feature_id from chado.analysisfeature where analysis_id = :analysis_id) LIMIT 1;";
+        $args = array(
+          ':chromosome' => $row[$options['assaydesign_selected_options']['v3_chromosome']],
+          ':analysis_id' => $tpps_process_genotype_assaydesign_global['analysis_id']
         );
+        $results_feature_id = chado_query($sql, $args);
+        if($options['devel']) {
+          print_r($results_feature_id->getQueryString());
+          print_r($args);
+          print_r("\n");
+        }
 
         $feature_id = null;
         foreach($results_feature_id as $results_feature_id_row) {
@@ -2127,9 +2141,18 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
             print_r("\n");
             print_r($row[$options['assaydesign_selected_options']['v2_genome_snp_id']] . "\n");
           }
-          $results_snp_feature_id = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename ILIKE :snp_id LIMIT 1', array(
+          // This was originally given to me by Emily
+          // $sql = 'SELECT feature_id FROM chado.feature WHERE uniquename::text ILIKE :snp_id LIMIT 1';
+          $sql = 'SELECT feature_id FROM chado.feature WHERE uniquename = :snp_id LIMIT 1';
+          $args = array(
             ':snp_id' => $row[$options['assaydesign_selected_options']['v2_genome_snp_id']]
-          ));
+          );          
+          $results_snp_feature_id = chado_query($sql, $args);
+          if($options['devel']) {
+            print_r($results_snp_feature_id->getQueryString());
+            print_r($args);
+            print_r("\n");
+          }
 
           $snp_feature_id = null;
           foreach($results_snp_feature_id as $results_snp_feature_id_row) {
