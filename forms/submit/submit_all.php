@@ -2075,6 +2075,25 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
         }
 
         $organism_species = trim($ref_genome_matches[0]);
+        $organism_species_parts = explode(" ",$organism_species);
+        $organism_genus_only = $organism_species_parts[0];
+        $organism_species_only = "";
+        for($i=1; $i < count($organism_species_parts); $i++) {
+          $organism_species_only .= $organism_species_parts[$i] . " ";
+        }
+        $organism_species_only = trim($organism_species_only);
+        $results_organism = chado_query("SELECT organism_id FROM {organism} WHERE genus ILIKE :genus AND species ILIKE :species LIMIT 1", array(
+          ':genus' => $organism_genus_only,
+          ':species' => $organism_species_only,
+        ));
+        $ref_genome_organism_id = null;
+        foreach($results_organism as $results_organism_row) {
+          $ref_genome_organism_id = $results_organism_row->organism_id;
+        }
+        if($ref_genome_organism_id == null) {
+          throw new Exception("Cannot continue since the reference genome organism id could not be found in the database!");
+        }
+        $tpps_process_genotype_assaydesign_global['ref_genome_organism_id'] = $ref_genome_organism_id;
 
         // Check to see whether v3 chromosome, v3 position and v3 allele columns were selected
         if(!empty($options['assaydesign_selected_options']['v3_chromosome']) &&
@@ -2143,9 +2162,10 @@ function tpps_process_genotype_assaydesign($row, array &$options = array()) {
           }
           // This was originally given to me by Emily
           // $sql = 'SELECT feature_id FROM chado.feature WHERE uniquename::text ILIKE :snp_id LIMIT 1';
-          $sql = 'SELECT feature_id FROM chado.feature WHERE uniquename = :snp_id LIMIT 1';
+          $sql = 'SELECT feature_id FROM chado.feature WHERE uniquename = :snp_id AND organism_id = :organism_id LIMIT 1';
           $args = array(
-            ':snp_id' => $row[$options['assaydesign_selected_options']['v2_genome_snp_id']]
+            ':snp_id' => $row[$options['assaydesign_selected_options']['v2_genome_snp_id']],
+            ':organism_id' => $tpps_process_genotype_assaydesign_global['ref_genome_organism_id']
           );          
           $results_snp_feature_id = chado_query($sql, $args);
           if($options['devel']) {
