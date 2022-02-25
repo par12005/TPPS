@@ -595,6 +595,14 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       $duplicates = array_diff_assoc($headers, array_unique($headers));
       if (!empty($duplicates)) {
         drupal_set_message(t('Following header values are duplicate in provided snp file. %data', array('%data' => implode(',', $duplicates))), 'error');
+        drupal_set_message('Duplicates found: ' . implode(',',$duplicates), 'error');
+      }
+      else {
+        drupal_set_message('No duplicates found', 'status');
+      }
+      $differences = array_diff_assoc($headers, array_unique($headers));
+      if (!empty($differences)) {
+        drupal_set_message('Differences found: ' . implode(',',$differences), 'error');
       }
       form_set_error("$id][genotype][files][snps-assay", t("SNPs Assay file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file."));
     }
