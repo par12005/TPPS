@@ -236,7 +236,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'name' => array(
         '#type' => 'textfield',
         '#title' => 'Phenotype !num Name: *',
-        '#autocomplete_path' => 'tpps/autocomplete/phenotype',
+        // '#autocomplete_path' => 'tpps/autocomplete/phenotype',
         '#prefix' => "<label><b>Phenotype !num:</b></label>",
         '#attributes' => array(
           'data-toggle' => array('tooltip'),
