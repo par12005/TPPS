@@ -241,7 +241,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#attributes' => array(
           'data-toggle' => array('tooltip'),
           'data-placement' => array('right'),
-          'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
+          // 'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
+          'title' => array('If your phenotype name does not exist in our database, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
         ),
         '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your <a href="@url">Phenotype file</a> below.', array('@url' => url('/tpps', array('fragment' => "edit-$id-phenotype-file-ajax-wrapper")))),
       ),
