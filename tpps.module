@@ -244,6 +244,7 @@ function tpps_menu() {
   $items = array_merge($items, tpps_api_paths());
 
   return $items;
+  
 }
 
 /**
