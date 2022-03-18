@@ -27,8 +27,10 @@ function tpps_user_info(array &$form, array $values) {
       'data-placement' => array('right'),
       'title' => array('First Author of the publication'),
     ),
-    '#value' => $values['primaryAuthor']
   );
+  if(isset($values['primaryAuthor']) && $values['primaryAuthor'] != "") {
+    $form['primaryAuthor']['#value'] = $values['primaryAuthor'];
+  }
 
   $form['organization'] = array(
     '#type' => 'textfield',
@@ -91,21 +93,27 @@ function tpps_publication(array &$form, array $values, array $form_state) {
   $form['publication']['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Title of Publication/Study: *'),
-    '#value' => $values['publication']['title'],
   );
+  if(isset($values['publication']['title']) && $values['publication']['title'] != "") {
+    $form['publication']['title']['#value'] = $values['publication']['title'];
+  }  
 
   $form['publication']['abstract'] = array(
     '#type' => 'textarea',
     '#title' => t('Abstract/Description: *'),
-    '#value' => $values['publication']['abstract'],
   );
+  if(isset($values['publication']['abstract']) && $values['publication']['abstract'] != "") {
+    $form['publication']['abstract']['#value'] = $values['publication']['abstract'];
+  }
 
   $form['publication']['journal'] = array(
     '#type' => 'textfield',
     '#title' => t('Journal: *'),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
-    '#value' => $values['publication']['journal'],
   );
+  if(isset($values['publication']['journal']) && $values['publication']['journal'] != "") {
+    $form['publication']['journal']['#value'] = $values['publication']['journal'];
+  }  
 
   return $form;
 }
@@ -206,8 +214,10 @@ function tpps_year(array &$form, array $values, array $form_state) {
     '#description' => t('If your publication has not been published yet, please choose the expected year of publication.'),
     '#prefix' => '<div id="pubyear">',
     '#suffix' => '</div>',
-    '#value' => $values['publication']['year']
   );
+  if(isset($values['publication']['year'])) {
+    $form['publication']['year']['#value'] = $values['publication']['year'];
+  }
 
   return $form;
 }
