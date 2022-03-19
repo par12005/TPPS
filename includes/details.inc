@@ -731,6 +731,8 @@ function tpps_details_study(array &$state) {
  *   The HTML table of plants associated with the submission.
  */
 function tpps_details_trees(array &$state) {
+  $path = current_path();
+  $args = explode('/', $path);
   $params = drupal_get_query_parameters($_POST);
   $page = 0;
   if (!empty($params['page'])) {
@@ -755,7 +757,10 @@ function tpps_details_trees(array &$state) {
     $form_number = array_search($id, $state['ids']['organism_ids']);
     $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$form_number]['name'];
 
+    $tree_id = tpps_entity_link($info['stock_id'], $name, 'Stock');
+
     $row = array(
+      strtoupper($args[2]) . '-' . strip_tags($tree_id),
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
       tpps_entity_link($id, $species_name, 'Organism'),
     );
@@ -767,6 +772,7 @@ function tpps_details_trees(array &$state) {
   }
 
   $header = array(
+    'TreeGenes Identifier',
     'Identifier',
     'Species',
   );
