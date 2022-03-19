@@ -507,6 +507,10 @@ function tpps_details_search(array $form, array $form_state) {
     '#value' => t('Search'),
   );
 
+  $form['reset_button'] = array(
+    '#markup' => '<button class="btn btn-primary form-button" type="reset"/>Reset</button>',
+  ); 
+
   $form['#attributes'] = array(
     'style' => 'text-align:center',
   );
