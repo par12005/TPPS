@@ -17,8 +17,14 @@
  *   The coordinates in standardized form. False if coordinates were not valid.
  */
 function tpps_standard_coord($raw_coordinate) {
-  $matches = array();
+  // Patch added on 3/22/2022 - Reported by Emily Strickland
+  if(stripos($raw_coordinate,'‐') !== FALSE) {
+    // this is a strange character, so replace it with standard minus
+    $raw_coordinate = str_ireplace('‐','-', $raw_coordinate);
+  }
+  
 
+  $matches = array();
   if (preg_match('/(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([N|S])),? ?(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([E|W]))/', $raw_coordinate, $matches)) {
     $lat = $matches[2] + ($matches[3] / 60) + ($matches[4] / 3600);
     $long = $matches[7] + ($matches[8] / 60) + ($matches[9] / 3600);
