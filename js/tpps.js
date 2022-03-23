@@ -310,6 +310,62 @@ jQuery(document).ready(function ($) {
       })
     })
   }
+
+  // Here goes the selector of the button that starts the upload
+  var startUploadButtonClass = '.plupload_buttons .plupload_button.plupload_start';
+  var checkForNewFilesInterval = 1000;
+  // This line could go in your CSS
+  $('head').append('<style>'+ startUploadButtonClass +'{ display:none } </style>');
+  // Checking every checkForNewFilesInterval seconds
+  setInterval (function () {
+      var $pluploadFilelist = $('.plupload .plupload_filelist li');
+      var filesToUpload = $pluploadFilelist.length;
+      // alert(filesToUpload);
+      if (filesToUpload>0) {
+          $(startUploadButtonClass).click(); 
+          document.cookie = 'count=' + filesToUpload;
+      }
+  },checkForNewFilesInterval);
+
+  var file_id_array = jQuery('#edit-files-file-ids').val();
+
+  if(file_id_array != undefined && file_id_array != '') {
+    var json_files = jQuery.parseJSON(file_id_array);
+  }
+  jQuery(".file_id .button").click(function(e){
+    e.preventDefault();
+    var file_id = jQuery(this).attr('data-attr');
+    var original_file_id = jQuery(this).attr('data-src-attr');
+    var parent_li = jQuery(this).closest('li');
+
+    jQuery.post("snps-assay/remove/file/" + file_id,
+    {
+      file_id: file_id,
+    },
+    function(data, status){
+      if (data == '1') {
+
+        for (var key in json_files) {
+          if (json_files.hasOwnProperty(key)) {
+            // do something with `key'
+            if (json_files[key] == original_file_id) {
+              delete json_files[key];
+            }
+          }
+        }
+
+        json_files = json_files.filter(function(x) { return x !== null }); 
+        var json_string = JSON.stringify(json_files);
+
+        jQuery('#edit-files-file-ids').val(json_string);
+  
+        parent_li.remove();
+      }
+    });
+
+    // alert("The paragraph was clicked.");
+  });
+
 });
 
 jQuery.fn.mapButtonsClick = function (selector) {

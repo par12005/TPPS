@@ -241,10 +241,43 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['snps-assay/remove/file'] = array(
+    'title' => 'Delete File',
+    'page callback' => 'snps_assay_delete_file',
+    'page arguments' => array(),
+    'access arguments' => array('access content'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
   $items = array_merge($items, tpps_api_paths());
 
   return $items;
   
+}
+
+/**
+ * Returns what to show on the completion page.
+ */
+function snps_assay_delete_file($file_id) {
+
+  $fid = base64_decode($file_id);
+  $file = file_load($fid);
+
+  if ($file) {
+    $path = $file->uri;
+    file_unmanaged_delete($path);
+    file_delete($file);
+  }
+
+  db_query("DELETE FROM {file_usage} WHERE fid = {$fid}");
+  db_query("DELETE FROM {file_managed} WHERE fid = {$fid}");
+
+
+  db_delete('file_usage')->condition('fid', $fid)->execute();
+  db_delete('file_managed')->condition('fid', $fid)->execute();
+
+  print('1');
+  exit;
 }
 
 /**
@@ -971,6 +1004,22 @@ function tpps_main_submit($form, &$form_state) {
   $persist = TRUE;
 
   if ($form_state['triggering_element']['#value'] == 'Save') {
+
+    if (isset($form_state['values']['organism-1']['genotype']['files']['snps-assay'][0]['tmppath'])) {
+      $file_ids = snps_assay_file_save_files($form_state['values']['organism-1']['genotype']['files']['snps-assay'], $form_state);
+
+      $file_ids_total = [];
+      if (!empty($form_state['saved_values']['files']['file_ids'])) {
+        $file_ids_total = json_decode($form_state['saved_values']['files']['file_ids'], true);
+      }
+      $file_ids_total = array_filter($file_ids_total);
+
+      $file_ids_total = array_merge($file_ids, $file_ids_total);
+      $form_state['values']['organism-1']['genotype']['files']['snps-assay'] = $file_ids_total;
+      $form_state['values']['file_ids'] = json_encode($file_ids_total);
+      $form_state['saved_values']['files']['file_ids'] = json_encode($file_ids_total);
+    }
+
     drupal_set_message(t('Your information has been saved!'), 'status');
 
     if (isset($form_state['saved_values']['form_build_id'])) {
@@ -1048,6 +1097,32 @@ function tpps_main_submit($form, &$form_state) {
   if ($persist) {
     tpps_update_submission($form_state);
   }
+}
+
+/**
+ * This function handles the multi file upload from snps_assay field
+ */
+
+function snps_assay_file_save_files($files, $form_state) {
+  $saved_files = array();
+  $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+
+  $scheme = $genotype_upload_location; // Change to "public://" if you want to move to public files folder.
+  foreach ($files as $uploaded_file) {
+    if ($uploaded_file['status'] == 'done') {
+      $source = $uploaded_file['tmppath'];
+      $destination = file_stream_wrapper_uri_normalize($scheme . '/' . $uploaded_file['name']);
+      $destination = file_unmanaged_move($source, $destination, FILE_EXISTS_RENAME);
+      $file = plupload_file_uri_to_object($destination);
+      file_save($file);
+      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      // Check the $file object to see if all necessary properties are set. Otherwise, use file_load($file->fid) to populate all of them.
+      // $file = file_load($file->fid);
+      $saved_files[] = $file->fid;
+    }
+  }
+
+  return $saved_files;
 }
 
 /**
