@@ -312,22 +312,22 @@ jQuery(document).ready(function ($) {
   }
 
   // Here goes the selector of the button that starts the upload
-  var startUploadButtonClass = '.plupload_buttons .plupload_button.plupload_start';
-  var checkForNewFilesInterval = 1000;
-  // This line could go in your CSS
-  $('head').append('<style>'+ startUploadButtonClass +'{ display:none } </style>');
-  // Checking every checkForNewFilesInterval seconds
-  setInterval (function () {
-      var $pluploadFilelist = $('.plupload .plupload_filelist li');
-      var filesToUpload = $pluploadFilelist.length;
-      // alert(filesToUpload);
-      if (filesToUpload>0) {
-          $(startUploadButtonClass).click(); 
-          document.cookie = 'count=' + filesToUpload;
-      }
-  },checkForNewFilesInterval);
+  // var startUploadButtonClass = '.plupload_buttons .plupload_button.plupload_start';
+  // var checkForNewFilesInterval = 1000;
+  // // This line could go in your CSS
+  // $('head').append('<style>'+ startUploadButtonClass +'{ display:none } </style>');
+  // // Checking every checkForNewFilesInterval seconds
+  // setInterval (function () {
+  //     var $pluploadFilelist = $('.plupload .plupload_filelist li');
+  //     var filesToUpload = $pluploadFilelist.length;
+  //     // alert(filesToUpload);
+  //     if (filesToUpload>0) {
+  //         $(startUploadButtonClass).click(); 
+  //         document.cookie = 'count=' + filesToUpload;
+  //     }
+  // },checkForNewFilesInterval);
 
-  var file_id_array = jQuery('#edit-files-file-ids').val();
+  var file_id_array = jQuery("input[name='files[file_ids]']").val();  
 
   if(file_id_array != undefined && file_id_array != '') {
     var json_files = jQuery.parseJSON(file_id_array);
