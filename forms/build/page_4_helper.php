@@ -973,6 +973,51 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $vcf_file_check = tpps_get_ajax_value($form_state, $parents);
 
   if (!empty($snps_assay_check)) {
+    $fields['files']['snps-assay-from-previous-study'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('SNP Genotype Assay File is from a previous study'),
+      '#default' => false,
+      '#tree' => TRUE
+    );
+
+    $studies_all = chado_query("SELECT * FROM public.tpps_submission ORDER BY accession ASC", array());
+    $snp_assay_previous_study_select_options = array();
+    foreach ($studies_all as $study_row) {
+      $study_details = unserialize($study_row->submission_state);
+      // dpm(array_keys($study_details));
+      // dpm($study_details['saved_values']);
+      $temp_organism_count = $study_details['saved_values'][1]['organism']['number'];
+      if(!isset($temp_organism_count)) {
+        $temp_organism_count = 0; // default to 0 if not set
+      }
+
+      // Go through each organism in the genotype section which is in page
+      for($i=1; $i<=$temp_organism_count; $i++) {
+        if(isset($study_details['saved_values'][4]['organism-'.$i]['genotype']['files']['snps-assay'])) {
+          $temp_fid = $study_details['saved_values'][4]['organism-'.$i]['genotype']['files']['snps-assay'];
+          if($temp_fid != 0) {
+            $snp_assay_previous_study_select_options[$temp_fid] = $study_row->accession . " - " . $study_details['saved_values'][1]['organism'][$i]['name'];
+          }
+        }
+      }
+    }
+
+    $fields['files']['snps-assay-previous-study'] = array(
+      '#type' => 'select',
+      '#title' => t('SNP Genotype Assay File from previous study: '),
+      // '#options' => array(
+      //   0 => t('No'),
+      //   1 => t('Yes'),
+      // ),
+      '#options' => $snp_assay_previous_study_select_options,
+      '#tree' => TRUE,
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="organism-1[genotype][files][snps-assay-from-previous-study]"]' => array('checked' => FALSE),
+        ),
+      )      
+    );   
+    
     $fields['files']['snps-assay'] = array(
       '#type' => 'managed_file',
       '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
@@ -982,6 +1027,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       ),
       '#description' => t("Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
       '#tree' => TRUE,
+      '#states' => array(
+        'visible' => array(
+          ':input[name="organism-1[genotype][files][snps-assay-from-previous-study]"]' => array('checked' => FALSE),
+        ),
+      ) 
     );
 
     if (isset($fields['files']['snps-assay']['#value']['fid'])) {
