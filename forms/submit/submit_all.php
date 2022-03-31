@@ -1048,6 +1048,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
     );
 
+    print_r('ISO_FID:' . $iso_fid . "\n");
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
     tpps_chado_insert_multi($options['records']);
   }
@@ -1761,8 +1762,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   $suffix = &$options['suffix'];
   $tree_info = &$options['tree_info'];
   $phenotype_count = &$options['phenotype_count'];
-  $record_group = variable_get('tpps_record_group', 10000);
-
+  // $record_group = variable_get('tpps_record_group', 10000);
+  $record_group = 1;
   if (!$iso) {
     if (isset($meta_headers['name']) and (isset($meta_headers['value']))) {
       $id = $row[$meta_headers['value']];
@@ -1848,6 +1849,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
         'phenotype' => $phenotype_name,
       ),
     );
+    // print_r($records['phenotypeprop']["$phenotype_name-desc"]);
 
     if ($iso) {
       $records['phenotypeprop']["$phenotype_name-unit"] = array(
@@ -1898,7 +1900,17 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     }
 
     if ($phenotype_count > $record_group) {
+      print_r($records);
+      print_r('------------' . "\n");
       tpps_chado_insert_multi($records);
+      
+      // $temp_results = chado_query('SELECT * FROM chado.phenotype WHERE uniquename ILIKE :phenotype_name', array(
+      //   ':phenotype_name' => $phenotype_name
+      // ));
+      // foreach($temp_results as $temp_row) {
+      //   echo "Found phenotype saved: " . $temp_row->uniquename . "\n";
+      // }
+      
       $records = array(
         'phenotype' => array(),
         'phenotypeprop' => array(),
