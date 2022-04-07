@@ -17,7 +17,7 @@
  *   The populated form.
  */
 function tpps_user_info(array &$form, array $values) {
-
+  // dpm($values);
   $form['primaryAuthor'] = array(
     '#type' => 'textfield',
     '#title' => t('Primary Author: *'),
@@ -28,6 +28,9 @@ function tpps_user_info(array &$form, array $values) {
       'title' => array('First Author of the publication'),
     ),
   );
+  if(isset($values['primaryAuthor']) && $values['primaryAuthor'] != "") {
+    $form['primaryAuthor']['#value'] = $values['primaryAuthor'];
+  }
 
   $form['organization'] = array(
     '#type' => 'textfield',
@@ -91,17 +94,26 @@ function tpps_publication(array &$form, array $values, array $form_state) {
     '#type' => 'textfield',
     '#title' => t('Title of Publication/Study: *'),
   );
+  if(isset($values['publication']['title']) && $values['publication']['title'] != "") {
+    $form['publication']['title']['#value'] = $values['publication']['title'];
+  }  
 
   $form['publication']['abstract'] = array(
     '#type' => 'textarea',
     '#title' => t('Abstract/Description: *'),
   );
+  if(isset($values['publication']['abstract']) && $values['publication']['abstract'] != "") {
+    $form['publication']['abstract']['#value'] = $values['publication']['abstract'];
+  }
 
   $form['publication']['journal'] = array(
     '#type' => 'textfield',
     '#title' => t('Journal: *'),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
   );
+  if(isset($values['publication']['journal']) && $values['publication']['journal'] != "") {
+    $form['publication']['journal']['#value'] = $values['publication']['journal'];
+  }  
 
   return $form;
 }
@@ -203,6 +215,9 @@ function tpps_year(array &$form, array $values, array $form_state) {
     '#prefix' => '<div id="pubyear">',
     '#suffix' => '</div>',
   );
+  if(isset($values['publication']['year'])) {
+    $form['publication']['year']['#value'] = $values['publication']['year'];
+  }
 
   return $form;
 }
