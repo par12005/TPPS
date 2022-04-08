@@ -1352,7 +1352,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
     // dpm('start: ' . date('r'));.
     while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
-      if ($vcf_line[0] != '#') {
+      if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE) {
+        // print_r($vcf_line[0]);
+        // throw new Exception('DEBUG');
         $genotype_count += count($stocks);
         $vcf_line = explode("\t", $vcf_line);
         $scaffold_id = &$vcf_line[0];
