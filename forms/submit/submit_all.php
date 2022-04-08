@@ -884,8 +884,10 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
+  $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $phenotype = $fourthpage["organism-$i"]['phenotype'] ?? NULL;
+  $organism_name = $firstpage['organism'][$i]['name'];
   if (empty($phenotype)) {
     return;
   }
@@ -1028,6 +1030,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['data_columns'] = $data_columns ?? NULL;
     $options['meta'] = $phenotypes_meta;
     $options['file_empty'] = $phenotype['file-empty'];
+    $options['organism_name'] = $organism_name;
 
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
@@ -1042,6 +1045,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['records'] = $records;
     $options['cvterms'] = $phenotype_cvterms;
     $options['file_headers'] = tpps_file_headers($iso_fid);
+    $options['organism_name'] = $organism_name;
     $options['meta'] = array(
       'desc' => "Mass Spectrometry",
       'unit' => "intensity (arbitrary units)",
@@ -1762,8 +1766,63 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   $suffix = &$options['suffix'];
   $tree_info = &$options['tree_info'];
   $phenotype_count = &$options['phenotype_count'];
-  // $record_group = variable_get('tpps_record_group', 10000);
-  $record_group = 1;
+  $organism_name = &$options['organism_name'];
+  $record_group = variable_get('tpps_record_group', 10000);
+  // $record_group = 1;
+
+  // Get genus and species from the organism name
+  $organism_name_parts = explode(' ', $organism_name, 2);
+  $genus = $organism_name_parts[0];
+  $species = $organism_name_parts[1];
+
+  // Ensure that we got the genus and species or error out
+  if ($genus == "" || $species == "") {
+    throw new Exception('Organism genus and species could not be processed. Please ensure you added an organism that exists within the chado.organism table!');
+  }
+
+  // Query the organism table to get the organism id
+  $organism_id_results = chado_query('SELECT * FROM chado.organism WHERE genus = :genus and species = :species LIMIT 1', array(
+    ':genus' => $genus,
+    ':species' => $species
+  ));
+
+  // Dummy value for organism_id until we get it from the sql results row
+  $organism_id = -1;
+  foreach($organism_id_results as $organism_id_row) {
+    $organism_id = $organism_id_row->organism_id;
+  }
+
+  // Check that the organism id is valid
+  if($organism_id == -1 || $organism_id == "") {
+    throw new Exception('Could not find organism id for ' . $organism_name. '. This organism does not seem to exist in the chado.organism table!');
+  }
+  
+  $cvterm_id_4lettercode = -1;
+  // Get the cvterm_id (which is the type_id) for the organism 4 letter code
+  $cvterm_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name LIMIT 1', array(
+    ':name' => 'organism 4 letter code'
+  ));
+  foreach($cvterm_results as $cvterm_row) {
+    $cvterm_id_4lettercode = $cvterm_row->cvterm_id;
+  }
+  if($cvterm_id_4lettercode == -1 || $cvterm_id_4lettercode == "") {
+    throw new Exception('Could not find the cvterm id for organism 4 letter code within the chado.cvterm table. This is needed to generate the phenotype name.');
+  }
+  
+  // We need to use the cvterm_id 4 letter code to find the actual code within the organismprop table (using the organism_id)
+  $value_4lettercode = "";
+  $organismprop_results = chado_query('SELECT * FROM chado.organismprop WHERE type_id = :type_id AND organism_id = :organism_id LIMIT 1', array(
+    ':type_id' => $cvterm_id_4lettercode,
+    ':organism_id' => $organism_id
+  ));
+  foreach ($organismprop_results as $organismprop_row) {
+    $value_4lettercode = $organismprop_row->value;
+  }
+
+  if($value_4lettercode == "") {
+    throw new Exception('4 letter code could not be found for ' . $organism_name . ' in the chado.organismprop table. This is needed to create the phenotype_name.');
+  }
+
   if (!$iso) {
     if (isset($meta_headers['name']) and (isset($meta_headers['value']))) {
       $id = $row[$meta_headers['value']];
@@ -1794,6 +1853,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     $attr_id = $iso ? $meta['attr_id'] : $meta[strtolower($name)]['attr_id'];
     $value = $row[$id];
     $phenotype_name = "$accession-$tree_id-$name-$suffix";
+    $phenotype_name .= '-' . $value_4lettercode;
     $options['data']["$tree_id-$name-$suffix"] = array(
       'uniquename' => "$tree_id-$name-$suffix",
       'name' => $name,
@@ -1900,8 +1960,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     }
 
     if ($phenotype_count > $record_group) {
-      print_r($records);
-      print_r('------------' . "\n");
+      // print_r($records);
+      // print_r('------------' . "\n");
       tpps_chado_insert_multi($records);
       
       // $temp_results = chado_query('SELECT * FROM chado.phenotype WHERE uniquename ILIKE :phenotype_name', array(
