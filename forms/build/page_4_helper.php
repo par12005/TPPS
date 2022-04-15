@@ -987,19 +987,19 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#tree' => TRUE,
     );
 
-    $fields['files']['snps-assay-1'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
-      '#upload_location' => "$genotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
-      ),
-      '#attributes' => array(
-        'multiple' => 'multiple',
-        'class' => 'testclass',
-      ),
-      '#tree' => TRUE,
-    );
+    // $fields['files']['snps-assay-1'] = array(
+    //   '#type' => 'managed_file',
+    //   '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
+    //   '#upload_location' => "$genotype_upload_location",
+    //   '#upload_validators' => array(
+    //     'file_validate_extensions' => array('csv tsv xlsx'),
+    //   ),
+    //   '#attributes' => array(
+    //     'multiple' => 'multiple',
+    //     'class' => 'testclass',
+    //   ),
+    //   '#tree' => TRUE,
+    // );
 
     //   for ($i = 0; $i < $form_state['pnum_names']; $i++) {
 
@@ -1015,78 +1015,37 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
     $fields['files']['snps_assay_button'] = array(
       '#type' => 'button',
-      '#title' => t('Add another'),
-      '#value' => t('Add another'),
-      '#ajax' => array(
-        'callback' => 'tpps_genotype_add_another_files_callback',
-        'wrapper' => "$id-genotype-files",
-      ),
-      '#description' => t("Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
+      '#title' => t('Add More Files'),
+      '#value' => t('Add More Files'),
     );
 
-    // $values = isset($form_state['saved_values']['files']) ? $form_state['saved_values']['files'] : array();
+    $values_form_file = 5;
 
+    for ($i = 2; $i <= $values_form_file; $i++) {
 
-    // if (isset($values['file_ids']) && !empty($values['file_ids'])) {
-    //   $array_files = json_decode($values['file_ids'], true);
-    //   $total_files = count($array_files);
-  
-    //   $stages1 = array(
-    //     1 => array('data' => '1. Rate the Room' . l('Configure', 'admin/config')),
-    //     2 => array('data' => '2. Rate the Service'),
-    //     3 => array('data' => '3. Enter the Draw'),
-    //   );
-  
-    //   $row_data = [];
-  
-      
-    //   $file_display = [];
-    //   foreach ($array_files as $key => $fid) {
-  
-    //     if (!empty($fid)) {
-    //       $file = file_load($fid);
-    //       if (!empty($file)) {
-    //         $str_file = '<div class="file_container_' . base64_encode($fid) . ' file_id" class="" data-attr="' . base64_encode($fid) .'"><span class="file"><a  data-attr="' . base64_encode($fid) .'" href="' . file_create_url($file->uri) . '" type="' . $file->filemime . ';">' . $file->filename . '</a></span>';
-    //         $str_file .= '&nbsp;';
-    
-    //         $row_data[$key] = array('data' => $str_file . l('Remove', 'snps-assay/remove/file/' . base64_encode($fid), ['attributes' => ['data-attr' => [base64_encode($fid)], 'data-src-attr' => [$fid], 'class' => ['button']]]));
+      $fields['files']['snps-assay-' . $i] = array(
+        '#type' => 'managed_file',
+        '#title' => t('SNPs Files - ' . $i),
+        '#upload_location' => "$genotype_upload_location",
+        '#upload_validators' => array(
+          'file_validate_extensions' => array('csv tsv xlsx'),
+        ),
+        '#attributes' => array(
+          'multiple' => 'multiple',
+          'class' => 'visually-hidden',
+        ),
+        '#tree' => TRUE,
+      );
 
-    //         $file_display[] = $fid;
-    //       }
-    //     }
-    //   }
-
-    //   $json_display_file = json_encode($file_display);
-  
-    //   $stages_list1 = theme('item_list', array('items' => $row_data));
-  
-    //   $fields['files']['snps-assay1'] = array(
-    //     '#markup' => $stages_list1,
-    //     '#title' => '',
-    //     '#value' => $stages_list1,
-    //   );
-    // }
-
-    // $form['files']['file_ids'] = array(
-    //   '#type' => 'hidden',
-    //   '#title' => 'file ids',
-    //   '#default_value' => isset($json_display_file) ? $json_display_file : NULL,
-    //   '#value' => isset($json_display_file) ? $json_display_file : NULL,
-    // );
-
-    // $fields['files']['snps-assay'] = array(
-    //   '#type' => 'plupload',
-    //   '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
-    //   '#upload_location' => "$genotype_upload_location",
-    //   '#upload_validators' => array(
-    //     'file_validate_extensions' => array('csv tsv xlsx'),
-    //   ),
-    //   '#description' => t("Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
-    //   '#plupload_settings' => array(
-    //     'runtimes' => 'html5',
-    //     'chunk_size' => '1mb',
-    //   ),
-    // );
+      if (isset($fields['files']['snps-assay-' . $i]['#value']['fid'])) {
+        $fields['files']['snps-assay-' . $i]['#default_value'] = $fields['files']['snps-assay-' . $i]['#value']['fid'];
+        $fields['files']['snps-assay-' . $i]['#attributes']['class'] = '';
+      }
+      if (!empty($fields['files']['snps-assay-' . $i]['#default_value']) and ($file = file_load($fields['files']['snps-assay-' . $i]['#default_value']))) {
+        // Stop using the file so it can be deleted if the user clicks 'remove'.
+        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      }
+    }
     
 
     if (isset($fields['files']['snps-assay']['#value']['fid'])) {

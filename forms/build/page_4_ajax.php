@@ -121,18 +121,20 @@ function tpps_genotype_files_callback(array $form, array &$form_state) {
  *   The element in the form to be updated.
  */
 function tpps_genotype_add_another_files_callback(array $form, array &$form_state) {
-  // print('<pre style="color:red;">');
-  // print_r($form);
-  // print('</pre>');
-  // exit;
-  // $id = $form_state['triggering_element']['#parents'][0];
 
-  // return $form[$id]['genotype']['files']['snps_assay_button'];
   $id = $form_state['triggering_element']['#parents'][0];
 
-  return $form[$id]['files']['snps-assay-1'];
-  // return $form['files']['snps-assay-1'];
+  $values_form_file = $form_state['input']['organism-1']['genotype']['files']['upload_fieldset']['upload_items'];
+
+  $values_form_file += 1;
+
+
+  $form[$id]['genotype']['files']['upload_fieldset']['upload_items']['#default_value'] = 5;
+  $form[$id]['genotype']['files']['upload_fieldset']['upload_items']['#value'] = 5;
+
+  return $form[$id]['genotype']['files'];
 }
+
 
 /**
  * Indicate the managed_file element to be updated.

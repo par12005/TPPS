@@ -1,4 +1,27 @@
 jQuery(document).ready(function ($) {
+
+  jQuery("#organism-1-genotype-files [id^=edit-organism-1-genotype-files-snps-assay-] input[name^='files[organism-1_genotype_files_snps-assay-']").each(function() {
+    // jQuery(this).parent().parent().parent().addClass('jigish');
+    jQuery(this).parent().parent().parent().css('display', 'none');
+  });
+
+  jQuery('#edit-organism-1-genotype-files-snps-assay-button').on('click', function(){
+    jQuery(this).hide();
+    jQuery("#organism-1-genotype-files [id^=edit-organism-1-genotype-files-snps-assay-] input[name^='files[organism-1_genotype_files_snps-assay-']").each(function() {
+      // jQuery(this).parent().parent().parent().addClass('jigish');
+      jQuery(this).parent().parent().parent().css('display', 'block');
+    });
+    return false;
+  });
+
+  function showAdditionalFiles() {
+    alert('comes');
+    return false;
+    // jQuery( "li" ).each(function() {
+    //   jQuery( this ).addClass( "foo" );
+    // });
+  }
+
   function Supplemental_Files(){
     var files_add = jQuery('#edit-files-add');
     var files_remove = jQuery('#edit-files-remove');
