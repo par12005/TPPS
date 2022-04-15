@@ -1012,17 +1012,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     //     );
     // }
 
-
-    $fields['files']['snps_assay_button'] = array(
-      '#type' => 'button',
-      '#title' => t('Add More Files'),
-      '#value' => t('Add More Files'),
-    );
-
     $values_form_file = 5;
 
     for ($i = 2; $i <= $values_form_file; $i++) {
-
       $fields['files']['snps-assay-' . $i] = array(
         '#type' => 'managed_file',
         '#title' => t('SNPs Files - ' . $i),
@@ -1046,7 +1038,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
       }
     }
-    
+    $fields['files']['snps_assay_button'] = array(
+      '#type' => 'button',
+      '#title' => t('Add More SNP Files'),
+      '#value' => t('Add More SNP Files'),
+    );
 
     if (isset($fields['files']['snps-assay']['#value']['fid'])) {
       $fields['files']['snps-assay']['#default_value'] = $fields['files']['snps-assay']['#value']['fid'];
