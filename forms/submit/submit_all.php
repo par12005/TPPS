@@ -1362,8 +1362,16 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $species_code = $species_codes[$current_id];
 
     // dpm('start: ' . date('r'));.
+    echo "[INFO] Processing Genotype VCF file\n";
+    $file_progress_line_count = 0;
     while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
-      if ($vcf_line[0] != '#') {
+      $file_progress_line_count++;
+      if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
+        echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+      }
+      if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
+        // print_r($vcf_line[0]);
+        // throw new Exception('DEBUG');
         $genotype_count += count($stocks);
         $vcf_line = explode("\t", $vcf_line);
         $scaffold_id = &$vcf_line[0];
