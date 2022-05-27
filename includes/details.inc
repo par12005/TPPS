@@ -906,13 +906,40 @@ function tpps_details_genotype(array &$state) {
   $per_page = 20;
   $start = $page * $per_page;
 
-  $query = db_select('chado.genotype', 'g');
-  $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
-  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
-  $query->addExpression('count(g.genotype_id)', 'count');
-  $query->condition('ps.project_id', $state['ids']['project_id']);
-  $query = $query->execute();
-  $total = $query->fetchObject()->count;
+  // Set total check = false to begin with
+  $total_check = false;
+
+  // Check cache to see if a total is available
+  $total_array = variable_get('tpps_tab_genotype_' + $state['ids']['project_id'] + '_total');
+  if($total_array == NULL) {
+    $total_check = true;
+  }
+  else {
+    // total array should have an expire_time
+    if($total_array['expire_time'] < time()) {
+      $total_check = true;
+    }
+    else {
+      $total = $total_array['total'];
+    }
+
+  }
+
+  if($total_check) {
+    $query = db_select('chado.genotype', 'g');
+    $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
+    $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
+    $query->addExpression('count(g.genotype_id)', 'count');
+    $query->condition('ps.project_id', $state['ids']['project_id']);
+    $query = $query->execute();
+    $total = $query->fetchObject()->count;
+    
+    $total_array = array(
+      'expire_time' => time() + variable_get('tpps_tab_genotype_total_cache_time', 30*(24*60*60)),
+      'total' => $total
+    );
+    variable_set('tpps_tab_genotype_' + $state['ids']['project_id'] + '_total', $total_array);
+  }
 
   $_GET['page'] = $page;
   pager_default_initialize($total, $per_page);
