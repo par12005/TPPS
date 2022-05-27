@@ -925,6 +925,12 @@ function tpps_details_genotype(array &$state) {
 
   }
 
+
+  $dev = FALSE;
+  if($dev == TRUE) {
+    $total_check = true;
+  }
+
   if($total_check) {
     $query = db_select('chado.genotype', 'g');
     $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
