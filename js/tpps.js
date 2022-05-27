@@ -363,10 +363,46 @@ function detailsTab() {
       return;
     }
   }
-  jQuery('#' + detail_type)[0].innerHTML = "Loading...";
+  jQuery('#' + detail_type)[0].innerHTML = "Querying database for " + detail_type + " information...";
 
-  var request = jQuery.post(path + '/' + detail_type, {
-    page: page
+  // OLD version from Peter
+  // var request = jQuery.post(path + '/' + detail_type, {
+  //   page: page
+  // });
+
+  // New version from Rish with XHR status
+  var request = jQuery.ajax({
+      xhr: function() {
+        var xhr = new window.XMLHttpRequest();
+
+        // Upload progress
+        xhr.upload.addEventListener("progress", function(evt){
+            if (evt.lengthComputable) {
+                var percentComplete = evt.loaded / evt.total;
+                //Do something with upload progress
+                console.log(percentComplete);
+            }
+      }, false);
+      
+      // Download progress
+      xhr.addEventListener("progress", function(evt){
+          console.log(evt);
+          jQuery('#' + detail_type)[0].innerHTML = "Loading " + detail_type + " information... " + Math.ceil(evt.loaded / 100) + ' KB';
+          if (evt.lengthComputable) {
+              var percentComplete = evt.loaded / evt.total;
+              // Do something with download progress
+              console.log(percentComplete);
+              //jQuery('#' + detail_type)[0].innerHTML = "Loading " + detail_type + " information... " + Math.ceil(percentComplete * 100) + ' %';
+          }
+      }, false);
+      
+      return xhr;
+    },
+    type: 'POST',
+    url: path + '/' + detail_type, 
+    data: {
+      page: page
+    }
   });
 
   request.done(function (data) {
