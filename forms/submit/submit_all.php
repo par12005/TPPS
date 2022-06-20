@@ -1018,15 +1018,9 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     if ($phenotype['format'] == 0) {
       $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
       $data_columns = array();
-      // Bug fix for TGDR473 
-      // print_r($groups['Phenotype Data']);
-      // foreach ($groups['Phenotype Data']['0'] as $col) {
-      if (isset($groups['Phenotype Data'][0])) {        
-        $col = $groups['Phenotype Data'][0];
+      foreach ($groups['Phenotype Data']['0'] as $col) {
         $data_columns[$col] = $file_headers[$col];
       }
-      // print_r($data_columns);
-      // throw new Exception('DEBUG');
       unset($file_headers);
     }
 
