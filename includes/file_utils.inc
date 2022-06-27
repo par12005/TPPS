@@ -292,7 +292,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
       file_save($file);
       return file_copy($file, $new_filename);
     }
-    return file_move($file, $new_filename);
+    return file_move($file, $new_filename, FILE_EXISTS_RENAME);
   }
   throw new Exception("Error: could not open file");
 }
@@ -647,7 +647,7 @@ function tpps_get_path_extension($path) {
     return ""; // Added by Rish during debugging process. XLSX extracting creates files without paths
   }
   return strtolower($matches[1]);
-  
+
 }
 
 /**
