@@ -1236,6 +1236,7 @@ function tpps_snpassay_file_selector($string) {
   $result = db_select('file_managed', 'f')
     ->fields('f', array('fid', 'filename'))
     ->condition('f.filename', '%' . db_like($string) . '%', 'LIKE')
+    ->condition('f.filename', '%SNP%', 'LIKE')
     ->execute();
 
   // save the query to matches
