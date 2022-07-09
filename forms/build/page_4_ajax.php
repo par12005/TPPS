@@ -106,6 +106,27 @@ function tpps_genotype_files_callback(array $form, array &$form_state) {
   return $form[$id]['genotype']['files'];
 }
 
+
+/**
+ * Ajax callback for genotype files fieldset.
+ *
+ * Indicates the element to be updated when the genotype marker types checkboxes
+ * or the genotype file types checkboxes are updated.
+ *
+ * @param array $form
+ *   The form to be updated.
+ * @param array $form_state
+ *   The state of the form to be updated.
+ *
+ * @return array
+ *   The element in the form to be updated.
+ */
+function tpps_genotype_files_type_change_callback(array $form, array &$form_state) {
+  $id = $form_state['triggering_element']['#parents'][0];
+
+  return $form[$id]['genotype']['files'];
+}
+
 /**
  * Indicate the managed_file element to be updated.
  *
