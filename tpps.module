@@ -1237,6 +1237,7 @@ function tpps_snpassay_file_selector($string) {
     ->fields('f', array('fid', 'filename'))
     ->condition('f.filename', '%' . db_like($string) . '%', 'LIKE')
     ->condition('f.filename', '%SNP%', 'LIKE')
+    ->orderBy('f.timestamp', 'DESC')
     ->execute();
 
   // save the query to matches
