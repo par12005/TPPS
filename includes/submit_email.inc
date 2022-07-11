@@ -23,8 +23,12 @@ function tpps_submit_email(array &$form_state) {
 
   global $user;
   global $base_url;
-  $admin = variable_get('tpps_admin_email', "treegenesdb@gmail.com");
+  $admin = variable_get('tpps_admin_email', '');
 
+  if ($admin == '')
+  {
+    return FALSE;
+  }
   $params = array();
 
   $to = $user->mail;

@@ -72,7 +72,7 @@ function tpps_admin_settings(array $form, array &$form_state) {
   $form['tpps_admin_email'] = array(
     '#type' => 'textfield',
     '#title' => t('TPPS Admin Email Address'),
-    '#default_value' => variable_get('tpps_admin_email', 'treegenesdb@gmail.com'),
+    '#default_value' => variable_get('tpps_admin_email', ''),
   );
 
   $form['tpps_refresh_views_job_frequency'] = array(
