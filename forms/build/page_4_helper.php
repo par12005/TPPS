@@ -867,6 +867,7 @@ function tpps_phenotype_number_clear($button_name, $value) {
 function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+  $aflp_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
 
   $fields = array(
     '#type' => 'fieldset',
@@ -1867,10 +1868,13 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
  */
 function tpps_page_4_marker_info(array &$fields, $id) {
 
+  $aflp_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+
   $fields['marker-type'] = array(
     '#type' => 'checkboxes',
     '#title' => t('Marker Type (select all that apply): *'),
     '#options' => drupal_map_assoc(array(
+      t('AFLP'),
       t('SNPs'),
       t('SSRs/cpSSRs'),
       t('Indels'),
@@ -1882,6 +1886,36 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     'callback' => 'tpps_genotype_files_callback',
     'wrapper' => "$id-genotype-files",
   );
+
+  $fields['AFLP'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('<div class="fieldset-title">AFLP Information:</div>'),
+    '#states' => array(
+      'visible' => array(
+        ':input[name="' . $id . '[genotype][marker-type][AFLP]"]' => array('checked' => TRUE),
+      ),
+    ),
+    '#collapsible' => TRUE,
+  );
+
+  $fields['AFLP']['aflp-file'] = array(
+    '#type' => 'managed_file',
+    '#title' => t('AFLP File: please provide a spreadsheet with columns for the AFLP: *'),
+    '#upload_location' => "$aflp_upload_location",
+    '#upload_validators' => array(
+      'file_validate_extensions' => array('csv tsv xlsx'),
+    ),
+    '#description' => t("Please upload a spreadsheet file containing AFLP data. The format of this file is very important!."),
+    '#tree' => TRUE,
+  );
+
+  if (isset($fields['AFLP']['aflp-file']['#value']['fid'])) {
+    $fields['AFLP']['aflp-file']['#default_value'] = $fields['AFLP']['aflp-file']['#value']['fid'];
+  }
+  if (!empty($fields['AFLP']['aflp-file']['#default_value']) and ($file = file_load($fields['AFLP']['aflp-file']['#default_value']))) {
+    // Stop using the file so it can be deleted if the user clicks 'remove'.
+    file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+  }
 
   $fields['SNPs'] = array(
     '#type' => 'fieldset',
