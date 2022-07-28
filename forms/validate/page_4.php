@@ -476,17 +476,22 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
   }
-  dpm($vcf);
-  dpm($file_type['VCF']);
+  
+  if($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf_check']) {
+    $vcf = $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf'];
+  }
 
   if (!empty($file_type['VCF']) and !$vcf) {
-    $vcf_file_location = $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf'];
-    dpm($vcf_file_location);
     form_set_error("$id][genotype][files][vcf", t("Genotype VCF File: field is required."));
   }
   elseif (!empty($file_type['VCF'])) {
     if (($ref_genome === 'manual' or $ref_genome === 'manual2' or $ref_genome === 'url') and isset($assembly) and $assembly and !form_get_errors()) {
-      $vcf_content = gzopen(file_load($vcf)->uri, 'r');
+      if ($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf_check']) {
+        $vcf_content = gzopen($vcf, 'r');
+      }
+      else {      
+        $vcf_content = gzopen(file_load($vcf)->uri, 'r');
+      }
       $assembly_content = gzopen(file_load($assembly)->uri, 'r');
 
       while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
