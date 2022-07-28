@@ -461,6 +461,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   }
   $loaded_state = tpps_load_submission($form_state['accession']);
 
+  // $vcf = '';
+  dpm($form_state['values']);
   if (!empty($loaded_state['vcf_replace'])) {
     foreach ($loaded_state['vcf_replace'] as $org_num => $fid) {
       if (file_load($fid)) {
@@ -474,8 +476,12 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
   }
+  dpm($vcf);
+  dpm($file_type['VCF']);
 
   if (!empty($file_type['VCF']) and !$vcf) {
+    $vcf_file_location = $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf'];
+    dpm($vcf_file_location);
     form_set_error("$id][genotype][files][vcf", t("Genotype VCF File: field is required."));
   }
   elseif (!empty($file_type['VCF'])) {
