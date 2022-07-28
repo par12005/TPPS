@@ -868,7 +868,7 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
   // Submit raw data.
   for ($i = 1; $i <= $organism_number; $i++) {
     tpps_submit_phenotype($form_state, $i, $job);
-    tpps_submit_genotype($form_state, $species_codes, $i);
+    tpps_submit_genotype($form_state, $species_codes, $i, $job);
     tpps_submit_environment($form_state, $i);
   }
 }
@@ -1073,9 +1073,12 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
 function tpps_submit_genotype(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL) {
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $job->logMessage("[INFO] Genotype 4th Page: @pid", array('@pid' => print_r($fourthpage, 1)));
+  $job->logMessage("[INFO] test data: @pid", array('@pid' => $i));
   if (empty($genotype)) {
     return;
   }
+  
   tpps_submission_add_tag($form_state['accession'], 'Genotype');
 
   $project_id = $form_state['ids']['project_id'];
@@ -1127,6 +1130,25 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
   );
+
+  $job->logMessage("[INFO] AFLP File types: @pid", array('@pid' => $genotype['files']['file-type']));
+  if (!empty($genotype['files']['file-type']['aflp'])) {
+    $aflp_fid = $genotype['files']['aflp'];
+    tpps_add_project_file($form_state, $aflp_fid);
+
+    $options['type'] = 'aflp';
+    $options['headers'] = tpps_file_headers($aflp_fid);
+    $options['marker'] = 'aflp';
+    // Hard coding cvterm id for AFLP
+    $options['type_cvterm'] = 54732;
+
+    tpps_file_iterator($aflp_fid, 'tpps_process_genotype_spreadsheet', $options);
+
+    tpps_chado_insert_multi($options['records'], $multi_insert_options);
+    $options['records'] = $records;
+    $genotype_total += $genotype_count;
+    $genotype_count = 0;
+  }
 
   if ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url') {
     if ($genotype['tripal_fasta']['file_upload']) {
@@ -1290,6 +1312,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $genotype_count = 0;
     }
   }
+
 
   if (!empty($genotype['files']['file-type']['Indel Genotype Spreadsheet'])) {
     $indel_fid = $genotype['files']['indels'];

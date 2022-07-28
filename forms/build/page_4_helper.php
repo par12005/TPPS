@@ -1887,18 +1887,18 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     'wrapper' => "$id-genotype-files",
   );
 
-  $fields['AFLP'] = array(
+  $fields['aflp'] = array(
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">AFLP Information:</div>'),
     '#states' => array(
       'visible' => array(
-        ':input[name="' . $id . '[genotype][marker-type][AFLP]"]' => array('checked' => TRUE),
+        ':input[name="' . $id . '[genotype][marker-type][aflp]"]' => array('checked' => TRUE),
       ),
     ),
     '#collapsible' => TRUE,
   );
 
-  $fields['AFLP']['aflp-file'] = array(
+  $fields['aflp']['aflp-file'] = array(
     '#type' => 'managed_file',
     '#title' => t('AFLP File: please provide a spreadsheet with columns for the AFLP: *'),
     '#upload_location' => "$aflp_upload_location",
@@ -1909,10 +1909,10 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#tree' => TRUE,
   );
 
-  if (isset($fields['AFLP']['aflp-file']['#value']['fid'])) {
-    $fields['AFLP']['aflp-file']['#default_value'] = $fields['AFLP']['aflp-file']['#value']['fid'];
+  if (isset($fields['aflp']['aflp-file']['#value']['fid'])) {
+    $fields['aflp']['aflp-file']['#default_value'] = $fields['aflp']['aflp-file']['#value']['fid'];
   }
-  if (!empty($fields['AFLP']['aflp-file']['#default_value']) and ($file = file_load($fields['AFLP']['aflp-file']['#default_value']))) {
+  if (!empty($fields['aflp']['aflp-file']['#default_value']) and ($file = file_load($fields['aflp']['aflp-file']['#default_value']))) {
     // Stop using the file so it can be deleted if the user clicks 'remove'.
     file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
   }

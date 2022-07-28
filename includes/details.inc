@@ -825,10 +825,8 @@ function tpps_details_phenotype(array &$state) {
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query = $query->execute();
   $total = $query->fetchObject()->count;
-
   $_GET['page'] = $page;
   pager_default_initialize($total, $per_page);
-
   $query = db_select('chado.phenotype', 'p');
   $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
@@ -844,7 +842,6 @@ function tpps_details_phenotype(array &$state) {
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query->range($start, $per_page);
   $query = $query->execute();
-
   while (($result = $query->fetchObject())) {
     preg_match('/^TGDR...-(.*)$/', $result->uniquename, $matches);
     $tree = $matches[1];
