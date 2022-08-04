@@ -973,24 +973,54 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $parents = array_merge($file_type_parents, array('VCF'));
   $vcf_file_check = tpps_get_ajax_value($form_state, $parents);
 
+  
   if (!empty($snps_assay_check)) {
-    $fields['files']['snps-assay'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
-      '#upload_location' => "$genotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
+    $fields['files']['file-selector'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Reference Existing SNP File'),
+      '#ajax' => array(
+        'callback' => 'tpps_genotype_files_type_change_callback',
+        'wrapper' => "$id-genotype-files",
       ),
-      '#description' => t("Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
-      '#tree' => TRUE,
+    );
+    $file_type_parents = array(
+      $id,
+      'genotype',
+      'files',
     );
 
-    if (isset($fields['files']['snps-assay']['#value']['fid'])) {
-      $fields['files']['snps-assay']['#default_value'] = $fields['files']['snps-assay']['#value']['fid'];
+    $parents = array_merge($file_type_parents, array('file-selector'));
+    $file_selector_check = tpps_get_ajax_value($form_state, $parents);
+
+    if (empty($file_selector_check)) {
+      $fields['files']['snps-assay'] = array(
+        '#type' => 'managed_file',
+        '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
+        '#upload_location' => "$genotype_upload_location",
+        '#upload_validators' => array(
+          'file_validate_extensions' => array('csv tsv xlsx'),
+        ),
+        '#description' => t("Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
+        '#tree' => TRUE,
+      );
+
+      if (isset($fields['files']['snps-assay']['#value']['fid'])) {
+        $fields['files']['snps-assay']['#default_value'] = $fields['files']['snps-assay']['#value']['fid'];
+      }
+      if (!empty($fields['files']['snps-assay']['#default_value']) and ($file = file_load($fields['files']['snps-assay']['#default_value']))) {
+        // Stop using the file so it can be deleted if the user clicks 'remove'.
+        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      }
     }
-    if (!empty($fields['files']['snps-assay']['#default_value']) and ($file = file_load($fields['files']['snps-assay']['#default_value']))) {
-      // Stop using the file so it can be deleted if the user clicks 'remove'.
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    else {
+      // // Add autocomplete field.
+      $fields['files']['snps-assay'] = array(
+        '#type' => 'textfield',
+        '#title' => t('SNPs Genotype Assay File: please select an already existing spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
+        '#upload_location' => "$genotype_upload_location",
+        '#autocomplete_path' => 'snp-assay-file/upload',
+        '#description' => t("Please select an already existing spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
+      );
     }
   }
   else {
