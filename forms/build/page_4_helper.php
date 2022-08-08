@@ -1917,35 +1917,45 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     'wrapper' => "$id-genotype-files",
   );
 
-  $fields['aflp'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">AFLP Information:</div>'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[genotype][marker-type][aflp]"]' => array('checked' => TRUE),
+  //$parents = array_merge($file_type_parents, array('aflp'));
+  //$aflp_file_check = tpps_get_ajax_value($form_state, $parents);
+  
+ // if ($aflp_file_check) {
+    $fields['aflp'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('<div class="fieldset-title">AFLP Information:</div>'),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[genotype][marker-type][aflp]"]' => array('checked' => TRUE),
+        ),
       ),
-    ),
-    '#collapsible' => TRUE,
-  );
+      '#collapsible' => TRUE,
+    );
 
-  $fields['aflp']['aflp-file'] = array(
-    '#type' => 'managed_file',
-    '#title' => t('AFLP File: please provide a spreadsheet with columns for the AFLP: *'),
-    '#upload_location' => "$aflp_upload_location",
-    '#upload_validators' => array(
-      'file_validate_extensions' => array('csv tsv xlsx'),
-    ),
-    '#description' => t("Please upload a spreadsheet file containing AFLP data. The format of this file is very important!."),
-    '#tree' => TRUE,
-  );
+    $fields['aflp']['aflp-file'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('AFLP File: please provide a spreadsheet with columns for the AFLP: *'),
+      '#upload_location' => "$aflp_upload_location",
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('csv tsv xlsx'),
+      ),
+      '#states' => array(
+        'visible' => array(
+          ':input[name="' . $id . '[genotype][marker-type][aflp]"]' => array('checked' => TRUE),
+        ),
+      ),
+      '#description' => t("Please upload a spreadsheet file containing AFLP data. The format of this file is very important!."),
+      '#tree' => TRUE,
+    );
 
-  if (isset($fields['aflp']['aflp-file']['#value']['fid'])) {
-    $fields['aflp']['aflp-file']['#default_value'] = $fields['aflp']['aflp-file']['#value']['fid'];
-  }
-  if (!empty($fields['aflp']['aflp-file']['#default_value']) and ($file = file_load($fields['aflp']['aflp-file']['#default_value']))) {
-    // Stop using the file so it can be deleted if the user clicks 'remove'.
-    file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-  }
+    if (isset($fields['aflp']['aflp-file']['#value']['fid'])) {
+      $fields['aflp']['aflp-file']['#default_value'] = $fields['aflp']['aflp-file']['#value']['fid'];
+    }
+    if (!empty($fields['aflp']['aflp-file']['#default_value']) and ($file = file_load($fields['aflp']['aflp-file']['#default_value']))) {
+      // Stop using the file so it can be deleted if the user clicks 'remove'.
+      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+ // }
 
   $fields['SNPs'] = array(
     '#type' => 'fieldset',
