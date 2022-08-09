@@ -149,3 +149,22 @@ function tpps_page_4_file_dynamic(array $form, array &$form_state) {
   $element = drupal_array_get_nested_value($form, $parents);
   return $element;
 }
+
+/**
+ * Ajax callback for phenotype files fieldset.
+ *
+ * Indicates the element to be updated when the genotype marker types checkboxes
+ * or the genotype file types checkboxes are updated.
+ *
+ * @param array $form
+ *   The form to be updated.
+ * @param array $form_state
+ *   The state of the form to be updated.
+ *
+ * @return array
+ *   The element in the form to be updated.
+ */
+function tpps_phenotype_file_type_change_callback(array $form, array &$form_state) {
+  $id = $form_state['triggering_element']['#parents'][0];
+  return $form[$id]['phenotype']['file'];
+}
