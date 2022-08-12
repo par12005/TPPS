@@ -94,17 +94,17 @@ function tpps_publication(array &$form, array $values, array $form_state) {
     '#type' => 'textfield',
     '#title' => t('Title of Publication/Study: *'),
   );
-  if(isset($values['publication']['title']) && $values['publication']['title'] != "") {
-    $form['publication']['title']['#value'] = $values['publication']['title'];
-  }  
+  // if(isset($values['publication']['title']) && $values['publication']['title'] != "") {
+  //   $form['publication']['title']['#value'] = $values['publication']['title'];
+  // }  
 
   $form['publication']['abstract'] = array(
     '#type' => 'textarea',
     '#title' => t('Abstract/Description: *'),
   );
-  if(isset($values['publication']['abstract']) && $values['publication']['abstract'] != "") {
-    $form['publication']['abstract']['#value'] = $values['publication']['abstract'];
-  }
+  // if(isset($values['publication']['abstract']) && $values['publication']['abstract'] != "") {
+  //   $form['publication']['abstract']['#value'] = $values['publication']['abstract'];
+  // }
 
   $form['publication']['journal'] = array(
     '#type' => 'textfield',
@@ -215,9 +215,9 @@ function tpps_year(array &$form, array $values, array $form_state) {
     '#prefix' => '<div id="pubyear">',
     '#suffix' => '</div>',
   );
-  if(isset($values['publication']['year'])) {
-    $form['publication']['year']['#value'] = $values['publication']['year'];
-  }
+  // if(isset($values['publication']['year'])) {
+  //   $form['publication']['year']['#value'] = $values['publication']['year'];
+  // }
 
   return $form;
 }

@@ -162,6 +162,11 @@ function tpps_update_submission(array $state, array $options = array()) {
   $state['updated'] = time();
   $options['submission_state'] = serialize($state);
 
+  
+  // dpm($options);
+  // dpm($state['accession']);
+  
+
   db_update('tpps_submission')
     ->fields($options)
     ->condition('accession', $state['accession'])
