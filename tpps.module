@@ -247,6 +247,14 @@ function tpps_menu() {
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK
   );
+
+  $items['phenotype-file-suggestions'] = array(
+    'title' => 'Autocomplete for phenotype files',
+    'page callback' => 'tpps_phenotype_file_selector',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK
+  );
+
   $items = array_merge($items, tpps_api_paths());
 
   return $items;
@@ -1237,6 +1245,28 @@ function tpps_snpassay_file_selector($string) {
     ->fields('f', array('fid', 'filename'))
     ->condition('f.filename', '%' . db_like($string) . '%', 'LIKE')
     ->condition('f.filename', '%SNP%', 'LIKE')
+    ->orderBy('f.timestamp', 'DESC')
+    ->execute();
+
+  // save the query to matches
+  foreach ($result as $row) {
+    $value = $row->filename . ' (' . $row->fid . ')';
+    $matches[$row->fid] = $row->filename;
+  }
+
+  // Return the result to the form in json
+  drupal_json_output($matches);
+}
+
+/**
+ * 
+ */
+function tpps_phenotype_file_selector($string) {
+  $matches = array();
+  $result = db_select('file_managed', 'f')
+    ->fields('f', array('fid', 'filename'))
+    ->condition('f.filename', '%' . db_like($string) . '%', 'LIKE')
+    ->condition('f.filename', '%Phenotype%', 'LIKE')
     ->orderBy('f.timestamp', 'DESC')
     ->execute();
 

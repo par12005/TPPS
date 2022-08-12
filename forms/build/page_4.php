@@ -100,7 +100,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           '#title' => t('Reference Existing Phenotype File'),
           '#ajax' => array(
             'callback' => 'tpps_phenotype_file_type_change_callback',
-            'wrapper' => "phenotype-main-$i",
+            'wrapper' => "phenotype-main-organism-$i",
           ),
         );
         $file_select_check = tpps_get_ajax_value($form_state, array(
@@ -138,7 +138,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           $form["organism-$i"]['phenotype']['file'] = array(
             '#type' => 'textfield',
             '#title' => t('Phenotype file: Please select a file containing columns for Plant Identifier, Phenotype Data: *'),
-            '#autocomplete_path' => 'snp-assay-file/upload',
+            '#autocomplete_path' => 'phenotype-file-suggestions',
           );
         }
 

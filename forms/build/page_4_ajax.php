@@ -166,5 +166,5 @@ function tpps_page_4_file_dynamic(array $form, array &$form_state) {
  */
 function tpps_phenotype_file_type_change_callback(array $form, array &$form_state) {
   $id = $form_state['triggering_element']['#parents'][0];
-  return $form[$id]['phenotype']['file'];
+  return $form[$id]['phenotype'];
 }
