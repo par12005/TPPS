@@ -461,6 +461,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   }
   $loaded_state = tpps_load_submission($form_state['accession']);
 
+  // $vcf = '';
   if (!empty($loaded_state['vcf_replace'])) {
     foreach ($loaded_state['vcf_replace'] as $org_num => $fid) {
       if (file_load($fid)) {
@@ -474,13 +475,19 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
   }
-
-  if (!empty($file_type['VCF']) and !$vcf) {
+  
+  if (!empty($file_type['VCF']) and !$vcf and trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) == '') {
     form_set_error("$id][genotype][files][vcf", t("Genotype VCF File: field is required."));
   }
   elseif (!empty($file_type['VCF'])) {
     if (($ref_genome === 'manual' or $ref_genome === 'manual2' or $ref_genome === 'url') and isset($assembly) and $assembly and !form_get_errors()) {
-      $vcf_content = gzopen(file_load($vcf)->uri, 'r');
+      if (trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) != '') {
+        $local_vcf_path = trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']);
+        $vcf_content = gzopen($local_vcf_path, 'r');
+      }
+      else {
+        $vcf_content = gzopen(file_load($vcf)->uri, 'r');
+      }
       $assembly_content = gzopen(file_load($assembly)->uri, 'r');
 
       while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
@@ -538,9 +545,13 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
     elseif (!form_get_errors()) {
       $accession_ids = tpps_parse_file_column($tree_accession_file, $id_col_accession_name);
-
       $vcf_file = file_load($vcf);
-      $location = tpps_get_location($vcf_file->uri);
+      if (trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) != '') {
+        $location = trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']);
+      }
+      else {
+        $location = tpps_get_location($vcf_file->uri);
+      }
       $vcf_content = gzopen($location, 'r');
       $stocks = array();
       while (($vcf_line = gzgets($vcf_content)) !== FALSE) {

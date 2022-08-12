@@ -363,9 +363,58 @@ function detailsTab() {
       return;
     }
   }
-  jQuery('#' + detail_type)[0].innerHTML = "Loading...";
-  var request = jQuery.post(path + '/' + detail_type, {
-    page: page
+  jQuery('#' + detail_type)[0].innerHTML = "Querying database for " + detail_type + " information...<div id='query_timer'></div>";
+
+  // create a timer
+  var query_timer_current = 0;
+  var query_timer = setInterval(function() {
+    query_timer_current = query_timer_current + 1;
+    if(query_timer_current > 5) {
+      jQuery('#query_timer').html('Querying time: ' + query_timer_current + ' seconds.<br /><b>Thank you for your patience, first time pulls can take up to a minute to complete depending on the size of our dataset but gets faster after the first page load.</b>');
+    }
+  }, 1000);
+  
+  // OLD version from Peter
+  // var request = jQuery.post(path + '/' + detail_type, {
+  //   page: page
+  // });
+
+  // New version from Rish with XHR status
+  var request = jQuery.ajax({
+      xhr: function() {
+        var xhr = new window.XMLHttpRequest();
+
+        // Upload progress
+        xhr.upload.addEventListener("progress", function(evt){
+            if (evt.lengthComputable) {
+                var percentComplete = evt.loaded / evt.total;
+                //Do something with upload progress
+                console.log(percentComplete);
+            }
+      }, false);
+      
+      // Download progress
+      xhr.addEventListener("progress", function(evt){
+          try {
+            clearInterval(query_timer);
+          } catch (err) {}
+          console.log(evt);
+          jQuery('#' + detail_type)[0].innerHTML = "Loading " + detail_type + " information... " + Math.ceil(evt.loaded / 100) + ' KB';
+          if (evt.lengthComputable) {
+              var percentComplete = evt.loaded / evt.total;
+              // Do something with download progress
+              console.log(percentComplete);
+              //jQuery('#' + detail_type)[0].innerHTML = "Loading " + detail_type + " information... " + Math.ceil(percentComplete * 100) + ' %';
+          }
+      }, false);
+      
+      return xhr;
+    },
+    type: 'POST',
+    url: path + '/' + detail_type, 
+    data: {
+      page: page
+    }
   });
 
   request.done(function (data) {

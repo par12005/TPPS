@@ -292,7 +292,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
       file_save($file);
       return file_copy($file, $new_filename);
     }
-    return file_move($file, $new_filename);
+    return file_move($file, $new_filename, FILE_EXISTS_RENAME);
   }
   throw new Exception("Error: could not open file");
 }
@@ -642,7 +642,12 @@ function tpps_get_location($location) {
  */
 function tpps_get_path_extension($path) {
   preg_match('/\.([a-zA-Z0-9]*)$/', $path, $matches);
+
+  if(count($matches) == 0) {
+    return ""; // Added by Rish during debugging process. XLSX extracting creates files without paths
+  }
   return strtolower($matches[1]);
+
 }
 
 /**
@@ -1089,27 +1094,37 @@ function tpps_xlsx_generator($location, array $options = array()) {
   $dims = array();
   $readers = array();
   foreach ($sheets as $sheet) {
+    // dpm('SHEET location: ' . $dir . '/xl/worksheets/' . $sheet);
     if (tpps_get_path_extension($dir . '/xl/worksheets/' . $sheet) !== 'xml') {
       continue;
     }
     $loc = $dir . '/xl/worksheets/' . $sheet;
     $dimension = tpps_xlsx_get_dimension($loc);
+    // dpm($loc);
+    // dpm($dimension);
     preg_match('/([A-Z]+)[0-9]+:([A-Z]+)[0-9]+/', $dimension, $matches);
-    $left_hex = unpack('H*', $matches[1]);
-    $hex = $left_hex[1];
-    $right_hex = unpack('H*', $matches[2]);
-    if ($first_left == NULL) {
-      $first_left = $left_hex[1];
-      $last_right = $left_hex[1] - 1;
+    // dpm($matches);
+    if(count($matches) < 3) {
+      // The dimensions are invalid (probably an empty worksheet)
     }
-    while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
-      $hex = tpps_increment_hex($hex);
-      $last_right = tpps_increment_hex($last_right);
+    else {
+      // Matches found dimensions, continue processing this as a valid sheet
+      $left_hex = unpack('H*', $matches[1]);
+      $hex = $left_hex[1];
+      $right_hex = unpack('H*', $matches[2]);
+      if ($first_left == NULL) {
+        $first_left = $left_hex[1];
+        $last_right = $left_hex[1] - 1;
+      }
+      while (base_convert($hex, 16, 10) <= base_convert($right_hex[1], 16, 10)) {
+        $hex = tpps_increment_hex($hex);
+        $last_right = tpps_increment_hex($last_right);
+      }
+      $dims[] = array($left_hex[1], $right_hex[1]);
+      $reader = new XMLReader();
+      $reader->open($loc);
+      $readers[] = $reader;
     }
-    $dims[] = array($left_hex[1], $right_hex[1]);
-    $reader = new XMLReader();
-    $reader->open($loc);
-    $readers[] = $reader;
   }
 
   // If the file has a header row, skip it.
