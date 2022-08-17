@@ -1358,6 +1358,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     // dpm('start: ' . date('r'));.
     echo "[INFO] Processing Genotype VCF file\n";
     $file_progress_line_count = 0;
+    $record_count = 0;
     while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
       $file_progress_line_count++;
       if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
@@ -1366,6 +1367,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
         // print_r($vcf_line[0]);
         // throw new Exception('DEBUG');
+        $record_count = $record_count + 1;
+        print_r('Record count:' . $record_count . "\n");
         $genotype_count += count($stocks);
         $vcf_line = explode("\t", $vcf_line);
         $scaffold_id = &$vcf_line[0];
@@ -1380,119 +1383,176 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
         if (empty($variant_name) or $variant_name == '.') {
           $variant_name = "{$scaffold_id}{$position}$ref:$alt";
         }
-        $marker_name = $variant_name . $marker;
+        // $marker_name = $variant_name . $marker; // Original by Peter
+        $marker_name = $scaffold_id . '_' . $position; // Emily updated suggestion on Tuesday August 9th 2022
         $description = "$ref:$alt";
-        $genotype_name = "$marker-$species_code-$scaffold_id-$position";
-        $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description";
+        // $genotype_name = "$marker-$species_code-$scaffold_id-$position"; // Original by Peter
 
+        // Instead, we have multiple genotypes we need to generate, so lets do a key val array
+        $detected_genotypes = array();
+        $first_genotypes = array(); // used to save the first genotype in each row of the VCF (used for genotype_call table)
+        for ($j = 9; $j < count($vcf_line); $j++) {
+          $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
+          $raw_value_colon_parts = explode(':',$raw_value);
+          $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
+          $genotype_combination = "";
+          for($k = 0; $k < count($ref_alt_indices); $k++) {
+            $index_tmp = $ref_alt_indices[$k];
+            if($k > 0) {
+              $genotype_combination .= ':';
+            }
+            if($index_tmp == 0) {
+              $genotype_combination .= $ref;
+            }
+            else {
+              $genotype_combination .= $alt;
+            }
+          }
+
+          $detected_genotypes[$marker_name . $genotype_combination] = TRUE;
+
+          // Record the first genotype name to use for genotype_call table
+          if($j == 9) {
+            print_r('[First Genotype]:' . $marker_name . $genotype_combination . "\n");
+            $first_genotypes[$marker_name . $genotype_combination] = TRUE;
+          }
+          
+        }
+        // SOME DEBUG CODE (FROM RISH CODING)
+        // print_r('detected_genotypes');
+        // print_r($detected_genotypes);
+        // throw new Exception('DEBUG STOP');
+
+        // $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description"; // Original by Peter
+        
+        print_r('[New Feature]: ' . $marker_name . "\n");
         $records['feature'][$marker_name] = array(
           'organism_id' => $current_id,
           'uniquename' => $marker_name,
           'type_id' => $seq_var_cvterm,
         );
 
+        print_r('[New Feature variant_name]: ' . $variant_name . "\n");
         $records['feature'][$variant_name] = array(
           'organism_id' => $current_id,
           'uniquename' => $variant_name,
           'type_id' => $seq_var_cvterm,
         );
 
-        $records['genotype'][$genotype_desc] = array(
-          'name' => $genotype_name,
-          'uniquename' => $genotype_desc,
-          'description' => $description,
-          'type_id' => $snp_cvterm,
-        );
+        // Rish 12/08/2022: So we have multiple genotypes created
+        // So I adjusted some of this code into a for statement
+        // since the genotype_desc seems important and so I modified it to be unique
+        // and based on the genotype_name
+        $genotype_names = array_keys($detected_genotypes); 
+        foreach ($genotype_names as $genotype_name) {
+          $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
+          print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
+          
 
-        if ($format != "") {
-          $records['genotypeprop']["$genotype_desc-format"] = array(
-            'type_id' => $format_cvterm,
-            'value' => $format,
+          $records['genotype'][$genotype_desc] = array(
+            'name' => $genotype_name,
+            'uniquename' => $genotype_desc,
+            'description' => $description,
+            'type_id' => $snp_cvterm,
+          );
+
+          if ($format != "") {
+            $records['genotypeprop']["$genotype_desc-format"] = array(
+              'type_id' => $format_cvterm,
+              'value' => $format,
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+          }
+
+          // It's here we need to do only the first genotype
+          // So do a check for first genotype and only that should be added
+          if(isset($first_genotypes[$genotype_name])) {
+            $vcf_line_count = count($vcf_line);
+            for ($j = 9; $j < $vcf_line_count; $j++) {
+              print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
+              $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                'project_id' => $project_id,
+                'stock_id' => $stocks[$j - 9],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                  'variant' => $variant_name,
+                  'marker' => $marker_name,
+                ),
+              );
+
+              $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                'stock_id' => $stocks[$j - 9],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
+              );
+            
+            }
+          }
+
+          // Quality score.
+          $records['genotypeprop']["$genotype_desc-qual"] = array(
+            'type_id' => $qual_cvterm,
+            'value' => $qual,
             '#fk' => array(
               'genotype' => $genotype_desc,
             ),
           );
-        }
 
-        for ($j = 9; $j < count($vcf_line); $j++) {
-          $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
-            'project_id' => $project_id,
-            'stock_id' => $stocks[$j - 9],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-              'variant' => $variant_name,
-              'marker' => $marker_name,
-            ),
-          );
-
-          $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
-            'stock_id' => $stocks[$j - 9],
+          // filter: pass/fail.
+          $records['genotypeprop']["$genotype_desc-filter"] = array(
+            'type_id' => $filter_cvterm,
+            'value' => ($filter == '.') ? "P" : "NP",
             '#fk' => array(
               'genotype' => $genotype_desc,
             ),
           );
-        }
 
-        // Quality score.
-        $records['genotypeprop']["$genotype_desc-qual"] = array(
-          'type_id' => $qual_cvterm,
-          'value' => $qual,
-          '#fk' => array(
-            'genotype' => $genotype_desc,
-          ),
-        );
+          // Break up info column.
+          $info_vals = explode(";", $info);
+          foreach ($info_vals as $key => $val) {
+            $parts = explode("=", $val);
+            unset($info_vals[$key]);
+            $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
+          }
 
-        // filter: pass/fail.
-        $records['genotypeprop']["$genotype_desc-filter"] = array(
-          'type_id' => $filter_cvterm,
-          'value' => ($filter == '.') ? "P" : "NP",
-          '#fk' => array(
-            'genotype' => $genotype_desc,
-          ),
-        );
+          // Allele frequency, assuming that the info code for allele
+          // frequency is 'AF'.
+          if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
+            $records['genotypeprop']["$genotype_desc-freq"] = array(
+              'type_id' => $freq_cvterm,
+              'value' => $info_vals['AF'],
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+          }
 
-        // Break up info column.
-        $info_vals = explode(";", $info);
-        foreach ($info_vals as $key => $val) {
-          $parts = explode("=", $val);
-          unset($info_vals[$key]);
-          $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
-        }
+          // Depth coverage, assuming that the info code for depth coverage is
+          // 'DP'.
+          if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
+            $records['genotypeprop']["$genotype_desc-depth"] = array(
+              'type_id' => $depth_cvterm,
+              'value' => $info_vals['DP'],
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+          }
 
-        // Allele frequency, assuming that the info code for allele
-        // frequency is 'AF'.
-        if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
-          $records['genotypeprop']["$genotype_desc-freq"] = array(
-            'type_id' => $freq_cvterm,
-            'value' => $info_vals['AF'],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        // Depth coverage, assuming that the info code for depth coverage is
-        // 'DP'.
-        if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
-          $records['genotypeprop']["$genotype_desc-depth"] = array(
-            'type_id' => $depth_cvterm,
-            'value' => $info_vals['DP'],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        // Number of samples, assuming that the info code for number of
-        // samples is 'NS'.
-        if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
-          $records['genotypeprop']["$genotype_desc-n_sample"] = array(
-            'type_id' => $n_sample_cvterm,
-            'value' => $info_vals['NS'],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
+          // Number of samples, assuming that the info code for number of
+          // samples is 'NS'.
+          if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
+            $records['genotypeprop']["$genotype_desc-n_sample"] = array(
+              'type_id' => $n_sample_cvterm,
+              'value' => $info_vals['NS'],
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+          }
         }
         // Tripal Job has issues when all submissions are made at the same
         // time, so break them up into groups of 10,000 genotypes along with
