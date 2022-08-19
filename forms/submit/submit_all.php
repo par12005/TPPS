@@ -1468,7 +1468,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
           // It's here we need to do only the first genotype
           // So do a check for first genotype and only that should be added
-          if(isset($first_genotypes[$genotype_name])) {
+          //if(isset($first_genotypes[$genotype_name])) {
             $vcf_line_count = count($vcf_line);
             for ($j = 9; $j < $vcf_line_count; $j++) {
               print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
@@ -1490,7 +1490,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               );
             
             }
-          }
+          //}
 
           // Quality score.
           $records['genotypeprop']["$genotype_desc-qual"] = array(
