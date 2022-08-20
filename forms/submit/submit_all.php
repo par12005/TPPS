@@ -1381,7 +1381,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
         $info = &$vcf_line[7];
 
         if (empty($variant_name) or $variant_name == '.') {
-          $variant_name = "{$scaffold_id}{$position}$ref:$alt";
+          // $variant_name = "{$scaffold_id}{$position}$ref:$alt";
+          $variant_name = $scaffold_id . '_' . $position . 'SNP';
         }
         // $marker_name = $variant_name . $marker; // Original by Peter
         $marker_name = $scaffold_id . '_' . $position; // Emily updated suggestion on Tuesday August 9th 2022
