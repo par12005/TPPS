@@ -168,3 +168,20 @@ function tpps_phenotype_file_type_change_callback(array $form, array &$form_stat
   $id = $form_state['triggering_element']['#parents'][0];
   return $form[$id]['phenotype'];
 }
+
+/**
+ * Ajax callback for phenotype metadata files fieldset.
+ *
+ *
+ * @param array $form
+ *   The form to be updated.
+ * @param array $form_state
+ *   The state of the form to be updated.
+ *
+ * @return array
+ *   The element in the form to be updated.
+ */
+function tpps_phenotype_metadata_file_callback(array $form, array &$form_state) {
+  $id = $form_state['triggering_element']['#parents'][0];
+  return $form[$id]['phenotype'];
+}

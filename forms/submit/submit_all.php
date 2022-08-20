@@ -670,7 +670,6 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
     $names[$i] = $firstpage['organism'][$i]['name'];
   }
   $names['number'] = $firstpage['organism']['number'];
-
   $options = array(
     'cvterms' => $cvterms,
     'records' => $records,
@@ -732,7 +731,7 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
       }
     }
 
-    tpps_file_iterator($fid, 'tpps_process_accession', $options);
+    tpps_file_iterator($fid, 'tpps_process_accession', $options, $job);
 
     $new_ids = tpps_chado_insert_multi($options['records'], $multi_insert_options);
     foreach ($new_ids as $t_id => $stock_id) {
@@ -2577,7 +2576,7 @@ function tpps_submit_summary(array &$form_state) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_process_accession($row, array &$options) {
+function tpps_process_accession($row, array &$options, $job = NULL) {
   $cvterm = $options['cvterms'];
   $records = &$options['records'];
   $accession = $options['accession'];
@@ -2633,7 +2632,7 @@ function tpps_process_accession($row, array &$options) {
         'stock' => $clone_name,
       ),
     );
-
+    $job->logMessage('[INFO] CV Terms Data' . print_r($cvterm, 1));
     $records['stock_relationship'][$clone_name] = array(
       'type_id' => $cvterm['has_part'],
       '#fk' => array(

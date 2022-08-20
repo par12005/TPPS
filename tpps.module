@@ -1279,3 +1279,10 @@ function tpps_phenotype_file_selector($string) {
   // Return the result to the form in json
   drupal_json_output($matches);
 }
+
+function tpps_media_browser_plugins_alter(&$plugins) {
+  //if (variable_get('disable_media_upload', 0)) {
+   unset($plugins['upload']);
+   unset($plugins['media_default--media_browser_my_files']);
+ // }
+ }
