@@ -251,12 +251,12 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
           $phenotype_file_name_col = $groups['Phenotype Name/Identifier']['2'];
           $phenotype_names = tpps_parse_file_column($phenotype_file, $phenotype_file_name_col);
         }
-        
+
         $phenotype_meta_names = array();
         if (isset($phenotype_name_col)) {
           $phenotype_meta_names = tpps_parse_file_column($phenotype_meta, $phenotype_name_col);
         }
-        
+
         for ($i = 1; $i <= $phenotype_number; $i++) {
           $phenotype_meta_names[] = $phenotype['phenotypes-meta'][$i]['name'];
         }
@@ -475,7 +475,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
   }
-  
+
   if (!empty($file_type['VCF']) and !$vcf and trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) == '') {
     form_set_error("$id][genotype][files][vcf", t("Genotype VCF File: field is required."));
   }
@@ -613,7 +613,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     if (!form_get_errors()) {
       $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
       $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
-      print_r($missing_trees); 
       if ($missing_trees !== array()) {
         $tree_id_str = implode(', ', $missing_trees);
         form_set_error("$id][genotype][files][snps-assay", t("SNPs Assay file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: @tree_id_str", array('@tree_id_str' => $tree_id_str)));
