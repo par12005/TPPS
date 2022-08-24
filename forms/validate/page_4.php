@@ -460,8 +460,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     return;
   }
   $loaded_state = tpps_load_submission($form_state['accession']);
-
-  // $vcf = '';
+  //$vcf = '';
   if (!empty($loaded_state['vcf_replace'])) {
     foreach ($loaded_state['vcf_replace'] as $org_num => $fid) {
       if (file_load($fid)) {
@@ -539,7 +538,10 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
 
     }
-
+    if (empty($loaded_state['vcf_replace']) && trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) != '') {
+      form_set_error("$org_num][genotype][files][local_vcf", t("Local VCF File: File needs to be pre-validated. Please click on Pre-validate my VCF files button at the bottom."));
+    }
+    
     if (!empty($loaded_state['vcf_validated']) and $loaded_state['vcf_validated'] === TRUE and empty($loaded_state['vcf_val_errors'])) {
       drupal_set_message(t('VCF files pre-validated. Skipping VCF file validation'));
     }
@@ -612,8 +614,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
     if (!form_get_errors()) {
       $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
-      $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
-      print_r($missing_trees); 
+      $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header); 
       if ($missing_trees !== array()) {
         $tree_id_str = implode(', ', $missing_trees);
         form_set_error("$id][genotype][files][snps-assay", t("SNPs Assay file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: @tree_id_str", array('@tree_id_str' => $tree_id_str)));

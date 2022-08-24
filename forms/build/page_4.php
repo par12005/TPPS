@@ -138,8 +138,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           $form["organism-$i"]['phenotype']['file'] = array(
             '#type' => 'media',
             '#title' => t('Phenotype file: Please select a file containing columns for Plant Identifier, Phenotype Data: *'),
-           // '#autocomplete_path' => 'phenotype-file-suggestions',
-           // '#default_value' => isset($values["organism-$i"]['phenotype']['file']) ? $values["organism-$i"]['phenotype']['file'] : '',
+            '#default_value' => isset($values["organism-$i"]['phenotype']['file']) ? $values["organism-$i"]['phenotype']['file'] : '',
           );
         }
 

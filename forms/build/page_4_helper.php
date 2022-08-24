@@ -696,6 +696,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
             ':input[name="' . $id . '[phenotype][check]"]' => array('value' => 'upload_file'),
           ),
         ),
+        '#default_value' => isset($values["$id"]['phenotype']['metadata']) ? $values["$id"]['phenotype']['metadata'] : '',
         '#tree' => TRUE,
       );
     }
@@ -703,10 +704,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       $form[$id]['phenotype']['metadata'] = array(
         '#type' => 'media',
         '#title' => t('Phenotype Metadata File: Please reference a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
-        '#upload_location' => "$phenotype_upload_location",
-        '#upload_validators' => array(
-          'file_validate_extensions' => array('csv tsv xlsx'),
-        ),
+        '#default_value' => isset($values["$id"]['phenotype']['metadata']) ? $values["$id"]['phenotype']['metadata'] : '',
         '#states' => array(
           'visible' => array(
             ':input[name="' . $id . '[phenotype][check]"]' => array('value' => 'reference_file'),
