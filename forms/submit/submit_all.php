@@ -9,6 +9,10 @@
  * submitted through a Tripal job due to the size of the data.
  */
 
+ // Global variables
+ $tpps_job_logger = NULL;
+
+
 /**
  * Creates a record for the project and calls the submission helper functions.
  *
@@ -18,14 +22,28 @@
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_all($accession, TripalJob $job = NULL) {
+  // Get public path
+  $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
 
+  mkdir($log_path);
+
+  // Update the global $tpps_job_logger variable
+  global $tpps_job_logger;
+  $tpps_job_logger = [];
+  $tpps_job_logger['job_object'] = $job;
+  $tpps_job_logger['log_file_path'] =  $log_path . $accession . '_' . $tpps_job_logger['job_object']->getJobID() . '.txt';
+  $tpps_job_logger['log_file_handle'] = fopen($tpps_job_logger['log_file_path'], "w+");
+
+  tpps_job_logger_write('[INFO] Setting up...');
   $job->logMessage('[INFO] Setting up...');
   $job->setInterval(1);
   $form_state = tpps_load_submission($accession);
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
+  tpps_job_logger_write('[INFO] Clearing Database...');
   $job->logMessage('[INFO] Clearing Database...');
   tpps_submission_clear_db($accession);
+  tpps_job_logger_write('[INFO] Database Cleared');
   $job->logMessage('[INFO] Database Cleared.');
   $project_id = $form_state['ids']['project_id'] ?? NULL;
   $transaction = db_transaction();
@@ -38,6 +56,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $form_state['file_rank'] = 0;
     $form_state['ids'] = array();
 
+    tpps_job_logger_write('[INFO] Creating project record...');
     $job->logMessage('[INFO] Creating project record...');
     $form_state['title'] = $firstpage['publication']['title'];
     $form_state['abstract'] = $firstpage['publication']['abstract'];
@@ -49,6 +68,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       $project_record['project_id'] = $project_id;
     }
     $form_state['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
+    tpps_job_logger_write("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
     $job->logMessage("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
 
     tpps_tripal_entity_publish('Project', array(
@@ -56,47 +76,91 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       $form_state['ids']['project_id'],
     ));
 
+    tpps_job_logger_write("[INFO] Submitting Publication/Species information...");
     $job->logMessage("[INFO] Submitting Publication/Species information...");
     tpps_submit_page_1($form_state, $job);
+    tpps_job_logger_write("[INFO] Publication/Species information submitted!\n");
     $job->logMessage("[INFO] Publication/Species information submitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Study Details...");
     $job->logMessage("[INFO] Submitting Study Details...");
     tpps_submit_page_2($form_state, $job);
+    tpps_job_logger_write("[INFO] Study Details sumbitted!\n");
     $job->logMessage("[INFO] Study Details sumbitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Accession information...");
     $job->logMessage("[INFO] Submitting Accession information...");
     tpps_submit_page_3($form_state, $job);
+    tpps_job_logger_write("[INFO] Accession information submitted!\n");
     $job->logMessage("[INFO] Accession information submitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Raw data...");
     $job->logMessage("[INFO] Submitting Raw data...");
     tpps_submit_page_4($form_state, $job);
+    tpps_job_logger_write("[INFO] Raw data submitted!\n");
     $job->logMessage("[INFO] Raw data submitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Summary information...");
     $job->logMessage("[INFO] Submitting Summary information...");
     tpps_submit_summary($form_state);
+    tpps_job_logger_write("[INFO] Summary information submitted!\n");
     $job->logMessage("[INFO] Summary information submitted!\n");
 
     tpps_update_submission($form_state);
 
+    tpps_job_logger_write("[INFO] Renaming files...");
     $job->logMessage("[INFO] Renaming files...");
     tpps_submission_rename_files($accession);
+    tpps_job_logger_write("[INFO] Files renamed!\n");
     $job->logMessage("[INFO] Files renamed!\n");
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Approved';
     $form_state['loaded'] = time();
+    tpps_job_logger_write("[INFO] Finishing up...");
     $job->logMessage("[INFO] Finishing up...");
     tpps_update_submission($form_state, array('status' => 'Approved'));
+    tpps_job_logger_write("[INFO] Complete!");
     $job->logMessage("[INFO] Complete!");
+
+    fclose($tpps_job_logger['log_file_handle']);
+
   }
   catch (Exception $e) {
     $transaction->rollback();
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Pending Approval';
     tpps_update_submission($form_state, array('status' => 'Pending Approval'));
+    
+    tpps_job_logger_write('[ERROR] Job failed');
     $job->logMessage('[ERROR] Job failed', array(), TRIPAL_ERROR);
+    tpps_job_logger_write('[ERROR] Error message: @msg', array('@msg' => $e->getMessage()));
     $job->logMessage('[ERROR] Error message: @msg', array('@msg' => $e->getMessage()), TRIPAL_ERROR);
+    tpps_job_logger_write("[ERROR] Trace: \n@trace", array('@trace' => $e->getTraceAsString()));
     $job->logMessage("[ERROR] Trace: \n@trace", array('@trace' => $e->getTraceAsString()), TRIPAL_ERROR);
+    
+    fclose($tpps_job_logger['log_file_handle']);
     watchdog_exception('tpps', $e);
+
+  }
+}
+
+/**
+ * Writes data to the tpps_job_logger_handle
+ *
+ * @param string $string
+ *   Write string to the job log file using the tpps_job_logger object
+ */
+function tpps_job_logger_write($string, $replacements = []) {
+  global $tpps_job_logger;
+  try {
+    foreach ($replacements as $key_string => $replace_string) {
+      $string = str_replace($key_string, $replace_string, $string);
+    }
+    fwrite($tpps_job_logger['log_file_handle'],$string);
+    fflush($tpps_job_logger['log_file_handle']);
+  }
+  catch (Exception $e) {
+    print_r($e->getMessage());
   }
 }
 
