@@ -159,7 +159,7 @@ function tpps_job_logger_write($string, $replacements = []) {
 
     // Add timestamp
     $time_now = time();
-    $timestamp_now = date('m/d/y g:i:s a', $time_now);
+    $timestamp_now = date('m/d/y g:i:s A', $time_now);
 
     $string = "\n" . $timestamp_now . " " . $string;
 
