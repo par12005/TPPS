@@ -156,6 +156,13 @@ function tpps_job_logger_write($string, $replacements = []) {
     foreach ($replacements as $key_string => $replace_string) {
       $string = str_replace($key_string, $replace_string, $string);
     }
+
+    // Add timestamp
+    $time_now = time();
+    $timestamp_now = date('m/d/y g:i:s a', $time_now);
+
+    $string = "\n" . $timestamp_now . " " . $string;
+
     fwrite($tpps_job_logger['log_file_handle'],$string);
     fflush($tpps_job_logger['log_file_handle']);
   }
