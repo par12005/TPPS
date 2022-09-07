@@ -298,6 +298,25 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     );
   }
 
+  $disable_vcf_import = 1;
+  if(!isset($submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'])) {
+    $disable_vcf_import = 0;
+  }
+  else {
+    $disable_vcf_import = $submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'];
+  }
+
+  $form['DISABLE_VCF_IMPORT'] = array(
+    '#type' => 'checkbox',
+    '#title' => 'Disable VCF Import in Tripal Job Submission',
+    '#default_value' => $disable_vcf_import,
+  );
+
+  $form['DISABLE_VCF_IMPORT_SAVE'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save VCF Import Setting'),
+  );  
+
   $form['admin-comments'] = array(
     '#type' => 'textarea',
     '#title' => t('Additional comments (administrator):'),
@@ -318,6 +337,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     );
   }
 
+
   if ($status != "Pending Approval") {
     $form['SAVE_COMMENTS'] = array(
       '#type' => 'button',
@@ -328,6 +348,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       ),
     );
   }
+
+
 
   $date = $submission_state['saved_values']['summarypage']['release-date'] ?? NULL;
   if (!empty($date)) {
@@ -1085,6 +1107,17 @@ function tpps_admin_panel_submit($form, &$form_state) {
   }
 
   switch ($form_state['triggering_element']['#value']) {
+    case 'Save VCF Import Setting':
+      // dpm($form_state['values']);
+      if($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
+        $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
+      }
+      else {
+        $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
+      }
+      tpps_update_submission($state);
+      break;
+
     case 'Reject':
       drupal_mail($type, 'user_rejected', $to, user_preferred_language($owner), $params, $from, TRUE);
       $state['status'] = 'Incomplete';
