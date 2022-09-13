@@ -1614,27 +1614,27 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
                 'genotype' => $genotype_desc,
               ),
             );
-          }
-        }
-        elseif (preg_match('/##FORMAT=/', $vcf_line)) {
-          $format .= substr($vcf_line, 9, -1);
-        }
-        elseif (preg_match('/#CHROM/', $vcf_line)) {
-          $vcf_line = explode("\t", $vcf_line);
-          for ($j = 9; $j < count($vcf_line); $j++) {
-            $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
-          }
+          }        
         }
       }
+      elseif (preg_match('/##FORMAT=/', $vcf_line)) {
+        $format .= substr($vcf_line, 9, -1);
+      }
+      elseif (preg_match('/#CHROM/', $vcf_line)) {
+        $vcf_line = explode("\t", $vcf_line);
+        for ($j = 9; $j < count($vcf_line); $j++) {
+          $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
+        }
+      }      
       // Insert the last set of values.
       tpps_chado_insert_multi($records, $multi_insert_options);
       unset($records);
       $genotype_count = 0;
       // dpm('done: ' . date('r'));.
     }
-    else {
-      tpps_job_logger_write('[INFO] Ignoring VCF file because TPPS Admin Panel setting for this study is set to ignore VCF file.');
-    }
+  }
+  else {
+    tpps_job_logger_write('[INFO] Ignoring VCF file because TPPS Admin Panel setting for this study is set to ignore VCF file.');
   }
 }
 
