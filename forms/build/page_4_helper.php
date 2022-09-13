@@ -664,30 +664,55 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
 
     $form[$id]['phenotype']['check'] = array(
-      '#type' => 'checkbox',
+      '#type' => 'radios',
       '#title' => t('I would like to upload a phenotype metadata file'),
-      '#attributes' => array(
-        'data-toggle' => array('tooltip'),
-        'data-placement' => array('right'),
-        'title' => array('Upload a file'),
+      '#options' => array (
+        'upload_file' => t('I would like to upload a phenotype metadata file'),
+        'reference_file' => t('I would like to reference an existing phenotype metadata file'),
+      ),
+      '#default_value' => isset($values["$id"]['phenotype']['check']) ? $values["$id"]['phenotype']['check'] : '',
+      '#ajax' => array(
+        'callback' => 'tpps_phenotype_metadata_file_callback',
+        'wrapper' => "phenotype-main-organism-$i",
       ),
       '#description' => t('We encourage that you only upload a phenotype metadata file if you have > 20 phenotypes. Using the fields above instead of uploading a metadata file allows you to select from standardized controlled vocabulary terms, which makes your data more findable, interoperable, and reusable.'),
     );
 
-    $form[$id]['phenotype']['metadata'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
-      '#upload_location' => "$phenotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
-      ),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE),
+    $metadata_file_check = tpps_get_ajax_value($form_state, array(
+      "organism-$i",
+      'phenotype',
+      'check'
+    ));
+    if ($metadata_file_check == 'upload_file') {
+      $form[$id]['phenotype']['metadata'] = array(
+        '#type' => 'managed_file',
+        '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
+        '#upload_location' => "$phenotype_upload_location",
+        '#upload_validators' => array(
+          'file_validate_extensions' => array('csv tsv xlsx'),
         ),
-      ),
-      '#tree' => TRUE,
-    );
+        '#states' => array(
+          'visible' => array(
+            ':input[name="' . $id . '[phenotype][check]"]' => array('value' => 'upload_file'),
+          ),
+        ),
+        '#default_value' => isset($values["$id"]['phenotype']['metadata']) ? $values["$id"]['phenotype']['metadata'] : '',
+        '#tree' => TRUE,
+      );
+    }
+    elseif ($metadata_file_check == 'reference_file') {
+      $form[$id]['phenotype']['metadata'] = array(
+        '#type' => 'media',
+        '#title' => t('Phenotype Metadata File: Please reference a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
+        '#default_value' => isset($values["$id"]['phenotype']['metadata']) ? $values["$id"]['phenotype']['metadata'] : '',
+        '#states' => array(
+          'visible' => array(
+            ':input[name="' . $id . '[phenotype][check]"]' => array('value' => 'reference_file'),
+          ),
+        ),
+        '#tree' => TRUE,
+      );
+    }
 
     $form[$id]['phenotype']['metadata']['empty'] = array(
       '#default_value' => isset($values["$id"]['phenotype']['metadata']['empty']) ? $values["$id"]['phenotype']['metadata']['empty'] : 'NA',
