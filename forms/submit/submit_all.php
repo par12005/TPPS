@@ -1410,73 +1410,102 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
   if (!empty($genotype['files']['file-type']['VCF'])) {
 
+    // dpm('start: ' . date('r'));.
+    echo "[INFO] Processing Genotype VCF file\n";
+    $file_progress_line_count = 0;
+    $record_count = 0;
+    while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
+      $file_progress_line_count++;
+      if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
+        echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+      }
+      if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
+        // print_r($vcf_line[0]);
+        // throw new Exception('DEBUG');
+        $record_count = $record_count + 1;
+        print_r('Record count:' . $record_count . "\n");
+        $genotype_count += count($stocks);
+        $vcf_line = explode("\t", $vcf_line);
+        $scaffold_id = &$vcf_line[0];
+        $position = &$vcf_line[1];
+        $variant_name = &$vcf_line[2];
+        $ref = &$vcf_line[3];
+        $alt = &$vcf_line[4];
+        $qual = &$vcf_line[5];
+        $filter = &$vcf_line[6];
+        $info = &$vcf_line[7];
 
-    if($disable_vcf_import == 0) {
-      // @todo we probably want to use tpps_file_iterator to parse vcf files.
-      $vcf_fid = $genotype['files']['vcf'];
-      tpps_add_project_file($form_state, $vcf_fid);
-
-      $marker = 'SNP';
-
-      $records['genotypeprop'] = array();
-
-      $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
-      $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
-      $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
-      $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
-      $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
-      $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
-      $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
-
-      $vcf_file = file_load($vcf_fid);
-      $location = tpps_get_location($vcf_file->uri);
-      $vcf_content = gzopen($location, 'r');
-      $stocks = array();
-      $format = "";
-      $current_id = $form_state['ids']['organism_ids'][$i];
-      $species_code = $species_codes[$current_id];
-
-      // dpm('start: ' . date('r'));.
-      echo "[INFO] Processing Genotype VCF file\n";
-      $file_progress_line_count = 0;
-      while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
-        $file_progress_line_count++;
-        if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
-          echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+        if (empty($variant_name) or $variant_name == '.') {
+          // $variant_name = "{$scaffold_id}{$position}$ref:$alt";
+          $variant_name = $scaffold_id . '_' . $position . 'SNP';
         }
-        if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
-          // print_r($vcf_line[0]);
-          // throw new Exception('DEBUG');
-          $genotype_count += count($stocks);
-          $vcf_line = explode("\t", $vcf_line);
-          $scaffold_id = &$vcf_line[0];
-          $position = &$vcf_line[1];
-          $variant_name = &$vcf_line[2];
-          $ref = &$vcf_line[3];
-          $alt = &$vcf_line[4];
-          $qual = &$vcf_line[5];
-          $filter = &$vcf_line[6];
-          $info = &$vcf_line[7];
+        // $marker_name = $variant_name . $marker; // Original by Peter
+        $marker_name = $scaffold_id . '_' . $position; // Emily updated suggestion on Tuesday August 9th 2022
+        $description = "$ref:$alt";
+        // $genotype_name = "$marker-$species_code-$scaffold_id-$position"; // Original by Peter
 
-          if (empty($variant_name) or $variant_name == '.') {
-            $variant_name = "{$scaffold_id}{$position}$ref:$alt";
+        // Instead, we have multiple genotypes we need to generate, so lets do a key val array
+        $detected_genotypes = array();
+        $first_genotypes = array(); // used to save the first genotype in each row of the VCF (used for genotype_call table)
+        for ($j = 9; $j < count($vcf_line); $j++) {
+          // CODE REPLACED BY FUNCTION
+          // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
+          // $raw_value_colon_parts = explode(':',$raw_value);
+          // $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
+          // $genotype_combination = "";
+          // for($k = 0; $k < count($ref_alt_indices); $k++) {
+          //   $index_tmp = $ref_alt_indices[$k];
+          //   if($k > 0) {
+          //     $genotype_combination .= ':';
+          //   }
+          //   if($index_tmp == 0) {
+          //     $genotype_combination .= $ref;
+          //   }
+          //   else {
+          //     $genotype_combination .= $alt;
+          //   }
+          // }
+          $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+
+          $detected_genotypes[$marker_name . $genotype_combination] = TRUE;
+
+          // Record the first genotype name to use for genotype_call table
+          if($j == 9) {
+            print_r('[First Genotype]:' . $marker_name . $genotype_combination . "\n");
+            $first_genotypes[$marker_name . $genotype_combination] = TRUE;
           }
-          $marker_name = $variant_name . $marker;
-          $description = "$ref:$alt";
-          $genotype_name = "$marker-$species_code-$scaffold_id-$position";
-          $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description";
+          
+        }
+        // SOME DEBUG CODE (FROM RISH CODING)
+        // print_r('detected_genotypes');
+        // print_r($detected_genotypes);
+        // throw new Exception('DEBUG STOP');
 
-          $records['feature'][$marker_name] = array(
-            'organism_id' => $current_id,
-            'uniquename' => $marker_name,
-            'type_id' => $seq_var_cvterm,
-          );
+        // $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description"; // Original by Peter
+        
+        print_r('[New Feature]: ' . $marker_name . "\n");
+        $records['feature'][$marker_name] = array(
+          'organism_id' => $current_id,
+          'uniquename' => $marker_name,
+          'type_id' => $seq_var_cvterm,
+        );
 
-          $records['feature'][$variant_name] = array(
-            'organism_id' => $current_id,
-            'uniquename' => $variant_name,
-            'type_id' => $seq_var_cvterm,
-          );
+        print_r('[New Feature variant_name]: ' . $variant_name . "\n");
+        $records['feature'][$variant_name] = array(
+          'organism_id' => $current_id,
+          'uniquename' => $variant_name,
+          'type_id' => $seq_var_cvterm,
+        );
+
+        // Rish 12/08/2022: So we have multiple genotypes created
+        // So I adjusted some of this code into a for statement
+        // since the genotype_desc seems important and so I modified it to be unique
+        // and based on the genotype_name
+        $genotype_names = array_keys($detected_genotypes); 
+        foreach ($genotype_names as $genotype_name) {
+          $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
+          print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
+          
 
           $records['genotype'][$genotype_desc] = array(
             'name' => $genotype_name,
@@ -1495,25 +1524,36 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             );
           }
 
-          for ($j = 9; $j < count($vcf_line); $j++) {
-            $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
-              'project_id' => $project_id,
-              'stock_id' => $stocks[$j - 9],
-              '#fk' => array(
-                'genotype' => $genotype_desc,
-                'variant' => $variant_name,
-                'marker' => $marker_name,
-              ),
-            );
+          $vcf_line_count = count($vcf_line);
+          for ($j = 9; $j < $vcf_line_count; $j++) {
+            // Rish: This was added on 09/122/2022
+            // This gets the name of the current genotype for the tree_id column
+            // being checked.
+            $column_genotype_name = $marker_name . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+            if($column_genotype_name == $genotype_name) {
+              // Found a match between the tree_id genotype and the genotype_name from records
 
-            $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
-              'stock_id' => $stocks[$j - 9],
-              '#fk' => array(
-                'genotype' => $genotype_desc,
-              ),
-            );
+              print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
+              $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                'project_id' => $project_id,
+                'stock_id' => $stocks[$j - 9],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                  'variant' => $variant_name,
+                  'marker' => $marker_name,
+                ),
+              );
+
+              $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                'stock_id' => $stocks[$j - 9],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
+              );
+            }
+            
           }
-
+          
           // Quality score.
           $records['genotypeprop']["$genotype_desc-qual"] = array(
             'type_id' => $qual_cvterm,
@@ -1575,21 +1615,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               ),
             );
           }
-          // Tripal Job has issues when all submissions are made at the same
-          // time, so break them up into groups of 10,000 genotypes along with
-          // their relevant genotypeprops.
-          if ($genotype_count > $record_group) {
-            $genotype_count = 0;
-            tpps_chado_insert_multi($records, $multi_insert_options);
-            $records = array(
-              'feature' => array(),
-              'genotype' => array(),
-              'genotype_call' => array(),
-              'genotypeprop' => array(),
-              'stock_genotype' => array(),
-            );
-            $genotype_count = 0;
-          }
         }
         elseif (preg_match('/##FORMAT=/', $vcf_line)) {
           $format .= substr($vcf_line, 9, -1);
@@ -1611,6 +1636,36 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       tpps_job_logger_write('[INFO] Ignoring VCF file because TPPS Admin Panel setting for this study is set to ignore VCF file.');
     }
   }
+}
+
+/**
+ * Submits environmental information for one species.
+ *
+ * @param string $raw_value
+ *   Tree ID genotype value from VCF file
+ * @param string $ref
+ *   REF value
+ * @param string $alt
+ *   ALT value
+ */
+function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
+  // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
+  $raw_value_colon_parts = explode(':',$raw_value);
+  $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
+  $genotype_combination = "";
+  for($k = 0; $k < count($ref_alt_indices); $k++) {
+    $index_tmp = $ref_alt_indices[$k];
+    if($k > 0) {
+      $genotype_combination .= ':';
+    }
+    if($index_tmp == 0) {
+      $genotype_combination .= $ref;
+    }
+    else {
+      $genotype_combination .= $alt;
+    }
+  }
+  return $genotype_combination;
 }
 
 /**
