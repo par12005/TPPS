@@ -155,16 +155,6 @@ function tpps_menu() {
     'file' => 'admin/panel.php',
   );
 
-  $items['tpps-admin-panel-logs/%'] = array(
-    'title' => 'TPPS Admin Panel',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_admin_panel_logs', 1),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('approve tpps submissions'),
-    'type' => MENU_NORMAL_ITEM,
-    'file' => 'admin/logs.php',
-  );  
-
   $items['tpps/doi/%'] = array(
     'title' => 'TPPS DOI',
     'page callback' => 'tpps_manage_doi',
@@ -257,14 +247,6 @@ function tpps_menu() {
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK
   );
-
-  $items['phenotype-file-suggestions'] = array(
-    'title' => 'Autocomplete for phenotype files',
-    'page callback' => 'tpps_phenotype_file_selector',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK
-  );
-
   $items = array_merge($items, tpps_api_paths());
 
   return $items;
@@ -1267,32 +1249,3 @@ function tpps_snpassay_file_selector($string) {
   // Return the result to the form in json
   drupal_json_output($matches);
 }
-
-/**
- * 
- */
-function tpps_phenotype_file_selector($string) {
-  $matches = array();
-  $result = db_select('file_managed', 'f')
-    ->fields('f', array('fid', 'filename'))
-    ->condition('f.filename', '%' . db_like($string) . '%', 'LIKE')
-    ->condition('f.filename', '%Phenotype%', 'LIKE')
-    ->orderBy('f.timestamp', 'DESC')
-    ->execute();
-
-  // save the query to matches
-  foreach ($result as $row) {
-    $value = $row->filename . ' (' . $row->fid . ')';
-    $matches[$row->fid] = $row->filename;
-  }
-
-  // Return the result to the form in json
-  drupal_json_output($matches);
-}
-
-function tpps_media_browser_plugins_alter(&$plugins) {
-  //if (variable_get('disable_media_upload', 0)) {
-   unset($plugins['upload']);
-   unset($plugins['media_default--media_browser_my_files']);
- // }
- }

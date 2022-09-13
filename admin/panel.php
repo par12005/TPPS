@@ -66,29 +66,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $options = array();
   $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
 
-  // Check for log file
-  // Step 1 - Look for the last tripal job that has the accession
-  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 'TPPS Record Submission - $accession' ORDER BY submit_date DESC LIMIT 1;");
-  $job_id = -1;
-  while($row_array = $results->fetchObject()) {
-    // dpm($row_array);
-    // $display .= print_r($row_array, true);
-    $job_id = $row_array->job_id;
-  }
-  if($job_id == -1) {
-    $display .= "<div style='padding: 10px;'>No log file exists for this study (resubmit this study to generate a log file if necessary)</div>";
-  }
-  else {
-    $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
-    // dpm($log_path . $accession . "_" . $job_id . ".txt");
-    if(file_exists($log_path . $accession . "_" . $job_id . ".txt")) {
-      $display .= "<div style='padding: 10px;background: #e9f9ef;border: 1px solid #90bea9;font-size: 18px;'><a target='_blank' href='../tpps-admin-panel-logs/" . $accession . "_" . $job_id . "'>Latest job log file ($accession - $job_id)</a></div>";
-    }
-    else {
-      $display .= "<div style='padding: 10px;'>Could not find job log file (this can happen if the log file was deleted - resubmit study if necessary to regenerate log file)</div>";
-    }
-  }
-
   if ($status == "Pending Approval") {
     $options['files'] = array(
       'revision_destination' => TRUE,
@@ -298,25 +275,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     );
   }
 
-  $disable_vcf_import = 1;
-  if(!isset($submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'])) {
-    $disable_vcf_import = 0;
-  }
-  else {
-    $disable_vcf_import = $submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'];
-  }
-
-  $form['DISABLE_VCF_IMPORT'] = array(
-    '#type' => 'checkbox',
-    '#title' => 'Disable VCF Import in Tripal Job Submission',
-    '#default_value' => $disable_vcf_import,
-  );
-
-  $form['DISABLE_VCF_IMPORT_SAVE'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save VCF Import Setting'),
-  );  
-
   $form['admin-comments'] = array(
     '#type' => 'textarea',
     '#title' => t('Additional comments (administrator):'),
@@ -337,7 +295,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     );
   }
 
-
   if ($status != "Pending Approval") {
     $form['SAVE_COMMENTS'] = array(
       '#type' => 'button',
@@ -348,8 +305,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       ),
     );
   }
-
-
 
   $date = $submission_state['saved_values']['summarypage']['release-date'] ?? NULL;
   if (!empty($date)) {
@@ -1107,17 +1062,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
   }
 
   switch ($form_state['triggering_element']['#value']) {
-    case 'Save VCF Import Setting':
-      // dpm($form_state['values']);
-      if($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
-        $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
-      }
-      else {
-        $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
-      }
-      tpps_update_submission($state);
-      break;
-
     case 'Reject':
       drupal_mail($type, 'user_rejected', $to, user_preferred_language($owner), $params, $from, TRUE);
       $state['status'] = 'Incomplete';

@@ -131,11 +131,3 @@ th > div.form-type-select > .ajax-progress {
 #tpps-main input.btn {
   margin-top: 5px;
 }
-
-div.media-widget.form-media a.browse {
-  background-color: #e2b448;
-    border-radius: 3px;
-    font-size: 14px;
-    color: white;
-    padding: 10px 15px;
-}
