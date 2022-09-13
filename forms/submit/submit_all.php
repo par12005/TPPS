@@ -1409,6 +1409,29 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
 
   if (!empty($genotype['files']['file-type']['VCF'])) {
+    // @todo we probably want to use tpps_file_iterator to parse vcf files.
+    $vcf_fid = $genotype['files']['vcf'];
+    tpps_add_project_file($form_state, $vcf_fid);
+
+    $marker = 'SNP';
+
+    $records['genotypeprop'] = array();
+
+    $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
+    $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
+    $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
+    $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
+    $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
+    $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
+    $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
+
+    $vcf_file = file_load($vcf_fid);
+    $location = tpps_get_location($vcf_file->uri);
+    $vcf_content = gzopen($location, 'r');
+    $stocks = array();
+    $format = "";
+    $current_id = $form_state['ids']['organism_ids'][$i];
+    $species_code = $species_codes[$current_id];
 
     // dpm('start: ' . date('r'));.
     echo "[INFO] Processing Genotype VCF file\n";
@@ -1614,7 +1637,24 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
                 'genotype' => $genotype_desc,
               ),
             );
-          }        
+          }
+          
+          // Tripal Job has issues when all submissions are made at the same
+          // time, so break them up into groups of 10,000 genotypes along with
+          // their relevant genotypeprops.
+          if ($genotype_count > $record_group) {
+            $genotype_count = 0;
+            tpps_chado_insert_multi($records, $multi_insert_options);
+            $records = array(
+              'feature' => array(),
+              'genotype' => array(),
+              'genotype_call' => array(),
+              'genotypeprop' => array(),
+              'stock_genotype' => array(),
+            );
+            $genotype_count = 0;
+          }
+
         }
       }
       elseif (preg_match('/##FORMAT=/', $vcf_line)) {
