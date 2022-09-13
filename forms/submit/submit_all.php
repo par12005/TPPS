@@ -9,6 +9,10 @@
  * submitted through a Tripal job due to the size of the data.
  */
 
+ // Global variables
+ $tpps_job_logger = NULL;
+
+
 /**
  * Creates a record for the project and calls the submission helper functions.
  *
@@ -18,14 +22,28 @@
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_all($accession, TripalJob $job = NULL) {
+  // Get public path
+  $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
 
+  mkdir($log_path);
+
+  // Update the global $tpps_job_logger variable
+  global $tpps_job_logger;
+  $tpps_job_logger = [];
+  $tpps_job_logger['job_object'] = $job;
+  $tpps_job_logger['log_file_path'] =  $log_path . $accession . '_' . $tpps_job_logger['job_object']->getJobID() . '.txt';
+  $tpps_job_logger['log_file_handle'] = fopen($tpps_job_logger['log_file_path'], "w+");
+
+  tpps_job_logger_write('[INFO] Setting up...');
   $job->logMessage('[INFO] Setting up...');
   $job->setInterval(1);
   $form_state = tpps_load_submission($accession);
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
+  tpps_job_logger_write('[INFO] Clearing Database...');
   $job->logMessage('[INFO] Clearing Database...');
   tpps_submission_clear_db($accession);
+  tpps_job_logger_write('[INFO] Database Cleared');
   $job->logMessage('[INFO] Database Cleared.');
   $project_id = $form_state['ids']['project_id'] ?? NULL;
   $transaction = db_transaction();
@@ -38,6 +56,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $form_state['file_rank'] = 0;
     $form_state['ids'] = array();
 
+    tpps_job_logger_write('[INFO] Creating project record...');
     $job->logMessage('[INFO] Creating project record...');
     $form_state['title'] = $firstpage['publication']['title'];
     $form_state['abstract'] = $firstpage['publication']['abstract'];
@@ -49,6 +68,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       $project_record['project_id'] = $project_id;
     }
     $form_state['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
+    tpps_job_logger_write("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
     $job->logMessage("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
 
     tpps_tripal_entity_publish('Project', array(
@@ -56,47 +76,98 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       $form_state['ids']['project_id'],
     ));
 
+    tpps_job_logger_write("[INFO] Submitting Publication/Species information...");
     $job->logMessage("[INFO] Submitting Publication/Species information...");
     tpps_submit_page_1($form_state, $job);
+    tpps_job_logger_write("[INFO] Publication/Species information submitted!\n");
     $job->logMessage("[INFO] Publication/Species information submitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Study Details...");
     $job->logMessage("[INFO] Submitting Study Details...");
     tpps_submit_page_2($form_state, $job);
+    tpps_job_logger_write("[INFO] Study Details sumbitted!\n");
     $job->logMessage("[INFO] Study Details sumbitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Accession information...");
     $job->logMessage("[INFO] Submitting Accession information...");
     tpps_submit_page_3($form_state, $job);
+    tpps_job_logger_write("[INFO] Accession information submitted!\n");
     $job->logMessage("[INFO] Accession information submitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Raw data...");
     $job->logMessage("[INFO] Submitting Raw data...");
     tpps_submit_page_4($form_state, $job);
+    tpps_job_logger_write("[INFO] Raw data submitted!\n");
     $job->logMessage("[INFO] Raw data submitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Summary information...");
     $job->logMessage("[INFO] Submitting Summary information...");
     tpps_submit_summary($form_state);
+    tpps_job_logger_write("[INFO] Summary information submitted!\n");
     $job->logMessage("[INFO] Summary information submitted!\n");
 
     tpps_update_submission($form_state);
 
+    tpps_job_logger_write("[INFO] Renaming files...");
     $job->logMessage("[INFO] Renaming files...");
     tpps_submission_rename_files($accession);
+    tpps_job_logger_write("[INFO] Files renamed!\n");
     $job->logMessage("[INFO] Files renamed!\n");
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Approved';
     $form_state['loaded'] = time();
+    tpps_job_logger_write("[INFO] Finishing up...");
     $job->logMessage("[INFO] Finishing up...");
     tpps_update_submission($form_state, array('status' => 'Approved'));
+    tpps_job_logger_write("[INFO] Complete!");
     $job->logMessage("[INFO] Complete!");
+
+    fclose($tpps_job_logger['log_file_handle']);
+
   }
   catch (Exception $e) {
     $transaction->rollback();
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Pending Approval';
     tpps_update_submission($form_state, array('status' => 'Pending Approval'));
+    
+    tpps_job_logger_write('[ERROR] Job failed');
     $job->logMessage('[ERROR] Job failed', array(), TRIPAL_ERROR);
+    tpps_job_logger_write('[ERROR] Error message: @msg', array('@msg' => $e->getMessage()));
     $job->logMessage('[ERROR] Error message: @msg', array('@msg' => $e->getMessage()), TRIPAL_ERROR);
+    tpps_job_logger_write("[ERROR] Trace: \n@trace", array('@trace' => $e->getTraceAsString()));
     $job->logMessage("[ERROR] Trace: \n@trace", array('@trace' => $e->getTraceAsString()), TRIPAL_ERROR);
+    
+    fclose($tpps_job_logger['log_file_handle']);
     watchdog_exception('tpps', $e);
+
+  }
+}
+
+/**
+ * Writes data to the tpps_job_logger_handle
+ *
+ * @param string $string
+ *   Write string to the job log file using the tpps_job_logger object
+ */
+function tpps_job_logger_write($string, $replacements = []) {
+  global $tpps_job_logger;
+  try {
+    foreach ($replacements as $key_string => $replace_string) {
+      $string = str_replace($key_string, $replace_string, $string);
+    }
+
+    // Add timestamp
+    $time_now = time();
+    $timestamp_now = date('m/d/y g:i:s A', $time_now);
+
+    $string = "\n" . $timestamp_now . " " . $string;
+
+    fwrite($tpps_job_logger['log_file_handle'],$string);
+    fflush($tpps_job_logger['log_file_handle']);
+  }
+  catch (Exception $e) {
+    print_r($e->getMessage());
   }
 }
 
@@ -670,7 +741,6 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
     $names[$i] = $firstpage['organism'][$i]['name'];
   }
   $names['number'] = $firstpage['organism']['number'];
-
   $options = array(
     'cvterms' => $cvterms,
     'records' => $records,
@@ -732,7 +802,7 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
       }
     }
 
-    tpps_file_iterator($fid, 'tpps_process_accession', $options);
+    tpps_file_iterator($fid, 'tpps_process_accession', $options, $job);
 
     $new_ids = tpps_chado_insert_multi($options['records'], $multi_insert_options);
     foreach ($new_ids as $t_id => $stock_id) {
@@ -1071,6 +1141,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_genotype(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL) {
+  $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   if (empty($genotype)) {
@@ -1330,30 +1401,14 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $genotype_count = 0;
   }
 
+  // check to make sure admin has not set disable_vcf_importing
+  $disable_vcf_import = 0;
+  if(isset($firstpage['disable_vcf_import'])) {
+    $disable_vcf_import = $firstpage['disable_vcf_import'];
+  }
+  tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
+
   if (!empty($genotype['files']['file-type']['VCF'])) {
-    // @todo we probably want to use tpps_file_iterator to parse vcf files.
-    $vcf_fid = $genotype['files']['vcf'];
-    tpps_add_project_file($form_state, $vcf_fid);
-
-    $marker = 'SNP';
-
-    $records['genotypeprop'] = array();
-
-    $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
-    $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
-    $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
-    $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
-    $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
-    $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
-    $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
-
-    $vcf_file = file_load($vcf_fid);
-    $location = tpps_get_location($vcf_file->uri);
-    $vcf_content = gzopen($location, 'r');
-    $stocks = array();
-    $format = "";
-    $current_id = $form_state['ids']['organism_ids'][$i];
-    $species_code = $species_codes[$current_id];
 
     // dpm('start: ' . date('r'));.
     echo "[INFO] Processing Genotype VCF file\n";
@@ -1561,37 +1616,25 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             );
           }
         }
-        // Tripal Job has issues when all submissions are made at the same
-        // time, so break them up into groups of 10,000 genotypes along with
-        // their relevant genotypeprops.
-        if ($genotype_count > $record_group) {
-          $genotype_count = 0;
-          tpps_chado_insert_multi($records, $multi_insert_options);
-          $records = array(
-            'feature' => array(),
-            'genotype' => array(),
-            'genotype_call' => array(),
-            'genotypeprop' => array(),
-            'stock_genotype' => array(),
-          );
-          $genotype_count = 0;
+        elseif (preg_match('/##FORMAT=/', $vcf_line)) {
+          $format .= substr($vcf_line, 9, -1);
+        }
+        elseif (preg_match('/#CHROM/', $vcf_line)) {
+          $vcf_line = explode("\t", $vcf_line);
+          for ($j = 9; $j < count($vcf_line); $j++) {
+            $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
+          }
         }
       }
-      elseif (preg_match('/##FORMAT=/', $vcf_line)) {
-        $format .= substr($vcf_line, 9, -1);
-      }
-      elseif (preg_match('/#CHROM/', $vcf_line)) {
-        $vcf_line = explode("\t", $vcf_line);
-        for ($j = 9; $j < count($vcf_line); $j++) {
-          $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
-        }
-      }
+      // Insert the last set of values.
+      tpps_chado_insert_multi($records, $multi_insert_options);
+      unset($records);
+      $genotype_count = 0;
+      // dpm('done: ' . date('r'));.
     }
-    // Insert the last set of values.
-    tpps_chado_insert_multi($records, $multi_insert_options);
-    unset($records);
-    $genotype_count = 0;
-    // dpm('done: ' . date('r'));.
+    else {
+      tpps_job_logger_write('[INFO] Ignoring VCF file because TPPS Admin Panel setting for this study is set to ignore VCF file.');
+    }
   }
 }
 
@@ -2682,7 +2725,7 @@ function tpps_submit_summary(array &$form_state) {
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_process_accession($row, array &$options) {
+function tpps_process_accession($row, array &$options, $job = NULL) {
   $cvterm = $options['cvterms'];
   $records = &$options['records'];
   $accession = $options['accession'];
@@ -2738,7 +2781,7 @@ function tpps_process_accession($row, array &$options) {
         'stock' => $clone_name,
       ),
     );
-
+    $job->logMessage('[INFO] CV Terms Data' . print_r($cvterm, 1));
     $records['stock_relationship'][$clone_name] = array(
       'type_id' => $cvterm['has_part'],
       '#fk' => array(
