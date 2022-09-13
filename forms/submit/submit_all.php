@@ -1393,22 +1393,24 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
         $detected_genotypes = array();
         $first_genotypes = array(); // used to save the first genotype in each row of the VCF (used for genotype_call table)
         for ($j = 9; $j < count($vcf_line); $j++) {
-          $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
-          $raw_value_colon_parts = explode(':',$raw_value);
-          $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
-          $genotype_combination = "";
-          for($k = 0; $k < count($ref_alt_indices); $k++) {
-            $index_tmp = $ref_alt_indices[$k];
-            if($k > 0) {
-              $genotype_combination .= ':';
-            }
-            if($index_tmp == 0) {
-              $genotype_combination .= $ref;
-            }
-            else {
-              $genotype_combination .= $alt;
-            }
-          }
+          // CODE REPLACED BY FUNCTION
+          // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
+          // $raw_value_colon_parts = explode(':',$raw_value);
+          // $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
+          // $genotype_combination = "";
+          // for($k = 0; $k < count($ref_alt_indices); $k++) {
+          //   $index_tmp = $ref_alt_indices[$k];
+          //   if($k > 0) {
+          //     $genotype_combination .= ':';
+          //   }
+          //   if($index_tmp == 0) {
+          //     $genotype_combination .= $ref;
+          //   }
+          //   else {
+          //     $genotype_combination .= $alt;
+          //   }
+          // }
+          $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
 
           $detected_genotypes[$marker_name . $genotype_combination] = TRUE;
 
@@ -1467,12 +1469,16 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             );
           }
 
-          // It's here we need to do only the first genotype
-          // So do a check for first genotype and only that should be added
-          //if(isset($first_genotypes[$genotype_name])) {
-            $vcf_line_count = count($vcf_line);
-            for ($j = 9; $j < $vcf_line_count; $j++) {
-              print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
+          $vcf_line_count = count($vcf_line);
+          for ($j = 9; $j < $vcf_line_count; $j++) {
+            // Rish: This was added on 09/122/2022
+            // This gets the name of the current genotype for the tree_id column
+            // being checked.
+            $column_genotype_name = $marker_name . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+            if($column_genotype_name == $genotype_name) {
+              // Found a match between the tree_id genotype and the genotype_name from records
+              
+              // print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
               $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
                 'project_id' => $project_id,
                 'stock_id' => $stocks[$j - 9],
@@ -1489,10 +1495,10 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
                   'genotype' => $genotype_desc,
                 ),
               );
-            
             }
-          //}
-
+            
+          }
+          
           // Quality score.
           $records['genotypeprop']["$genotype_desc-qual"] = array(
             'type_id' => $qual_cvterm,
@@ -1587,6 +1593,36 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $genotype_count = 0;
     // dpm('done: ' . date('r'));.
   }
+}
+
+/**
+ * Submits environmental information for one species.
+ *
+ * @param string $raw_value
+ *   Tree ID genotype value from VCF file
+ * @param string $ref
+ *   REF value
+ * @param string $alt
+ *   ALT value
+ */
+function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
+  // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
+  $raw_value_colon_parts = explode(':',$raw_value);
+  $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
+  $genotype_combination = "";
+  for($k = 0; $k < count($ref_alt_indices); $k++) {
+    $index_tmp = $ref_alt_indices[$k];
+    if($k > 0) {
+      $genotype_combination .= ':';
+    }
+    if($index_tmp == 0) {
+      $genotype_combination .= $ref;
+    }
+    else {
+      $genotype_combination .= $alt;
+    }
+  }
+  return $genotype_combination;
 }
 
 /**
