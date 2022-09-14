@@ -1477,8 +1477,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             $column_genotype_name = $marker_name . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
             if($column_genotype_name == $genotype_name) {
               // Found a match between the tree_id genotype and the genotype_name from records
-
-              print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
+              
+              // print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
               $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
                 'project_id' => $project_id,
                 'stock_id' => $stocks[$j - 9],
