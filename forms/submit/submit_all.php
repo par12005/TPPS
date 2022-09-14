@@ -1677,6 +1677,37 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 }
 
 /**
+ * Render genotype combination
+ *
+ * @param string $raw_value
+ *   Tree ID genotype value from VCF file
+ * @param string $ref
+ *   REF value
+ * @param string $alt
+ *   ALT value
+ */
+function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
+  // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
+  $raw_value_colon_parts = explode(':',$raw_value);
+  $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
+  $genotype_combination = "";
+  for($k = 0; $k < count($ref_alt_indices); $k++) {
+    $index_tmp = $ref_alt_indices[$k];
+    if($k > 0) {
+      $genotype_combination .= ':';
+    }
+    if($index_tmp == 0) {
+      $genotype_combination .= $ref;
+    }
+    else {
+      $genotype_combination .= $alt;
+    }
+  }
+  return $genotype_combination;
+}
+
+
+/**
  * Submits environmental information for one species.
  *
  * @param array $form_state
