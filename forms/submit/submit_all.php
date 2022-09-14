@@ -1141,6 +1141,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_genotype(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL) {
+  $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   if (empty($genotype)) {
@@ -1400,201 +1401,211 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $genotype_count = 0;
   }
 
+  // check to make sure admin has not set disable_vcf_importing
+  $disable_vcf_import = 0;
+  if(isset($firstpage['disable_vcf_import'])) {
+    $disable_vcf_import = $firstpage['disable_vcf_import'];
+  }
+  tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
+
+
   if (!empty($genotype['files']['file-type']['VCF'])) {
-    // @todo we probably want to use tpps_file_iterator to parse vcf files.
-    $vcf_fid = $genotype['files']['vcf'];
-    tpps_add_project_file($form_state, $vcf_fid);
+    if($disable_vcf_import == 0) {
+      // @todo we probably want to use tpps_file_iterator to parse vcf files.
+      $vcf_fid = $genotype['files']['vcf'];
+      tpps_add_project_file($form_state, $vcf_fid);
 
-    $marker = 'SNP';
+      $marker = 'SNP';
 
-    $records['genotypeprop'] = array();
+      $records['genotypeprop'] = array();
 
-    $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
-    $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
-    $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
-    $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
-    $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
-    $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
-    $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
+      $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
+      $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
+      $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
+      $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
+      $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
+      $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
+      $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
-    $vcf_file = file_load($vcf_fid);
-    $location = tpps_get_location($vcf_file->uri);
-    $vcf_content = gzopen($location, 'r');
-    $stocks = array();
-    $format = "";
-    $current_id = $form_state['ids']['organism_ids'][$i];
-    $species_code = $species_codes[$current_id];
+      $vcf_file = file_load($vcf_fid);
+      $location = tpps_get_location($vcf_file->uri);
+      $vcf_content = gzopen($location, 'r');
+      $stocks = array();
+      $format = "";
+      $current_id = $form_state['ids']['organism_ids'][$i];
+      $species_code = $species_codes[$current_id];
 
-    // dpm('start: ' . date('r'));.
-    echo "[INFO] Processing Genotype VCF file\n";
-    $file_progress_line_count = 0;
-    while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
-      $file_progress_line_count++;
-      if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
-        echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+      // dpm('start: ' . date('r'));.
+      echo "[INFO] Processing Genotype VCF file\n";
+      $file_progress_line_count = 0;
+      while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
+        $file_progress_line_count++;
+        if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
+          echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+        }
+        if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
+          // print_r($vcf_line[0]);
+          // throw new Exception('DEBUG');
+          $genotype_count += count($stocks);
+          $vcf_line = explode("\t", $vcf_line);
+          $scaffold_id = &$vcf_line[0];
+          $position = &$vcf_line[1];
+          $variant_name = &$vcf_line[2];
+          $ref = &$vcf_line[3];
+          $alt = &$vcf_line[4];
+          $qual = &$vcf_line[5];
+          $filter = &$vcf_line[6];
+          $info = &$vcf_line[7];
+
+          if (empty($variant_name) or $variant_name == '.') {
+            $variant_name = "{$scaffold_id}{$position}$ref:$alt";
+          }
+          $marker_name = $variant_name . $marker;
+          $description = "$ref:$alt";
+          $genotype_name = "$marker-$species_code-$scaffold_id-$position";
+          $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description";
+
+          $records['feature'][$marker_name] = array(
+            'organism_id' => $current_id,
+            'uniquename' => $marker_name,
+            'type_id' => $seq_var_cvterm,
+          );
+
+          $records['feature'][$variant_name] = array(
+            'organism_id' => $current_id,
+            'uniquename' => $variant_name,
+            'type_id' => $seq_var_cvterm,
+          );
+
+          $records['genotype'][$genotype_desc] = array(
+            'name' => $genotype_name,
+            'uniquename' => $genotype_desc,
+            'description' => $description,
+            'type_id' => $snp_cvterm,
+          );
+
+          if ($format != "") {
+            $records['genotypeprop']["$genotype_desc-format"] = array(
+              'type_id' => $format_cvterm,
+              'value' => $format,
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+          }
+
+          for ($j = 9; $j < count($vcf_line); $j++) {
+            $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
+              'project_id' => $project_id,
+              'stock_id' => $stocks[$j - 9],
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+                'variant' => $variant_name,
+                'marker' => $marker_name,
+              ),
+            );
+
+            $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
+              'stock_id' => $stocks[$j - 9],
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+          }
+
+          // Quality score.
+          $records['genotypeprop']["$genotype_desc-qual"] = array(
+            'type_id' => $qual_cvterm,
+            'value' => $qual,
+            '#fk' => array(
+              'genotype' => $genotype_desc,
+            ),
+          );
+
+          // filter: pass/fail.
+          $records['genotypeprop']["$genotype_desc-filter"] = array(
+            'type_id' => $filter_cvterm,
+            'value' => ($filter == '.') ? "P" : "NP",
+            '#fk' => array(
+              'genotype' => $genotype_desc,
+            ),
+          );
+
+          // Break up info column.
+          $info_vals = explode(";", $info);
+          foreach ($info_vals as $key => $val) {
+            $parts = explode("=", $val);
+            unset($info_vals[$key]);
+            $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
+          }
+
+          // Allele frequency, assuming that the info code for allele
+          // frequency is 'AF'.
+          if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
+            $records['genotypeprop']["$genotype_desc-freq"] = array(
+              'type_id' => $freq_cvterm,
+              'value' => $info_vals['AF'],
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+          }
+
+          // Depth coverage, assuming that the info code for depth coverage is
+          // 'DP'.
+          if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
+            $records['genotypeprop']["$genotype_desc-depth"] = array(
+              'type_id' => $depth_cvterm,
+              'value' => $info_vals['DP'],
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+          }
+
+          // Number of samples, assuming that the info code for number of
+          // samples is 'NS'.
+          if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
+            $records['genotypeprop']["$genotype_desc-n_sample"] = array(
+              'type_id' => $n_sample_cvterm,
+              'value' => $info_vals['NS'],
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+          }
+          // Tripal Job has issues when all submissions are made at the same
+          // time, so break them up into groups of 10,000 genotypes along with
+          // their relevant genotypeprops.
+          if ($genotype_count > $record_group) {
+            $genotype_count = 0;
+            tpps_chado_insert_multi($records, $multi_insert_options);
+            $records = array(
+              'feature' => array(),
+              'genotype' => array(),
+              'genotype_call' => array(),
+              'genotypeprop' => array(),
+              'stock_genotype' => array(),
+            );
+            $genotype_count = 0;
+          }
+        }
+        elseif (preg_match('/##FORMAT=/', $vcf_line)) {
+          $format .= substr($vcf_line, 9, -1);
+        }
+        elseif (preg_match('/#CHROM/', $vcf_line)) {
+          $vcf_line = explode("\t", $vcf_line);
+          for ($j = 9; $j < count($vcf_line); $j++) {
+            $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
+          }
+        }
       }
-      if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
-        // print_r($vcf_line[0]);
-        // throw new Exception('DEBUG');
-        $genotype_count += count($stocks);
-        $vcf_line = explode("\t", $vcf_line);
-        $scaffold_id = &$vcf_line[0];
-        $position = &$vcf_line[1];
-        $variant_name = &$vcf_line[2];
-        $ref = &$vcf_line[3];
-        $alt = &$vcf_line[4];
-        $qual = &$vcf_line[5];
-        $filter = &$vcf_line[6];
-        $info = &$vcf_line[7];
-
-        if (empty($variant_name) or $variant_name == '.') {
-          $variant_name = "{$scaffold_id}{$position}$ref:$alt";
-        }
-        $marker_name = $variant_name . $marker;
-        $description = "$ref:$alt";
-        $genotype_name = "$marker-$species_code-$scaffold_id-$position";
-        $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description";
-
-        $records['feature'][$marker_name] = array(
-          'organism_id' => $current_id,
-          'uniquename' => $marker_name,
-          'type_id' => $seq_var_cvterm,
-        );
-
-        $records['feature'][$variant_name] = array(
-          'organism_id' => $current_id,
-          'uniquename' => $variant_name,
-          'type_id' => $seq_var_cvterm,
-        );
-
-        $records['genotype'][$genotype_desc] = array(
-          'name' => $genotype_name,
-          'uniquename' => $genotype_desc,
-          'description' => $description,
-          'type_id' => $snp_cvterm,
-        );
-
-        if ($format != "") {
-          $records['genotypeprop']["$genotype_desc-format"] = array(
-            'type_id' => $format_cvterm,
-            'value' => $format,
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        for ($j = 9; $j < count($vcf_line); $j++) {
-          $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
-            'project_id' => $project_id,
-            'stock_id' => $stocks[$j - 9],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-              'variant' => $variant_name,
-              'marker' => $marker_name,
-            ),
-          );
-
-          $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
-            'stock_id' => $stocks[$j - 9],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        // Quality score.
-        $records['genotypeprop']["$genotype_desc-qual"] = array(
-          'type_id' => $qual_cvterm,
-          'value' => $qual,
-          '#fk' => array(
-            'genotype' => $genotype_desc,
-          ),
-        );
-
-        // filter: pass/fail.
-        $records['genotypeprop']["$genotype_desc-filter"] = array(
-          'type_id' => $filter_cvterm,
-          'value' => ($filter == '.') ? "P" : "NP",
-          '#fk' => array(
-            'genotype' => $genotype_desc,
-          ),
-        );
-
-        // Break up info column.
-        $info_vals = explode(";", $info);
-        foreach ($info_vals as $key => $val) {
-          $parts = explode("=", $val);
-          unset($info_vals[$key]);
-          $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
-        }
-
-        // Allele frequency, assuming that the info code for allele
-        // frequency is 'AF'.
-        if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
-          $records['genotypeprop']["$genotype_desc-freq"] = array(
-            'type_id' => $freq_cvterm,
-            'value' => $info_vals['AF'],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        // Depth coverage, assuming that the info code for depth coverage is
-        // 'DP'.
-        if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
-          $records['genotypeprop']["$genotype_desc-depth"] = array(
-            'type_id' => $depth_cvterm,
-            'value' => $info_vals['DP'],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        // Number of samples, assuming that the info code for number of
-        // samples is 'NS'.
-        if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
-          $records['genotypeprop']["$genotype_desc-n_sample"] = array(
-            'type_id' => $n_sample_cvterm,
-            'value' => $info_vals['NS'],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-        // Tripal Job has issues when all submissions are made at the same
-        // time, so break them up into groups of 10,000 genotypes along with
-        // their relevant genotypeprops.
-        if ($genotype_count > $record_group) {
-          $genotype_count = 0;
-          tpps_chado_insert_multi($records, $multi_insert_options);
-          $records = array(
-            'feature' => array(),
-            'genotype' => array(),
-            'genotype_call' => array(),
-            'genotypeprop' => array(),
-            'stock_genotype' => array(),
-          );
-          $genotype_count = 0;
-        }
-      }
-      elseif (preg_match('/##FORMAT=/', $vcf_line)) {
-        $format .= substr($vcf_line, 9, -1);
-      }
-      elseif (preg_match('/#CHROM/', $vcf_line)) {
-        $vcf_line = explode("\t", $vcf_line);
-        for ($j = 9; $j < count($vcf_line); $j++) {
-          $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
-        }
-      }
+      // Insert the last set of values.
+      tpps_chado_insert_multi($records, $multi_insert_options);
+      unset($records);
+      $genotype_count = 0;
+      // dpm('done: ' . date('r'));.
     }
-    // Insert the last set of values.
-    tpps_chado_insert_multi($records, $multi_insert_options);
-    unset($records);
-    $genotype_count = 0;
-    // dpm('done: ' . date('r'));.
   }
 }
 
