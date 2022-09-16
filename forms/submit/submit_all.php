@@ -1088,7 +1088,13 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     if ($phenotype['format'] == 0) {
       $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
       $data_columns = array();
-      foreach ($groups['Phenotype Data']['0'] as $col) {
+      if(is_array($groups['Phenotype Data']['0']) && !empty($groups['Phenotype Data']['0'])) {
+        foreach ($groups['Phenotype Data']['0'] as $col) {
+          $data_columns[$col] = $file_headers[$col];
+        }
+      }
+      else {
+        $col = $groups['Phenotype Data'][0];
         $data_columns[$col] = $file_headers[$col];
       }
       unset($file_headers);
