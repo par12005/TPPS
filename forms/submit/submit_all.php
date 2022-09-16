@@ -9,6 +9,10 @@
  * submitted through a Tripal job due to the size of the data.
  */
 
+ // Global variables
+ $tpps_job_logger = NULL;
+
+
 /**
  * Creates a record for the project and calls the submission helper functions.
  *
@@ -18,14 +22,28 @@
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_all($accession, TripalJob $job = NULL) {
+  // Get public path
+  $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
 
+  mkdir($log_path);
+
+  // Update the global $tpps_job_logger variable
+  global $tpps_job_logger;
+  $tpps_job_logger = [];
+  $tpps_job_logger['job_object'] = $job;
+  $tpps_job_logger['log_file_path'] =  $log_path . $accession . '_' . $tpps_job_logger['job_object']->getJobID() . '.txt';
+  $tpps_job_logger['log_file_handle'] = fopen($tpps_job_logger['log_file_path'], "w+");
+
+  tpps_job_logger_write('[INFO] Setting up...');
   $job->logMessage('[INFO] Setting up...');
   $job->setInterval(1);
   $form_state = tpps_load_submission($accession);
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
+  tpps_job_logger_write('[INFO] Clearing Database...');
   $job->logMessage('[INFO] Clearing Database...');
   tpps_submission_clear_db($accession);
+  tpps_job_logger_write('[INFO] Database Cleared');
   $job->logMessage('[INFO] Database Cleared.');
   $project_id = $form_state['ids']['project_id'] ?? NULL;
   $transaction = db_transaction();
@@ -38,6 +56,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $form_state['file_rank'] = 0;
     $form_state['ids'] = array();
 
+    tpps_job_logger_write('[INFO] Creating project record...');
     $job->logMessage('[INFO] Creating project record...');
     $form_state['title'] = $firstpage['publication']['title'];
     $form_state['abstract'] = $firstpage['publication']['abstract'];
@@ -49,6 +68,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       $project_record['project_id'] = $project_id;
     }
     $form_state['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
+    tpps_job_logger_write("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
     $job->logMessage("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
 
     tpps_tripal_entity_publish('Project', array(
@@ -56,47 +76,98 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       $form_state['ids']['project_id'],
     ));
 
+    tpps_job_logger_write("[INFO] Submitting Publication/Species information...");
     $job->logMessage("[INFO] Submitting Publication/Species information...");
     tpps_submit_page_1($form_state, $job);
+    tpps_job_logger_write("[INFO] Publication/Species information submitted!\n");
     $job->logMessage("[INFO] Publication/Species information submitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Study Details...");
     $job->logMessage("[INFO] Submitting Study Details...");
     tpps_submit_page_2($form_state, $job);
+    tpps_job_logger_write("[INFO] Study Details sumbitted!\n");
     $job->logMessage("[INFO] Study Details sumbitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Accession information...");
     $job->logMessage("[INFO] Submitting Accession information...");
     tpps_submit_page_3($form_state, $job);
+    tpps_job_logger_write("[INFO] Accession information submitted!\n");
     $job->logMessage("[INFO] Accession information submitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Raw data...");
     $job->logMessage("[INFO] Submitting Raw data...");
     tpps_submit_page_4($form_state, $job);
+    tpps_job_logger_write("[INFO] Raw data submitted!\n");
     $job->logMessage("[INFO] Raw data submitted!\n");
 
+    tpps_job_logger_write("[INFO] Submitting Summary information...");
     $job->logMessage("[INFO] Submitting Summary information...");
     tpps_submit_summary($form_state);
+    tpps_job_logger_write("[INFO] Summary information submitted!\n");
     $job->logMessage("[INFO] Summary information submitted!\n");
 
     tpps_update_submission($form_state);
 
+    tpps_job_logger_write("[INFO] Renaming files...");
     $job->logMessage("[INFO] Renaming files...");
     tpps_submission_rename_files($accession);
+    tpps_job_logger_write("[INFO] Files renamed!\n");
     $job->logMessage("[INFO] Files renamed!\n");
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Approved';
     $form_state['loaded'] = time();
+    tpps_job_logger_write("[INFO] Finishing up...");
     $job->logMessage("[INFO] Finishing up...");
     tpps_update_submission($form_state, array('status' => 'Approved'));
+    tpps_job_logger_write("[INFO] Complete!");
     $job->logMessage("[INFO] Complete!");
+
+    fclose($tpps_job_logger['log_file_handle']);
+
   }
   catch (Exception $e) {
     $transaction->rollback();
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Pending Approval';
     tpps_update_submission($form_state, array('status' => 'Pending Approval'));
+    
+    tpps_job_logger_write('[ERROR] Job failed');
     $job->logMessage('[ERROR] Job failed', array(), TRIPAL_ERROR);
+    tpps_job_logger_write('[ERROR] Error message: @msg', array('@msg' => $e->getMessage()));
     $job->logMessage('[ERROR] Error message: @msg', array('@msg' => $e->getMessage()), TRIPAL_ERROR);
+    tpps_job_logger_write("[ERROR] Trace: \n@trace", array('@trace' => $e->getTraceAsString()));
     $job->logMessage("[ERROR] Trace: \n@trace", array('@trace' => $e->getTraceAsString()), TRIPAL_ERROR);
+    
+    fclose($tpps_job_logger['log_file_handle']);
     watchdog_exception('tpps', $e);
+
+  }
+}
+
+/**
+ * Writes data to the tpps_job_logger_handle
+ *
+ * @param string $string
+ *   Write string to the job log file using the tpps_job_logger object
+ */
+function tpps_job_logger_write($string, $replacements = []) {
+  global $tpps_job_logger;
+  try {
+    foreach ($replacements as $key_string => $replace_string) {
+      $string = str_replace($key_string, $replace_string, $string);
+    }
+
+    // Add timestamp
+    $time_now = time();
+    $timestamp_now = date('m/d/y g:i:s A', $time_now);
+
+    $string = "\n" . $timestamp_now . " " . $string;
+
+    fwrite($tpps_job_logger['log_file_handle'],$string);
+    fflush($tpps_job_logger['log_file_handle']);
+  }
+  catch (Exception $e) {
+    print_r($e->getMessage());
   }
 }
 
@@ -1017,7 +1088,13 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     if ($phenotype['format'] == 0) {
       $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
       $data_columns = array();
-      foreach ($groups['Phenotype Data']['0'] as $col) {
+      if(is_array($groups['Phenotype Data']['0']) && !empty($groups['Phenotype Data']['0'])) {
+        foreach ($groups['Phenotype Data']['0'] as $col) {
+          $data_columns[$col] = $file_headers[$col];
+        }
+      }
+      else {
+        $col = $groups['Phenotype Data'][0];
         $data_columns[$col] = $file_headers[$col];
       }
       unset($file_headers);
@@ -1070,6 +1147,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_genotype(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL) {
+  $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   if (empty($genotype)) {
@@ -1329,203 +1407,311 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $genotype_count = 0;
   }
 
+  // check to make sure admin has not set disable_vcf_importing
+  $disable_vcf_import = 0;
+  if(isset($firstpage['disable_vcf_import'])) {
+    $disable_vcf_import = $firstpage['disable_vcf_import'];
+  }
+  tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
+
+
   if (!empty($genotype['files']['file-type']['VCF'])) {
-    // @todo we probably want to use tpps_file_iterator to parse vcf files.
-    $vcf_fid = $genotype['files']['vcf'];
-    tpps_add_project_file($form_state, $vcf_fid);
+    if($disable_vcf_import == 0) {
+      // @todo we probably want to use tpps_file_iterator to parse vcf files.
+      $vcf_fid = $genotype['files']['vcf'];
+      tpps_add_project_file($form_state, $vcf_fid);
 
-    $marker = 'SNP';
+      $marker = 'SNP';
 
-    $records['genotypeprop'] = array();
+      $records['genotypeprop'] = array();
 
-    $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
-    $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
-    $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
-    $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
-    $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
-    $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
-    $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
+      $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
+      $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
+      $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
+      $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
+      $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
+      $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
+      $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
-    $vcf_file = file_load($vcf_fid);
-    $location = tpps_get_location($vcf_file->uri);
-    $vcf_content = gzopen($location, 'r');
-    $stocks = array();
-    $format = "";
-    $current_id = $form_state['ids']['organism_ids'][$i];
-    $species_code = $species_codes[$current_id];
+      $vcf_file = file_load($vcf_fid);
+      $location = tpps_get_location($vcf_file->uri);
+      $vcf_content = gzopen($location, 'r');
+      $stocks = array();
+      $format = "";
+      $current_id = $form_state['ids']['organism_ids'][$i];
+      $species_code = $species_codes[$current_id];
 
-    // dpm('start: ' . date('r'));.
-    echo "[INFO] Processing Genotype VCF file\n";
-    $file_progress_line_count = 0;
-    while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
-      $file_progress_line_count++;
-      if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
-        echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+      // dpm('start: ' . date('r'));.
+      echo "[INFO] Processing Genotype VCF file\n";
+      $file_progress_line_count = 0;
+      $record_count = 0;
+      while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
+        $file_progress_line_count++;
+        if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
+          echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+        }
+        if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
+          // print_r($vcf_line[0]);
+          // throw new Exception('DEBUG');
+          $record_count = $record_count + 1;
+          print_r('Record count:' . $record_count . "\n");
+          $genotype_count += count($stocks);
+          $vcf_line = explode("\t", $vcf_line);
+          $scaffold_id = &$vcf_line[0];
+          $position = &$vcf_line[1];
+          $variant_name = &$vcf_line[2];
+          $ref = &$vcf_line[3];
+          $alt = &$vcf_line[4];
+          $qual = &$vcf_line[5];
+          $filter = &$vcf_line[6];
+          $info = &$vcf_line[7];
+
+          if (empty($variant_name) or $variant_name == '.') {
+            // $variant_name = "{$scaffold_id}{$position}$ref:$alt";
+            $variant_name = $scaffold_id . '_' . $position . 'SNP';
+          }
+          // $marker_name = $variant_name . $marker; // Original by Peter
+          $marker_name = $scaffold_id . '_' . $position; // Emily updated suggestion on Tuesday August 9th 2022
+          $description = "$ref:$alt";
+          // $genotype_name = "$marker-$species_code-$scaffold_id-$position"; // Original by Peter
+
+          // Instead, we have multiple genotypes we need to generate, so lets do a key val array
+          $detected_genotypes = array();
+          $first_genotypes = array(); // used to save the first genotype in each row of the VCF (used for genotype_call table)
+          for ($j = 9; $j < count($vcf_line); $j++) {
+            // CODE REPLACED BY FUNCTION
+            // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
+            // $raw_value_colon_parts = explode(':',$raw_value);
+            // $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
+            // $genotype_combination = "";
+            // for($k = 0; $k < count($ref_alt_indices); $k++) {
+            //   $index_tmp = $ref_alt_indices[$k];
+            //   if($k > 0) {
+            //     $genotype_combination .= ':';
+            //   }
+            //   if($index_tmp == 0) {
+            //     $genotype_combination .= $ref;
+            //   }
+            //   else {
+            //     $genotype_combination .= $alt;
+            //   }
+            // }
+            $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+
+            $detected_genotypes[$marker_name . $genotype_combination] = TRUE;
+
+            // Record the first genotype name to use for genotype_call table
+            if($j == 9) {
+              print_r('[First Genotype]:' . $marker_name . $genotype_combination . "\n");
+              $first_genotypes[$marker_name . $genotype_combination] = TRUE;
+            }
+            
+          }
+          // SOME DEBUG CODE (FROM RISH CODING)
+          // print_r('detected_genotypes');
+          // print_r($detected_genotypes);
+          // throw new Exception('DEBUG STOP');
+
+          // $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description"; // Original by Peter
+          
+          print_r('[New Feature]: ' . $marker_name . "\n");
+          $records['feature'][$marker_name] = array(
+            'organism_id' => $current_id,
+            'uniquename' => $marker_name,
+            'type_id' => $seq_var_cvterm,
+          );
+
+          print_r('[New Feature variant_name]: ' . $variant_name . "\n");
+          $records['feature'][$variant_name] = array(
+            'organism_id' => $current_id,
+            'uniquename' => $variant_name,
+            'type_id' => $seq_var_cvterm,
+          );
+
+          // Rish 12/08/2022: So we have multiple genotypes created
+          // So I adjusted some of this code into a for statement
+          // since the genotype_desc seems important and so I modified it to be unique
+          // and based on the genotype_name
+          $genotype_names = array_keys($detected_genotypes); 
+          foreach ($genotype_names as $genotype_name) {
+            $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
+            print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
+            
+
+            $records['genotype'][$genotype_desc] = array(
+              'name' => $genotype_name,
+              'uniquename' => $genotype_desc,
+              'description' => $description,
+              'type_id' => $snp_cvterm,
+            );
+
+            if ($format != "") {
+              $records['genotypeprop']["$genotype_desc-format"] = array(
+                'type_id' => $format_cvterm,
+                'value' => $format,
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
+              );
+            }
+
+            $vcf_line_count = count($vcf_line);
+            for ($j = 9; $j < $vcf_line_count; $j++) {
+              // Rish: This was added on 09/122/2022
+              // This gets the name of the current genotype for the tree_id column
+              // being checked.
+              $column_genotype_name = $marker_name . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+              if($column_genotype_name == $genotype_name) {
+                // Found a match between the tree_id genotype and the genotype_name from records
+
+                print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
+                $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                  'project_id' => $project_id,
+                  'stock_id' => $stocks[$j - 9],
+                  '#fk' => array(
+                    'genotype' => $genotype_desc,
+                    'variant' => $variant_name,
+                    'marker' => $marker_name,
+                  ),
+                );
+
+                $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                  'stock_id' => $stocks[$j - 9],
+                  '#fk' => array(
+                    'genotype' => $genotype_desc,
+                  ),
+                );
+              }
+              
+            }
+            
+            // Quality score.
+            $records['genotypeprop']["$genotype_desc-qual"] = array(
+              'type_id' => $qual_cvterm,
+              'value' => $qual,
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+
+            // filter: pass/fail.
+            $records['genotypeprop']["$genotype_desc-filter"] = array(
+              'type_id' => $filter_cvterm,
+              'value' => ($filter == '.') ? "P" : "NP",
+              '#fk' => array(
+                'genotype' => $genotype_desc,
+              ),
+            );
+
+            // Break up info column.
+            $info_vals = explode(";", $info);
+            foreach ($info_vals as $key => $val) {
+              $parts = explode("=", $val);
+              unset($info_vals[$key]);
+              $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
+            }
+
+            // Allele frequency, assuming that the info code for allele
+            // frequency is 'AF'.
+            if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
+              $records['genotypeprop']["$genotype_desc-freq"] = array(
+                'type_id' => $freq_cvterm,
+                'value' => $info_vals['AF'],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
+              );
+            }
+
+            // Depth coverage, assuming that the info code for depth coverage is
+            // 'DP'.
+            if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
+              $records['genotypeprop']["$genotype_desc-depth"] = array(
+                'type_id' => $depth_cvterm,
+                'value' => $info_vals['DP'],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
+              );
+            }
+
+            // Number of samples, assuming that the info code for number of
+            // samples is 'NS'.
+            if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
+              $records['genotypeprop']["$genotype_desc-n_sample"] = array(
+                'type_id' => $n_sample_cvterm,
+                'value' => $info_vals['NS'],
+                '#fk' => array(
+                  'genotype' => $genotype_desc,
+                ),
+              );
+            }
+          }
+          // Tripal Job has issues when all submissions are made at the same
+          // time, so break them up into groups of 10,000 genotypes along with
+          // their relevant genotypeprops.
+          if ($genotype_count > $record_group) {
+            $genotype_count = 0;
+            tpps_chado_insert_multi($records, $multi_insert_options);
+            $records = array(
+              'feature' => array(),
+              'genotype' => array(),
+              'genotype_call' => array(),
+              'genotypeprop' => array(),
+              'stock_genotype' => array(),
+            );
+            $genotype_count = 0;
+          }
+        }
+        elseif (preg_match('/##FORMAT=/', $vcf_line)) {
+          $format .= substr($vcf_line, 9, -1);
+        }
+        elseif (preg_match('/#CHROM/', $vcf_line)) {
+          $vcf_line = explode("\t", $vcf_line);
+          for ($j = 9; $j < count($vcf_line); $j++) {
+            $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
+          }
+        }
       }
-      if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
-        // print_r($vcf_line[0]);
-        // throw new Exception('DEBUG');
-        $genotype_count += count($stocks);
-        $vcf_line = explode("\t", $vcf_line);
-        $scaffold_id = &$vcf_line[0];
-        $position = &$vcf_line[1];
-        $variant_name = &$vcf_line[2];
-        $ref = &$vcf_line[3];
-        $alt = &$vcf_line[4];
-        $qual = &$vcf_line[5];
-        $filter = &$vcf_line[6];
-        $info = &$vcf_line[7];
-
-        if (empty($variant_name) or $variant_name == '.') {
-          $variant_name = "{$scaffold_id}{$position}$ref:$alt";
-        }
-        $marker_name = $variant_name . $marker;
-        $description = "$ref:$alt";
-        $genotype_name = "$marker-$species_code-$scaffold_id-$position";
-        $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description";
-
-        $records['feature'][$marker_name] = array(
-          'organism_id' => $current_id,
-          'uniquename' => $marker_name,
-          'type_id' => $seq_var_cvterm,
-        );
-
-        $records['feature'][$variant_name] = array(
-          'organism_id' => $current_id,
-          'uniquename' => $variant_name,
-          'type_id' => $seq_var_cvterm,
-        );
-
-        $records['genotype'][$genotype_desc] = array(
-          'name' => $genotype_name,
-          'uniquename' => $genotype_desc,
-          'description' => $description,
-          'type_id' => $snp_cvterm,
-        );
-
-        if ($format != "") {
-          $records['genotypeprop']["$genotype_desc-format"] = array(
-            'type_id' => $format_cvterm,
-            'value' => $format,
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        for ($j = 9; $j < count($vcf_line); $j++) {
-          $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
-            'project_id' => $project_id,
-            'stock_id' => $stocks[$j - 9],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-              'variant' => $variant_name,
-              'marker' => $marker_name,
-            ),
-          );
-
-          $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
-            'stock_id' => $stocks[$j - 9],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        // Quality score.
-        $records['genotypeprop']["$genotype_desc-qual"] = array(
-          'type_id' => $qual_cvterm,
-          'value' => $qual,
-          '#fk' => array(
-            'genotype' => $genotype_desc,
-          ),
-        );
-
-        // filter: pass/fail.
-        $records['genotypeprop']["$genotype_desc-filter"] = array(
-          'type_id' => $filter_cvterm,
-          'value' => ($filter == '.') ? "P" : "NP",
-          '#fk' => array(
-            'genotype' => $genotype_desc,
-          ),
-        );
-
-        // Break up info column.
-        $info_vals = explode(";", $info);
-        foreach ($info_vals as $key => $val) {
-          $parts = explode("=", $val);
-          unset($info_vals[$key]);
-          $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
-        }
-
-        // Allele frequency, assuming that the info code for allele
-        // frequency is 'AF'.
-        if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
-          $records['genotypeprop']["$genotype_desc-freq"] = array(
-            'type_id' => $freq_cvterm,
-            'value' => $info_vals['AF'],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        // Depth coverage, assuming that the info code for depth coverage is
-        // 'DP'.
-        if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
-          $records['genotypeprop']["$genotype_desc-depth"] = array(
-            'type_id' => $depth_cvterm,
-            'value' => $info_vals['DP'],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-
-        // Number of samples, assuming that the info code for number of
-        // samples is 'NS'.
-        if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
-          $records['genotypeprop']["$genotype_desc-n_sample"] = array(
-            'type_id' => $n_sample_cvterm,
-            'value' => $info_vals['NS'],
-            '#fk' => array(
-              'genotype' => $genotype_desc,
-            ),
-          );
-        }
-        // Tripal Job has issues when all submissions are made at the same
-        // time, so break them up into groups of 10,000 genotypes along with
-        // their relevant genotypeprops.
-        if ($genotype_count > $record_group) {
-          $genotype_count = 0;
-          tpps_chado_insert_multi($records, $multi_insert_options);
-          $records = array(
-            'feature' => array(),
-            'genotype' => array(),
-            'genotype_call' => array(),
-            'genotypeprop' => array(),
-            'stock_genotype' => array(),
-          );
-          $genotype_count = 0;
-        }
-      }
-      elseif (preg_match('/##FORMAT=/', $vcf_line)) {
-        $format .= substr($vcf_line, 9, -1);
-      }
-      elseif (preg_match('/#CHROM/', $vcf_line)) {
-        $vcf_line = explode("\t", $vcf_line);
-        for ($j = 9; $j < count($vcf_line); $j++) {
-          $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
-        }
-      }
+      // Insert the last set of values.
+      tpps_chado_insert_multi($records, $multi_insert_options);
+      unset($records);
+      $genotype_count = 0;
+      // dpm('done: ' . date('r'));.
     }
-    // Insert the last set of values.
-    tpps_chado_insert_multi($records, $multi_insert_options);
-    unset($records);
-    $genotype_count = 0;
-    // dpm('done: ' . date('r'));.
   }
 }
+
+/**
+ * Render genotype combination
+ *
+ * @param string $raw_value
+ *   Tree ID genotype value from VCF file
+ * @param string $ref
+ *   REF value
+ * @param string $alt
+ *   ALT value
+ */
+function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
+  // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
+  $raw_value_colon_parts = explode(':',$raw_value);
+  $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
+  $genotype_combination = "";
+  for($k = 0; $k < count($ref_alt_indices); $k++) {
+    $index_tmp = $ref_alt_indices[$k];
+    if($k > 0) {
+      $genotype_combination .= ':';
+    }
+    if($index_tmp == 0) {
+      $genotype_combination .= $ref;
+    }
+    else {
+      $genotype_combination .= $alt;
+    }
+  }
+  return $genotype_combination;
+}
+
 
 /**
  * Submits environmental information for one species.
