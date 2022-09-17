@@ -290,7 +290,21 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     if ($options['preserve']) {
       $file->status = FILE_STATUS_PERMANENT;
       file_save($file);
-      return file_copy($file, $new_filename);
+      // Check if file already exists then return that file.
+      $result = db_query('SELECT f.fid
+              FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
+      $record = $result->fetchObject();
+      if(isset($record)) {
+        return file_load($record->fid);
+      }
+      return file_copy($file, $new_filename, FILE_EXISTS_RENAME);
+    }
+    // Check if file already exists then return that file.
+    $result = db_query('SELECT f.fid
+    FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
+    $record = $result->fetchObject();
+    if(isset($record)) {
+      return file_load($record->fid);
     }
     return file_move($file, $new_filename, FILE_EXISTS_RENAME);
   }

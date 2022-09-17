@@ -597,9 +597,29 @@ function tpps_submission_rename_files($accession) {
         $old_file = file_load($fid);
         if ($old_file->uri[0] != '/') {
           $old_path = file_create_url($old_file->uri);
-          $file = tpps_rename_file($fid, "{$accession}_{$name}");
-          $file->status = FILE_STATUS_PERMANENT;
-          $file = file_save($file);
+          // Prepare new file_name.
+          $file_load = file_load($fid);
+          $new_filename = $accession .'_'.$name . "." . tpps_get_path_extension($file_load->uri);
+          if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
+            preg_match('/^(.*\/).*$/', $file->uri, $matches);
+            $new_filename = $matches[1] . $new_filename;
+          }
+          // Check if file already exists then return that file.
+          if ($new_filename != '') {
+            $result = db_query('SELECT f.fid
+            FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
+            $record = $result->fetchObject();
+          }
+          
+          if(isset($record)) {
+            $file = file_load($record->fid);
+          }
+          else {
+            $file = tpps_rename_file($fid, "{$accession}_{$name}");
+            $file->status = FILE_STATUS_PERMANENT;
+            $file = file_save($file);
+          }
+          
           $new_path = file_create_url($file->uri);
           chado_update_record('projectprop', array(
             'project_id' => $state['ids']['project_id'],
