@@ -402,7 +402,30 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $form['CHANGE_OWNER'] = array(
     '#type' => 'submit',
     '#value' => t('Change Submission Owner'),
-  );  
+  ); 
+  
+  $current_tpps_type = '';
+  if($submission_state['tpps_type'] == 'tppsc') {
+    $current_tpps_type = 'tppsc';
+  }
+  else {
+    $current_tpps_type = 'tpps';
+  }
+  $form['CHANGE_TPPS_TYPE'] = array(
+    '#type' => 'select',
+    '#title' => 'Change this study\'s TPPS type',
+    '#description' => 'Warning: This will also override the original submitter owner so you become the owner of the study (you can change the owner back to the original owner but you will have to keep note of the original owner).',
+    '#options' => array(
+      'tppsc' => t('TPPSc'),
+      'tpps' => t('TPPS'),
+    ),
+    '#default_value' => $current_tpps_type,
+  );
+
+  $form['CHANGE_TPPS_TYPE_SAVE'] = array(
+    '#type' => 'submit',
+    '#value' => t('Change TPPS Type'),
+  );    
 
   $form['state-status'] = array(
     '#type' => 'select',
@@ -1114,7 +1137,27 @@ function tpps_admin_panel_submit($form, &$form_state) {
         $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
       }
       tpps_update_submission($state);
+      drupal_set_message(t('VCF disable import setting saved'), 'status');
       break;
+
+    case 'Change TPPS Type':
+      // dpm($form_state['values']);
+      if($form_state['values']['CHANGE_TPPS_TYPE'] == 'TPPSc') {
+        // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
+        // Set the state tpps_type to tppsc
+        $state['tpps_type'] = 'tppsc';
+        global $user;
+        tpps_update_submission($state, array(
+          'uid' => $user->uid,
+        ));       
+      }
+      else {
+        // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
+        $state['tpps_type'] = 'tpps';
+      }
+      tpps_update_submission($state);
+      drupal_set_message(t('Updated study TPPS type'), 'status');
+      break;      
 
     case 'Reject':
       drupal_mail($type, 'user_rejected', $to, user_preferred_language($owner), $params, $from, TRUE);
