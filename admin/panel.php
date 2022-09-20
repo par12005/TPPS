@@ -1142,7 +1142,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     case 'Change TPPS Type':
       // dpm($form_state['values']);
-      if($form_state['values']['CHANGE_TPPS_TYPE'] == 'TPPSc') {
+      if($form_state['values']['CHANGE_TPPS_TYPE'] == 'tppsc') {
         // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
         // Set the state tpps_type to tppsc
         $state['tpps_type'] = 'tppsc';
@@ -1156,7 +1156,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
         $state['tpps_type'] = 'tpps';
       }
       tpps_update_submission($state);
-      drupal_set_message(t('Updated study TPPS type'), 'status');
+      drupal_set_message(t('Updated study TPPS type: ') . $state['tpps_type'], 'status');
       break;      
 
     case 'Reject':
