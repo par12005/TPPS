@@ -272,6 +272,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       tpps_phenotype_editor($form, $form_state, $submission_state);
     }
 
+
     $form['approve-check'] = array(
       '#type' => 'checkbox',
       '#title' => t('This submission has been reviewed and approved.'),
@@ -297,25 +298,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       ),
     );
   }
-
-  $disable_vcf_import = 1;
-  if(!isset($submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'])) {
-    $disable_vcf_import = 0;
-  }
-  else {
-    $disable_vcf_import = $submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'];
-  }
-
-  $form['DISABLE_VCF_IMPORT'] = array(
-    '#type' => 'checkbox',
-    '#title' => 'Disable VCF Import in Tripal Job Submission',
-    '#default_value' => $disable_vcf_import,
-  );
-
-  $form['DISABLE_VCF_IMPORT_SAVE'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save VCF Import Setting'),
-  );  
 
 
   $form['admin-comments'] = array(
@@ -391,9 +373,31 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   }
 
+  $disable_vcf_import = 1;
+  if(!isset($submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'])) {
+    $disable_vcf_import = 0;
+  }
+  else {
+    $disable_vcf_import = $submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'];
+  }
+
+  $form['DISABLE_VCF_IMPORT'] = array(
+    '#type' => 'checkbox',
+    '#prefix' => '<h2 style="margin-top: 30px;">Disable VCF import</h2>',
+    '#title' => 'Disable VCF Import in Tripal Job Submission',
+    '#default_value' => $disable_vcf_import,
+  );
+
+  $form['DISABLE_VCF_IMPORT_SAVE'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save VCF Import Setting'),
+    '#suffix' => '<div style="margin-bottom: 30px;"></div>'
+  );        
+
   $submitting_user = user_load($submission_state['submitting_uid']);
   $form['change_owner'] = array(
     '#type' => 'textfield',
+    '#prefix' => '<h2 style="margin-top: 30px;">Change owner</h2>',
     '#title' => t('Choose a new owner for the submission'),
     '#default_value' => $submitting_user->mail,
     '#autocomplete_path' => 'tpps/autocomplete/user',
@@ -414,6 +418,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $form['CHANGE_TPPS_TYPE'] = array(
     '#type' => 'select',
     '#title' => 'Change this study\'s TPPS type',
+    '#prefix' => '<h2 style="margin-top: 30px;">Change TPPS type</h2>',
     '#description' => 'Warning: This will also override the original submitter owner so you become the owner of the study (you can change the owner back to the original owner but you will have to keep note of the original owner).',
     '#options' => array(
       'tppsc' => t('TPPSc'),
@@ -429,6 +434,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   $form['state-status'] = array(
     '#type' => 'select',
+    '#prefix' => '<h2 style="margin-top: 30px;">Change state</h2>',
     '#title' => t('Change state status'),
     '#description' => t('Warning: This feature is experimental and may cause unforseen issues. Please do not change the status of this submission unless you are willing to risk the loss of existing data. The current status of the submission is @status.', array('@status' => $status)),
     '#options' => array(
@@ -448,6 +454,13 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       ),
     ),
   );
+
+  // Remove this study's markers and genotypes  
+  $form['REMOVE_STUDY_MARKERS_GENOTYPES'] = array(
+    '#type' => 'submit',
+    '#prefix' => '<h2 style="margin-top: 30px;">Clear markers and genotypes</h2>Warning: This will clear all markers and genotypes for this study. You will need to resubmit the study to import back this data.',
+    '#value' => t("Remove this study's markers and genotypes"),
+  ); 
 }
 
 /**
@@ -1138,6 +1151,16 @@ function tpps_admin_panel_submit($form, &$form_state) {
       }
       tpps_update_submission($state);
       drupal_set_message(t('VCF disable import setting saved'), 'status');
+      break;
+
+    case "Remove this study's markers and genotypes":
+      global $user;
+      $includes = array();
+      # $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('inc', 'tpps', 'includes/markers_genotypes_utils');
+      $args = array($accession);
+      $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession", 'tpps', 'tpps_remove_all_markers_genotypes', $args, $user->uid, 10, $includes, TRUE);
+      // drupal_set_message(t('Tripal Job created to remove all study markers and genotypes from ' . $accession), 'status');
       break;
 
     case 'Change TPPS Type':
