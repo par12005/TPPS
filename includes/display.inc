@@ -788,6 +788,7 @@ function tpps_tab_create($uid) {
     if (isset($state['accession'])) {
       $accession_cell = "<input type='submit' id='delete-{$state['accession']}' onclick='";
       $name = isset($page_1['publication']['title']) ? ' titled ' . $page_1['publication']['title'] : '';
+      $name = str_replace("'", "", $name);
       $accession_cell .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$name}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/tpps-submission/{$state['accession']}/delete\"}";
       $accession_cell .= "' name='op' class='form-button' value='Delete'>";
     }
