@@ -144,7 +144,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     
     fclose($tpps_job_logger['log_file_handle']);
     watchdog_exception('tpps', $e);
-
+    throw new Exception('Job failed.');
   }
 }
 
