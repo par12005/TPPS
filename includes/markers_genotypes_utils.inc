@@ -42,7 +42,7 @@ function tpps_remove_all_markers_genotypes($accession, TripalJob $job = NULL) {
         $sql .= "or feature_id in (";
         $sql .= "   select distinct variant_id from chado.genotype_call where project_id = (";
         $sql .= "       select project_id from chado.project_dbxref where dbxref_id = (";
-        $sql .= "           select dbxref_id from dbxref where accession = '" . $accession . "'";
+        $sql .= "           select dbxref_id from chado.dbxref where accession = '" . $accession . "'";
         $sql .= "       )";
         $sql .= "   )";
         $sql .= ");";
