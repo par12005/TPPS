@@ -195,9 +195,12 @@ function tpps_load_cv($info) {
  * @return object|false
  *   The resulting cvterm object, or FALSE on failure.
  */
-function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
+function tpps_load_cvterm($term, array $options = array(), $version = NULL, $refresh_cache = FALSE) {
 
   $check_cache = variable_get('tpps_load_cvterm_' . md5($term), null);
+  if($refresh_cache == TRUE) {
+    $check_cache = null;
+  }
   if ($_GET['refresh_cache'] == 'true') {
     $check_cache = null;
   }
@@ -272,8 +275,15 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
     }
 
     if (empty($result)) {
+      // Try searching our TreeGenes Internal Ontology (desperate measures: eg study_type)
+      $identifiers['cv_id'] = tpps_load_cv('TreeGenes Internal Ontology')->cv_id;
+      $result = chado_get_cvterm($identifiers, $options);
+    }
+
+    if (empty($result)) {
       if (!empty($options['job'])) {
         $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+        throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
       }
       else {
         $trace = debug_backtrace()[1];
@@ -290,6 +300,8 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL) {
         }
       }
     }
+
+
     variable_set('tpps_load_cvterm_' . md5($term), serialize($result));
   }
   else {
@@ -464,14 +476,14 @@ function tpps_get_cvterms_v1_2() {
     'vascular_leaf' => 'po:vascular leaf:plant_anatomy',
 
     // PECO terms.
-    'co2_control' => 'peco:carbon dioxide exposure',
-    'humidity_control' => 'peco:humidity exposure',
-    'light_control' => 'peco:light intensity exposure',
-    'pH_control' => 'peco:pH exposure',
-    'treatment' => 'peco:plant exposure',
-    'salinity_control' => 'peco:salt exposure',
-    'biotic_environment' => 'peco:biotic plant exposure',
-    'study_type' => 'peco:study type',
+    'co2_control' => 'plant_experimental_conditions_ontology:carbon dioxide exposure',
+    'humidity_control' => 'plant_experimental_conditions_ontology:humidity exposure',
+    'light_control' => 'plant_experimental_conditions_ontology:light intensity exposure',
+    'pH_control' => 'plant_experimental_conditions_ontology:pH exposure',
+    'treatment' => 'plant_experimental_conditions_ontology:plant exposure',
+    'salinity_control' => 'plant_experimental_conditions_ontology:salt exposure',
+    'biotic_environment' => 'plant_experimental_conditions_ontology:biotic plant exposure',
+    'study_type' => 'plant_experimental_conditions_ontology:study type',
 
     // ENVO terms.
     'co2_level' => 'envo:atmospheric carbon dioxide',
@@ -888,9 +900,7 @@ function tpps_migrate_cvterms($old_major = NULL, $old_minor = NULL, $new_major =
   $old_term_func = 'tpps_get_cvterms_v' . $old_v;
   $new_term_func = 'tpps_get_cvterms_v' . $new_v;
   $old_terms = $old_term_func();
-  // print_r($old_terms);
   $new_terms = $new_term_func();
-  // print_r($new_terms);
   $transaction = db_transaction();
 
   try {

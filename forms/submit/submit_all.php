@@ -1009,11 +1009,18 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     for ($j = 1; $j <= $phenotype_number; $j++) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
       if (!empty($phenos_edit[$j])) {
+        // (Rish) BUGFIX related to sex -> age 
+        // keep track of the cvterm id
+        $cvterm_id = $phenotype['phenotypes-meta'][$j]['attribute'];
         $result = $phenos_edit[$j] + $phenotype['phenotypes-meta'][$j];
         $phenotype['phenotypes-meta'][$j] = $result;
+        // restore the cvterm_id from the original (since this is from verified cvterm table which populated the select list dropdown box on tpps form)
+        $phenotype['phenotypes-meta'][$j]['attribute'] = $cvterm_id;
       }
       $phenotypes_meta[$name] = array();
       $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
+      // print_r('LINE 1022:');
+      // print_r($phenotype['phenotypes-meta'][$j]);
       if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
       }
@@ -1455,8 +1462,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
         }
         if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
-          // print_r($vcf_line[0]);
-          // throw new Exception('DEBUG');
           $record_count = $record_count + 1;
           print_r('Record count:' . $record_count . "\n");
           $genotype_count += count($stocks);
@@ -1511,13 +1516,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             }
             
           }
-          // SOME DEBUG CODE (FROM RISH CODING)
-          // print_r('detected_genotypes');
-          // print_r($detected_genotypes);
-          // throw new Exception('DEBUG STOP');
 
-          // $genotype_desc = "$marker-$species_code-$scaffold_id-$position-$description"; // Original by Peter
-          
           print_r('[New Feature]: ' . $marker_name . "\n");
           $records['feature'][$marker_name] = array(
             'organism_id' => $current_id,
