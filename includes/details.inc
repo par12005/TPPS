@@ -680,8 +680,10 @@ function tpps_details_study(array &$state) {
   $files = array();
   foreach ($state['files'] as $fid) {
     $file = file_load($fid);
-    $file_url = check_plain(file_create_url($file->uri));
-    $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
+    if ($file) {
+      $file_url = check_plain(file_create_url($file->uri));
+      $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
+    }
   }
 
   $pub_link = $state['title'];
