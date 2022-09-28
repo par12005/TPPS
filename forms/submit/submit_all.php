@@ -1977,7 +1977,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   }
 
   // Query the organism table to get the organism id
-  $organism_id_results = chado_query('SELECT * FROM chado.organism WHERE genus = :genus and species = :species LIMIT 1', array(
+  $organism_id_results = chado_query('SELECT * FROM chado.organism WHERE genus = :genus and species = :species ORDER BY organism_id ASC LIMIT 1', array(
     ':genus' => $genus,
     ':species' => $species
   ));
