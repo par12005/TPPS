@@ -281,6 +281,12 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
     }
 
     if (empty($result)) {
+      // Try searching our TreeGenes Internal Ontology (desperate measures: eg study_type)
+      $identifiers['cv_id'] = tpps_load_cv('TreeGenes Internal Ontology')->cv_id;
+      $result = chado_get_cvterm($identifiers, $options);
+    }    
+
+    if (empty($result)) {
       if (!empty($options['job'])) {
         $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
         throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
@@ -298,6 +304,7 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
             $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);             
           }
         }
+        throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
       }
     }
 
@@ -499,19 +506,19 @@ function tpps_get_cvterms_v1_2() {
     'irrigation_type' => 'agro:irrigation process',
 
     // SO terms.
-    'reference_genome' => 'so:reference_genome',
-    'genotype' => 'so:genotype',
-    'sequence_variant' => 'so:sequence_variant',
-    'snp' => 'so:SNP',
-    'ssr' => 'so:microsatellite',
-    'genetic_marker' => 'so:genetic_marker',
-    'quality_value' => 'so:quality_value',
-    'allelic_frequency' => 'so:allelic_frequency',
-    'synonymous' => 'so:synonymous',
-    'clone' => 'so:clone',
-    'supercontig' => 'so:supercontig',
-    'scaffold' => 'so:chromosome',
-    'has_part' => 'so:has_part',
+    'reference_genome' => 'sequence:reference_genome',
+    'genotype' => 'sequence:genotype',
+    'sequence_variant' => 'sequence:sequence_variant',
+    'snp' => 'sequence:SNP',
+    'ssr' => 'sequence:microsatellite',
+    'genetic_marker' => 'sequence:genetic_marker',
+    'quality_value' => 'sequence:quality_value',
+    'allelic_frequency' => 'sequence:allelic_frequency',
+    'synonymous' => 'sequence:synonymous',
+    'clone' => 'sequence:clone',
+    'supercontig' => 'sequence:supercontig',
+    'scaffold' => 'sequence:chromosome',
+    'has_part' => 'sequence:has_part',
 
     // EDAM terms.
     'filter' => 'edam:Sequence contamination filtering:operation',
