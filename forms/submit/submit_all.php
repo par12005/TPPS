@@ -1135,14 +1135,14 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['file_empty'] = $phenotype['file-empty'];
     $options['organism_name'] = $organism_name;
 
+    print_r('DATA_FID:' . $data_fid . "\n");
     tpps_job_logger_write('[INFO] - Processing phenotype_data file data...');
     $job->logMessage('[INFO] - Processing phenotype_data file data...');    
-    tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');      
+    tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);    
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting data into database using insert_multi...'); 
+    $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+    print_r($options['records']);     
     tpps_chado_insert_multi($options['records']);
     tpps_job_logger_write('[INFO] - Done.');
     $job->logMessage('[INFO] - Done.'); 
@@ -1167,10 +1167,8 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     tpps_job_logger_write('[INFO] - Processing phenotype_data file data...');
     $job->logMessage('[INFO] - Processing phenotype_data file data...');      
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.'); 
     tpps_job_logger_write('[INFO] - Inserting phenotype_data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting phenotype_data into database using insert_multi...');       
+    $job->logMessage('[INFO] - Inserting phenotype_data into database using insert_multi...');   
     tpps_chado_insert_multi($options['records']);
     tpps_job_logger_write('[INFO] - Done.');
     $job->logMessage('[INFO] - Done.');      
@@ -2112,7 +2110,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     $value_4lettercode = $organismprop_row->value;
   }
 
-  if($value_4lettercode == "") {
+  if($value_4lettercode == "" || $value_4lettercode == null) {
     throw new Exception('4 letter code could not be found for ' . $organism_name . ' in the chado.organismprop table. This is needed to create the phenotype_name.');
   }
 
@@ -2142,10 +2140,18 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     }
   }
 
+  if($tree_id == null || $tree_id = "") {
+    throw new Exception('tree_id was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
+  }
+
+
   // print_r($values);
   // throw new Exception('DEBUG');
 
   foreach ($values as $id => $name) {
+    if($name == null || $name = "") {
+      throw new Exception('Phenotype name was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
+    }    
     $attr_id = $iso ? $meta['attr_id'] : $meta[strtolower($name)]['attr_id'];
     $value = $row[$id];
     $phenotype_name = "$accession-$tree_id-$name-$suffix";
@@ -2258,8 +2264,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     if ($phenotype_count > $record_group) {
       // print_r($records);
       // print_r('------------' . "\n");
-      tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-      $job->logMessage('[INFO] - Inserting data into database using insert_multi...'); 
+      tpps_job_logger_write('[INFO] -- Inserting data into database using insert_multi...');
+      $job->logMessage('[INFO] -- Inserting data into database using insert_multi...'); 
       tpps_chado_insert_multi($records);
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.'); 
