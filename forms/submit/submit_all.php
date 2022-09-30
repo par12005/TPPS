@@ -2147,8 +2147,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
 
   // print_r($values);
   // throw new Exception('DEBUG');
-
-  foreach ($values as $id => $name) {
+  $phenotype_name_previous = "<none set>";
+  foreach ($values as $id => $name) {       
     if($name == null || $name = "") {
       throw new Exception('Phenotype name was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
     }    
@@ -2204,6 +2204,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       $options['data'][$phenotype_name]['time'] = $val;
     }
 
+    // print_r($meta);
     $records['phenotypeprop']["$phenotype_name-desc"] = array(
       'type_id' => $cvterms['desc'],
       'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
@@ -2261,6 +2262,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       );
     }
 
+ 
+
     if ($phenotype_count > $record_group) {
       // print_r($records);
       // print_r('------------' . "\n");
@@ -2284,6 +2287,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       );
       $phenotype_count = 0;
     }
+
+
 
     $phenotype_count++;
   }
