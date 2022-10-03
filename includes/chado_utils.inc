@@ -280,7 +280,13 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
         chado_set_active($previous);
       }
       else {
-        $last_id = $inserts[$table]->execute();
+        try {
+          $last_id = $inserts[$table]->execute();
+        }
+        catch (Exception $ex) {
+          print_r($values);
+          throw new Exception($ex);
+        }
       }
       $fks[$table] += array_combine($fks_to_populate, range($last_id - count($fks_to_populate) + 1, $last_id));
     }

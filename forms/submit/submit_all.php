@@ -987,6 +987,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     'min' => tpps_load_cvterm('minimum')->cvterm_id,
     'max' => tpps_load_cvterm('maximum')->cvterm_id,
     'environment' => tpps_load_cvterm('environment')->cvterm_id,
+    'intensity' => tpps_load_cvterm('intensity')->cvterm_id,
   );
 
   $records = array(
@@ -1058,8 +1059,10 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       tpps_submission_add_tag($form_state['accession'], 'Environment');
     }
 
-    if ($phenotype['check'] == '1') {
+    // throw new Exception('$phenotype[check]:' . $phenotype['check'] . "\n");
+    if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
       $meta_fid = $phenotype['metadata'];
+      print_r('META_FID:' . $meta_fid . "\n");
       tpps_add_project_file($form_state, $meta_fid);
 
       // Get metadata column values.
@@ -1142,7 +1145,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
     $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
-    print_r($options['records']);     
+    // print_r($options['records']);     
     tpps_chado_insert_multi($options['records']);
     tpps_job_logger_write('[INFO] - Done.');
     $job->logMessage('[INFO] - Done.'); 
@@ -1981,6 +1984,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       'ontology' => 'po',
     ),
   );
+  print_r($meta);
   foreach ($meta as $name => $data) {
     foreach ($term_types as $type => $info) {
       $meta[$name]["{$type}_id"] = $data["{$type}"];
@@ -2008,7 +2012,8 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
           if (empty($meta[$name]["{$type}_id"])) {
             $meta[$name]["{$type}_id"] = chado_insert_cvterm(array(
               'id' => "{$local_db->name}:{$data["{$type}-other"]}",
-              'name' => $data["{$type}-other"],
+              // 'name' => $data["{$type}-other"],
+              'name' => $data["{$type}"] . '-other',
               'definition' => '',
               'cv_name' => $local_cv->name,
             ))->cvterm_id;
@@ -2140,19 +2145,27 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     }
   }
 
-  if($tree_id == null || $tree_id = "") {
+  if($tree_id == null || $tree_id == "") {
     throw new Exception('tree_id was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
   }
 
 
   // print_r($values);
   // throw new Exception('DEBUG');
-
-  foreach ($values as $id => $name) {
-    if($name == null || $name = "") {
+  $phenotype_name_previous = "<none set>";
+  foreach ($values as $id => $name) {       
+    if($name == null || $name == "") {
       throw new Exception('Phenotype name was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
     }    
     $attr_id = $iso ? $meta['attr_id'] : $meta[strtolower($name)]['attr_id'];
+    // throw new Exception('debug');
+    if($attr_id == null || $attr_id == "") {
+      print_r('$meta[attr_id]:' . $meta['attr_id'] . "\n");
+      print_r('$name:' . $name . "\n");
+      print_r('$meta[$name]:' . $meta[strtolower($name)]['attr_id'] . "\n");
+      print_r('$attr_id:' . $attr_id . "\n");
+      throw new Exception('Attribute id is null which causes phenotype data to not be added to database correctly.');
+    }
     $value = $row[$id];
     $phenotype_name = "$accession-$tree_id-$name-$suffix";
     $phenotype_name .= '-' . $value_4lettercode;
@@ -2204,6 +2217,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       $options['data'][$phenotype_name]['time'] = $val;
     }
 
+    // print_r($meta);
     $records['phenotypeprop']["$phenotype_name-desc"] = array(
       'type_id' => $cvterms['desc'],
       'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
@@ -2261,6 +2275,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       );
     }
 
+ 
+
     if ($phenotype_count > $record_group) {
       // print_r($records);
       // print_r('------------' . "\n");
@@ -2284,6 +2300,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       );
       $phenotype_count = 0;
     }
+
+
 
     $phenotype_count++;
   }
