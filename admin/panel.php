@@ -455,6 +455,13 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     ),
   );
 
+  // REFRESH TPPS CVTERMS CACHE
+  $form['REFRESH_TPPS_CVTERMS_CACHE'] = array(
+    '#type' => 'submit',
+    '#prefix' => '<h2 style="margin-top: 30px;">Refresh TPPS CVTERMS CACHE</h2>',
+    '#value' => t("Refresh TPPS cvterms cache"),
+  );   
+
   // Remove this study's markers and genotypes  
   $form['REMOVE_STUDY_MARKERS_GENOTYPES'] = array(
     '#type' => 'submit',
@@ -1162,6 +1169,16 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession", 'tpps', 'tpps_remove_all_markers_genotypes', $args, $user->uid, 10, $includes, TRUE);
       // drupal_set_message(t('Tripal Job created to remove all study markers and genotypes from ' . $accession), 'status');
       break;
+
+    case "Refresh TPPS cvterms cache":
+      global $user;
+      $includes = array();
+      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('inc', 'tpps', 'includes/cvterm_utils');
+      $args = array();
+      $jid = tripal_add_job("TPPS REFRESH CVTERMS CACHE", 'tpps', 'tpps_cvterms_clear_cache', $args, $user->uid, 10, $includes, TRUE);
+      // drupal_set_message(t('Tripal Job created to remove all study markers and genotypes from ' . $accession), 'status');
+      break;      
 
     case 'Change TPPS Type':
       // dpm($form_state['values']);

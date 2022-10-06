@@ -108,6 +108,15 @@ function tpps_ols_url($types, array $args = array()) {
     $url .= "?" . implode('&', $args);
   }
 
+  print_r('OLS URL:' . $url . "\n");
+  try {
+    if(function_exists('tpps_job_logger_write')) {
+      tpps_job_logger_write('[INFO] -- ' . 'OLS URL:' . $url);
+    }
+  }
+  catch (Exception $ex) {
+
+  }
   return $url;
 }
 
@@ -128,6 +137,7 @@ function tpps_load_cv($info) {
   $id = strtolower($id);
 
   $cache = cache_get('tpps_cv')->data ?? array();
+  // print_r($cache);
 
   // Try to load cv_id from cache.
   $cv_id = $cache[$id] ?? NULL;
@@ -196,7 +206,6 @@ function tpps_load_cv($info) {
  *   The resulting cvterm object, or FALSE on failure.
  */
 function tpps_load_cvterm($term, array $options = array(), $version = NULL, $refresh_cache = FALSE) {
-
   $check_cache = variable_get('tpps_load_cvterm_' . md5($term), null);
   if($refresh_cache == TRUE) {
     $check_cache = null;
@@ -315,6 +324,34 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
     $result = unserialize($check_cache);
   }
   return $result;
+}
+
+/**
+ * Returns nothing, this is an administration function
+ *
+ * To speed up the process cvterms and even the cv (ontologies)
+ * are cached using various methods. This will refresh the cache
+ * and update the necessary links in the cache.
+ * 
+ * @return array
+ *   Array of cvterms that TPPS will be using.
+ */
+function tpps_cvterms_clear_cache(TripalJob $job = NULL) {
+  if($job) {
+    $job->logMessage('[INFO] Initializing cvterms cache refresh...');
+  }
+  // Reset the cv ids
+  cache_set('tpps_cv', NULL);
+
+  $cvt_v = variable_get('tpps_cvterms_version', '1_1');
+  $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
+  $terms = $get_cvt();
+  foreach ($terms as $term => $ontology_and_term) {
+    tpps_load_cvterm($term, array(), $cvt_v, TRUE);
+  }
+  if($job) {
+    $job->logMessage('[INFO] Complete!');
+  }  
 }
 
 /**
@@ -452,7 +489,7 @@ function tpps_get_cvterms_v1_2() {
     'sex' => 'pato:phenotypic sex',
 
     // PO terms.
-    'whole plant' => 'po:whole plant',
+    'whole plant' => 'po:whole plant:plant_ontology',
     'bark' => 'po:bark:plant_anatomy',
     'branch' => 'po:branch:plant_anatomy',
     'bud' => 'po:bud:plant_anatomy',
@@ -473,6 +510,7 @@ function tpps_get_cvterms_v1_2() {
     'plant_callus' => 'po:plant callus:plant_anatomy',
     'primary_thickening_meristem' => 'po:primary thickening meristem:plant_anatomy',
     // 'root' => 'po:root:plant_anatomy',
+    'root' => 'plant_anatomy:root',
     'secondary_xylem' => 'po:secondary xylem:plant_anatomy',
     'seed' => 'po:seed:plant_anatomy',
     'shoot_system' => 'po:shoot system:plant_anatomy',
@@ -719,6 +757,8 @@ function tpps_ols_add_cvterm($term) {
  *   The resulting cvterm object, or "local", or FALSE on failure.
  */
 function tpps_ols_install_term($info) {
+  // print_r('tpps_ols_install_term:');
+  // print_r('overall_info:' . $info . "\n");
   $parts = explode(':', $info);
   $ontology = $parts[0];
   if ($ontology == 'local') {
@@ -732,6 +772,9 @@ function tpps_ols_install_term($info) {
     $cv = tpps_ols_add_cv($ontology);
   }
 
+  
+  // print_r('term:' . $term . "\n");
+  // print_r('cv_id:' . $cv->cv_id . "\n");
   $cvt = chado_get_cvterm(array(
     'name' => $term,
     'cv_id' => $cv->cv_id,
@@ -747,8 +790,29 @@ function tpps_ols_install_term($info) {
     }
   }
 
+  if(!$cvt) {
+    // Double check original term
+    try {
+      // Since tpps_load_cvterm is used else where for require data
+      // we had set this to throw Exceptions if a cvterm isn't found
+      // so this is why it is placed in a try clause
+      $cvt = tpps_load_cvterm($term);
+    }
+    catch (Exception $ex) {
+
+    }
+  }
+
   if (!$cvt) {
+    print_r("Searching OLS search for term: $term with ontology: $ontology\n");
+    try {
+      tpps_job_logger_write("[INFO] -- Searching OLS search for term: $term with ontology: $ontology");
+    }
+    catch (Exception $ex) {
+
+    }
     $response = tpps_ols_search($term, $ontology)->response;
+    $doc_index = 0; // default value of 0 (index from OLS search for first value found)
     if ($response->numFound == 0) {
       return FALSE;
     }
@@ -757,12 +821,35 @@ function tpps_ols_install_term($info) {
       foreach ($response->docs as $doc) {
         $docs[$doc->iri] = $doc;
       }
+      print_r($response->docs);
       if (count($docs) != 1) {
+        // RISH: 10/06/2022 - I coded this for po:root but it is probably better
+        // to make sure the term exists in cvterms than use this method
+        // also update the function with the term, the function name is tpps_get_cvterms_v1_2()
+        // 
+        // // try to find a defining ontology based on the json results, if one can be found, use that
+        // $found_alternative = false;
+        // for($doc_index = 0; $doc_index < count($response->docs); $doc_index++) {
+        //   $doc = $response->docs[$doc_index];
+        //   print_r('doc:');
+        //   print_r($doc);
+        //   if (!empty($doc->is_defining_ontology)) {
+        //     // we found a possible legit term (this was tested with po:root)
+        //     if($doc->is_defining_ontology == 'true') {
+        //       print_r('Found a valid alternative.' . "\n");
+        //       $found_alternative = true;
+        //       break;
+        //     }
+        //   }
+        // } 
+        // if($found_alternative == false) {
+        //   throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
+        // }
         throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
       }
-      $response->docs[0] = current($docs);
+      $response->docs[$doc_index] = current($docs);
     }
-    $cvt = tpps_ols_add_cvterm($response->docs[0]);
+    $cvt = tpps_ols_add_cvterm($response->docs[$doc_index]);
   }
   return $cvt;
 }
