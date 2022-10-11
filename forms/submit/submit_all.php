@@ -229,21 +229,27 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
   $authors = array($firstpage['primaryAuthor']);
   if ($seconds['number'] != 0) {
     for ($i = 1; $i <= $seconds['number']; $i++) {
-      tpps_chado_insert_record('contact', array(
-        'name' => $seconds[$i],
-        'type_id' => tpps_load_cvterm('person')->cvterm_id,
-      ));
+      if(!empty($seconds[$i]) || $seconds[$i] != "") {
+        tpps_chado_insert_record('contact', array(
+          'name' => $seconds[$i],
+          'type_id' => tpps_load_cvterm('person')->cvterm_id,
+        ));
 
-      $names = explode(" ", $seconds[$i]);
-      $first_name = implode(" ", array_slice($names, 0, -1));
-      $last_name = end($names);
-
-      $pubauthors[] = array(
-        'rank' => "$i",
-        'surname' => $last_name,
-        'givennames' => $first_name,
-      );
-      $authors[] = $seconds[$i];
+        $names = explode(" ", $seconds[$i]);
+        $first_name = implode(" ", array_slice($names, 0, -1));
+        $last_name = end($names);
+        $pubauthors[] = array(
+          'rank' => "$i",
+          'surname' => $last_name,
+          'givennames' => $first_name,
+        );
+        $authors[] = $seconds[$i];
+      }
+      else {
+        tpps_job_logger_write('[INFO] - Secondary publishers error - found an empty secondary publisher name. Ignoring this input.');
+        $job->logMessage('[INFO] - Secondary publishers error - found an empty secondary publisher name. Ignoring this input.');
+        // throw new Exception("Seconds[$i]" . $seconds[$i]);
+      }
     }
   }
 
