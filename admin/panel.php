@@ -1223,12 +1223,13 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $jid = tripal_add_job("TPPS rename $accession to $new_accession", 'tpps', 'tpps_change_tgdr_number', $args, $user->uid, 10, $includes, TRUE);
 
 
-      // $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
-      // $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-      // $args = array($accession);
-      // $jid = tripal_add_job("TPPS Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
-      // $state['job_id'] = $jid;      
-      // tpps_update_submission($state);
+      // Now run the new import for the new accession TGDR number
+      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+      $args = array($new_accession);
+      $jid = tripal_add_job("TPPS Record Submission - $new_accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+      $state['job_id'] = $jid;      
+      tpps_update_submission($state);
       break;
 
     case "Refresh TPPS cvterms cache":

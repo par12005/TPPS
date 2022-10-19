@@ -165,9 +165,39 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   $submission = tpps_load_submission($old_accession, FALSE);
   $state = unserialize($submission->submission_state);
 
+  $job->logMessage('Original submission data for ' . $old_accession);
+  $job->logMessage(print_r($state, true));
+
   // Update the TGDR with the new_accession
-  $state = str_replace($old_accession, $new_accession, $state);
-  tpps_update_submission($state);
+  // First encode to JSON before string replacement
+  $state_json = json_encode($state);
+
+  // Now replace the old accession with the new accession
+  $state_json = str_replace($old_accession,$new_accession,$state_json);
+
+  // Now convert JSON back to an array
+  $state = json_decode($state_json,true);
+
+
+
+  $job->logMessage('New submission data for ' . $new_accession);
+  $job->logMessage(print_r($state, true));
+
+  // This function will not work here because it tries to update
+  // a non existing TGDR (the new one has not been created as yet)
+  // The update SQL after this, will make it exist because
+  // it renames the old tgdr number to the new tgdr number
+  // So instead of this function tpps_update_submission, manually do it
+  // tpps_update_submission($state);
+
+  $options['status'] = 'Approved';
+  $state['updated'] = time();
+  $options['submission_state'] = serialize($state);
+
+  db_update('tpps_submission')
+    ->fields($options)
+    ->condition('accession', $old_accession)
+    ->execute();  
 
 
   $job->logMessage('[INFO] Update tpps_submission table study ' . $old_accession . ' to ' . $new_accession);
@@ -183,6 +213,8 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
     $transaction->rollback();
     throw $e;
   }
+
+  $job->logMessage('Completed! The next job in the queue should reimport the study data for ' . $new_accession);
 }
 
 /**
