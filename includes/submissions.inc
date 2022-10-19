@@ -145,6 +145,79 @@ function tpps_create_submission(array $state, $uid) {
 }
 
 /**
+ * Changes the TGDR number of a study (and does resubmission)
+ *
+ * @param string $old_accession
+ *   The old accession number being submitted.
+ * @param string $new_accession
+ *   The new accession number being submitted. 
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
+ */
+function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job = NULL) {
+  $job->logMessage('[INFO] Clearing database for study ' . $old_accession);
+  $job->setInterval(1);
+  // Clear the db of all data for the old study accession
+  tpps_submission_clear_db($old_accession);
+
+  $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
+  // Update the form state data for the study
+  $submission = tpps_load_submission($old_accession, FALSE);
+  $state = unserialize($submission->submission_state);
+
+  $job->logMessage('Original submission data for ' . $old_accession);
+  $job->logMessage(print_r($state, true));
+
+  // Update the TGDR with the new_accession
+  // First encode to JSON before string replacement
+  $state_json = json_encode($state);
+
+  // Now replace the old accession with the new accession
+  $state_json = str_replace($old_accession,$new_accession,$state_json);
+
+  // Now convert JSON back to an array
+  $state = json_decode($state_json,true);
+
+
+
+  $job->logMessage('New submission data for ' . $new_accession);
+  $job->logMessage(print_r($state, true));
+
+  // This function will not work here because it tries to update
+  // a non existing TGDR (the new one has not been created as yet)
+  // The update SQL after this, will make it exist because
+  // it renames the old tgdr number to the new tgdr number
+  // So instead of this function tpps_update_submission, manually do it
+  // tpps_update_submission($state);
+
+  $options['status'] = 'Approved';
+  $state['updated'] = time();
+  $options['submission_state'] = serialize($state);
+
+  db_update('tpps_submission')
+    ->fields($options)
+    ->condition('accession', $old_accession)
+    ->execute();  
+
+
+  $job->logMessage('[INFO] Update tpps_submission table study ' . $old_accession . ' to ' . $new_accession);
+  // Now change the accession number in the tpps_submission table
+  $transaction = db_transaction();
+  try {
+    chado_query('UPDATE tpps_submission SET accession = :new_accession WHERE accession = :old_accession', array(
+      ':new_accession' => $new_accession,
+      ':old_accession' => $old_accession
+    )); 
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+
+  $job->logMessage('Completed! The next job in the queue should reimport the study data for ' . $new_accession);
+}
+
+/**
  * This function updates the form_state of a submission.
  *
  * Additional attributes of the submission record can be updated by populating
