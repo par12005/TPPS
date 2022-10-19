@@ -145,6 +145,47 @@ function tpps_create_submission(array $state, $uid) {
 }
 
 /**
+ * Changes the TGDR number of a study (and does resubmission)
+ *
+ * @param string $old_accession
+ *   The old accession number being submitted.
+ * @param string $new_accession
+ *   The new accession number being submitted. 
+ * @param TripalJob $job
+ *   The TripalJob object for the submission job.
+ */
+function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job = NULL) {
+  $job->logMessage('[INFO] Clearing database for study ' . $old_accession);
+  $job->setInterval(1);
+  // Clear the db of all data for the old study accession
+  tpps_submission_clear_db($old_accession);
+
+  $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
+  // Update the form state data for the study
+  $submission = tpps_load_submission($old_accession, FALSE);
+  $state = unserialize($submission->submission_state);
+
+  // Update the TGDR with the new_accession
+  $state = str_replace($old_accession, $new_accession, $state);
+  tpps_update_submission($state);
+
+
+  $job->logMessage('[INFO] Update tpps_submission table study ' . $old_accession . ' to ' . $new_accession);
+  // Now change the accession number in the tpps_submission table
+  $transaction = db_transaction();
+  try {
+    chado_query('UPDATE tpps_submission SET accession = :new_accession WHERE accession = :old_accession', array(
+      ':new_accession' => $new_accession,
+      ':old_accession' => $old_accession
+    )); 
+  }
+  catch (\Exception $e) {
+    $transaction->rollback();
+    throw $e;
+  }
+}
+
+/**
  * This function updates the form_state of a submission.
  *
  * Additional attributes of the submission record can be updated by populating

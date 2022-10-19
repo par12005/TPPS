@@ -467,7 +467,21 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#type' => 'submit',
     '#prefix' => '<h2 style="margin-top: 30px;">Clear markers and genotypes</h2>Warning: This will clear all markers and genotypes for this study. You will need to resubmit the study to import back this data.',
     '#value' => t("Remove this study's markers and genotypes"),
-  ); 
+  );
+  
+  
+  $form['CHANGE_TGDR_NUMBER'] = array(
+    '#type' => 'textfield',
+    '#prefix' => '<h2 style="margin-top: 30px;">Change TGDR number</h2>Warning: This will clear all data from the database and reimport as a new study.',
+    '#title' => t('Specify the new TGDR number only (do not include TGDR)'),
+    '#default_value' => '',
+  );  
+
+  // Remove this study's markers and genotypes  
+  $form['CHANGE_TGDR_NUMBER_SUBMIT'] = array(
+    '#type' => 'submit',
+    '#value' => t("Change TGDR number"),
+  );   
 }
 
 /**
@@ -1117,7 +1131,7 @@ function tpps_admin_panel_validate($form, &$form_state) {
  * for file parsing.
  */
 function tpps_admin_panel_submit($form, &$form_state) {
-
+  
   global $base_url;
   $type = $form_state['tpps_type'] ?? 'tpps';
   $type_label = ($type == 'tpps') ? 'TPPS' : 'TPPSC';
@@ -1168,6 +1182,53 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $args = array($accession);
       $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession", 'tpps', 'tpps_remove_all_markers_genotypes', $args, $user->uid, 10, $includes, TRUE);
       // drupal_set_message(t('Tripal Job created to remove all study markers and genotypes from ' . $accession), 'status');
+      break;
+
+    case "Change TGDR number":
+      // dpm($form_state['values']);
+
+      // Check if a valid tgdr number was supplied
+      if(!is_numeric($form_state['values']['CHANGE_TGDR_NUMBER'])) {
+        drupal_set_message(t('You did not enter a valid number. Operation aborted.'));
+        break;
+      }
+
+      $new_accession = 'TGDR' . $form_state['values']['CHANGE_TGDR_NUMBER'];
+      // Check if the new tgdr number does not exist in the database
+      // if it exists, abort the mission
+      $results = chado_query('SELECT count(*) as c1 FROM public.tpps_submission WHERE accession = :new_accession', array(
+        ':new_accession' => $new_accession
+      ));
+      $result_object = $results->fetchObject();
+      // dpm($result_object);
+      $result_count = $result_object->c1;
+      if($result_count > 0) {
+        drupal_set_message(t('It seems the TGDR number you wanted to change to is already in use. Operation aborted due to safety concerns.'));
+        break;
+      }
+
+      // dpm($state); // this doesn't even load on the browser (too big!)
+      
+      global $user;
+      $includes = array();
+      # $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('inc', 'tpps', 'includes/markers_genotypes_utils');
+      $includes[] = module_load_include('inc', 'tpps', 'includes/submissions');
+      $args = [$accession];
+      // Job to remove genotype information and features
+      $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession", 'tpps', 'tpps_remove_all_markers_genotypes', $args, $user->uid, 10, $includes, TRUE);
+
+      // Job to change the TGDR number to the new TGDR number
+      $args = [$accession, $new_accession];
+      $jid = tripal_add_job("TPPS rename $accession to $new_accession", 'tpps', 'tpps_change_tgdr_number', $args, $user->uid, 10, $includes, TRUE);
+
+
+      // $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      // $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+      // $args = array($accession);
+      // $jid = tripal_add_job("TPPS Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+      // $state['job_id'] = $jid;      
+      // tpps_update_submission($state);
       break;
 
     case "Refresh TPPS cvterms cache":
@@ -1271,6 +1332,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'Change Status':
       $state['status'] = $form_state['values']['state-status'];
       tpps_update_submission($state);
+      dpm($state['status']);
       break;
 
     case 'Save Alternative Accessions':
