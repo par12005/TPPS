@@ -749,6 +749,14 @@ function tpps_submission_clear_db($accession) {
   chado_query("DELETE FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql)");
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
 
+  // Force delete stock just in case by study accession name
+  // Make sure to ensure $accession is properly populated before doing this
+  if(strpos($accession,'TGDR') !== FALSE && strlen($accession) >= 7) {
+    chado_query("DELETE FROM chado.stock WHERE uniquename LIKE :accession", [
+      ':accession' => $accession . '%'
+    ]);
+  }
+
   $state['ids'] = array('project_id' => $project_id);
   tpps_update_submission($state);
   return TRUE;
