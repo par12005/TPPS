@@ -119,10 +119,10 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
     $phenotype_meta = $phenotype['metadata'];
     $phenotype_file = $phenotype['file'];
 
-    if ($phenotype_check == 'upload_file' and empty($phenotype_meta)) {
+    if ($phenotype_check == '1' and empty($phenotype_meta)) {
       form_set_error("$id][phenotype][metadata", t("Phenotype Metadata File: field is required."));
     }
-    if ($phenotype_check == 'upload_file' and !empty($phenotype_meta)) {
+    if ($phenotype_check == '1' and !empty($phenotype_meta)) {
       $required_groups = array(
         'Phenotype Id' => array(
           'id' => array(1),
@@ -233,9 +233,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       }
 
       $file_element = $form[$id]['phenotype']['file'];
-      if ($file_element['#type'] != 'media') {
-        $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-      }
+      $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
 
       if (!form_get_errors()) {
         $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
@@ -282,9 +280,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
           $missing_trees = tpps_compare_files($form_state['values'][$id]['phenotype']['file'], $tree_accession_file, $phenotype_file_tree_col, $id_col_accession_name, $phenotype_no_header, $acc_no_header);
           if ($missing_trees !== array()) {
             $tree_id_str = implode(', ', $missing_trees);
-            if (trim($tree_id_str) != '') {
-              form_set_error("$id][phenotype][file", "Phenotype file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Phenotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
-            }
+            form_set_error("$id][phenotype][file", "Phenotype file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Phenotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
           }
         }
       }

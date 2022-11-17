@@ -94,54 +94,32 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         $form["organism-$i"]['phenotype']['format'][0]['#suffix'] = "</figcaption></figure>";
         $form["organism-$i"]['phenotype']['format'][1]['#prefix'] = "<figure><img src=\"/{$image_path}phenotype_format_2.png\"><figcaption>";
         $form["organism-$i"]['phenotype']['format'][1]['#suffix'] = "</figcaption></figure>";
-        
-        $form["organism-$i"]['phenotype']['file-selector'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('Reference Existing Phenotype File'),
-          '#ajax' => array(
-            'callback' => 'tpps_phenotype_file_type_change_callback',
-            'wrapper' => "phenotype-main-organism-$i",
+      
+        $form["organism-$i"]['phenotype']['file'] = array(
+          '#type' => 'managed_file',
+          '#title' => t('Phenotype file: Please upload a file containing columns for Plant Identifier, Phenotype Data: *'),
+          '#upload_location' => 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype'),
+          '#upload_validators' => array(
+            'file_validate_extensions' => array('csv tsv xlsx'),
+          ),
+          '#tree' => TRUE,
+          '#states' => array(
+            'invisible' => array(
+              ":input[name=\"organism-{$i}[phenotype][phenotypes-meta][number]\"]" => array('value' => '0'),
+              ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
+            ),
           ),
         );
-        $file_select_check = tpps_get_ajax_value($form_state, array(
-          "organism-$i",
-          'phenotype',
-          'file-selector'
-        ));
-        if (empty($file_select_check)) {
-          $form["organism-$i"]['phenotype']['file'] = array(
-            '#type' => 'managed_file',
-            '#title' => t('Phenotype file: Please upload a file containing columns for Plant Identifier, Phenotype Data: *'),
-            '#upload_location' => 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype'),
-            '#upload_validators' => array(
-              'file_validate_extensions' => array('csv tsv xlsx'),
-            ),
-            '#tree' => TRUE,
-            '#states' => array(
-              'invisible' => array(
-                ":input[name=\"organism-{$i}[phenotype][phenotypes-meta][number]\"]" => array('value' => '0'),
-                ":input[name=\"organism-{$i}[phenotype][check]\"]" => array('checked' => FALSE),
-              ),
-            ),
-          );
 
-          $form["organism-$i"]['phenotype']['file']['empty'] = array(
-            '#default_value' => isset($values["organism-$i"]['phenotype']['file']['empty']) ? $values["organism-$i"]['phenotype']['file']['empty'] : 'NA',
-          );
+        $form["organism-$i"]['phenotype']['file']['empty'] = array(
+          '#default_value' => isset($values["organism-$i"]['phenotype']['file']['empty']) ? $values["organism-$i"]['phenotype']['file']['empty'] : 'NA',
+        );
 
-          $form["organism-$i"]['phenotype']['file']['columns'] = array(
-            '#description' => t('Please define which columns hold the required data: Plant Identifier, Phenotype name, and Value(s)'),
-          );
-        }
-        else {
-          // // Add autocomplete field.
-          $form["organism-$i"]['phenotype']['file'] = array(
-            '#type' => 'media',
-            '#title' => t('Phenotype file: Please select a file containing columns for Plant Identifier, Phenotype Data: *'),
-            '#default_value' => isset($values["organism-$i"]['phenotype']['file']) ? $values["organism-$i"]['phenotype']['file'] : '',
-          );
-        }
-
+        $form["organism-$i"]['phenotype']['file']['columns'] = array(
+          '#description' => t('Please define which columns hold the required data: Plant Identifier, Phenotype name, and Value(s)'),
+        );
+        
+        
         $format = tpps_get_ajax_value($form_state, array(
           "organism-$i",
           'phenotype',
