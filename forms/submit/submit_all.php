@@ -1799,6 +1799,14 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
   $public_path = drupal_realpath($path);
   echo '[PUBLIC PATH] ' . $public_path . "\n";
 
+  // Get the module path
+  $module_path = DRUPAL_ROOT . drupal_get_path('module', 'tpps');
+  echo '[MODULE PATH] ' . $module_path . "\n";
+
+  // Tools path
+  $tools_path = $module_path . "/tools";
+  echo '[TOOLS PATH] ' .  $tools_path . "\n";
+
   // Make temp directory just in case for vcf files etc
   $popstruct_temp_dir = $public_path . '/popstruct_temp/' . $study_accession;
   mkdir($popstruct_temp_dir, 0755, true);
@@ -1836,6 +1844,11 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
   echo "[VCF_LOCATION_TEMP] $vcf_location_temp \n"; 
   // So now we have th $vcf_location_temp which should be used accordingly 
 
+  // Step 1 - Perform PLINK
+  exec($tools_path . '/plink/plink --vcf ' . $vcf_location_temp . " --allow-extra-chr --double-id --make-bed --out "  . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink');
+
+  // Step 2 by x - Fast Structure run
+  
 
 }
 
