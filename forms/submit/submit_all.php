@@ -1529,6 +1529,11 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
       $vcf_file = file_load($vcf_fid);
       $location = tpps_get_location($vcf_file->uri);
+
+
+      tpps_generate_popstruct($form_state['accession'],$location);
+
+
       $vcf_content = gzopen($location, 'r');
       $stocks = array();
       $format = "";
@@ -1774,6 +1779,64 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       // dpm('done: ' . date('r'));.
     }
   }
+}
+
+
+function tpps_generate_popstruct($study_accession, $vcf_location) {
+  // Perform basic checks
+  if ($study_accession == "") {
+    echo "[FATAL ERROR] You must enter a non-empty study accession. Aborting.\n";
+    return;
+  }
+
+  if ($vcf_location == "") {
+    echo "[FATAL ERROR] You must enter a non-empty vcf_location. Aborting.\n";
+    return;
+  }
+
+  // Get the correct path of the public directory
+  $path = 'public://';
+  $public_path = drupal_realpath($path);
+  echo '[PUBLIC PATH] ' . $public_path . "\n";
+
+  // Make temp directory just in case for vcf files etc
+  $popstruct_temp_dir = $public_path . '/popstruct_temp/' . $study_accession;
+  mkdir($popstruct_temp_dir, 0755, true);
+
+  // In case there are already files in here, delete them
+  $files = glob($popstruct_temp_dir . '/*'); // get all file names
+  foreach($files as $file){ // iterate files
+    if(is_file($file)) {
+      echo "[CLEAN UP BEFORE BEGIN] Removing $file from the popstruct directory";
+      unlink($file); // delete file
+    }
+  }
+
+  $flag_using_temp_file = false;
+
+  // This variable is used to process the vcf since we may have to gunzip
+  // the file. So we need to keep the original location variable (by not overwriting it).
+  $vcf_location_temp = $vcf_location;
+  if (stripos($vcf_location, '.gz') !== FALSE) {
+    // we need to gunzip the file
+    // Set flag to true that we are using a temp file
+    // This will need to be deleted afterwards
+    $flag_using_temp_file = true;
+    
+    // Get file name without extension so we use that as the gunzipped filename
+    $file_name_without_ext = basename($vcf_location, ".gz");
+
+    // Gunzip the the file
+    exec("gunzip -c " . $vcf_location . " > " . $popstruct_temp_dir . "/" . $file_name_without_ext);
+
+    // Set the vcf_location_temp to where the gunzip file is
+    $vcf_location_temp = $popstruct_temp_dir . "/" . $file_name_without_ext;
+  }
+
+  echo "[VCF_LOCATION_TEMP] $vcf_location_temp \n"; 
+  // So now we have th $vcf_location_temp which should be used accordingly 
+
+
 }
 
 /**
