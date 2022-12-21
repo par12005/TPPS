@@ -1576,23 +1576,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           $detected_genotypes = array();
           $first_genotypes = array(); // used to save the first genotype in each row of the VCF (used for genotype_call table)
           for ($j = 9; $j < count($vcf_line); $j++) {
-            // CODE REPLACED BY FUNCTION
-            // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
-            // $raw_value_colon_parts = explode(':',$raw_value);
-            // $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
-            // $genotype_combination = "";
-            // for($k = 0; $k < count($ref_alt_indices); $k++) {
-            //   $index_tmp = $ref_alt_indices[$k];
-            //   if($k > 0) {
-            //     $genotype_combination .= ':';
-            //   }
-            //   if($index_tmp == 0) {
-            //     $genotype_combination .= $ref;
-            //   }
-            //   else {
-            //     $genotype_combination .= $alt;
-            //   }
-            // }
+
             $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
 
             $detected_genotypes[$marker_name . $genotype_combination] = TRUE;
@@ -1781,7 +1765,11 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   }
 }
 
+/**
+ * TPPS Generate Population Structure
+ */
 
+ // drush php-eval 'include("/var/www/Drupal/sites/all/modules/TGDR/forms/submit/submit_all.php"); tpps_generate_popstruct("TGDR000", "dummy_location.vcf");'
 function tpps_generate_popstruct($study_accession, $vcf_location) {
   // Perform basic checks
   if ($study_accession == "") {
@@ -1848,7 +1836,14 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
   exec($tools_path . '/plink/plink --vcf ' . $vcf_location_temp . " --allow-extra-chr --double-id --make-bed --out "  . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink');
 
   // Step 2 by x - Fast Structure run
-  
+  // To get fastStruct installed, we need the dependenices
+  // These dependencies seem to need Python 3.8 / pip3
+
+  // For CENTOS
+  // sudo yum -y groupinstall "Development Tools"
+  // sudo yum -y install openssl-devel bzip2-devel libffi-devel xz-devel
+
+
 
 }
 
