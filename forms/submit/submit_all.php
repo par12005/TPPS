@@ -1771,6 +1771,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
  // drush php-eval 'include("/var/www/Drupal/sites/all/modules/TGDR/forms/submit/submit_all.php"); tpps_generate_popstruct("TGDR000", "dummy_location.vcf");'
 function tpps_generate_popstruct($study_accession, $vcf_location) {
+  // TODO remove function disabled option
+  echo "Function disabled until completed";
+  return;
   // Perform basic checks
   if ($study_accession == "") {
     echo "[FATAL ERROR] You must enter a non-empty study accession. Aborting.\n";
@@ -1823,7 +1826,7 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
     $file_name_without_ext = basename($vcf_location, ".gz");
 
     // Gunzip the the file
-    exec("gunzip -c " . $vcf_location . " > " . $popstruct_temp_dir . "/" . $file_name_without_ext);
+    shell_exec("gunzip -c " . $vcf_location . " > " . $popstruct_temp_dir . "/" . $file_name_without_ext);
 
     // Set the vcf_location_temp to where the gunzip file is
     $vcf_location_temp = $popstruct_temp_dir . "/" . $file_name_without_ext;
@@ -1833,18 +1836,59 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
   // So now we have th $vcf_location_temp which should be used accordingly 
 
   // Step 1 - Perform PLINK
-  exec($tools_path . '/plink/plink --vcf ' . $vcf_location_temp . " --allow-extra-chr --double-id --make-bed --out "  . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink');
+  echo shell_exec($tools_path . '/plink/plink --vcf ' . $vcf_location_temp . " --allow-extra-chr --double-id --make-bed --out "  . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink');
 
   // Step 2 by x - Fast Structure run
   // To get fastStruct installed, we need the dependenices
   // These dependencies seem to need Python 3.8 / pip3
-
   // For CENTOS
   // sudo yum -y groupinstall "Development Tools"
   // sudo yum -y install openssl-devel bzip2-devel libffi-devel xz-devel
 
+  for($i=1; $i <= 10; $i++) {
+    echo "Performing FastStructure for k = $i\n";
+    $fast_structure_cmd = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib; export CFLAGS="-I/usr/local/include"; export LDFLAGS="-L/usr/local/lib";  python ' . $tools_path . "/fastStructure/structure.py -K " . $i . " --input=" . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink' . " --output="  . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink' . ' --full;';
+    echo shell_exec($fast_structure_cmd);
+  }
 
+  // Step 3 is to select K from previous runs
+  $chooseK_cmd = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib; export CFLAGS="-I/usr/local/include"; export LDFLAGS="-L/usr/local/lib"; python ' . $tools_path . '/fastStructure/chooseK.py --input=' . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink';
+  $chooseK_output = shell_exec($chooseK_cmd);
+  echo $chooseK_output . "\n";
 
+  // Step 3b - from the output, get the suggested K value
+  $chooseK_parts = explode('Model components used to explain structure in data = ', $chooseK_output);
+  $chooseK_optimal = $chooseK_parts[1];
+
+  // Step 4 - awk and sed to clean up files
+  $cmd_custom_cmds1 = "awk 'BEGIN { OFS = \"_\" } ;{print $1,$2}' " . $popstruct_temp_dir . '/' . $study_accession .  '_popstruct_plink.fam > ' . $popstruct_temp_dir . '/' . $study_accession .  "_popstruct_IDPanel.txt;";
+  $cmd_custom_cmds1 .= "sed 's/_/\t/g' " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDPanel.txt > " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDPaneltab.txt;";
+  $cmd_custom_cmds1 .= "awk '{print $1,$2}' " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDPaneltab.txt > " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDfamPanel.txt;";
+  shell_exec($cmd_custom_cmds1);
+
+  // Step 5 - count the population
+  $count_output = shell_exec("wc -l " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDPanel.txt");
+  echo $count_output . "\n";
+  $count_output_parts = explode(' ', $count_output);
+  $population_count = $count_output_parts[0];
+
+  // Step 6 - Execute R script which generates popstruct from Panel using chooseK optimal value
+  $cmd_custom_r_code = "Rscript " . $tools_path .  "/popstruct_from_panel.R ";
+  $cmd_custom_r_code .= $study_accession + " ";
+  $cmd_custom_r_code .= $population_count + " ";
+  $cmd_custom_r_code .= $popstruct_temp_dir . '/' . $study_accession . "_popstruct_plink." . $chooseK_optimal. ".meanQ ";
+  $cmd_custom_r_code .= $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDfamPanel.txt ";
+  $cmd_custom_r_code .= $popstruct_temp_dir . '/' . $study_accession . "_popstruct_PopPanel.txt";
+  echo shell_exec($cmd_custom_cmds1);
+
+  // Step 7 - Cleaning up PopPanel columns...
+  $cmd_remove_column_code = "cut -d\\  -f2- " . $popstruct_temp_dir . '/' . $study_accession .  "_popstruct_PopPanel.txt > " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_PopPanel_final.txt";
+  echo shell_exec($cmd_remove_column_code);
+
+  // TODO: Push to postgres popstruct table
+  // READ THE OUTPUT FILE, GET THE TREE_IDS AND LOCATIONS
+  // THEN GO THROUGH THE OUTPUT FILE AND GET THE POPULATION GROUPS
+  // THEN ADD THIS TO THE TABLE
 }
 
 /**
