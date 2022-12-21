@@ -124,6 +124,8 @@ function tpps_load_submission_multiple(array $conditions = array(), $state = TRU
  *   The id of the user creating the submission.
  */
 function tpps_create_submission(array $state, $uid) {
+  dpm($state);
+  return;
   $values = array(
     'uid' => $uid,
     'status' => 'Incomplete',

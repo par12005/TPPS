@@ -20,24 +20,36 @@
 function tpps_init_project(array &$form_state, $accession = NULL) {
 
   if (empty($accession)) {
-    $values = array(
-      'accession' => 'TGDR.*',
-    );
+    // This code is deprecated since it doesn't work for TGDR numbers over 999
+    // Code originally written by Peter Richter and kept as a backup
+    // Code deprecated by Rish (12/20/2022) as part of a patch to cater for TGDR
+    // numbers over 999
 
-    $options = array(
-      'order_by' => array(
-        'accession' => 'DESC',
-      ),
-      'limit' => '1',
-      'regex_columns' => array('accession'),
-    );
+    // $values = array(
+    //   'accession' => 'TGDR.*',
+    // );
 
-    $result = chado_select_record('dbxref', array('accession'), $values, $options);
+    // $options = array(
+    //   'order_by' => array(
+    //     'accession' => 'DESC',
+    //   ),
+    //   'limit' => '1',
+    //   'regex_columns' => array('accession'),
+    // );
 
-    if (empty($result)) {
+    // $result = chado_select_record('dbxref', array('accession'), $values, $options);
+
+    // Rish: New patch that sorts based on integer instead of string values
+    $result_query = chado_query("SELECT *, substr(accession, 5)::INTEGER as accession_number " . 
+      "FROM chado.dbxref WHERE accession LIKE 'TGDR%' "  .
+      "ORDER BY accession_number DESC LIMIT 1;", []);
+
+    if (empty($result_query)) {
       $accession = 'TGDR001';
     }
     else {
+      $result = []; // create an empty array
+      $result[] = $result_query->fetchObject(); // add the first record found into result
       $accession = substr($result[0]->accession, 4) + 1;
       while (strlen($accession) < 3) {
         $accession = "0$accession";
