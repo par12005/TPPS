@@ -1812,7 +1812,7 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
       tpps_job_logger_write("[FILE CLEAN/DELETE] $file");
       echo("[FILE CLEAN/DELETE] $file\n");
       // echo "TODO: Perform the actual delete\n";
-      unlink($file); // delete file
+      // unlink($file); // delete file
     }
   }
 
@@ -1842,7 +1842,7 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
   
   // So now we have th $vcf_location_temp which should be used accordingly 
 
-
+  
   // Step 1 - Perform PLINK
   // TODO: RESTORE THIS
   tpps_job_logger_write("PERFORM PLINK");
@@ -1864,6 +1864,7 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
     $fast_structure_cmd = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib; export CFLAGS="-I/usr/local/include"; export LDFLAGS="-L/usr/local/lib";  python ' . $tools_path . "/fastStructure/structure.py -K " . $i . " --input=" . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink' . " --output="  . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink' . ' --full;';
     echo shell_exec($fast_structure_cmd);
   }
+  
 
   // Step 3 is to select K from previous runs
   // TODO: RESTORE THIS
@@ -1956,12 +1957,12 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
       if(count($line_space_parts) >= 4) {
         $population_group = $line_space_parts[3];
         if (strpos($population_group, 'e') !== FALSE) {
-          $population_group = 0 + 1;
+          $population_group = 1;
         }
         else {
           $population_group = intval(ceil($population_group)) + 1;
         }
-        // echo $population_group . ',';
+        echo $population_group . ',';
         $tree_info['population'] = $population_group;
         $tree_data[$tree_id] = $tree_info;
       }
