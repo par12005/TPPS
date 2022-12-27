@@ -1812,7 +1812,7 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
       tpps_job_logger_write("[FILE CLEAN/DELETE] $file");
       echo("[FILE CLEAN/DELETE] $file\n");
       // echo "TODO: Perform the actual delete\n";
-      // unlink($file); // delete file
+      unlink($file); // delete file
     }
   }
 
