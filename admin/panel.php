@@ -455,12 +455,19 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     ),
   );
 
+  // GENERATE_POPSTRUCT_FROM_VCF
+  $form['GENERATE_POPSTRUCT_FROM_VCF'] = array(
+    '#type' => 'submit',
+    '#prefix' => '<h2 style="margin-top: 30px;">Generate PopStruct FROM VCF</h2>',
+    '#value' => t("Generate PopStruct FROM VCF"),
+  );
+
   // REFRESH TPPS CVTERMS CACHE
   $form['REFRESH_TPPS_CVTERMS_CACHE'] = array(
     '#type' => 'submit',
     '#prefix' => '<h2 style="margin-top: 30px;">Refresh TPPS CVTERMS CACHE</h2>',
     '#value' => t("Refresh TPPS cvterms cache"),
-  );   
+  );
 
   // Remove this study's markers and genotypes  
   $form['REMOVE_STUDY_MARKERS_GENOTYPES'] = array(
@@ -1230,6 +1237,25 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $jid = tripal_add_job("TPPS Record Submission - $new_accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
       $state['job_id'] = $jid;      
       tpps_update_submission($state);
+      break;
+
+    case "Generate PopStruct FROM VCF":
+      global $user;
+      $includes = array();
+      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all'); 
+
+      // dpm($state['saved_values'][4]['organism-1']['genotype']['files']['vcf']);
+      if(!empty($state['saved_values'][4]['organism-1']['genotype']['files']['vcf'])) {
+        $vcf_fid = $state['saved_values'][4]['organism-1']['genotype']['files']['vcf'];
+        $vcf_file = file_load($vcf_fid);
+        $location = tpps_get_location($vcf_file->uri);
+        $args = array($accession,$location);
+        // dpm($args);
+        $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession", 'tpps', 'tpps_generate_popstruct', $args, $user->uid, 10, $includes, TRUE);     
+      }
+      else {
+        drupal_set_message("Could not find a VCF tied to organism-1, are you sure you linked a VCF file?");
+      }
       break;
 
     case "Refresh TPPS cvterms cache":

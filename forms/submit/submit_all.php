@@ -1529,6 +1529,11 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
       $vcf_file = file_load($vcf_fid);
       $location = tpps_get_location($vcf_file->uri);
+
+      // TODO Activate this function to generate popstruct
+      tpps_generate_popstruct($form_state['accession'],$location);
+
+
       $vcf_content = gzopen($location, 'r');
       $stocks = array();
       $format = "";
@@ -1571,23 +1576,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           $detected_genotypes = array();
           $first_genotypes = array(); // used to save the first genotype in each row of the VCF (used for genotype_call table)
           for ($j = 9; $j < count($vcf_line); $j++) {
-            // CODE REPLACED BY FUNCTION
-            // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
-            // $raw_value_colon_parts = explode(':',$raw_value);
-            // $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
-            // $genotype_combination = "";
-            // for($k = 0; $k < count($ref_alt_indices); $k++) {
-            //   $index_tmp = $ref_alt_indices[$k];
-            //   if($k > 0) {
-            //     $genotype_combination .= ':';
-            //   }
-            //   if($index_tmp == 0) {
-            //     $genotype_combination .= $ref;
-            //   }
-            //   else {
-            //     $genotype_combination .= $alt;
-            //   }
-            // }
+
             $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
 
             $detected_genotypes[$marker_name . $genotype_combination] = TRUE;
@@ -1774,6 +1763,254 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       // dpm('done: ' . date('r'));.
     }
   }
+}
+
+/**
+ * TPPS Generate Population Structure
+ * FastStructure requires pip install pip==9.0.1 to install dependencies
+ */
+
+ // drush php-eval 'include("/var/www/Drupal/sites/all/modules/TGDR/forms/submit/submit_all.php"); tpps_generate_popstruct("TGDR675", "/var/www/Drupal/sites/default/files/popstruct_temp/Panel4SNPv3.vcf");'
+function tpps_generate_popstruct($study_accession, $vcf_location) {
+  // Perform basic checks
+  if ($study_accession == "") {
+    tpps_job_logger_write("[FATAL ERROR] You must enter a non-empty study accession. Aborting.\n");
+    return;
+  }
+
+  if ($vcf_location == "") {
+    tpps_job_logger_write("[FATAL ERROR] You must enter a non-empty vcf_location. Aborting.\n");
+    return;
+  }
+
+  // Get the correct path of the public directory
+  $path = 'public://';
+  $public_path = drupal_realpath($path);
+  tpps_job_logger_write('[PUBLIC PATH] ' . $public_path . "\n");
+  echo('[PUBLIC PATH] ' . $public_path . "\n");
+
+  // Get the module path
+  $module_path = DRUPAL_ROOT . '/' . drupal_get_path('module', 'tpps');
+  tpps_job_logger_write('[MODULE PATH] ' . $module_path . "\n");
+  echo('[MODULE PATH] ' . $module_path . "\n");
+
+  // Tools path
+  $tools_path = $module_path . "/tools";
+  tpps_job_logger_write('[TOOLS PATH] ' .  $tools_path . "\n");
+  echo('[TOOLS PATH] ' .  $tools_path . "\n");
+
+  // Make temp directory just in case for vcf files etc
+  $popstruct_temp_dir = $public_path . '/popstruct_temp/' . $study_accession;
+  mkdir($popstruct_temp_dir, 0755, true);
+
+  // In case there are already files in here, delete them
+  $files = glob($popstruct_temp_dir . '/*'); // get all file names
+  foreach($files as $file){ // iterate files
+    if(is_file($file)) {
+      tpps_job_logger_write("[CLEAN UP BEFORE BEGIN] Removing $file from the popstruct directory");
+      echo("[CLEAN UP BEFORE BEGIN] Removing $file from the popstruct directory\n");
+      tpps_job_logger_write("[FILE CLEAN/DELETE] $file");
+      echo("[FILE CLEAN/DELETE] $file\n");
+      // echo "TODO: Perform the actual delete\n";
+      unlink($file); // delete file
+    }
+  }
+
+  $flag_using_temp_file = false;
+
+  // This variable is used to process the vcf since we may have to gunzip
+  // the file. So we need to keep the original location variable (by not overwriting it).
+  $vcf_location_temp = $vcf_location;
+  if (stripos($vcf_location, '.gz') !== FALSE) {
+    // we need to gunzip the file
+    // Set flag to true that we are using a temp file
+    // This will need to be deleted afterwards
+    $flag_using_temp_file = true;
+    
+    // Get file name without extension so we use that as the gunzipped filename
+    $file_name_without_ext = basename($vcf_location, ".gz");
+
+    // Gunzip the the file
+    shell_exec("gunzip -c " . $vcf_location . " > " . $popstruct_temp_dir . "/" . $file_name_without_ext);
+
+    // Set the vcf_location_temp to where the gunzip file is
+    $vcf_location_temp = $popstruct_temp_dir . "/" . $file_name_without_ext;
+  }
+
+  tpps_job_logger_write("[VCF_LOCATION_TEMP] $vcf_location_temp");
+  echo("[VCF_LOCATION_TEMP] $vcf_location_temp");
+  
+  // So now we have th $vcf_location_temp which should be used accordingly 
+
+  
+  // Step 1 - Perform PLINK
+  // TODO: RESTORE THIS
+  tpps_job_logger_write("PERFORM PLINK");
+  echo("PERFORM PLINK");
+  echo shell_exec($tools_path . '/plink/plink --vcf ' . $vcf_location_temp . " --allow-extra-chr --double-id --make-bed --out "  . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink');
+  
+  
+  // Step 2 by x - Fast Structure run
+  // To get fastStruct installed, we need the dependenices
+  // These dependencies seem to need Python 3.8 / pip3
+  // For CENTOS
+  // sudo yum -y groupinstall "Development Tools"
+  // sudo yum -y install openssl-devel bzip2-devel libffi-devel xz-devel
+
+  // TODO: RESTORE THIS
+  for($i=1; $i <= 10; $i++) {
+    tpps_job_logger_write("Performing FastStructure for k = $i\n");
+    echo("Performing FastStructure for k = $i\n");
+    $fast_structure_cmd = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib; export CFLAGS="-I/usr/local/include"; export LDFLAGS="-L/usr/local/lib";  python ' . $tools_path . "/fastStructure/structure.py -K " . $i . " --input=" . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink' . " --output="  . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink' . ' --full;';
+    echo shell_exec($fast_structure_cmd);
+  }
+  
+
+  // Step 3 is to select K from previous runs
+  // TODO: RESTORE THIS
+  tpps_job_logger_write("[INFO] Perform chooseK...\n");
+  echo("[INFO] Perform chooseK...\n");
+  $chooseK_cmd = 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib; export CFLAGS="-I/usr/local/include"; export LDFLAGS="-L/usr/local/lib"; python ' . $tools_path . '/fastStructure/chooseK.py --input=' . $popstruct_temp_dir . '/' . $study_accession.  '_popstruct_plink';
+  $chooseK_output = shell_exec($chooseK_cmd);
+  echo $chooseK_output . "\n";
+
+  // Step 3b - from the output, get the suggested K value
+  // Go through each line in $chooseK_output
+  // TODO: RESTORE THIS
+  $chooseK_lines = explode("\n", $chooseK_output);
+  $chooseK_lines_count = count($chooseK_lines);
+  $chooseK_optimal = 0;
+  for ($i=0; $i<$chooseK_lines_count; $i++) {
+    $line = $chooseK_lines[$i];
+    if ($i == 0) {
+      $chooseK_parts = explode('Model complexity that maximizes marginal likelihood = ', $line);
+    }
+    else if ($i == 1) {
+      $chooseK_parts = explode('Model components used to explain structure in data = ', $line);
+    }
+
+    // Determine the highest value for use
+    if($chooseK_parts[1] > $chooseK_optimal) {
+      $chooseK_optimal = $chooseK_parts[1];
+    }
+  }
+  tpps_job_logger_write("Optimal K is " . $chooseK_optimal . "\n");
+  echo("Optimal K is " . $chooseK_optimal . "\n");
+
+
+
+  // Step 4 - awk and sed to clean up files
+  // TODO: RESTORE THIS
+  tpps_job_logger_write("AWK AND SED adjustments");
+  echo("AWK AND SED adjustments");
+  $cmd_custom_cmds1 = "awk 'BEGIN { OFS = \"_\" } ;{print $1,$2}' " . $popstruct_temp_dir . '/' . $study_accession .  '_popstruct_plink.fam > ' . $popstruct_temp_dir . '/' . $study_accession .  "_popstruct_IDPanel.txt;";
+  $cmd_custom_cmds1 .= "sed 's/_/\t/g' " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDPanel.txt > " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDPaneltab.txt;";
+  $cmd_custom_cmds1 .= "awk '{print $1,$2}' " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDPaneltab.txt > " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDfamPanel.txt;";
+  echo shell_exec($cmd_custom_cmds1);
+
+  // // Step 5 - count the population
+  $count_output = shell_exec("wc -l " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDPanel.txt");
+  tpps_job_logger_write($count_output . "\n");
+  echo($count_output . "\n");
+  $count_output_parts = explode(' ', $count_output);
+  $population_count = $count_output_parts[0];
+  tpps_job_logger_write("Population count:" . $population_count . "\n");
+  echo("Population count:" . $population_count . "\n");
+
+  // Step 6 - Execute R script which generates popstruct from Panel using chooseK optimal value
+  // TODO: RESTORE THIS
+  tpps_job_logger_write("RScript popstruct_from_panel execution\n");
+  echo("RScript popstruct_from_panel execution\n");
+  $cmd_custom_r_code = "Rscript " . $tools_path .  "/popstruct_from_panel.R ";
+  $cmd_custom_r_code .= $study_accession . " ";
+  $cmd_custom_r_code .= $population_count . " ";
+  $cmd_custom_r_code .= $popstruct_temp_dir . '/' . $study_accession . "_popstruct_plink." . $chooseK_optimal. ".meanQ ";
+  $cmd_custom_r_code .= $popstruct_temp_dir . '/' . $study_accession . "_popstruct_IDfamPanel.txt ";
+  $cmd_custom_r_code .= $popstruct_temp_dir . '/' . $study_accession . "_popstruct_PopPanel.txt";
+  
+  echo shell_exec($cmd_custom_r_code);
+
+  // Step 7 - Cleaning up PopPanel columns...
+  // TODO: RESTORE THIS
+  $cmd_remove_column_code = "cut -d\\  -f2- " . $popstruct_temp_dir . '/' . $study_accession .  "_popstruct_PopPanel.txt > " . $popstruct_temp_dir . '/' . $study_accession . "_popstruct_PopPanel_final.txt";
+  echo shell_exec($cmd_remove_column_code);
+
+
+  // TODO: Push to postgres popstruct table
+  // READ THE OUTPUT FILE, GET THE TREE_IDS AND LOCATIONS
+  // THEN GO THROUGH THE OUTPUT FILE AND GET THE POPULATION GROUPS
+  // THEN ADD THIS TO THE TABLE
+  $file_handle = fopen($popstruct_temp_dir . '/' . $study_accession . "_popstruct_PopPanel_final.txt", "r");
+  $tree_data = [];
+  if ($file_handle) {
+    while (($line = fgets($file_handle)) !== false) {
+      // process the line read.
+      $line_space_parts = explode(" ", $line);
+      $tree_id = $study_accession . '-' . $line_space_parts[0];
+      $tree_info = [
+        'tree_id' => $tree_id,
+        'population' => 0,
+        'latitude' => 0,
+        'longitude' => 0,
+        'study_accession' => $study_accession
+      ];
+      if(count($line_space_parts) >= 4) {
+        $population_group = $line_space_parts[3];
+        if (strpos($population_group, 'e') !== FALSE) {
+          $population_group = 1;
+        }
+        else {
+          $population_group = intval(ceil($population_group)) + 1;
+        }
+        echo $population_group . ',';
+        $tree_info['population'] = $population_group;
+        $tree_data[$tree_id] = $tree_info;
+      }
+    }
+    // echo "\n";
+    fclose($file_handle);
+
+    // Remove all records from the popstruct table for this study
+    tpps_job_logger_write("Removing all popstruct data for accession $study_accession\n");
+    echo("Removing all popstruct data for accession $study_accession\n");
+    chado_query("DELETE FROM public.cartogratree_popstruct_layer WHERE study_accession = '" . $study_accession . "';");
+
+
+    // Now query the locations of these tree_ids, so build an SQL statement
+    $sql_locations = 'SELECT * FROM public.ct_trees WHERE uniquename IN (';
+    $sql_tree_ids_list = '';
+    $tree_id_count = 0;
+    $sql_tree_ids_list = '';
+    foreach($tree_data as $tree_info) {
+      if($tree_id_count != 0) {
+        $sql_tree_ids_list .= ',';
+      }
+      $sql_tree_ids_list .= "'" . $tree_info['tree_id'] . "'";
+      $tree_id_count = $tree_id_count + 1;
+    }
+    $sql_locations .= $sql_tree_ids_list;
+    // echo $sql_locations . "\n";
+    $sql_locations .= ')';
+    $results = chado_query($sql_locations);
+    foreach($results as $row) {
+      $tree_id = $row->uniquename;
+      // echo $tree_id . "\n";
+      $tree_data[$tree_id]['latitude'] = $row->latitude;
+      $tree_data[$tree_id]['longitude'] = $row->longitude;
+      $insert_sql = "INSERT INTO public.cartogratree_popstruct_layer (uniquename,population,study_accession,latitude,longitude) ";
+      $insert_sql .= "VALUES (";
+      $insert_sql .= "'" . $tree_id ."',". $tree_data[$tree_id]['population'] .",";
+      $insert_sql .= "'" . $study_accession ."',". $tree_data[$tree_id]['latitude'] ."," . $tree_data[$tree_id]['latitude'] . "";
+      $insert_sql .= ")";
+      // echo $insert_sql . "\n";
+      chado_query($insert_sql);
+    }
+
+    tpps_job_logger_write("POPSTRUCT completed.\n");
+    echo("POPSTRUCT completed.\n");
+
+  }
+
 }
 
 /**
