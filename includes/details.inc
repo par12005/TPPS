@@ -855,7 +855,8 @@ function tpps_details_phenotype(array &$state) {
   $query = $query->execute();
 
   while (($result = $query->fetchObject())) {
-    preg_match('/^TGDR...-(.*)$/', $result->uniquename, $matches);
+    // preg_match('/^TGDR...-(.*)$/', $result->uniquename, $matches);
+    preg_match('/^TGDR.{1,4}-(.*)$/', $result->uniquename, $matches);
     $tree = $matches[1];
     $obs = chado_get_cvterm(array(
       'cvterm_id' => $result->observable_id,
@@ -976,7 +977,8 @@ function tpps_details_genotype(array &$state) {
   $query = $query->execute();
 
   while (($result = $query->fetchObject())) {
-    preg_match('/^TGDR...-(.*)$/', $result->s_uniquename, $matches);
+    // preg_match('/^TGDR...-(.*)$/', $result->s_uniquename, $matches);
+    preg_match('/^TGDR.{1,4}-(.*)$/', $result->s_uniquename, $matches);
     $tree = $matches[1];
     $type = chado_get_cvterm(array(
       'cvterm_id' => $result->type_id,

@@ -734,6 +734,9 @@ function tpps_submission_clear_db($accession) {
   if (empty($project_id)) {
     return FALSE;
   }
+  if (empty($accession)) {
+    throw new Exception('Accession cannot be empty');
+  }
 
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
   chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
@@ -748,6 +751,8 @@ function tpps_submission_clear_db($accession) {
   chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stocks_sql)");
   chado_query("DELETE FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql)");
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
+  chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession ."-%';");
+  echo "FINISHED DB CLEAR DELETES\n";
 
   // Force delete stock just in case by study accession name
   // Make sure to ensure $accession is properly populated before doing this
