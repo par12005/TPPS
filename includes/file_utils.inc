@@ -5,6 +5,7 @@
  * Defines useful functions for file management.
  */
 
+
 /**
  * This function parses a file and returns an array of its content.
  *

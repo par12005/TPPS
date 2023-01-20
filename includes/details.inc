@@ -854,6 +854,18 @@ function tpps_details_phenotype(array &$state) {
   $query->range($start, $per_page);
   $query = $query->execute();
 
+  // $query = db_select('chado.new_pheno_view_update', 'p');
+  // $query->addField('p', 'phenotype_id', 'phenotype_id');
+  // $query->addField('p', 'synonym', 'name');
+  // $query->addField('p', 'structure_id', 'attr_id');
+  // $query->addField('p', 'observable_id', 'observable_id');
+  // $query->addField('p', 'value', 'value');
+  // $query->addField('p', 'tree_acc', 'uniquename');
+  // $query->addField('p', 'stock_id', 'stock_id');
+  // $query->condition('p.project_id', $state['ids']['project_id']);
+  // $query->range($start, $per_page);
+  // $query = $query->execute();
+
   while (($result = $query->fetchObject())) {
     // preg_match('/^TGDR...-(.*)$/', $result->uniquename, $matches);
     preg_match('/^TGDR.{1,4}-(.*)$/', $result->uniquename, $matches);
