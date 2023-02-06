@@ -5,6 +5,7 @@
  * Defines useful functions for file management.
  */
 
+
 /**
  * This function parses a file and returns an array of its content.
  *
@@ -303,10 +304,16 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     $result = db_query('SELECT f.fid
     FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
     $record = $result->fetchObject();
-    if(isset($record)) {
+
+    if(isset($record->fid)) {
+      // print_r("FID:" . $record->fid . "\n");
       return file_load($record->fid);
     }
-    return file_move($file, $new_filename, FILE_EXISTS_RENAME);
+    $file_object = file_move($file, $new_filename, FILE_EXISTS_RENAME);
+    // print_r("FILE OBJECT:\n");
+    // print_r($file_object);
+    // print_r("\n");
+    return $file_object;
   }
   throw new Exception("Error: could not open file");
 }
@@ -1011,10 +1018,40 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
     $options['job']->setItemsHandled(0);
   }
 
+  $file = file_load($fid);
+  $file_location = tpps_get_location($file->uri);
+
   foreach (tpps_file_generator($fid, $options) as $item) {
-    $function($item, $options);
-    if (!empty($options['job'])) {
-      $options['job']->addItemsHandled(1);
+    // Assume the item IS NOT EMPTY
+    $item_is_not_empty = true;
+    if(is_array($item)) {  
+      // Check each key value
+      $values_count = count($item);
+      $values_empty_count = 0;
+      foreach($item as $key => $value) {
+        if($value == '') {
+          $values_empty_count = $values_empty_count + 1;
+        }
+      }
+      // Check if $values_count == $values_empty_count (this means item is empty)
+      if ($values_count == $values_empty_count) {
+        $item_is_not_empty = false;
+      }
+    }
+
+    // if the item is not empty, proceed to process the line
+    if ($item_is_not_empty) {
+      $function($item, $options);
+      if (!empty($options['job'])) {
+        $options['job']->addItemsHandled(1);
+      }
+    }
+    else {
+      // print_r($item);
+      echo json_encode($item) . "\n";
+      echo "[TPPS FILE ITERATOR] Found a line/item that was empty, ignoring this item\n";
+      echo "[TPPS FILE ITERATOR] File location: " . $file_location . "\n";
+      // throw new Exception('DEBUG STOP - FOUND AN EMPTY LINE');
     }
   }
   return TRUE;

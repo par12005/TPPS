@@ -1069,35 +1069,42 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
       $meta_fid = $phenotype['metadata'];
       print_r('META_FID:' . $meta_fid . "\n");
-      tpps_add_project_file($form_state, $meta_fid);
+      // Added because 009 META FID was 0 which caused failures
+      if ($meta_fid > 0) {
+        
+        tpps_add_project_file($form_state, $meta_fid);
 
-      // Get metadata column values.
-      $groups = $phenotype['metadata-groups'];
-      $column_vals = $phenotype['metadata-columns'];
-      $struct = array_search('5', $column_vals);
-      $min = array_search('6', $column_vals);
-      $max = array_search('7', $column_vals);
-      $columns = array(
-        'name' => $groups['Phenotype Id']['1'],
-        'attr' => $groups['Attribute']['2'],
-        'desc' => $groups['Description']['3'],
-        'unit' => $groups['Units']['4'],
-        'struct' => !empty($struct) ? $struct : NULL,
-        'min' => !empty($min) ? $min : NULL,
-        'max' => !empty($max) ? $max : NULL,
-      );
+        // Get metadata column values.
+        $groups = $phenotype['metadata-groups'];
+        $column_vals = $phenotype['metadata-columns'];
+        $struct = array_search('5', $column_vals);
+        $min = array_search('6', $column_vals);
+        $max = array_search('7', $column_vals);
+        $columns = array(
+          'name' => $groups['Phenotype Id']['1'],
+          'attr' => $groups['Attribute']['2'],
+          'desc' => $groups['Description']['3'],
+          'unit' => $groups['Units']['4'],
+          'struct' => !empty($struct) ? $struct : NULL,
+          'min' => !empty($min) ? $min : NULL,
+          'max' => !empty($max) ? $max : NULL,
+        );
 
-      $meta_options = array(
-        'no_header' => $phenotype['metadata-no-header'],
-        'meta_columns' => $columns,
-        'meta' => &$phenotypes_meta,
-      );
+        $meta_options = array(
+          'no_header' => $phenotype['metadata-no-header'],
+          'meta_columns' => $columns,
+          'meta' => &$phenotypes_meta,
+        );
 
-      tpps_job_logger_write('[INFO] - Processing phenotype_meta file data...');
-      $job->logMessage('[INFO] - Processing phenotype_meta file data...');  
-      tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
-      tpps_job_logger_write('[INFO] - Done.');
-      $job->logMessage('[INFO] - Done.');        
+        tpps_job_logger_write('[INFO] - Processing phenotype_meta file data...');
+        $job->logMessage('[INFO] - Processing phenotype_meta file data...');  
+        tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
+        tpps_job_logger_write('[INFO] - Done.');
+        $job->logMessage('[INFO] - Done.');  
+      } 
+      else {
+        tpps_job_logger_write('[WARNING] - phenotype_meta file id looks incorrect but the UI checkbox was selected. Need to double check this!');
+      }     
     }
 
     $time_options = array();
@@ -1531,7 +1538,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $location = tpps_get_location($vcf_file->uri);
 
       // TODO Activate this function to generate popstruct
-      tpps_generate_popstruct($form_state['accession'],$location);
+      // tpps_generate_popstruct($form_state['accession'],$location);
 
 
       $vcf_content = gzopen($location, 'r');
@@ -2420,6 +2427,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       'value' => $value,
     );
 
+    
     $records['phenotype'][$phenotype_name] = array(
       'uniquename' => $phenotype_name,
       'name' => $name,
@@ -2427,6 +2435,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       'observable_id' => $meta[strtolower($name)]['struct_id'] ?? NULL,
       'value' => $value,
     );
+    // print_r($records['phenotype'][$phenotype_name]);
 
     $records['stock_phenotype'][$phenotype_name] = array(
       'stock_id' => $tree_info[$tree_id]['stock_id'],
@@ -2434,6 +2443,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
         'phenotype' => $phenotype_name,
       ),
     );
+    // print_r($records['stock_phenotype'][$phenotype_name]);
 
     if (isset($meta[strtolower($name)]['time'])) {
       $records['phenotypeprop']["$phenotype_name-time"] = array(
@@ -2443,6 +2453,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
+      // print_r($records['phenotypeprop']["$phenotype_name-time"]);
       $options['data'][$phenotype_name]['time'] = $meta[strtolower($name)]['time'];
     }
     elseif (isset($meta_headers['time'])) {
@@ -2457,6 +2468,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
+      // print_r($records['phenotypeprop']["$phenotype_name-time"]);
       $options['data'][$phenotype_name]['time'] = $val;
     }
 
@@ -2468,6 +2480,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
         'phenotype' => $phenotype_name,
       ),
     );
+    // print_r($phenotype_name-desc . "\n");
     // print_r($records['phenotypeprop']["$phenotype_name-desc"]);
 
     if ($iso) {
@@ -2478,6 +2491,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
+      // print_r($records['phenotypeprop']["$phenotype_name-unit"]);
     }
 
     if (!$iso) {
@@ -2487,6 +2501,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
+      // print_r($records['phenotype_cvterm']["$phenotype_name-unit"]);
     }
 
     if (isset($meta[strtolower($name)]['min'])) {
@@ -2497,6 +2512,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
+      // print_r($records['phenotypeprop']["$phenotype_name-min"]);
     }
 
     if (isset($meta[strtolower($name)]['max'])) {
@@ -2507,6 +2523,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
+      // print_r($records['phenotypeprop']["$phenotype_name-max"]);
     }
 
     if (!empty($meta[strtolower($name)]['env'])) {
@@ -2516,6 +2533,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
+      // print_r($records['phenotype_cvterm']["$phenotype_name-env"]);
     }
 
  
@@ -2525,6 +2543,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       // print_r('------------' . "\n");
       tpps_job_logger_write('[INFO] -- Inserting data into database using insert_multi...');
       $job->logMessage('[INFO] -- Inserting data into database using insert_multi...'); 
+      // print_r($records);
       tpps_chado_insert_multi($records);
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.'); 
@@ -2543,8 +2562,6 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       );
       $phenotype_count = 0;
     }
-
-
 
     $phenotype_count++;
   }

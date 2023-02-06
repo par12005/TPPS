@@ -163,7 +163,17 @@ function tpps_menu() {
     'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/logs.php',
-  );  
+  ); 
+  
+  $items['tpps-admin-panel/file-diagnostics/%'] = array(
+    'title' => 'TPPS Admin Panel',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tpps_admin_files_diagnostics_page', 2),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('administer tpps module'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'admin/pages.php',
+  ); 
 
   $items['tpps/doi/%'] = array(
     'title' => 'TPPS DOI',
