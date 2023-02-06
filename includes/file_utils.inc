@@ -304,10 +304,16 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     $result = db_query('SELECT f.fid
     FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
     $record = $result->fetchObject();
-    if(isset($record)) {
+
+    if(isset($record->fid)) {
+      // print_r("FID:" . $record->fid . "\n");
       return file_load($record->fid);
     }
-    return file_move($file, $new_filename, FILE_EXISTS_RENAME);
+    $file_object = file_move($file, $new_filename, FILE_EXISTS_RENAME);
+    // print_r("FILE OBJECT:\n");
+    // print_r($file_object);
+    // print_r("\n");
+    return $file_object;
   }
   throw new Exception("Error: could not open file");
 }

@@ -1069,35 +1069,42 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
       $meta_fid = $phenotype['metadata'];
       print_r('META_FID:' . $meta_fid . "\n");
-      tpps_add_project_file($form_state, $meta_fid);
+      // Added because 009 META FID was 0 which caused failures
+      if ($meta_fid > 0) {
+        
+        tpps_add_project_file($form_state, $meta_fid);
 
-      // Get metadata column values.
-      $groups = $phenotype['metadata-groups'];
-      $column_vals = $phenotype['metadata-columns'];
-      $struct = array_search('5', $column_vals);
-      $min = array_search('6', $column_vals);
-      $max = array_search('7', $column_vals);
-      $columns = array(
-        'name' => $groups['Phenotype Id']['1'],
-        'attr' => $groups['Attribute']['2'],
-        'desc' => $groups['Description']['3'],
-        'unit' => $groups['Units']['4'],
-        'struct' => !empty($struct) ? $struct : NULL,
-        'min' => !empty($min) ? $min : NULL,
-        'max' => !empty($max) ? $max : NULL,
-      );
+        // Get metadata column values.
+        $groups = $phenotype['metadata-groups'];
+        $column_vals = $phenotype['metadata-columns'];
+        $struct = array_search('5', $column_vals);
+        $min = array_search('6', $column_vals);
+        $max = array_search('7', $column_vals);
+        $columns = array(
+          'name' => $groups['Phenotype Id']['1'],
+          'attr' => $groups['Attribute']['2'],
+          'desc' => $groups['Description']['3'],
+          'unit' => $groups['Units']['4'],
+          'struct' => !empty($struct) ? $struct : NULL,
+          'min' => !empty($min) ? $min : NULL,
+          'max' => !empty($max) ? $max : NULL,
+        );
 
-      $meta_options = array(
-        'no_header' => $phenotype['metadata-no-header'],
-        'meta_columns' => $columns,
-        'meta' => &$phenotypes_meta,
-      );
+        $meta_options = array(
+          'no_header' => $phenotype['metadata-no-header'],
+          'meta_columns' => $columns,
+          'meta' => &$phenotypes_meta,
+        );
 
-      tpps_job_logger_write('[INFO] - Processing phenotype_meta file data...');
-      $job->logMessage('[INFO] - Processing phenotype_meta file data...');  
-      tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
-      tpps_job_logger_write('[INFO] - Done.');
-      $job->logMessage('[INFO] - Done.');        
+        tpps_job_logger_write('[INFO] - Processing phenotype_meta file data...');
+        $job->logMessage('[INFO] - Processing phenotype_meta file data...');  
+        tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
+        tpps_job_logger_write('[INFO] - Done.');
+        $job->logMessage('[INFO] - Done.');  
+      } 
+      else {
+        tpps_job_logger_write('[WARNING] - phenotype_meta file id looks incorrect but the UI checkbox was selected. Need to double check this!');
+      }     
     }
 
     $time_options = array();

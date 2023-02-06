@@ -678,11 +678,16 @@ function tpps_details_study(array &$state) {
   );
 
   $files = array();
-  foreach ($state['files'] as $fid) {
+  $study_file_ids = tpps_details_get_study_file_ids($state);
+  // foreach ($state['files'] as $fid) {
+  foreach ($study_file_ids as $fid) {
     $file = file_load($fid);
     if ($file) {
       $file_url = check_plain(file_create_url($file->uri));
-      $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
+      if(stripos($file_url, 'core/labs') === FALSE) {
+        $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
+      }
+      
     }
   }
 
@@ -728,6 +733,61 @@ function tpps_details_study(array &$state) {
     'empty' => '',
   );
   return theme('table', $vars);
+}
+
+function tpps_details_get_study_file_ids($state) {
+  $saved_values = $state['saved_values'];
+  // print_r($saved_values);
+  $organism_count = $saved_values['1']['organism']['number'];
+  $file_ids = [];
+  for($i=1; $i<=4; $i++) {
+    if ($i == 3) {
+      for($j=1; $j<=$organism_count; $j++) {
+        if(isset($saved_values[$i]['tree-accession']['species-' . $j]['file'])) {
+          array_push($file_ids, $saved_values[$i]['tree-accession']['species-' . $j]['file']);
+        }
+      }
+    }
+    if ($i == 4) {
+      // Phenotype files
+      for($j=1; $j<=$organism_count; $j++) {
+        if(isset($saved_values[$i]['organism-' . $j]['phenotype']['file'])) {
+          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['file']);
+        }
+        if(isset($saved_values[$i]['organism-' . $j]['phenotype']['metadata'])) {
+          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['metadata']);
+        }        
+      }
+      for($j=1; $j<=$organism_count; $j++) {
+        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay'])) {
+          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay']);
+        }
+        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-association'])) {
+          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['snps-association']);
+        }
+        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['vcf'])) {
+          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['vcf']);
+        }
+        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs'])) {
+          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs']);
+        } 
+        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra'])) {
+          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra']);
+        }                        
+      }
+    }
+  }
+  // check summarypage for supplemental files
+  if(count($saved_values['summarypage']['files']) > 2) {
+    $files = $saved_values['summarypage']['files'];
+    foreach ($files as $file_index => $file_id) {
+      if(is_numeric($file_id) && $file_id > 0) {
+        // print_r($file_index);
+        // array_push($file_ids, $file_id);
+      }
+    }
+  }
+  return $file_ids;
 }
 
 /**

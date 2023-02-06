@@ -161,6 +161,10 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#markup' => $display,
   );
 
+  $form['file_diagnostics'] = array(
+    '#markup' => '<a class="btn btn-primary" target="_blank" href="file-diagnostics/' . $accession . '">Files diagnostics</a><br /><br />',
+  );
+
   $submission_tags = tpps_submission_get_tags($submission_state['accession']);
 
   // Show current tags.
