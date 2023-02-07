@@ -1639,7 +1639,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
             $vcf_line_count = count($vcf_line);
             for ($j = 9; $j < $vcf_line_count; $j++) {
-              // Rish: This was added on 09/122/2022
+              // Rish: This was added on 09/12/2022
               // This gets the name of the current genotype for the tree_id column
               // being checked.
               $column_genotype_name = $marker_name . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
@@ -2035,7 +2035,8 @@ function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
   $raw_value_colon_parts = explode(':',$raw_value);
   $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
   $genotype_combination = "";
-  for($k = 0; $k < count($ref_alt_indices); $k++) {
+  $count_indices = count($ref_alt_indices);
+  for($k = 0; $k < $count_indices; $k++) {
     $index_tmp = $ref_alt_indices[$k];
     if($k > 0) {
       $genotype_combination .= ':';
