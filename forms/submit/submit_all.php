@@ -1536,10 +1536,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
       $vcf_file = file_load($vcf_fid);
       $location = tpps_get_location($vcf_file->uri);
-
-      // TODO Activate this function to generate popstruct
-      // tpps_generate_popstruct($form_state['accession'],$location);
-
+      echo "VCF location: $location\n";
 
       $vcf_content = gzopen($location, 'r');
       $stocks = array();
@@ -1557,6 +1554,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
         }
         if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
+          $line_process_start_time = microtime(true);
           $record_count = $record_count + 1;
           print_r('Record count:' . $record_count . "\n");
           $genotype_count += count($stocks);
@@ -1582,7 +1580,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           // Instead, we have multiple genotypes we need to generate, so lets do a key val array
           $detected_genotypes = array();
           $first_genotypes = array(); // used to save the first genotype in each row of the VCF (used for genotype_call table)
-          for ($j = 9; $j < count($vcf_line); $j++) {
+          $count_columns = count($vcf_line);
+          for ($j = 9; $j < $count_columns; $j++) {
 
             $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
 
@@ -1590,20 +1589,20 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
             // Record the first genotype name to use for genotype_call table
             if($j == 9) {
-              print_r('[First Genotype]:' . $marker_name . $genotype_combination . "\n");
+              // print_r('[First Genotype]:' . $marker_name . $genotype_combination . "\n");
               $first_genotypes[$marker_name . $genotype_combination] = TRUE;
             }
             
           }
 
-          print_r('[New Feature]: ' . $marker_name . "\n");
+          // print_r('[New Feature]: ' . $marker_name . "\n");
           $records['feature'][$marker_name] = array(
             'organism_id' => $current_id,
             'uniquename' => $marker_name,
             'type_id' => $seq_var_cvterm,
           );
 
-          print_r('[New Feature variant_name]: ' . $variant_name . "\n");
+          // print_r('[New Feature variant_name]: ' . $variant_name . "\n");
           $records['feature'][$variant_name] = array(
             'organism_id' => $current_id,
             'uniquename' => $variant_name,
@@ -1614,10 +1613,18 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           // So I adjusted some of this code into a for statement
           // since the genotype_desc seems important and so I modified it to be unique
           // and based on the genotype_name
-          $genotype_names = array_keys($detected_genotypes); 
+          $genotype_names = array_keys($detected_genotypes);
+          
+          // print_r($detected_genotypes);
+          echo "\n";
+          echo "line#$file_progress_line_count ";
+          print_r('genotypes per line: ' . count($genotype_names) . " ");
+          
+          $genotype_name_progress_count = 0;
           foreach ($genotype_names as $genotype_name) {
+            $genotype_name_progress_count++;
             $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
-            print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
+            // print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
             
 
             $records['genotype'][$genotype_desc] = array(
@@ -1637,8 +1644,10 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               );
             }
 
-            $vcf_line_count = count($vcf_line);
-            for ($j = 9; $j < $vcf_line_count; $j++) {
+            $vcf_cols_count = count($vcf_line);
+            
+            echo "gen_name_index:$genotype_name_progress_count colcount:$vcf_cols_count ";
+            for ($j = 9; $j < $vcf_cols_count; $j++) {
               // Rish: This was added on 09/12/2022
               // This gets the name of the current genotype for the tree_id column
               // being checked.
@@ -1646,7 +1655,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               if($column_genotype_name == $genotype_name) {
                 // Found a match between the tree_id genotype and the genotype_name from records
 
-                print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
+                // print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
                 $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
                   'project_id' => $project_id,
                   'stock_id' => $stocks[$j - 9],
@@ -1729,16 +1738,47 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               );
             }
           }
+          $line_process_end_time = microtime(true);
+          $line_process_elapsed_time = $line_process_end_time - $line_process_start_time;
+          echo " PHP Proctime: $line_process_elapsed_time seconds\n";
+          if(!isset($line_process_cumulative_time)) {
+            $line_process_cumulative_time = 0;
+          }
+          $line_process_cumulative_time += $line_process_elapsed_time;
+          echo "Cumulative PHP proctime: " . $line_process_cumulative_time . " seconds\n";
+          echo "\nGenotype call records to insert (LINE:$file_progress_line_count): " . count($records['genotype_call']);
+          echo "\nrecord group threshold: $record_group ";
+          // throw new Exception('DEBUG');
           // Tripal Job has issues when all submissions are made at the same
           // time, so break them up into groups of 10,000 genotypes along with
           // their relevant genotypeprops.
           if ($genotype_count > $record_group) {
+            tpps_job_logger_write('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+            $job->logMessage('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+            tpps_job_logger_write('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+            $job->logMessage('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+            tpps_job_logger_write('[INFO] - Last insert cumulative time: ' . $insert_cumulative_time . ' seconds');
+            $job->logMessage('[INFO] - Last insert cumulative time: ' . $insert_cumulative_time . ' seconds');            
             $genotype_count = 0;
+            $insert_start_time = microtime(true);
             tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
             $job->logMessage('[INFO] - Inserting data into database using insert_multi...'); 
             tpps_chado_insert_multi($records, $multi_insert_options);
             tpps_job_logger_write('[INFO] - Done.');
-            $job->logMessage('[INFO] - Done.'); 
+            $job->logMessage('[INFO] - Done.');
+            $insert_end_time = microtime(true);
+            $insert_elapsed_time = $insert_end_time - $insert_start_time;
+            tpps_job_logger_write('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+            $job->logMessage('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+            tpps_job_logger_write('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+            $job->logMessage('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds'); 
+            if(!isset($insert_cumulative_time)) {
+              $insert_cumulative_time = 0;
+            }
+            $insert_cumulative_time += $insert_elapsed_time;
+            tpps_job_logger_write('[INFO] - Insert cumulative time: ' . $insert_cumulative_time . ' seconds');
+            $job->logMessage('[INFO] - Insert cumulative time: ' . $insert_cumulative_time . ' seconds');
+            // throw new Exception('DEBUG');             
             $records = array(
               'feature' => array(),
               'genotype' => array(),
