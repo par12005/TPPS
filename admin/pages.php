@@ -129,4 +129,113 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
 
   return $form;
 }
+
+/**
+ * This function will check study submission state from database
+ * and compare with another study submission state for differences
+ * 
+ */
+function tpps_admin_state_compare_page(array $form, array &$form_state, $study_accession1 = NULL, $study_accession2 = NULL) {
+  
+  // print_r($study_accession1);
+  // print_r($study_accession2);
+
+  $results1 = chado_query('SELECT * FROM tpps_submission WHERE accession = :accession', [
+    ':accession' => $study_accession1
+  ]);
+
+  $results2 = chado_query('SELECT * FROM tpps_submission WHERE accession = :accession', [
+    ':accession' => $study_accession2
+  ]);  
+
+  $submission1 = [];
+  foreach ($results1 as $row) {
+    $submission1 = unserialize($row->submission_state);
+  }
+
+  $submission2 = [];
+  foreach ($results2 as $row) {
+    $submission2 = unserialize($row->submission_state);
+  }  
+
+  $markup = "";
+  $markup .= '<div style="width: 80%"><table width="800px">';
+  $markup .= '<tr>';
+  $markup .= '<td colspan="1" style="width: 30%; display: inline-block; vertical-align: top; word-wrap: break-word;">';
+  $markup .= '<h3>' . $study_accession1 . '</h3>';
+  $markup .= print_r($submission1['saved_values'], true);
+  $markup .= '</td>';
+  $markup .= '<td colspan="1" style="width: 30%; display: inline-block; vertical-align: top; word-wrap: break-word;">';
+  $markup .= '<h3>' . $study_accession2 . '</h3>';
+  $markup .= print_r($submission2['saved_values'], true);
+  $markup .= '</td>';
+  $markup .= '<td colspan="1" style="width: 30%; display: inline-block; vertical-align: top; word-wrap: break-word;">';
+  $markup .= '<h3>Differences</h3>';
+  // $markup .= print_r(array_diff($submission1['saved_values'], $submission2['saved_values']), true);
+  $markup .= print_r(tpps_arrayRecursiveDiff($submission1['saved_values'], $submission2['saved_values']), true);
+  $markup .= '</td>';
+  $markup .= '</tr>';
+  $markup .= '</table></div>';
+  $form['markup'] = array(
+    '#type' => 'markup',
+    '#markup' => $markup
+  );
+  return $form;
+}
+
+// https://stackoverflow.com/questions/3876435/recursive-array-diff
+function tpps_arrayRecursiveDiff($aArray1, $aArray2) {
+  $aReturn = array();
+
+  foreach ($aArray1 as $mKey => $mValue) {
+    if (array_key_exists($mKey, $aArray2)) {
+      if (is_array($mValue)) {
+        $aRecursiveDiff = tpps_arrayRecursiveDiff($mValue, $aArray2[$mKey]);
+        if (count($aRecursiveDiff)) { $aReturn[$mKey] = $aRecursiveDiff; }
+      } else {
+        if ($mValue != $aArray2[$mKey]) {
+          $aReturn[$mKey] = $mValue;
+        }
+      }
+    } else {
+      $aReturn[$mKey] = $mValue;
+    }
+  }
+  return $aReturn;
+} 
+
+// https://stackoverflow.com/questions/5911067/compare-object-properties-and-show-diff-in-php
+function tpps_objDiff($obj1, $obj2):array { 
+  $a1 = (array)$obj1;
+  $a2 = (array)$obj2;
+  return tpps_arrDiff($a1, $a2);
+}
+
+function tpps_arrDiff(array $a1, array $a2):array {
+  $r = array();
+  foreach ($a1 as $k => $v) {
+      if (array_key_exists($k, $a2)) { 
+          if ($v instanceof stdClass) { 
+              $rad = objDiff($v, $a2[$k]); 
+              if (count($rad)) { $r[$k] = $rad; } 
+          }else if (is_array($v)){
+              $rad = arrDiff($v, $a2[$k]);  
+              if (count($rad)) { $r[$k] = $rad; } 
+          // required to avoid rounding errors due to the 
+          // conversion from string representation to double
+          } else if (is_double($v)){ 
+              if (abs($v - $a2[$k]) > 0.000000000001) { 
+                  $r[$k] = array($v, $a2[$k]); 
+              }
+          } else { 
+              if ($v != $a2[$k]) { 
+                  $r[$k] = array($v, $a2[$k]); 
+              }
+          }
+      } else { 
+          $r[$k] = array($v, null); 
+      } 
+  } 
+  return $r;     
+}
 ?>

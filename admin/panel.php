@@ -165,6 +165,11 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#markup' => '<a class="btn btn-primary" target="_blank" href="file-diagnostics/' . $accession . '">Files diagnostics</a><br /><br />',
   );
 
+  $form['state_compare'] = array(
+    '#markup' => '<a class="btn btn-primary" target="_blank" href="state-compare/' . $accession . '/' . $accession . '">Submission state compare</a><br /><br />',
+  );
+  // https://treegenesdb.org/tpps-admin-panel/state-compare/
+
   $submission_tags = tpps_submission_get_tags($submission_state['accession']);
 
   // Show current tags.
