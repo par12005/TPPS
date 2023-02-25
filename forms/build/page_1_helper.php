@@ -28,9 +28,9 @@ function tpps_user_info(array &$form, array $values) {
       'title' => array('First Author of the publication'),
     ),
   );
-  if(isset($values['primaryAuthor']) && $values['primaryAuthor'] != "") {
-    $form['primaryAuthor']['#value'] = $values['primaryAuthor'];
-  }
+  // if(isset($values['primaryAuthor']) && $values['primaryAuthor'] != "") {
+  //   $form['primaryAuthor']['#value'] = $values['primaryAuthor'];
+  // }
 
   $form['organization'] = array(
     '#type' => 'textfield',
@@ -111,9 +111,9 @@ function tpps_publication(array &$form, array $values, array $form_state) {
     '#title' => t('Journal: *'),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
   );
-  if(isset($values['publication']['journal']) && $values['publication']['journal'] != "") {
-    $form['publication']['journal']['#value'] = $values['publication']['journal'];
-  }  
+  // if(isset($values['publication']['journal']) && $values['publication']['journal'] != "") {
+  //   $form['publication']['journal']['#value'] = $values['publication']['journal'];
+  // }  
 
   return $form;
 }

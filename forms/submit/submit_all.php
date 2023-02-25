@@ -1177,6 +1177,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       'desc' => "Mass Spectrometry",
       'unit' => "intensity (arbitrary units)",
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
+      'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id, // manual term for MASS Spec
     );
 
     print_r('ISO_FID:' . $iso_fid . "\n");
@@ -2468,12 +2469,23 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       'value' => $value,
     );
 
+    $struct_id = NULL;
+    if (isset($meta[strtolower($name)]['struct_id'])) {
+      $struct_id = $meta[strtolower($name)]['struct_id'];
+    }
+    else if ($iso) { //override the value - likely for intensity / mass spectrometry
+      $struct_id = $meta['struct_id'];
+    }
+
     
     $records['phenotype'][$phenotype_name] = array(
       'uniquename' => $phenotype_name,
       'name' => $name,
       'attr_id' => $attr_id,
-      'observable_id' => $meta[strtolower($name)]['struct_id'] ?? NULL,
+      // removed this old obserable_id to cater for mass spectrometry
+      // 'observable_id' => $meta[strtolower($name)]['struct_id'] ?? NULL,
+      // this is the new way of adding observable_id to cater for mass spectrometry as well
+      'observable_id' => $struct_id,
       'value' => $value,
     );
     // print_r($records['phenotype'][$phenotype_name]);
