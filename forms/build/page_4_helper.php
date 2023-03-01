@@ -247,8 +247,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ))),
       'synonym_id' => array(
         '#type' => 'select',
-        '#title' => 'Phenotype !num Synonym:',
-        '#options' => array('') + tpps_synonym_get_list(),
+        '#title' => 'Phenotype !num Synonym: *',
+        '#options' => tpps_synonym_get_list(),
         '#states' => array('visible' => array(
           tpps_synonym_selector($synonym_meta) => array('checked' => FALSE),
         )),
