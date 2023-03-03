@@ -27,6 +27,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
   else {
     $values = array();
   }
+  // dpm("FORM CREATED SAVED VALUES:");
+  // dpm($values);
 
   $form['#tree'] = TRUE;
 
@@ -153,6 +155,27 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         );
 
         $form["organism-$i"]['phenotype']['file']['no-header'] = array();
+      }
+
+      // This will check if there are Time Phenotypes saved from the saved values
+      // and use this to re-check the checkboxes on the form
+      if (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['time']['time_phenotypes'])) {
+        $count_time_phenotypes = count($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['time']['time_phenotypes']);
+        // dpm('TIME PHENOTYPES DETECTED: ' . $count_time_phenotypes);
+        if($count_time_phenotypes > 0) {
+          $time_phenotypes = $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['time']['time_phenotypes'];
+          // dpm($time_phenotypes);
+          // Go through all time phenotypes
+          foreach ($time_phenotypes as $time_phenotype) {
+            // dpm($time_phenotype);
+            // if time_phenotype is not 0, meaning the phenotype name and phenotype value would be the same, so not 0
+            if($time_phenotype != "0") {
+              // dpm($time_phenotype);
+              // Adjust the checkbox element on the form to TRUE (checkbox)
+              $form["organism-$i"]['phenotype']['time']['time_phenotypes'][$time_phenotype]['#default_value'] = TRUE;
+            }
+          }
+        }
       }
     }
 

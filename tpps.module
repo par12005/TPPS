@@ -60,6 +60,8 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
+
+
   $items['tpps/%/pre-validate'] = array(
     'title' => 'TPPS File Pre-Validation',
     'page callback' => 'tpps_pre_validate_init',
@@ -994,7 +996,11 @@ function tpps_main_validate(&$form, &$form_state) {
  * input to persistent variables so they can be reloaded later.
  */
 function tpps_main_submit($form, &$form_state) {
-  // dpm("SUBMIT");
+  // dpm("ON SUBMIT");
+  // dpm(array_keys($form_state));
+  // dpm('saved_values key contains:');
+  // dpm($form_state['saved_values']);
+  // dpm('values key contains:');
   // dpm($form_state['values']);
   $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
   $persist = TRUE;
@@ -1009,6 +1015,8 @@ function tpps_main_submit($form, &$form_state) {
     }
     $form_state['saved_values']['form_build_id'] = $form_state['values']['form_build_id'];
     $form_state['rebuild'] = TRUE;
+    // dpm('ON SAVE');
+    // dpm('Form state saved_values:');
     // dpm($form_state['saved_values']);
 
     tpps_update_submission($form_state);
@@ -1081,6 +1089,7 @@ function tpps_main_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 
   if ($persist) {
+    // dpm('PERSIST END');
     tpps_update_submission($form_state);
   }
 }
