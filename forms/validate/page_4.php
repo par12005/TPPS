@@ -155,7 +155,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
     for ($i = 1; $i <= $phenotype_number; $i++) {
       $current_phenotype = $phenotype['phenotypes-meta']["$i"];
       $units = $current_phenotype['units'];
-      if (!($synonym_missing = $current_phenotype['synonym_missing'])) {
+      if (!$current_phenotype['no_synonym']) {
         // Synonym form.
         $synonym_id = $current_phenotype['synonym_id'];
         $synonym_name = $current_phenotype['synonym_name'];

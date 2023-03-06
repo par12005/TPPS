@@ -228,32 +228,30 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
     $struct_options['other'] = 'My structure term is not in this list';
 
-
-    $synonym_meta = array('missing_field_name' => 'synonym_missing', 'id' => $id);
     $field = array(
       '#type' => 'fieldset',
       '#tree' => TRUE,
       '#prefix' => "<div id=\"org_{$id}_phenotype_!num_meta\">",
       '#suffix' => "</div>",
-      // Synonym form.
+      // VS. Synonym form.
       'synonym_name' => tpps_build_field_name($id) + array(
         '#prefix' => "<label><b>Phenotype !num:</b></label>",
         '#states' => array('visible' => array(
-          tpps_synonym_selector($synonym_meta) => array('checked' => FALSE),
+          tpps_synonym_selector($id) => array('checked' => FALSE),
         ))),
       'synonym_description' => tpps_build_field_description() + array(
         '#states' => array('visible' => array(
-          tpps_synonym_selector($synonym_meta) => array('checked' => FALSE),
+          tpps_synonym_selector($id) => array('checked' => FALSE),
         ))),
       'synonym_id' => array(
         '#type' => 'select',
         '#title' => 'Phenotype !num Synonym: *',
         '#options' => tpps_synonym_get_list(),
         '#states' => array('visible' => array(
-          tpps_synonym_selector($synonym_meta) => array('checked' => FALSE),
+          tpps_synonym_selector($id) => array('checked' => FALSE),
         )),
       ),
-      $synonym_meta['missing_field_name'] => array(
+      'no_synonym' => array(
         '#type' => 'checkbox',
         '#title' => "I can't find synonym",
       ),
@@ -261,7 +259,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       // Main form.
       'name' => tpps_build_field_name($id) + array(
         '#states' => array('visible' => array(
-          tpps_synonym_selector($synonym_meta) => array('checked' => TRUE),
+          tpps_synonym_selector($id) => array('checked' => TRUE),
         ))),
       'env-check' => array(
         '#type' => 'checkbox',
@@ -271,7 +269,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'wrapper' => "org_{$id}_phenotype_!num_meta",
         ),
         '#states' => array('visible' => array(
-          tpps_synonym_selector($synonym_meta) => array('checked' => TRUE),
+          tpps_synonym_selector($id) => array('checked' => TRUE),
         )),
       ),
       'attribute' => array(
@@ -283,7 +281,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'wrapper' => "org_{$id}_phenotype_!num_meta",
         ),
         '#states' => array('visible' => array(
-          tpps_synonym_selector($synonym_meta) => array('checked' => TRUE),
+          tpps_synonym_selector($id) => array('checked' => TRUE),
         )),
       ),
       'attr-other' => array(
@@ -300,21 +298,21 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'visible' => array(
             ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'
               => array('value' => 'other'),
-            tpps_synonym_selector($synonym_meta) => array('checked' => TRUE),
+            tpps_synonym_selector($id) => array('checked' => TRUE),
           ),
         ),
       ),
       'description' => tpps_build_field_description()
         + array('#states' => array('visible' => array(
-          tpps_synonym_selector($synonym_meta) => array('checked' => TRUE),
+          tpps_synonym_selector($id) => array('checked' => TRUE),
         ))),
       'units' => array(
         '#type' => 'select',
         '#title' => 'Phenotype !num Units: *',
         '#options' => $unit_options,
-        '#states' => array('visible' => array(
-          tpps_synonym_selector($synonym_meta) => array('checked' => TRUE),
-        )),
+        //'#states' => array('visible' => array(
+        //  tpps_synonym_selector($id) => array('checked' => TRUE),
+        //)),
       ),
       'unit-other' => array(
         '#type' => 'textfield',
@@ -329,7 +327,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#states' => array('visible' => array(
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'
             => array('value' => 'other'),
-          tpps_synonym_selector($synonym_meta) => array('checked' => FALSE),
         )),
       ),
       'val-check' => array(
@@ -351,7 +348,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
               ),
               'or',
               array(
-                tpps_synonym_selector($synonym_meta) => array('!checked' => TRUE),
+                tpps_synonym_selector($id) => array('!checked' => TRUE),
               ),
             ),
           ),
@@ -374,7 +371,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
               ),
               'or',
               array(
-                tpps_synonym_selector($synonym_meta) => array('!checked' => TRUE),
+                tpps_synonym_selector($id) => array('!checked' => TRUE),
               ),
             ),
           ),
@@ -387,7 +384,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
         '#states' => array(
           'visible' => array(
-            tpps_synonym_selector($synonym_meta) => array('checked' => TRUE),
+            tpps_synonym_selector($id) => array('checked' => TRUE),
           ),
         ),
       ),
@@ -479,7 +476,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('synonym_description', '#title'),
         array('synonym_description', '#description'),
         array('synonym_id', '#title'),
-        array('synonym_missing', '#title'),
+        array('no_synonym', '#title'),
 
         // Main form.
         array('#prefix'),
@@ -501,23 +498,21 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('min', '#title'),
         array('max', '#title'),
       ),
-      // Replace '!num' in attributes.
+      // VS. Replace '!num' in attributes.
       'substitute_keys' => array(
-        // Synonym form.
-        array('synonym_name', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
-        array('synonym_description', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
-        array('synonym_id', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
+        // VS. Synonym form.
+        array('synonym_name', '#states', 'visible', tpps_synonym_selector($id)),
+        array('synonym_description', '#states', 'visible', tpps_synonym_selector($id)),
+        array('synonym_id', '#states', 'visible', tpps_synonym_selector($id)),
         // State of the Main form related to Synonym form.
-        array('name', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
-        array('env-check', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
-        array('attribute', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
-        array('attr-other', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
-        array('description', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
-        array('units', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
-        array('unit-other', '#states', 'visible', 0, tpps_synonym_selector($synonym_meta)),
-        array('val-check', '#states', 'visible', 0, 4, tpps_synonym_selector($synonym_meta)),
-        array('bin-check', '#states', 'invisible', 0, 4, tpps_synonym_selector($synonym_meta)),
-        array('structure', '#states', 'visible', tpps_synonym_selector($synonym_meta)),
+        array('name', '#states', 'visible', tpps_synonym_selector($id)),
+        array('env-check', '#states', 'visible', tpps_synonym_selector($id)),
+        array('attribute', '#states', 'visible', tpps_synonym_selector($id)),
+        array('attr-other', '#states', 'visible', tpps_synonym_selector($id)),
+        array('description', '#states', 'visible', tpps_synonym_selector($id)),
+        array('val-check', '#states', 'visible', 0, 4, tpps_synonym_selector($id)),
+        array('bin-check', '#states', 'invisible', 0, 4, tpps_synonym_selector($id)),
+        array('structure', '#states', 'visible', tpps_synonym_selector($id)),
         // Main form.
         array(
           'attr-other',
@@ -542,7 +537,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array(
           'val-check',
           '#states',
-          'invisible',
           0,
           2,
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
@@ -2129,22 +2123,13 @@ function tpps_build_field_description() {
 /**
  * Builds a selector for 'Synonym Missing' checkbox for form states.
  *
- * @param array $synonym_meta
- *   Associative array with keys:
- *   'id' - string Organism Id.
- *   'missing_field_name' - string Name of the 'Synonym Missing' checkbox.
+ * @param string $id
+ *   Organism Id.
  *
  * @return string
  *   Ready for form state selector.
  */
-function tpps_synonym_selector($synonym_meta) {
-  $static_cache = &drupal_static(__FUNCTION__);
-  $key = json_encode($synonym_meta);
-  if (!isset($static_cache[$key])) {
-    // Obtain value
-    $static_cache[$key] = ':input[name="' . $synonym_meta['id']
-    . '[phenotype][phenotypes-meta][!num]['
-    . $synonym_meta['missing_field_name'] . ']"]';
-  }
-  return $static_cache[$key];
+function tpps_synonym_selector($id) {
+  return ':input[name="' . $id
+    . '[phenotype][phenotypes-meta][!num][no_synonym]"]';
 }

@@ -1026,7 +1026,8 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
-      if ($phenotype['synonym_missing']) {
+      watchdog('vs', '<pre>' . print_r($phenotype, 1) . '</pre>');
+      if ($phenotype['no_synonym']) {
         // Main form.
         $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
       }
@@ -1039,6 +1040,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
           = $phenotype['phenotypes-meta'][$j]['synonym_description'];
         $synonym_id = $phenotype['phenotypes-meta'][$j]['synonym_id'];
         $synonym = tpps_synonym_get($synonym_id);
+        watchdog('vs', '<pre>' . print_r($synonym, 1) . '</pre>');
         // Restore phenotype attributes by $synonym_id.
         $phenotype['phenotypes-meta'][$j]['attribute']
           = $synonym->attribute_id ?? 'other';
