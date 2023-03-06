@@ -30,7 +30,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
   else {
     $values = array();
   }
-
+  
   tpps_user_info($form, $values);
 
   tpps_publication($form, $values, $form_state);

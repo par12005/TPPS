@@ -586,7 +586,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
 
     }
-    if (empty($loaded_state['vcf_replace']) && trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) != '') {
+    if (empty($loaded_state['vcf_replace']) && trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) != '' && $loaded_state['vcf_validated'] !== TRUE) {
       form_set_error("$org_num][genotype][files][local_vcf", t("Local VCF File: File needs to be pre-validated. Please click on Pre-validate my VCF files button at the bottom."));
     }
 

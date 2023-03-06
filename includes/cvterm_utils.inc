@@ -803,6 +803,17 @@ function tpps_ols_install_term($info) {
     }
   }
 
+  // Try searching for the term with the lowercase of the term
+  // Added by Rish on 02/20/2023
+  if(!$cvt) {
+    try {
+      $cvt = tpps_load_cvterm(strtolower($term));
+    }
+    catch (Exception $ex) {
+
+    }
+  }  
+
   if (!$cvt) {
     print_r("Searching OLS search for term: $term with ontology: $ontology\n");
     try {

@@ -423,7 +423,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#type' => 'select',
     '#title' => 'Change this study\'s TPPS type',
     '#prefix' => '<h2 style="margin-top: 30px;">Change TPPS type</h2>',
-    '#description' => 'Warning: This will also override the original submitter owner so you become the owner of the study (you can change the owner back to the original owner but you will have to keep note of the original owner).',
+    '#description' => 'This will change the submission state type and also the submission tag to the type you select',
     '#options' => array(
       'tppsc' => t('TPPSc'),
       'tpps' => t('TPPS'),
@@ -1274,18 +1274,62 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     case 'Change TPPS Type':
       // dpm($form_state['values']);
+
+      // Get the tpps_submission_id from the public.tpps_submission table
+      $results = chado_query('SELECT * FROM public.tpps_submission WHERE accession = :accession LIMIT 1', [
+        ':accession' => $accession
+      ]);
+      $tpps_submission_id = NULL;
+      foreach ($results as $row) {
+        $tpps_submission_id = $row->tpps_submission_id;
+      }
+      // dpm('tpps_submission_id = ' . $tpps_submission_id);
+      if ($tpps_submission_id == NULL) {
+        drupal_set_message(t('Could not find a TPPS SUBMISSION ID for this accession, contact administration'), 'error');
+        break;
+      }
+
       if($form_state['values']['CHANGE_TPPS_TYPE'] == 'tppsc') {
         // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
+
         // Set the state tpps_type to tppsc
         $state['tpps_type'] = 'tppsc';
-        global $user;
-        tpps_update_submission($state, array(
-          'uid' => $user->uid,
-        ));       
+        
+        // Deprecated changing the user id since we adjusted TPPSc
+        // to allow curators to see all studies (3/6/2023)
+        // global $user;
+        // tpps_update_submission($state, array(
+        //   'uid' => $user->uid,
+        // ));
+
+        // Update the submission tag table which in term will get rippled
+        // into the ct_trees_all_view materialized view that filters internal and external submissions
+        chado_query('UPDATE public.tpps_submission_tag
+          SET tpps_tag_id = 2  
+          WHERE tpps_submission_id = :tpps_submission_id
+          AND (tpps_tag_id = 1 OR tpps_tag_id = 2)',
+          [
+            ':tpps_submission_id' => $tpps_submission_id
+          ]  
+        );
+
       }
       else {
         // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
+
+        // Set the state tpps_type to tpps
         $state['tpps_type'] = 'tpps';
+
+        // Update the submission tag table which in term will get rippled
+        // into the ct_trees_all_view materialized view that filters internal and external submissions
+        chado_query('UPDATE public.tpps_submission_tag
+          SET tpps_tag_id = 1  
+          WHERE tpps_submission_id = :tpps_submission_id
+          AND (tpps_tag_id = 1 OR tpps_tag_id = 2)',
+          [
+            ':tpps_submission_id' => $tpps_submission_id
+          ]  
+        );
       }
       tpps_update_submission($state);
       drupal_set_message(t('Updated study TPPS type: ') . $state['tpps_type'], 'status');

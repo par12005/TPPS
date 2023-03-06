@@ -61,6 +61,8 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
   );
 
+
+
   $items['tpps/%/pre-validate'] = array(
     'title' => 'TPPS File Pre-Validation',
     'page callback' => 'tpps_pre_validate_init',
@@ -995,23 +997,34 @@ function tpps_main_validate(&$form, &$form_state) {
  * input to persistent variables so they can be reloaded later.
  */
 function tpps_main_submit($form, &$form_state) {
-
+  // dpm("ON SUBMIT");
+  // dpm(array_keys($form_state));
+  // dpm('saved_values key contains:');
+  // dpm($form_state['saved_values']);
+  // dpm('values key contains:');
+  // dpm($form_state['values']);
   $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
   $persist = TRUE;
 
+  // This happens when the user clicks Save, notice this if clause will do a return
+  // This means after saving, the form will be rebuilt based on the rebuild key = TRUE.
   if ($form_state['triggering_element']['#value'] == 'Save') {
     drupal_set_message(t('Your information has been saved!'), 'status');
-
+    // dpm($form_state['saved_values']);
     if (isset($form_state['saved_values']['form_build_id'])) {
       $form_state['values']['form_build_id'] = $form_state['saved_values']['form_build_id'];
     }
     $form_state['saved_values']['form_build_id'] = $form_state['values']['form_build_id'];
     $form_state['rebuild'] = TRUE;
+    // dpm('ON SAVE');
+    // dpm('Form state saved_values:');
+    // dpm($form_state['saved_values']);
 
     tpps_update_submission($form_state);
     return;
   }
 
+  // ELSE, it will do the below logic, read the comment after this switch statement
   switch ($form_state['stage']) {
     case 'frontpage':
       $persist = FALSE;
@@ -1068,6 +1081,8 @@ function tpps_main_submit($form, &$form_state) {
       break;
   }
 
+  // It'll then come here and also perform a save most likely
+  // which I think will cater for NEXT button
   if (isset($form_state['saved_values']['form_build_id'])) {
     $form_state['values']['form_build_id'] = $form_state['saved_values']['form_build_id'];
   }
@@ -1075,6 +1090,7 @@ function tpps_main_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 
   if ($persist) {
+    // dpm('PERSIST END');
     tpps_update_submission($form_state);
   }
 }
