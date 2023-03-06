@@ -1048,9 +1048,9 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
     }
     else {
       // print_r($item);
-      echo json_encode($item) . "\n";
-      echo "[TPPS FILE ITERATOR] Found a line/item that was empty, ignoring this item\n";
-      echo "[TPPS FILE ITERATOR] File location: " . $file_location . "\n";
+      // echo json_encode($item) . "\n";
+      // echo "[TPPS FILE ITERATOR] Found a line/item that was empty, ignoring this item\n";
+      // echo "[TPPS FILE ITERATOR] File location: " . $file_location . "\n";
       // throw new Exception('DEBUG STOP - FOUND AN EMPTY LINE');
     }
   }
