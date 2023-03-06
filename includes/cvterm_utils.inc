@@ -207,10 +207,10 @@ function tpps_load_cv($info) {
  */
 function tpps_load_cvterm($term, array $options = array(), $version = NULL, $refresh_cache = FALSE) {
   $check_cache = variable_get('tpps_load_cvterm_' . md5($term), null);
-  if($refresh_cache == TRUE) {
-    $check_cache = null;
-  }
-  if (isset($_GET['refresh_cache']) && $_GET['refresh_cache'] == 'true') {
+  $condition = ($refresh_cache
+    || (isset($_GET['refresh_cache']) && $_GET['refresh_cache'] == 'true')
+  );
+  if ($condition) {
     $check_cache = null;
   }
   if ($check_cache == null) {

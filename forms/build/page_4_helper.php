@@ -183,8 +183,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'year' => t('Year'),
     );
     foreach ($terms as $term => $label) {
-      $unit_id = tpps_load_cvterm($term)->cvterm_id;
-      $unit_options[$unit_id] = $label;
+      // VS. Somehow object became empty and it cause a lot of messages like:
+      // Notice: Trying to get property of non-object in tpps_phenotype()
+      // (line 186 of /var/www/Drupal/sites/all/modules/TGDR/forms/build/page_4_helper.php).
+      if (!empty(tpps_load_cvterm($term))) {
+        $unit_id = tpps_load_cvterm($term)->cvterm_id;
+        $unit_options[$unit_id] = $label;
+      }
       // drupal_set_message($term . "," . $label . "," . $unit_id);
     }
     $unit_options['other'] = 'My unit is not in this list';
