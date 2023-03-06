@@ -168,14 +168,14 @@ function tpps_load_cv($info) {
   $cv = chado_generate_var('cv', $query);
   if (!$cv and !empty($cv_info['namespace'])) {
     $query['name']['data'] = $cv_info['namespace'];
-    $cv = chado_generate_var('cv', $query);    
+    $cv = chado_generate_var('cv', $query);
   }
 
   if (is_array($cv)) {
     // This is a critical temporary patch until confirmation from Emily (slack: 10/19/2021 with Rish)
     if($query['name']['data'] == 'OBI') {
       $query['name']['data'] = strtolower($query['name']['data']); // for the use of lowercase OBI
-    } 
+    }
     $query['name']['op'] = 'LIKE';
     $cv = chado_generate_var('cv', $query);
   }
@@ -210,7 +210,7 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
   if($refresh_cache == TRUE) {
     $check_cache = null;
   }
-  if ($_GET['refresh_cache'] == 'true') {
+  if (isset($_GET['refresh_cache']) && $_GET['refresh_cache'] == 'true') {
     $check_cache = null;
   }
   if ($check_cache == null) {
@@ -218,7 +218,7 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
     $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
     $terms = $get_cvt();
     $info = $terms[$term] ?? NULL;
-    
+
     if (empty($info)) {
       $info = ":$term";
     }
@@ -236,7 +236,7 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
 
     if (!empty($ontology)) {
       if ($ontology == 'local') {
-        $identifiers['definition'] = $name;   
+        $identifiers['definition'] = $name;
       }
       else {
         $identifiers['name'] = $name;
@@ -256,23 +256,23 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
         $alt_ontology = $matches2[4] ?? NULL;
         if (!empty($ontology)) {
           if ($ontology == 'local') {
-            $identifiers['definition'] = $name;   
+            $identifiers['definition'] = $name;
           }
           else {
             $identifiers['name'] = $name;
             $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
           }
         }
-        $result = chado_get_cvterm($identifiers, $options);  
-      }  
+        $result = chado_get_cvterm($identifiers, $options);
+      }
     }
 
     if(empty($result) && $ontology == 'local') {
         // Added by Rish (1/5/2022)
         unset($identifiers['definition']);
         $identifiers['name'] = $name;
-        $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id; 
-        $result = chado_get_cvterm($identifiers, $options);  
+        $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
+        $result = chado_get_cvterm($identifiers, $options);
     }
     // drupal_set_message('Identifiers: ' . var_export($identifiers,true));
     // drupal_set_message('CVTERM_ID: ' . $result->cvterm_id);
@@ -293,7 +293,7 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
       // Try searching our TreeGenes Internal Ontology (desperate measures: eg study_type)
       $identifiers['cv_id'] = tpps_load_cv('TreeGenes Internal Ontology')->cv_id;
       $result = chado_get_cvterm($identifiers, $options);
-    }    
+    }
 
     if (empty($result)) {
       if (!empty($options['job'])) {
@@ -310,7 +310,7 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
             }
           }
           if (!empty($job)) {
-            $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);             
+            $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
           }
         }
         throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
@@ -332,7 +332,7 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
  * To speed up the process cvterms and even the cv (ontologies)
  * are cached using various methods. This will refresh the cache
  * and update the necessary links in the cache.
- * 
+ *
  * @return array
  *   Array of cvterms that TPPS will be using.
  */
@@ -351,7 +351,7 @@ function tpps_cvterms_clear_cache(TripalJob $job = NULL) {
   }
   if($job) {
     $job->logMessage('[INFO] Complete!');
-  }  
+  }
 }
 
 /**
@@ -402,7 +402,7 @@ function tpps_get_cvterms_v1_2() {
     'milligrams per millimeter' => 'local:milligrams per millimeter',
     'milligrams per millimeter squared' => 'local:milligrams per millimeter squared',
     'milligrams per milligram' => 'local:milligrams per milligram',
-    'micromoles carbon dioxide per gram Nitrogen per second' => 'local:micromoles carbon dioxide per gram Nitrogen per second', 
+    'micromoles carbon dioxide per gram Nitrogen per second' => 'local:micromoles carbon dioxide per gram Nitrogen per second',
     'micromoles carbon dioxide per millimole water' => 'local:micromoles carbon dioxide per millimole water',
     'moles water per meter squared per second' => 'local:moles water per meter squared per second',
 
@@ -772,7 +772,7 @@ function tpps_ols_install_term($info) {
     $cv = tpps_ols_add_cv($ontology);
   }
 
-  
+
   // print_r('term:' . $term . "\n");
   // print_r('cv_id:' . $cv->cv_id . "\n");
   $cvt = chado_get_cvterm(array(
@@ -826,7 +826,7 @@ function tpps_ols_install_term($info) {
         // RISH: 10/06/2022 - I coded this for po:root but it is probably better
         // to make sure the term exists in cvterms than use this method
         // also update the function with the term, the function name is tpps_get_cvterms_v1_2()
-        // 
+        //
         // // try to find a defining ontology based on the json results, if one can be found, use that
         // $found_alternative = false;
         // for($doc_index = 0; $doc_index < count($response->docs); $doc_index++) {
@@ -841,7 +841,7 @@ function tpps_ols_install_term($info) {
         //       break;
         //     }
         //   }
-        // } 
+        // }
         // if($found_alternative == false) {
         //   throw new \Exception("conflict found for cvterm $term from ontology $ontology: $response->numFound terms found");
         // }
