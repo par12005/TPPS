@@ -142,5 +142,5 @@ div.media-widget.form-media a.browse {
 
 /* Highlight active button when using TAB key to switch. */
 .btn:focus:focus-visible {
-  outline: green solid 1px;
+  outline: black solid 2px;
 }
