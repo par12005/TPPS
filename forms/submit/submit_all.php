@@ -1026,7 +1026,11 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
-      if (! $phenotype['synonym_missing']) {
+      if ($phenotype['synonym_missing']) {
+        // Main form.
+        $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
+      }
+      else {
         // Synonym form.
         // We have only name, description and synonym_id.
         $name = $phenotype['phenotypes-meta'][$j]['name']
@@ -1034,16 +1038,36 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
         $phenotype['phenotypes-meta'][$j]['description']
           = $phenotype['phenotypes-meta'][$j]['synonym_description'];
         $synonym_id = $phenotype['phenotypes-meta'][$j]['synonym_id'];
+        $synonym = tpps_synonym_get($synonym_id);
         // Restore phenotype attributes by $synonym_id.
-        $phenotype_synonym = tpps_synonym_get($synonym_id);
         $phenotype['phenotypes-meta'][$j]['attribute']
-          = $phenotype_synonym->attribute_id;
+          = $synonym->attribute_id ?? 'other';
+        if (empty($synonym->attribute_id)) {
+          watchdog('tpps', 'Synonym #@synonym_id has no "attribute_id"',
+            array('@synonym_id' => $synonym_id), WATCHDOG_CRITICAL
+          );
+          $phenotype['phenotypes-meta'][$j]['attribute'] = 'other';
+          // @TODO Get attribute name from the file?
+          $phenotype['phenotypes-meta'][$j]['attr-other'] = 'new attribute';
+        }
+        // Structure.
         $phenotype['phenotypes-meta'][$j]['structure']
-          = $phenotype_synonym->structure_id;
-      }
-      else {
-        // Main form.
-        $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
+          = $synonym->structure_id;
+        if (empty($synonym->structure_id)) {
+          watchdog('tpps', 'Synonym #@synonym_id has no "structure_id"',
+            array('@synonym_id' => $synonym_id), WATCHDOG_CRITICAL
+          );
+        }
+        // Unit.
+        $phenotype['phenotypes-meta'][$j]['units'] = $synonym->unit_id ?? 'other';
+
+        // @TODO Map unused synonym fields:
+        // cvterm_1_id;
+        // cvterm_2_id;
+        // is_common_phenotype.
+        // @TODO Unmapped form fields:
+        // env-check
+        // bin-check
       }
 
       $phenotypes_meta[$name] = array();
