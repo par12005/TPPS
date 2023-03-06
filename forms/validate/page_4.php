@@ -103,7 +103,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
  * @param array $form_state
  *   The state of the form being validated.
  */
-function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array &$form_state) {
+function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array &$form_state) {
   $normal_check = $phenotype['normal-check'];
   $iso_check = $phenotype['iso-check'];
   $id = "organism-$org_num";
@@ -153,7 +153,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
     }
 
     for ($i = 1; $i <= $phenotype_number; $i++) {
-      $current_phenotype = $phenotype['phenotypes-meta']["$i"];
+      $current_phenotype = &$phenotype['phenotypes-meta']["$i"];
       $units = $current_phenotype['units'];
       if (!$current_phenotype['no_synonym']) {
         // Synonym form.
@@ -171,6 +171,11 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
         if ($synonym_id == '') {
           form_set_error("$id][phenotype][phenotypes-meta][$i][synonym_id",
             "Phenotype $i Synonym: field is required.");
+        }
+        else {
+          // Restore only if there is Synonym Id.
+          // @TODO Validate only main form and restore values at the beginning.
+          tpps_synonym_restore_values($current_phenotype);
         }
       }
       else {

@@ -54,52 +54,46 @@ function tpps_synonym_get($synonym_id) {
 }
 
 /**
- * Gets all the Phenotype data by Synonym.
+ * Sets correct Phenotype values by Synonym.
  *
- * @param int $synonym_id
- *   Phenotype Synonym Id.
+ * @param array $current_phenotype
+ * @access public
  *
- * @return array
- *   Returns Penotype's data related to Synonym.
- *   Returns FALSE if synonym wasn't found.
+ * @return void
  */
-function tpps_synonym_get_phenotype($synonym_id) {
-  $synonym = tpps_synonym_get($synonym_id);
-  foreach ($synonym as $key => $value) {
-    $skip_keys_list = array(
-      'phenotype_synonyms_id',
-      'synonym',
-      // This field already has correct value and not linked to 'cvterm' table.
-      'structure',
-      // I don't know what for this item.
-      // @TODO Ask Emily about it.
-      'is_common_phenotype'
-    );
-    if (!empty($value) && !in_array($key, $skip_keys_list)) {
-      // @TODO Seems we need only 'name' from 'cvterm' table so multiple
-      // requests could be replaced with a set of JOINs with aliases
-      // which mapped to real values.
-      $synonym->$key = tpps_synonym_get_cvterm($value);
-    }
+function tpps_synonym_restore_values(array &$current_phenotype) {
+  if (empty($synonym_id = $current_phenotype['synonym_id'])) {
+    return;
   }
-  return $synonym;
-}
+  $synonym = tpps_synonym_get($synonym_id);
+  $current_phenotype['name'] = $current_phenotype['synonym_name'];
+  $current_phenotype['description'] = $current_phenotype['synonym_description'];
+  // Restore phenotype attributes by $synonym_id.
+  $current_phenotype['attribute'] = $synonym->attribute_id ?? 'other';
+  if (empty($synonym->attribute_id)) {
+    watchdog('tpps', 'Synonym #@synonym_id has no "attribute_id"',
+      array('@synonym_id' => $synonym_id), WATCHDOG_CRITICAL
+    );
+    $current_phenotype['attribute'] = 'other';
+    // Set fake attribute name to avoid errors.
+    // @TODO Get attribute name from the file?
+    $current_phenotype['attr-other'] = 'new attribute';
+  }
+  // Structure.
+  $current_phenotype['structure'] = $synonym->structure_id;
+  if (empty($synonym->structure_id)) {
+    watchdog('tpps', 'Synonym #@synonym_id has no "structure_id"',
+      array('@synonym_id' => $synonym_id), WATCHDOG_CRITICAL
+    );
+  }
+  // Unit.
+  $current_phenotype['units'] = $synonym->unit_id ?? 'other';
 
-/**
- * Gets 'CVTerm' by it's Id.
- *
- * @param int $cvterm_id
- *   CVTerm Id.
- *
- * @return object
- *    Returns CVTerm.
- *
- * @TODO Minor. Move this function to better file/module.
- */
-function tpps_synonym_get_cvterm($cvterm_id) {
-  return db_select('chado.cvterm', 't')
-    ->fields('t', array())
-    ->condition('t.cvterm_id', $cvterm_id)
-    ->execute()
-    ->fetchObject();
+  // @TODO Map unused synonym fields:
+  // cvterm_1_id;
+  // cvterm_2_id;
+  // is_common_phenotype.
+  // @TODO Unmapped form fields:
+  // env-check
+  // bin-check
 }
