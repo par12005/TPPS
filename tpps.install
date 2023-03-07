@@ -647,6 +647,37 @@ function tpps_schema() {
     ),
   );
 
+  // #3kged9b Phenotypes synonyms table integrated on TPPS [VS].
+  $schema['tpps_phenotype_unit_warning'] = array(
+    'description' => 'Contains Phenotypes created by Synonym with custom Unit.',
+    'fields' => array(
+      'phenotype_id' => array(
+        'description' => 'The Phenotype Id.',
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'unit' => array(
+        'description' => 'Custom Unit value',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+    ),
+    'foreign keys' => array(
+      'phenotype_id' => array(
+        'table' => 'chado.phenotype',
+        'columns' => array(
+          'phenotype_id' => 'phenotype_id',
+        ),
+      ),
+    ),
+    'indexes' => array(
+      'phenotype_id' => ('phenotype_id'),
+    ),
+  );
+
   return $schema;
 }
 
@@ -1973,5 +2004,26 @@ function tpps_update_7118() {
   catch (\Exception $e) {
     $transaction->rollback();
     throw $e;
+  }
+}
+
+
+
+/**
+ * #3kged9b Creates table 'public.tpps_phenotype_unit_warning' [VS].
+ */
+function tpps_update_7119() {
+  $table = 'tpps_phenotype_unit_warning';
+  if (!db_table_exists($table)) {
+    if ($table_schema = tpps_schema()[$table]) {
+      $transaction = db_transaction();
+      try {
+        db_create_table($table, $table_schema);
+      }
+      catch (\Exception $e) {
+        $transaction->rollback();
+        throw $e;
+      }
+    }
   }
 }
