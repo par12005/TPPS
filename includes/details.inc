@@ -50,7 +50,25 @@ function tpps_details($accession = NULL) {
 
   $output = "<a href=\"$base_url/tpps/details\">Return to TPPS Details</a>$output";
   $state = tpps_load_submission($accession);
+  // dpm($state);
   if (!empty($state)) {
+
+    if (isset($state['study_view_role'])) {
+      global $user;
+      // If more than 0, then a view role was set by curation team
+      if ($state['study_view_role'] > 0) {
+        // dpm($user->roles);
+        if (!in_array(user_roles($true)[$state['study_view_role']], $user->roles)
+          && !in_array('administrator', $user->roles)
+        ) {
+          $output .= "<br />";
+          $output .= "This study has been set to be available to only a specific user role<br />";
+          $output .= "If you believe this is an error, please contact us via the contact us page.<br />";
+          return $output;
+        }
+      }
+    }
+
     if ($state['status'] != 'Approved') {
       drupal_set_message(t('This submission is still under construction. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
       if (function_exists('tpps_details_byaccession_page')) {

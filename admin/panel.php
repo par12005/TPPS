@@ -412,6 +412,29 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#value' => t('Change Submission Owner'),
   ); 
   
+  $study_role_view = NULL;
+  if(isset($submission_state['study_view_role'])) {
+    $study_role_view = $submission_state['study_view_role'];
+  }
+  else {
+    $study_role_view = 0;
+  }
+
+  $options = user_roles(true);
+  $options[0] = 'All users';
+  $form['CHANGE_STUDY_VIEW_ROLE'] = array(
+    '#type' => 'select',
+    '#title' => 'Set this study view role',
+    '#prefix' => '<h2 style="margin-top: 30px;">Change study role view</h2>',
+    '#description' => 'This will change the user role that is allowed to view this study',
+    '#options' => $options,
+    '#default_value' => $study_role_view,
+  );
+  $form['CHANGE_STUDY_VIEW_ROLE_SAVE'] = array(
+    '#type' => 'submit',
+    '#value' => t('Change Study View Role'),
+  );     
+
   $current_tpps_type = '';
   if($submission_state['tpps_type'] == 'tppsc') {
     $current_tpps_type = 'tppsc';
@@ -1408,6 +1431,20 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $state['status'] = $form_state['values']['state-status'];
       tpps_update_submission($state);
       dpm($state['status']);
+      break;
+
+    case 'Change Study View Role':
+      $view_role = $form_state['values']['CHANGE_STUDY_VIEW_ROLE'];
+      if ($view_role > 0) {
+        $state['study_view_role'] = $view_role;
+        drupal_set_message('Study view role has been set to ' . user_roles(true)[$view_role]);
+      }
+      else {
+        unset($state['study_view_role']);
+        drupal_set_message('Study view role set to public all users');
+      }
+      tpps_update_submission($state);
+      
       break;
 
     case 'Save Alternative Accessions':
