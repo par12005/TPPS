@@ -183,7 +183,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'year' => t('Year'),
     );
     foreach ($terms as $term => $label) {
-      // VS. Somehow object became empty and it cause a lot of messages like:
+      // [vs] Somehow object became empty and it cause a lot of messages like:
       // Notice: Trying to get property of non-object in tpps_phenotype()
       // (line 186 of /var/www/Drupal/sites/all/modules/TGDR/forms/build/page_4_helper.php).
       if (!empty(tpps_load_cvterm($term))) {
@@ -238,7 +238,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#tree' => TRUE,
       '#prefix' => "<div id=\"org_{$id}_phenotype_!num_meta\">",
       '#suffix' => "</div>",
-      // VS. Synonym form.
+      // [vs] Synonym form.
       'synonym_name' => tpps_build_field_name($id) + array(
         '#prefix' => "<label><b>Phenotype !num:</b></label>",
         '#states' => array('visible' => array(
@@ -503,9 +503,9 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('min', '#title'),
         array('max', '#title'),
       ),
-      // VS. Replace '!num' in attributes.
+      // [vs] Replace '!num' in attributes.
       'substitute_keys' => array(
-        // VS. Synonym form.
+        // Synonym form.
         array('synonym_name', '#states', 'visible', tpps_synonym_selector($id)),
         array('synonym_description', '#states', 'visible', tpps_synonym_selector($id)),
         array('synonym_id', '#states', 'visible', tpps_synonym_selector($id)),
