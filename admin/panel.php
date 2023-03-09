@@ -57,6 +57,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 function tpps_manage_submission_form(array &$form, array &$form_state, $accession = NULL) {
   global $base_url;
   $submission = tpps_load_submission($accession, FALSE);
+  // dpm($submission);
   $status = $submission->status;
   $submission_state = unserialize($submission->submission_state);
   if (empty($submission_state['status'])) {
@@ -166,9 +167,12 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   );
 
   $submission_tags = tpps_submission_get_tags($submission_state['accession']);
+  // dpm($submission_tags);
+
+  $tags_markup .= "<div style='margin-bottom: 10px; font-weight: bold; text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
 
   // Show current tags.
-  $tags_markup = "<label class=\"control-label\">Current Tags:</label><br>";
+  $tags_markup .= "<label class=\"control-label\">Current Tags:</label><br>";
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
   $query = db_select('tpps_tag', 't')
     ->fields('t')
@@ -185,27 +189,95 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   }
 
   // Show available tags.
-  $tags_markup .= "<br><label class=\"control-label\">Available Tags (click to add):</label><br><div id=\"available-tags\">";
-  $query = db_select('tpps_tag', 't')
-    ->fields('t')
-    ->condition('static', 0)
-    ->execute();
-  while (($result = $query->fetchObject())) {
-    $color = $result->color;
-    if (empty($color)) {
-      $color = 'white';
-    }
-    $style = "";
-    if (array_key_exists($result->tpps_tag_id, $submission_tags)) {
-      $style = 'display: none';
-    }
-    $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-add\" class=\"tag add-tag\" style=\"background-color:{$color}; $style\"><span class=\"tag-text\">{$result->name}</span></span>";
-  }
-  $tags_markup .= "</div>";
-  $tags_markup .= "<a href=\"/tpps-tag\">Manage TPPS Submission Tags</a>";
+  // REMOVED ON 3/8/2023 by Risharde (code does not work)
+  // $tags_markup .= "<br><label class=\"control-label\">Available Tags (click to add):</label><br><div id=\"available-tags\">";
+  // $query = db_select('tpps_tag', 't')
+  //   ->fields('t')
+  //   ->condition('static', 0)
+  //   ->execute();
+  // while (($result = $query->fetchObject())) {
+  //   $color = $result->color;
+  //   if (empty($color)) {
+  //     $color = 'white';
+  //   }
+  //   $style = "";
+  //   if (array_key_exists($result->tpps_tag_id, $submission_tags)) {
+  //     $style = 'display: none';
+  //   }
+  //   $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-add\" class=\"tag add-tag\" style=\"background-color:{$color}; $style\"><span class=\"tag-text\">{$result->name}</span></span>";
+  // }
+  // $tags_markup .= "</div>";
+  // $tags_markup .= "<div style='margin-top: 10px;'><a href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
   $form['tags'] = array(
     '#markup' => "<div id=\"tags\">$tags_markup</div>",
   );
+
+  
+
+  $form['TAG_REMOVE_CONTAINER'] = array(
+    '#prefix' => '<div class="tag-admin-container" style="display: inline-block; vertical-align: top; text-align: left; padding: 25px;">',
+    '#suffix' => '</div>',    
+  );
+
+  $submission_tags_ids = [];
+  foreach ($submission_tags as $submission_tag) {
+    $submission_tags_ids = $submission_tag['id'];
+  }
+
+  // This code will generate the tag options that we can delete
+  $current_tags_options = [];
+  $current_tags_results = chado_query('SELECT * FROM tpps_submission_tag tsg
+    LEFT JOIN tpps_tag tg ON (tsg.tpps_tag_id = tg.tpps_tag_id)
+    WHERE tpps_submission_id = :tpps_submission_id
+    AND tsg.tpps_tag_id > 2', [':tpps_submission_id' => $submission->tpps_submission_id]);
+  foreach ($current_tags_results as $row) {
+    $current_tags_options[$row->tpps_tag_id] = $row->name;
+  }
+
+  
+  $form['TAG_REMOVE_CONTAINER']['TAG_REMOVE_OPTION'] = array(
+    '#type' => 'select',
+    '#title' => 'Remove the following selected tag',
+    '#description' => 'This will delete a tag that has been already <br />added to this study',
+    '#options' => $current_tags_options,
+    '#default_value' => '',
+  ); 
+  $form['TAG_REMOVE_CONTAINER']['TAG_REMOVE_OPTION_DO'] = array(
+    '#type' => 'submit',
+    '#value' => t('Remove tag from this study'),
+    '#suffix' => '<div style="margin-bottom: 30px;"></div>'
+  );
+
+  $form['TAG_ADD_CONTAINER'] = array(
+    '#prefix' => '<div class="tag-admin-container" style="display: inline-block; vertical-align: top; text-align: left; padding: 25px;">',
+    '#suffix' => '</div>',  
+  );  
+  
+  // This code will generate all tag options that we can add
+  $all_add_tags_options = [];
+  $all_add_tags_results = chado_query('SELECT * FROM tpps_tag 
+    WHERE tpps_tag_id NOT IN (SELECT tpps_tag_id FROM tpps_submission_tag 
+      WHERE tpps_submission_id = :tpps_submission_id) AND tpps_tag_id > 2', [
+        ':tpps_submission_id' => $submission->tpps_submission_id
+      ]);
+  foreach ($all_add_tags_results as $row) {
+    $all_add_tags_options[$row->tpps_tag_id] = $row->name;
+  }  
+
+  $form['TAG_ADD_CONTAINER']['TAG_ADD_OPTION'] = array(
+    '#type' => 'select',
+    '#title' => 'Add the following selected tag',
+    // '#prefix' => '<div style="display: inline-block; width: 45%;">',
+    // '#suffix' => '</div>',
+    '#description' => 'This will add a tag that isn\'t already <br />added to this study',
+    '#options' => $all_add_tags_options,
+    '#default_value' => '',
+  ); 
+  $form['TAG_ADD_CONTAINER']['TAG_ADD_OPTION_DO'] = array(
+    '#type' => 'submit',
+    '#value' => t('Add tag to this study'),
+    '#suffix' => '<div style="margin-bottom: 30px;"></div>'
+  );     
 
   if ($status == "Pending Approval") {
 
@@ -1195,7 +1267,59 @@ function tpps_admin_panel_submit($form, &$form_state) {
     }
   }
 
+  // dpm($form_state['triggering_element']['#value']);
   switch ($form_state['triggering_element']['#value']) {
+    case 'Add tag to this study':
+      $tpps_tag_id = $form_state['values']['TAG_ADD_OPTION'];
+      $tpps_submission_id = $submission->tpps_submission_id;
+      // Insert tag for this tpps_submission_id
+      chado_query('INSERT INTO tpps_submission_tag 
+        (tpps_submission_id, tpps_tag_id) 
+        VALUES (:tpps_submission_id, :tpps_tag_id)',
+        [
+          ':tpps_submission_id' => $tpps_submission_id,
+          ':tpps_tag_id' => $tpps_tag_id
+        ]
+      );
+      // Get the tag name for the message alert
+      $tag_name = "";
+      $tag_name_results = chado_query('SELECT * FROM tpps_tag 
+        WHERE tpps_tag_id = :tpps_tag_id', [
+          ':tpps_tag_id' => $tpps_tag_id
+        ]
+      );
+      foreach ($tag_name_results as $row) {
+        $tag_name = $row->name;
+      }
+      drupal_set_message($tag_name . " has been added to the study");
+      break;
+    case 'Remove tag from this study':
+      $tpps_tag_id = $form_state['values']['TAG_REMOVE_OPTION'];
+      $tpps_submission_id = $submission->tpps_submission_id;
+      // Get the tag name for the message alert
+      $tag_name = "";
+      $tag_name_results = chado_query('SELECT * FROM tpps_tag 
+        WHERE tpps_tag_id = :tpps_tag_id', [
+          ':tpps_tag_id' => $tpps_tag_id
+        ]
+      );
+      foreach ($tag_name_results as $row) {
+        $tag_name = $row->name;
+      }       
+      if ($tpps_tag_id > 2) {
+        chado_query('DELETE FROM tpps_submission_tag 
+          WHERE tpps_submission_id = :tpps_submission_id 
+          AND tpps_tag_id = :tpps_tag_id', [
+            ':tpps_submission_id' => $tpps_submission_id,
+            ':tpps_tag_id' => $tpps_tag_id
+          ]
+        );     
+        drupal_set_message($tag_name . " successfully removed from study.");
+      }
+      else {
+        drupal_set_message($tag_name . " cannot be removed from study.","error");
+      }   
+      break;
     case 'Save VCF Import Setting':
       // dpm($form_state['values']);
       if($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
