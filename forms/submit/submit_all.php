@@ -998,11 +998,17 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
-      $current_phenotype = &$phenotype['phenotypes-meta'][$j];
-      if (!$phenotype['no_synonym']) {
-        // Synonym form and we need to restore values by Synonym.
-        tpps_synonym_restore_values($current_phenotype);
-      }
+
+
+
+      // @TODO [VS] Check if it could be removed. We restore at validation step.
+      //$current_phenotype = &$phenotype['phenotypes-meta'][$j];
+
+      //if (!$current_phenotype['no_synonym']) {
+      //  // Synonym form and we need to restore values by Synonym.
+      //  tpps_synonym_restore_values($current_phenotype);
+      //}
+
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
 
       $phenotypes_meta[$name] = array();
@@ -1140,7 +1146,11 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_log('[INFO] - Inserting data into database using insert_multi...');
     // print_r($options['records']);
-    tpps_chado_insert_multi($options['records']);
+    if ($id_list = tpps_chado_insert_multi($options['records'])) {
+      // [VS] Store relations between Phenotype, Synonym, Unit.
+      tpps_synonym_save($phenotype['phenotypes-meta'][$j], $id_list);
+    }
+
     tpps_log('[INFO] - Done.');
   }
 

@@ -97,3 +97,72 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
   // env-check
   // bin-check
 }
+
+
+/**
+ * Stores relation between Phenotype, Synonym and Unit [vs].
+ *
+ * @param array $current_phenotype
+ *   Part of $form_state with currently processing Phenotype.
+ * @param array $id_list
+ *   Accosiative array where keys are table names and values are foreign keys
+ *   and their values.
+ *   For example for $id_list['phenotype'] keys will be Phenotype names and v
+ *   alues are  Phenotype Ids.
+ *
+ * @return bool
+ *   Returns TRUE in case of success and FALSE otherwise.
+ */
+function tpps_synonym_save(array $current_phenotype, array $id_list ) {
+  $condition = (
+    empty($current_phenotype['synonym_id'])
+    || $synonym = tpps_synonym_get($current_phenotype['synonym_id'])
+  );
+  if ($condition) {
+    return FALSE;
+  }
+
+  //tpps_log(print_r($form_state, 1));
+  // Checkbox 'I can't find Synonym' is unchecked.
+  // Synonym was used.
+  foreach ($id_list['phenotype'] as $phenotype_id) {
+    // Chado API couldn't be used because table 'chado.phenotype_to_synonym'
+    // do not belongs to Chado yet.
+    // @TODO Minor. Use db_query() to insert multiple records in one query.
+    //       Need to check if records exists.
+    db_merge('chado.phenotype_to_synonym')
+      ->key(array(
+        'phenotype_id' => $phenotype_id,
+        'phenotype_synonyms_id' => $current_phenotype['synonym_id'],
+      ))
+      ->fields(array(
+        'phenotype_id' => $phenotype_id,
+        'phenotype_synonyms_id' => $current_phenotype['synonym_id'],
+      ))
+      ->execute();
+    tpps_log('[INFO] Stored relation between Phenotype #@phenotype_id '
+      . 'and Synonym #@synonym_id.', array(
+        '@phenotype_id' => $phenotype_id,
+        '@synonym_id' => $current_phenotype['synonym_id'],
+      )
+    );
+  }
+
+  // Case when custom Unit was usd.
+  $condition = (
+    // For some Synonyms 'unit_id' is NULL.
+    !empty($synonym['unit_id'])
+    && $current_phenotype['units'] != $synonym['unit_id']
+  );
+  //if ($condition) {
+  //  db_insert('tpps_phenotype_unit_warning')
+  //    ->fields(array(
+  //      'phenotype_id' => $phenotype_id,
+  //      'unit_id' => $current_phenotype['units'],
+  //    ))->execute();
+  //}
+
+
+  return TRUE;
+
+}
