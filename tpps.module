@@ -178,6 +178,7 @@ function tpps_menu() {
     'file' => 'admin/pages.php',
   );
 
+
   $items['tpps/doi/%'] = array(
     'title' => 'TPPS DOI',
     'page callback' => 'tpps_manage_doi',
@@ -270,6 +271,25 @@ function tpps_menu() {
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK
   );
+
+  // [VS] Synonym and Unit reports.
+  $items['admin/reports/unit-warning'] = array(
+    'title' => 'Unit Warning',
+    'description' => "List of Phenotypes which differs from Synonym's Unit.",
+    'page arguments' => array('tpps_admin_unit_warning'),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('administer tpps module'),
+    'file' => 'reports/unit_warning.php',
+  );
+  $items['admin/reports/no-synonym'] = array(
+    'title' => 'Phenotype without Synonym',
+    'description' => "List of Phenotypes which are missing Synonym.",
+    'page arguments' => array('tpps_admin_no_synonym'),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('administer tpps module'),
+    'file' => 'reports/no_synonym.php',
+  );
+  // [/VS]
 
   $items = array_merge($items, tpps_api_paths());
 

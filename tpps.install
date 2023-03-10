@@ -2018,4 +2018,5 @@ function tpps_update_7119() {
       . 'ON DELETE CASCADE;'
     );
   }
+  cache_clear_all();
 }
