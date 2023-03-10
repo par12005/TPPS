@@ -13,6 +13,8 @@
  */
 function tpps_install() {
 
+  simple_report_install();
+
   tpps_alter_tpps_submissions();
 
   tpps_alter_tpps_submission_dbxref();
@@ -285,6 +287,8 @@ function tpps_install() {
  * usage from public.file_usage.
  */
 function tpps_uninstall() {
+
+  simple_report_install();
 
   // Remove all incomplete submissions connected to user profiles.
   db_delete('public.variable')
@@ -2017,6 +2021,10 @@ function tpps_update_7119() {
       . 'FOREIGN KEY (phenotype_id) REFERENCES chado.phenotype(phenotype_id) '
       . 'ON DELETE CASCADE;'
     );
+  }
+  $module_name = 'simple_report';
+  if (!module_exists($module_name)) {
+    module_enable(array($module_name));
   }
   cache_clear_all();
 }

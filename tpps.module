@@ -276,7 +276,7 @@ function tpps_menu() {
   $items['admin/reports/unit-warning'] = array(
     'title' => 'Unit Warning',
     'description' => "List of Phenotypes which differs from Synonym's Unit.",
-    'page arguments' => array('tpps_admin_unit_warning'),
+    'page callback' => 'tpps_admin_unit_warning_report',
     'access callback' => 'tpps_access',
     'access arguments' => array('administer tpps module'),
     'file' => 'reports/unit_warning.php',
@@ -284,7 +284,7 @@ function tpps_menu() {
   $items['admin/reports/no-synonym'] = array(
     'title' => 'Phenotype without Synonym',
     'description' => "List of Phenotypes which are missing Synonym.",
-    'page arguments' => array('tpps_admin_no_synonym'),
+    'page callback' => 'tpps_admin_no_synonym_report',
     'access callback' => 'tpps_access',
     'access arguments' => array('administer tpps module'),
     'file' => 'reports/no_synonym.php',
