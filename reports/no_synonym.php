@@ -11,7 +11,9 @@
 function tpps_admin_no_synonym_report() {
   // @TODO Build sql to get list of phenotypes without synonyms.
 
-  $table_name = 'tpps_phenotype_unit_warning';
+  //$table_name = 'public.users';
+  //$table_name = 'users';
+  $table_name = 'chado.phenotype';
   return simple_table_report($table_name);
 }
 
