@@ -106,38 +106,25 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  *
  * @param array $current_phenotype
  *   Part of $form_state with currently processing Phenotype.
- * @param array $id_list
- *   Accosiative array where keys are table names and values are foreign keys
- *   and their values.
- *   For example for $id_list['phenotype'] keys will be Phenotype names and v
- *   alues are  Phenotype Ids.
- *
- * @return bool
- *   Returns TRUE in case of success and FALSE otherwise.
+ * @param int $phenotype_id
+ *   Phenotype Id.
  */
-function tpps_synonym_save(array $current_phenotype, array $id_list ) {
+function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
   $debug_mode = FALSE;
   if ($debug_mode) {
-    tpps_log('[DEBUG] Process Synonym and Unit.');
-    tpps_log('[DEBUG] ' . "Current Phenotype:\n " . print_r($current_phenotype, 1));
-    tpps_log('[DEBUG] ' . "Id List: \n" . print_r($id_list, 1));
+    tpps_log('[DEBUG] '
+      . 'Phenotype Id: ' . $phenotype_id
+      . "Current Phenotype:\n " . print_r($current_phenotype, 1)
+    );
   }
-  // We store custom Units only when Synonym was used.
-  $condition = (
-    // Skip when checkbox 'I can't find Synonym' checked because
-    // Synonym not used in this case and Unit could be set to any value.
-    $current_phenotype['no_synonym']
-    // Synonym field is required and will always has a value but we check
-    // if we have loaded whole Synonym object.
-    || empty($synonym_id = $current_phenotype['synonym_id'])
-    || empty($synonym = tpps_synonym_get($synonym_id))
-  );
-  if ($condition) {
-    return FALSE;
-  }
-
-  // Synonym was used.
-  foreach ($id_list['phenotype'] as $phenotype_id) {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Store phenotype and synonym relation.
+  if ($current_phenotype['synonym_id'] != 'other') {
+    // We store zero value when Synonym wasn't used to allow to filter out
+    // only new phenotypes without synonym from 'phenotype_to_synonym' table
+    // which not allow NULL but only integer values.
+    // We use db_merge() instead of db_insert() to avoid errors if phenotype
+    // will be updated.
     // Chado API couldn't be used because table 'chado.phenotype_to_synonym'
     // do not belongs to Chado yet.
     // Note:
@@ -157,34 +144,40 @@ function tpps_synonym_save(array $current_phenotype, array $id_list ) {
     tpps_log('[INFO] Stored relation between Phenotype #@phenotype_id '
       . 'and Synonym #@synonym_id.', array(
         '@phenotype_id' => $phenotype_id,
-        '@synonym_id' => $current_phenotype['synonym_id'],
+        '@synonym_id' => $synonym_id,
       )
     );
-
-    // Synonym's Unit differs from Submitted and we need to store this.
-    $condition = (
-      // For some Synonyms 'unit_id' is NULL and we skip check in this case.
-      !empty($synonym->unit_id)
-      && (
-        // Used regular 'Unit' field.
-        $current_phenotype['units'] != $synonym->unit_id
-        || (
-          // Used custom/new Unit.
-          $current_phenotype['units'] == 'other'
-          && $current_phenotype['unit-other'] != $synonym->unit_id
-        )
-      )
-    );
-    if ($condition) {
-      db_insert('tpps_phenotype_unit_warning')
-        ->fields(array('phenotype_iid' => $phenotype_id))
-        ->execute();
-    }
-    if ($debug_mode) {
-      tpps_log('[DEBUG] ' . 'Phenotype Id: ' . $phenotype_id);
-      tpps_log('[DEBUG] ' . 'Phenotype Unit: ' . $current_phenotype['unit']);
-      tpps_log('[DEBUG] ' . 'Synonym Unit: ' . $synonym->unit_id);
-    }
   }
-  return TRUE;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Create a record in 'Unit Warning' table
+  // when Synonym's Unit differs from Submitted Unit.
+  $condition = (
+    // Synonym was selected, and it's not 'other' and it was found by id.
+    (
+      $current_phenotype['synonym_id'] != 'other'
+      && !empty($synonym = tpps_synonym_get($synonym_id))
+    )
+    // For some Synonyms 'unit_id' is NULL and we skip check in this case.
+    && !empty($synonym->unit_id)
+    && (
+      // Submitted Unit differs from Synonym's Unit.
+      $current_phenotype['units'] != $synonym->unit_id
+      || (
+        // Custom Unit differs from Synonym's Unit.
+        $current_phenotype['units'] == 'other'
+        && $current_phenotype['unit-other'] != $synonym->unit_id
+      )
+    )
+  );
+  if ($condition) {
+    db_merge('tpps_phenotype_unit_warning')
+      ->key(['phenotype_id' => $phenotype_id])
+      ->fields(['phenotype_id' => $phenotype_id])
+      ->execute();
+  }
+  if ($debug_mode) {
+    tpps_log('[DEBUG] ' . 'Phenotype Id: ' . $phenotype_id);
+    tpps_log('[DEBUG] ' . 'Phenotype Unit: ' . $current_phenotype['unit']);
+    tpps_log('[DEBUG] ' . 'Synonym Unit: ' . $synonym->unit_id);
+  }
 }
