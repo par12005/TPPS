@@ -998,17 +998,6 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
-
-
-
-      // @TODO [VS] Check if it could be removed. We restore at validation step.
-      //$current_phenotype = &$phenotype['phenotypes-meta'][$j];
-
-      //if (!$current_phenotype['no_synonym']) {
-      //  // Synonym form and we need to restore values by Synonym.
-      //  tpps_synonym_restore_values($current_phenotype);
-      //}
-
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
 
       $phenotypes_meta[$name] = array();

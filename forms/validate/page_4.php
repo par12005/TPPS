@@ -155,9 +155,8 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     for ($i = 1; $i <= $phenotype_number; $i++) {
       $current_phenotype = &$phenotype['phenotypes-meta']["$i"];
       $units = $current_phenotype['units'];
-      if (!$current_phenotype['no_synonym']) {
+      if ($current_phenotype['synonym_id']) {
         // Synonym form.
-        $synonym_id = $current_phenotype['synonym_id'];
         $synonym_name = $current_phenotype['synonym_name'];
         $synonym_description = $current_phenotype['synonym_description'];
         if ($synonym_name == '') {
@@ -168,13 +167,9 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
           form_set_error("$id][phenotype][phenotypes-meta][$i][synonym_description",
             "Phenotype $i Description: field is required.");
         }
-        if ($synonym_id == '') {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][synonym_id",
-            "Phenotype $i Synonym: field is required.");
-        }
-        else {
+        // @TODO Check if this could be done on submit.
+        if (!empty($current_phenotype['synonym_id'])) {
           // Restore only if there is Synonym Id.
-          // @TODO Validate only main form and restore values at the beginning.
           tpps_synonym_restore_values($current_phenotype);
         }
       }
