@@ -155,7 +155,7 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
   $condition = (
     // Synonym was selected, and it's not 'other' and it was found by id.
     (
-      $current_phenotype['synonym_id'] != 'other'
+      !empty($current_phenotype['synonym_id'])
       && !empty($synonym = tpps_synonym_get($synonym_id))
     )
     // For some Synonyms 'unit_id' is NULL and we skip check in this case.
@@ -170,6 +170,18 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
       )
     )
   );
+
+
+  // @TODO Remove debug code.
+  // Used for demo only.
+    db_merge('tpps_phenotype_unit_warning')
+      ->key(['phenotype_id' => $phenotype_id])
+      ->fields(['phenotype_id' => $phenotype_id])
+      ->execute();
+  // @End Remove debug code
+
+
+
   if ($condition) {
     db_merge('tpps_phenotype_unit_warning')
       ->key(['phenotype_id' => $phenotype_id])
