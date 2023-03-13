@@ -111,16 +111,16 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  *   Phenotype Id.
  */
 function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
-  $debug_mode = FALSE;
+  $debug_mode = TRUE;
   if ($debug_mode) {
     tpps_log('[DEBUG] '
       . 'Phenotype Id: ' . $phenotype_id
-      . "Current Phenotype:\n " . print_r($current_phenotype, 1)
+      . "\nCurrent Phenotype:\n " . print_r($current_phenotype, 1)
     );
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Store phenotype and synonym relation.
-  if ($current_phenotype['synonym_id'] != 'other') {
+  if ($current_phenotype['synonym_id']) {
     // We store zero value when Synonym wasn't used to allow to filter out
     // only new phenotypes without synonym from 'phenotype_to_synonym' table
     // which not allow NULL but only integer values.

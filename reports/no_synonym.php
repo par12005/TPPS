@@ -12,12 +12,14 @@ function tpps_admin_no_synonym_report() {
   //return simple_table_report('chado.phenotype_to_synonym');
 
   $table = 'phenotype';
+      //['data' => t("Name"), 'field' => $table . '.name', 'op' => 'count'],
+      //['data' => t("Attribute Id"), 'field' => $table . '.attr_id', 'op' => 'count'],
   $meta = [
     //'header' => [
     //  ['data' => t("Phenotype Id"), 'field' => $table . '.phenotype_id', 'sort' => 'DESC'],
     //  ['data' => t("Unique Name"), 'field' => $table . '.uniquename'],
-    //  ['data' => t("Name"), 'field' => $table . '.name', 'op' => 'count'],
-    //  ['data' => t("Attribute Id"), 'field' => $table . '.attr_id', 'op' => 'count'],
+    //  ['data' => t("Name"), 'field' => $table . '.name'],
+    //  ['data' => t("Attribute Id"), 'field' => $table . '.attr_id'],
     //  ['data' => t("Value"), 'field' => $table . '.value'],
     //  ['data' => t("CValue"), 'field' => $table . '.cvalue_id'],
     //  ['data' => t("Assay Id"), 'field' => $table . '.assay_id'],
@@ -40,6 +42,7 @@ function tpps_admin_no_synonym_report() {
     'pager' => 'both',
   ];
   // @TODO Check how to use 'op' => '>'.
+  //$filter[] = ['name' => 'phenotype_synonyms_id', 'value' => 0, 'operator' => '='];
   if (count($_GET)) {
     foreach ($_GET as $name => $value) {
       if (!in_array($name, ['q', 'page', 'sort', 'order', 'count'])) {
@@ -50,6 +53,16 @@ function tpps_admin_no_synonym_report() {
   return simple_report($meta, $filter ?? []);
 }
 
+/**
+ * Simple Report Formatter for 'tpps_admin_no_synonym' report.
+ *
+ * @param string $name
+ * @param mixed $value
+ * @param array $row
+ * @access public
+ *
+ * @return void
+ */
 function tpps_admin_no_synonym_formatter(string $name, $value, array $row) {
   $formatted = check_plain($value);
   if (empty($name)) {

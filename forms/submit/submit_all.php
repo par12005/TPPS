@@ -1138,12 +1138,16 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
 
     // [VS] Store relations between Phenotype, Synonym, Unit.
     if ($id_list = tpps_chado_insert_multi($options['records'])) {
+
+      tpps_log('[DEBUG] ' . print_r($id_list, 1));
       tpps_log('[DEBUG] Process Synonym and Unit.');
       for ($j = 1; $j <= $phenotype_number; $j++) {
-        tpps_synonym_save(
-          $phenotype['phenotypes-meta'][$j],
-          $id_list['phenotype'][$j - 1]
-        );
+        foreach (array_values($id_list['phenotype']) as $synonym_phenotype_id) {
+          tpps_synonym_save(
+            $phenotype['phenotypes-meta'][$j],
+            $synonym_phenotype_id
+          );
+        }
       }
     }
     // [/VS].
