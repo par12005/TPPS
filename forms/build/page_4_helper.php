@@ -251,7 +251,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'synonym_id' => [
         '#type' => 'select',
         '#title' => 'Synonym: *',
-        '#options' => tpps_synonym_get_list(),
+        '#options' => $synonym_list = tpps_synonym_get_list(),
+        '#default_value' =>  array_key_first($synonym_list),
       ],
       // [/VS]
 
@@ -2123,4 +2124,19 @@ function tpps_build_field_description() {
  */
 function tpps_synonym_selector($id) {
   return ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][synonym_id]"]';
+}
+
+// There are several ways to provide this functionality for versions
+// prior to PHP 7.3.0. It is possible to use array_keys(),
+//  but that may be rather inefficient.
+//  It is also possible to use reset() and key(),
+//  but that may change the internal array pointer.
+//  An efficient solution, which does not change the internal array pointer, written as polyfill:
+if (!function_exists('array_key_first')) {
+  function array_key_first(array $arr) {
+    foreach($arr as $key => $unused) {
+      return $key;
+    }
+    return NULL;
+  }
 }
