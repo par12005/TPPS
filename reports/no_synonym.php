@@ -6,14 +6,20 @@
  */
 
 /**
- * Menu callback. Shows list of phenotypes without synonym.
+ * Menu callback. Shows list of new phenotypes without synonym.
  */
-function tpps_admin_no_synonym_report() {
-  // @TODO Build sql to get list of phenotypes without synonyms.
+function tpps_admin_no_synonym_new_report() {
+  $table = 'chado.phenotype_to_synonym';
+  $filter[] = ['name' => 'phenotype_synonyms_id', 'value' => 0];
+  return simple_table_report($table, $filter ?? []);
+}
 
-  //$table_name = 'public.users';
-  //$table_name = 'users';
-  $table_name = 'chado.phenotype';
-  return simple_table_report($table_name);
+/**
+ * Menu callback. Shows list of all phenotypes without synonym.
+ */
+function tpps_admin_no_synonym_all_report() {
+  $table = 'chado.phenotype';
+  //$filter[] = ['name' => 'phenotype_synonyms_id', 'value' => 0];
+  return simple_table_report($table, $filter ?? []);
 }
 
