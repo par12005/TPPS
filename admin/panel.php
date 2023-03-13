@@ -180,7 +180,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   while (($result = $query->fetchObject())) {
     $color = !empty($result->color) ? $result->color : 'white';
     $style = !array_key_exists($result->tpps_tag_id, $submission_tags) ? "display: none" : "";
-    $tooltip = $result->static ? "This tag cannot be removed" : "";
+    // $tooltip = $result->static ? "This tag cannot be removed" : "";
+    $tooltip = '';
     $tags_markup .= "<span title=\"$tooltip\" class=\"tag\" style=\"background-color:$color; $style\"><span class=\"tag-text\">{$result->name}</span>";
     if (!$result->static) {
       $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-remove\" class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
