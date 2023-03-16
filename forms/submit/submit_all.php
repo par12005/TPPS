@@ -1138,7 +1138,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     if ($id_list = tpps_chado_insert_multi($options['records'])) {
 
       // tpps_log('[DEBUG] ' . print_r($id_list, 1));
-      tpps_log('[DEBUG] Process Synonym and Unit.');
+      tpps_log('[INFO] Process Synonym and Unit.');
       for ($j = 1; $j <= $phenotype_number; $j++) {
         foreach (array_values($id_list['phenotype']) as $synonym_phenotype_id) {
           tpps_synonym_save(
