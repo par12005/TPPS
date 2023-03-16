@@ -146,7 +146,7 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
       . 'and Synonym #@synonym_id.',
       [
         '@phenotype_id' => $phenotype_id,
-        '@synonym_id' => $synonym_id,
+        '@synonym_id' => $current_phenotype['synonym_id'],
       ]
     );
   }
