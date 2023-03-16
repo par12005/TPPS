@@ -15,15 +15,16 @@ function tpps_admin_no_synonym_report() {
       //['data' => t("Name"), 'field' => $table . '.name', 'op' => 'count'],
       //['data' => t("Attribute Id"), 'field' => $table . '.attr_id', 'op' => 'count'],
   $meta = [
-    //'header' => [
-    //  ['data' => t("Phenotype Id"), 'field' => $table . '.phenotype_id', 'sort' => 'DESC'],
-    //  ['data' => t("Unique Name"), 'field' => $table . '.uniquename'],
-    //  ['data' => t("Name"), 'field' => $table . '.name'],
-    //  ['data' => t("Attribute Id"), 'field' => $table . '.attr_id'],
-    //  ['data' => t("Value"), 'field' => $table . '.value'],
-    //  ['data' => t("CValue"), 'field' => $table . '.cvalue_id'],
-    //  ['data' => t("Assay Id"), 'field' => $table . '.assay_id'],
-    //],
+    'header' => [
+      ['data' => t("Phenotype Id"), 'field' => $table . '.phenotype_id', 'sort' => 'DESC'],
+      ['data' => t("Unique Name"), 'field' => $table . '.uniquename'],
+      //['data' => t("Name"), 'field' => $table . '.name'],
+      ['data' => t("Name"), 'field' => $table . '.name', 'op' => 'count'],
+      ['data' => t("Attribute Id"), 'field' => $table . '.attr_id'],
+      ['data' => t("Value"), 'field' => $table . '.value'],
+      ['data' => t("CValue"), 'field' => $table . '.cvalue_id'],
+      ['data' => t("Assay Id"), 'field' => $table . '.assay_id'],
+    ],
     'tables' => [
       'chado.' . $table => [
         'fields' => [],
@@ -80,8 +81,7 @@ function tpps_admin_no_synonym_formatter(string $name, $value, array $row) {
 
     case 'name':
       if (!empty($value)) {
-        $path = url('admin/reports/no-synonym', [
-          'query' => [check_plain($name) => $formatted],
+        $path = url('admin/reports/no-synonym/name/' . $formatted, [
           'absolute' => TRUE,
         ]);
         $formatted = l(check_plain($value), $path);
@@ -90,3 +90,44 @@ function tpps_admin_no_synonym_formatter(string $name, $value, array $row) {
   }
   return $formatted;
 }
+
+/**
+ * Menu callback. Shows specific phenotype report which has no synonym.
+ */
+function tpps_admin_no_synonym_name_report($phenotype_name = '') {
+  if (empty($phenotype_name)) {
+    return;
+  }
+
+  $filter[] = ['name' => 'name', 'value' => $phenotype_name];
+  $table = 'phenotype';
+  $meta = [
+    'tables' => [
+      'chado.' . $table => [
+        'fields' => [],
+        'full_table_name' => 'chado.phenotype',
+        'schema' => 'chado',
+      ],
+      'chado.phenotype_to_synonym' => [
+        'join' => [
+          'type' => 'leftJoin',
+          'on' => 'phenotype.phenotype_id = phenotype_to_synonym.phenotype_id',
+        ],
+        'fields' => ['phenotype_synonyms_id'],
+      ],
+    ],
+    'formatter' => 'tpps_admin_no_synonym_formatter',
+    'pager' => 'both',
+  ];
+  // @TODO Check how to use 'op' => '>'.
+  //$filter[] = ['name' => 'phenotype_synonyms_id', 'value' => 0, 'operator' => '='];
+  if (count($_GET)) {
+    foreach ($_GET as $name => $value) {
+      if (!in_array($name, ['q', 'page', 'sort', 'order', 'count'])) {
+        $filter[] = ['name' => $name, 'value' => $value];
+      }
+    }
+  }
+  return simple_report($meta, $filter ?? []);
+}
+

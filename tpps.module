@@ -273,22 +273,31 @@ function tpps_menu() {
   );
 
   // [VS] Synonym and Unit reports.
-  $items['admin/reports/unit-warning'] = array(
+  $items['admin/reports/unit-warning'] = [
     'title' => 'Unit Warning',
     'description' => "List of Phenotypes which differs from Synonym's Unit.",
     'page callback' => 'tpps_admin_unit_warning_report',
     'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
+    'access arguments' => ['administer tpps module'],
     'file' => 'reports/unit_warning.php',
-  );
-  $items['admin/reports/no-synonym'] = array(
+  ];
+  $items['admin/reports/no-synonym'] = [
     'title' => 'Phenotypes without Synonym',
     'description' => "List of phenotypes without synonym.",
     'page callback' => 'tpps_admin_no_synonym_report',
     'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
+    'access arguments' => ['administer tpps module'],
     'file' => 'reports/no_synonym.php',
-  );
+  ];
+  $items['admin/reports/no-synonym/name/%'] = [
+    'title' => 'Specific Phenotype Name',
+    'description' => 'Specific Phenotype Name Report',
+    'page callback' => 'tpps_admin_no_synonym_name_report',
+    'page arguments' => [4],
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/no_synonym.php',
+  ];
   // [/VS]
 
   $items = array_merge($items, tpps_api_paths());
