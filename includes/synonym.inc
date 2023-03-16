@@ -111,7 +111,7 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  *   Phenotype Id.
  */
 function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
-  $debug_mode = TRUE;
+  $debug_mode = FALSE;
   if ($debug_mode) {
     tpps_log('[DEBUG] '
       . 'Phenotype Id: ' . $phenotype_id
@@ -143,10 +143,11 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
       ))
       ->execute();
     tpps_log('[INFO] Stored relation between Phenotype #@phenotype_id '
-      . 'and Synonym #@synonym_id.', array(
+      . 'and Synonym #@synonym_id.',
+      [
         '@phenotype_id' => $phenotype_id,
         '@synonym_id' => $synonym_id,
-      )
+      ]
     );
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -174,10 +175,10 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
 
   // @TODO Remove debug code.
   // Used for demo only.
-    db_merge('tpps_phenotype_unit_warning')
-      ->key(['phenotype_id' => $phenotype_id])
-      ->fields(['phenotype_id' => $phenotype_id])
-      ->execute();
+    //db_merge('tpps_phenotype_unit_warning')
+    //  ->key(['phenotype_id' => $phenotype_id])
+    //  ->fields(['phenotype_id' => $phenotype_id])
+    //  ->execute();
   // @End Remove debug code
 
 

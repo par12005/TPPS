@@ -44,8 +44,6 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
   $transaction = db_transaction();
 
-
-
   try {
 
     tpps_log('[INFO] Clearing Database...');
@@ -1139,7 +1137,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     // [VS] Store relations between Phenotype, Synonym, Unit.
     if ($id_list = tpps_chado_insert_multi($options['records'])) {
 
-      tpps_log('[DEBUG] ' . print_r($id_list, 1));
+      // tpps_log('[DEBUG] ' . print_r($id_list, 1));
       tpps_log('[DEBUG] Process Synonym and Unit.');
       for ($j = 1; $j <= $phenotype_number; $j++) {
         foreach (array_values($id_list['phenotype']) as $synonym_phenotype_id) {
