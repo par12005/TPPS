@@ -238,7 +238,7 @@ function tpps_flatten(array $state) {
     $data['#page_3_cleared'] = FALSE;
   }
 
-  $data['#skip_loc'] = !empty($page_3['skip_validation']);
+  $data['#skip_loc'] = FALSE;
   $loc = &$page_3['study_location'];
   $data['#location_type'] = (isset($loc['type']) and $loc['type']) ? $loc['type'] : NULL;
 
@@ -717,7 +717,7 @@ function tpps_completed_display($accession = NULL) {
     border: 1px solid #cccccc;
     border-radius: 4px;
     padding: 0px 10px;
-  }		
+  }
   ";
   drupal_add_css($css, 'inline');
 

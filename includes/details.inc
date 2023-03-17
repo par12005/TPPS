@@ -78,26 +78,24 @@ function tpps_details($accession = NULL) {
       }
     }
 
-    if (empty($state['saved_values'][TPPS_PAGE_3]['skip_validation'])) {
-      $map_api_key = variable_get('tpps_maps_api_key', NULL);
-      $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-        async defer></script>"
-        . "<div id=\"_map_wrapper\"></div>";
-      $tree_info = array();
-      if (!empty($state['tree_info'])) {
-        foreach ($state['tree_info'] as $name => $info) {
-          if (!empty($info['lat']) and !empty($info['lng'])) {
-            $tree_info[] = array(
-              $name,
-              $info['lat'],
-              $info['lng'],
-            );
-          }
+    $map_api_key = variable_get('tpps_maps_api_key', NULL);
+    $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
+      async defer></script>"
+      . "<div id=\"_map_wrapper\"></div>";
+    $tree_info = array();
+    if (!empty($state['tree_info'])) {
+      foreach ($state['tree_info'] as $name => $info) {
+        if (!empty($info['lat']) and !empty($info['lng'])) {
+          $tree_info[] = array(
+            $name,
+            $info['lat'],
+            $info['lng'],
+          );
         }
-        drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
       }
-      $output .= $map_api_tools;
+      drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
     }
+    $output .= $map_api_tools;
     drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
     drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
@@ -110,11 +108,6 @@ function tpps_details($accession = NULL) {
       $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
       $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
       $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
-    }
-
-    if (!empty($state['saved_values'][TPPS_PAGE_3]['skip_validation'])) {
-      $image_path = drupal_get_path('module', 'tpps') . '/images/';
-      $pub_link .= "<img title=\"This submission contains no location information\" src=\"/{$image_path}no_location.png\">";
     }
 
     $output .= "<h2>$pub_link</h2>";
@@ -137,7 +130,7 @@ function tpps_details($accession = NULL) {
       . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
           jQuery('#abstract')[0].innerHTML = `{$state['abstract']}`;
         }));</script>";
-    if (empty($state['saved_values'][TPPS_PAGE_3]['skip_validation']) and module_exists('cartogratree')) {
+    if (module_exists('cartogratree')) {
       $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograPlant</a><br>";
     }
     $output .= "<a href=\"$base_url/tpps/api/files/$accession\">Download compressed raw files</a><br>";
@@ -186,7 +179,7 @@ function tpps_details_tabs(array &$state) {
       $mass_spectro_exist = TRUE;
     }
   }
-  
+
   $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes / Environments</a></li>' : "";
   $output .= $g_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
   $output .= $mass_spectro_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#mass_spectrometry">Mass Spectrometry</a></li>' : "";
@@ -534,7 +527,7 @@ function tpps_details_search(array $form, array $form_state) {
 
   $form['reset_button'] = array(
     '#markup' => '<button class="btn btn-primary form-button" type="reset"/>Reset</button>',
-  ); 
+  );
 
   $form['#attributes'] = array(
     'style' => 'text-align:center',
@@ -647,7 +640,7 @@ function tpps_details_species(array &$state) {
       $common_name,
     );
   }
-  
+
   $vars = array(
     'header' => array(
       'Order',
@@ -705,7 +698,7 @@ function tpps_details_study(array &$state) {
       if(stripos($file_url, 'core/labs') === FALSE) {
         $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
       }
-      
+
     }
   }
 
@@ -774,7 +767,7 @@ function tpps_details_get_study_file_ids($state) {
         }
         if(isset($saved_values[$i]['organism-' . $j]['phenotype']['metadata'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['metadata']);
-        }        
+        }
       }
       for($j=1; $j<=$organism_count; $j++) {
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay'])) {
@@ -788,10 +781,10 @@ function tpps_details_get_study_file_ids($state) {
         }
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs']);
-        } 
+        }
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra']);
-        }                        
+        }
       }
     }
   }
@@ -833,8 +826,6 @@ function tpps_details_trees(array &$state) {
     return $output;
   }
 
-  $skip = !empty($state['saved_values'][TPPS_PAGE_3]['skip_validation']);
-
   $_GET['page'] = $page;
   pager_default_initialize(count($state['tree_info']), $per_page);
   $chunks = array_chunk($state['tree_info'], $per_page, TRUE);
@@ -851,10 +842,8 @@ function tpps_details_trees(array &$state) {
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
       tpps_entity_link($id, $species_name, 'Organism'),
     );
-    if (!$skip) {
-      $row[] = $info['lat'];
-      $row[] = $info['lng'];
-    }
+    $row[] = $info['lat'];
+    $row[] = $info['lng'];
     $rows[] = $row;
   }
 
@@ -863,10 +852,10 @@ function tpps_details_trees(array &$state) {
     'Identifier',
     'Species',
   );
-  if (!$skip) {
+  //if (!$skip) {
     $header[] = 'Latitude';
     $header[] = 'Longitude';
-  }
+  //}
 
   $vars = array(
     'header' => $header,
@@ -1039,7 +1028,7 @@ function tpps_details_genotype(array &$state) {
     $query->condition('ps.project_id', $state['ids']['project_id']);
     $query = $query->execute();
     $total = $query->fetchObject()->count;
-    
+
     $total_array = array(
       'expire_time' => time() + variable_get('tpps_tab_genotype_total_cache_time', 30*(24*60*60)),
       'total' => $total
