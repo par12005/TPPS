@@ -1022,7 +1022,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $options['VCF'] = 'VCF';
 
   $fields['files']['file-type'] = array(
-    '#type' => 'checkboxes',
+    '#type' => 'select',
     '#title' => t('Genotype File Types (select all that apply): *'),
     '#options' => $options,
     '#ajax' => array(
@@ -1960,7 +1960,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 function tpps_page_4_marker_info(array &$fields, $id) {
 
   $fields['marker-type'] = array(
-    '#type' => 'checkboxes',
+    '#type' => 'select',
     '#title' => t('Marker Type (select all that apply): *'),
     '#options' => drupal_map_assoc(array(
       t('SNPs'),
