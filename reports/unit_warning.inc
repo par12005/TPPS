@@ -42,7 +42,6 @@ function tpps_admin_unit_warning_report(array $filter = array()) {
   return simple_report($meta_data, $filter);
 }
 
-
 /**
  * Values formatter for 'simple_report'.
  *

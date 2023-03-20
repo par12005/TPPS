@@ -18,8 +18,8 @@ function tpps_admin_no_synonym_report() {
     'header' => [
       ['data' => t("Phenotype Id"), 'field' => $table . '.phenotype_id', 'sort' => 'DESC'],
       ['data' => t("Unique Name"), 'field' => $table . '.uniquename'],
-      //['data' => t("Name"), 'field' => $table . '.name'],
-      ['data' => t("Name"), 'field' => $table . '.name', 'op' => 'count'],
+      ['data' => t("Name"), 'field' => $table . '.name'],
+      //['data' => t("Name"), 'field' => $table . '.name', 'op' => 'count'],
       ['data' => t("Attribute Id"), 'field' => $table . '.attr_id'],
       ['data' => t("Value"), 'field' => $table . '.value'],
       ['data' => t("CValue"), 'field' => $table . '.cvalue_id'],
