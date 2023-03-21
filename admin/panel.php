@@ -32,7 +32,14 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
     tpps_admin_panel_top($form);
   }
   // Special care for Phenotype Synonyms reports.
+  // @TODO Better solution is to move submission's pages to
+  //   /tpps-admin-panel/<something>/TGDRXXXXX
+  // to have ability to add menu items like:
+  //   /tpps-admin-panel/reports/no-synonyms
+  //   /tpps-admin-panel/reports/unit-warning
   else if ($accession == 'phenotype-synonyms') {
+    // It works but there is no menu items which could be managed using
+    // Drupal Admin area and it's hardcoded.
     if (arg(2) == 'no-synonyms') {
       module_load_include('inc', 'tpps', 'reports/no_synonym');
       if (arg(3) == 'name') {
@@ -861,6 +868,17 @@ function tpps_save_admin_comments(array $form, array $form_state) {
  */
 function tpps_admin_panel_top(array &$form) {
   global $base_url;
+
+  // [VS] Add block with links to report pages.
+  $block = module_invoke('tpps', 'block_view', 'tpps_report_menu');
+  $form['report_menu'] = [
+    '#type' => 'fieldset',
+    '#title' => t('TPPS Reports'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    'table' => ['#markup' => $block['content']],
+  ];
+  // [/VS]
 
   $submissions = tpps_load_submission_multiple(array(), FALSE);
 

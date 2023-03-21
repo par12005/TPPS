@@ -1130,14 +1130,54 @@ function tpps_main_submit($form, &$form_state) {
  * Adds the tpps_status block.
  */
 function tpps_block_info() {
-  // dpm("BLOCK INFO");.
   $blocks['tpps_status'] = array(
-  // info: The name of the block.
     'info' => t('TPPS Status'),
   );
-
+  // [VS]
+  $blocks['tpps_report_menu'] = array(
+    'info' => t('Reports'),
+    'description'=>t('Links to various report pages.'),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  // [/VS]
   return $blocks;
 }
+
+// [VS]
+/**
+ * Implements hook_block_view().
+ */
+function tpps_block_view($delta = '') {
+  switch ($delta) {
+    // Shows links to report's pages.
+    case 'tpps_report_menu':
+      $block['subject'] = 'TPPS Reports';
+      $block['content'] = tpps_report_menu_block();
+  }
+  return $block;
+}
+
+/**
+ * Renders list of links to report pages.
+ *
+ * @return string
+ *   Returns rendered list.
+ *
+ * @TODO This function is not a hook and should be moved to some of the
+ * included files. But there could be not only synonym's related links later
+ * and currently all files included for any pages and it will not improve
+ * page load speed.
+ * @TODO Minor. Create a hook and allow each report dynamically add links
+ * to own page to this list. Problem: there is no menu items (custom links).
+ */
+function tpps_report_menu_block() {
+  $items = [
+    l(t('Phenotype without synonyms'), 'tpps-admin-panel/phenotype-synonyms/no-synonyms'),
+    l(t('Unit Warning'), 'tpps-admin-panel/phenotype-synonyms/unit-warning'),
+  ];
+  return theme('item_list', ['items' => $items]);
+}
+// [/VS]
 
 /**
  * Implements hook_block_view_alter().
