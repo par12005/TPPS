@@ -279,7 +279,7 @@ function tpps_menu() {
     'page callback' => 'tpps_admin_unit_warning_report',
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
-    'file' => 'reports/unit_warning.php',
+    'file' => 'includes/report.unit_warning.inc',
   ];
   $items['admin/reports/no-synonym'] = [
     'title' => 'Phenotypes without Synonym',
@@ -287,7 +287,7 @@ function tpps_menu() {
     'page callback' => 'tpps_admin_no_synonym_report',
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
-    'file' => 'reports/no_synonym.php',
+    'file' => 'includes/report.no_synonym.inc',
   ];
   $items['admin/reports/no-synonym/name/%'] = [
     'title' => 'Specific Phenotype Name',
@@ -296,7 +296,7 @@ function tpps_menu() {
     'page arguments' => [4],
     'type' => MENU_NORMAL_ITEM,
     'access arguments' => ['administer tpps module'],
-    'file' => 'reports/no_synonym.php',
+    'file' => 'includes/report.no_synonym.inc',
   ];
   // [/VS]
 

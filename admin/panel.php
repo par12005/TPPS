@@ -41,7 +41,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
     // It works but there is no menu items which could be managed using
     // Drupal Admin area and it's hardcoded.
     if (arg(2) == 'no-synonyms') {
-      module_load_include('inc', 'tpps', 'reports/no_synonym');
+      module_load_include('inc', 'tpps', 'includes/report.no_synonym');
       if (arg(3) == 'name') {
         $form['no-synonyms'] = ['#markup' =>
           call_user_func('tpps_admin_no_synonym_name_report', arg(4))
@@ -54,7 +54,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
       }
     }
     if (arg(2) == 'unit-warning') {
-      module_load_include('inc', 'tpps', 'reports/unit_warning');
+      module_load_include('inc', 'tpps', 'includes/report.unit_warning');
       $form['no-synonyms'] = ['#markup' =>
         call_user_func('tpps_admin_unit_warning_report')
       ];
