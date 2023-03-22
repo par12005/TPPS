@@ -1123,14 +1123,25 @@ function tpps_details_mass_spectrometry(array &$state) {
   $per_page = 20;
   $start = $page * $per_page;
 
+  // $query = db_select('chado.phenotype', 'p');
+  // $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
+  // $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
+  // $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
+  // $query->addExpression('count(p.phenotype_id)', 'count');
+  // $query->condition('ps.project_id', $state['ids']['project_id']);
+  // $query = $query->execute();
+  // $total = $query->fetchObject()->count;
+
+  // Get total count which is used for pager system (Rish)
   $query = db_select('chado.phenotype', 'p');
   $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
   $query->addExpression('count(p.phenotype_id)', 'count');
+  $query->condition('p.attr_id', tpps_load_cvterm('intensity')->cvterm_id);
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query = $query->execute();
-  $total = $query->fetchObject()->count;
+  $total = $query->fetchObject()->count;  
 
   $_GET['page'] = $page;
   pager_default_initialize($total, $per_page);
