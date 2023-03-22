@@ -1363,17 +1363,3 @@ function tpps_media_browser_plugins_alter(&$plugins) {
    unset($plugins['media_default--media_browser_my_files']);
  // }
 }
-
-/**
- * Implements hook_query_alter().
- *
- * Query Tag: tpps_admin_no_synonym_report.
- *
- * @param QueryAlterableInterface $query
- */
-function tpps_query_alter(QueryAlterableInterface $query) {
-  if ($query->hasTag('tpps_admin_no_synonym_report')) {
-    tpps_query_tpps_admin_no_synonym_report_alter($query);
-  }
-}
-
