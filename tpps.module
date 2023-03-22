@@ -1364,42 +1364,16 @@ function tpps_media_browser_plugins_alter(&$plugins) {
  // }
 }
 
-
-
-// @TODO Remove debug code.
-// Must not be used at production site because do not sanitize $message.
 /**
- * Dumps given array of variables to watchdog log.
+ * Implements hook_query_alter().
  *
- * Usage in hook_form_alter():
- * tpps_debug(array(
- *   'form_id' => $form_id,
- *   'form' => $form,
- *   'form_state' => $form_state,
- * ));
- * @param array $variables
- *   Accosiative array of variables where key is a variable name.
+ * Query Tag: tpps_admin_no_synonym_report.
+ *
+ * @param QueryAlterableInterface $query
  */
-function tpps_debug($variables) {
-  $skip = array(
-    'dblog_clear_log_form',
-    'dblog_filter_form',
-    'website_search_box_form',
-    'search_form',
-    'masquerade_block_1',
-  );
-  $condition = (
-    isset($variables['form_id'])
-    && in_array($variables['form_id'], $skip)
-  );
-  if ($condition) {
-    return;
+function tpps_query_alter(QueryAlterableInterface $query) {
+  if ($query->hasTag('tpps_admin_no_synonym_report')) {
+    tpps_query_tpps_admin_no_synonym_report_alter($query);
   }
-  //dpm($variables['form_id'], 'form_id');
-  $message = array();
-  foreach ($variables as $name => $value) {
-    $message[] = '<h3>' . $name . ':</h3><pre>'
-      . print_r($value, 1) . '</pre>';
-  }
-  watchdog('tpps_debug', implode(' <hr />', $message), array(), WATCHDOG_DEBUG);
 }
+
