@@ -342,6 +342,14 @@ function tpps_flatten(array $state) {
             }
             $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
           }
+
+          // Rish comments: 21 March 2023
+          // Based on the example of TGDR465, there is a single ISO file that can be uploaded
+          // I *think* the headers should match each phenotype name that is added manually 
+          // from the previous part of page 4
+          if (isset($pheno['file']) and $pheno['file']) {
+            $data["$org_name Phenotype File"] = $pheno['file'];
+          }
         }
 
         if (isset($org['genotype'])) {

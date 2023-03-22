@@ -1067,9 +1067,9 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
 
     // throw new Exception('$phenotype[check]:' . $phenotype['check'] . "\n");
     if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
-      $meta_fid = $phenotype['metadata'];
+      $meta_fid = intval($phenotype['metadata']);
       print_r('META_FID:' . $meta_fid . "\n");
-      // Added because 009 META FID was 0 which caused failures
+      // Added because TGDR009 META FID was 0 which caused failures
       if ($meta_fid > 0) {
         
         tpps_add_project_file($form_state, $meta_fid);
