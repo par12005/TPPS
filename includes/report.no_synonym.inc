@@ -78,22 +78,14 @@ function tpps_admin_no_synonym_formatter(string $name, $value, array $row) {
   }
   switch ($name) {
     // @TODO Update to use for Count Report.
-    case 'phenotype_id':
+    case 'study_name':
       if (!empty($value)) {
         $path = 'wholeplant/' . check_plain($value);
-        $path = 'tpps-admin-panel/TGDR465';
+        $path = 'tpps-admin-panel/' . $value;
         $formatted = l(check_plain($value), $path);
       }
       break;
 
-    case 'name':
-      if (!empty($value)) {
-        $path = url('admin/reports/no-synonym/name/' . $formatted, [
-          'absolute' => TRUE,
-        ]);
-        $formatted = l(check_plain($value), $path);
-      }
-      break;
   }
   return $formatted;
 }

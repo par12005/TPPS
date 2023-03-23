@@ -8,26 +8,26 @@
 /**
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
-function tpps_admin_unit_warning_report(array $filter = array()) {
+function tpps_admin_unit_warning_report(array $filter = []) {
   // Note: Unique fields: .
   $table = 'tpps_phenotype_unit_warning';
   //return simple_table_report($table);
-  $meta_data = array(
+  $meta_data = [
     'header' => [
       ['data' => t('Phenotype Id'), 'field' => $table . '.phenotype_id'],
-      //['data' => t('Phenotype Name'), 'field' => 'chado.phenotype.name'],
+      ['data' => t('Phenotype Name'), 'field' => 'phenotype.name'],
     ],
     'tables' => [
       $table => [],
-      //'chado.phenotype' => [
-      //  'join' => [
-      //    'type' => 'leftJoin',
-      //    'on' => $table . '.phenotype_id = chado.phenotype.phenotype_id',
-      //  ],
-      //  'fields' => ['name'],
-      //]
+      'chado.phenotype' => [
+        'join' => [
+          'type' => 'left outer',
+          'on' => $table . '.phenotype_id = phenotype.phenotype_id',
+        ],
+        'fields' => ['name'],
+      ]
     ],
-    'formatter' => 'tpps_report_formatter',
+    'formatter' => 'tpps_admin_unit_warning_report_formatter',
     'items_per_page' => variable_get('tpps_report_items_per_page', 25),
     'refresh_time' => variable_get('tpps_report_refresh_time', 0),
     'tableselect' => [
@@ -38,7 +38,7 @@ function tpps_admin_unit_warning_report(array $filter = array()) {
         'Remove' => 'tpps_unit_warning_report_remove',
       ],
     ],
-  );
+  ];
   return simple_report($meta_data, $filter);
 }
 
@@ -60,7 +60,7 @@ function tpps_admin_unit_warning_report(array $filter = array()) {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_report_formatter(string $name, $value, array $row) {
+function tpps_admin_unit_warning_report_formatter(string $name, $value, array $row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;
