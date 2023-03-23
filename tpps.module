@@ -1158,28 +1158,6 @@ function tpps_block_view($delta = '') {
 }
 
 /**
- * Renders list of links to report pages.
- *
- * @return string
- *   Returns rendered list.
- *
- * @TODO This function is not a hook and should be moved to some of the
- * included files. But there could be not only synonym's related links later
- * and currently all files included for any pages and it will not improve
- * page load speed.
- * @TODO Minor. Create a hook and allow each report dynamically add links
- * to own page to this list. Problem: there is no menu items (custom links).
- */
-function tpps_report_menu_block() {
-  $items = [
-    l(t('Phenotype without synonyms'), 'tpps-admin-panel/phenotype-synonyms/no-synonyms'),
-    l(t('Unit Warning'), 'tpps-admin-panel/phenotype-synonyms/unit-warning'),
-  ];
-  return theme('item_list', ['items' => $items]);
-}
-// [/VS]
-
-/**
  * Implements hook_block_view_alter().
  *
  * This function populates the TPPS Status Bar block with data that has already

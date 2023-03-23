@@ -8,6 +8,13 @@
  * submissions.
  */
 
+define(
+  'TPPS_NO_SYNONYM_REPORT_NAME', 'Phenotypes without synonym'
+);
+define(
+  'TPPS_UNIT_WARNING_REPORT_NAME', 'Phenotypes which units differs from Synonym'
+);
+
 /**
  * Creates the administrative panel form.
  *
@@ -42,19 +49,19 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
     // Drupal Admin area and it's hardcoded.
     if (arg(2) == 'no-synonyms') {
       module_load_include('inc', 'tpps', 'includes/report.no_synonym');
-      if (arg(3) == 'name') {
-        $form['no-synonyms'] = ['#markup' =>
-          call_user_func('tpps_admin_no_synonym_name_report', arg(4))
-        ];
-      }
-      else {
-        $form['no-synonyms'] = ['#markup' =>
-          call_user_func('tpps_admin_no_synonym_report')
-        ];
-      }
+      // @TODO Use drupal's page templates.
+      $form['title'] = [
+        '#markup' => '<h2>' . TPPS_NO_SYNONYM_REPORT_NAME . '</h2>'
+      ];
+      $form['no-synonyms'] = ['#markup' =>
+        call_user_func('tpps_admin_no_synonym_report')
+      ];
     }
     if (arg(2) == 'unit-warning') {
       module_load_include('inc', 'tpps', 'includes/report.unit_warning');
+      $form['title'] = [
+        '#markup' => '<h2>' . TPPS_UNIT_WARNING_REPORT_NAME . '</h2>'
+      ];
       $form['no-synonyms'] = ['#markup' =>
         call_user_func('tpps_admin_unit_warning_report')
       ];
@@ -869,14 +876,18 @@ function tpps_save_admin_comments(array $form, array $form_state) {
 function tpps_admin_panel_top(array &$form) {
   global $base_url;
 
-  // [VS] Add block with links to report pages.
-  $block = module_invoke('tpps', 'block_view', 'tpps_report_menu');
+  // [VS] Add links to report pages.
+  $panel_url = 'tpps-admin-panel/phenotype-synonyms';
+  $items = [
+    l(TPPS_NO_SYNONYM_REPORT_NAME, $panel_url . '/no-synonyms'),
+    l(TPPS_UNIT_WARNING_REPORT_NAME, $panel_url . '/unit-warning'),
+  ];
   $form['report_menu'] = [
     '#type' => 'fieldset',
     '#title' => t('TPPS Reports'),
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
-    'table' => ['#markup' => $block['content']],
+    'table' => ['#markup' => theme('item_list', ['items' => $items])],
   ];
   // [/VS]
 
