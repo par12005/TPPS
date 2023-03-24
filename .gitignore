@@ -3,3 +3,6 @@
 vendor/
 .env
 docs/build/
+modules/
+tags
+*.swp
