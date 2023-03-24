@@ -1811,6 +1811,10 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       // dpm('done: ' . date('r'));.
     }
   }
+  if (isset($project_id)) {
+    tpps_generate_genotype_materialized_view($project_id);
+  }
+
 }
 
 /**
@@ -2973,6 +2977,77 @@ function tpps_other_marker_headers($fid, array $cols) {
     $results[$col] = $headers[$col];
   }
   return $results;
+}
+
+/**
+ * This will generate all genotype materialized views
+ */
+function tpps_generate_all_genotype_materialized_views() {
+  // Get count of all studies
+  $results = chado_query('SELECT COUNT(DISTINCT(accession)) as c1 FROM "public"."tpps_submission";',[]);
+  $total = 0;
+  foreach ($results as $row) {
+    $total = $row->c1;
+  }
+  $current_count = 0;
+
+  // Get all the study accessions from database
+  $results = chado_query('SELECT DISTINCT(accession) as accession FROM "public"."tpps_submission" ORDER BY accession;',[]);
+  foreach ($results as $row) {
+    $current_count = $current_count+1;
+    echo "Processing genotype materialized view: $current_count of $total\n";
+    // Get the submission state
+    $state = tpps_load_submission($row->accession);
+    // Check if there's a project_id in the submission state
+    $project_id = $state['ids']['project_id'] ?? NULL;
+    // Once the project_id is not null, we're good
+    if (isset($project_id)) {
+      tpps_generate_genotype_materialized_view($project_id);
+    }
+  }
+}
+
+/**
+ * This function will generate a genotype materialized view for 
+ * the specific project_id (which you must get from the state object).
+ * This is used for the tpps/details genotypes tab
+ *
+ *
+ * @param mixed $project_id
+ *   The project ID of the study. NOT THE STUDY ACCESSION!
+ * 
+ * 
+ */
+function tpps_generate_genotype_materialized_view($project_id) {
+  // Ensure the project_id is an integer
+  $project_id = intval($project_id); 
+  if ($project_id <= 0) {
+    return;
+  }
+  $view_name = 'chado.genotypes_' . $project_id;
+  echo "Attempting to create materialized view (if it does not exist): " . $view_name . "\n";
+  chado_query('CREATE MATERIALIZED VIEW IF NOT EXISTS ' . $view_name . ' AS ' .
+    "(SELECT g.genotype_id AS 
+    genotype_id, 
+    g.name AS name, 
+    g.uniquename AS uniquename, 
+    g.description AS description, 
+    g.type_id AS type_id, 
+    s.uniquename AS s_uniquename, 
+    s.stock_id AS stock_id 
+    FROM chado.genotype g 
+    INNER JOIN chado.stock_genotype sg ON sg.genotype_id = g.genotype_id 
+    INNER JOIN chado.project_stock ps ON ps.stock_id = sg.stock_id 
+    INNER JOIN chado.stock s ON s.stock_id = sg.stock_id 
+    WHERE (ps.project_id = '" . $project_id . "')" . ') ' . 
+    "WITH NO DATA"
+  ,[]);
+
+  // Generate the data / regenerate if necessary
+  echo "Refreshing materialized view: " . $view_name . "\n";
+  chado_query('REFRESH MATERIALIZED VIEW ' . $view_name, []);
+  echo "Finished refresh of " . $view_name . "\n";
+  
 }
 
 /**
