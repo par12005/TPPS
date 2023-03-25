@@ -6,3 +6,4 @@ docs/build/
 modules/
 tags
 *.swp
+.vimrc*
