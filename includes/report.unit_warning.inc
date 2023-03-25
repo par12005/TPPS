@@ -12,7 +12,7 @@ function tpps_admin_unit_warning_report(array $filter = []) {
   // Note: Unique fields: .
   $table = 'tpps_phenotype_unit_warning';
   //return simple_table_report($table);
-  $meta_data = [
+  $meta = [
     'header' => [
       ['data' => t('Phenotype Id'), 'field' => $table . '.phenotype_id'],
       ['data' => t('Phenotype Name'), 'field' => 'phenotype.name'],
@@ -30,16 +30,14 @@ function tpps_admin_unit_warning_report(array $filter = []) {
     'formatter' => 'tpps_admin_unit_warning_report_formatter',
     'items_per_page' => variable_get('tpps_report_items_per_page', 25),
     'refresh_time' => variable_get('tpps_report_refresh_time', 0),
-    'tableselect' => [
-      'primary_key' => 'phenotype_id',
-      'select_all' => TRUE,
-      'actions' => [
-        // name => callback.
-        'Remove' => 'tpps_unit_warning_report_remove',
-      ],
+    'primary_key' => 'phenotype_id',
+    'select_all' => FALSE,
+    'actions' => [
+      // name => callback.
+      'Remove' => 'tpps_unit_warning_report_remove',
     ],
   ];
-  return simple_report($meta_data, $filter);
+  return simple_report_tableselect($meta, $filter);
 }
 
 /**

@@ -19,7 +19,7 @@ function tpps_admin_no_synonym_report() {
   $table = 'phenotype';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
-    //'tag' => 'debug',
+//    'tag' => 'debug',
     'header' => [
       ['data' => t("Study"), 'field' => 'study_name'],
       ['data' => t("Phenotype Name"), 'field' => $table . '.name'],
