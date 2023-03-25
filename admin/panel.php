@@ -48,6 +48,30 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   return $form;
 }
 
+function tpps_manage_generate_all_materialized_views(array $form, array &$form_state, $option = NULL) {
+  global $user;
+  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+
+
+  module_load_include('php', 'tpps', 'forms/submit/submit_all');
+
+  $includes = array();
+  $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+  $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+  $args = array();
+  $jid = tripal_add_job("Generate materialized views for all studies", 'tpps', 'tpps_generate_all_genotype_materialized_views', $args, $user->uid, 10, $includes, TRUE);
+
+  $markup = "";
+  $markup = '<div>A job has been created to (re)generate materialized views for all studies</div>';
+  $form['item1'] = array(
+    '#type' => 'markup',
+    '#markup' => $markup
+  );
+
+  return $form;
+}
+
 /**
  * Build form to manage TPPS submissions from admin panel.
  *
@@ -187,7 +211,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   while (($result = $query->fetchObject())) {
     $color = !empty($result->color) ? $result->color : 'white';
     $style = !array_key_exists($result->tpps_tag_id, $submission_tags) ? "display: none" : "";
-    $tooltip = $result->static ? "This tag cannot be removed" : "";
+    // $tooltip = $result->static ? "This tag cannot be removed" : "";
+    $tooltip = '';
     $tags_markup .= "<span title=\"$tooltip\" class=\"tag\" style=\"background-color:$color; $style\"><span class=\"tag-text\">{$result->name}</span>";
     if (!$result->static) {
       $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-remove\" class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
@@ -575,6 +600,12 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#value' => t("Refresh TPPS cvterms cache"),
   );
 
+  $form['REGENERATE_GENOTYPE_MATERIALIZED_VIEW'] = array(
+    '#type' => 'submit',
+    '#prefix' => '<h2 style="margin-top: 30px;">REGENERATE GENOTYPE MATERIALIZED VIEW</h2>This regenerates the genotype view for the tpps details page.<br />',
+    '#value' => t("Regenerate genotype materialized view"),
+  );
+
   // Remove this study's markers and genotypes
   $form['REMOVE_STUDY_MARKERS_GENOTYPES'] = array(
     '#type' => 'submit',
@@ -590,7 +621,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#default_value' => '',
   );
 
-  // Remove this study's markers and genotypes
   $form['CHANGE_TGDR_NUMBER_SUBMIT'] = array(
     '#type' => 'submit',
     '#value' => t("Change TGDR number"),
@@ -1012,6 +1042,22 @@ function tpps_admin_panel_top(array &$form) {
   krsort($approved);
   krsort($incomplete);
 
+
+  $form['general_tasks'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General tasks'),
+    '#collapsible' => TRUE,
+  );
+
+  $markup_genotype_views = '';
+  $markup_genotype_views .= '<a target="_blank" href="/tpps-admin-panel/refresh-genotypes-materialized-views">Refresh all genotype
+    materialized views</a>';
+  $form['general_tasks']['genotype_views'] = array(
+    '#type' => 'markup',
+    '#markup' => $markup_genotype_views
+  );
+
+
   $vars = array(
     'attributes' => array(
       'class' => array('view', 'tpps_table'),
@@ -1352,6 +1398,17 @@ function tpps_admin_panel_submit($form, &$form_state) {
       }
       tpps_update_submission($state);
       drupal_set_message(t('VCF disable import setting saved'), 'status');
+      break;
+
+    case "Regenerate genotype materialized view":
+      global $user;
+      $project_id = $state['ids']['project_id'] ?? NULL;
+      $includes = array();
+      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+      $args = array($project_id);
+      $jid = tripal_add_job("Generate materialized view for $accession (project_id=$project_id)", 'tpps', 'tpps_generate_genotype_materialized_view', $args, $user->uid, 10, $includes, TRUE);
+
       break;
 
     case "Remove this study's markers and genotypes":

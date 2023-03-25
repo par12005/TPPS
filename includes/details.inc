@@ -997,6 +997,7 @@ function tpps_details_phenotype(array &$state) {
  *   The HTML table of plants and genotypes associated with the submission.
  */
 function tpps_details_genotype(array &$state) {
+  $project_id = $state['ids']['project_id'];
   $params = drupal_get_query_parameters($_POST);
   $page = 0;
   if (!empty($params['page'])) {
@@ -1006,65 +1007,78 @@ function tpps_details_genotype(array &$state) {
   $per_page = 20;
   $start = $page * $per_page;
 
-  // Set total check = false to begin with
-  $total_check = false;
+  // // Set total check = false to begin with
+  // $total_check = false;
 
-  // Check cache to see if a total is available
-  $total_array = variable_get('tpps_tab_genotype_' + $state['ids']['project_id'] + '_total');
-  if($total_array == NULL) {
-    $total_check = true;
-  }
-  else {
-    // total array should have an expire_time
-    if($total_array['expire_time'] < time()) {
-      $total_check = true;
-    }
-    else {
-      $total = $total_array['total'];
-    }
+  // // Check cache to see if a total is available
+  // $total_array = variable_get('tpps_tab_genotype_' + $state['ids']['project_id'] + '_total');
+  // if($total_array == NULL) {
+  //   $total_check = true;
+  // }
+  // else {
+  //   // total array should have an expire_time
+  //   if($total_array['expire_time'] < time()) {
+  //     $total_check = true;
+  //   }
+  //   else {
+  //     $total = $total_array['total'];
+  //   }
 
-  }
+  // }
 
+  //
 
-  $dev = FALSE;
-  if($dev == TRUE) {
-    $total_check = true;
-  }
+  // $dev = FALSE;
+  // if($dev == TRUE) {
+  //   $total_check = true;
+  // }
 
-  if($total_check) {
-    $query = db_select('chado.genotype', 'g');
-    $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
-    $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
-    $query->addExpression('count(g.genotype_id)', 'count');
-    $query->condition('ps.project_id', $state['ids']['project_id']);
-    $query = $query->execute();
-    $total = $query->fetchObject()->count;
+  // if($total_check) {
+  //   $query = db_select('chado.genotype', 'g');
+  //   $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
+  //   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
+  //   $query->addExpression('count(g.genotype_id)', 'count');
+  //   $query->condition('ps.project_id', $state['ids']['project_id']);
+  //   $query = $query->execute();
+  //   $total = $query->fetchObject()->count;
     
-    $total_array = array(
-      'expire_time' => time() + variable_get('tpps_tab_genotype_total_cache_time', 30*(24*60*60)),
-      'total' => $total
-    );
-    variable_set('tpps_tab_genotype_' + $state['ids']['project_id'] + '_total', $total_array);
+  //   $total_array = array(
+  //     'expire_time' => time() + variable_get('tpps_tab_genotype_total_cache_time', 7*(24*60*60)),
+  //     'total' => $total
+  //   );
+  //   variable_set('tpps_tab_genotype_' + $state['ids']['project_id'] + '_total', $total_array);
+  // }
+
+
+  $query_results = chado_query('SELECT COUNT(*) as c1 FROM chado.genotypes_' . $project_id);
+  $total = 0;
+  foreach ($query_results as $row) {
+    $total = $row->c1;
   }
+
 
   $_GET['page'] = $page;
   pager_default_initialize($total, $per_page);
 
-  $query = db_select('chado.genotype', 'g');
-  $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
-  $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
-  $query->join('chado.stock', 's', 's.stock_id = sg.stock_id');
-  $query->fields('g', array(
-    'genotype_id',
-    'name',
-    'uniquename',
-    'description',
-    'type_id',
-  ));
-  $query->fields('s', array('uniquename', 'stock_id'));
-  $query->condition('ps.project_id', $state['ids']['project_id']);
-  $query->range($start, $per_page);
-  $query = $query->execute();
+  // Removed by Rish in favour of materialized views per project_id / study 3/24/2023
+  // $query = db_select('chado.genotype', 'g');
+  // $query->join('chado.stock_genotype', 'sg', 'sg.genotype_id = g.genotype_id');
+  // $query->join('chado.project_stock', 'ps', 'ps.stock_id = sg.stock_id');
+  // $query->join('chado.stock', 's', 's.stock_id = sg.stock_id');
+  // $query->fields('g', array(
+  //   'genotype_id',
+  //   'name',
+  //   'uniquename',
+  //   'description',
+  //   'type_id',
+  // ));
+  // $query->fields('s', array('uniquename', 'stock_id'));
+  // $query->condition('ps.project_id', $state['ids']['project_id']);
+  // $query->range($start, $per_page);
+  // $query = $query->execute();
+
+
+  $query = chado_query("SELECT * FROM chado.genotypes_" . $project_id . " OFFSET $start LIMIT $per_page");
 
   while (($result = $query->fetchObject())) {
     // preg_match('/^TGDR...-(.*)$/', $result->s_uniquename, $matches);
@@ -1123,14 +1137,25 @@ function tpps_details_mass_spectrometry(array &$state) {
   $per_page = 20;
   $start = $page * $per_page;
 
+  // $query = db_select('chado.phenotype', 'p');
+  // $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
+  // $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
+  // $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
+  // $query->addExpression('count(p.phenotype_id)', 'count');
+  // $query->condition('ps.project_id', $state['ids']['project_id']);
+  // $query = $query->execute();
+  // $total = $query->fetchObject()->count;
+
+  // Get total count which is used for pager system (Rish)
   $query = db_select('chado.phenotype', 'p');
   $query->join('chado.stock_phenotype', 'sp', 'sp.phenotype_id = p.phenotype_id');
   $query->join('chado.project_stock', 'ps', 'ps.stock_id = sp.stock_id');
   $query->join('chado.stock', 's', 's.stock_id = sp.stock_id');
   $query->addExpression('count(p.phenotype_id)', 'count');
+  $query->condition('p.attr_id', tpps_load_cvterm('intensity')->cvterm_id);
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query = $query->execute();
-  $total = $query->fetchObject()->count;
+  $total = $query->fetchObject()->count;  
 
   $_GET['page'] = $page;
   pager_default_initialize($total, $per_page);

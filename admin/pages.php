@@ -50,6 +50,9 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
     if ($i == 4) {
       // Phenotype files
       for($j=1; $j<=$organism_count; $j++) {
+        if (isset($saved_values[$i]['organism-' . $j]['phenotype']['file'])) {
+          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['file']);
+        }
         if(isset($saved_values[$i]['organism-' . $j]['phenotype']['file'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['file']);
         }

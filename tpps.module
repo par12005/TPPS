@@ -148,6 +148,16 @@ function tpps_menu() {
     'file' => 'admin/panel.php',
   );
 
+  $items['tpps-admin-panel/refresh-genotypes-materialized-views'] = array(
+    'title' => 'TPPS Refresh Genotypes Materialized Views',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('tpps_manage_generate_all_materialized_views', 1),
+    'access callback' => 'tpps_access',
+    'access arguments' => array('approve tpps submissions'),
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'admin/panel.php',
+  );  
+
   $items['tpps-admin-panel/%'] = array(
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
