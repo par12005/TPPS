@@ -38,35 +38,6 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   if (empty($accession)) {
     tpps_admin_panel_top($form);
   }
-  // Special care for Phenotype Synonyms reports.
-  // @TODO Better solution is to move submission's pages to
-  //   /tpps-admin-panel/<something>/TGDRXXXXX
-  // to have ability to add menu items like:
-  //   /tpps-admin-panel/reports/no-synonyms
-  //   /tpps-admin-panel/reports/unit-warning
-  else if ($accession == 'phenotype-synonyms') {
-    // It works but there is no menu items which could be managed using
-    // Drupal Admin area and it's hardcoded.
-    if (arg(2) == 'no-synonyms') {
-      module_load_include('inc', 'tpps', 'includes/report.no_synonym');
-      // @TODO Use drupal's page templates.
-      $form['title'] = [
-        '#markup' => '<h2>' . TPPS_NO_SYNONYM_REPORT_NAME . '</h2>'
-      ];
-      $form['no-synonyms'] = ['#markup' =>
-        call_user_func('tpps_admin_no_synonym_report')
-      ];
-    }
-    if (arg(2) == 'unit-warning') {
-      module_load_include('inc', 'tpps', 'includes/report.unit_warning');
-      $form['title'] = [
-        '#markup' => '<h2>' . TPPS_UNIT_WARNING_REPORT_NAME . '</h2>'
-      ];
-      $form['no-synonyms'] = ['#markup' =>
-        call_user_func('tpps_admin_unit_warning_report')
-      ];
-    }
-  }
   else {
     tpps_manage_submission_form($form, $form_state, $accession);
   }

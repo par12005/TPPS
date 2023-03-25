@@ -9,6 +9,8 @@
  * Menu callback. Shows list of all phenotypes without synonym.
  */
 function tpps_admin_no_synonym_report() {
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+
   // Query to get Study name.
   $sub_query = db_select('chado.phenotype', 'cte')->fields('cte', []);
   $sub_query->addExpression(
@@ -19,7 +21,8 @@ function tpps_admin_no_synonym_report() {
   $table = 'phenotype';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
-//    'tag' => 'debug',
+    //    'tag' => 'debug',
+    'attributes' => ['class' => ['view' , 'tpps_table']],
     'header' => [
       ['data' => t("Study"), 'field' => 'study_name'],
       ['data' => t("Phenotype Name"), 'field' => $table . '.name'],
@@ -88,7 +91,6 @@ function tpps_admin_no_synonym_formatter(string $name, $value, array $row) {
     return $formatted;
   }
   switch ($name) {
-    // @TODO Update to use for Count Report.
     case 'study_name':
       if (!empty($value)) {
         $path = 'tpps-admin-panel/' . $value;

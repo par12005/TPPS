@@ -9,10 +9,12 @@
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
 function tpps_admin_unit_warning_report(array $filter = []) {
-  // Note: Unique fields: .
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   $table = 'tpps_phenotype_unit_warning';
-  //return simple_table_report($table);
   $meta = [
+    // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
+    // 'tag' => 'debug',
+    'attributes' => ['class' => ['view' , 'tpps_table']],
     'header' => [
       ['data' => t('Phenotype Id'), 'field' => $table . '.phenotype_id'],
       ['data' => t('Phenotype Name'), 'field' => 'phenotype.name'],
@@ -33,49 +35,12 @@ function tpps_admin_unit_warning_report(array $filter = []) {
     'primary_key' => 'phenotype_id',
     'select_all' => FALSE,
     'actions' => [
-      // name => callback.
+      // name --> callback.
       'Remove' => 'tpps_unit_warning_report_remove',
     ],
   ];
   return simple_report_tableselect($meta, $filter);
 }
-
-/**
- * Values formatter for 'simple_report'.
- *
- * @param string $name
- *   Required. Field name.
- *   Machine table field name (column name) without table name and dot.
- * @param mixed $value
- *   Field value.
- * @param array $row
- *   Data of the whole table row with hidden fields.
- *   This data could be used to format other fields. For example,
- *   hidden field 'uid' or 'entity_id' could be used to build a link to
- *   user profile page.
- *
- * @return mixed
- *   Returns formatted value.
- *   Empty value will not be formatted and returned as is.
- */
-function tpps_admin_unit_warning_report_formatter(string $name, $value, array $row) {
-  $formatted = check_plain($value);
-  if (empty($name) || empty($value)) {
-    return $formatted;
-  }
-  $name = check_plain($name);
-  switch ($name) {
-    case 'phenotype_id':
-      if (!empty($value)) {
-        $path = 'wholeplant/' . check_plain($value);
-        $formatted = l(check_plain($value), $path);
-      }
-      break;
-
-  }
-  return $formatted;
-}
-
 
 /**
  * Removes items selected at 'Unit Warning Report' page.

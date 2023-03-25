@@ -158,6 +158,24 @@ function tpps_menu() {
     'file' => 'admin/panel.php',
   );
 
+  // Synonym Reports.
+  $items['tpps-admin-panel/phenotype-synonyms/no-synonyms'] = [
+    'title' => 'Phenotypes without synonyms',
+    'page callback' => 'tpps_admin_no_synonym_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/report.no_synonym.inc',
+  ];
+  $items['tpps-admin-panel/phenotype-synonyms/unit-warning'] = [
+    'title' => 'Unit Warning',
+    'page callback' => 'tpps_admin_unit_warning_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/report.unit_warning.inc',
+  ];
+
   $items['tpps-admin-panel-logs/%'] = array(
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
