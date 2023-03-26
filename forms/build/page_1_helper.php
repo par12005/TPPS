@@ -96,7 +96,7 @@ function tpps_publication(array &$form, array $values, array $form_state) {
   );
   // if(isset($values['publication']['title']) && $values['publication']['title'] != "") {
   //   $form['publication']['title']['#value'] = $values['publication']['title'];
-  // }  
+  // }
 
   $form['publication']['abstract'] = array(
     '#type' => 'textarea',
@@ -113,7 +113,7 @@ function tpps_publication(array &$form, array $values, array $form_state) {
   );
   // if(isset($values['publication']['journal']) && $values['publication']['journal'] != "") {
   //   $form['publication']['journal']['#value'] = $values['publication']['journal'];
-  // }  
+  // }
 
   return $form;
 }
@@ -143,11 +143,18 @@ function tpps_organism(array &$form, array &$form_state) {
         'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
       ),
     ),
-    'is_tree' => array(
-      '#type' => 'checkbox',
+    // [VS] #8669py203.
+    'is_tree' => [
+      '#type' => 'select',
       '#title' => t('This species is a tree.'),
-      '#default_value' => 1,
-    ),
+      '#options' => [
+        'yes' => t('Yes'),
+        'no' => t('No'),
+        'i_do_not_know' => t("I don't know"),
+      ],
+      '#default_value' => 'no',
+    ],
+    // [/VS]
   );
 
   tpps_dynamic_list($form, $form_state, 'organism', $field, array(
