@@ -32,6 +32,7 @@ require_once 'includes/ncbi_utils.inc';
 require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'includes/cvterm_utils.inc';
+require_once 'includes/synonym.inc';
 require_once 'api/tpps.api.inc';
 
 /**
@@ -167,6 +168,24 @@ function tpps_menu() {
     'file' => 'admin/panel.php',
   );
 
+  // Synonym Reports.
+  $items['tpps-admin-panel/phenotype-synonyms/no-synonyms'] = [
+    'title' => 'Phenotypes without synonyms',
+    'page callback' => 'tpps_admin_no_synonym_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/report.no_synonym.inc',
+  ];
+  $items['tpps-admin-panel/phenotype-synonyms/unit-warning'] = [
+    'title' => 'Unit Warning',
+    'page callback' => 'tpps_admin_unit_warning_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'includes/report.unit_warning.inc',
+  ];
+
   $items['tpps-admin-panel-logs/%'] = array(
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
@@ -175,8 +194,8 @@ function tpps_menu() {
     'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/logs.php',
-  ); 
-  
+  );
+
   $items['tpps-admin-panel/file-diagnostics/%'] = array(
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
@@ -185,7 +204,8 @@ function tpps_menu() {
     'access arguments' => array('administer tpps module'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/pages.php',
-  ); 
+  );
+
 
   $items['tpps/doi/%'] = array(
     'title' => 'TPPS DOI',
@@ -279,6 +299,34 @@ function tpps_menu() {
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK
   );
+
+  // [VS] Synonym and Unit reports.
+  $items['admin/reports/unit-warning'] = [
+    'title' => 'Unit Warning',
+    'description' => "List of Phenotypes which differs from Synonym's Unit.",
+    'page callback' => 'tpps_admin_unit_warning_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'includes/report.unit_warning.inc',
+  ];
+  $items['admin/reports/no-synonym'] = [
+    'title' => 'Phenotypes without Synonym',
+    'description' => "List of phenotypes without synonym.",
+    'page callback' => 'tpps_admin_no_synonym_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'includes/report.no_synonym.inc',
+  ];
+  $items['admin/reports/no-synonym/name/%'] = [
+    'title' => 'Specific Phenotype Name',
+    'description' => 'Specific Phenotype Name Report',
+    'page callback' => 'tpps_admin_no_synonym_name_report',
+    'page arguments' => [4],
+    'type' => MENU_NORMAL_ITEM,
+    'access arguments' => ['administer tpps module'],
+    'file' => 'includes/report.no_synonym.inc',
+  ];
+  // [/VS]
 
   $items = array_merge($items, tpps_api_paths());
 
@@ -873,9 +921,9 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 
   tpps_status_bar($form, $form_state);
 
-  
+
   if ((!isset($form_state['tpps_type']) or $form_state['tpps_type'] != 'tppsc') and (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization']))) {
-    
+
     $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
     if ($contact_bundle) {
       $query = new EntityFieldQuery();
@@ -924,7 +972,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   $suffix = '
     <script>
     jQuery(document).ready(function(){
-      jQuery(\'[data-toggle="tooltip"]\').tooltip();   
+      jQuery(\'[data-toggle="tooltip"]\').tooltip();
     });
     </script>';
 
@@ -1110,13 +1158,31 @@ function tpps_main_submit($form, &$form_state) {
  * Adds the tpps_status block.
  */
 function tpps_block_info() {
-  // dpm("BLOCK INFO");.
   $blocks['tpps_status'] = array(
-  // info: The name of the block.
     'info' => t('TPPS Status'),
   );
-
+  // [VS]
+  $blocks['tpps_report_menu'] = array(
+    'info' => t('Reports'),
+    'description'=>t('Links to various report pages.'),
+    'cache' => DRUPAL_CACHE_PER_PAGE,
+  );
+  // [/VS]
   return $blocks;
+}
+
+// [VS]
+/**
+ * Implements hook_block_view().
+ */
+function tpps_block_view($delta = '') {
+  switch ($delta) {
+    // Shows links to report's pages.
+    case 'tpps_report_menu':
+      $block['subject'] = 'TPPS Reports';
+      $block['content'] = tpps_report_menu_block();
+  }
+  return $block;
 }
 
 /**
@@ -1134,7 +1200,7 @@ function tpps_block_view_alter(&$data, $block) {
           vertical-align: middle;
           margin-bottom: 4px;
           margin-right: 2px;
-      }		
+      }
       ";
       drupal_add_css($css, 'inline');
 
@@ -1302,4 +1368,4 @@ function tpps_media_browser_plugins_alter(&$plugins) {
    unset($plugins['upload']);
    unset($plugins['media_default--media_browser_my_files']);
  // }
- }
+}

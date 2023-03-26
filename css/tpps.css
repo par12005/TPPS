@@ -154,3 +154,8 @@ div.media-widget.form-media a.browse {
     color: white;
     padding: 10px 15px;
 }
+
+/* Highlight active button when using TAB key to switch. */
+.btn:focus:focus-visible {
+  outline: black solid 2px;
+}

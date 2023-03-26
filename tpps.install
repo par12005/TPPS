@@ -13,6 +13,8 @@
  */
 function tpps_install() {
 
+  simple_report_install();
+
   tpps_alter_tpps_submissions();
 
   tpps_alter_tpps_submission_dbxref();
@@ -285,6 +287,8 @@ function tpps_install() {
  * usage from public.file_usage.
  */
 function tpps_uninstall() {
+
+  simple_report_install();
 
   // Remove all incomplete submissions connected to user profiles.
   db_delete('public.variable')
@@ -644,6 +648,26 @@ function tpps_schema() {
     ),
     'primary key' => array(
       'tpps_submission_tag_id',
+    ),
+  );
+
+  // #3kged9b Phenotypes synonyms table integrated on TPPS [VS].
+  $schema['tpps_phenotype_unit_warning'] = array(
+    'description' => 'Contains Phenotypes created by Synonym with custom Unit.',
+    'fields' => array(
+      'phenotype_id' => array(
+        'description' => 'The Phenotype Id.',
+        'type' => 'int',
+        'size' => 'big',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ),
+    'foreign keys' => array(
+      'phenotype_id' => array(
+        'table' => 'chado.phenotype',
+        'columns' => array('phenotype_id' => 'phenotype_id'),
+      ),
     ),
   );
 
@@ -1974,4 +1998,33 @@ function tpps_update_7118() {
     $transaction->rollback();
     throw $e;
   }
+}
+
+/**
+ * #3kged9b Creates table 'public.tpps_phenotype_unit_warning' [VS].
+ */
+function tpps_update_7119() {
+  $table = 'tpps_phenotype_unit_warning';
+  if (!db_table_exists($table)) {
+    if ($table_schema = tpps_schema()[$table]) {
+      $transaction = db_transaction();
+      try {
+        db_create_table($table, $table_schema);
+      }
+      catch (\Exception $e) {
+        $transaction->rollback();
+        throw $e;
+      }
+    }
+    // Add foreign key.
+    db_query('ALTER TABLE ' . $table . ' ADD CONSTRAINT phenotype_id '
+      . 'FOREIGN KEY (phenotype_id) REFERENCES chado.phenotype(phenotype_id) '
+      . 'ON DELETE CASCADE;'
+    );
+  }
+  $module_name = 'simple_report';
+  if (!module_exists($module_name)) {
+    module_enable(array($module_name));
+  }
+  cache_clear_all();
 }

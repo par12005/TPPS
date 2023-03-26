@@ -3,5 +3,7 @@
 vendor/
 .env
 docs/build/
-.vimrc
+modules/
 tags
+*.swp
+.vimrc*
