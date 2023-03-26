@@ -310,7 +310,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           '#options' => [
             'street' => t('Street'),
             'city' => t('City'),
-            'county' => t('county'),
+            'county' => t('County'),
             'state/province' => t('State/province'),
             'country' => t('Country'),
           ],
