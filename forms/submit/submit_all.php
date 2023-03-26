@@ -760,20 +760,43 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
     //
     // @TODO Need some work!!!
     //
-    //
-    //
-    //
-    //
-    $options['exact'] = $tree_accession['exact_coords'] ?? NULL;
+    // @TODO Remove outdate code.
+    //$options['exact'] = $tree_accession['exact_coords'] ?? NULL;
+    //$options['precision'] = NULL;
+    //if (!$options['exact']) {
+    //  $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
+    //  if (!array_key_exists(tpps_get_tag_id('No Location Information'), tpps_submission_get_tags($form_state['accession']))) {
+    //    tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
+    //  }
+    //}
+    // @TODO /Remove outdate code.
+
+    switch ($tree_accession['location_accuracy']) {
+      case 'exact':
+        $options['exact'] = TRUE;
+        $options['precision'] = NULL;
+        break;
+
+      case 'approximate':
+        $options['exact'] = NULL;
+        $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
+        $condition = (
+          !array_key_exists(tpps_get_tag_id('No Location Information'),
+          tpps_submission_get_tags($form_state['accession']))
+        );
+        if ($condition) {
+          tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
+        }
+        break;
+
+      case 'descriptive_place':
+        // @TODO Major. Store value in database.
+        $options['exact'] = NULL;
+        $options['precision'] = $tree_accession['descriptive_place'] ?? NULL;
+        break;
+    }
     // [/VS] #8669py308
 
-    $options['precision'] = NULL;
-    if (!$options['exact']) {
-      $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
-      if (!array_key_exists(tpps_get_tag_id('No Location Information'), tpps_submission_get_tags($form_state['accession']))) {
-        tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
-      }
-    }
     $county = array_search('8', $column_vals);
     $district = array_search('9', $column_vals);
     $clone = array_search('13', $column_vals);
