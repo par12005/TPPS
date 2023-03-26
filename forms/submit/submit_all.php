@@ -611,10 +611,6 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
   $stock_count = 0;
   $loc_name = 'Location (latitude/longitude or country/state or population group)';
 
-  if (!empty($thirdpage['skip_validation'])) {
-    tpps_submission_add_tag($form_state['accession'], 'No Location Information');
-  }
-
   if (!empty($thirdpage['study_location'])) {
     $type = $thirdpage['study_location']['type'];
     $locs = $thirdpage['study_location']['locations'];
@@ -1396,7 +1392,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $options['marker'] = $genotype['SSRs/cpSSRs'];
     $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
     $options['empty'] = $genotype['files']['ssrs-empty'];
-    tpps_log('[INFO] - Processing genotype_spreadsheet file data...');
     tpps_file_iterator($ssr_fid, 'tpps_process_genotype_spreadsheet', $options);
     tpps_log('[INFO] - Done.');
 
@@ -2133,7 +2128,6 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
       'suffix' => 0,
       'job' => &$job,
     );
-    tpps_log('[INFO] - Processing environment_layers file data...');
     tpps_file_iterator($tree_acc_fid, 'tpps_process_environment_layers', $options);
     tpps_log('[INFO] - Done.');
 
@@ -2947,38 +2941,38 @@ function tpps_generate_all_genotype_materialized_views() {
 }
 
 /**
- * This function will generate a genotype materialized view for 
+ * This function will generate a genotype materialized view for
  * the specific project_id (which you must get from the state object).
  * This is used for the tpps/details genotypes tab
  *
  *
  * @param mixed $project_id
  *   The project ID of the study. NOT THE STUDY ACCESSION!
- * 
- * 
+ *
+ *
  */
 function tpps_generate_genotype_materialized_view($project_id) {
   // Ensure the project_id is an integer
-  $project_id = intval($project_id); 
+  $project_id = intval($project_id);
   if ($project_id <= 0) {
     return;
   }
   $view_name = 'chado.genotypes_' . $project_id;
   echo "Attempting to create materialized view (if it does not exist): " . $view_name . "\n";
   chado_query('CREATE MATERIALIZED VIEW IF NOT EXISTS ' . $view_name . ' AS ' .
-    "(SELECT g.genotype_id AS 
-    genotype_id, 
-    g.name AS name, 
-    g.uniquename AS uniquename, 
-    g.description AS description, 
-    g.type_id AS type_id, 
-    s.uniquename AS s_uniquename, 
-    s.stock_id AS stock_id 
-    FROM chado.genotype g 
-    INNER JOIN chado.stock_genotype sg ON sg.genotype_id = g.genotype_id 
-    INNER JOIN chado.project_stock ps ON ps.stock_id = sg.stock_id 
-    INNER JOIN chado.stock s ON s.stock_id = sg.stock_id 
-    WHERE (ps.project_id = '" . $project_id . "')" . ') ' . 
+    "(SELECT g.genotype_id AS
+    genotype_id,
+    g.name AS name,
+    g.uniquename AS uniquename,
+    g.description AS description,
+    g.type_id AS type_id,
+    s.uniquename AS s_uniquename,
+    s.stock_id AS stock_id
+    FROM chado.genotype g
+    INNER JOIN chado.stock_genotype sg ON sg.genotype_id = g.genotype_id
+    INNER JOIN chado.project_stock ps ON ps.stock_id = sg.stock_id
+    INNER JOIN chado.stock s ON s.stock_id = sg.stock_id
+    WHERE (ps.project_id = '" . $project_id . "')" . ') ' .
     "WITH NO DATA"
   ,[]);
 
@@ -2986,7 +2980,7 @@ function tpps_generate_genotype_materialized_view($project_id) {
   echo "Refreshing materialized view: " . $view_name . "\n";
   chado_query('REFRESH MATERIALIZED VIEW ' . $view_name, []);
   echo "Finished refresh of " . $view_name . "\n";
-  
+
 }
 
 /**

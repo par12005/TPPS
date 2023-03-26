@@ -40,13 +40,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     '#description' => t('If this box is checked, TPPS will try to find plants with matching ids around the same location as the ones you are providing. If it finds them successfully, it will mark them as the same plant in the database.'),
   );
 
-  if (tpps_access('administer tpps module')) {
-    $form['skip_validation'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Skip location validation (ignore location information)'),
-    );
-  }
-
   $form['tree-accession'] = array(
     '#type' => 'fieldset',
     '#title' => t('Plant Accession Information'),
@@ -173,10 +166,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       'tree-accession',
       "species-$i",
       'file',
-    ), NULL);
-
-    $skip = tpps_get_ajax_value($form_state, array(
-      'skip_validation',
     ), NULL);
 
     if (!empty($fid) and empty($skip)) {
