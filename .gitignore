@@ -3,3 +3,5 @@
 vendor/
 .env
 docs/build/
+.vimrc
+tags
