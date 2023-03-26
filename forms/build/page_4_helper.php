@@ -412,18 +412,20 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'parents' => array($id, 'phenotype'),
       'wrapper' => "phenotype-main-$id",
       'name_suffix' => $id,
-      'alternative_buttons' => array(
-        "Add 5 Phenotypes" => 5,
-        "Add 10 Phenotypes" => 10,
+      // [VS] #8669py3z7
+      'alternative_buttons' => [
+        //"Add 5 Phenotypes" => 5,
+        "Add 20 Phenotypes" => 20,
         "Clear All Phenotypes" => 'tpps_phenotype_number_clear',
-      ),
-      'button_weights' => array(
+      ],
+      'button_weights' => [
         "Add Phenotype" => -5,
-        "Add 5 Phenotypes" => -4,
-        "Add 10 Phenotypes" => -3,
+        //"Add 5 Phenotypes" => -4,
+        "Add 20 Phenotypes" => -3,
         "Remove Phenotype" => -2,
         "Clear All Phenotypes" => -1,
-      ),
+      ],
+      // [/VS] #8669py3z7
       'substitute_fields' => array(
         array('#prefix'),
         array('name', '#title'),
@@ -674,7 +676,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => t('We encourage that you only upload a phenotype metadata file if you have > 20 phenotypes. Using the fields above instead of uploading a metadata file allows you to select from standardized controlled vocabulary terms, which makes your data more findable, interoperable, and reusable.'),
     );
 
-    
+
     $form[$id]['phenotype']['metadata'] = array(
       '#type' => 'managed_file',
       '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
@@ -807,7 +809,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         $time_options[strtolower($name)] = $name;
       }
       $form[$id]['phenotype']['time']['time_phenotypes'] = array(
-        '#type' => 'checkboxes',
+        '#type' => 'select',
         '#title' => t('Time-based Phenotypes: *'),
         '#options' => $time_options,
         '#description' => t('Please select the phenotypes which are time-based'),
@@ -960,20 +962,22 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
   $options['VCF'] = 'VCF';
 
-  $fields['files']['file-type'] = array(
-    '#type' => 'checkboxes',
+  // [VS] #8669rmvf2
+  $fields['files']['file-type'] = [
+    '#type' => 'select',
     '#title' => t('Genotype File Types (select all that apply): *'),
     '#options' => $options,
-    '#ajax' => array(
+    '#ajax' => [
       'callback' => 'tpps_genotype_files_callback',
       'wrapper' => "$id-genotype-files",
-    ),
-  );
+    ],
+  ];
+  // [/VS]
 
   $parents = array_merge($file_type_parents, array('VCF'));
   $vcf_file_check = tpps_get_ajax_value($form_state, $parents);
 
-  
+
   if (!empty($snps_assay_check)) {
     $fields['files']['file-selector'] = array(
       '#type' => 'checkbox',
@@ -1898,16 +1902,18 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
  */
 function tpps_page_4_marker_info(array &$fields, $id) {
 
-  $fields['marker-type'] = array(
-    '#type' => 'checkboxes',
+  // [VS] #8669rmvf2
+  $fields['marker-type'] = [
+    '#type' => 'select',
     '#title' => t('Marker Type (select all that apply): *'),
-    '#options' => drupal_map_assoc(array(
+    '#options' => drupal_map_assoc([
       t('SNPs'),
       t('SSRs/cpSSRs'),
       t('Indels'),
       t('Other'),
-    )),
-  );
+    ]),
+  ];
+  // [/VS]
 
   $fields['marker-type']['#ajax'] = array(
     'callback' => 'tpps_genotype_files_callback',
