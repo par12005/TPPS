@@ -753,7 +753,20 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
     $options['no_header'] = !empty($tree_accession['file-no-header']);
     $options['empty'] = $tree_accession['file-empty'];
     $options['pop_group'] = $tree_accession['pop-group'];
+
+    // [VS] #8669py308
+    //
+    //
+    //
+    // @TODO Need some work!!!
+    //
+    //
+    //
+    //
+    //
     $options['exact'] = $tree_accession['exact_coords'] ?? NULL;
+    // [/VS] #8669py308
+
     $options['precision'] = NULL;
     if (!$options['exact']) {
       $options['precision'] = $tree_accession['coord_precision'] ?? NULL;

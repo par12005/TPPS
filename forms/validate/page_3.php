@@ -70,9 +70,28 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           }
         }
 
-        if (isset($values['exact_coords']) and !$values['exact_coords'] and empty($values['coord_precision'])) {
-          form_set_error("tree-accession][species-$i][coord_precision", t("Coordinates accuracy: field is required."));
+        // [/VS] #8669py308
+        //if (isset($values['exact_coords']) and !$values['exact_coords'] and empty($values['coord_precision'])) {
+        //  form_set_error("tree-accession][species-$i][coord_precision", t("Coordinates accuracy: field is required."));
+        //}
+        $condition = (
+          $values['location_accuracy'] == 'descriptive_place'
+          && empty($values['desriptive_place'])
+        );
+        if ($codition) {
+          form_set_error("tree-accession][species-$i][descriptive_place",
+            t("Descriptive Place: field is required."));
         }
+
+        $condition = (
+          $values['location_accuracy'] == 'approximate'
+          && empty($values['coord_precision'])
+        );
+        if ($codition) {
+          form_set_error("tree-accession][species-$i][coord_precision",
+            t("Coordinates accuracy: field is required."));
+        }
+        // [/VS] #8669py308
 
         if (!form_get_errors()) {
           $options = array(

@@ -284,23 +284,60 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
       if ($found_lat and $found_lng) {
         unset($form['tree-accession']["species-$i"]['pop-group']['#suffix']);
+        // [VS] #8669py308
+        // @TODO Remove outdated field after testing.
+        /*
         $form['tree-accession']["species-$i"]['exact_coords'] = array(
           '#type' => 'checkbox',
           '#title' => t('The provided GPS coordinates are exact'),
           '#default_value' => $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['exact_coords'] ?? TRUE,
         );
-
-        $form['tree-accession']["species-$i"]['coord_precision'] = array(
+         */
+        $form['tree-accession']["species-$i"]['location_accuracy'] = [
+          '#type' => 'select',
+          '#title' => t('Location accuracy: *'),
+          '#default_value' => $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['location_accuracy'] ?? 'exact',
+          '#options' => [
+            'exact' => t('Exact'),
+            'approximate' => t('Approximate'),
+            'descriptive_place' => t('Descriptive Place'),
+          ],
+        ];
+        $form['tree-accession']["species-$i"]['descriptive_place'] = [
+          '#type' => 'select',
+          '#title' => t('Descriptive place: *'),
+          '#default_value' => $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['descriptive_place'] ?? 'street',
+          '#options' => [
+            'street' => t('Street'),
+            'city' => t('City'),
+            'county' => t('county'),
+            'state/province' => t('State/province'),
+            'country' => t('Country'),
+          ],
+          '#states' => [
+            'visible' => [
+              ":input[name=\"tree-accession[species-$i][location_accuracy]\"]" => [
+                'value' => 'descriptive_place'
+              ],
+            ],
+          ],
+        ];
+        $form['tree-accession']["species-$i"]['coord_precision'] = [
           '#type' => 'textfield',
-          '#title' => t('Coordinates accuracy:'),
-          '#description' => t('The precision of the provided coordinates. For example, if a plant could be up to 10m awa from the provided coordinates, then the accuracy would be "10m".'),
+          '#title' => t('Coordinates accuracy: *'),
+          '#description' => t('The precision of the provided coordinates. '
+            . 'For example, if a plant could be up to 10m awa from the '
+            . 'provided coordinates, then the accuracy would be "10m".'),
           '#suffix' => '</div>',
-          '#states' => array(
-            'visible' => array(
-              ":input[name=\"tree-accession[species-$i][exact_coords]\"]" => array('checked' => FALSE),
-            ),
-          ),
-        );
+          '#states' => [
+            'visible' => [
+              ":input[name=\"tree-accession[species-$i][location_accuracy]\"]" => [
+                'value' => 'approximate'
+              ],
+            ],
+          ],
+        ];
+        // [/VS] #8669py308
       }
     }
   }
