@@ -1051,7 +1051,8 @@ function tpps_admin_panel_top(array &$form) {
 
   $markup_genotype_views = '';
   $markup_genotype_views .= '<a target="_blank" href="/tpps-admin-panel/refresh-genotypes-materialized-views">Refresh all genotype
-    materialized views</a>';
+    materialized views</a><br />';
+  $markup_genotype_views .= '<br />';
   $form['general_tasks']['genotype_views'] = array(
     '#type' => 'markup',
     '#markup' => $markup_genotype_views
