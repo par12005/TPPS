@@ -1584,9 +1584,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           $count_columns = count($vcf_line);
           for ($j = 9; $j < $count_columns; $j++) {
 
-            $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+            $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt); // eg A:G
 
-            $detected_genotypes[$marker_name . $genotype_combination] = TRUE;
+            $detected_genotypes[$marker_name . $genotype_combination] = TRUE; // scaffold_A:G
 
             // Record the first genotype name to use for genotype_call table
             if($j == 9) {
@@ -1610,6 +1610,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             'type_id' => $seq_var_cvterm,
           );
 
+          // MEETING WITH EMILY TO DISCUSS
+          // @TODO @URGENT 3/27/2023: Chromosome number and position (store this in featureloc table)
+          // feature_id from marker or variant created
+          // srcfeature_id for the genome / assembly used for reference (some sort of query - complicated)
+          // store where marker starts on chromosome etc.
+
           // Rish 12/08/2022: So we have multiple genotypes created
           // So I adjusted some of this code into a for statement
           // since the genotype_desc seems important and so I modified it to be unique
@@ -1622,12 +1628,13 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           print_r('genotypes per line: ' . count($genotype_names) . " ");
           
           $genotype_name_progress_count = 0;
-          foreach ($genotype_names as $genotype_name) {
+          foreach ($genotype_names as $genotype_name) { // eg scaffold_A:G
             $genotype_name_progress_count++;
             $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
             // print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
             
 
+           
             $records['genotype'][$genotype_desc] = array(
               'name' => $genotype_name,
               'uniquename' => $genotype_desc,
@@ -1635,6 +1642,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               'type_id' => $snp_cvterm,
             );
 
+             // 3/27/2023 Meeting - FORMAT: REVIEW THIS IN TERMS OF IF WE NEED IT
             if ($format != "") {
               $records['genotypeprop']["$genotype_desc-format"] = array(
                 'type_id' => $format_cvterm,
@@ -1667,6 +1675,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
                   ),
                 );
 
+                // THIS ABOUT REMOVING THIS - but it is in use for genotype materialized views
+                // which is used for tpps/details page
                 $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
                   'stock_id' => $stocks[$j - 9],
                   '#fk' => array(
@@ -1677,6 +1687,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               
             }
             
+            // 3/27/2023 - Jill question: Do we need to store in the database
             // Quality score.
             $records['genotypeprop']["$genotype_desc-qual"] = array(
               'type_id' => $qual_cvterm,
@@ -1715,6 +1726,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               );
             }
 
+            // 3/27/2023 - Jill question: Do we need to store in the database
             // Depth coverage, assuming that the info code for depth coverage is
             // 'DP'.
             if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
@@ -1727,6 +1739,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               );
             }
 
+            // 3/27/2023 - Jill question: Do we need to store in the database
             // Number of samples, assuming that the info code for number of
             // samples is 'NS'.
             if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
@@ -2078,11 +2091,17 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
 function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
   // $raw_value = $vcf_line[$j]; // format looks like this: 0/0:27,0:27:81:0,81,1065
   $raw_value_colon_parts = explode(':',$raw_value);
-  $ref_alt_indices = explode('/', $raw_value_colon_parts[0]);
+  // Sometimes, the format can look like 0|0 instead of 0/0
+  if (stripos($raw_value_colon_parts[0], '|') !== FALSE) {
+    $ref_alt_indices = explode('|', $raw_value_colon_parts[0]); 
+  }
+  else {
+    $ref_alt_indices = explode('/', $raw_value_colon_parts[0]); // eg 0/0
+  }
   $genotype_combination = "";
-  $count_indices = count($ref_alt_indices);
-  for($k = 0; $k < $count_indices; $k++) {
-    $index_tmp = $ref_alt_indices[$k];
+  $count_indices = count($ref_alt_indices); // 2
+  for($k = 0; $k < $count_indices; $k++) { // essentially generating A:G, A:A 
+    $index_tmp = $ref_alt_indices[$k]; // 0 or 1 (actual value)
     if($k > 0) {
       $genotype_combination .= ':';
     }
@@ -2090,7 +2109,19 @@ function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
       $genotype_combination .= $ref;
     }
     else {
-      $genotype_combination .= $alt;
+      // Index_tmp value is 1 or higher
+      // We need to process $alt since alt could have comma separated values
+      $alt_csv = explode(',', $alt);
+
+      // Since index_tmp = 1 would be the first alt_csv[0], we can just make a new index_tmp_alt to know the index of alt_csv
+      $index_tmp_alt = $index_tmp - 1;
+
+      // OLD code that didn't cater for index_tmp being anything other than 1
+      // $genotype_combination .= $alt;
+
+      // NEW code 3/27/2023 which caters for alt being a csv
+      $genotype_combination .= $alt_csv[$index_tmp_alt];
+
     }
   }
   return $genotype_combination;
