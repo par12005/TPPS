@@ -10,6 +10,8 @@
  */
 function tpps_admin_no_synonym_report() {
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+  $title = 'Phenotypes without synonym';
+  drupal_set_title($title);
 
   // Query to get Study name.
   $sub_query = db_select('chado.phenotype', 'cte')->fields('cte', []);
@@ -69,7 +71,7 @@ function tpps_admin_no_synonym_report() {
     ],
     'formatter' => 'tpps_admin_no_synonym_formatter',
   ];
-  return simple_report($meta, $filter ?? []);
+  return '<h2>' . $title . '</h2>' . simple_report($meta, $filter ?? []);
 }
 
 /**

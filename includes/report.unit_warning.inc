@@ -10,6 +10,8 @@
  */
 function tpps_admin_unit_warning_report(array $filter = []) {
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+  $title = 'Phenotypes which units differs from Synonym';
+  drupal_set_title($title);
   $table = 'tpps_phenotype_unit_warning';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
@@ -39,7 +41,7 @@ function tpps_admin_unit_warning_report(array $filter = []) {
       'Remove' => 'tpps_unit_warning_report_remove',
     ],
   ];
-  return simple_report_tableselect($meta, $filter);
+  return '<h2>' . $title . '</h2>' . simple_report_tableselect($meta, $filter);
 }
 
 /**
