@@ -18,8 +18,8 @@
 function tpps_synonym_get_list() {
   $results = chado_select_record(
     'phenotype_synonyms',
-    array('phenotype_synonyms_id', 'synonym'),
-    array('synonym' => array('data' => 0, 'op' => '>'))
+    ['phenotype_synonyms_id', 'synonym'],
+    ['synonym' => ['data' => 0, 'op' => '>']]
   );
   foreach ($results as $row) {
     $options[$row->phenotype_synonyms_id] = check_plain($row->synonym);
@@ -194,4 +194,66 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
     tpps_log('[DEBUG] ' . 'Phenotype Unit: ' . $current_phenotype['unit']);
     tpps_log('[DEBUG] ' . 'Synonym Unit: ' . $synonym->unit_id);
   }
+}
+
+
+
+
+
+/**
+* Custom callback to build form fields.
+*/
+function tpps_synonym_update_unit_list($form, &$form_state) {
+  $values = $form_state['values'];
+
+  $organism_name = $form_state['triggering_element']['#parents'][0];
+  $organism_id = $form_state['triggering_element']['#parents'][3];
+  $synonym_id = $form_state['triggering_element']['#value'];
+
+
+
+  // @TODO There could be a lot of checkboxes and we need to update right one.
+  watchdog('tpps', '<pre>' . print_r($form_state, 1));
+
+  $unit_list =  tpps_synonym_get_unit_list(8);
+  // $unit_list = ['cm', 'mm'];
+
+  // Overwrite the student list fields with new options value.
+  $form['units'] = [
+    '#type' => 'select',
+    '#title' => 'Phenotype !num Units: *',
+    '#options' => $unit_list,
+    '#prefix' => '<div id="unit-list-wrapper">',
+    '#suffix' => '</div>',
+  ];
+  $form['units'] = form_process_select($form['units']);
+  return $form['units'];
+}
+
+/**
+ * Get list of units which belongs to given group.
+ *
+ * @param string $group
+ *   Unit group. See chado.phenotype_synonyms.unit_group.
+ *
+ * @return void
+ */
+function tpps_synonym_get_unit_list($synonym_id) {
+
+  $sql = "SELECT unit_cvterm_id as id, unit_name as name
+    FROM {chado.phenotype_units} pu
+      LEFT JOIN {chado.phenotype_synonyms} ps
+      ON ps.unit_group = pu.unit_group
+    WHERE ps.phenotype_synonyms_id = :synonym_id";
+
+  $result = db_query($sql, [':synonym_id' => $synonym_id])
+    ->fetchAll();
+  $unit_list = array();
+  foreach ($result as $item) {
+    $unit_list[$item->id] = $item->name;
+  }
+  // This option must be last.
+  // @TODO Update title.
+  $unit_list[0] = "I can't find unit";
+  return $unit_list;
 }
