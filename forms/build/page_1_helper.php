@@ -144,15 +144,17 @@ function tpps_organism(array &$form, array &$form_state) {
       ),
     ),
     // [VS] #8669py203.
+    // Note: the real field is defined in TPPSc/forms/build/page_1_helper.php
+    // changes below will have no effect.
     'is_tree' => [
       '#type' => 'select',
       '#title' => t('This species is a tree.'),
       '#options' => [
-        'yes' => t('Yes'),
-        'no' => t('No'),
-        'i_do_not_know' => t("I don't know"),
+        '1' => t('Yes'),
+        '0' => t('No'),
+        '-1' => t("I don't know"),
       ],
-      '#default_value' => 'no',
+      '#default_value' => '1',
     ],
     // [/VS]
   );
