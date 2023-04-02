@@ -196,12 +196,14 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
   }
 }
 
-
-
-
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Synonym related Units.
 
 /**
-* Custom callback to build form fields.
+ * Custom callback to build form fields.
+ *
+ * Creates a form element for 'Units' dropdown which will replce existing one
+ * at page when Synonym selectbox changed.
 */
 function tpps_synonym_update_unit_list($form, &$form_state) {
   $values = $form_state['values'];
@@ -210,20 +212,11 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   $organism_id = $form_state['triggering_element']['#parents'][3];
   $synonym_id = $form_state['triggering_element']['#value'];
 
-
-
-  // @TODO There could be a lot of checkboxes and we need to update right one.
-  watchdog('tpps', '<pre>' . print_r($form_state, 1));
-
-  $unit_list =  tpps_synonym_get_unit_list(8);
-  // $unit_list = ['cm', 'mm'];
-
-  // Overwrite the student list fields with new options value.
   $form['units'] = [
     '#type' => 'select',
-    '#title' => 'Phenotype !num Units: *',
-    '#options' => $unit_list,
-    '#prefix' => '<div id="unit-list-wrapper">',
+    '#title' => t('Phenotype !num Units: *', ['!num' => $organism_id]),
+    '#options' => tpps_synonym_get_unit_list($synonym_id, TRUE),
+    '#prefix' => '<div id="unit-list-' . $organism_id . '-wrapper">',
     '#suffix' => '</div>',
   ];
   $form['units'] = form_process_select($form['units']);
@@ -231,29 +224,33 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
 }
 
 /**
- * Get list of units which belongs to given group.
+ * Gets list of units.
  *
- * @param string $group
- *   Unit group. See chado.phenotype_synonyms.unit_group.
+ * @param int $synonym_id
+ *   Synonym Id. See db table 'chado.phenotype_synonyms'.
+ * @param bool $not_in_list_option
+ *   When TRUE extra item will be added to the unit list. Could be used in
+ *   dropdown lists. When FALSE (default) then only list of units will
+ *   be returned.
  *
- * @return void
+ * @return array
+ *  Returns list of units related to given synonym.
+ *  Returns all units if synonym not specified.
+ *  Returns empty array if synonym not found.
  */
-function tpps_synonym_get_unit_list($synonym_id) {
-
-  $sql = "SELECT unit_cvterm_id as id, unit_name as name
-    FROM {chado.phenotype_units} pu
-      LEFT JOIN {chado.phenotype_synonyms} ps
-      ON ps.unit_group = pu.unit_group
-    WHERE ps.phenotype_synonyms_id = :synonym_id";
-
-  $result = db_query($sql, [':synonym_id' => $synonym_id])
-    ->fetchAll();
-  $unit_list = array();
-  foreach ($result as $item) {
-    $unit_list[$item->id] = $item->name;
+function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = FALSE) {
+  $query = db_select('chado.phenotype_units', 'cpu')
+    ->fields('cpu', ['unit_cvterm_id', 'unit_name']);
+  if (!empty($synonym_id)) {
+    $query->leftJoin('chado.phenotype_synonyms', 'cps',
+      'cps.unit_group = cpu.unit_group'
+    );
+    $query->condition('cps.phenotype_synonyms_id', $synonym_id);
   }
+  $unit_list = $query->execute()->fetchAllKeyed();
   // This option must be last.
-  // @TODO Update title.
-  $unit_list[0] = "I can't find unit";
+  if (!empty($unit_list) && $not_in_list_option) {
+    $unit_list = $unit_list + ['0' => t('My unit is not in this list')];
+  }
   return $unit_list;
 }

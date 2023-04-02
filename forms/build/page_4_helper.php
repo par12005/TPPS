@@ -138,61 +138,14 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
     $attr_options['other'] = 'My attribute term is not in this list';
 
-    $unit_options = array();
-    $terms = array(
-      'absorbance unit' => t('Absorbance Unit'),
-      'boolean' => t('Boolean (Binary)'),
-      'centimeter' => t('Centimeter'),
-      'centimeters per day' => t('Centimeters per Day'),
-      'cubic_centimeter' => t('Cubic Centimeter'),
-      'cubic_meter' => t('Cubic Meter'),
-      'day' => t('Day'),
-      'degrees_celsius' => t('Degrees Celsius'),
-      'degrees celsius per millimeter' => t('Degrees Celsius per Millimeter'),
-      'degrees_fahrenheit' => t('Degrees Fahrenheit'),
-      'grams_per_square_meter' => t('Grams per Square Meter'),
-      'gram' => t('Gram'),
-      'kilogram' => t('Kilogram'),
-      'kilogram_per_cubic_meter' => t('Kilogram per Cubic Meter'),
-      'kilograms per meter cubed' => t('Kilograms per Meter Cubed'),
-      'liter' => t('Liter'),
-      'log(centimeters per day)' => t('Log (Centimeters per day)'),
-      'log(centimeters cubed per day)' => t('Log (Centimeters cubed per day)'),
-      'luminous_intensity_unit' => t('Luminous Intensity Unit'),
-      'meter' => t('Meter'),
-      'milligram' => t('Milligram'),
-      'milligrams per millimeter' => t('Milligrams per Millimeter'),
-      'milligrams per millimeter squared' => t('Milligrams per Millimeter Squared'),
-      'milligrams per milligram' => t('Milligrams per Milligram'),
-      'milliliter' => t('Milliliter'),
-      'millimeter' => t('Millimeter'),
-      'micrometer' => t('Micrometer'),
-      'micromoles carbon dioxide per meter squared per second' => t('Micromoles Carbon Dioxide per Meter Squared per Second'),
-      'micromoles carbon dioxide per gram per second' => t('Micromoles Carbon Dioxide per Gram per Second'),
-      'micromoles carbon dioxide per gram Nitrogen per second' => t('Micromoles Carbon Dioxide per Gram Nitrogen per Second'),
-      'micromoles carbon dioxide per millimole water' => t('Micromoles Carbon Dioxide per Millimole Water'),
-      'moles water per meter squared per second' => t('Moles Water per Meter Squared per Second'),
-      'no unit' => t('No Unit'),
-      'number' => t('Number'),
-      'pascal' => t('Pascal'),
-      'percent' => t('Percent'),
-      'qualitative' => t('Qualitative'),
-      'square_micrometer' => t('Square Micrometer'),
-      'square_millimeter' => t('Square Millimeter'),
-      'watt_per_square_meter' => t('Watt per Square Meter'),
-      'year' => t('Year'),
-    );
-    foreach ($terms as $term => $label) {
-      // [vs] Somehow object became empty and it cause a lot of messages like:
-      // Notice: Trying to get property of non-object in tpps_phenotype()
-      // (line 186 of /var/www/Drupal/sites/all/modules/TGDR/forms/build/page_4_helper.php).
-      if (!empty(tpps_load_cvterm($term))) {
-        $unit_id = tpps_load_cvterm($term)->cvterm_id;
-        $unit_options[$unit_id] = $label;
-      }
-      // drupal_set_message($term . "," . $label . "," . $unit_id);
-    }
-    $unit_options['other'] = 'My unit is not in this list';
+    // [VS] #8669rmrw5
+    // Synonyms.
+    $synonym_list = tpps_synonym_get_list();
+    $default_synonym = array_key_first($synonym_list);
+    // Units.
+    $unit_list = tpps_synonym_get_unit_list($default_synonym, TRUE);
+    $default_unit = array_key_first($unit_list);
+    // [/VS] #8669rmrw5
 
     $struct_options = array();
     $terms = array(
@@ -251,11 +204,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'synonym_id' => [
         '#type' => 'select',
         '#title' => 'Synonym: *',
-        '#options' => $synonym_list = tpps_synonym_get_list(),
-        '#default_value' =>  array_key_first($synonym_list),
+        '#options' => $synonym_list,
+        '#default_value' => $default_synonym,
+        // Unit dropdown must be updated in each synonym field change.
         '#ajax' => [
           'callback' => 'tpps_synonym_update_unit_list',
-          'wrapper' => 'unit-list-wrapper',
+          'wrapper' => 'unit-list-!num-wrapper',
           'method' => 'replace',
           'event' => 'change',
         ],
@@ -315,11 +269,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'units' => [
         '#type' => 'select',
         '#title' => 'Phenotype !num Units: *',
-        '#options' => $unit_options,
-        '#prefix' => '<div id="unit-list-wrapper">',
+        '#options' => $unit_list,
+        '#default_value' => $default_unit,
+        '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
       ],
-      // [/VS]
       'unit-other' => array(
         '#type' => 'textfield',
         '#title' => 'Phenotype !num Custom Units: *',
@@ -330,11 +284,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
         ),
         '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
-        '#states' => array('visible' => array(
+        '#states' => ['visible' => [
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'
-            => array('value' => 'other'),
-        )),
+            => ['value' => 0],
+        ]],
       ),
+      // [/VS]
       'val-check' => array(
         '#type' => 'checkbox',
         '#title' => 'Phenotype !num has a value range',
@@ -474,15 +429,15 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         "Remove Phenotype" => -2,
         "Clear All Phenotypes" => -1,
       ],
-      // [/VS] #8669py3z7
       // Replaces '!num'.
       'substitute_fields' => array(
-
         // Synonym form.
-        array('synonym_name', '#title'),
-        array('synonym_name', '#prefix'),
-        array('synonym_description', '#title'),
-        array('synonym_description', '#description'),
+        ['synonym_name', '#title'],
+        ['synonym_name', '#prefix'],
+        ['synonym_description', '#title'],
+        ['synonym_description', '#description'],
+        ['synonym_id', '#ajax', 'wrapper'],
+      // [/VS]
 
         // Main form.
         array('#prefix'),
@@ -496,6 +451,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('description', '#title'),
         array('description', '#description'),
         array('units', '#title'),
+        ['units', '#prefix'],
         array('unit-other', '#title'),
         array('val-check', '#title'),
         array('bin-check', '#title'),
@@ -504,11 +460,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('min', '#title'),
         array('max', '#title'),
       ),
-      // [vs] Replace '!num' in attributes.
+      // [VS] Replace '!num' in attributes.
       'substitute_keys' => array(
         // Synonym form.
-        array('synonym_name', '#states', 'visible', tpps_synonym_selector($id)),
-        array('synonym_description', '#states', 'visible', tpps_synonym_selector($id)),
+        ['synonym_name', '#states', 'visible', tpps_synonym_selector($id)],
+        ['synonym_description', '#states', 'visible', tpps_synonym_selector($id)],
         // State of the Main form related to Synonym form.
         array('name', '#states', 'visible', tpps_synonym_selector($id)),
         array('env-check', '#states', 'visible', tpps_synonym_selector($id)),
@@ -708,16 +664,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         default:
           $terms = array();
           break;
-      }
-
-      $new_options = array();
-      foreach ($terms as $term) {
-        $new_options[tpps_load_cvterm($term)->cvterm_id] = $unit_options[tpps_load_cvterm($term)->cvterm_id];
-      }
-
-      if (!empty($new_options)) {
-        $new_options['other'] = 'My unit is not in this list';
-        $form[$id]['phenotype']['phenotypes-meta'][$i]['units']['#options'] = $new_options;
       }
 
       if ($phenotypes[$i]['env-check']) {
