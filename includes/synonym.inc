@@ -12,21 +12,24 @@
 /**
  * Gets list of Phenotype Synonyms.
  *
+ * @param bool $not_in_list_option
+ *   When TRUE extra item will be added to the unit list. Could be used in
+ *   dropdown lists. When FALSE then only list of units will be returned.
+ *
  * @return array
  *   Returns associative array where key is synonym_id and value is name.
  */
-function tpps_synonym_get_list() {
-  $results = chado_select_record(
-    'phenotype_synonyms',
-    ['phenotype_synonyms_id', 'synonym'],
-    ['synonym' => ['data' => 0, 'op' => '>']]
-  );
-  foreach ($results as $row) {
-    $options[$row->phenotype_synonyms_id] = check_plain($row->synonym);
-  }
+function tpps_synonym_get_list($not_in_list_option = TRUE) {
+  // Using chado_select_record() don't allow to use fetchAllKeyed().
+  $query = db_select('chado.phenotype_synonyms', 'cps')
+    ->fields('cps', ['phenotype_synonyms_id', 'synonym'])
+    ->condition('cps.synonym', 0, '>');
+  $synonym_list = $query->execute()->fetchAllKeyed();
   // This option must be last.
-  $options[0] = "I can't find synonym";
-  return $options;
+  if ($not_in_list_option) {
+    $synonym_list[0] = t("I can't find synonym");
+  }
+  return $synonym_list;
 }
 
 /**
@@ -40,8 +43,6 @@ function tpps_synonym_get_list() {
  * @return object
  *   Returns all the Synonym's data.
  *   Returns FALSE if synonym wasn't found.
- *
- * @TODO Return object.
  */
 function tpps_synonym_get($synonym_id) {
   $results = chado_select_record(
@@ -60,9 +61,7 @@ function tpps_synonym_get($synonym_id) {
  * Sets correct Phenotype values by Synonym.
  *
  * @param array $current_phenotype
- * @access public
- *
- * @return void
+ *   Currently processing phenotype.
  */
 function tpps_synonym_restore_values(array &$current_phenotype) {
   if (empty($synonym_id = $current_phenotype['synonym_id'])) {
@@ -89,18 +88,7 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
       array('@synonym_id' => $synonym_id), WATCHDOG_CRITICAL
     );
   }
-  // Unit.
-  $current_phenotype['units'] = $synonym->unit_id ?? 'other';
-
-  // @TODO Map unused synonym fields:
-  // cvterm_1_id;
-  // cvterm_2_id;
-  // is_common_phenotype.
-  // @TODO Unmapped form fields:
-  // env-check
-  // bin-check
 }
-
 
 /**
  * Stores relation between Phenotype, Synonym and Unit [vs].
@@ -153,25 +141,8 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Create a record in 'Unit Warning' table
   // when Synonym's Unit differs from Submitted Unit.
-  $condition = (
-    // Synonym was selected, and it's not 'other' and it was found by id.
-    (
-      !empty($current_phenotype['synonym_id'])
-      && !empty($synonym = tpps_synonym_get($synonym_id))
-    )
-    // For some Synonyms 'unit_id' is NULL and we skip check in this case.
-    && !empty($synonym->unit_id)
-    && (
-      // Submitted Unit differs from Synonym's Unit.
-      $current_phenotype['units'] != $synonym->unit_id
-      || (
-        // Custom Unit differs from Synonym's Unit.
-        $current_phenotype['units'] == 'other'
-        && $current_phenotype['unit-other'] != $synonym->unit_id
-      )
-    )
-  );
-
+  $synonym = tpps_synonym_get($synonym_id);
+  $unit_group = tpps_synonym_get_unit_list($synonym_id, FALSE);
 
   // @TODO Remove debug code.
   // Used for demo only.
@@ -181,9 +152,11 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
     //  ->execute();
   // @End Remove debug code
 
-
-
-  if ($condition) {
+  if ($current_phenotype['units'] == 0) {
+    // Store phenotype Id which has custom unit.
+    // Note: The same data could be found in column
+    // 'public.tpps_submissions.submission_state' but it's serialized
+    // and so hard to search and use reports.
     db_merge('tpps_phenotype_unit_warning')
       ->key(['phenotype_id' => $phenotype_id])
       ->fields(['phenotype_id' => $phenotype_id])
@@ -230,15 +203,14 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
  *   Synonym Id. See db table 'chado.phenotype_synonyms'.
  * @param bool $not_in_list_option
  *   When TRUE extra item will be added to the unit list. Could be used in
- *   dropdown lists. When FALSE (default) then only list of units will
- *   be returned.
+ *   dropdown lists. When FALSE then only list of units will be returned.
  *
  * @return array
  *  Returns list of units related to given synonym.
  *  Returns all units if synonym not specified.
  *  Returns empty array if synonym not found.
  */
-function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = FALSE) {
+function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = TRUE) {
   $query = db_select('chado.phenotype_units', 'cpu')
     ->fields('cpu', ['unit_cvterm_id', 'unit_name']);
   if (!empty($synonym_id)) {
@@ -250,7 +222,7 @@ function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = FALS
   $unit_list = $query->execute()->fetchAllKeyed();
   // This option must be last.
   if (!empty($unit_list) && $not_in_list_option) {
-    $unit_list = $unit_list + ['0' => t('My unit is not in this list')];
+    $unit_list['0'] = t('My unit is not in this list');
   }
   return $unit_list;
 }
