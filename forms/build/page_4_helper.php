@@ -138,11 +138,17 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
     $attr_options['other'] = 'My attribute term is not in this list';
 
-    $unit_list = tpps_synonym_get_unit_list();
+    // [VS] #8669rmrw5
+    // Synonyms.
+    $synonym_list = tpps_synonym_get_list();
+    $default_synonym = array_key_first($synonym_list);
+    // Units.
+    $unit_list = tpps_synonym_get_unit_list($default_synonym);
     // This option must be last.
     if (!empty($unit_list)) {
       $unit_list = $unit_list + ['0' => t('My unit is not in this list')];
     }
+    // [/VS] #8669rmrw5
 
     $struct_options = array();
     $terms = array(
@@ -201,11 +207,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'synonym_id' => [
         '#type' => 'select',
         '#title' => 'Synonym: *',
-        '#options' => $synonym_list = tpps_synonym_get_list(),
-        '#default_value' =>  array_key_first($synonym_list),
+        '#options' => $synonym_list,
+        '#default_value' => $default_synonym,
+        // Unit dropdown must be updated in each synonym field change.
         '#ajax' => [
           'callback' => 'tpps_synonym_update_unit_list',
-          'wrapper' => 'unit-list-wrapper',
+          'wrapper' => 'unit-list-!num-wrapper',
           'method' => 'replace',
           'event' => 'change',
         ],
@@ -266,7 +273,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#type' => 'select',
         '#title' => 'Phenotype !num Units: *',
         '#options' => $unit_list,
-        '#prefix' => '<div id="unit-list-wrapper">',
+        '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
       ],
       // [/VS]
@@ -424,15 +431,15 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         "Remove Phenotype" => -2,
         "Clear All Phenotypes" => -1,
       ],
-      // [/VS] #8669py3z7
       // Replaces '!num'.
       'substitute_fields' => array(
-
         // Synonym form.
-        array('synonym_name', '#title'),
-        array('synonym_name', '#prefix'),
-        array('synonym_description', '#title'),
-        array('synonym_description', '#description'),
+        ['synonym_name', '#title'],
+        ['synonym_name', '#prefix'],
+        ['synonym_description', '#title'],
+        ['synonym_description', '#description'],
+        ['synonym_id', '#ajax', 'wrapper'],
+      // [/VS]
 
         // Main form.
         array('#prefix'),
@@ -446,6 +453,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('description', '#title'),
         array('description', '#description'),
         array('units', '#title'),
+        ['units', '#prefix'],
         array('unit-other', '#title'),
         array('val-check', '#title'),
         array('bin-check', '#title'),
@@ -454,11 +462,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('min', '#title'),
         array('max', '#title'),
       ),
-      // [vs] Replace '!num' in attributes.
+      // [VS] Replace '!num' in attributes.
       'substitute_keys' => array(
         // Synonym form.
-        array('synonym_name', '#states', 'visible', tpps_synonym_selector($id)),
-        array('synonym_description', '#states', 'visible', tpps_synonym_selector($id)),
+        ['synonym_name', '#states', 'visible', tpps_synonym_selector($id)],
+        ['synonym_description', '#states', 'visible', tpps_synonym_selector($id)],
         // State of the Main form related to Synonym form.
         array('name', '#states', 'visible', tpps_synonym_selector($id)),
         array('env-check', '#states', 'visible', tpps_synonym_selector($id)),

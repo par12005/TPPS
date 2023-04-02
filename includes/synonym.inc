@@ -212,17 +212,14 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
 
 
   // @TODO There could be a lot of checkboxes and we need to update right one.
-  watchdog('tpps', '<pre>' . print_r($form_state, 1));
-
-  $unit_list =  tpps_synonym_get_unit_list(8);
-  // $unit_list = ['cm', 'mm'];
+  //watchdog('tpps', '<pre>' . print_r($form_state, 1));
 
   // Overwrite the student list fields with new options value.
   $form['units'] = [
     '#type' => 'select',
-    '#title' => 'Phenotype !num Units: *',
-    '#options' => $unit_list,
-    '#prefix' => '<div id="unit-list-wrapper">',
+    '#title' => t('Phenotype !num Units: *', ['!num' => $organism_id]),
+    '#options' => tpps_synonym_get_unit_list($synonym_id),
+    '#prefix' => '<div id="unit-list-' . $organism_id . '-wrapper">',
     '#suffix' => '</div>',
   ];
   $form['units'] = form_process_select($form['units']);
