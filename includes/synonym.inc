@@ -200,7 +200,10 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
 // Synonym related Units.
 
 /**
-* Custom callback to build form fields.
+ * Custom callback to build form fields.
+ *
+ * Creates a form element for 'Units' dropdown which will replce existing one
+ * at page when Synonym selectbox changed.
 */
 function tpps_synonym_update_unit_list($form, &$form_state) {
   $values = $form_state['values'];
@@ -209,12 +212,6 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   $organism_id = $form_state['triggering_element']['#parents'][3];
   $synonym_id = $form_state['triggering_element']['#value'];
 
-
-
-  // @TODO There could be a lot of checkboxes and we need to update right one.
-  //watchdog('tpps', '<pre>' . print_r($form_state, 1));
-
-  // Overwrite the student list fields with new options value.
   $form['units'] = [
     '#type' => 'select',
     '#title' => t('Phenotype !num Units: *', ['!num' => $organism_id]),

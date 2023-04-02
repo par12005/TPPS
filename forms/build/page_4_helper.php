@@ -668,22 +668,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           break;
       }
 
-      // [VS]
-// @TODO Review this code.
-
-
-
-      //$new_options = array();
-      //foreach ($terms as $term) {
-      //  $new_options[tpps_load_cvterm($term)->cvterm_id] = $unit_options[tpps_load_cvterm($term)->cvterm_id];
-      //}
-
-      //if (!empty($new_options)) {
-      //  $new_options['other'] = 'My unit is not in this list';
-      //  $form[$id]['phenotype']['phenotypes-meta'][$i]['units']['#options'] = $new_options;
-      //}
-      // [VS]
-
       if ($phenotypes[$i]['env-check']) {
         $terms = array(
           'whole plant' => 'Whole Plant',
