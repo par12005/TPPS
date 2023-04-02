@@ -9,10 +9,11 @@
  */
 
 define(
-  'TPPS_NO_SYNONYM_REPORT_NAME', 'Phenotypes without synonym'
+  'TPPS_NO_SYNONYM_REPORT_NAME', 'List of phenotypes without Synonym'
 );
 define(
-  'TPPS_UNIT_WARNING_REPORT_NAME', 'Phenotypes which units differs from Synonym'
+  'TPPS_UNIT_WARNING_REPORT_NAME',
+  'Unit Warning (list of phenotypes which unit differs from Synonym)'
 );
 
 /**
@@ -169,7 +170,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
         if ($phenotype['phenotypes-meta'][$j]['attribute'] === 'other') {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['attr-other'];
         }
-        if ($phenotype['phenotypes-meta'][$j]['units'] === 'other') {
+        if ($phenotype['phenotypes-meta'][$j]['units'] === 0) {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['unit-other'];
         }
       }
@@ -836,6 +837,18 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         ),
         '#default_value' => $info['struct-other'],
       ),
+
+
+
+
+
+      // [VS] @TODO Check if this form must be updated.
+
+
+
+
+
+
       'units' => array(
         '#type' => 'select',
         '#title' => t('Unit'),
