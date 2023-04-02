@@ -253,6 +253,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#title' => 'Synonym: *',
         '#options' => $synonym_list = tpps_synonym_get_list(),
         '#default_value' =>  array_key_first($synonym_list),
+        '#ajax' => [
+          'callback' => 'tpps_synonym_update_unit_list',
+          'wrapper' => 'unit-list-wrapper',
+          'method' => 'replace',
+          'event' => 'change',
+        ],
       ],
       // [/VS]
 
@@ -305,11 +311,15 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         + array('#states' => array('visible' => array(
             tpps_synonym_selector($id) => ['value' => 0],
         ))),
-      'units' => array(
+      // [VS] #8669rmrw5.
+      'units' => [
         '#type' => 'select',
         '#title' => 'Phenotype !num Units: *',
         '#options' => $unit_options,
-      ),
+        '#prefix' => '<div id="unit-list-wrapper">',
+        '#suffix' => '</div>',
+      ],
+      // [/VS]
       'unit-other' => array(
         '#type' => 'textfield',
         '#title' => 'Phenotype !num Custom Units: *',
