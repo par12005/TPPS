@@ -143,11 +143,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     $synonym_list = tpps_synonym_get_list();
     $default_synonym = array_key_first($synonym_list);
     // Units.
-    $unit_list = tpps_synonym_get_unit_list($default_synonym);
-    // This option must be last.
-    if (!empty($unit_list)) {
-      $unit_list = $unit_list + ['0' => t('My unit is not in this list')];
-    }
+    $unit_list = tpps_synonym_get_unit_list($default_synonym, TRUE);
+    $default_unit = array_key_first($unit_list);
     // [/VS] #8669rmrw5
 
     $struct_options = array();
@@ -273,10 +270,10 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#type' => 'select',
         '#title' => 'Phenotype !num Units: *',
         '#options' => $unit_list,
+        '#default_value' => $default_unit,
         '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
       ],
-      // [/VS]
       'unit-other' => array(
         '#type' => 'textfield',
         '#title' => 'Phenotype !num Custom Units: *',
@@ -287,11 +284,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
         ),
         '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
-        '#states' => array('visible' => array(
+        '#states' => ['visible' => [
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'
-            => array('value' => 'other'),
-        )),
+            => ['value' => 0],
+        ]],
       ),
+      // [/VS]
       'val-check' => array(
         '#type' => 'checkbox',
         '#title' => 'Phenotype !num has a value range',

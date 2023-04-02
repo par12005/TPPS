@@ -215,7 +215,7 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   $form['units'] = [
     '#type' => 'select',
     '#title' => t('Phenotype !num Units: *', ['!num' => $organism_id]),
-    '#options' => tpps_synonym_get_unit_list($synonym_id),
+    '#options' => tpps_synonym_get_unit_list($synonym_id, TRUE),
     '#prefix' => '<div id="unit-list-' . $organism_id . '-wrapper">',
     '#suffix' => '</div>',
   ];
@@ -228,13 +228,17 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
  *
  * @param int $synonym_id
  *   Synonym Id. See db table 'chado.phenotype_synonyms'.
+ * @param bool $not_in_list_option
+ *   When TRUE extra item will be added to the unit list. Could be used in
+ *   dropdown lists. When FALSE (default) then only list of units will
+ *   be returned.
  *
  * @return array
  *  Returns list of units related to given synonym.
  *  Returns all units if synonym not specified.
  *  Returns empty array if synonym not found.
  */
-function tpps_synonym_get_unit_list($synonym_id = '') {
+function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = FALSE) {
   $query = db_select('chado.phenotype_units', 'cpu')
     ->fields('cpu', ['unit_cvterm_id', 'unit_name']);
   if (!empty($synonym_id)) {
@@ -243,5 +247,10 @@ function tpps_synonym_get_unit_list($synonym_id = '') {
     );
     $query->condition('cps.phenotype_synonyms_id', $synonym_id);
   }
-  return $query->execute()->fetchAllKeyed();
+  $unit_list = $query->execute()->fetchAllKeyed();
+  // This option must be last.
+  if (!empty($unit_list) && $not_in_list_option) {
+    $unit_list = $unit_list + ['0' => t('My unit is not in this list')];
+  }
+  return $unit_list;
 }
