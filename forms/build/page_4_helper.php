@@ -138,61 +138,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
     $attr_options['other'] = 'My attribute term is not in this list';
 
-    $unit_options = array();
-    $terms = array(
-      'absorbance unit' => t('Absorbance Unit'),
-      'boolean' => t('Boolean (Binary)'),
-      'centimeter' => t('Centimeter'),
-      'centimeters per day' => t('Centimeters per Day'),
-      'cubic_centimeter' => t('Cubic Centimeter'),
-      'cubic_meter' => t('Cubic Meter'),
-      'day' => t('Day'),
-      'degrees_celsius' => t('Degrees Celsius'),
-      'degrees celsius per millimeter' => t('Degrees Celsius per Millimeter'),
-      'degrees_fahrenheit' => t('Degrees Fahrenheit'),
-      'grams_per_square_meter' => t('Grams per Square Meter'),
-      'gram' => t('Gram'),
-      'kilogram' => t('Kilogram'),
-      'kilogram_per_cubic_meter' => t('Kilogram per Cubic Meter'),
-      'kilograms per meter cubed' => t('Kilograms per Meter Cubed'),
-      'liter' => t('Liter'),
-      'log(centimeters per day)' => t('Log (Centimeters per day)'),
-      'log(centimeters cubed per day)' => t('Log (Centimeters cubed per day)'),
-      'luminous_intensity_unit' => t('Luminous Intensity Unit'),
-      'meter' => t('Meter'),
-      'milligram' => t('Milligram'),
-      'milligrams per millimeter' => t('Milligrams per Millimeter'),
-      'milligrams per millimeter squared' => t('Milligrams per Millimeter Squared'),
-      'milligrams per milligram' => t('Milligrams per Milligram'),
-      'milliliter' => t('Milliliter'),
-      'millimeter' => t('Millimeter'),
-      'micrometer' => t('Micrometer'),
-      'micromoles carbon dioxide per meter squared per second' => t('Micromoles Carbon Dioxide per Meter Squared per Second'),
-      'micromoles carbon dioxide per gram per second' => t('Micromoles Carbon Dioxide per Gram per Second'),
-      'micromoles carbon dioxide per gram Nitrogen per second' => t('Micromoles Carbon Dioxide per Gram Nitrogen per Second'),
-      'micromoles carbon dioxide per millimole water' => t('Micromoles Carbon Dioxide per Millimole Water'),
-      'moles water per meter squared per second' => t('Moles Water per Meter Squared per Second'),
-      'no unit' => t('No Unit'),
-      'number' => t('Number'),
-      'pascal' => t('Pascal'),
-      'percent' => t('Percent'),
-      'qualitative' => t('Qualitative'),
-      'square_micrometer' => t('Square Micrometer'),
-      'square_millimeter' => t('Square Millimeter'),
-      'watt_per_square_meter' => t('Watt per Square Meter'),
-      'year' => t('Year'),
-    );
-    foreach ($terms as $term => $label) {
-      // [vs] Somehow object became empty and it cause a lot of messages like:
-      // Notice: Trying to get property of non-object in tpps_phenotype()
-      // (line 186 of /var/www/Drupal/sites/all/modules/TGDR/forms/build/page_4_helper.php).
-      if (!empty(tpps_load_cvterm($term))) {
-        $unit_id = tpps_load_cvterm($term)->cvterm_id;
-        $unit_options[$unit_id] = $label;
-      }
-      // drupal_set_message($term . "," . $label . "," . $unit_id);
+    $unit_list = tpps_synonym_get_unit_list();
+    // This option must be last.
+    if (!empty($unit_list)) {
+      $unit_list = $unit_list + ['0' => t('My unit is not in this list')];
     }
-    $unit_options['other'] = 'My unit is not in this list';
 
     $struct_options = array();
     $terms = array(
@@ -315,7 +265,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'units' => [
         '#type' => 'select',
         '#title' => 'Phenotype !num Units: *',
-        '#options' => $unit_options,
+        '#options' => $unit_list,
         '#prefix' => '<div id="unit-list-wrapper">',
         '#suffix' => '</div>',
       ],
@@ -710,15 +660,21 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           break;
       }
 
-      $new_options = array();
-      foreach ($terms as $term) {
-        $new_options[tpps_load_cvterm($term)->cvterm_id] = $unit_options[tpps_load_cvterm($term)->cvterm_id];
-      }
+      // [VS]
+// @TODO Review this code.
 
-      if (!empty($new_options)) {
-        $new_options['other'] = 'My unit is not in this list';
-        $form[$id]['phenotype']['phenotypes-meta'][$i]['units']['#options'] = $new_options;
-      }
+
+
+      //$new_options = array();
+      //foreach ($terms as $term) {
+      //  $new_options[tpps_load_cvterm($term)->cvterm_id] = $unit_options[tpps_load_cvterm($term)->cvterm_id];
+      //}
+
+      //if (!empty($new_options)) {
+      //  $new_options['other'] = 'My unit is not in this list';
+      //  $form[$id]['phenotype']['phenotypes-meta'][$i]['units']['#options'] = $new_options;
+      //}
+      // [VS]
 
       if ($phenotypes[$i]['env-check']) {
         $terms = array(
