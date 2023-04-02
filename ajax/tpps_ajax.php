@@ -312,30 +312,6 @@ function tpps_attribute_autocomplete($string) {
 }
 
 /**
- * Phenotype units auto-complete matching.
- *
- * @param string $string
- *   The string the user has already entered into the text field.
- */
-function tpps_units_autocomplete($string) {
-  $matches = array();
-
-  $results = chado_select_record('phenotypeprop', array('value'), array(
-    'value' => array(
-      'data' => $string,
-      'op' => '~*',
-    ),
-    'type_id' => tpps_load_cvterm('unit')->cvterm_id,
-  ));
-
-  foreach ($results as $row) {
-    $matches[$row->value] = check_plain($row->value);
-  }
-
-  drupal_json_output($matches);
-}
-
-/**
  * Phenotype structure auto-complete matching.
  *
  * @param string $string
