@@ -516,6 +516,13 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#value' => t('Change Submission Owner'),
   );
 
+  $form['SYNC_PUBLICATION_DATA'] = array(
+    '#title' => 'Synchronize publication data',
+    '#prefix' => '<h2 style="margin-top: 30px;">Synchronize publication data</h2>This will attempt to pull publication data from the publication content type and update the study info<br />',
+    '#type' => 'submit',
+    '#value' => t('Sync Publication'),
+  );
+
   $study_role_view = NULL;
   if(isset($submission_state['study_view_role'])) {
     $study_role_view = $submission_state['study_view_role'];
@@ -534,6 +541,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#options' => $options,
     '#default_value' => $study_role_view,
   );
+
   $form['CHANGE_STUDY_VIEW_ROLE_SAVE'] = array(
     '#type' => 'submit',
     '#value' => t('Change Study View Role'),
@@ -1668,6 +1676,102 @@ function tpps_admin_panel_submit($form, &$form_state) {
       tpps_update_submission($state, array(
         'uid' => $new_user->uid,
       ));
+      break;
+
+    case 'Sync Publication':
+      // dpm('State title:');
+      // dpm($state['title']);
+      // dpm('Project ID:');
+      $project_id = $state['ids']['project_id'] ?? NULL;
+      // dpm($project_id);
+      // dpm($state['publication']);
+      // dpm(array_keys($state));
+      // dpm($state['authors']);
+      // dpm($state['pyear']);
+
+      $pub_id = db_select('chado.project_pub', 'p')
+      ->fields('p', array('pub_id'))
+      ->condition('project_id', $state['ids']['project_id'])
+      ->execute()->fetchObject()->pub_id;
+      if (!empty($pub_id)) {
+        $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
+
+
+        $pub_entity_id = NULL;
+        try {
+          $pub_entity_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
+        }
+        catch (Exception $ex) {
+          // couldn't find a publication entity
+        }
+
+        if (!isset($pub_entity_id)) {
+          drupal_set_message('Could not find a matching publication safely. Will not synchronize data.');
+        }
+        else {
+          drupal_set_message("Publication entity id found ($pub_entity_id), retrieving publication data...");
+          // dpm('pub_entity_id:'. $pub_entity_id);
+          // This will return results as an array
+          $publication_entity_results = tripal_load_entity('TripalEntity', array($pub_entity_id));
+          // Get the entity
+          $publication_entity = $publication_entity_results[$pub_entity_id];
+          // dpm($publication_entity);
+          // dpm($publication_entity->title);
+          if (isset($publication_entity->title)) {
+            $pub_title = $publication_entity->title;
+            // dpm('pub_title:' . $pub_title);
+            if ($pub_title != "") {
+              drupal_set_message('Found a valid publication title, syncing with study.');
+              $state['title'] = $pub_title;
+            }
+          }
+          if (isset($publication_entity->tpub__year['und'][0]['safe_value'])) {
+            $pub_year = $publication_entity->tpub__year['und'][0]['safe_value'];
+            // dpm('pub_year:' . $pub_year);
+            if ($pub_year != "") {
+              drupal_set_message('Found a valid publication year, synced with study.');
+              $state['pyear'] = $pub_year;
+            }
+          }
+          if (isset($publication_entity->tpub__abstract['und'][0]['value'])) {
+            $pub_abstract = $publication_entity->tpub__abstract['und'][0]['value'];
+            // dpm('pub_abstract:' . $pub_abstract);
+            if ($pub_abstract != "") {
+              drupal_set_message('Found a valid publication abstract, synced with study.');
+              $state['abstract'] = $pub_abstract;
+            }
+          }
+          if (isset($publication_entity->tpub__authors['und'][0]['value'])) {
+            $pub_authors = $publication_entity->tpub__authors['und'][0]['value'];
+            // dpm('pub_authors:' . $pub_authors);
+            if ($pub_authors != "") {
+              preg_match_all('/.[^,]+,*/', $pub_authors, $matches);
+              // dpm($matches);
+              if (count($matches) > 0) {
+                $actual_matches = $matches[0];
+                // dpm($actual_matches);
+                $filtered_matches = array();
+                foreach ($actual_matches as $match) {
+                  $match = str_replace(',','',$match);
+                  $match = trim($match);
+                  array_push($filtered_matches, $match);
+                }
+                // dpm($filtered_matches);
+                if (count($filtered_matches) > 0) {
+                  $state['authors'] = $filtered_matches;
+                  drupal_set_message('Found valid publication authors, synced with study.');
+                }
+              }
+            }
+          }
+          // Save the submission state
+          tpps_update_submission($state);
+          drupal_set_message('Done.');
+        }
+      }
+      else {
+        drupal_set_message('Could not find a valid pub_id for this study. Edit via TPPSc and make sure you have connected this study to a valid paper');
+      }
       break;
 
     default:

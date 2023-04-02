@@ -1537,6 +1537,48 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $current_id = $form_state['ids']['organism_ids'][$i];
       $species_code = $species_codes[$current_id];
 
+
+      // The following code is used to get the analysis_id from the genome assemble if it's selected
+      // WE NEED THIS TO DO FEATURELOC INSERTS (basically to get to the point of srcfeature_id later on)
+      // * GOALS: First we need to find the analysis id
+      // We need to get the reference genome from the TPPS form ex:
+      $ref_genome = $genotype['ref-genome'];
+      $analysis_id = NULL;
+      if (isset($ref_genome)) {
+        // Get the species and version from the reference genome selected
+        // if match occurs thats in index [0].
+        // The group match index [1] is species, group match index [2] is version
+        preg_match('/(.+) +v(\d*\.*\d*)/', $ref_genome, $matches);
+        $ref_genome_species = NULL;
+        $ref_genome_version = NULL;
+        if (count($matches) > 0) {
+          $ref_genome_species = $matches[2];
+          $ref_genome_version = $matches[3];
+        }
+
+        if (isset($ref_genome_species) && isset($ref_genome_version)) {
+          // Look up the analysis
+          $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
+            WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
+            [
+              ':name' => $ref_genome_species . '%',
+              ':programversion' => $ref_genome_version
+            ]
+          );
+          foreach ($analysis_results as $row) {
+            $analysis_id = $row->analysis_id;
+          }
+        }
+
+        // Once an analysis_id was found, try to get srcfeature_id
+
+      }
+      else {
+        echo "A reference genome could not be found in the TPPS page 4 form.\n";
+        echo "Without this, we cannot find the analysis_id and thus the srcfeature_id.\n";
+        echo "Featureloc data will not be recorded\n";
+      }
+
       // dpm('start: ' . date('r'));.
       echo "[INFO] Processing Genotype VCF file\n";
       $file_progress_line_count = 0;
@@ -1589,24 +1631,113 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           }
 
           // print_r('[New Feature]: ' . $marker_name . "\n");
-          $records['feature'][$marker_name] = array(
-            'organism_id' => $current_id,
-            'uniquename' => $marker_name,
-            'type_id' => $seq_var_cvterm,
-          );
+
+          // @TODO: 3/28/2023 Emily mentioned we could try to get the foreign key first
+          //                  and use this later on.
+
+          // PETER'S CODE
+          // $records['feature'][$marker_name] = array(
+          //   'organism_id' => $current_id,
+          //   'uniquename' => $marker_name,
+          //   'type_id' => $seq_var_cvterm,
+          // );
+
+          // Rish code to test a single insert and get the id
+          try {
+            $results = chado_insert_record('feature', [
+              'name' => $marker_name,
+              'organism_id' => $current_id,
+              'uniquename' => $marker_name,
+              'type_id' => $seq_var_cvterm,
+            ]);
+          }
+          catch (Exception $ex) {
+
+          }
+          // get the feature_id
+          $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
+            ':uniquename' => $marker_name
+          ]);
+          $row_object = $results->fetchObject();
+          $marker_id = $row_object->feature_id;
 
           // print_r('[New Feature variant_name]: ' . $variant_name . "\n");
-          $records['feature'][$variant_name] = array(
-            'organism_id' => $current_id,
-            'uniquename' => $variant_name,
-            'type_id' => $seq_var_cvterm,
-          );
+          // PETER'S CODE
+          // $records['feature'][$variant_name] = array(
+          //   'organism_id' => $current_id,
+          //   'uniquename' => $variant_name,
+          //   'type_id' => $seq_var_cvterm,
+          // );
 
-          // MEETING WITH EMILY TO DISCUSS
-          // @TODO @URGENT 3/27/2023: Chromosome number and position (store this in featureloc table)
+          // Rish code to test a single insert and get the id
+          try {
+            $results = chado_insert_record('feature', [
+              'name' => $variant_name,
+              'organism_id' => $current_id,
+              'uniquename' => $variant_name,
+              'type_id' => $seq_var_cvterm,
+            ]);
+          }
+          catch (Exception $ex) {
+
+          }
+          // get the feature_id
+          $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
+            ':uniquename' => $variant_name
+          ]);
+          $row_object = $results->fetchObject();
+          $variant_id = $row_object->feature_id;
+
+          // SOME CODE FOR THIS IS OUTSIDE OF THE PER LINE PROCESSING ABOVE (OUTISDE FOR LOOP)
+          // 3/27/2023: Chromosome number and position (store this in featureloc table)
           // feature_id from marker or variant created
           // srcfeature_id for the genome / assembly used for reference (some sort of query - complicated)
           // store where marker starts on chromosome etc.
+          $srcfeature_id = NULL;
+          if (isset($analysis_id)) {
+            // Get the srcfeature_id
+            $srcfeature_results = chado_query('select feature.feature_id from feature
+              join analysisfeature on feature.feature_id = analysisfeature.feature_id
+              where feature.name = :scaffold_id and analysisfeature.analysis_id = :analysis_id',
+              [
+                ':scaffold_id' => $scaffold_id,
+                ':analysis_id' => $analysis_id
+              ]
+            );
+
+
+            foreach ($srcfeature_results as $row) {
+              $srcfeature_id = $row->feature_id;
+            }
+          }
+
+          // if srcfeature_id was found, then we have enough info to add featureloc data
+          if (isset($srcfeature_id)) {
+            $featureloc_values = [
+              'feature_id' => $marker_id,
+              'srcfeature_id' => $srcfeature_id,
+              'fmin' => $position,
+              'fmax' => $position // TODO We need to determine how to deal with indels
+            ];
+
+            // Since we haven't catered for deletion of these featureloc records
+            // there may already exist, we have to make sure the record doesn't already exist
+            $featureloc_results = chado_query('SELECT count(*) as c1 FROM chado.featureloc
+              WHERE feature_id = :feature_id AND srcfeature_id = :srcfeature_id;', [
+                ':feature_id' => $marker_id,
+                ':srcfeature_id' => $srcfeature_id
+              ]
+            );
+            $featureloc_count = 0;
+            foreach ($featureloc_results as $row) {
+              $featureloc_count = $row->c1;
+            }
+            // This means no featureloc exists, so insert it
+            if ($featureloc_count == 0) {
+              // This will add it to the multiinsert record system for insertion
+              $records['featureloc'][$marker_name] = $featureloc_values;
+            }
+          }
 
           // Rish 12/08/2022: So we have multiple genotypes created
           // So I adjusted some of this code into a for statement
@@ -1625,23 +1756,44 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
             // print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
 
+            // PETER'S CODE
+            // $records['genotype'][$genotype_desc] = array(
+            //   'name' => $genotype_name,
+            //   'uniquename' => $genotype_desc,
+            //   'description' => $description,
+            //   'type_id' => $snp_cvterm,
+            // );
 
+            // Rish code to test a single insert and get the id
+            try {
+              $results = chado_insert_record('genotype', [
+                'name' => $genotype_name,
+                'uniquename' => $genotype_desc,
+                'description' => $description,
+                'type_id' => $snp_cvterm,
+              ]);
+            }
+            catch (Exception $ex) {
 
-            $records['genotype'][$genotype_desc] = array(
-              'name' => $genotype_name,
-              'uniquename' => $genotype_desc,
-              'description' => $description,
-              'type_id' => $snp_cvterm,
-            );
+            }
+            // get the feature_id
+            $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
+              ':uniquename' => $genotype_desc
+            ]);
+            $row_object = $results->fetchObject();
+            $genotype_id = $row_object->genotype_id;
 
              // 3/27/2023 Meeting - FORMAT: REVIEW THIS IN TERMS OF IF WE NEED IT
             if ($format != "") {
               $records['genotypeprop']["$genotype_desc-format"] = array(
                 'type_id' => $format_cvterm,
                 'value' => $format,
-                '#fk' => array(
-                  'genotype' => $genotype_desc,
-                ),
+                // PETER
+                // '#fk' => array(
+                //   'genotype' => $genotype_desc,
+                // ),
+                // RISH
+                'genotype_id' => $genotype_id,
               );
             }
 
@@ -1660,42 +1812,66 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
                 $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
                   'project_id' => $project_id,
                   'stock_id' => $stocks[$j - 9],
-                  '#fk' => array(
-                    'genotype' => $genotype_desc,
-                    'variant' => $variant_name,
-                    'marker' => $marker_name,
-                  ),
+                  // PETER
+                  // '#fk' => array(
+                  //   'genotype' => $genotype_desc,
+                  //   'variant' => $variant_name,
+                  //   'marker' => $marker_name,
+                  // ),
+                  // RISH
+                  'genotype_id' => $genotype_id,
+                  'variant_id' => $variant_id,
+                  'marker_id' => $marker_id,
                 );
 
                 // THIS ABOUT REMOVING THIS - but it is in use for genotype materialized views
                 // which is used for tpps/details page
                 $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
                   'stock_id' => $stocks[$j - 9],
-                  '#fk' => array(
-                    'genotype' => $genotype_desc,
-                  ),
+                  // PETER
+                  // '#fk' => array(
+                  //   'genotype' => $genotype_desc,
+                  // ),
+                  // RISH
+                  'genotype_id' => $genotype_id,
                 );
               }
-
             }
+
+
+            // @TODO 3/28/2023 - Gabe thought we didn't additional data from the VCF file
+            // Basically chromosome and position
+            // Featureloc table: the following are where to get the values for these fields
+            //                   in order to create the featureloc record
+            // Field: feature_id -> $records['feature'][$marker_name]
+            // Field: srcfeature_id query needs analysis_id from TPPS FORM, then query feature table
+            // Field: fmin
+            // Field: fmax
+
 
             // 3/27/2023 - Jill question: Do we need to store in the database
             // Quality score.
             $records['genotypeprop']["$genotype_desc-qual"] = array(
               'type_id' => $qual_cvterm,
               'value' => $qual,
-              '#fk' => array(
-                'genotype' => $genotype_desc,
-              ),
+              // PETER
+              // '#fk' => array(
+              //   'genotype' => $genotype_desc,
+              // ),
+              // RISH
+              'genotype_id' => $genotype_id,
             );
 
             // filter: pass/fail.
             $records['genotypeprop']["$genotype_desc-filter"] = array(
               'type_id' => $filter_cvterm,
               'value' => ($filter == '.') ? "P" : "NP",
-              '#fk' => array(
-                'genotype' => $genotype_desc,
-              ),
+              // PETER
+              // '#fk' => array(
+              //   'genotype' => $genotype_desc,
+              // ),
+              // RISH
+              'genotype_id' => $genotype_id,
             );
 
             // Break up info column.
@@ -1712,9 +1888,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               $records['genotypeprop']["$genotype_desc-freq"] = array(
                 'type_id' => $freq_cvterm,
                 'value' => $info_vals['AF'],
-                '#fk' => array(
-                  'genotype' => $genotype_desc,
-                ),
+                // PETER
+                // '#fk' => array(
+                //   'genotype' => $genotype_desc,
+                // ),
+                // RISH
+                'genotype_id' => $genotype_id,
               );
             }
 
@@ -1725,9 +1904,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               $records['genotypeprop']["$genotype_desc-depth"] = array(
                 'type_id' => $depth_cvterm,
                 'value' => $info_vals['DP'],
-                '#fk' => array(
-                  'genotype' => $genotype_desc,
-                ),
+                // PETER
+                // '#fk' => array(
+                //   'genotype' => $genotype_desc,
+                // ),
+                // RISH
+                'genotype_id' => $genotype_id,
               );
             }
 
@@ -1738,9 +1920,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               $records['genotypeprop']["$genotype_desc-n_sample"] = array(
                 'type_id' => $n_sample_cvterm,
                 'value' => $info_vals['NS'],
-                '#fk' => array(
-                  'genotype' => $genotype_desc,
-                ),
+                // PETER
+                // '#fk' => array(
+                //   'genotype' => $genotype_desc,
+                // ),
+                // RISH
+                'genotype_id' => $genotype_id,
               );
             }
           }
@@ -3025,9 +3210,41 @@ function tpps_generate_genotype_materialized_view($project_id) {
     return;
   }
   $view_name = 'chado.genotypes_' . $project_id;
+
+  // Added to fix previous queries that used stock_genotype which we don't
+  // want to keep using.
+  try {
+    echo "Attempting to drop materialized view (if exist): " . $view_name . "\n";
+    chado_query("DROP MATERIALIZED VIEW " . $view_name . " IF EXISTS;");
+  }
+  catch (Exception $ex) {
+    echo "Exception occurred while trying to drop materialized view: " . $view_name . "\n";
+  }
+
   echo "Attempting to create materialized view (if it does not exist): " . $view_name . "\n";
+
+  // @ DEPRECATED - Used stock_genotype which we want to avoid due to size.
+  // We still use stock_genotype for Tripal Entities
+  // chado_query('CREATE MATERIALIZED VIEW IF NOT EXISTS ' . $view_name . ' AS ' .
+  //   "(SELECT g.genotype_id AS
+  //   genotype_id,
+  //   g.name AS name,
+  //   g.uniquename AS uniquename,
+  //   g.description AS description,
+  //   g.type_id AS type_id,
+  //   s.uniquename AS s_uniquename,
+  //   s.stock_id AS stock_id
+  //   FROM chado.genotype g
+  //   INNER JOIN chado.stock_genotype sg ON sg.genotype_id = g.genotype_id
+  //   INNER JOIN chado.project_stock ps ON ps.stock_id = sg.stock_id
+  //   INNER JOIN chado.stock s ON s.stock_id = sg.stock_id
+  //   WHERE (ps.project_id = '" . $project_id . "')" . ') ' .
+  //   "WITH NO DATA"
+  // ,[]);
+
+  // @NEW - This code uses the genotype_call table only - less joins - more efficient
   chado_query('CREATE MATERIALIZED VIEW IF NOT EXISTS ' . $view_name . ' AS ' .
-    "(SELECT g.genotype_id AS
+  "(SELECT g.genotype_id AS
     genotype_id,
     g.name AS name,
     g.uniquename AS uniquename,
@@ -3036,12 +3253,13 @@ function tpps_generate_genotype_materialized_view($project_id) {
     s.uniquename AS s_uniquename,
     s.stock_id AS stock_id
     FROM chado.genotype g
-    INNER JOIN chado.stock_genotype sg ON sg.genotype_id = g.genotype_id
-    INNER JOIN chado.project_stock ps ON ps.stock_id = sg.stock_id
-    INNER JOIN chado.stock s ON s.stock_id = sg.stock_id
-    WHERE (ps.project_id = '" . $project_id . "')" . ') ' .
+    INNER JOIN chado.genotype_call gc ON gc.genotype_id = g.genotype_id
+    INNER JOIN chado.stock s ON s.stock_id = gc.stock_id
+    WHERE (gc.project_id = '" . $project_id . "') )" .
     "WITH NO DATA"
   ,[]);
+
+
 
   // Generate the data / regenerate if necessary
   echo "Refreshing materialized view: " . $view_name . "\n";
