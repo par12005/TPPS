@@ -175,7 +175,7 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
 /**
  * Custom callback to build form fields.
  *
- * Creates a form element for 'Units' dropdown which will replce existing one
+ * Creates a form element for 'Unit' dropdown which will replce existing one
  * at page when Synonym selectbox changed.
 */
 function tpps_synonym_update_unit_list($form, &$form_state) {
@@ -187,7 +187,7 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
 
   $form['unit'] = [
     '#type' => 'select',
-    '#title' => t('Phenotype !num Units: *', ['!num' => $organism_id]),
+    '#title' => t('Phenotype !num Unit: *', ['!num' => $organism_id]),
     '#options' => tpps_synonym_get_unit_list($synonym_id, TRUE),
     '#prefix' => '<div id="unit-list-' . $organism_id . '-wrapper">',
     '#suffix' => '</div>',
