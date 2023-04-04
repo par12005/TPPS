@@ -125,19 +125,19 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     if ($phenotype_check == '1' and !empty($phenotype_meta)) {
       $required_groups = array(
         'Phenotype Id' => array(
-          'id' => array(1),
+          'id' => [1],
         ),
         'Attribute' => array(
-          'attr' => array(2),
+          'attr' => [2],
         ),
         'Description' => array(
-          'desc' => array(3),
+          'desc' => [3],
         ),
         'Units' => array(
-          'units' => array(4),
+          'unit' => [4],
         ),
         'Structure' => array(
-          'structure' => array(5),
+          'structure' => [5],
         ),
       );
 
@@ -154,7 +154,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
 
     for ($i = 1; $i <= $phenotype_number; $i++) {
       $current_phenotype = &$phenotype['phenotypes-meta']["$i"];
-      $units = $current_phenotype['units'];
+      $unit = $current_phenotype['unit'];
       // Synonym form.
       if (!empty($current_phenotype['synonym_id'])) {
         $synonym_name = $current_phenotype['synonym_name'];
@@ -195,11 +195,11 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         form_set_error("$id][phenotype][phenotypes-meta][$i][attr-other",
           "Phenotype $i Custom Attribute: field is required.");
       }
-      if ($units == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][units",
+      if ($unit == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][unit",
           "Phenotype $i Units: field is required.");
       }
-      elseif ($units == 0 && $current_phenotype['unit-other'] == '') {
+      elseif ($unit == 0 && $current_phenotype['unit-other'] == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][unit-other",
           "Phenotype $i Custom Unit: field is required.");
       }
@@ -218,7 +218,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
       //  (
       //    $current_phenotype['val-check']
       //    || $current_phenotype['bin-check']
-      //    || $current_phenotype['units'] == tpps_load_cvterm('boolean')->cvterm_id
+      //    || $current_phenotype['unit'] == tpps_load_cvterm('boolean')->cvterm_id
       //  )
       //  && $current_phenotype['min'] == ''
       //);
@@ -230,7 +230,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
       //  (
       //    $current_phenotype['val-check']
       //    || $current_phenotype['bin-check']
-      //    || $current_phenotype['units'] == tpps_load_cvterm('boolean')->cvterm_id
+      //    || $current_phenotype['unit'] == tpps_load_cvterm('boolean')->cvterm_id
       //  )
       //  && $current_phenotype['max'] == ''
       //);

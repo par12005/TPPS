@@ -266,29 +266,33 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
             tpps_synonym_selector($id) => ['value' => 0],
         ))),
       // [VS] #8669rmrw5.
-      'units' => [
+      'unit' => [
         '#type' => 'select',
-        '#title' => 'Phenotype !num Units: *',
+        '#title' => 'Phenotype !num Unit: *',
         '#options' => $unit_list,
         '#default_value' => $default_unit,
         '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
       ],
-      'unit-other' => array(
+      'unit-other' => [
         '#type' => 'textfield',
         '#title' => 'Phenotype !num Custom Units: *',
-        '#autocomplete_path' => 'tpps/autocomplete/units',
+        '#autocomplete_path' => 'tpps/autocomplete/unit',
         '#attributes' => array(
           'data-toggle' => array('tooltip'),
           'data-placement' => array('right'),
           'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
         ),
         '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
+
+        // @TODO Major. Not work because unit field added by
+        // ajax has no name or id in browser.
+
         '#states' => ['visible' => [
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]'
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
             => ['value' => 0],
         ]],
-      ),
+      ],
       // [/VS]
       'val-check' => array(
         '#type' => 'checkbox',
@@ -298,7 +302,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
             array(
               [
                 ':input[name="' . $id
-                . '[phenotype][phenotypes-meta][!num][units]"]' =>
+                . '[phenotype][phenotypes-meta][!num][unit]"]' =>
                 array('value' => tpps_load_cvterm('boolean')->cvterm_id),
               ],
               'or',
@@ -322,7 +326,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'invisible' => array(
             array(
               array(':input[name="' . $id
-                . '[phenotype][phenotypes-meta][!num][units]"]' =>
+                . '[phenotype][phenotypes-meta][!num][unit]"]' =>
                   array('value' => tpps_load_cvterm('boolean')->cvterm_id),
               ),
               'or',
@@ -372,7 +376,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'visible' => array(
             array(
               array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
+                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
+                => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
               ),
               'or',
               array(
@@ -393,11 +398,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'visible' => array(
             array(
               array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
+                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
+                  => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
               ),
               'or',
               array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => TRUE),
+                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'
+                  => array('checked' => TRUE),
               ),
               'or',
               array(
@@ -450,9 +457,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('attr-other', '#title'),
         array('description', '#title'),
         array('description', '#description'),
-        array('units', '#title'),
-        ['units', '#prefix'],
-        array('unit-other', '#title'),
+        // [VS] #8669rmrw5
+        ['unit', '#title'],
+        ['unit', '#prefix'],
+        ['unit-other', '#title'],
+        // [/VS]
         array('val-check', '#title'),
         array('bin-check', '#title'),
         array('structure', '#title'),
@@ -485,15 +494,20 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'unit-other',
           '#states',
           'visible',
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
         ),
+
+
+        // @TODO Check fields at form.
+
+
         array(
           'val-check',
           '#states',
           'invisible',
           0,
           0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
         ),
         array(
           'val-check',
@@ -508,7 +522,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'invisible',
           0,
           0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
         ),
         array(
           'bin-check',
@@ -524,14 +538,14 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'visible',
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]',
         ),
-        array(
-          'min',
-          '#states',
-          'visible',
-          0,
-          0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
-        ),
+        //array(
+        //  'min',
+        //  '#states',
+        //  'visible',
+        //  0,
+        //  0,
+        //  ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
+        //),
         array(
           'min',
           '#states',
@@ -548,14 +562,14 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           4,
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
         ),
-        array(
-          'max',
-          '#states',
-          'visible',
-          0,
-          0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
-        ),
+        //array(
+        //  'max',
+        //  '#states',
+        //  'visible',
+        //  0,
+        //  0,
+        //  ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
+        //),
         array(
           'max',
           '#states',

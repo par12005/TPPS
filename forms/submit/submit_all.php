@@ -1049,8 +1049,8 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
       }
-      $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
-      if ($phenotype['phenotypes-meta'][$j]['units'] == 0) {
+      $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['unit'];
+      if ($phenotype['phenotypes-meta'][$j]['unit'] == 0) {
         $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
       }
       $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
@@ -1062,7 +1062,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       //$condition = (
       //  !empty($phenotype['phenotypes-meta'][$j]['val-check'])
       //  or !empty($phenotype['phenotypes-meta'][$j]['bin-check']
-      //  or $phenotype['phenotypes-meta'][$j]['units'] == tpps_load_cvterm('boolean')->cvterm_id)
+      //  or $phenotype['phenotypes-meta'][$j]['unit'] == tpps_load_cvterm('boolean')->cvterm_id)
       //);
       //if ($condition) {
       //  $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
@@ -1199,7 +1199,9 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['organism_name'] = $organism_name;
     $options['meta'] = array(
       'desc' => "Mass Spectrometry",
-      // @TODO Replace with Unit Id.
+
+      // @TODO Major. Replace with Unit Id.
+
       'unit' => "intensity (arbitrary units)",
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
       'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id, // manual term for MASS Spec

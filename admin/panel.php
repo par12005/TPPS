@@ -170,7 +170,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
         if ($phenotype['phenotypes-meta'][$j]['attribute'] === 'other') {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['attr-other'];
         }
-        if ($phenotype['phenotypes-meta'][$j]['units'] === 0) {
+        if ($phenotype['phenotypes-meta'][$j]['unit'] === 0) {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['unit-other'];
         }
       }
@@ -849,11 +849,11 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
 
 
 
-      'units' => array(
+      'unit' => array(
         '#type' => 'select',
         '#title' => t('Unit'),
         '#options' => $unit_options,
-        '#default_value' => $info['units'],
+        '#default_value' => $info['unit'],
       ),
       'unit-other' => array(
         '#type' => 'textfield',
@@ -861,7 +861,8 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#autocomplete_path' => 'tpps/autocomplete/unit',
         '#states' => array(
           'visible' => array(
-            ':input[name="phenotypes_edit[' . $num . '][units]"]' => array('value' => 'other'),
+            ':input[name="phenotypes_edit[' . $num . '][unit]"]'
+              =>  ['value' => 'other'],
           ),
         ),
         '#default_value' => $info['unit-other'],

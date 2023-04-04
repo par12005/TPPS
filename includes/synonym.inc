@@ -185,15 +185,14 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   $organism_id = $form_state['triggering_element']['#parents'][3];
   $synonym_id = $form_state['triggering_element']['#value'];
 
-  $form['units'] = [
+  $form['unit'] = [
     '#type' => 'select',
     '#title' => t('Phenotype !num Units: *', ['!num' => $organism_id]),
     '#options' => tpps_synonym_get_unit_list($synonym_id, TRUE),
     '#prefix' => '<div id="unit-list-' . $organism_id . '-wrapper">',
     '#suffix' => '</div>',
   ];
-  $form['units'] = form_process_select($form['units']);
-  return $form['units'];
+  return form_process_select($form['unit']);
 }
 
 /**

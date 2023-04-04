@@ -315,7 +315,7 @@ function tpps_flatten(array $state) {
                   'name' => 'Name',
                   'attribute' => 'Attribute',
                   'description' => 'Description',
-                  'units' => 'Units',
+                  'unit' => 'Unit',
                 );
                 if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
                   $fields['structure'] = 'Structure';
@@ -345,7 +345,7 @@ function tpps_flatten(array $state) {
 
           // Rish comments: 21 March 2023
           // Based on the example of TGDR465, there is a single ISO file that can be uploaded
-          // I *think* the headers should match each phenotype name that is added manually 
+          // I *think* the headers should match each phenotype name that is added manually
           // from the previous part of page 4
           if (isset($pheno['file']) and $pheno['file']) {
             $data["$org_name Phenotype File"] = $pheno['file'];
