@@ -331,7 +331,7 @@ function tpps_unit_autocomplete($string) {
       ->condition('unit_name', '%' . db_like($string) . '%', 'LIKE')
       ->execute()->fetchCol()
   );
-  drupal_json_output($matches);
+  drupal_json_output(array_combine($matches, $matches));
 }
 
 /**
