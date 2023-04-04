@@ -273,6 +273,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#default_value' => $default_unit,
         '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
+        '#validated' => TRUE,
       ],
       'custom-unit' => [
         '#type' => 'textfield',

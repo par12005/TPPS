@@ -173,27 +173,6 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
 // Synonym related Units.
 
 /**
- * Custom callback to build form fields.
- *
- * Creates a form element for 'Unit' dropdown which will replce existing one
- * at page when Synonym selectbox changed.
-*/
-function tpps_synonym_update_unit_list($form, &$form_state) {
-  $parents = $form_state['triggering_element']['#parents'];
-  // This is true until 'synonym_id' and 'unit' fields are siblings.
-  array_pop($parents);
-  $parents[] = 'unit';
-
-  // Update list of units.
-  $unit_field = drupal_array_get_nested_value($form, $parents, $key_exists);
-  if ($key_exists) {
-    $unit_field['#options'] = tpps_synonym_get_unit_list($synonym_id, TRUE);
-    return form_process_select($unit_field);
-  }
-  watchdog('tpps', 'Field "unit" not found in AJAX callback.', [], WATCHDOG_ERROR);
-}
-
-/**
  * Gets list of units.
  *
  * @param int $synonym_id
@@ -222,6 +201,33 @@ function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = TRUE
     $unit_list['0'] = t('My unit is not in this list');
   }
   return $unit_list;
+}
+
+/**
+ * Custom callback to build form fields.
+ *
+ * Creates a form element for 'Unit' dropdown which will replce existing one
+ * at page when Synonym selectbox changed.
+*/
+function tpps_synonym_update_unit_list($form, &$form_state) {
+
+  // @TODO Cache list of units by phenotype id and $synonym_id because
+  // adding 2+ phenotypes increases ajax request processing time.
+  $synonym_id = $form_state['triggering_element']['#value'];
+  $parents = $form_state['triggering_element']['#parents'];
+  // This is true until 'synonym_id' and 'unit' fields are siblings.
+  array_pop($parents);
+  $parents[] = 'unit';
+
+  // Update list of units.
+  $unit_field = drupal_array_get_nested_value($form, $parents, $key_exists);
+  if ($key_exists) {
+    $unit_field['#options'] = tpps_synonym_get_unit_list($synonym_id, TRUE);
+    // https://www.drupal.org/forum/support/post-installation/2018-04-25/an-illegal-choice-has-been-detected-please-contact-the#comment-13254706
+    //$unit_field['#validated'] = TRUE;
+    return form_process_select($unit_field);
+  }
+  watchdog('tpps', 'Field "unit" not found in AJAX callback.', [], WATCHDOG_ERROR);
 }
 
 /**
