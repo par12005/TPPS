@@ -179,20 +179,18 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
  * at page when Synonym selectbox changed.
 */
 function tpps_synonym_update_unit_list($form, &$form_state) {
-  $values = $form_state['values'];
+  $parents = $form_state['triggering_element']['#parents'];
+  // This is true until 'synonym_id' and 'unit' fields are siblings.
+  array_pop($parents);
+  $parents[] = 'unit';
 
-  $organism_name = $form_state['triggering_element']['#parents'][0];
-  $organism_id = $form_state['triggering_element']['#parents'][3];
-  $synonym_id = $form_state['triggering_element']['#value'];
-
-  $form['unit'] = [
-    '#type' => 'select',
-    '#title' => t('Phenotype !num Unit: *', ['!num' => $organism_id]),
-    '#options' => tpps_synonym_get_unit_list($synonym_id, TRUE),
-    '#prefix' => '<div id="unit-list-' . $organism_id . '-wrapper">',
-    '#suffix' => '</div>',
-  ];
-  return form_process_select($form['unit']);
+  // Update list of units.
+  $unit_field = drupal_array_get_nested_value($form, $parents, $key_exists);
+  if ($key_exists) {
+    $unit_field['#options'] = tpps_synonym_get_unit_list($synonym_id, TRUE);
+    return form_process_select($unit_field);
+  }
+  watchdog('tpps', 'Field "unit" not found in AJAX callback.', [], WATCHDOG_ERROR);
 }
 
 /**
@@ -224,4 +222,18 @@ function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = TRUE
     $unit_list['0'] = t('My unit is not in this list');
   }
   return $unit_list;
+}
+
+/**
+ * Alias for watchdog() with ketchup and mustard.
+ *
+ * @param array $vars
+ *   Array of variables to dump.
+ * @param string $message
+ *   Optional message.
+ */
+function hotdog(array $vars, $message = 'hotdog') {
+  watchdog('tpps', $message . ': <pre>' . print_r($vars, 1) . '</pre>',
+    [], WATCHDOG_DEBUG
+  );
 }
