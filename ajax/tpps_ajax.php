@@ -3,6 +3,11 @@
 /**
  * @file
  * Defines some ajax callback functions that TPPS uses often.
+ *
+ * To debug/test use:
+ * $string = 's';
+ * module_load_include('php', 'tpps', 'ajax/tpps_ajax');
+ * dpm(print_r(tpps_unit_autocomplete($string), 1));
  */
 
 /**
@@ -308,6 +313,24 @@ function tpps_attribute_autocomplete($string) {
     $matches[$row->name] = check_plain($row->name);
   }
 
+  drupal_json_output($matches);
+}
+
+/**
+ * Phenotype unit auto-complete matching.
+ *
+ * Used for 'Custom Unit' field to avoid duplicates.
+ *
+ * @param string $string
+ *   The string the user has already entered into the text field.
+ */
+function tpps_unit_autocomplete($string) {
+  $matches = array_map('check_plain',
+    db_select('chado.phenotype_units', 'cpu')
+      ->fields('cpu', ['unit_name'])
+      ->condition('unit_name', '%' . db_like($string) . '%', 'LIKE')
+      ->execute()->fetchCol()
+  );
   drupal_json_output($matches);
 }
 
