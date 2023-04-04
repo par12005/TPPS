@@ -171,7 +171,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['attr-other'];
         }
         if ($phenotype['phenotypes-meta'][$j]['unit'] === 0) {
-          $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['unit-other'];
+          $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['custom-unit'];
         }
       }
     }
@@ -855,7 +855,7 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#options' => $unit_options,
         '#default_value' => $info['unit'],
       ),
-      'unit-other' => array(
+      'custom-unit' => array(
         '#type' => 'textfield',
         '#title' => t('Other Unit'),
         '#autocomplete_path' => 'tpps/autocomplete/unit',
@@ -865,7 +865,7 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
               =>  ['value' => 'other'],
           ),
         ),
-        '#default_value' => $info['unit-other'],
+        '#default_value' => $info['custom-unit'],
       ),
     );
   }

@@ -199,8 +199,8 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         form_set_error("$id][phenotype][phenotypes-meta][$i][unit",
           "Phenotype $i Units: field is required.");
       }
-      elseif ($unit == 0 && $current_phenotype['unit-other'] == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][unit-other",
+      elseif ($unit == 0 && $current_phenotype['custom-unit'] == '') {
+        form_set_error("$id][phenotype][phenotypes-meta][$i][custom-unit",
           "Phenotype $i Custom Unit: field is required.");
       }
 

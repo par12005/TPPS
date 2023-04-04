@@ -1051,7 +1051,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       }
       $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['unit'];
       if ($phenotype['phenotypes-meta'][$j]['unit'] == 0) {
-        $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
+        $phenotypes_meta[$name]['custom-unit'] = $phenotype['phenotypes-meta'][$j]['custom-unit'];
       }
       $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
       if ($phenotype['phenotypes-meta'][$j]['structure'] == 'other') {
@@ -2434,7 +2434,7 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $meta[$name]['attr-other'] = $row[$columns['attr']];
   $meta[$name]['desc'] = $row[$columns['desc']];
   $meta[$name]['unit'] = 0;
-  $meta[$name]['unit-other'] = $row[$columns['unit']];
+  $meta[$name]['custom-unit'] = $row[$columns['unit']];
   if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
     $meta[$name]['struct'] = 'other';
     $meta[$name]['struct-other'] = $row[$columns['struct']];
