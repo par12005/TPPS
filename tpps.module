@@ -156,7 +156,7 @@ function tpps_menu() {
     'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/panel.php',
-  );  
+  );
 
   $items['tpps-admin-panel/%'] = array(
     'title' => 'TPPS Admin Panel',
@@ -1368,4 +1368,33 @@ function tpps_media_browser_plugins_alter(&$plugins) {
    unset($plugins['upload']);
    unset($plugins['media_default--media_browser_my_files']);
  // }
+}
+
+// There are several ways to provide this functionality for versions
+// prior to PHP 7.3.0. It is possible to use array_keys(),
+//  but that may be rather inefficient.
+//  It is also possible to use reset() and key(),
+//  but that may change the internal array pointer.
+//  An efficient solution, which does not change the internal array pointer, written as polyfill:
+if (!function_exists('array_key_first')) {
+  function array_key_first(array $arr) {
+    foreach($arr as $key => $unused) {
+      return $key;
+    }
+    return NULL;
+  }
+}
+
+/**
+ * Alias for watchdog() with ketchup and mustard.
+ *
+ * @param array $vars
+ *   Array of variables to dump.
+ * @param string $message
+ *   Optional message.
+ */
+function hotdog(array $vars, $message = 'hotdog') {
+  watchdog('tpps', $message . ': <pre>' . print_r($vars, 1) . '</pre>',
+    [], WATCHDOG_DEBUG
+  );
 }

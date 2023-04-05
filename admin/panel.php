@@ -711,39 +711,49 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
   }
   $attr_options['other'] = 'My attribute term is not in this list';
 
-  $unit_options = array();
-  $terms = array(
-    'boolean' => 'Boolean (Binary)',
-    'centimeter' => 'Centimeter',
-    'cubic_centimeter' => 'Cubic Centimeter',
-    'day' => 'Day',
-    'degrees_celsius' => 'Degrees Celsius',
-    'degrees_fahrenheit' => 'Dgrees Fahrenheit',
-    'grams_per_square_meter' => 'Grams per Square Meter',
-    'gram' => 'Gram',
-    'luminous_intensity_unit' => 'Luminous Intensity Unit',
-    'kilogram' => 'Kilogram',
-    'kilogram_per_cubic_meter' => 'Kilogram per Cubic Meter',
-    'liter' => 'Liter',
-    'cubic_meter' => 'Cubic Meter',
-    'pascal' => 'Pascal',
-    'meter' => 'Meter',
-    'milligram' => 'Milligram',
-    'milliliter' => 'Milliliter',
-    'millimeter' => 'Millimeter',
-    'micrometer' => 'Micrometer',
-    'percent' => 'Percent',
-    'qualitative' => 'Qualitative',
-    'square_micrometer' => 'Square Micrometer',
-    'square_millimeter' => 'Square Millimeter',
-    'watt_per_square_meter' => 'Watt per Square Meter',
-    'year' => 'Year',
-  );
-  foreach ($terms as $term => $label) {
-    $unit_id = tpps_load_cvterm($term)->cvterm_id;
-    $unit_options[$unit_id] = $label;
-  }
-  $unit_options['other'] = 'My unit is not in this list';
+  // [VS] #8669rmrw5
+  //
+  // @TODO Remove outdated code:
+  //
+  //$unit_options = array();
+  //$terms = array(
+  //  'boolean' => 'Boolean (Binary)',
+  //  'centimeter' => 'Centimeter',
+  //  'cubic_centimeter' => 'Cubic Centimeter',
+  //  'day' => 'Day',
+  //  'degrees_celsius' => 'Degrees Celsius',
+  //  'degrees_fahrenheit' => 'Dgrees Fahrenheit',
+  //  'grams_per_square_meter' => 'Grams per Square Meter',
+  //  'gram' => 'Gram',
+  //  'luminous_intensity_unit' => 'Luminous Intensity Unit',
+  //  'kilogram' => 'Kilogram',
+  //  'kilogram_per_cubic_meter' => 'Kilogram per Cubic Meter',
+  //  'liter' => 'Liter',
+  //  'cubic_meter' => 'Cubic Meter',
+  //  'pascal' => 'Pascal',
+  //  'meter' => 'Meter',
+  //  'milligram' => 'Milligram',
+  //  'milliliter' => 'Milliliter',
+  //  'millimeter' => 'Millimeter',
+  //  'micrometer' => 'Micrometer',
+  //  'percent' => 'Percent',
+  //  'qualitative' => 'Qualitative',
+  //  'square_micrometer' => 'Square Micrometer',
+  //  'square_millimeter' => 'Square Millimeter',
+  //  'watt_per_square_meter' => 'Watt per Square Meter',
+  //  'year' => 'Year',
+  //);
+  //foreach ($terms as $term => $label) {
+  //  $unit_id = tpps_load_cvterm($term)->cvterm_id;
+  //  $unit_options[$unit_id] = $label;
+  //}
+  //$unit_options['other'] = 'My unit is not in this list';
+
+  $unit_list = tpps_synonym_get_unit_list(NULL, TRUE);
+  // [/VS] #8669rmrw5
+
+
+
 
   $struct_options = array();
   $terms = array(
@@ -838,35 +848,26 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#default_value' => $info['struct-other'],
       ),
 
-
-
-
-
-      // [VS] @TODO Check if this form must be updated.
-
-
-
-
-
-
-      'unit' => array(
+      // [VS] #8669rmrw5.
+      'unit' => [
         '#type' => 'select',
         '#title' => t('Unit'),
-        '#options' => $unit_options,
+        '#options' => $unit_list,
         '#default_value' => $info['unit'],
-      ),
-      'custom-unit' => array(
+      ],
+      'custom-unit' => [
         '#type' => 'textfield',
-        '#title' => t('Other Unit'),
+        '#title' => t('Custom Unit'),
         '#autocomplete_path' => 'tpps/autocomplete/unit',
-        '#states' => array(
-          'visible' => array(
+        '#states' => [
+          'visible' => [
             ':input[name="phenotypes_edit[' . $num . '][unit]"]'
-              =>  ['value' => 'other'],
-          ),
-        ),
+              =>  ['value' => 0],
+          ],
+        ],
         '#default_value' => $info['custom-unit'],
-      ),
+      ],
+      // [/VS] #8669rmrw5.
     );
   }
 }

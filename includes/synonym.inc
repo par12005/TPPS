@@ -229,17 +229,3 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   }
   watchdog('tpps', 'Field "unit" not found in AJAX callback.', [], WATCHDOG_ERROR);
 }
-
-/**
- * Alias for watchdog() with ketchup and mustard.
- *
- * @param array $vars
- *   Array of variables to dump.
- * @param string $message
- *   Optional message.
- */
-function hotdog(array $vars, $message = 'hotdog') {
-  watchdog('tpps', $message . ': <pre>' . print_r($vars, 1) . '</pre>',
-    [], WATCHDOG_DEBUG
-  );
-}
