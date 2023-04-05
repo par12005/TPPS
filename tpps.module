@@ -1398,3 +1398,72 @@ function hotdog(array $vars, $message = 'hotdog') {
     [], WATCHDOG_DEBUG
   );
 }
+
+
+// Timer ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+/**
+ * Records current time in msec to watchdog.
+ *
+ * Usage example:
+ *   tpps_timer('Called tpps_unit_autocomplete()', microtime(1));
+ *   // some code...
+ *   tpps_timer('Finished tpps_unit_autocomplete()', microtime(1));
+ *
+ * @param mixed $message
+ * @param string $time
+ * @param string $prev_time
+ * @access public
+ *
+ * @return void
+ */
+function tpps_timer($message, $time = '', $prev_time = '') {
+  if (empty($time)) {
+    $time = microtime(1);
+  }
+  $timer_name = 'tpps_prev_time';
+  if (empty($prev_time)  && isset($_SESSION[$timer_name])) {
+    $prev_time = $_SESSION[$timer_name];
+  }
+  if (!empty($prev_time)) {
+    $diff = round($time - $prev_time, 3);
+  }
+      //variable_get('date_default_timezone', 0)
+  // Use server's timezone instead of user's.
+  $tz =  variable_get('date_default_timezone', @date_default_timezone_get());
+  watchdog('tpps_timer', ((empty($diff)) ? '0: ' : '+' . $diff . ': ')
+    . $message . '. '
+    .  '<br />' . $time
+    .  '<br />' . format_date($time, 'custom', 'H:i:s P', $tz ),
+    [],
+    WATCHDOG_DEBUG
+  );
+  return $_SESSION[$timer_name] = $time;
+}
+
+function tpps_init() {
+  return;
+  $timer_name = 'tpps_prev_time';
+  unset($_SESSION[$timer_name]);
+
+  $condition = (
+    strpos($_GET['q'], 'tpps-admin-panel') !== FALSE
+    || strpos($_GET['q'], 'tpps') !== FALSE
+    || strpos($_GET['q'], 'ajax') !== FALSE
+  );
+  if ($condition) {
+    tpps_timer('Called hook_init() for ' . $_GET['q'] , microtime(1));
+  }
+}
+
+function tpps_exit() {
+  return;
+  $condition = (
+    strpos($_GET['q'], 'tpps-admin-panel') !== FALSE
+    || strpos($_GET['q'], 'tpps') !== FALSE
+    || strpos($_GET['q'], 'ajax') !== FALSE
+  );
+  if ($condition) {
+    tpps_timer('Called hook_exit() for ' . $_GET['q'] , microtime(1));
+  }
+}
