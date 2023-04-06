@@ -28,7 +28,9 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   // Get public path
   $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
 
-  mkdir($log_path);
+  if (!is_dir($log_path)) {
+    mkdir($log_path);
+  }
 
   // Update the global $tpps_job_logger variable
   global $tpps_job_logger;
