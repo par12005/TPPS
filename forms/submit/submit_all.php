@@ -2016,6 +2016,76 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 }
 
 /**
+ * @param mixed $options array of options
+ *        keys: study_accession, form_state, job
+ * @return void 
+ */
+
+function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
+  // If study accession value exists, use this to look up the form_state
+  $form_state = NULL;
+  if (isset($options['study_accession'])) {
+    $form_state = tpps_load_submission($options['study_accession']);
+  }
+  else if (isset($options['form_state'])) {
+    $form_state = $options['form_state'];
+  }
+  
+  // If $form_state is not NULL
+  if (isset($form_state)) {
+    // Get page 1 form_state data
+    $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
+    // Get page 4 form_state data
+    $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+    // Organism count
+    $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+    // Project ID
+    $project_id = $form_state['ids']['project_id'];
+
+    // Go through each organism
+    for ($i = 1; $i <= $organism_number; $i++) {
+      $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+      if (empty($genotype['files']['file-type']['VCF'])) {
+        echo "Could not find a VCF file for organism-$i\n";
+      }
+      else {
+        // Get the VCF fid
+        $vcf_fid = $genotype['files']['vcf'];
+        $vcf_file = file_load($vcf_fid);
+        $location = tpps_get_location($vcf_file->uri);
+        echo "VCF location: $location\n";
+        $vcf_content = gzopen($location, 'r');
+
+        echo "[INFO] Processing Genotype VCF file\n";
+        $file_progress_line_count = 0;
+        while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
+          $file_progress_line_count++;
+          if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
+            echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+          }
+          // We want to get a non header line
+          if (stripos($vcf_line,'#CHROM') !== FALSE) {
+            // This will take the line and get each tab value
+            $vcf_line = explode("\t", $vcf_line);
+            print_r($vcf_line);
+            $cols_count = count($vcf_line);
+            for($j=9; $j<$cols_count; $j++) {
+              print_r($vcf_line[$j]);
+            }
+            // Break out of the while loop since we only want one line
+            // to get the sample names
+            break;
+          }
+        } // end while       
+      } // end else
+    } // end for
+  }
+  else {
+    echo "Could not find a form_state\n";
+  }
+}
+
+/**
  * TPPS Generate Population Structure
  * FastStructure requires pip install pip==9.0.1 to install dependencies
  */
