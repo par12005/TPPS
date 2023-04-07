@@ -2057,8 +2057,20 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
 
         // Get the VCF fid
         $vcf_fid = $genotype['files']['vcf'];
-        $vcf_file = file_load($vcf_fid);
-        $location = tpps_get_location($vcf_file->uri);
+        if (isset($vcf_fid)) {
+          $vcf_file = file_load($vcf_fid);
+          $location = tpps_get_location($vcf_file->uri);
+        }
+        else {
+          echo "Could not detect an uploaded VCF, checking for a local VCF file\n";
+          $location = $genotype['files']['vcf']['local_vcf'];
+        }
+
+        if (!isset($location)) {
+          echo "[FAILED] Could not find a VCF location. Either upload a VCF file or set a local vcf location via the TPPS form on page 4.\n";
+          return;
+        }
+
         echo "VCF location: $location\n";
         $vcf_content = gzopen($location, 'r');
 
