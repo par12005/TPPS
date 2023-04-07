@@ -2104,7 +2104,8 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         file_prepare_directory($dest_folder, FILE_CREATE_DIRECTORY);
         $file_name = $form_state['accession'] . '-sample-list-' . $i . '.txt'; 
         $file = file_save_data($sample_list_data, $dest_folder . $file_name);
-        echo "File managed as FID:" . $file->fid . "\n";
+        echo "File managed as FID: " . $file->fid . "\n";
+        echo "File managed location: " . $file->uri . "\n";
         // We could store this in the submit_state - TODO if we need this
         // $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
         // tpps_update_submission($form_state);
