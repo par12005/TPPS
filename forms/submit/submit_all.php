@@ -2057,7 +2057,8 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
 
         // Get the VCF fid
         $vcf_fid = $genotype['files']['vcf'];
-        if (isset($vcf_fid)) {
+        if (isset($vcf_fid) && $vcf_fid > 0) {
+          echo "Found uploaded VCF with FID: " . $vcf_fid . "\n";
           $vcf_file = file_load($vcf_fid);
           $location = tpps_get_location($vcf_file->uri);
         }
