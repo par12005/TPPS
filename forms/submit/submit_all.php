@@ -2064,7 +2064,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         }
         else {
           echo "Could not detect an uploaded VCF, checking for a local VCF file\n";
-          $location = $genotype['files']['vcf']['local_vcf'];
+          $location = $genotype['files']['local_vcf'];
         }
 
         if (!isset($location)) {
