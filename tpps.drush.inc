@@ -78,7 +78,7 @@ function drush_tpps_submit_command($section = NULL, $action = NULL, $values = NU
 }
 
 function tpps_run_vcf_generate_sample_file($action = NULL, $values = NULL) {
-    print_r($values);
+    // print_r($values);
     if (isset($values)) {
         // print_r($values);
         include_once('forms/submit/submit_all.php');

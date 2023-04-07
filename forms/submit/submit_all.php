@@ -2044,11 +2044,17 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
 
     // Go through each organism
     for ($i = 1; $i <= $organism_number; $i++) {
+      $organism_name = $firstpage['organism'][$i]['name'];
+      echo "Organism name: $organism_name\n";
       $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
       if (empty($genotype['files']['file-type']['VCF'])) {
         echo "Could not find a VCF file for organism-$i\n";
       }
       else {
+
+        // Initialize sample.list text
+        $sample_list_data = "VCF_header_sample\tSample_name\tSample_Accession\tGermplasm_name\tGermplasm_Accession\tGermplasm_type\tOrganism\n"; // header
+
         // Get the VCF fid
         $vcf_fid = $genotype['files']['vcf'];
         $vcf_file = file_load($vcf_fid);
@@ -2056,7 +2062,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         echo "VCF location: $location\n";
         $vcf_content = gzopen($location, 'r');
 
-        echo "[INFO] Processing Genotype VCF file\n";
+        echo "[INFO] Scanning Genotype VCF file to generate sample list\n";
         $file_progress_line_count = 0;
         while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
           $file_progress_line_count++;
@@ -2067,16 +2073,29 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
           if (stripos($vcf_line,'#CHROM') !== FALSE) {
             // This will take the line and get each tab value
             $vcf_line = explode("\t", $vcf_line);
-            print_r($vcf_line);
+            // print_r($vcf_line);
             $cols_count = count($vcf_line);
+            echo "Found " . ($cols_count - 9) . " sample IDs. Generating sample list file.\n";
             for($j=9; $j<$cols_count; $j++) {
-              print_r($vcf_line[$j]);
+              // print_r($vcf_line[$j]);
+              echo ".";
+              $sample_list_data .= $vcf_line[$j] . "\t" . $vcf_line[$j] . "\t" . $vcf_line[$j] . "\t" . $organism_name . "-germplasm-name\t" . $vcf_line[$j] . "\taccession\t" . $organism_name . "\n";
             }
+            echo "\n";
             // Break out of the while loop since we only want one line
             // to get the sample names
             break;
           }
-        } // end while       
+        } // end while
+        $dest_folder = 'public://tpps_vcf_sample_list_files/';
+        file_prepare_directory($dest_folder, FILE_CREATE_DIRECTORY);
+        $file_name = $form_state['accession'] . '-sample-list-' . $i . '.txt'; 
+        $file = file_save_data($sample_list_data, $dest_folder . $file_name);
+        echo "File managed as FID:" . $file->fid . "\n";
+        // We could store this in the submit_state - TODO if we need this
+        // $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
+        // tpps_update_submission($form_state);
+        // print_r($sample_list_data);      
       } // end else
     } // end for
   }
