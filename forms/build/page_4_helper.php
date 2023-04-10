@@ -333,14 +333,10 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'name_suffix' => $id,
       // [VS] #8669py3z7
       'alternative_buttons' => [
-        //"Add 5 Phenotypes" => 5,
-        "Add 20 Phenotypes" => 20,
         "Clear All Phenotypes" => 'tpps_phenotype_number_clear',
       ],
       'button_weights' => [
         "Add Phenotype" => -5,
-        //"Add 5 Phenotypes" => -4,
-        "Add 20 Phenotypes" => -3,
         "Remove Phenotype" => -2,
         "Clear All Phenotypes" => -1,
       ],
