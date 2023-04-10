@@ -329,7 +329,14 @@ function tpps_flatten(array $state) {
 
                 foreach ($fields as $field => $field_string) {
                   if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
-                    $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
+                    if ($field == 'unit') {
+                      $value = $pheno_meta[$j][$field];
+                      $value = tpps_synonym_get_unit_name($value);
+                    }
+                    else {
+                      $value = $pheno_meta[$j][$field];
+                    }
+                    $data["$org_name Phenotype $j $field_string"] = $value;
                   }
                 }
               }

@@ -229,3 +229,24 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   }
   watchdog('tpps', 'Field "unit" not found in AJAX callback.', [], WATCHDOG_ERROR);
 }
+
+/**
+ * Gets unit name.
+ *
+ * @param int $synonym_id
+ *   Unit Id. See db table 'chado.phenotype_units'.
+ *
+ * @return string
+ *  Returns name of unit.
+ */
+function tpps_synonym_get_unit_name($unit_id = '') {
+  if (empty($unit_id)) {
+    return;
+  }
+  return db_select('chado.phenotype_units', 'cpu')
+    ->fields('cpu', ['unit_name'])
+    ->condition('cpu.unit_cvterm_id', $unit_id)
+    ->range(0, 1)
+    ->execute()
+    ->fetchField();
+}
