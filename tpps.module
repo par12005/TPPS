@@ -1467,3 +1467,17 @@ function tpps_exit() {
     tpps_timer('Called hook_exit() for ' . $_GET['q'] , microtime(1));
   }
 }
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Changes label of default action of Simple Report tableselect report.
+ */
+function tpps_form_simple_report_tableselect_form_alter($form, &$form_state) {
+  $option_name = 'simple_report_tableselect_action_remove';
+  if (empty($form['action']['#options'][$option_name])) {
+    return;
+  }
+  $form['action']['#options'][$option_name] = t('Remove');
+  return $form;
+}
