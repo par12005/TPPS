@@ -2080,6 +2080,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
             for($j=9; $j<$cols_count; $j++) {
               // print_r($vcf_line[$j]);
               echo ".";
+              $vcf_line[$j] = trim($vcf_line[$j]); // in case it's the last column which can contain a new line character which messes up TSV sample file generated
               $sample_list_data .= $vcf_line[$j] . "\t" . $vcf_line[$j] . "\t" . $vcf_line[$j] . "\t" . $organism_name . "-germplasm-name\t" . $vcf_line[$j] . "\taccession\t" . $organism_name . "\n";
             }
             echo "\n";
