@@ -212,33 +212,6 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         form_set_error("$id][phenotype][phenotypes-meta][$i][struct-other",
           "Phenotype $i Custom Structure: field is required.");
       }
-      // [VS] #8669rmrw5
-      // @TODO Ask team. Then update or remove.
-      //$condition = (
-      //  (
-      //    $current_phenotype['val-check']
-      //    || $current_phenotype['bin-check']
-      //    || $current_phenotype['unit'] == tpps_load_cvterm('boolean')->cvterm_id
-      //  )
-      //  && $current_phenotype['min'] == ''
-      //);
-      //if ($condition) {
-      //  form_set_error("$id][phenotype][phenotypes-meta][$i][min",
-      //    "Phenotype $i Minimum Value: field is required.");
-      //}
-      //$condition = (
-      //  (
-      //    $current_phenotype['val-check']
-      //    || $current_phenotype['bin-check']
-      //    || $current_phenotype['unit'] == tpps_load_cvterm('boolean')->cvterm_id
-      //  )
-      //  && $current_phenotype['max'] == ''
-      //);
-      //if ($condition) {
-      //  form_set_error("$id][phenotype][phenotypes-meta][$i][max",
-      //    "Phenotype $i Maximum Value: field is required.");
-      //}
-      // [/VS] #8669rmrw5
     }
 
     if ($phenotype['time']['time-check']) {

@@ -301,31 +301,33 @@ function tpps_menu() {
   );
 
   // [VS] Synonym and Unit reports.
-  $items['admin/reports/unit-warning'] = [
-    'title' => 'Unit Warning',
-    'description' => "List of Phenotypes which differs from Synonym's Unit.",
-    'page callback' => 'tpps_admin_unit_warning_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'includes/report.unit_warning.inc',
-  ];
-  $items['admin/reports/no-synonym'] = [
-    'title' => 'Phenotypes without Synonym',
-    'description' => "List of phenotypes without synonym.",
-    'page callback' => 'tpps_admin_no_synonym_report',
-    'access callback' => 'tpps_access',
-    'access arguments' => ['administer tpps module'],
-    'file' => 'includes/report.no_synonym.inc',
-  ];
-  $items['admin/reports/no-synonym/name/%'] = [
-    'title' => 'Specific Phenotype Name',
-    'description' => 'Specific Phenotype Name Report',
-    'page callback' => 'tpps_admin_no_synonym_name_report',
-    'page arguments' => [4],
-    'type' => MENU_NORMAL_ITEM,
-    'access arguments' => ['administer tpps module'],
-    'file' => 'includes/report.no_synonym.inc',
-  ];
+  if (function_exists('simple_report_form')) {
+    $items['admin/reports/unit-warning'] = [
+      'title' => 'Unit Warning',
+      'description' => "List of Phenotypes which differs from Synonym's Unit.",
+      'page callback' => 'tpps_admin_unit_warning_report',
+      'access callback' => 'tpps_access',
+      'access arguments' => ['administer tpps module'],
+      'file' => 'includes/report.unit_warning.inc',
+    ];
+    $items['admin/reports/no-synonym'] = [
+      'title' => 'Phenotypes without Synonym',
+      'description' => "List of phenotypes without synonym.",
+      'page callback' => 'tpps_admin_no_synonym_report',
+      'access callback' => 'tpps_access',
+      'access arguments' => ['administer tpps module'],
+      'file' => 'includes/report.no_synonym.inc',
+    ];
+    $items['admin/reports/no-synonym/name/%'] = [
+      'title' => 'Specific Phenotype Name',
+      'description' => 'Specific Phenotype Name Report',
+      'page callback' => 'tpps_admin_no_synonym_name_report',
+      'page arguments' => [4],
+      'type' => MENU_NORMAL_ITEM,
+      'access arguments' => ['administer tpps module'],
+      'file' => 'includes/report.no_synonym.inc',
+    ];
+  }
   // [/VS]
 
   $items = array_merge($items, tpps_api_paths());
@@ -1466,4 +1468,17 @@ function tpps_exit() {
   if ($condition) {
     tpps_timer('Called hook_exit() for ' . $_GET['q'] , microtime(1));
   }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Changes label of default action of Simple Report tableselect report.
+ */
+function tpps_form_simple_report_tableselect_form_alter(&$form, &$form_state) {
+  $option_name = 'simple_report_tableselect_action_remove';
+  if (empty($form['action']['#options'][$option_name])) {
+    return;
+  }
+  $form['action']['#options'][$option_name] = t('Remove');
 }

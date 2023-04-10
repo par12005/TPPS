@@ -295,54 +295,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ]],
       ],
       // [/VS]
-      'val-check' => array(
-        '#type' => 'checkbox',
-        '#title' => 'Phenotype !num has a value range',
-        '#states' => array(
-          'invisible' => array(
-            array(
-              [
-                ':input[name="' . $id
-                . '[phenotype][phenotypes-meta][!num][unit]"]' =>
-                array('value' => tpps_load_cvterm('boolean')->cvterm_id),
-              ],
-              'or',
-              [
-                ':input[name="' . $id
-                . '[phenotype][phenotypes-meta][!num][bin-check]"]' =>
-                array('checked' => TRUE),
-              ],
-              'or',
-              [
-                tpps_synonym_selector($id) => ['!value' => 0],
-              ],
-            ),
-          ),
-        ),
-      ),
-      'bin-check' => array(
-        '#type' => 'checkbox',
-        '#title' => 'Phenotype !num is a binary phenotype',
-        '#states' => array(
-          'invisible' => array(
-            array(
-              array(':input[name="' . $id
-                . '[phenotype][phenotypes-meta][!num][unit]"]' =>
-                  array('value' => tpps_load_cvterm('boolean')->cvterm_id),
-              ),
-              'or',
-              array(':input[name="' . $id
-                . '[phenotype][phenotypes-meta][!num][val-check]"]' =>
-                array('checked' => TRUE),
-              ),
-              'or',
-              [
-                tpps_synonym_selector($id) => ['!value' => 0],
-              ],
-            ),
-          ),
-        ),
-      ),
       'structure' => array(
         '#type' => 'select',
         '#title' => 'Phenotype !num Structure: *',
@@ -367,51 +319,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#states' => array(
           'visible' => array(
             ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]' => array('value' => 'other'),
-          ),
-        ),
-      ),
-      'min' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Minimum Value (type 1 for binary): *',
-        '#states' => array(
-          'visible' => array(
-            array(
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
-                => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => TRUE),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => TRUE),
-              ),
-            ),
-          ),
-        ),
-      ),
-      'max' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Maximum Value (type 2 for binary): *',
-        '#states' => array(
-          'visible' => array(
-            array(
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
-                  => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]'
-                  => array('checked' => TRUE),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => TRUE),
-              ),
-            ),
           ),
         ),
       ),
@@ -462,13 +369,9 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ['unit', '#title'],
         ['unit', '#prefix'],
         ['custom-unit', '#title'],
-        // [/VS]
-        array('val-check', '#title'),
-        array('bin-check', '#title'),
         array('structure', '#title'),
         array('struct-other', '#title'),
-        array('min', '#title'),
-        array('max', '#title'),
+        // [/VS]
       ),
       // [VS] Replace '!num' in attributes.
       'substitute_keys' => array(
@@ -481,8 +384,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('attribute', '#states', 'visible', tpps_synonym_selector($id)),
         array('attr-other', '#states', 'visible', tpps_synonym_selector($id)),
         array('description', '#states', 'visible', tpps_synonym_selector($id)),
-        array('val-check', '#states', 'visible', 0, 4, tpps_synonym_selector($id)),
-        array('bin-check', '#states', 'invisible', 0, 4, tpps_synonym_selector($id)),
         array('structure', '#states', 'visible', tpps_synonym_selector($id)),
         // Main form.
         array(
@@ -497,95 +398,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'visible',
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
         ),
-
-
-        // @TODO Check fields at form.
-
-
-        array(
-          'val-check',
-          '#states',
-          'invisible',
-          0,
-          0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
-        ),
-        array(
-          'val-check',
-          '#states',
-          0,
-          2,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
-        ),
-        array(
-          'bin-check',
-          '#states',
-          'invisible',
-          0,
-          0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
-        ),
-        array(
-          'bin-check',
-          '#states',
-          'invisible',
-          0,
-          2,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]',
-        ),
         array(
           'struct-other',
           '#states',
           'visible',
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]',
-        ),
-        //array(
-        //  'min',
-        //  '#states',
-        //  'visible',
-        //  0,
-        //  0,
-        //  ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
-        //),
-        array(
-          'min',
-          '#states',
-          'visible',
-          0,
-          2,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]',
-        ),
-        array(
-          'min',
-          '#states',
-          'visible',
-          0,
-          4,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
-        ),
-        //array(
-        //  'max',
-        //  '#states',
-        //  'visible',
-        //  0,
-        //  0,
-        //  ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
-        //),
-        array(
-          'max',
-          '#states',
-          'visible',
-          0,
-          2,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]',
-        ),
-        array(
-          'max',
-          '#states',
-          'visible',
-          0,
-          4,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
         ),
       ),
     ));

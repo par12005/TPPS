@@ -994,8 +994,8 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     'time' => tpps_load_cvterm('time')->cvterm_id,
     'desc' => tpps_load_cvterm('description')->cvterm_id,
     'unit' => tpps_load_cvterm('unit')->cvterm_id,
-    'min' => tpps_load_cvterm('minimum')->cvterm_id,
-    'max' => tpps_load_cvterm('maximum')->cvterm_id,
+    //'min' => tpps_load_cvterm('minimum')->cvterm_id,
+    //'max' => tpps_load_cvterm('maximum')->cvterm_id,
     'environment' => tpps_load_cvterm('environment')->cvterm_id,
     'intensity' => tpps_load_cvterm('intensity')->cvterm_id,
   );
@@ -1101,8 +1101,8 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
           'desc' => $groups['Description']['3'],
           'unit' => $groups['Unit']['4'],
           'struct' => !empty($struct) ? $struct : NULL,
-          'min' => !empty($min) ? $min : NULL,
-          'max' => !empty($max) ? $max : NULL,
+          //'min' => !empty($min) ? $min : NULL,
+          //'max' => !empty($max) ? $max : NULL,
         );
 
         $meta_options = array(
@@ -2006,7 +2006,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 /**
  * @param mixed $options array of options
  *        keys: study_accession, form_state, job
- * @return void 
+ * @return void
  */
 
 function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
@@ -2018,7 +2018,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
   else if (isset($options['form_state'])) {
     $form_state = $options['form_state'];
   }
-  
+
   // If $form_state is not NULL
   if (isset($form_state)) {
     // Get page 1 form_state data
@@ -2091,7 +2091,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         } // end while
         $dest_folder = 'public://tpps_vcf_sample_list_files/';
         file_prepare_directory($dest_folder, FILE_CREATE_DIRECTORY);
-        $file_name = $form_state['accession'] . '-sample-list-' . $i . '.txt'; 
+        $file_name = $form_state['accession'] . '-sample-list-' . $i . '.txt';
         $file = file_save_data($sample_list_data, $dest_folder . $file_name);
         echo "File managed as FID: " . $file->fid . "\n";
         echo "File managed location: " . $file->uri . "\n";
@@ -2099,7 +2099,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         // We could store this in the submit_state - TODO if we need this
         // $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
         // tpps_update_submission($form_state);
-        // print_r($sample_list_data);      
+        // print_r($sample_list_data);
       } // end else
     } // end for
   }
@@ -2546,12 +2546,12 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
     $meta[$name]['struct'] = 'other';
     $meta[$name]['struct-other'] = $row[$columns['struct']];
   }
-  if (!empty($columns['min']) and isset($row[$columns['min']]) and $row[$columns['min']] != '') {
-    $meta[$name]['min'] = $row[$columns['min']];
-  }
-  if (!empty($columns['max']) and isset($row[$columns['max']]) and $row[$columns['max']] != '') {
-    $meta[$name]['max'] = $row[$columns['max']];
-  }
+  //if (!empty($columns['min']) and isset($row[$columns['min']]) and $row[$columns['min']] != '') {
+  //  $meta[$name]['min'] = $row[$columns['min']];
+  //}
+  //if (!empty($columns['max']) and isset($row[$columns['max']]) and $row[$columns['max']] != '') {
+  //  $meta[$name]['max'] = $row[$columns['max']];
+  //}
 }
 
 /**
