@@ -320,10 +320,12 @@ function tpps_flatten(array $state) {
                 if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
                   $fields['structure'] = 'Structure';
                 }
-                if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
-                  $fields['min'] = 'Minimum Value';
-                  $fields['max'] = 'Maximum Value';
-                }
+                // [VS] #8669rmrw5
+                //if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
+                //  $fields['min'] = 'Minimum Value';
+                //  $fields['max'] = 'Maximum Value';
+                //}
+                // [/VS] #8669rmrw5
 
                 foreach ($fields as $field => $field_string) {
                   if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
