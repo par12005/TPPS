@@ -142,6 +142,7 @@ function tpps_organism(array &$form, array &$form_state) {
         'data-placement' => array('right'),
         'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
       ),
+      '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['name'] ?? '',
     ),
     // [VS] #8669py203.
     // Note: the real field is defined in TPPSc/forms/build/page_1_helper.php
@@ -154,7 +155,7 @@ function tpps_organism(array &$form, array &$form_state) {
         '0' => t('No'),
         '-1' => t("I don't know"),
       ],
-      '#default_value' => '1',
+      '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['is_tree'] ?? '1',
     ],
     // [/VS]
   );
