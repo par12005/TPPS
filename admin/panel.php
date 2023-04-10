@@ -712,48 +712,8 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
   $attr_options['other'] = 'My attribute term is not in this list';
 
   // [VS] #8669rmrw5
-  //
-  // @TODO Remove outdated code:
-  //
-  //$unit_options = array();
-  //$terms = array(
-  //  'boolean' => 'Boolean (Binary)',
-  //  'centimeter' => 'Centimeter',
-  //  'cubic_centimeter' => 'Cubic Centimeter',
-  //  'day' => 'Day',
-  //  'degrees_celsius' => 'Degrees Celsius',
-  //  'degrees_fahrenheit' => 'Dgrees Fahrenheit',
-  //  'grams_per_square_meter' => 'Grams per Square Meter',
-  //  'gram' => 'Gram',
-  //  'luminous_intensity_unit' => 'Luminous Intensity Unit',
-  //  'kilogram' => 'Kilogram',
-  //  'kilogram_per_cubic_meter' => 'Kilogram per Cubic Meter',
-  //  'liter' => 'Liter',
-  //  'cubic_meter' => 'Cubic Meter',
-  //  'pascal' => 'Pascal',
-  //  'meter' => 'Meter',
-  //  'milligram' => 'Milligram',
-  //  'milliliter' => 'Milliliter',
-  //  'millimeter' => 'Millimeter',
-  //  'micrometer' => 'Micrometer',
-  //  'percent' => 'Percent',
-  //  'qualitative' => 'Qualitative',
-  //  'square_micrometer' => 'Square Micrometer',
-  //  'square_millimeter' => 'Square Millimeter',
-  //  'watt_per_square_meter' => 'Watt per Square Meter',
-  //  'year' => 'Year',
-  //);
-  //foreach ($terms as $term => $label) {
-  //  $unit_id = tpps_load_cvterm($term)->cvterm_id;
-  //  $unit_options[$unit_id] = $label;
-  //}
-  //$unit_options['other'] = 'My unit is not in this list';
-
   $unit_list = tpps_synonym_get_unit_list(NULL, TRUE);
   // [/VS] #8669rmrw5
-
-
-
 
   $struct_options = array();
   $terms = array(
@@ -901,18 +861,20 @@ function tpps_admin_panel_top(array &$form) {
   global $base_url;
 
   // [VS] Add links to report pages.
-  $panel_url = 'tpps-admin-panel/phenotype-synonyms';
-  $items = [
-    l(TPPS_NO_SYNONYM_REPORT_NAME, $panel_url . '/no-synonyms'),
-    l(TPPS_UNIT_WARNING_REPORT_NAME, $panel_url . '/unit-warning'),
-  ];
-  $form['report_menu'] = [
-    '#type' => 'fieldset',
-    '#title' => t('TPPS Reports'),
-    '#collapsible' => TRUE,
-    '#collapsed' => FALSE,
-    'table' => ['#markup' => theme('item_list', ['items' => $items])],
-  ];
+  if (function_exists('simple_report_form')) {
+    $panel_url = 'tpps-admin-panel/phenotype-synonyms';
+    $items = [
+      l(TPPS_NO_SYNONYM_REPORT_NAME, $panel_url . '/no-synonyms'),
+      l(TPPS_UNIT_WARNING_REPORT_NAME, $panel_url . '/unit-warning'),
+    ];
+    $form['report_menu'] = [
+      '#type' => 'fieldset',
+      '#title' => t('TPPS Reports'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+      'table' => ['#markup' => theme('item_list', ['items' => $items])],
+    ];
+  }
   // [/VS]
 
   $submissions = tpps_load_submission_multiple(array(), FALSE);
