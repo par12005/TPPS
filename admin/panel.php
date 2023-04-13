@@ -760,16 +760,19 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#value' => $info['name'],
         '#disabled' => TRUE,
       ),
+      // [VS] #8669rmrw5.
       'description' => array(
         '#type' => 'textfield',
         '#title' => t('Description'),
-        '#default_value' => $info['description'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['description']
+          ?? $info['description'],
       ),
       'attribute' => array(
         '#type' => 'select',
         '#title' => t('Attribute'),
         '#options' => $attr_options,
-        '#default_value' => $info['attribute'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['attribute']
+          ?? $info['attribute'],
       ),
       'attr-other' => array(
         '#type' => 'textfield',
@@ -777,16 +780,19 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#autocomplete_path' => 'tpps/autocomplete/attribute',
         '#states' => array(
           'visible' => array(
-            ':input[name="phenotypes_edit[' . $num . '][attribute]"]' => array('value' => 'other'),
+            ':input[name="phenotypes_edit[' . $num . '][attribute]"]'
+            => array('value' => 'other'),
           ),
         ),
-        '#default_value' => $info['attr-other'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['attr-other']
+          ?? $info['attr-other'],
       ),
       'structure' => array(
         '#type' => 'select',
         '#title' => t('Structure'),
         '#options' => $struct_options,
-        '#default_value' => $info['structure'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['structure']
+          ?? $info['structure'],
       ),
       'struct-other' => array(
         '#type' => 'textfield',
@@ -794,18 +800,20 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#autocomplete_path' => 'tpps/autocomplete/structure',
         '#states' => array(
           'visible' => array(
-            ':input[name="phenotypes_edit[' . $num . '][structure]"]' => array('value' => 'other'),
+            ':input[name="phenotypes_edit[' . $num . '][structure]"]'
+            => array('value' => 'other'),
           ),
         ),
-        '#default_value' => $info['struct-other'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['struct-other']
+          ?? $info['struct-other'],
       ),
 
-      // [VS] #8669rmrw5.
       'unit' => [
         '#type' => 'select',
         '#title' => t('Unit'),
         '#options' => $unit_list,
-        '#default_value' => $info['unit'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['unit']
+          ?? $info['unit'],
       ],
       'custom-unit' => [
         '#type' => 'textfield',
@@ -817,7 +825,8 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
               =>  ['value' => 0],
           ],
         ],
-        '#default_value' => $info['custom-unit'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['custom-unit']
+          ?? $info['custom-unit'],
       ],
     );
   }
@@ -1310,9 +1319,9 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
   // dpm($form_state['triggering_element']['#value']);
   switch ($form_state['triggering_element']['#value']) {
-    case 'Save phenotype changes':
-      tpps_update_submission($state);
-      break;
+    //case 'Save phenotype changes':
+    //  tpps_update_submission($state);
+    //  break;
 
     case 'Add tag to this study':
       $tpps_tag_id = $form_state['values']['TAG_ADD_OPTION'];
@@ -1548,6 +1557,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_goto('<front>');
       break;
 
+    case 'Save phenotype changes':
     case 'Approve':
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
