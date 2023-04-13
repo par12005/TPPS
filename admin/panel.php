@@ -8,14 +8,6 @@
  * submissions.
  */
 
-define(
-  'TPPS_NO_SYNONYM_REPORT_NAME', 'List of phenotypes without Synonym'
-);
-define(
-  'TPPS_UNIT_WARNING_REPORT_NAME',
-  'Unit Warning (list of phenotypes which unit differs from Synonym)'
-);
-
 /**
  * Creates the administrative panel form.
  *
@@ -827,9 +819,15 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         ],
         '#default_value' => $info['custom-unit'],
       ],
-      // [/VS] #8669rmrw5.
     );
   }
+
+  $form['phenotypes_edit']['phenotype_update'] = [
+    '#type' => 'submit',
+    '#value' => t('Save phenotype changes'),
+  ];
+  // [/VS] #8669rmrw5.
+
 }
 
 /**
@@ -860,21 +858,8 @@ function tpps_save_admin_comments(array $form, array $form_state) {
 function tpps_admin_panel_top(array &$form) {
   global $base_url;
 
-  // [VS] Add links to report pages.
-  if (function_exists('simple_report_form')) {
-    $panel_url = 'tpps-admin-panel/phenotype-synonyms';
-    $items = [
-      l(TPPS_NO_SYNONYM_REPORT_NAME, $panel_url . '/no-synonyms'),
-      l(TPPS_UNIT_WARNING_REPORT_NAME, $panel_url . '/unit-warning'),
-    ];
-    $form['report_menu'] = [
-      '#type' => 'fieldset',
-      '#title' => t('TPPS Reports'),
-      '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
-      'table' => ['#markup' => theme('item_list', ['items' => $items])],
-    ];
-  }
+  // [VS] #3v6kz7k;
+  tpps_admin_panel_reports($form);
   // [/VS]
 
   $submissions = tpps_load_submission_multiple(array(), FALSE);
@@ -1292,6 +1277,8 @@ function tpps_admin_panel_validate($form, &$form_state) {
  */
 function tpps_admin_panel_submit($form, &$form_state) {
 
+  //dpm($form_state);
+
   global $base_url;
   $type = $form_state['tpps_type'] ?? 'tpps';
   $type_label = ($type == 'tpps') ? 'TPPS' : 'TPPSC';
@@ -1323,6 +1310,10 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
   // dpm($form_state['triggering_element']['#value']);
   switch ($form_state['triggering_element']['#value']) {
+    case 'Save phenotype changes':
+      tpps_update_submission($state);
+      break;
+
     case 'Add tag to this study':
       $tpps_tag_id = $form_state['values']['TAG_ADD_OPTION'];
       $tpps_submission_id = $submission->tpps_submission_id;
@@ -1347,6 +1338,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       }
       drupal_set_message($tag_name . " has been added to the study");
       break;
+
     case 'Remove tag from this study':
       $tpps_tag_id = $form_state['values']['TAG_REMOVE_OPTION'];
       $tpps_submission_id = $submission->tpps_submission_id;
@@ -1374,6 +1366,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
         drupal_set_message($tag_name . " cannot be removed from study.","error");
       }
       break;
+
     case 'Save VCF Import Setting':
       // dpm($form_state['values']);
       if($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
@@ -1753,5 +1746,44 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     default:
       break;
+  }
+}
+
+/**
+ * Adds fieldset with links to custom report pages.
+ *
+ * @param array $form
+ *   The form element of the TPPS admin panel page.
+ */
+function tpps_admin_panel_get_reports() {
+  $panel_url = 'tpps-admin-panel/phenotype-synonyms/';
+  return [
+    // Format: <Report Key> => <Path related to $panel_url>
+    'no_synonym' => $panel_url . 'no-synonyms',
+    'unit_warning' => $panel_url . 'unit-warning',
+    'order_family_exist' => $panel_url . 'order-family-exist',
+  ];
+}
+
+/**
+ * Adds fieldset with links to custom report pages.
+ *
+ * @param array $form
+ *   The form element of the TPPS admin panel page.
+ */
+function tpps_admin_panel_reports(array &$form) {
+  if (function_exists('simple_report_form')) {
+    foreach (tpps_admin_panel_get_reports() as $report_key => $path) {
+      if ($title = variable_get('tpps_report_' . $report_key . '_title')) {
+        $items[] = l(t($title), $panel_url . $path);
+      }
+    }
+    $form['report_menu'] = [
+      '#type' => 'fieldset',
+      '#title' => t('TPPS Reports'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+      'table' => ['#markup' => theme('item_list', ['items' => $items])],
+    ];
   }
 }

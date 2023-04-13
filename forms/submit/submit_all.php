@@ -993,6 +993,8 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
   $phenotype_cvterms = array(
     'time' => tpps_load_cvterm('time')->cvterm_id,
     'desc' => tpps_load_cvterm('description')->cvterm_id,
+    // @TODO [VS] Not sure this is needed since units are in separate table
+    // in database.
     'unit' => tpps_load_cvterm('unit')->cvterm_id,
     //'min' => tpps_load_cvterm('minimum')->cvterm_id,
     //'max' => tpps_load_cvterm('maximum')->cvterm_id,
@@ -1051,26 +1053,19 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
       }
-      $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['unit'];
+      // [VS] #8669rmrw5
+      // Convert Unit Id into Unit Name.
+      $phenotypes_meta[$name]['unit'] = tpps_synonym_get_unit_name(
+        $phenotype['phenotypes-meta'][$j]['unit']
+      );
       if ($phenotype['phenotypes-meta'][$j]['unit'] == 0) {
         $phenotypes_meta[$name]['custom-unit'] = $phenotype['phenotypes-meta'][$j]['custom-unit'];
       }
+      // [/VS] #8669rmrw5
       $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
       if ($phenotype['phenotypes-meta'][$j]['structure'] == 'other') {
         $phenotypes_meta[$name]['struct-other'] = $phenotype['phenotypes-meta'][$j]['struct-other'];
       }
-      // [VS] #8669rmrw5
-      // @TODO Ask team. Then update or remove.
-      //$condition = (
-      //  !empty($phenotype['phenotypes-meta'][$j]['val-check'])
-      //  or !empty($phenotype['phenotypes-meta'][$j]['bin-check']
-      //  or $phenotype['phenotypes-meta'][$j]['unit'] == tpps_load_cvterm('boolean')->cvterm_id)
-      //);
-      //if ($condition) {
-      //  $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
-      //  $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
-      //}
-      // [/VS] #8669rmrw5
       $phenotypes_meta[$name]['env'] = !empty($phenotype['phenotypes-meta'][$j]['env-check']);
       if ($phenotypes_meta[$name]['env']) {
         $env_phenotypes = TRUE;
@@ -2540,18 +2535,13 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $meta[$name]['attr'] = 'other';
   $meta[$name]['attr-other'] = $row[$columns['attr']];
   $meta[$name]['desc'] = $row[$columns['desc']];
+  // [VS] Probably we need to check if unit exists and reuse existing unit.
   $meta[$name]['unit'] = 0;
   $meta[$name]['custom-unit'] = $row[$columns['unit']];
   if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
     $meta[$name]['struct'] = 'other';
     $meta[$name]['struct-other'] = $row[$columns['struct']];
   }
-  //if (!empty($columns['min']) and isset($row[$columns['min']]) and $row[$columns['min']] != '') {
-  //  $meta[$name]['min'] = $row[$columns['min']];
-  //}
-  //if (!empty($columns['max']) and isset($row[$columns['max']]) and $row[$columns['max']] != '') {
-  //  $meta[$name]['max'] = $row[$columns['max']];
-  //}
 }
 
 /**

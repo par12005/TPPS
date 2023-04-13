@@ -9,9 +9,6 @@
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
 function tpps_admin_unit_warning_report(array $filter = []) {
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-  $title = 'Phenotypes which units differs from Synonym';
-  drupal_set_title($title);
   $table = 'tpps_phenotype_unit_warning';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
@@ -37,5 +34,11 @@ function tpps_admin_unit_warning_report(array $filter = []) {
     'primary_key' => 'phenotype_id',
     'select_all' => FALSE,
   ];
-  return '<h2>' . $title . '</h2>' . simple_report_tableselect($meta, $filter);
+
+  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+  if($title = variable_get('tpps_report_no_synonym_title')) {
+    // @TODO Use theme templates.
+    $page_title = '<h2>' . $title . '</h2>';
+  }
+  return $page_title . simple_report_tableselect($meta, $filter ?? []);
 }

@@ -194,6 +194,32 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#description' => t('If you save configuration with this option enabled, TPPS will search for all older TPPS Submissions that are no longer compatible with newer versions of TPPS, and will make them compatible again. This works best after using the "tpps/update" tool from the "update_old_submissions" branch on the TPPS gitlab.'),
     '#default_value' => variable_get('tpps_update_old_submissions', NULL),
   );
+  // [VS] #3v6kz7k
+  // Custom Reports.
+  $form['custom_reports'] = [
+    '#type' => 'fieldset',
+    '#title' => 'Custom Reports',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  ];
+  $form['custom_reports']['tpps_report_no_synonym_title'] = [
+    '#type' => 'textfield',
+    '#title' => t('Title of "No synonym" report'),
+    '#default_value' => variable_get('tpps_report_no_synonym_title'),
+    '#description' => t('Used on admin panel page and as page title on report page.'),
+  ];
+  $form['custom_reports']['tpps_report_unit_warning_title'] = [
+    '#type' => 'textfield',
+    '#title' => t('Title of "Unit Warning" report'),
+    '#default_value' => variable_get('tpps_report_unit_warning_title'),
+    '#description' => t('Used on admin panel page and as page title on report page.'),
+  ];
+  $form['custom_reports']['tpps_report_order_family_exist_title'] = [
+    '#type' => 'textfield',
+    '#title' => t('Title of "Order/Family Exist" report'),
+    '#default_value' => variable_get('tpps_report_order_family_exist_title'),
+    '#description' => t('Used on admin panel page and as page title on report page.'),
+  ];
 
   return system_settings_form($form);
 }
