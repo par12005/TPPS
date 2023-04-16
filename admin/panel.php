@@ -645,7 +645,11 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
     '#tree' => TRUE,
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#description' => t('Note: The phenotype editor does not have any validation measures in place. This means that fields in this section that are left blank will be accepted by TPPS, and they will override any user selections. Please be careful when editing information in this section.'),
+    '#description' => t('Note: The phenotype editor does not have any '
+      . 'validation measures in place. This means that fields in this '
+      . 'section that are left blank will be accepted by TPPS, and they '
+      . 'will override any user selections. Please be careful when editing '
+      . 'information in this section.'),
   );
 
   $phenotypes = array();
@@ -836,7 +840,6 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
     '#value' => t('Save phenotype changes'),
   ];
   // [/VS] #8669rmrw5.
-
 }
 
 /**
@@ -1562,9 +1565,10 @@ function tpps_admin_panel_submit($form, &$form_state) {
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
       $uid = $user->uid;
-      $state['submitting_uid'] = $uid;
+      $state['submitting_uid'] = $user->uid;
 
-      $params['subject'] = "$type_label Submission Approved: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+      $params['subject'] = "$type_label Submission Approved: "
+        . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
       $params['accession'] = $state['accession'];
       drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
       drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
@@ -1577,15 +1581,17 @@ function tpps_admin_panel_submit($form, &$form_state) {
           }
         }
       }
-
       if (!empty($form_state['values']['phenotypes_edit'])) {
+        // Remove helper button.
+        unset($form_state['values']['phenotype_update']);
         $state['phenotypes_edit'] = $form_state['values']['phenotypes_edit'];
       }
-
       if (!empty($form_state['values']['study_location'])) {
-        $state['saved_values'][TPPS_PAGE_3]['study_location']['type'] = $form_state['values']['study_location']['type'];
+        $state['saved_values'][TPPS_PAGE_3]['study_location']['type']
+          = $form_state['values']['study_location']['type'];
         for ($i = 1; $i <= $form_state['values']['study_location']['locations']['number']; $i++) {
-          $state['saved_values'][TPPS_PAGE_3]['study_location']['locations'][$i] = $form_state['values']['study_location']['locations'][$i];
+          $state['saved_values'][TPPS_PAGE_3]['study_location']['locations'][$i]
+            = $form_state['values']['study_location']['locations'][$i];
         }
       }
 
