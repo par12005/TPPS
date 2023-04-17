@@ -3349,13 +3349,8 @@ function tpps_generate_genotype_materialized_view($project_id) {
 
   // Added to fix previous queries that used stock_genotype which we don't
   // want to keep using.
-  try {
-    echo "Attempting to drop materialized view (if exist): " . $view_name . "\n";
-    chado_query("DROP MATERIALIZED VIEW " . $view_name . " IF EXISTS;");
-  }
-  catch (Exception $ex) {
-    echo "Exception occurred while trying to drop materialized view: " . $view_name . "\n";
-  }
+  echo "Attempting to drop materialized view (if exist): " . $view_name . "\n";
+  chado_query("DROP MATERIALIZED VIEW IF EXISTS " . $view_name . ";");
 
   echo "Attempting to create materialized view (if it does not exist): " . $view_name . "\n";
   
@@ -3379,7 +3374,7 @@ function tpps_generate_genotype_materialized_view($project_id) {
   // ,[]);
 
   // @NEW - This code uses the genotype_call table only - less joins - more efficient
-  chado_query('CREATE MATERIALIZED VIEW IF NOT EXISTS ' . $view_name . ' AS ' .
+  chado_query('CREATE MATERIALIZED VIEW ' . $view_name . ' AS ' .
   "(SELECT g.genotype_id AS 
     genotype_id, 
     g.name AS name, 
