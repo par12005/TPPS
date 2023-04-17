@@ -1777,7 +1777,7 @@ function tpps_admin_panel_get_reports() {
     // Format: <Report Key> => <Path related to $panel_url>
     'no_synonym' => $panel_url . 'no-synonyms',
     'unit_warning' => $panel_url . 'unit-warning',
-    'order_family_exist' => $panel_url . 'order-family-exist',
+    'order_family_not_exist' => $panel_url . 'order-family-exist',
   ];
 }
 

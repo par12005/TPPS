@@ -284,8 +284,8 @@ function tpps_install() {
     'List of phenotypes without Synonyms');
   variable_set('tpps_report_unit_warning_title',
     'Unit Warning (list of phenotypes which unit differs from Synonym)');
-  variable_set('tpps_report_order_family_exist_title',
-    'Order/Family exist');
+  variable_set('tpps_report_order_family_not_exist_title',
+    'Order/Family not exist');
 }
 
 /**
@@ -300,7 +300,7 @@ function tpps_uninstall() {
   // Remove variables.
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
-  variable_del('tpps_report_order_family_exist_title');
+  variable_del('tpps_report_order_family_not_exist_title');
 
   // Remove all incomplete submissions connected to user profiles.
   db_delete('public.variable')
@@ -2021,8 +2021,8 @@ function tpps_update_7119() {
     'List of phenotypes without Synonyms');
   variable_set('tpps_report_unit_warning_title',
     'Unit Warning (list of phenotypes which unit differs from Synonym)');
-  variable_set('tpps_report_order_family_exist_title',
-    'Order/Family exist');
+  variable_set('tpps_report_order_family_not_exist_title',
+    'Order/Family not exist');
 
   // Create new db table.
   $table = 'tpps_phenotype_unit_warning';

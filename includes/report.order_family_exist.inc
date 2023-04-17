@@ -9,7 +9,7 @@
  * Menu callback. Shows simple report to identify if a term (Order/Family)
  * is not already present in database.
  */
-function tpps_admin_order_family_exist_report(array $filter = []) {
+function tpps_admin_order_family_not_exist_report(array $filter = []) {
   $list = db_select('chado.organismprop', 'op')
     ->fields('op', ['organism_id'])
     ->condition('type_id', [9, 10], 'IN')
@@ -37,7 +37,7 @@ function tpps_admin_order_family_exist_report(array $filter = []) {
   ];
 
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-  if($title = variable_get('tpps_report_order_family_exist_title')) {
+  if($title = variable_get('tpps_report_order_family_not_exist_title')) {
     // @TODO Use theme templates.
     $page_title = '<h2>' . $title . '</h2>';
   }

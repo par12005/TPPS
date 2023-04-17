@@ -286,7 +286,8 @@ function tpps_menu() {
   // [VS] Synonym and Unit reports.
   if (function_exists('simple_report_form')) {
     $items['admin/reports/unit-warning'] = [
-      'title' => variable_get('tpps_report_unit_warning_title'),
+      'title' => variable_get('tpps_report_unit_warning_title',
+        'Unit Warning (list of phenotypes which unit differs from Synonym)'),
       'description' => "List of Phenotypes which differs from Synonym's Unit.",
       'page callback' => 'tpps_admin_unit_warning_report',
       'access callback' => 'tpps_access',
@@ -294,7 +295,8 @@ function tpps_menu() {
       'file' => 'includes/report.unit_warning.inc',
     ];
     $items['tpps-admin-panel/phenotype-synonyms/unit-warning'] = [
-      'title' => variable_get('tpps_report_unit_warning_title'),
+      'title' => variable_get('tpps_report_unit_warning_title',
+        'Unit Warning (list of phenotypes which unit differs from Synonym)'),
       'page callback' => 'tpps_admin_unit_warning_report',
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
@@ -303,24 +305,17 @@ function tpps_menu() {
     ];
     // No synonym.
     $items['admin/reports/no-synonym'] = [
-      'title' => variable_get('tpps_report_no_synonym_title'),
+      'title' => variable_get('tpps_report_no_synonym_title',
+        'List of phenotypes without Synonyms'),
       'description' => "List of phenotypes without synonym.",
       'page callback' => 'tpps_admin_no_synonym_report',
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
       'file' => 'includes/report.no_synonym.inc',
     ];
-    $items['admin/reports/no-synonym/name/%'] = [
-      'title' => 'Specific Phenotype Name',
-      'description' => 'Specific Phenotype Name Report',
-      'page callback' => 'tpps_admin_no_synonym_name_report',
-      'page arguments' => [4],
-      'type' => MENU_NORMAL_ITEM,
-      'access arguments' => ['administer tpps module'],
-      'file' => 'includes/report.no_synonym.inc',
-    ];
     $items['tpps-admin-panel/phenotype-synonyms/no-synonyms'] = [
-      'title' => variable_get('tpps_report_no_synonym_title'),
+      'title' => variable_get('tpps_report_no_synonym_title',
+        'List of phenotypes without Synonyms'),
       'page callback' => 'tpps_admin_no_synonym_report',
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
@@ -329,20 +324,22 @@ function tpps_menu() {
     ];
     // Order/Family Exist Report.
     $items['admin/reports/order-family-exist'] = [
-      'title' => variable_get('tpps_report_order_family_exist_title'),
+      'title' => variable_get('tpps_report_order_family_not_exist_title',
+        'Order/Family not exist'),
       'description' => "Check if order/family exist.",
-      'page callback' => 'tpps_admin_order_family_exist_report',
+      'page callback' => 'tpps_admin_order_family_not_exist_report',
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
-      'file' => 'includes/report.order_family_exist.inc',
+      'file' => 'includes/report.order_family_not_exist.inc',
     ];
     $items['tpps-admin-panel/phenotype-synonyms/order-family-exist'] = [
-      'title' => variable_get('tpps_report_order_family_exist_title'),
-      'page callback' => 'tpps_admin_order_family_exist_report',
+      'title' => variable_get('tpps_report_order_family_not_exist_title',
+        'Order/Family not exist'),
+      'page callback' => 'tpps_admin_order_family_not_exist_report',
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
       'type' => MENU_NORMAL_ITEM,
-      'file' => 'includes/report.order_family_exist.inc',
+      'file' => 'includes/report.order_family_not_exist.inc',
     ];
   }
   // [/VS]

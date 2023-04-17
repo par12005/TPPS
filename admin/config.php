@@ -214,10 +214,10 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_report_unit_warning_title'),
     '#description' => t('Used on admin panel page and as page title on report page.'),
   ];
-  $form['custom_reports']['tpps_report_order_family_exist_title'] = [
+  $form['custom_reports']['tpps_report_order_family_not_exist_title'] = [
     '#type' => 'textfield',
-    '#title' => t('Title of "Order/Family Exist" report'),
-    '#default_value' => variable_get('tpps_report_order_family_exist_title'),
+    '#title' => t('Title of "Order/Family Not Exist" report'),
+    '#default_value' => variable_get('tpps_report_order_family_not_exist_title'),
     '#description' => t('Used on admin panel page and as page title on report page.'),
   ];
 
