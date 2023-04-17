@@ -740,17 +740,29 @@ function tpps_submission_clear_db($accession) {
 
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
   chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
+  echo "DELETE chado.project_organism values for project...\n";
   chado_query("DELETE FROM chado.project_organism WHERE project_id = $project_id");
+  echo "DELETE chado.project_pub values for project...\n";
   chado_query("DELETE FROM chado.project_pub WHERE project_id = $project_id");
+  echo "DELETE chado.projectprop values for project...\n";
   chado_query("DELETE FROM chado.projectprop WHERE project_id = $project_id");
+  echo "DELETE chado.projectprop values for project...\n";
   db_query("DELETE FROM public.tpps_project_file_managed WHERE project_id = $project_id");
+  echo "DELETE tpps_project_file_managed values for project...\n";
   chado_query("DELETE FROM chado.phenotype_cvterm WHERE phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE stock_id in ($stocks_sql))");
+  echo "DELETE chado.phenotype_to_synonym values for project...\n";
   chado_query("DELETE FROM chado.phenotype_to_synonym WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
+  echo "DELETE chado.phenotype values for project...\n";
   chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
+  echo "DELETE chado.genotype_call values for project...\n";
   chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");
+  echo "DELETE chado.stock_genotype values for project...\n";
   chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stocks_sql)");
+  echo "DELETE chado.stock_phenotype values for project...\n";
   chado_query("DELETE FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql)");
+  echo "DELETE chado.stock values for project...\n";
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
+  echo "DELETE chado.phenotype values for project...\n";
   chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession ."-%';");
   echo "FINISHED DB CLEAR DELETES\n";
 

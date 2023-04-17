@@ -3391,7 +3391,7 @@ function tpps_generate_genotype_materialized_view($project_id) {
     FROM chado.genotype g
     INNER JOIN chado.genotype_call gc ON gc.genotype_id = g.genotype_id 
     INNER JOIN chado.stock s ON s.stock_id = gc.stock_id
-    WHERE (gc.project_id = '" . $project_id . "') )" . 
+    WHERE (gc.project_id = '" . $project_id . "') ) " . 
     "WITH NO DATA"
   ,[]);  
 
