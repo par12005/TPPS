@@ -323,16 +323,16 @@ function tpps_menu() {
       'file' => 'includes/report.no_synonym.inc',
     ];
     // Order/Family Exist Report.
-    $items['admin/reports/order-family-exist'] = [
+    $items['admin/reports/order-family-not-exist'] = [
       'title' => variable_get('tpps_report_order_family_not_exist_title',
         'Order/Family not exist'),
-      'description' => "Check if order/family exist.",
+      'description' => "Lists non-existing order/family.",
       'page callback' => 'tpps_admin_order_family_not_exist_report',
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
       'file' => 'includes/report.order_family_not_exist.inc',
     ];
-    $items['tpps-admin-panel/phenotype-synonyms/order-family-exist'] = [
+    $items['tpps-admin-panel/phenotype-synonyms/order-family-not-exist'] = [
       'title' => variable_get('tpps_report_order_family_not_exist_title',
         'Order/Family not exist'),
       'page callback' => 'tpps_admin_order_family_not_exist_report',
