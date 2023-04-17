@@ -275,7 +275,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#suffix' => '</div>',
         '#validated' => TRUE,
       ],
-      'custom-unit' => [
+      'unit-other' => [
         '#type' => 'textfield',
         '#title' => 'Phenotype !num Custom Unit: *',
         '#autocomplete_path' => 'tpps/autocomplete/unit',
@@ -364,7 +364,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         // [VS] #8669rmrw5
         ['unit', '#title'],
         ['unit', '#prefix'],
-        ['custom-unit', '#title'],
+        ['unit-other', '#title'],
         array('structure', '#title'),
         array('struct-other', '#title'),
         // [/VS]
@@ -389,7 +389,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]',
         ),
         array(
-          'custom-unit',
+          'unit-other',
           '#states',
           'visible',
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',

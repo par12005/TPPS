@@ -1059,7 +1059,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
         $phenotype['phenotypes-meta'][$j]['unit']
       );
       if ($phenotype['phenotypes-meta'][$j]['unit'] == 0) {
-        $phenotypes_meta[$name]['custom-unit'] = $phenotype['phenotypes-meta'][$j]['custom-unit'];
+        $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
       }
       // [/VS] #8669rmrw5
       $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
@@ -2537,9 +2537,9 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $meta[$name]['desc'] = $row[$columns['desc']];
   // [VS]
   // @TODO Minor. Check if unit exists and reuse existing unit instead of
-  // creating new 'custom-unit'.
+  // creating new 'unit-other'.
   $meta[$name]['unit'] = 0;
-  $meta[$name]['custom-unit'] = $row[$columns['unit']];
+  $meta[$name]['unit-other'] = $row[$columns['unit']];
   if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
     $meta[$name]['struct'] = 'other';
     $meta[$name]['struct-other'] = $row[$columns['struct']];
@@ -2835,26 +2835,24 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     // print_r($phenotype_name-desc . "\n");
     // print_r($records['phenotypeprop']["$phenotype_name-desc"]);
 
+    // [VS]
+    // $iso is probably means "intensity / mass spectrometry".
     if ($iso) {
-      $records['phenotypeprop']["$phenotype_name-unit"] = array(
-        'type_id' => $cvterms['unit'],
+      $records['phenotypeprop']["$phenotype_name-unit"] = [
+        'type_id' => 139527,
+        // value: the chemical name/identifier.
         'value' => $meta['unit'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-      // print_r($records['phenotypeprop']["$phenotype_name-unit"]);
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
-
-    if (!$iso) {
-      $records['phenotype_cvterm']["$phenotype_name-unit"] = array(
+    else {
+      $records['phenotype_cvterm']["$phenotype_name-unit"] = [
         'cvterm_id' => $meta[strtolower($name)]['unit_id'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-      // print_r($records['phenotype_cvterm']["$phenotype_name-unit"]);
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
+    // print_r($records['phenotype_cvterm']["$phenotype_name-unit"]);
+    // [/VS]
 
     if (isset($meta[strtolower($name)]['min'])) {
       $records['phenotypeprop']["$phenotype_name-min"] = array(

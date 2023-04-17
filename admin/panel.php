@@ -163,7 +163,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['attr-other'];
         }
         if ($phenotype['phenotypes-meta'][$j]['unit'] === 0) {
-          $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['custom-unit'];
+          $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['unit-other'];
         }
       }
     }
@@ -819,7 +819,7 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#default_value' => $submission['phenotypes_edit'][$num]['unit']
           ?? $info['unit'],
       ],
-      'custom-unit' => [
+      'unit-other' => [
         '#type' => 'textfield',
         '#title' => t('Custom Unit'),
         '#autocomplete_path' => 'tpps/autocomplete/unit',
@@ -829,8 +829,8 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
               =>  ['value' => 0],
           ],
         ],
-        '#default_value' => $submission['phenotypes_edit'][$num]['custom-unit']
-          ?? $info['custom-unit'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['unit-other']
+          ?? $info['unit-other'],
       ],
     );
   }
@@ -1777,7 +1777,7 @@ function tpps_admin_panel_get_reports() {
     // Format: <Report Key> => <Path related to $panel_url>
     'no_synonym' => $panel_url . 'no-synonyms',
     'unit_warning' => $panel_url . 'unit-warning',
-    'order_family_not_exist' => $panel_url . 'order-family-exist',
+    'order_family_not_exist' => $panel_url . 'order-family-not-exist',
   ];
 }
 
