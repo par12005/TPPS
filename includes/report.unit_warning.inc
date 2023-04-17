@@ -9,6 +9,12 @@
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
 function tpps_admin_unit_warning_report(array $filter = []) {
+  $sub_query = db_select('chado.phenotype', 'cte')->fields('cte', []);
+  $sub_query->addExpression(
+    "substring(cte.uniquename, 0, strpos(cte.uniquename, '-'))",
+    'study_name'
+  );
+
   $table = 'tpps_phenotype_unit_warning';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
@@ -16,6 +22,7 @@ function tpps_admin_unit_warning_report(array $filter = []) {
     'attributes' => ['class' => ['view' , 'tpps_table']],
     'header' => [
       ['data' => t('Phenotype Id'), 'field' => $table . '.phenotype_id'],
+      ['data' => t("Study"), 'field' => 'study_name'],
       ['data' => t('Phenotype Name'), 'field' => 'phenotype.name'],
     ],
     'tables' => [
@@ -26,7 +33,21 @@ function tpps_admin_unit_warning_report(array $filter = []) {
           'on' => $table . '.phenotype_id = phenotype.phenotype_id',
         ],
         'fields' => ['name'],
-      ]
+      ],
+      // Common Table Expression.
+      'cte' => [
+        'query' => $sub_query,
+        'fields' => ['study_name'],
+        'join' => [
+          // @TODO Use addJoin() instead of leftJoin().
+          'type' => 'left outer',
+          'on' => 'cte.phenotype_id = tpps_phenotype_unit_warning.phenotype_id',
+        ],
+      ],
+    ],
+    'filter' => [
+      // Exclude all names without 'TGDR' in it.
+      "strpos(cte.study_name, 'TGDR') > 0",
     ],
     'formatter' => 'tpps_admin_unit_warning_report_formatter',
     'items_per_page' => variable_get('tpps_report_items_per_page', 25),
