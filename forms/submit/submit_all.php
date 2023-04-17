@@ -2536,7 +2536,7 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $meta[$name]['attr-other'] = $row[$columns['attr']];
   $meta[$name]['desc'] = $row[$columns['desc']];
   // [VS]
-  / @TODO Minor. Check if unit exists and reuse existing unit instead of
+  // @TODO Minor. Check if unit exists and reuse existing unit instead of
   // creating new 'custom-unit'.
   $meta[$name]['unit'] = 0;
   $meta[$name]['custom-unit'] = $row[$columns['unit']];
