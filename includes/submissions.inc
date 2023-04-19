@@ -763,7 +763,7 @@ function tpps_submission_clear_db($accession) {
   echo "DELETE chado.stock values for project...\n";
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
   echo "DELETE chado.phenotype values for project...\n";
-  chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession ."-%' ON DELETE CASCADE;");
+  chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession ."-%';");
   echo "FINISHED DB CLEAR DELETES\n";
 
   // Force delete stock just in case by study accession name
