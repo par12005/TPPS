@@ -1058,7 +1058,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       $phenotypes_meta[$name]['unit'] = tpps_synonym_get_unit_name(
         $phenotype['phenotypes-meta'][$j]['unit']
       );
-      if ($phenotype['phenotypes-meta'][$j]['unit'] == 0) {
+      if ($phenotype['phenotypes-meta'][$j]['unit'] == 'other') {
         $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
       }
       // [/VS] #8669rmrw5
@@ -2538,7 +2538,7 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   // [VS]
   // @TODO Minor. Check if unit exists and reuse existing unit instead of
   // creating new 'unit-other'.
-  $meta[$name]['unit'] = 0;
+  $meta[$name]['unit'] = 'other';
   $meta[$name]['unit-other'] = $row[$columns['unit']];
   if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
     $meta[$name]['struct'] = 'other';
@@ -2851,7 +2851,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
         '#fk' => ['phenotype' => $phenotype_name],
       ];
     }
-    // print_r($records['phenotype_cvterm']["$phenotype_name-unit"]);
+    print_r($records['phenotype_cvterm']["$phenotype_name-unit"]);
     // [/VS]
 
     if (isset($meta[strtolower($name)]['min'])) {
