@@ -7,7 +7,7 @@ function tpps_drush_command() {
         'description' => 'This is TPPS Submit command',
         'aliases' => array('tpps-submit'),
         'arguments' => array(
-           'section' => 'genotype, phenotype',
+           'section' => 'resubmit, genotype, phenotype, cleardb',
            'action' => 'These depends on the section you choose',
            'values' => 'Specific commands based on the action you request (comma separated)'
         ),
@@ -31,12 +31,19 @@ function drush_tpps_submit_command($section = NULL, $action = NULL, $values = NU
         $section_list = '';
         $section_list .= 'genotype';
         $section_list .= ',phenotype';
+        $section_list .= ',cleardb';
         echo 'Specify a section: ' . $section_list . "\n";
     }
 
     if (isset($section) && !isset($action)) {
         $action_list = '';
         switch ($section) {
+            case 'resubmit':
+                $action_list .= 'all';
+                break;
+            case 'cleardb':
+                $action_list .= 'all, extra';
+                break;
             case 'genotype':
                 $action_list .= 'vcf_generate_sample_file';
                 break;
@@ -64,6 +71,39 @@ function drush_tpps_submit_command($section = NULL, $action = NULL, $values = NU
         }
 
         switch ($section) {
+            case 'resubmit': {
+                switch ($action) {
+                    case 'all': {
+                        tpps_run_tpps_submission_resubmit_all($action, $values_key_vals);
+                        break;                        
+                    }
+                }
+                break;
+            }
+            case 'cleardb':
+                switch ($action) {
+                    case 'all':
+                        $transaction = db_transaction();
+                        try {
+                            tpps_run_tpps_submission_clear_db($action, $values_key_vals);
+                        }
+                        catch (\Exception $e) {
+                          $transaction->rollback();
+                          throw $e;
+                        }
+                        break;
+                    case 'extra':
+                        $transaction = db_transaction();
+                        try {
+                            tpps_run_tpps_submission_clear_db_extra($action, $values_key_vals);
+                        }
+                        catch (\Exception $e) {
+                          $transaction->rollback();
+                          throw $e;
+                        }
+                        break;                        
+                }
+                break;
             case 'genotype':
                 switch ($action) {
                     case 'vcf_generate_sample_file':
@@ -74,6 +114,55 @@ function drush_tpps_submit_command($section = NULL, $action = NULL, $values = NU
             case 'phenotype':
                 break;
         }
+    }
+}
+
+function tpps_run_tpps_submission_resubmit_all($action = NULL, $values = NULL) {
+    // print_r($values);
+    if (isset($values)) {
+        // print_r($values);
+        include_once('forms/submit/submit_all.php');
+        tpps_submit_all($values['accession'], NULL);
+    }
+    else {
+        echo $action . " - No values were specified\n";
+        $options_list = "";
+        $options_list .= "accession=<TGDRxxx>";
+        echo $action . " - Options available: " . $options_list . "\n";
+    }
+}
+
+function tpps_run_tpps_submission_clear_db_extra($action = NULL, $values = NULL) {
+    // print_r($values);
+    if (isset($values)) {
+        // print_r($values);
+        include_once('forms/submit/submit_all.php');
+        tpps_submission_clear_db_extra([
+            $values['accession']
+        ]);
+    }
+    else {
+        echo $action . " - No values were specified\n";
+        $options_list = "";
+        $options_list .= "accession=<TGDRxxx>";
+        echo $action . " - Options available: " . $options_list . "\n";
+    }
+}
+
+function tpps_run_tpps_submission_clear_db($action = NULL, $values = NULL) {
+    // print_r($values);
+    if (isset($values)) {
+        // print_r($values);
+        include_once('forms/submit/submit_all.php');
+        tpps_submission_clear_db([
+            $values['accession']
+        ]);
+    }
+    else {
+        echo $action . " - No values were specified\n";
+        $options_list = "";
+        $options_list .= "accession=<TGDRxxx>";
+        echo $action . " - Options available: " . $options_list . "\n";
     }
 }
 
@@ -91,7 +180,6 @@ function tpps_run_vcf_generate_sample_file($action = NULL, $values = NULL) {
         $options_list = "";
         $options_list .= "accession=<TGDRxxx>";
         echo $action . " - Options available: " . $options_list . "\n";
-
     }
 }
 ?>
