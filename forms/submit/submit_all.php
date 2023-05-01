@@ -1509,9 +1509,14 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $genotype_count = 0;
   }
 
-
+  $vcf_import_mode = $form_state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'];
+  if (!isset($vcf_import_mode)) {
+    $vcf_import_mode = 'hybrid'; // if not set, set it as default hybrid
+  }
+  tpps_job_logger_write('[INFO] - VCF IMPORT MODE is ' . $vcf_import_mode);
+  $job->logMessage('[INFO] - VCF IMPORT MODE is ' . $vcf_import_mode);  
   // THE VCF PROCESSING CODE HAS BEEN MOVED TO A NEW FUNCTION
-  tpps_genotype_vcf_processing($form_state, $species_codes, $i, $job);
+  tpps_genotype_vcf_processing($form_state, $species_codes, $i, $job, $vcf_import_mode);
   // // check to make sure admin has not set disable_vcf_importing
   // $disable_vcf_import = 0;
   // if(isset($firstpage['disable_vcf_import'])) {
@@ -2037,7 +2042,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
 /**
  * This function will process a vcf file's genotypic information and store it within the db.
- * Most importantly is the $insert_mode option which can be set to 'multi' or 'hybrid'
+ * Most importantly is the $import_mode option which can be set to 'multi' or 'hybrid'
  * Hybrid requires the the db user be granted SUPERUSER access to the Postgresql db in order
  * to utilize the COPY keyword for inserting data which is dramatically faster.
  */
@@ -2047,6 +2052,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+
 
   // Project ID is more for the database (it is different from the TPPS Accession)
   // but is unique as well.
