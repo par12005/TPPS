@@ -50,8 +50,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   try {
     tpps_job_logger_write('[INFO] Clearing Database...');
     $job->logMessage('[INFO] Clearing Database...');
-    // TODO - Restore this
-    // tpps_submission_clear_db($accession);
+    tpps_submission_clear_db($accession);
     tpps_job_logger_write('[INFO] Database Cleared');
     $job->logMessage('[INFO] Database Cleared.');
     $project_id = $form_state['ids']['project_id'] ?? NULL;
