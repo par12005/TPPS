@@ -2053,6 +2053,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
 
+  if ($insert_mode == '') {
+    throw new Exception('VCF processing insert mode was empty - it should have a value of either hybrid or inserts.');
+  }
+
 
   // Project ID is more for the database (it is different from the TPPS Accession)
   // but is unique as well.
