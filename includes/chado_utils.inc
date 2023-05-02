@@ -258,8 +258,17 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
 
   }
 
-  fflush($csv_file);
   fclose($csv_file);
+  do {
+    if (file_exists($file_location)) {
+        echo "The CSV file was found: " . date("d-m-Y h:i:s") . ". Continuing the import process...\n";
+        break;
+    }
+    else {
+      echo "Waiting for CSV file to get written to the filesystem\n";
+    }
+    sleep(100);
+  } while(true);
 
   if ($use_external_copy) {
     // throw new Exception('Test CSV write');
