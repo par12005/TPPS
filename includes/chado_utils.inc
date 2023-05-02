@@ -153,7 +153,15 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
   
   $table = 'genotype_call';
   $records = $record_groups['genotype_call'];
-  $file_location = "/tmp/" . time() . '-copy-table.csv';
+
+  // These variables are set within the Drupal admin panel /admin/config/content/tpps
+  $tpps_db_csv_directory = variable_get('tpps_db_csv_directory', '/tmp/tpps/');
+  $tpps_db_directory_user = variable_get('tpps_db_directory_user', 'postgres');
+
+  // Try to set the tpps_db_csv_directory to have the db_directory_user permission
+  chown($tpps_db_csv_directory, $tpps_db_directory_user);
+
+  $file_location = $tpps_db_csv_directory . time() . '-copy-table.csv';
   $csv_file = fopen($file_location, 'w+');
   
   print_r('TABLE:' . $table . "\n");
