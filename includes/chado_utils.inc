@@ -158,6 +158,8 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
   $tpps_db_csv_directory = variable_get('tpps_db_csv_directory', '/tmp/tpps/');
   $tpps_db_directory_user = variable_get('tpps_db_directory_user', 'postgres');
 
+  // Attempt to make directory if it does not exist
+  mkdir($tpps_db_csv_directory, 0755, true);
   // Try to set the tpps_db_csv_directory to have the db_directory_user permission
   chown($tpps_db_csv_directory, $tpps_db_directory_user);
 
