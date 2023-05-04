@@ -17,13 +17,16 @@ function tpps_admin_order_family_not_exist_report(array $filter = []) {
     ->execute()
     ->fetchCol();
 
-  $table = 'chado.organism';
+  $table = 'organism';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
     //'tag' => 'debug',
     'attributes' => ['class' => ['view' , 'tpps_table']],
     'tables' => [
-      $table => ['fields'  => ['organism_id', 'genus', 'species', 'type_id']],
+      $table => [
+        'fields'  => ['organism_id', 'genus', 'species', 'type_id'],
+        'schema' => 'chado',
+      ],
     ],
     'filter' => [
       [

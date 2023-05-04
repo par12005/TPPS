@@ -20,7 +20,7 @@ function tpps_admin_no_synonym_report() {
   $table = 'phenotype';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
-    //    'tag' => 'debug',
+    'tag' => 'debug',
     'attributes' => ['class' => ['view' , 'tpps_table']],
     'header' => [
       ['data' => t("Study"), 'field' => 'study_name'],
@@ -68,7 +68,7 @@ function tpps_admin_no_synonym_report() {
     ],
     'formatter' => 'tpps_admin_no_synonym_formatter',
   ];
-  
+
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   if($title = variable_get('tpps_report_no_synonym_title')) {
     // @TODO Use theme templates.
