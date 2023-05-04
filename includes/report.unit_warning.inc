@@ -19,6 +19,11 @@ function tpps_admin_unit_warning_report(array $filter = []) {
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
     // 'tag' => 'debug',
+    //'formatter' => 'tpps_admin_no_synonym_formatter',
+    'items_per_page' => variable_get('tpps_report_items_per_page', 25),
+    'refresh_time' => variable_get('tpps_report_refresh_time', 0),
+    'primary_key' => 'phenotype_id',
+    'select_all' => FALSE,
     'attributes' => ['class' => ['view' , 'tpps_table']],
     'header' => [
       ['data' => t('Phenotype Id'), 'field' => $table . '.phenotype_id'],
@@ -26,8 +31,12 @@ function tpps_admin_unit_warning_report(array $filter = []) {
       ['data' => t('Phenotype Name'), 'field' => 'phenotype.name'],
     ],
     'tables' => [
-      $table => [],
-      'chado.phenotype' => [
+      $table => [
+        'schema' => 'public',
+
+      ],
+      'phenotype' => [
+        'schema' => 'chado',
         'join' => [
           'type' => 'left outer',
           'on' => $table . '.phenotype_id = phenotype.phenotype_id',
@@ -36,6 +45,7 @@ function tpps_admin_unit_warning_report(array $filter = []) {
       ],
       // Common Table Expression.
       'cte' => [
+        'schema' => 'public',
         'query' => $sub_query,
         'fields' => ['study_name'],
         'join' => [
@@ -49,11 +59,6 @@ function tpps_admin_unit_warning_report(array $filter = []) {
       // Exclude all names without 'TGDR' in it.
       "strpos(cte.study_name, 'TGDR') > 0",
     ],
-    'formatter' => 'tpps_admin_unit_warning_report_formatter',
-    'items_per_page' => variable_get('tpps_report_items_per_page', 25),
-    'refresh_time' => variable_get('tpps_report_refresh_time', 0),
-    'primary_key' => 'phenotype_id',
-    'select_all' => FALSE,
   ];
 
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
