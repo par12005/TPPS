@@ -20,17 +20,21 @@ function tpps_admin_no_synonym_report() {
   $table = 'phenotype';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
-    'tag' => 'debug',
+    //'tag' => 'debug',
     'attributes' => ['class' => ['view' , 'tpps_table']],
     'header' => [
       ['data' => t("Study"), 'field' => 'study_name'],
       ['data' => t("Phenotype Name"), 'field' => $table . '.name'],
     ],
     'tables' => [
-      'chado.' . $table => [
+      $table => [
+        'schema' => 'chado',
+        'name' => $table,
         'fields' => ['name'],
       ],
-      'chado.phenotype_to_synonym' => [
+      'phenotype_to_synonym' => [
+        'schema' => 'chado',
+        'name' => 'phenotype_to_synonym',
         'join' => [
           'type' => 'left outer',
           'on' => 'phenotype.phenotype_id = phenotype_to_synonym.phenotype_id',
@@ -39,6 +43,7 @@ function tpps_admin_no_synonym_report() {
       ],
       // Common Table Expression.
       'cte' => [
+        'schema' => 'chado',
         'query' => $sub_query,
         'fields' => ['study_name'],
         'join' => [
