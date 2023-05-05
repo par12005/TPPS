@@ -3995,9 +3995,27 @@ function tpps_generate_genotype_materialized_view($project_id) {
   // ,[]);
 
   // @NEW - This code uses the genotype_call table only - less joins - more efficient
+  // chado_query('CREATE MATERIALIZED VIEW ' . $view_name . ' AS ' .
+  // "(SELECT g.genotype_id AS 
+  //   genotype_id, 
+  //   g.name AS name, 
+  //   g.uniquename AS uniquename, 
+  //   g.description AS description, 
+  //   g.type_id AS type_id, 
+  //   s.uniquename AS s_uniquename, 
+  //   s.stock_id AS stock_id 
+  //   FROM chado.genotype g
+  //   INNER JOIN chado.genotype_call gc ON gc.genotype_id = g.genotype_id 
+  //   INNER JOIN chado.stock s ON s.stock_id = gc.stock_id
+  //   WHERE (gc.project_id = '" . $project_id . "') ) " . 
+  //   "WITH NO DATA"
+  // ,[]);  
+
+  // @NEW V2 - This adds an index_id column
   chado_query('CREATE MATERIALIZED VIEW ' . $view_name . ' AS ' .
-  "(SELECT g.genotype_id AS 
-    genotype_id, 
+  "(SELECT 
+    row_number() over (order by g.genotype_id, s.stock_id) as index_id,
+    g.genotype_id AS genotype_id, 
     g.name AS name, 
     g.uniquename AS uniquename, 
     g.description AS description, 
@@ -4009,7 +4027,7 @@ function tpps_generate_genotype_materialized_view($project_id) {
     INNER JOIN chado.stock s ON s.stock_id = gc.stock_id
     WHERE (gc.project_id = '" . $project_id . "') ) " . 
     "WITH NO DATA"
-  ,[]);  
+  ,[]);
 
 
 
@@ -4017,6 +4035,12 @@ function tpps_generate_genotype_materialized_view($project_id) {
   echo "Refreshing materialized view: " . $view_name . "\n";
   chado_query('REFRESH MATERIALIZED VIEW ' . $view_name, []);
   echo "Finished refresh of " . $view_name . "\n";
+
+  // Add an index using the index_id column (IF NOT EXISTS)
+  echo "Adding index_id index to $view_name\n";
+  chado_query("CREATE UNIQUE INDEX " . str_replace('chado.', 'chado_' , $view_name) . 
+    "_id on " . $view_name . "(index_id);", []);
+  echo "Index completed\n";
   
 }
 
