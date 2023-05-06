@@ -2231,7 +2231,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
             $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt); // eg A:G
 
-            $detected_genotypes[$marker_name . $genotype_combination] = TRUE; // scaffold_A:G
+            // $detected_genotypes[$marker_name . '_' . $genotype_combination] = TRUE; // scaffold_A:G
+            $detected_genotypes[$marker_name] = TRUE;
 
             // Record the first genotype name to use for genotype_call table
             if($j == 9) {
