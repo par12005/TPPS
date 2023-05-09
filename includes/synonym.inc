@@ -100,7 +100,6 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  */
 function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
   $debug_mode = FALSE;
-  dpm($current_phenotype, 'current_F');
   if ($debug_mode) {
     tpps_log('[DEBUG] '
       . 'Phenotype Id: ' . $phenotype_id

@@ -1199,6 +1199,9 @@ vs_dump($phenotype['phenotypes-meta'][$j], $j);
       'desc' => "Mass Spectrometry",
 
       // @TODO Major. Replace with Unit Id.
+      // CV Term for 'chemical substance'
+      // A chemical substance is a portion of matter of constant composition,
+      // composed of molecular entities of the same type or of different types.
 
       'unit' => "intensity (arbitrary nits)",
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
