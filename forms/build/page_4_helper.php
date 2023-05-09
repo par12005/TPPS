@@ -291,7 +291,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
         '#states' => ['visible' => [
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
-            => ['value' => 0],
+            => ['value' => 'other'],
         ]],
       ],
       // [/VS]

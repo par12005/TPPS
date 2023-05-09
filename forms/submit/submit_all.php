@@ -1054,10 +1054,11 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
       }
       // [VS] #8669rmrw5
-      // Convert Unit Id into Unit Name.
-      $phenotypes_meta[$name]['unit'] = tpps_synonym_get_unit_name(
-        $phenotype['phenotypes-meta'][$j]['unit']
-      );
+      // Unit is an integer here.
+
+vs_dump($phenotype['phenotypes-meta'][$j], $j);
+
+      $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['unit'];
       if ($phenotype['phenotypes-meta'][$j]['unit'] == 'other') {
         $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
       }
@@ -1199,7 +1200,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
 
       // @TODO Major. Replace with Unit Id.
 
-      'unit' => "intensity (arbitrary units)",
+      'unit' => "intensity (arbitrary nits)",
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
       'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id, // manual term for MASS Spec
     );
@@ -2586,7 +2587,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
           $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
           if ($result !== FALSE) {
             $meta[$name]["{$type}_id"] = $result->cvterm_id;
-            $job->logMessage("[INFO] New OLS Term {$info['ontology']}:{$data["{$type}-other"]} installed");
+            $job->logMessage("[INFO] New OLS Term '{$info['ontology']}:{$data["{$type}-other"]}' installed");
           }
 
           if (empty($meta[$name]["{$type}_id"])) {
@@ -2610,7 +2611,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
               'cv_name' => $local_cv->name,
             ))->cvterm_id;
             if (!empty($meta[$name]["{$type}_id"])) {
-              $job->logMessage("[INFO] New Local {$info['label']} Term {$data["{$type}-other"]} installed");
+              $job->logMessage("[INFO] New Local '{$info['label']}' Term '{$data["{$type}-other"]}' installed");
             }
           }
           $cvt_cache[$data["{$type}-other"]] = $meta[$name]["{$type}_id"];
@@ -2644,6 +2645,11 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   global $tpps_job;
   $job = $tpps_job;
   $iso = $options['iso'] ?? FALSE;
+
+vs_dump($options['attr_id'], '$options["attr_id"]');
+
+
+
   $records = &$options['records'];
   $meta_headers = $options['meta_headers'] ?? NULL;
   $file_headers = $options['file_headers'] ?? NULL;
@@ -3949,4 +3955,13 @@ function tpps_log($message, $variables = array(), $severity = TRIPAL_INFO) {
   global $tpps_job;
   tpps_job_logger_write($message, $variables);
   $tpps_job->logMessage($message, $variables, $severity);
+}
+
+
+
+function vs_dump($var, $message = '') {
+  print_r("\n[VS] ---------------------------------------------------\n");
+  print_r($message . "\n");
+  print_r($var);
+  print_r("\n[VS] ---------------------------------------------------\n");
 }

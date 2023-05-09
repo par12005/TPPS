@@ -162,7 +162,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
         if ($phenotype['phenotypes-meta'][$j]['attribute'] === 'other') {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['attr-other'];
         }
-        if ($phenotype['phenotypes-meta'][$j]['unit'] === 0) {
+        if ($phenotype['phenotypes-meta'][$j]['unit'] === 'other') {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['unit-other'];
         }
       }
@@ -826,7 +826,7 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#states' => [
           'visible' => [
             ':input[name="phenotypes_edit[' . $num . '][unit]"]'
-              =>  ['value' => 0],
+              =>  ['value' => 'other'],
           ],
         ],
         '#default_value' => $submission['phenotypes_edit'][$num]['unit-other']

@@ -100,6 +100,7 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  */
 function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
   $debug_mode = FALSE;
+  dpm($current_phenotype, 'current_F');
   if ($debug_mode) {
     tpps_log('[DEBUG] '
       . 'Phenotype Id: ' . $phenotype_id
@@ -198,7 +199,7 @@ function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = TRUE
   $unit_list = $query->execute()->fetchAllKeyed();
   // This option must be last.
   if (!empty($unit_list) && $not_in_list_option) {
-    $unit_list['0'] = t('My unit is not in this list');
+    $unit_list['other'] = t('My unit is not in this list');
   }
   return $unit_list;
 }
