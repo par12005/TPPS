@@ -18,17 +18,23 @@ function tpps_admin_unit_warning_report(array $filter = []) {
   $table = 'tpps_phenotype_unit_warning';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
-    'tag' => 'debug',
-    'items_per_page' => variable_get('tpps_report_items_per_page', 25),
+    //'tag' => 'debug',
+    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
     'refresh_time' => variable_get('tpps_report_refresh_time', 0),
+    // Manually set 'primary_key' because DB table has no PK.
     'primary_key' => 'phenotype_id',
     'select_all' => FALSE,
+    // To have common style.
     'attributes' => ['class' => ['view' , 'tpps_table']],
 
     'header' => [
-      ['data' => t('Phenotype Id'), 'field' => $table . '.phenotype_id'],
-      ['data' => t("Study"), 'field' => 'cte.study_name'],
-      ['data' => t('Phenotype Name'), 'field' => 'phenotype.name'],
+      ['data' => t('Phenotype Id'), 'field' => 'public.' . $table . '.phenotype_id'],
+      [
+        'data' => t("Study"),
+        'field' => 'public.cte.study_name',
+        'theme' => 'none',
+      ],
+      ['data' => t('Phenotype Name'), 'field' => 'chado.phenotype.name'],
     ],
     'main_table' => [
       'schema' => 'public',
@@ -49,6 +55,7 @@ function tpps_admin_unit_warning_report(array $filter = []) {
         'schema' => 'public',
         'name' => 'cte',
         'query' => $sub_query,
+        // Specify list of fields to avoid automatic generation.
         'fields' => ['study_name'],
         'join' => [
           'type' => 'left outer',

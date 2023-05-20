@@ -22,10 +22,19 @@ function tpps_admin_order_family_not_exist_report(array $filter = []) {
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
     //'tag' => 'debug',
     'attributes' => ['class' => ['view' , 'tpps_table']],
+    'items_per_page' => variable_get('tpps_report_items_per_page', 25),
+    'refresh_time' => variable_get('tpps_report_refresh_time', 0),
+
+    //'main_table' => [
+    //  'name' => $table,
+    //  'fields'  => ['organism_id', 'genus', 'species', 'type_id'],
+    //  'schema' => 'chado',
+    //],
+
     'tables' => [
       $table => [
-        'fields'  => ['organism_id', 'genus', 'species', 'type_id'],
         'schema' => 'chado',
+        'fields'  => ['organism_id', 'genus', 'species', 'type_id'],
       ],
     ],
     'filter' => [
@@ -35,8 +44,6 @@ function tpps_admin_order_family_not_exist_report(array $filter = []) {
         'operator' => 'NOT IN',
       ],
     ],
-    'items_per_page' => variable_get('tpps_report_items_per_page', 25),
-    'refresh_time' => variable_get('tpps_report_refresh_time', 0),
   ];
 
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
