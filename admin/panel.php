@@ -940,8 +940,13 @@ function tpps_admin_panel_top(array &$form) {
                   ->fieldCondition('local__email', 'value', $owner_mail)
                   ->range(0, 1)
                   ->execute();
-                $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
-                $owner = "<a href=\"$base_url/TripalContactProfile/{$entity->id}\">$submitting_user</a>";
+                // [VS] Fixed notices.
+                $owner = '';
+                if (!empty($results['TripalEntity'])) {
+                  $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
+                  $owner = "<a href=\"$base_url/TripalContactProfile/{$entity->id}\">$submitting_user</a>";
+                }
+                // [/VS]
               }
               else {
                 $owner_mail = user_load($submission->uid)->mail;
@@ -1789,9 +1794,9 @@ function tpps_admin_panel_get_reports() {
  */
 function tpps_admin_panel_reports(array &$form) {
   if (function_exists('simple_report_form')) {
-    foreach (tpps_admin_panel_get_reports() as $report_key => $path) {
+    foreach (tpps_admin_panel_get_reports() as $report_key => $panel_url) {
       if ($title = variable_get('tpps_report_' . $report_key . '_title')) {
-        $items[] = l(t($title), $panel_url . $path);
+        $items[] = l(t($title), $panel_url);
       }
     }
     $form['report_menu'] = [
