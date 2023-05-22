@@ -100,7 +100,6 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  */
 function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
   $debug_mode = FALSE;
-  dpm($current_phenotype, 'current_F');
   if ($debug_mode) {
     tpps_log('[DEBUG] '
       . 'Phenotype Id: ' . $phenotype_id
@@ -144,14 +143,6 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
   // when Synonym's Unit differs from Submitted Unit.
   $synonym = tpps_synonym_get($synonym_id);
   $unit_group = tpps_synonym_get_unit_list($synonym_id, FALSE);
-
-  // @TODO Remove debug code.
-  // Used for demo only.
-    //db_merge('tpps_phenotype_unit_warning')
-    //  ->key(['phenotype_id' => $phenotype_id])
-    //  ->fields(['phenotype_id' => $phenotype_id])
-    //  ->execute();
-  // @End Remove debug code
 
   if ($current_phenotype['units'] == 0) {
     // Store phenotype Id which has custom unit.
