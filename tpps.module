@@ -292,7 +292,7 @@ function tpps_menu() {
       'page callback' => 'tpps_admin_unit_warning_report',
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
-      'file' => 'includes/report.unit_warning.inc',
+      'file' => 'reports/unit_warning.inc',
     ];
     $items['tpps-admin-panel/phenotype-synonyms/unit-warning'] = [
       'title' => variable_get('tpps_report_unit_warning_title',
@@ -301,7 +301,7 @@ function tpps_menu() {
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
       'type' => MENU_NORMAL_ITEM,
-      'file' => 'includes/report.unit_warning.inc',
+      'file' => 'reports/unit_warning.inc',
     ];
     // No synonym.
     $items['admin/reports/no-synonym'] = [
@@ -311,7 +311,7 @@ function tpps_menu() {
       'page callback' => 'tpps_admin_no_synonym_report',
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
-      'file' => 'includes/report.no_synonym.inc',
+      'file' => 'reports/no_synonym.inc',
     ];
     $items['tpps-admin-panel/phenotype-synonyms/no-synonyms'] = [
       'title' => variable_get('tpps_report_no_synonym_title',
@@ -320,7 +320,7 @@ function tpps_menu() {
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
       'type' => MENU_NORMAL_ITEM,
-      'file' => 'includes/report.no_synonym.inc',
+      'file' => 'reports/no_synonym.inc',
     ];
     // Order/Family Exist Report.
     $items['admin/reports/order-family-not-exist'] = [
@@ -330,7 +330,7 @@ function tpps_menu() {
       'page callback' => 'tpps_admin_order_family_not_exist_report',
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
-      'file' => 'includes/report.order_family_not_exist.inc',
+      'file' => 'reports/order_family_not_exist.inc',
     ];
     $items['tpps-admin-panel/phenotype-synonyms/order-family-not-exist'] = [
       'title' => variable_get('tpps_report_order_family_not_exist_title',
@@ -339,7 +339,7 @@ function tpps_menu() {
       'access callback' => 'tpps_access',
       'access arguments' => ['administer tpps module'],
       'type' => MENU_NORMAL_ITEM,
-      'file' => 'includes/report.order_family_not_exist.inc',
+      'file' => 'reports/order_family_not_exist.inc',
     ];
   }
   // [/VS]
