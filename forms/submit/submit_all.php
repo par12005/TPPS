@@ -45,8 +45,6 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
   $transaction = db_transaction();
 
-  
-
   try {
     tpps_job_logger_write('[INFO] Clearing Database...');
     $job->logMessage('[INFO] Clearing Database...');
@@ -2123,6 +2121,14 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
   if (!empty($genotype['files']['file-type']['VCF'])) {
     if($disable_vcf_import == 0) {
+
+      // DROP INDEXES FROM GENOTYPE_CALL TABLE
+      // tpps_job_logger_write('[INFO] - Dropping indexes...');
+      // $job->logMessage('[INFO] - Dropping indexes...'); 
+      // chado_query("DROP INDEX chado.genotype_call_genotype_id_idx, chado.genotype_call_project_id_idx, chado.genotype_call_stock_id_idx");
+      // tpps_job_logger_write('[INFO] - Done.');
+      // $job->logMessage('[INFO] - Done.'); 
+
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
       $vcf_fid = $genotype['files']['vcf'];
       tpps_add_project_file($form_state, $vcf_fid);
@@ -2231,8 +2237,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
             $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt); // eg A:G
 
-            // $detected_genotypes[$marker_name . '_' . $genotype_combination] = TRUE; // scaffold_A:G
-            $detected_genotypes[$marker_name] = TRUE;
+            $detected_genotypes[$marker_name . '_' . $genotype_combination] = $marker_name; // [scaffold_pos_A:G] = scaffold_pos
+            // $detected_genotypes[$marker_name] = TRUE;
 
             // Record the first genotype name to use for genotype_call table
             if($j == 9) {
@@ -2358,7 +2364,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           print_r('genotypes per line: ' . count($genotype_names) . " ");
           
           $genotype_name_progress_count = 0;
-          foreach ($genotype_names as $genotype_name) { // eg scaffold_A:G
+          // foreach ($genotype_names as $genotype_name) { // eg scaffold_pos_A:G
+          foreach ($detected_genotypes as $genotype_name => $genotype_name_without_combination) { // eg scaffold_pos_A:G
             $genotype_name_progress_count++;
             $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
             // print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
@@ -2372,9 +2379,21 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             // );
 
             // Rish code to test a single insert and get the id
+            // First we need to get the genotype_name without the combination
+            // TOO SLOW
+            // $genotype_name_without_combination = '';
+            // $genotype_name_parts = explode('_', $genotype_name);
+            // $genotype_name_parts_count = count($genotype_name_parts);
+            // for($gnpi = 0; $gnpi < ($genotype_name_parts_count - 1); $gnpi++) {
+            //   $genotype_name_without_combination .= $genotype_name_parts[$gnpi] . '_';
+            // }
+            // $genotype_name_without_combination = rtrim($genotype_name_without_combination, '_'); 
+            // echo "Genotype name without combination: $genotype_name_without_combination\n";   
+            
+            
             try {
               $results = chado_insert_record('genotype', [
-                'name' => $genotype_name,
+                'name' => $genotype_name_without_combination,
                 'uniquename' => $genotype_desc,
                 'description' => $description,
                 'type_id' => $snp_cvterm,
@@ -2405,13 +2424,13 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             }
 
             $vcf_cols_count = count($vcf_line);
-            
             echo "gen_name_index:$genotype_name_progress_count colcount:$vcf_cols_count ";
             for ($j = 9; $j < $vcf_cols_count; $j++) {
               // Rish: This was added on 09/12/2022
               // This gets the name of the current genotype for the tree_id column
               // being checked.
-              $column_genotype_name = $marker_name . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+              $column_genotype_name = $marker_name . '_' . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+              // echo 'Column genotype name: ' . $column_genotype_name . " vs Genotype name: $genotype_name\n";
               if($column_genotype_name == $genotype_name) {
                 // Found a match between the tree_id genotype and the genotype_name from records
 
@@ -2461,10 +2480,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             $records['genotypeprop']["$genotype_desc-qual"] = array(
               'type_id' => $qual_cvterm,
               'value' => $qual,
+
               // PETER
               // '#fk' => array(
               //   'genotype' => $genotype_desc,
               // ),
+
               // RISH
               'genotype_id' => $genotype_id,
             );
@@ -2473,10 +2494,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             $records['genotypeprop']["$genotype_desc-filter"] = array(
               'type_id' => $filter_cvterm,
               'value' => ($filter == '.') ? "P" : "NP",
+
               // PETER
               // '#fk' => array(
               //   'genotype' => $genotype_desc,
               // ),
+
               // RISH
               'genotype_id' => $genotype_id,              
             );
@@ -2495,10 +2518,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               $records['genotypeprop']["$genotype_desc-freq"] = array(
                 'type_id' => $freq_cvterm,
                 'value' => $info_vals['AF'],
+
                 // PETER
                 // '#fk' => array(
                 //   'genotype' => $genotype_desc,
                 // ),
+
                 // RISH
                 'genotype_id' => $genotype_id,                
               );
@@ -2511,10 +2536,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               $records['genotypeprop']["$genotype_desc-depth"] = array(
                 'type_id' => $depth_cvterm,
                 'value' => $info_vals['DP'],
+
                 // PETER
                 // '#fk' => array(
                 //   'genotype' => $genotype_desc,
                 // ),
+
                 // RISH
                 'genotype_id' => $genotype_id,                               
               );
@@ -2527,10 +2554,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               $records['genotypeprop']["$genotype_desc-n_sample"] = array(
                 'type_id' => $n_sample_cvterm,
                 'value' => $info_vals['NS'],
+
                 // PETER
                 // '#fk' => array(
                 //   'genotype' => $genotype_desc,
                 // ),
+
                 // RISH
                 'genotype_id' => $genotype_id,                
               );
@@ -2622,6 +2651,15 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...'); 
         tpps_chado_insert_hybrid($records, $multi_insert_options);
       }
+
+      // RECREATE INDEXES
+      // tpps_job_logger_write('[INFO] - Recreating indexes...');
+      // $job->logMessage('[INFO] - Recreating indexes...'); 
+      // chado_query("CREATE INDEX genotype_call_genotype_id_idx ON chado.genotype_call USING btree (genotype_id)");
+      // chado_query("CREATE INDEX genotype_call_project_id_idx ON chado.genotype_call USING btree (project_id)");
+      // chado_query("	CREATE INDEX genotype_call_stock_id_idx ON chado.genotype_call USING btree (stock_id)");
+      // tpps_job_logger_write('[INFO] - Recreating INDEXES - Done.');
+      // $job->logMessage('[INFO] - Recreating INDEXES - Done.');       
 
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.'); 

@@ -146,6 +146,12 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
     }
   }
 
+  // DEBUG CODE - Leave this debug code to determine if record_groups per table is getting populated correctly
+  // foreach ($record_groups as $table => $records) {
+  //   echo "Table $table record_count found in hybrid process: " . count($record_groups[$table]) . "\n";
+  // }
+  // throw new Exception('DEBUG');
+
   // This flag will basically store a csv file and use the command line copy
   // This doesn't work for us since we use transactions
   // and an external process doesn't get to see the transaction inserts etc.
@@ -280,51 +286,58 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
     sleep(100);
   } while(true);
 
-  if ($use_external_copy) {
-    // throw new Exception('Test CSV write');
+  // We could do this earlier but it would be harder to understand the logic
+  // We need to count the records (genotype_call records) to ensure there
+  // is at least one record since the field names are generated from the first record
+  // and the copy command would only be run if it at least one record exists
+  $records_count = count($records);
+  if ($records_count > 0) {
+    if ($use_external_copy) {
+      // throw new Exception('Test CSV write');
 
-    // WRITE A TEMP FILE
-    // print_r($csv_data_array);
-    // file_put_contents($file_location, $csv_data_array);
+      // WRITE A TEMP FILE
+      // print_r($csv_data_array);
+      // file_put_contents($file_location, $csv_data_array);
 
-    $connection_string = `drush sql-connect`;
-    $connection_string = trim($connection_string);
-    // REMOVE THE PGPASSFILE STRING SINCE THERE SEEMS TO BE A BUG WITH THIS
-    $connection_string_parts = explode('psql ', $connection_string);
-    $connection_string = 'psql ' . $connection_string_parts[1];
+      $connection_string = `drush sql-connect`;
+      $connection_string = trim($connection_string);
+      // REMOVE THE PGPASSFILE STRING SINCE THERE SEEMS TO BE A BUG WITH THIS
+      $connection_string_parts = explode('psql ', $connection_string);
+      $connection_string = 'psql ' . $connection_string_parts[1];
 
-    // GET THE DB PASSWORD
-    $db_password_output = `drush status --show-passwords --fields=db-password`;
-    $db_password_output = explode("\n", $db_password_output);
-    $db_password_output = $db_password_output[0]; // just get line
-    $db_password_output = explode(":",$db_password_output);
-    $pg_pass = trim($db_password_output[1]);
+      // GET THE DB PASSWORD
+      $db_password_output = `drush status --show-passwords --fields=db-password`;
+      $db_password_output = explode("\n", $db_password_output);
+      $db_password_output = $db_password_output[0]; // just get line
+      $db_password_output = explode(":",$db_password_output);
+      $pg_pass = trim($db_password_output[1]);
 
 
-    // NOW WE NEED TO SET THE PSQL PASSWORD USING export PGPASSWORD='password';
-    $connection_string = "export PGPASSWORD=$pg_pass;\n" . $connection_string;
-    echo "Connection_string: $connection_string \n";
+      // NOW WE NEED TO SET THE PSQL PASSWORD USING export PGPASSWORD='password';
+      $connection_string = "export PGPASSWORD=$pg_pass;\n" . $connection_string;
+      echo "Connection_string: $connection_string \n";
 
-    $command = $connection_string . ' -c "\\' . $copy_cmd . ' FROM STDIN WITH CSV " < ' . $file_location;
-    $result = `$command`;
-  }
-  else {
-    // This ends the copy insert data lines
-    // chado_query("\\.\n");
+      $command = $connection_string . ' -c "\\' . $copy_cmd . ' FROM STDIN WITH CSV " < ' . $file_location;
+      $result = `$command`;
+    }
+    else {
+      // This ends the copy insert data lines
+      // chado_query("\\.\n");
 
-    $sql = $copy_cmd . " FROM  '" . $file_location . "' WITH DELIMITER AS ','";
-    echo $sql . "\n";
-    chado_query($sql);
-  }
-  
+      $sql = $copy_cmd . " FROM  '" . $file_location . "' WITH DELIMITER AS ','";
+      echo $sql . "\n";
+      chado_query($sql);
+    }
+    
 
-  // CONVERT CSV DATA ARRAY TO A STRING
-  // $csv_data_array[] = "\\.\n";
-  // $csv_data_array = implode("\n", $csv_data_array); // turns it into a string
-  // chado_query($copy_cmd . " FROM STDIN DELIMITER ',';" . $csv_data_array, []);
-  echo "COPY completed for chado.$table with $records_count records\n";
-
-  unlink($file_location);  
+    // CONVERT CSV DATA ARRAY TO A STRING
+    // $csv_data_array[] = "\\.\n";
+    // $csv_data_array = implode("\n", $csv_data_array); // turns it into a string
+    // chado_query($copy_cmd . " FROM STDIN DELIMITER ',';" . $csv_data_array, []);
+    echo "COPY completed for chado.$table with $records_count records\n";
+    // echo "CSV File location: $file_location\n";
+    unlink($file_location); 
+  } 
 
   // ALL RECORDS FOR THIS TABLE ITERATED, SAVE THE CSV_DATA_ARRAY
   // print_r('DEBUG2:' .  $copy_cmd . "\n");
@@ -484,12 +497,12 @@ function tpps_chado_insert_multi(array $record_groups, array $options = array())
     if ($has_fields) {
       if ($table == 'featureloc') {
         $previous = chado_set_active('chado');
-        $last_id = $inserts[$table]->execute();
+        $last_id = @$inserts[$table]->execute();
         chado_set_active($previous);
       }
       else {
         try {
-          $last_id = $inserts[$table]->execute();
+          $last_id = @$inserts[$table]->execute();
         }
         catch (Exception $ex) {
           print_r($values);

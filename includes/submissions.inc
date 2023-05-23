@@ -862,7 +862,7 @@ function tpps_submission_clear_db($accession) {
   // Make sure to ensure $accession is properly populated before doing this
   if(strpos($accession,'TGDR') !== FALSE && strlen($accession) >= 7) {
     chado_query("DELETE FROM chado.stock WHERE uniquename LIKE :accession", [
-      ':accession' => $accession . '%'
+      ':accession' => $accession . '-%'
     ]);
   }
 
