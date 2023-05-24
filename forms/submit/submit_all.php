@@ -47,7 +47,6 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   $transaction = db_transaction();
 
   try {
-
     tpps_log('[INFO] Clearing Database...');
     tpps_submission_clear_db($accession);
     tpps_log('[INFO] Database Cleared');
@@ -1508,6 +1507,611 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $genotype_count = 0;
   }
 
+  $vcf_import_mode = $form_state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'];
+  if (!isset($vcf_import_mode)) {
+    $vcf_import_mode = 'hybrid'; // if not set, set it as default hybrid
+  }
+  tpps_job_logger_write('[INFO] - VCF IMPORT MODE is ' . $vcf_import_mode);
+  $job->logMessage('[INFO] - VCF IMPORT MODE is ' . $vcf_import_mode);
+  // THE VCF PROCESSING CODE HAS BEEN MOVED TO A NEW FUNCTION
+  tpps_genotype_vcf_processing($form_state, $species_codes, $i, $job, $vcf_import_mode);
+  // // check to make sure admin has not set disable_vcf_importing
+  // $disable_vcf_import = 0;
+  // if(isset($firstpage['disable_vcf_import'])) {
+  //   $disable_vcf_import = $firstpage['disable_vcf_import'];
+  // }
+  // tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
+
+
+  // if (!empty($genotype['files']['file-type']['VCF'])) {
+  //   if($disable_vcf_import == 0) {
+  //     // @todo we probably want to use tpps_file_iterator to parse vcf files.
+  //     $vcf_fid = $genotype['files']['vcf'];
+  //     tpps_add_project_file($form_state, $vcf_fid);
+
+  //     $marker = 'SNP';
+
+  //     $records['genotypeprop'] = array();
+
+  //     $snp_cvterm = tpps_load_cvterm('snp')->cvterm_id;
+  //     $format_cvterm = tpps_load_cvterm('format')->cvterm_id;
+  //     $qual_cvterm = tpps_load_cvterm('quality_value')->cvterm_id;
+  //     $filter_cvterm = tpps_load_cvterm('filter')->cvterm_id;
+  //     $freq_cvterm = tpps_load_cvterm('allelic_frequency')->cvterm_id;
+  //     $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
+  //     $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
+
+  //     $vcf_file = file_load($vcf_fid);
+  //     $location = tpps_get_location($vcf_file->uri);
+  //     echo "VCF location: $location\n";
+
+  //     $vcf_content = gzopen($location, 'r');
+  //     $stocks = array();
+  //     $format = "";
+  //     $current_id = $form_state['ids']['organism_ids'][$i];
+  //     $species_code = $species_codes[$current_id];
+
+
+  //     // The following code is used to get the analysis_id from the genome assemble if it's selected
+  //     // WE NEED THIS TO DO FEATURELOC INSERTS (basically to get to the point of srcfeature_id later on)
+  //     // * GOALS: First we need to find the analysis id
+  //     // We need to get the reference genome from the TPPS form ex:
+  //     $ref_genome = $genotype['ref-genome'];
+  //     $analysis_id = NULL;
+  //     if (isset($ref_genome)) {
+  //       // Get the species and version from the reference genome selected
+  //       // if match occurs thats in index [0].
+  //       // The group match index [1] is species, group match index [2] is version
+  //       preg_match('/(.+) +v(\d*\.*\d*)/', $ref_genome, $matches);
+  //       $ref_genome_species = NULL;
+  //       $ref_genome_version = NULL;
+  //       if (count($matches) > 0) {
+  //         $ref_genome_species = $matches[2];
+  //         $ref_genome_version = $matches[3];
+  //       }
+
+  //       if (isset($ref_genome_species) && isset($ref_genome_version)) {
+  //         // Look up the analysis
+  //         $analysis_results = chado_query('SELECT analysis_id FROM chado.analysis
+  //           WHERE name ILIKE :name AND programversion = :programversion LIMIT 1',
+  //           [
+  //             ':name' => $ref_genome_species . '%',
+  //             ':programversion' => $ref_genome_version
+  //           ]
+  //         );
+  //         foreach ($analysis_results as $row) {
+  //           $analysis_id = $row->analysis_id;
+  //         }
+  //       }
+
+  //       // Once an analysis_id was found, try to get srcfeature_id
+
+  //     }
+  //     else {
+  //       echo "A reference genome could not be found in the TPPS page 4 form.\n";
+  //       echo "Without this, we cannot find the analysis_id and thus the srcfeature_id.\n";
+  //       echo "Featureloc data will not be recorded\n";
+  //     }
+
+  //     // dpm('start: ' . date('r'));.
+  //     echo "[INFO] Processing Genotype VCF file\n";
+  //     $file_progress_line_count = 0;
+  //     $record_count = 0;
+  //     while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
+  //       $file_progress_line_count++;
+  //       if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
+  //         echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
+  //       }
+  //       if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
+  //         $line_process_start_time = microtime(true);
+  //         $record_count = $record_count + 1;
+  //         print_r('Record count:' . $record_count . "\n");
+  //         $genotype_count += count($stocks);
+  //         $vcf_line = explode("\t", $vcf_line);
+  //         $scaffold_id = &$vcf_line[0];
+  //         $position = &$vcf_line[1];
+  //         $variant_name = &$vcf_line[2];
+  //         $ref = &$vcf_line[3];
+  //         $alt = &$vcf_line[4];
+  //         $qual = &$vcf_line[5];
+  //         $filter = &$vcf_line[6];
+  //         $info = &$vcf_line[7];
+
+  //         if (empty($variant_name) or $variant_name == '.') {
+  //           // $variant_name = "{$scaffold_id}{$position}$ref:$alt";
+  //           $variant_name = $scaffold_id . '_' . $position . 'SNP';
+  //         }
+  //         // $marker_name = $variant_name . $marker; // Original by Peter
+  //         $marker_name = $scaffold_id . '_' . $position; // Emily updated suggestion on Tuesday August 9th 2022
+  //         $description = "$ref:$alt";
+  //         // $genotype_name = "$marker-$species_code-$scaffold_id-$position"; // Original by Peter
+
+  //         // Instead, we have multiple genotypes we need to generate, so lets do a key val array
+  //         $detected_genotypes = array();
+  //         $first_genotypes = array(); // used to save the first genotype in each row of the VCF (used for genotype_call table)
+  //         $count_columns = count($vcf_line);
+  //         for ($j = 9; $j < $count_columns; $j++) {
+
+  //           $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt); // eg A:G
+
+  //           $detected_genotypes[$marker_name . $genotype_combination] = TRUE; // scaffold_A:G
+
+  //           // Record the first genotype name to use for genotype_call table
+  //           if($j == 9) {
+  //             // print_r('[First Genotype]:' . $marker_name . $genotype_combination . "\n");
+  //             $first_genotypes[$marker_name . $genotype_combination] = TRUE;
+  //           }
+
+  //         }
+
+  //         // print_r('[New Feature]: ' . $marker_name . "\n");
+
+  //         // @TODO: 3/28/2023 Emily mentioned we could try to get the foreign key first
+  //         //                  and use this later on.
+
+  //         // PETER'S CODE
+  //         // $records['feature'][$marker_name] = array(
+  //         //   'organism_id' => $current_id,
+  //         //   'uniquename' => $marker_name,
+  //         //   'type_id' => $seq_var_cvterm,
+  //         // );
+
+  //         // Rish code to test a single insert and get the id
+  //         try {
+  //           $results = chado_insert_record('feature', [
+  //             'name' => $marker_name,
+  //             'organism_id' => $current_id,
+  //             'uniquename' => $marker_name,
+  //             'type_id' => $seq_var_cvterm,
+  //           ]);
+  //         }
+  //         catch (Exception $ex) {
+
+  //         }
+  //         // get the feature_id
+  //         $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
+  //           ':uniquename' => $marker_name
+  //         ]);
+  //         $row_object = $results->fetchObject();
+  //         $marker_id = $row_object->feature_id;
+
+  //         // print_r('[New Feature variant_name]: ' . $variant_name . "\n");
+  //         // PETER'S CODE
+  //         // $records['feature'][$variant_name] = array(
+  //         //   'organism_id' => $current_id,
+  //         //   'uniquename' => $variant_name,
+  //         //   'type_id' => $seq_var_cvterm,
+  //         // );
+
+  //         // Rish code to test a single insert and get the id
+  //         try {
+  //           $results = chado_insert_record('feature', [
+  //             'name' => $variant_name,
+  //             'organism_id' => $current_id,
+  //             'uniquename' => $variant_name,
+  //             'type_id' => $seq_var_cvterm,
+  //           ]);
+  //         }
+  //         catch (Exception $ex) {
+
+  //         }
+  //         // get the feature_id
+  //         $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
+  //           ':uniquename' => $variant_name
+  //         ]);
+  //         $row_object = $results->fetchObject();
+  //         $variant_id = $row_object->feature_id;
+
+  //         // SOME CODE FOR THIS IS OUTSIDE OF THE PER LINE PROCESSING ABOVE (OUTISDE FOR LOOP)
+  //         // 3/27/2023: Chromosome number and position (store this in featureloc table)
+  //         // feature_id from marker or variant created
+  //         // srcfeature_id for the genome / assembly used for reference (some sort of query - complicated)
+  //         // store where marker starts on chromosome etc.
+  //         $srcfeature_id = NULL;
+  //         if (isset($analysis_id)) {
+  //           // Get the srcfeature_id
+  //           $srcfeature_results = chado_query('select feature.feature_id from feature
+  //             join analysisfeature on feature.feature_id = analysisfeature.feature_id
+  //             where feature.name = :scaffold_id and analysisfeature.analysis_id = :analysis_id',
+  //             [
+  //               ':scaffold_id' => $scaffold_id,
+  //               ':analysis_id' => $analysis_id
+  //             ]
+  //           );
+
+
+  //           foreach ($srcfeature_results as $row) {
+  //             $srcfeature_id = $row->feature_id;
+  //           }
+  //         }
+
+  //         // if srcfeature_id was found, then we have enough info to add featureloc data
+  //         if (isset($srcfeature_id)) {
+  //           $featureloc_values = [
+  //             'feature_id' => $marker_id,
+  //             'srcfeature_id' => $srcfeature_id,
+  //             'fmin' => $position,
+  //             'fmax' => $position // TODO We need to determine how to deal with indels
+  //           ];
+
+  //           // Since we haven't catered for deletion of these featureloc records
+  //           // there may already exist, we have to make sure the record doesn't already exist
+  //           $featureloc_results = chado_query('SELECT count(*) as c1 FROM chado.featureloc
+  //             WHERE feature_id = :feature_id AND srcfeature_id = :srcfeature_id;', [
+  //               ':feature_id' => $marker_id,
+  //               ':srcfeature_id' => $srcfeature_id
+  //             ]
+  //           );
+  //           $featureloc_count = 0;
+  //           foreach ($featureloc_results as $row) {
+  //             $featureloc_count = $row->c1;
+  //           }
+  //           // This means no featureloc exists, so insert it
+  //           if ($featureloc_count == 0) {
+  //             // This will add it to the multiinsert record system for insertion
+  //             $records['featureloc'][$marker_name] = $featureloc_values;
+  //           }
+  //         }
+
+  //         // Rish 12/08/2022: So we have multiple genotypes created
+  //         // So I adjusted some of this code into a for statement
+  //         // since the genotype_desc seems important and so I modified it to be unique
+  //         // and based on the genotype_name
+  //         $genotype_names = array_keys($detected_genotypes);
+
+  //         // print_r($detected_genotypes);
+  //         echo "\n";
+  //         echo "line#$file_progress_line_count ";
+  //         print_r('genotypes per line: ' . count($genotype_names) . " ");
+
+  //         $genotype_name_progress_count = 0;
+  //         foreach ($genotype_names as $genotype_name) { // eg scaffold_A:G
+  //           $genotype_name_progress_count++;
+  //           $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
+  //           // print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
+
+  //           // PETER'S CODE
+  //           // $records['genotype'][$genotype_desc] = array(
+  //           //   'name' => $genotype_name,
+  //           //   'uniquename' => $genotype_desc,
+  //           //   'description' => $description,
+  //           //   'type_id' => $snp_cvterm,
+  //           // );
+
+  //           // Rish code to test a single insert and get the id
+  //           try {
+  //             $results = chado_insert_record('genotype', [
+  //               'name' => $genotype_name,
+  //               'uniquename' => $genotype_desc,
+  //               'description' => $description,
+  //               'type_id' => $snp_cvterm,
+  //             ]);
+  //           }
+  //           catch (Exception $ex) {
+
+  //           }
+  //           // get the feature_id
+  //           $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
+  //             ':uniquename' => $genotype_desc
+  //           ]);
+  //           $row_object = $results->fetchObject();
+  //           $genotype_id = $row_object->genotype_id;
+
+  //            // 3/27/2023 Meeting - FORMAT: REVIEW THIS IN TERMS OF IF WE NEED IT
+  //           if ($format != "") {
+  //             $records['genotypeprop']["$genotype_desc-format"] = array(
+  //               'type_id' => $format_cvterm,
+  //               'value' => $format,
+  //               // PETER
+  //               // '#fk' => array(
+  //               //   'genotype' => $genotype_desc,
+  //               // ),
+  //               // RISH
+  //               'genotype_id' => $genotype_id,
+  //             );
+  //           }
+
+  //           $vcf_cols_count = count($vcf_line);
+
+  //           echo "gen_name_index:$genotype_name_progress_count colcount:$vcf_cols_count ";
+  //           for ($j = 9; $j < $vcf_cols_count; $j++) {
+  //             // Rish: This was added on 09/12/2022
+  //             // This gets the name of the current genotype for the tree_id column
+  //             // being checked.
+  //             $column_genotype_name = $marker_name . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+  //             if($column_genotype_name == $genotype_name) {
+  //               // Found a match between the tree_id genotype and the genotype_name from records
+
+  //               // print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
+  //               $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
+  //                 'project_id' => $project_id,
+  //                 'stock_id' => $stocks[$j - 9],
+  //                 // PETER
+  //                 // '#fk' => array(
+  //                 //   'genotype' => $genotype_desc,
+  //                 //   'variant' => $variant_name,
+  //                 //   'marker' => $marker_name,
+  //                 // ),
+  //                 // RISH
+  //                 'genotype_id' => $genotype_id,
+  //                 'variant_id' => $variant_id,
+  //                 'marker_id' => $marker_id,
+  //               );
+
+  //               // THIS ABOUT REMOVING THIS - but it is in use for genotype materialized views
+  //               // which is used for tpps/details page
+  //               // $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
+  //               //   'stock_id' => $stocks[$j - 9],
+  //               //   // PETER
+  //               //   // '#fk' => array(
+  //               //   //   'genotype' => $genotype_desc,
+  //               //   // ),
+  //               //   // RISH
+  //               //   'genotype_id' => $genotype_id,
+  //               // );
+  //             }
+  //           }
+
+
+  //           // @TODO 3/28/2023 - Gabe thought we didn't additional data from the VCF file
+  //           // Basically chromosome and position
+  //           // Featureloc table: the following are where to get the values for these fields
+  //           //                   in order to create the featureloc record
+  //           // Field: feature_id -> $records['feature'][$marker_name]
+  //           // Field: srcfeature_id query needs analysis_id from TPPS FORM, then query feature table
+  //           // Field: fmin
+  //           // Field: fmax
+
+
+  //           // 3/27/2023 - Jill question: Do we need to store in the database
+  //           // Quality score.
+  //           $records['genotypeprop']["$genotype_desc-qual"] = array(
+  //             'type_id' => $qual_cvterm,
+  //             'value' => $qual,
+  //             // PETER
+  //             // '#fk' => array(
+  //             //   'genotype' => $genotype_desc,
+  //             // ),
+  //             // RISH
+  //             'genotype_id' => $genotype_id,
+  //           );
+
+  //           // filter: pass/fail.
+  //           $records['genotypeprop']["$genotype_desc-filter"] = array(
+  //             'type_id' => $filter_cvterm,
+  //             'value' => ($filter == '.') ? "P" : "NP",
+  //             // PETER
+  //             // '#fk' => array(
+  //             //   'genotype' => $genotype_desc,
+  //             // ),
+  //             // RISH
+  //             'genotype_id' => $genotype_id,
+  //           );
+
+  //           // Break up info column.
+  //           $info_vals = explode(";", $info);
+  //           foreach ($info_vals as $key => $val) {
+  //             $parts = explode("=", $val);
+  //             unset($info_vals[$key]);
+  //             $info_vals[$parts[0]] = isset($parts[1]) ? $parts[1] : '';
+  //           }
+
+  //           // Allele frequency, assuming that the info code for allele
+  //           // frequency is 'AF'.
+  //           if (isset($info_vals['AF']) and $info_vals['AF'] != '') {
+  //             $records['genotypeprop']["$genotype_desc-freq"] = array(
+  //               'type_id' => $freq_cvterm,
+  //               'value' => $info_vals['AF'],
+  //               // PETER
+  //               // '#fk' => array(
+  //               //   'genotype' => $genotype_desc,
+  //               // ),
+  //               // RISH
+  //               'genotype_id' => $genotype_id,
+  //             );
+  //           }
+
+  //           // 3/27/2023 - Jill question: Do we need to store in the database
+  //           // Depth coverage, assuming that the info code for depth coverage is
+  //           // 'DP'.
+  //           if (isset($info_vals['DP']) and $info_vals['DP'] != '') {
+  //             $records['genotypeprop']["$genotype_desc-depth"] = array(
+  //               'type_id' => $depth_cvterm,
+  //               'value' => $info_vals['DP'],
+  //               // PETER
+  //               // '#fk' => array(
+  //               //   'genotype' => $genotype_desc,
+  //               // ),
+  //               // RISH
+  //               'genotype_id' => $genotype_id,
+  //             );
+  //           }
+
+  //           // 3/27/2023 - Jill question: Do we need to store in the database
+  //           // Number of samples, assuming that the info code for number of
+  //           // samples is 'NS'.
+  //           if (isset($info_vals['NS']) and $info_vals['NS'] != '') {
+  //             $records['genotypeprop']["$genotype_desc-n_sample"] = array(
+  //               'type_id' => $n_sample_cvterm,
+  //               'value' => $info_vals['NS'],
+  //               // PETER
+  //               // '#fk' => array(
+  //               //   'genotype' => $genotype_desc,
+  //               // ),
+  //               // RISH
+  //               'genotype_id' => $genotype_id,
+  //             );
+  //           }
+  //         }
+  //         $line_process_end_time = microtime(true);
+  //         $line_process_elapsed_time = $line_process_end_time - $line_process_start_time;
+  //         echo " PHP Proctime: $line_process_elapsed_time seconds\n";
+  //         if(!isset($line_process_cumulative_time)) {
+  //           $line_process_cumulative_time = 0;
+  //         }
+  //         $line_process_cumulative_time += $line_process_elapsed_time;
+  //         echo "Cumulative PHP proctime: " . $line_process_cumulative_time . " seconds\n";
+  //         echo "\nGenotype call records to insert (LINE:$file_progress_line_count): " . count($records['genotype_call']);
+  //         echo "\nrecord group threshold: $record_group ";
+  //         // throw new Exception('DEBUG');
+  //         // Tripal Job has issues when all submissions are made at the same
+  //         // time, so break them up into groups of 10,000 genotypes along with
+  //         // their relevant genotypeprops.
+  //         if ($genotype_count > $record_group) {
+  //           tpps_job_logger_write('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+  //           $job->logMessage('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+  //           tpps_job_logger_write('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+  //           $job->logMessage('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+  //           tpps_job_logger_write('[INFO] - Last insert cumulative time: ' . $insert_cumulative_time . ' seconds');
+  //           $job->logMessage('[INFO] - Last insert cumulative time: ' . $insert_cumulative_time . ' seconds');
+  //           $genotype_count = 0;
+  //           $insert_start_time = microtime(true);
+  //           tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
+  //           $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+  //           // tpps_chado_insert_multi($records, $multi_insert_options);
+
+
+  //           // // DEVELOPMENT - SPLIT RECORD INSERT/COPY METHODS DUE TO DUPLICATES
+  //           // $records_inserts = [];
+  //           // $records_inserts['genotypeprop'] = $records['genotypeprop'];
+  //           // unset($records['genotypeprop']);
+  //           // tpps_chado_insert_multi($records_inserts, $multi_insert_options);
+
+  //           // // DEVELOPMENT - COPY ETC
+  //           tpps_chado_insert_hybrid($records, $multi_insert_options);
+
+  //           tpps_job_logger_write('[INFO] - Done.');
+  //           $job->logMessage('[INFO] - Done.');
+  //           $insert_end_time = microtime(true);
+  //           $insert_elapsed_time = $insert_end_time - $insert_start_time;
+  //           tpps_job_logger_write('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+  //           $job->logMessage('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+  //           tpps_job_logger_write('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+  //           $job->logMessage('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+  //           if(!isset($insert_cumulative_time)) {
+  //             $insert_cumulative_time = 0;
+  //           }
+  //           $insert_cumulative_time += $insert_elapsed_time;
+  //           tpps_job_logger_write('[INFO] - Insert cumulative time: ' . $insert_cumulative_time . ' seconds');
+  //           $job->logMessage('[INFO] - Insert cumulative time: ' . $insert_cumulative_time . ' seconds');
+  //           // throw new Exception('DEBUG');
+  //           $records = array(
+  //             'feature' => array(),
+  //             'genotype' => array(),
+  //             'genotype_call' => array(),
+  //             'genotypeprop' => array(),
+  //             'stock_genotype' => array(),
+  //           );
+  //           $genotype_count = 0;
+
+  //           // throw new Exception('DEBUG GENOTYPE_CALL TIME');
+  //         }
+  //       }
+  //       elseif (preg_match('/##FORMAT=/', $vcf_line)) {
+  //         $format .= substr($vcf_line, 9, -1);
+  //       }
+  //       elseif (preg_match('/#CHROM/', $vcf_line)) {
+  //         $vcf_line = explode("\t", $vcf_line);
+  //         for ($j = 9; $j < count($vcf_line); $j++) {
+  //           $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
+  //         }
+  //       }
+  //     }
+  //     // Insert the last set of values.
+  //     tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
+  //     $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+  //     // tpps_chado_insert_multi($records, $multi_insert_options);
+
+  //     // DEVELOPMENT - COPY
+  //     tpps_chado_insert_hybrid($records, $multi_insert_options);
+
+  //     tpps_job_logger_write('[INFO] - Done.');
+  //     $job->logMessage('[INFO] - Done.');
+  //     unset($records);
+  //     $genotype_count = 0;
+  //     // dpm('done: ' . date('r'));.
+  //   }
+  // }
+  // if (isset($project_id)) {
+  //   tpps_generate_genotype_materialized_view($project_id);
+  // }
+
+}
+
+/**
+ * This function will process a vcf file's genotypic information and store it within the db.
+ * Most importantly is the $import_mode option which can be set to 'multi' or 'hybrid'
+ * Hybrid requires the the db user be granted SUPERUSER access to the Postgresql db in order
+ * to utilize the COPY keyword for inserting data which is dramatically faster.
+ */
+function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
+  // Some initial variables previously inherited from the parent function code. So we're reusing it to avoid
+  // missing any important variables if we rewrote it.
+  $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+
+  if ($insert_mode == '') {
+    throw new Exception('VCF processing insert mode was empty - it should have a value of either hybrid or inserts.');
+  }
+
+
+  // Project ID is more for the database (it is different from the TPPS Accession)
+  // but is unique as well.
+  $project_id = $form_state['ids']['project_id'];
+
+  // Record group is used to determine batch side per inserts
+  $record_group = variable_get('tpps_record_group', 10000);
+
+  // Some initialization variables used later down including the $records variable
+  // which stores table => rows => fields
+  $genotype_count = 0;
+  $genotype_total = 0;
+  $seq_var_cvterm = tpps_load_cvterm('sequence_variant')->cvterm_id;
+  $overrides = array(
+    'genotype_call' => array(
+      'variant' => array(
+        'table' => 'feature',
+        'columns' => array(
+          'variant_id' => 'feature_id',
+        ),
+      ),
+      'marker' => array(
+        'table' => 'feature',
+        'columns' => array(
+          'marker_id' => 'feature_id',
+        ),
+      ),
+    ),
+  );
+
+  $records = array(
+    'feature' => array(),
+    'genotype' => array(),
+    'genotype_call' => array(),
+    'stock_genotype' => array(),
+  );
+
+  $multi_insert_options = array(
+    'fk_overrides' => $overrides,
+    'entities' => array(
+      'label' => 'Genotype',
+      'table' => 'genotype',
+    ),
+  );
+
+  $options = array(
+    'records' => $records,
+    'tree_info' => $form_state['tree_info'],
+    'species_codes' => $species_codes,
+    'genotype_count' => &$genotype_count,
+    'genotype_total' => &$genotype_total,
+    'project_id' => $project_id,
+    'seq_var_cvterm' => $seq_var_cvterm,
+    'multi_insert' => &$multi_insert_options,
+    'job' => &$job,
+  );
+
   // check to make sure admin has not set disable_vcf_importing
   $disable_vcf_import = 0;
   if(isset($firstpage['disable_vcf_import'])) {
@@ -1518,6 +2122,14 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
   if (!empty($genotype['files']['file-type']['VCF'])) {
     if($disable_vcf_import == 0) {
+
+      // DROP INDEXES FROM GENOTYPE_CALL TABLE
+      // tpps_job_logger_write('[INFO] - Dropping indexes...');
+      // $job->logMessage('[INFO] - Dropping indexes...');
+      // chado_query("DROP INDEX chado.genotype_call_genotype_id_idx, chado.genotype_call_project_id_idx, chado.genotype_call_stock_id_idx");
+      // tpps_job_logger_write('[INFO] - Done.');
+      // $job->logMessage('[INFO] - Done.');
+
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
       $vcf_fid = $genotype['files']['vcf'];
       tpps_add_project_file($form_state, $vcf_fid);
@@ -1586,7 +2198,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
         echo "Featureloc data will not be recorded\n";
       }
 
-      // dpm('start: ' . date('r'));.
       echo "[INFO] Processing Genotype VCF file\n";
       $file_progress_line_count = 0;
       $record_count = 0;
@@ -1627,7 +2238,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
             $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt); // eg A:G
 
-            $detected_genotypes[$marker_name . $genotype_combination] = TRUE; // scaffold_A:G
+            $detected_genotypes[$marker_name . '_' . $genotype_combination] = $marker_name; // [scaffold_pos_A:G] = scaffold_pos
+            // $detected_genotypes[$marker_name] = TRUE;
 
             // Record the first genotype name to use for genotype_call table
             if($j == 9) {
@@ -1636,11 +2248,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             }
 
           }
-
-          // print_r('[New Feature]: ' . $marker_name . "\n");
-
-          // @TODO: 3/28/2023 Emily mentioned we could try to get the foreign key first
-          //                  and use this later on.
 
           // PETER'S CODE
           // $records['feature'][$marker_name] = array(
@@ -1668,7 +2275,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           $row_object = $results->fetchObject();
           $marker_id = $row_object->feature_id;
 
-          // print_r('[New Feature variant_name]: ' . $variant_name . "\n");
           // PETER'S CODE
           // $records['feature'][$variant_name] = array(
           //   'organism_id' => $current_id,
@@ -1758,7 +2364,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           print_r('genotypes per line: ' . count($genotype_names) . " ");
 
           $genotype_name_progress_count = 0;
-          foreach ($genotype_names as $genotype_name) { // eg scaffold_A:G
+          // foreach ($genotype_names as $genotype_name) { // eg scaffold_pos_A:G
+          foreach ($detected_genotypes as $genotype_name => $genotype_name_without_combination) { // eg scaffold_pos_A:G
             $genotype_name_progress_count++;
             $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
             // print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
@@ -1772,9 +2379,21 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             // );
 
             // Rish code to test a single insert and get the id
+            // First we need to get the genotype_name without the combination
+            // TOO SLOW
+            // $genotype_name_without_combination = '';
+            // $genotype_name_parts = explode('_', $genotype_name);
+            // $genotype_name_parts_count = count($genotype_name_parts);
+            // for($gnpi = 0; $gnpi < ($genotype_name_parts_count - 1); $gnpi++) {
+            //   $genotype_name_without_combination .= $genotype_name_parts[$gnpi] . '_';
+            // }
+            // $genotype_name_without_combination = rtrim($genotype_name_without_combination, '_');
+            // echo "Genotype name without combination: $genotype_name_without_combination\n";
+
+
             try {
               $results = chado_insert_record('genotype', [
-                'name' => $genotype_name,
+                'name' => $genotype_name_without_combination,
                 'uniquename' => $genotype_desc,
                 'description' => $description,
                 'type_id' => $snp_cvterm,
@@ -1805,13 +2424,13 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             }
 
             $vcf_cols_count = count($vcf_line);
-
             echo "gen_name_index:$genotype_name_progress_count colcount:$vcf_cols_count ";
             for ($j = 9; $j < $vcf_cols_count; $j++) {
               // Rish: This was added on 09/12/2022
               // This gets the name of the current genotype for the tree_id column
               // being checked.
-              $column_genotype_name = $marker_name . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+              $column_genotype_name = $marker_name . '_' . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+              // echo 'Column genotype name: ' . $column_genotype_name . " vs Genotype name: $genotype_name\n";
               if($column_genotype_name == $genotype_name) {
                 // Found a match between the tree_id genotype and the genotype_name from records
 
@@ -1833,20 +2452,20 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
                 // THIS ABOUT REMOVING THIS - but it is in use for genotype materialized views
                 // which is used for tpps/details page
-                $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
-                  'stock_id' => $stocks[$j - 9],
-                  // PETER
-                  // '#fk' => array(
-                  //   'genotype' => $genotype_desc,
-                  // ),
-                  // RISH
-                  'genotype_id' => $genotype_id,
-                );
+                // $records['stock_genotype']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                //   'stock_id' => $stocks[$j - 9],
+                //   // PETER
+                //   // '#fk' => array(
+                //   //   'genotype' => $genotype_desc,
+                //   // ),
+                //   // RISH
+                //   'genotype_id' => $genotype_id,
+                // );
               }
             }
 
 
-            // @TODO 3/28/2023 - Gabe thought we didn't additional data from the VCF file
+            // @TODO 3/28/2023 - Gabe thought we didn't need additional data from the VCF file
             // Basically chromosome and position
             // Featureloc table: the following are where to get the values for these fields
             //                   in order to create the featureloc record
@@ -1861,10 +2480,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             $records['genotypeprop']["$genotype_desc-qual"] = array(
               'type_id' => $qual_cvterm,
               'value' => $qual,
+
               // PETER
               // '#fk' => array(
               //   'genotype' => $genotype_desc,
               // ),
+
               // RISH
               'genotype_id' => $genotype_id,
             );
@@ -1873,10 +2494,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             $records['genotypeprop']["$genotype_desc-filter"] = array(
               'type_id' => $filter_cvterm,
               'value' => ($filter == '.') ? "P" : "NP",
+
               // PETER
               // '#fk' => array(
               //   'genotype' => $genotype_desc,
               // ),
+
               // RISH
               'genotype_id' => $genotype_id,
             );
@@ -1895,10 +2518,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               $records['genotypeprop']["$genotype_desc-freq"] = array(
                 'type_id' => $freq_cvterm,
                 'value' => $info_vals['AF'],
+
                 // PETER
                 // '#fk' => array(
                 //   'genotype' => $genotype_desc,
                 // ),
+
                 // RISH
                 'genotype_id' => $genotype_id,
               );
@@ -1911,10 +2536,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               $records['genotypeprop']["$genotype_desc-depth"] = array(
                 'type_id' => $depth_cvterm,
                 'value' => $info_vals['DP'],
+
                 // PETER
                 // '#fk' => array(
                 //   'genotype' => $genotype_desc,
                 // ),
+
                 // RISH
                 'genotype_id' => $genotype_id,
               );
@@ -1927,10 +2554,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               $records['genotypeprop']["$genotype_desc-n_sample"] = array(
                 'type_id' => $n_sample_cvterm,
                 'value' => $info_vals['NS'],
+
                 // PETER
                 // '#fk' => array(
                 //   'genotype' => $genotype_desc,
                 // ),
+
                 // RISH
                 'genotype_id' => $genotype_id,
               );
@@ -1955,9 +2584,20 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
             tpps_log('[INFO] - Last insert cumulative time: ' . $insert_cumulative_time . ' seconds');
             $genotype_count = 0;
             $insert_start_time = microtime(true);
-            tpps_log('[INFO] - Inserting data into database using insert_multi...');
-            tpps_chado_insert_multi($records, $multi_insert_options);
-            tpps_log('[INFO] - Done.');
+            if ($insert_mode == 'multi') {
+              tpps_log('[INFO] - Inserting data into database using insert_multi...');
+              tpps_chado_insert_multi($records, $multi_insert_options);
+            }
+            else if ($insert_mode == 'hybrid') {
+              // THIS WILL DO SOME MULTI INSERTS BUT ALSO USE COPY FOR GENOTYPE_CALL TABLE
+              tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
+              tpps_chado_insert_hybrid($records, $multi_insert_options);
+            }
+
+
+
+            tpps_job_logger_write('[INFO] - Done.');
+            $job->logMessage('[INFO] - Done.');
             $insert_end_time = microtime(true);
             $insert_elapsed_time = $insert_end_time - $insert_start_time;
             tpps_log('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
@@ -1975,6 +2615,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
               'stock_genotype' => array(),
             );
             $genotype_count = 0;
+
+            // throw new Exception('DEBUG GENOTYPE_CALL TIME');
           }
         }
         elseif (preg_match('/##FORMAT=/', $vcf_line)) {
@@ -1988,8 +2630,24 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
         }
       }
       // Insert the last set of values.
-      tpps_log('[INFO] - Inserting data into database using insert_multi...');
-      tpps_chado_insert_multi($records, $multi_insert_options);
+      if ($insert_mode == 'multi') {
+        tpps_log('[INFO] - Inserting data into database using insert_multi...');
+        tpps_chado_insert_multi($records, $multi_insert_options);
+      }
+      else if ($insert_mode == 'hybrid') {
+        tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
+        tpps_chado_insert_hybrid($records, $multi_insert_options);
+      }
+
+      // RECREATE INDEXES
+      // tpps_job_logger_write('[INFO] - Recreating indexes...');
+      // $job->logMessage('[INFO] - Recreating indexes...');
+      // chado_query("CREATE INDEX genotype_call_genotype_id_idx ON chado.genotype_call USING btree (genotype_id)");
+      // chado_query("CREATE INDEX genotype_call_project_id_idx ON chado.genotype_call USING btree (project_id)");
+      // chado_query("	CREATE INDEX genotype_call_stock_id_idx ON chado.genotype_call USING btree (stock_id)");
+      // tpps_job_logger_write('[INFO] - Recreating INDEXES - Done.');
+      // $job->logMessage('[INFO] - Recreating INDEXES - Done.');
+
       tpps_log('[INFO] - Done.');
       unset($records);
       $genotype_count = 0;
@@ -1999,8 +2657,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   if (isset($project_id)) {
     tpps_generate_genotype_materialized_view($project_id);
   }
-
 }
+
+
 
 /**
  * @param mixed $options array of options
@@ -3325,13 +3984,8 @@ function tpps_generate_genotype_materialized_view($project_id) {
 
   // Added to fix previous queries that used stock_genotype which we don't
   // want to keep using.
-  try {
-    echo "Attempting to drop materialized view (if exist): " . $view_name . "\n";
-    chado_query("DROP MATERIALIZED VIEW " . $view_name . " IF EXISTS;");
-  }
-  catch (Exception $ex) {
-    echo "Exception occurred while trying to drop materialized view: " . $view_name . "\n";
-  }
+  echo "Attempting to drop materialized view (if exist): " . $view_name . "\n";
+  chado_query("DROP MATERIALIZED VIEW IF EXISTS " . $view_name . ";");
 
   echo "Attempting to create materialized view (if it does not exist): " . $view_name . "\n";
 
@@ -3355,9 +4009,27 @@ function tpps_generate_genotype_materialized_view($project_id) {
   // ,[]);
 
   // @NEW - This code uses the genotype_call table only - less joins - more efficient
-  chado_query('CREATE MATERIALIZED VIEW IF NOT EXISTS ' . $view_name . ' AS ' .
-  "(SELECT g.genotype_id AS
-    genotype_id,
+  // chado_query('CREATE MATERIALIZED VIEW ' . $view_name . ' AS ' .
+  // "(SELECT g.genotype_id AS
+  //   genotype_id,
+  //   g.name AS name,
+  //   g.uniquename AS uniquename,
+  //   g.description AS description,
+  //   g.type_id AS type_id,
+  //   s.uniquename AS s_uniquename,
+  //   s.stock_id AS stock_id
+  //   FROM chado.genotype g
+  //   INNER JOIN chado.genotype_call gc ON gc.genotype_id = g.genotype_id
+  //   INNER JOIN chado.stock s ON s.stock_id = gc.stock_id
+  //   WHERE (gc.project_id = '" . $project_id . "') ) " .
+  //   "WITH NO DATA"
+  // ,[]);
+
+  // @NEW V2 - This adds an index_id column
+  chado_query('CREATE MATERIALIZED VIEW ' . $view_name . ' AS ' .
+  "(SELECT
+    row_number() over (order by g.genotype_id, s.stock_id) as index_id,
+    g.genotype_id AS genotype_id,
     g.name AS name,
     g.uniquename AS uniquename,
     g.description AS description,
@@ -3367,10 +4039,9 @@ function tpps_generate_genotype_materialized_view($project_id) {
     FROM chado.genotype g
     INNER JOIN chado.genotype_call gc ON gc.genotype_id = g.genotype_id
     INNER JOIN chado.stock s ON s.stock_id = gc.stock_id
-    WHERE (gc.project_id = '" . $project_id . "') )" .
+    WHERE (gc.project_id = '" . $project_id . "') ) " .
     "WITH NO DATA"
   ,[]);
-
 
 
   // Generate the data / regenerate if necessary
@@ -3378,6 +4049,11 @@ function tpps_generate_genotype_materialized_view($project_id) {
   chado_query('REFRESH MATERIALIZED VIEW ' . $view_name, []);
   echo "Finished refresh of " . $view_name . "\n";
 
+  // Add an index using the index_id column (IF NOT EXISTS)
+  echo "Adding index_id index to $view_name\n";
+  chado_query("CREATE UNIQUE INDEX " . str_replace('chado.', 'chado_' , $view_name) .
+    "_id on " . $view_name . "(index_id);", []);
+  echo "Index completed\n";
 }
 
 /**
