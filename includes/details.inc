@@ -1049,8 +1049,12 @@ function tpps_details_genotype(array &$state) {
   //   variable_set('tpps_tab_genotype_' + $state['ids']['project_id'] + '_total', $total_array);
   // }
 
+  // VERSION 2 - RISH - better but far from perfect - can get as slow a 1 minute per query
+  // $query_results = chado_query('SELECT COUNT(*) as c1 FROM chado.genotypes_' . $project_id);
 
-  $query_results = chado_query('SELECT COUNT(*) as c1 FROM chado.genotypes_' . $project_id);
+  // @NEW -RISH using Emily's redesign that uses index_id. Fast response in ms.
+  $query_results = chado_query('select max(index_id) as c1 FROM chado.genotypes_' . $project_id,[]);
+
   $total = 0;
   foreach ($query_results as $row) {
     $total = $row->c1;
@@ -1077,8 +1081,14 @@ function tpps_details_genotype(array &$state) {
   // $query->range($start, $per_page);
   // $query = $query->execute();
 
+  // VERSION 2 - RISH - Faster but still linearly slower
+  // $query = chado_query("SELECT * FROM chado.genotypes_" . $project_id . " OFFSET $start LIMIT $per_page");
 
-  $query = chado_query("SELECT * FROM chado.genotypes_" . $project_id . " OFFSET $start LIMIT $per_page");
+  // @NEW - RISH using Emily's index_id to paginate the page columns
+  $query = chado_query("select * from chado.genotypes_" . $project_id .  
+    " where index_id > " . $start . 
+    " order by index_id asc 
+    limit " . $per_page . ";",[]);
 
   while (($result = $query->fetchObject())) {
     // preg_match('/^TGDR...-(.*)$/', $result->s_uniquename, $matches);
@@ -1089,7 +1099,8 @@ function tpps_details_genotype(array &$state) {
     ))->name ?? "";
     $rows[] = array(
       tpps_entity_link($result->stock_id, $tree, 'Stock'),
-      tpps_entity_link($result->genotype_id, $result->uniquename, 'Genotype'),
+      // tpps_entity_link($result->genotype_id, $result->uniquename, 'Genotype'),
+      $result->name,
       $result->description,
       $type,
     );

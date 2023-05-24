@@ -24,6 +24,23 @@ function tpps_admin_settings(array $form, array &$form_state) {
   $genotype = variable_get('tpps_genotype_files_dir', 'tpps_genotype');
   $phenotype = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
   $cartogratree_env = variable_get('tpps_cartogratree_env', FALSE);
+  $tpps_db_csv_directory = variable_get('tpps_db_csv_directory', '/tmp/tpps/');
+  $tpps_db_directory_user = variable_get('tpps_db_directory_user', 'postgres');
+
+
+  $form['tpps_db_csv_directory'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Database CSV Directory',
+    '#suffix' => '<div>If you have an external database server, you must provide a shared directory which the database has access to read import (CSV) generated files or study submissions will fail to run (default: /tmp/tpps/)</div>',
+    '#default_value' => $tpps_db_csv_directory
+  );
+
+  $form['tpps_db_csv_directory_user'] = array(
+    '#type' => 'textfield',
+    '#title' => 'Database directory user',
+    '#suffix' => '<div>The shared directory must be owned by the correct user in order for it to be read by the database process, this will try to set the directory permissions to the user your specify here (default: postgres)</div>',
+    '#default_value' => $tpps_db_directory_user
+  );  
 
   $form['tpps_maps_api_key'] = array(
     '#type' => 'textfield',
