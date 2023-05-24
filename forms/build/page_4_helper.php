@@ -674,7 +674,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#description' => t('We encourage that you only upload a phenotype metadata file if you have > 20 phenotypes. Using the fields above instead of uploading a metadata file allows you to select from standardized controlled vocabulary terms, which makes your data more findable, interoperable, and reusable.'),
     );
 
-    
+
     $form[$id]['phenotype']['metadata'] = array(
       '#type' => 'managed_file',
       '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
@@ -890,8 +890,8 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $parents = array_merge($marker_parents, array('SSRs/cpSSRs'));
   $ssrs_check = tpps_get_ajax_value($form_state, $parents);
 
-  $parents = array_merge($marker_parents, array('Indels'));
-  $indel_check = tpps_get_ajax_value($form_state, $parents);
+  //$parents = array_merge($marker_parents, array('Indels'));
+  //$indel_check = tpps_get_ajax_value($form_state, $parents);
 
   $parents = array_merge($marker_parents, array('Other'));
   $other_marker_check = tpps_get_ajax_value($form_state, $parents);
@@ -973,7 +973,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $parents = array_merge($file_type_parents, array('VCF'));
   $vcf_file_check = tpps_get_ajax_value($form_state, $parents);
 
-  
+
   if (!empty($snps_assay_check)) {
     $fields['files']['file-selector'] = array(
       '#type' => 'checkbox',
@@ -1899,32 +1899,27 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 function tpps_page_4_marker_info(array &$fields, $id) {
 
   $fields['marker-type'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Marker Type (select all that apply): *'),
-    '#options' => drupal_map_assoc(array(
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#title' => t('Marker Type: *'),
+    '#options' => drupal_map_assoc([
       t('SNPs'),
       t('SSRs/cpSSRs'),
-      t('Indels'),
       t('Other'),
-    )),
+    ]),
+    '#ajax' => [
+      'callback' => 'tpps_genotype_files_callback',
+      'wrapper' => "$id-genotype-files",
+    ],
   );
 
-  $fields['marker-type']['#ajax'] = array(
-    'callback' => 'tpps_genotype_files_callback',
-    'wrapper' => "$id-genotype-files",
-  );
-
-  $fields['SNPs'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // SNPs
+  $fields['SNPs'] = [
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">SNPs Information:</div>'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[genotype][marker-type][SNPs]"]' => array('checked' => TRUE),
-      ),
-    ),
     '#collapsible' => TRUE,
-  );
-
+  ];
   $fields['SNPs']['genotyping-design'] = array(
     '#type' => 'select',
     '#title' => t('Define Experimental Design: *'),
@@ -1937,7 +1932,6 @@ function tpps_page_4_marker_info(array &$fields, $id) {
       5 => t('Genotyping Array'),
     ),
   );
-
   $fields['SNPs']['GBS'] = array(
     '#type' => 'select',
     '#title' => t('GBS Type: *'),
@@ -1955,7 +1949,6 @@ function tpps_page_4_marker_info(array &$fields, $id) {
       ),
     ),
   );
-
   $fields['SNPs']['GBS-other'] = array(
     '#type' => 'textfield',
     '#states' => array(
@@ -1969,11 +1962,11 @@ function tpps_page_4_marker_info(array &$fields, $id) {
   $fields['SNPs']['targeted-capture'] = array(
     '#type' => 'select',
     '#title' => t('Targeted Capture Type: *'),
-    '#options' => array(
+    '#options' => [
       0 => t('- Select -'),
       1 => t('Exome Capture'),
       2 => t('Other'),
-    ),
+    ],
     '#states' => array(
       'visible' => array(
         ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '2'),
@@ -1991,23 +1984,17 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     ),
   );
 
-  $fields['SSRs/cpSSRs'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Define SSRs/cpSSRs Type: *'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[genotype][marker-type][SSRs/cpSSRs]"]' => array('checked' => TRUE),
-      ),
-    ),
-  );
+  $fields['SSRs/cpSSRs'] = [
+    '#type' => 'select',
+    '#title' => t('SSRs/cpSSRs Type: *'),
+    '#options' => drupal_map_assoc([
+      t('SSRs'), t('cpSSRs'), t('Both SSRs and cpSSRs')
+    ]),
 
-  $fields['other-marker'] = array(
+  ];
+
+  $fields['other-marker'] = [
     '#type' => 'textfield',
-    '#title' => t('Define Other Marker Type: *'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[genotype][marker-type][Other]"]' => array('checked' => TRUE),
-      ),
-    ),
-  );
+    '#title' => t('Other Marker Type: *'),
+  ];
 }

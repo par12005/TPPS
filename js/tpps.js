@@ -1,13 +1,42 @@
 jQuery(document).ready(function ($) {
+  /* [VS] */
+  // We can't use Drupal States API because it doesn't work with multiple
+  // select form elements.
+  // For Genotype only one organism Id. Usually '#edit-organism-1'
+  var organism_name = '#' + $('form#tppsc-main fieldset').first().attr('id');
+  $(organism_name + '-genotype-marker-type').bind('change', function() {
+    if ($.inArray('SNPs', $(this).val()) !== -1) {
+      $(organism_name + '-genotype-snps').show();
+    }
+    else {
+      $(organism_name + '-genotype-snps').hide();
+    }
+    if ($.inArray('SSRs/cpSSRs', $(this).val()) !== -1) {
+      $(organism_name + '-genotype-ssrscpssrs').parent().show();
+    }
+    else {
+      $(organism_name + '-genotype-ssrscpssrs').parent().hide();
+    }
+    if ($.inArray('Other', $(this).val()) !== -1) {
+      $(organism_name + '-genotype-other-marker').parent().show();
+    }
+    else {
+      $(organism_name + '-genotype-other-marker').parent().hide();
+    }
+  });
+  // Hide all Genotype related fields by default.
+  $(organism_name + '-genotype-marker-type').trigger('change');
+  /* [/VS] */
+
   function Supplemental_Files(){
     var files_add = jQuery('#edit-files-add');
     var files_remove = jQuery('#edit-files-remove');
     var number_object = jQuery('#edit-files div input:hidden');
     var files_number = number_object[0].value;
     var files = jQuery('#edit-files div div.form-type-managed-file');
-    
+
     files.hide();
-    
+
     if (files_number > 0){
       for (var i = 0; i < files_number; i++){
         jQuery(files[i]).show();
@@ -17,7 +46,7 @@ jQuery(document).ready(function ($) {
         jQuery(files[i]).hide();
       }
     }
-    
+
     files_add.attr('type', 'button');
     files_remove.attr('type', 'button');
 
@@ -25,7 +54,7 @@ jQuery(document).ready(function ($) {
       if (files_number < 10){
         files_number++;
         number_object[0].value = files_number;
-        
+
         for (var i = 0; i < files_number; i++){
           jQuery(files[i]).show();
         }
@@ -35,12 +64,12 @@ jQuery(document).ready(function ($) {
         }
       }
     });
-    
+
     files_remove.on('click', function(){
       if (files_number > 0){
         files_number--;
         number_object[0].value = files_number;
-        
+
         for (var i = 0; i < files_number; i++){
           jQuery(files[i]).show();
         }
@@ -50,7 +79,7 @@ jQuery(document).ready(function ($) {
         }
       }
     });
-    
+
   }
 
   var stage;
@@ -373,7 +402,7 @@ function detailsTab() {
       jQuery('#query_timer').html('Querying time: ' + query_timer_current + ' seconds.<br /><b>Thank you for your patience, first time pulls can take up to a minute to complete depending on the size of our dataset but gets faster after the first page load.</b>');
     }
   }, 1000);
-  
+
   // OLD version from Peter
   // var request = jQuery.post(path + '/' + detail_type, {
   //   page: page
@@ -392,7 +421,7 @@ function detailsTab() {
                 console.log(percentComplete);
             }
       }, false);
-      
+
       // Download progress
       xhr.addEventListener("progress", function(evt){
           try {
@@ -407,11 +436,11 @@ function detailsTab() {
               //jQuery('#' + detail_type)[0].innerHTML = "Loading " + detail_type + " information... " + Math.ceil(percentComplete * 100) + ' %';
           }
       }, false);
-      
+
       return xhr;
     },
     type: 'POST',
-    url: path + '/' + detail_type, 
+    url: path + '/' + detail_type,
     data: {
       page: page
     }
@@ -532,7 +561,7 @@ function clearMarkers(prefix) {
 
 function getCoordinates(){
   var fid = this.id.match(/(.*)_map_button/)[1];
-  
+
   var fid, no_header, id_col, lat_col, long_col;
   try{
     file = Drupal.settings.tpps.accession_files[fid];
@@ -556,12 +585,12 @@ function getCoordinates(){
     console.log(err);
     return;
   }
-  
+
   if (typeof id_col === 'undefined' || typeof lat_col === 'undefined' || typeof long_col === 'undefined'){
     jQuery("#" + Drupal.settings.tpps.map_buttons[fid].wrapper).hide();
     return;
   }
-  
+
   var request = jQuery.post('/tpps-accession', {
     fid: fid,
     no_header: no_header,
@@ -569,7 +598,7 @@ function getCoordinates(){
     lat_col: lat_col,
     long_col: long_col
   });
-  
+
   request.done(function (data) {
     jQuery.fn.updateMap(data, fid);
   });
@@ -591,23 +620,23 @@ jQuery.fn.updateMap = function(locations, fid = "") {
   else {
     jQuery("#" + fid + "_map_wrapper").css({"height": "100px"});
   }
-  
+
   clearMarkers(fid);
   maps[fid + '_total_lat'] = 0;
   maps[fid + '_total_long'] = 0;
   timeout = 2000/locations.length;
-  
+
   maps[fid + '_markers'] = locations.map(function (location, i) {
     maps[fid + '_total_lat'] += parseInt(location[1]);
     maps[fid + '_total_long'] += parseInt(location[2]);
     var marker = new google.maps.Marker({
       position: new google.maps.LatLng(location[1], location[2])
     });
-    
+
     var infowindow = new google.maps.InfoWindow({
       content: location[0] + '<br>Location: ' + location[1] + ', ' + location[2]
     });
-    
+
     marker.addListener('click', function() {
       infowindow.open(maps[fid], maps[fid + '_markers'][i]);
     });
