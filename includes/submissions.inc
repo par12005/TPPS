@@ -158,7 +158,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   $job->logMessage('[INFO] Clearing database for study ' . $old_accession);
   $job->setInterval(1);
   // Clear the db of all data for the old study accession
-  tpps_submission_clear_db($old_accession);
+  // tpps_submission_clear_db($old_accession);
 
   $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
   // Update the form state data for the study
@@ -715,6 +715,90 @@ function tpps_submission_rename_files($accession) {
 }
 
 /**
+ * This function will clear additional db information for a specific study
+ * such as genotypeprop data as well as feature data
+ * @param mixed $accession 
+ * @return void 
+ */
+function tpps_submission_clear_db_extra($accession) {
+  // FOR LATER USE MAYBE
+  echo "Deleting genotypeprop data...\n";
+  $start_time = time();
+  chado_query("
+  delete from chado.genotypeprop where genotype_id in 
+  (select genotype_id from chado.genotype where genotype_id not in 
+  (select genotype_id from chado.genotype_call));",
+  []);
+  $end_time = time();
+  echo "Time taken to complete: " . ($end_time - $start_time) . "\n";
+
+
+  // FOR EACH ORGANISM IN THIS STUDY
+  $organism_count = $state['saved_values']['1']['organism']['number'];
+  for ($i = 1; $i <= $organism_count; $i++) {
+    // GET THE ORGANISM NAME / GENUS SPECIES
+    $organism = $state['saved_values'][1]['organism'][$i];
+    $organism_name = $organism['name'];
+    // Lookup the organism_id from the organism_name
+    $organism_name_parts = explode(' ',$organism_name);
+    $genus = $organism_name_parts[0];
+    $species = '';
+    $organism_name_parts_count = count($organism_name_parts);
+    for ($j=1; $j < $organism_name_parts_count; $j++) {
+      $species .= $organism_name_parts[$j] . ' ';
+    }
+    $species = trim($species);
+
+    // LOOKUP ORGANISM_ID
+    $results = chado_query('SELECT * FROM chado.organism WHERE genus ILIKE :genus AND species ILIKE :species LIMIT 1;',[
+      ':genus' => $genus,
+      ':species' => $species
+    ]);
+    $organism_id = NULL;
+    foreach ($results as $row) {
+      $organism_id = $row->organism_id;
+    }
+
+    
+    if ($organism_id != NULL) {
+      // // DELETE features based on organism_id if it is not NULL
+      $start_time = time();
+
+      $cvterm_id = NULL;
+      // Get cvterm for sequence_variant
+      $results = chado_query("SELECT * FROM chado.cvterm WHERE name = :name LIMIT 1;", [
+        ':name' => 'sequence_variant'
+      ]);
+
+      foreach ($results as $row) {
+        $cvterm_id = $row->cvterm_id;
+      }
+
+      if ($cvterm_id == NULL) {
+        echo "Could not find cvterm name for sequence_variant\n";
+        echo "This means no features will be able to be deleted! COPY command could fail to insert!\n";
+        echo "Please contact db administrator to determine how to delete features\n";
+        break;
+      }
+
+      echo "Deleting features data for organism_id = $organism_id ($genus $species)... \n";
+      chado_query("
+      delete from chado.feature where organism_id = :organism_id and type_id = :cvterm_id 
+      and feature_id not in 
+      ((select marker_id from chado.genotype_call) union (select variant_id from chado.genotype_call));
+      ", [
+        ':organism_id' => $organism_id,
+        ':cvterm_id' => $cvterm_id
+      ]);
+
+      $end_time = time();
+      echo "Time taken to complete: " . ($end_time - $start_time) . "\n";      
+    }
+    // print_r($organism);
+  }
+}
+
+/**
  * Clears submission data from the database.
  *
  * This function is particularly useful when submitting a study to the database
@@ -729,6 +813,8 @@ function tpps_submission_rename_files($accession) {
  */
 function tpps_submission_clear_db($accession) {
   $state = tpps_load_submission($accession);
+  // print_r(array_keys($state['saved_values'][1]['organism']));
+
   $state['file_rank'] = 0;
   $project_id = $state['ids']['project_id'] ?? NULL;
   if (empty($project_id)) {
@@ -738,27 +824,45 @@ function tpps_submission_clear_db($accession) {
     throw new Exception('Accession cannot be empty');
   }
 
+  $time_start = time();
+
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
+  echo $stocks_sql . "\n";
   chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
+  echo "DELETE chado.project_organism values for project...\n";
   chado_query("DELETE FROM chado.project_organism WHERE project_id = $project_id");
+  echo "DELETE chado.project_pub values for project...\n";
   chado_query("DELETE FROM chado.project_pub WHERE project_id = $project_id");
+  echo "DELETE chado.projectprop values for project...\n";
   chado_query("DELETE FROM chado.projectprop WHERE project_id = $project_id");
+  echo "DELETE chado.projectprop values for project...\n";
   db_query("DELETE FROM public.tpps_project_file_managed WHERE project_id = $project_id");
+  echo "DELETE tpps_project_file_managed values for project...\n";
   chado_query("DELETE FROM chado.phenotype_cvterm WHERE phenotype_id IN (SELECT phenotype_id from chado.stock_phenotype WHERE stock_id in ($stocks_sql))");
+  echo "DELETE chado.phenotype_to_synonym values for project...\n";
   chado_query("DELETE FROM chado.phenotype_to_synonym WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
+  echo "DELETE chado.phenotype values for project...\n";
   chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
+  echo "DELETE chado.genotype_call values for project...\n";
   chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");
+  echo "DELETE chado.stock_genotype values for project...\n";
   chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stocks_sql)");
+  echo "DELETE chado.stock_phenotype values for project...\n";
   chado_query("DELETE FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql)");
+  echo "DELETE chado.stock values for project...\n";
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
+  echo "DELETE chado.phenotype values for project...\n";
   chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession ."-%';");
+  
   echo "FINISHED DB CLEAR DELETES\n";
+  $time_end = time();
+  echo "Time taken to delete records: " . ($time_end - $time_start) . "\n";
 
   // Force delete stock just in case by study accession name
   // Make sure to ensure $accession is properly populated before doing this
   if(strpos($accession,'TGDR') !== FALSE && strlen($accession) >= 7) {
     chado_query("DELETE FROM chado.stock WHERE uniquename LIKE :accession", [
-      ':accession' => $accession . '%'
+      ':accession' => $accession . '-%'
     ]);
   }
 

@@ -493,7 +493,27 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#type' => 'submit',
     '#value' => t('Save VCF Import Setting'),
     '#suffix' => '<div style="margin-bottom: 30px;"></div>'
-  );        
+  );  
+
+  $options = [];
+  $options['hybrid'] = 'hybrid';
+  $options['inserts'] = 'inserts';
+  $form['VCF_IMPORT_MODE'] = array(
+    '#type' => 'select',
+    '#title' => 'VCF Import mode',
+    '#prefix' => '<h2 style="margin-top: 30px;">VCF Import Mode</h2>',
+    '#description' => 'Hybrid mode is the new method using the COPY command for some of the import. 
+      This requires the database user to have SUPERUSER rights. Inserts mode is the original 
+      code that used inserts only (which is much slower but tested and works for most cases).',
+    '#options' => $options,
+    '#default_value' => 'hybrid',
+  );  
+
+  $form['VCF_IMPORT_MODE_SAVE'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save VCF Import Mode'),
+    '#suffix' => '<div style="margin-bottom: 30px;"></div>'
+  );       
 
   $submitting_user = user_load($submission_state['submitting_uid']);
   $form['change_owner'] = array(
@@ -1387,6 +1407,20 @@ function tpps_admin_panel_submit($form, &$form_state) {
       tpps_update_submission($state);
       drupal_set_message(t('VCF disable import setting saved'), 'status');
       break;
+    case 'Save VCF Import Mode':
+      $vcf_import_mode = $form_state['values']['VCF_IMPORT_MODE'];
+      if($form_state['values']['VCF_IMPORT_MODE'] == 'hybrid') {
+        $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = 'hybrid';
+      }
+      else if($form_state['values']['VCF_IMPORT_MODE'] == 'inserts') {
+        $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = 'inserts';
+      }
+      else {
+        $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = 'hybrid';
+      }  
+      tpps_update_submission($state);
+      drupal_set_message(t("VCF import mode saved as '$vcf_import_mode'."), 'status'); 
+      break;
 
     case "Regenerate genotype materialized view":
       global $user;
@@ -1396,7 +1430,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = array($project_id);
       $jid = tripal_add_job("Generate materialized view for $accession (project_id=$project_id)", 'tpps', 'tpps_generate_genotype_materialized_view', $args, $user->uid, 10, $includes, TRUE);
-    
       break;
 
     case "Remove this study's markers and genotypes":
