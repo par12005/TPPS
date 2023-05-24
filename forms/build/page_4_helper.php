@@ -1747,9 +1747,8 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
  */
 function tpps_page_4_marker_info(array &$fields, $id) {
 
-  // [VS] #8669rmvf2
   $fields['marker-type'] = [
-    '#type' => 'select',
+    '#type' => 'checkboxes',
     '#title' => t('Marker Type (select all that apply): *'),
     '#options' => drupal_map_assoc([
       t('SNPs'),
@@ -1758,7 +1757,6 @@ function tpps_page_4_marker_info(array &$fields, $id) {
       t('Other'),
     ]),
   ];
-  // [/VS]
 
   $fields['marker-type']['#ajax'] = array(
     'callback' => 'tpps_genotype_files_callback',
