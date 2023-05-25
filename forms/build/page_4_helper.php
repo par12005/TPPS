@@ -1920,6 +1920,28 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#title' => t('<div class="fieldset-title">SNPs Information:</div>'),
     '#collapsible' => TRUE,
   ];
+  // [VS]
+  // @TODO Add validation.
+  // @TODO Update submit_all.php.
+  $fields['SNPs']['genotyping-type'] = [
+    '#type' => 'select',
+    '#title' => t('Genotyping type: *'),
+    '#options' => drupal_map_assoc([
+      t('Genotyping assay'),
+
+      // generate two upload fields - one for “SNP Assay File”
+      // and the other for “Assay design File”
+
+
+
+      t('Genotyping'),
+      // Generate dropdown titled “Genotyping file type” with options
+      // “SNP Assay file and Assay design file”,
+      // “VCF”
+
+    ]),
+  ];
+  // [/VS]
   $fields['SNPs']['genotyping-design'] = array(
     '#type' => 'select',
     '#title' => t('Define Experimental Design: *'),

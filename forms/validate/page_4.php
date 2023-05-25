@@ -417,9 +417,20 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
   }
 
+
+  //dpm($genotype['marker-type'], 'type');
+
+
+
   if (implode('', $genotype['marker-type']) === '000') {
     form_set_error("$id][genotype][marker-type", t("Genotype Marker Type: field is required."));
   }
+
+
+  // @TODO Check if validation works. Not save but submit.
+  // @TODO Make field required:
+  // SSRs/cpSSRs Type:
+
   elseif ($genotype['marker-type']['SNPs']) {
     if (!$snps['genotyping-design']) {
       form_set_error("$id][genotype][SNPs][genotyping-design", t("Genotyping Design: field is required."));
@@ -537,7 +548,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     if (empty($loaded_state['vcf_replace']) && trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) != '' && $loaded_state['vcf_validated'] !== TRUE) {
       form_set_error("$org_num][genotype][files][local_vcf", t("Local VCF File: File needs to be pre-validated. Please click on Pre-validate my VCF files button at the bottom."));
     }
-    
+
     if (!empty($loaded_state['vcf_validated']) and $loaded_state['vcf_validated'] === TRUE and empty($loaded_state['vcf_val_errors'])) {
       drupal_set_message(t('VCF files pre-validated. Skipping VCF file validation'));
     }
