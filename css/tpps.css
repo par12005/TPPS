@@ -167,7 +167,7 @@ div.media-widget.form-media a.browse {
  * @TODO This must be done for all site pages.
  **/
 select.form-select {
-  weight: 100%;
+  width: 100%;
   height: auto;
   min-height: 28px;
 }
