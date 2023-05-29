@@ -246,6 +246,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
     return $val;
   }
 
+  // @TODO [VS] Avoid code duplication. See above.
   $complete_parents = $parents;
   array_unshift($complete_parents, 'complete form');
   $element = drupal_array_get_nested_value($state, $complete_parents);
