@@ -25,9 +25,17 @@ function tpps_admin_no_synonym_report() {
     //'tag' => 'debug',
     // To have common style.
     'attributes' => ['class' => ['view' , 'tpps_table']],
+    'primary_key' => 'phenotype_id',
     'header' => [
-      ['data' => t('Study'), 'field' => 'public.cte.study_name'],
-      ['data' => t('Phenotype Name'), 'field' => 'chado.' . $table . '.name'],
+      [
+        'data' => t('Study'),
+        'field' => 'public.cte.study_name',
+        'theme' => 'none',
+      ],
+      [
+        'data' => t('Phenotype Name'),
+        'field' => 'chado.' . $table . '.name'
+      ],
     ],
     'main_table' => [
       'schema' => 'chado',
@@ -35,7 +43,7 @@ function tpps_admin_no_synonym_report() {
       'fields' => ['name'],
     ],
     'tables' => [
-      'phenotype_to_synonym' => [
+      'chadophenotype_to_synonym' => [
         'schema' => 'chado',
         'name' => 'phenotype_to_synonym',
         'join' => [
@@ -46,7 +54,7 @@ function tpps_admin_no_synonym_report() {
         'fields' => ['phenotype_synonyms_id'],
       ],
       // Common Table Expression.
-      'cte' => [
+      'publiccte' => [
         'schema' => 'public',
         'name' => 'cte',
         'query' => $sub_query,
