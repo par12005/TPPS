@@ -167,7 +167,7 @@ div.media-widget.form-media a.browse {
  * @TODO This must be done for all site pages.
  **/
 select.form-select {
-  width: 100%;
+  max-width: 100%;
   height: auto;
   min-height: 28px;
 }
@@ -179,5 +179,9 @@ form#tppsc-main fieldset {
 }
 form#tppsc-main fieldset legend {
   margin-left: -10px;
+}
+/* For debug only */
+label {
+  font-weight: bold;
 }
 /* [/VS] */

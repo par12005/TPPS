@@ -1404,16 +1404,17 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   //
   //
   //
-  //
-  if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
-    if ($genotype['files']['assay-load'] == 'new') {
-      $design_fid = $genotype['files']['assay-design'];
-    }
-    if ($genotype['files']['assay-load'] != 'new') {
-      $design_fid = $genotype['files']['assay-load'];
-    }
+  // [VS]
+  $condition = (
+    !empty($genotype['files']['genotyping-type']['Genotyping Assay'])
+    && $genotype['marker-type']['SNPs']
+  );
+  if ($condition) {
+    // File must exist because it passed validation.
+    $design_fid = $genotype['files']['assay-design'];
     tpps_add_project_file($form_state, $design_fid);
   }
+  // [/VS]
 
   if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
     $ssr_fid = $genotype['files']['ssrs'];

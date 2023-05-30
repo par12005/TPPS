@@ -893,11 +893,24 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   //$parents = array_merge($marker_parents, array('Indels'));
   //$indel_check = tpps_get_ajax_value($form_state, $parents);
 
+  // @TODO Rename to 'Other marker'. Check validation and submit.
   $parents = array_merge($marker_parents, array('Other'));
   $other_marker_check = tpps_get_ajax_value($form_state, $parents);
 
   $fields['files'] = array(
     '#type' => 'fieldset',
+
+
+
+
+    // @TODO Remove Debug code!
+    '#title' => 'Files',
+
+
+
+
+
+
     '#prefix' => "<div id='$id-genotype-files'>",
     '#suffix' => '</div>',
   );
@@ -919,40 +932,39 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     );
   }
 
-  $file_type_parents = array(
-    $id,
-    'genotype',
-    'files',
-    'file-type',
-  );
-  $options = array();
+  // [VS]
+  $file_type_parents = [$id, 'genotype', 'files', 'file-type'];
+  $genotyping_type_parents = [$id, 'genotype', 'files', 'genotyping-type'];
+  // @TODO Add other options.
+  $options = [];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Selected "SNPs".
   if (!empty($snps_check)) {
-    $options['SNPs Genotype Assay'] = 'SNPs Genotype Assay';
-    $parents = array_merge($file_type_parents, array('SNPs Genotype Assay'));
-    $snps_assay_check = tpps_get_ajax_value($form_state, $parents);
 
-    if (!empty($snps_assay_check)) {
-      $options['Assay Design'] = 'Assay Design';
-    }
-    $parents = array_merge($file_type_parents, array('Assay Design'));
-    $assay_design_check = tpps_get_ajax_value($form_state, $parents);
+    // @TODO Minor. Do we need t() here?
+    $genotyping_type_options = [
+      'none' => '- Select -',
+      'Genotyping Assay' => 'Genotyping Assay',
+      'Genotyping' => 'Genotyping',
+    ];
+    // @TODO This is new value. Implement validation. Submit_all?
+    $genotyping_type_check = tpps_get_ajax_value($form_state, $genotyping_type_parents);
+    // @TODO Add dependent file upload fields.
 
-    if (!empty($snps_assay_check) and !empty($form[$id]['phenotype'])) {
-      $options['SNPs Associations'] = 'SNPs Associations';
-    }
-    $parents = array_merge($file_type_parents, array('SNPs Associations'));
-    $association_check = tpps_get_ajax_value($form_state, $parents);
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Selected 'SSRs/cpSSRs'.
   if (!empty($ssrs_check)) {
     $options['SSRs/cpSSRs Genotype Spreadsheet'] = 'SSRs/cpSSRs Genotype Spreadsheet';
     $parents = array_merge($file_type_parents, array('SSRs/cpSSRs Genotype Spreadsheet'));
     $ssrs_file_check = tpps_get_ajax_value($form_state, $parents);
   }
-  if (!empty($indel_check)) {
-    $options['Indel Genotype Spreadsheet'] = 'Indel Genotype Spreadsheet';
-    $parents = array_merge($file_type_parents, array('Indel Genotype Spreadsheet'));
-    $indel_file_check = tpps_get_ajax_value($form_state, $parents);
-  }
+  //if (!empty($indel_check)) {
+  //  $options['Indel Genotype Spreadsheet'] = 'Indel Genotype Spreadsheet';
+  //  $parents = array_merge($file_type_parents, array('Indel Genotype Spreadsheet'));
+  //  $indel_file_check = tpps_get_ajax_value($form_state, $parents);
+  //}
   if (!empty($other_marker_check)) {
     $options['Other Marker Genotype Spreadsheet'] = 'Other Marker Genotype Spreadsheet';
     $parents = array_merge($file_type_parents, array('Other Marker Genotype Spreadsheet'));
@@ -960,148 +972,97 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
   $options['VCF'] = 'VCF';
 
-  $fields['files']['file-type'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Genotype File Types (select all that apply): *'),
-    '#options' => $options,
-    '#ajax' => array(
+  $fields['files']['genotyping-type'] = [
+    '#type' => 'select',
+    '#title' => t('Genotyping Type: *'),
+    '#options' => $genotyping_type_options,
+    '#ajax' => [
       'callback' => 'tpps_genotype_files_callback',
       'wrapper' => "$id-genotype-files",
-    ),
-  );
+    ],
+  ];
+  $fields['files']['file-type'] = [
+    '#type' => 'select',
+    '#title' => t('Genotyping file type: *'),
+    '#options' => $options,
+    '#ajax' => [
+      'callback' => 'tpps_genotype_files_callback',
+      'wrapper' => "$id-genotype-files",
+    ],
+  ];
 
   $parents = array_merge($file_type_parents, array('VCF'));
   $vcf_file_check = tpps_get_ajax_value($form_state, $parents);
 
-
-  if (!empty($snps_assay_check)) {
-    $fields['files']['file-selector'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Reference Existing SNP File'),
-      '#ajax' => array(
-        'callback' => 'tpps_genotype_files_type_change_callback',
-        'wrapper' => "$id-genotype-files",
-      ),
-    );
-    $file_type_parents = array(
-      $id,
-      'genotype',
-      'files',
-    );
-
-    $parents = array_merge($file_type_parents, array('file-selector'));
-    $file_selector_check = tpps_get_ajax_value($form_state, $parents);
-
-    if (empty($file_selector_check)) {
-      $fields['files']['snps-assay'] = array(
-        '#type' => 'managed_file',
-        '#title' => t('SNPs Genotype Assay File: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
-        '#upload_location' => "$genotype_upload_location",
-        '#upload_validators' => array(
-          'file_validate_extensions' => array('csv tsv xlsx'),
-        ),
-        '#description' => t("Please upload a spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
-        '#tree' => TRUE,
-      );
-
-      if (isset($fields['files']['snps-assay']['#value']['fid'])) {
-        $fields['files']['snps-assay']['#default_value'] = $fields['files']['snps-assay']['#value']['fid'];
-      }
-      if (!empty($fields['files']['snps-assay']['#default_value']) and ($file = file_load($fields['files']['snps-assay']['#default_value']))) {
-        // Stop using the file so it can be deleted if the user clicks 'remove'.
-        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      }
+  if ($genotyping_type_check == "Genotyping Assay") {
+    $file_field_name = 'snps-assay';
+    $title = 'SNP Assay File';
+    if (empty(tpps_add_file_selector($form_state, $fields, $id, $title, ''))) {
+      // Add file upload field if file selector wasn't checked.
+      tpps_build_file_field($fields, [
+        'form_state' => $form_state,
+        'id' => $id,
+        'file_field_name' => $file_field_name,
+        'title' => t($title),
+        'description' => t('Please provide a spreadsheet with columns '
+          . 'for the Plant ID of genotypes used in this study'),
+        'upload_location' => "$genotype_upload_location",
+      ]);
     }
     else {
-      // // Add autocomplete field.
-      $fields['files']['snps-assay'] = array(
+      // Add autocomplete field.
+      $fields['files'][$file_field_name] = [
         '#type' => 'textfield',
-        '#title' => t('SNPs Genotype Assay File: please select an already existing spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
+        '#title' => t($title . ': please select an already existing '
+          . 'spreadsheet with columns for the Plant ID of genotypes '
+          . 'used in this study: *'),
         '#upload_location' => "$genotype_upload_location",
         '#autocomplete_path' => 'snp-assay-file/upload',
-        '#description' => t("Please select an already existing spreadsheet file containing SNP Genotype Assay data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain SNP data."),
-      );
+        '#description' => t("Please select an already existing spreadsheet "
+          . "file containing SNP Genotype Assay data. The format of this "
+          . "file is very important! The first column of your file should "
+          . "contain plant identifiers which match the plant identifiers "
+          . "you provided in your plant accession file, and all of the "
+          . "remaining columns should contain SNP data."),
+      ];
     }
   }
   else {
-    $fields['files']['snps-assay'] = array(
+    $fields['files'][$file_field_name] = [
       '#type' => 'managed_file',
       '#tree' => TRUE,
       '#access' => FALSE,
-    );
+    ];
   }
 
-  if (!empty($assay_design_check)) {
-    $design_options = array(0 => '- Select -');
-    $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
-    for ($i = 1; $i <= $firstpage['organism']['number']; $i++) {
-      $parts = explode(" ", $firstpage['organism'][$i]['name']);
-      $genus = $parts[0];
-      $query = db_select('chado.organism', 'o');
-      $query->join('chado.project_organism', 'po', 'o.organism_id = po.organism_id');
-      $query->join('public.tpps_project_file_managed', 'pf', 'pf.project_id = po.project_id');
-      $query->join('public.file_managed', 'f', 'f.fid = pf.fid');
-      $query->join('chado.project', 'p', 'p.project_id = po.project_id');
-      $query->fields('f');
-      $query->fields('p');
-      $query->condition('o.genus', $genus);
-      $query->condition('f.filename', '%assay_design%', 'ILIKE');
-      $results = $query->execute();
-      while (($record = $results->fetchObject())) {
-        $design_options[$record->fid] = "{$record->filename} (from \"{$record->name}\")";
-      }
-    }
-    $design_options['new'] = 'I would like to upload a new assay design file';
-    $fields['files']['assay-load'] = array(
-      '#type' => 'select',
-      '#title' => 'Genotype Assay Design: *',
-      '#options' => $design_options,
-      '#description' => t('Please select an assay design. Some design files from the same genus as this species are available, or you can choose to upload your own assay design file.'),
-    );
+  // Assay Design File
+  $file_field_name = 'assay-design';
+  if ($genotyping_type_check == "Genotyping Assay") {
+    // Add file upload field.
+    tpps_build_file_field($fields, [
+      'form_state' => $form_state,
+      'id' => $id,
+      'file_field_name' => $file_field_name,
+      'title' => t('Assay Design File'),
+      'upload_location' => "$genotype_upload_location",
+    ]);
 
-    $fields['files']['assay-design'] = array(
-      '#type' => 'managed_file',
-      '#title' => 'Genotype Assay Design File: *',
-      '#upload_location' => "$genotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
-      ),
-      '#tree' => TRUE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[genotype][files][assay-load]"]' => array('value' => 'new'),
-        ),
-      ),
-    );
-
-    if (isset($fields['files']['assay-design']['#value'])) {
-      $fields['files']['assay-design']['#default_value'] = $fields['files']['assay-design']['#value'];
-    }
-    if (!empty($fields['files']['assay-design']['#default_value']) and ($file = file_load($fields['files']['assay-design']['#default_value']))) {
-      // Stop using the file so it can be deleted if the user clicks 'remove'.
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-    }
-
-    $fields['files']['assay-citation'] = array(
+    $fields['files']['assay-citation'] = [
       '#type' => 'textfield',
-      '#title' => t('Genotype Assay Design Citation (Optional):'),
-      '#description' => t('If your assay design file is from a different paper, please include the citation for that paper here.'),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[genotype][files][assay-load]"]' => array('value' => 'new'),
-        ),
-      ),
-    );
+      '#title' => t('Assay Design Citation (Optional):'),
+      '#description' => t('If your assay design file is from a different '
+        . 'paper, please include the citation for that paper here.'),
+    ];
   }
   else {
-    $fields['files']['assay-design'] = array(
+    $fields['files'][$file_field_name] = [
       '#type' => 'managed_file',
       '#tree' => TRUE,
       '#access' => FALSE,
-    );
+    ];
   }
 
-  if (!empty($association_check)) {
+  if ($genotyping_type_check == "Genotyping Assay") {
     $fields['files']['snps-association'] = array(
       '#type' => 'managed_file',
       '#title' => t('SNPs Association File: *'),
@@ -1368,33 +1329,34 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     );
   }
 
-  if (!empty($indel_file_check)) {
-    $fields['files']['indels'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('Indel Genotype Spreadsheet: *'),
-      '#upload_location' => "$genotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
-      ),
-      '#description' => t('Please upload a spreadsheet containing your Indels data. The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain Indel data.'),
-      '#tree' => TRUE,
-    );
+  // Disabled in #861muzfu4 but probably by mistake.
+  //if (!empty($indel_file_check)) {
+  //  $fields['files']['indels'] = array(
+  //    '#type' => 'managed_file',
+  //    '#title' => t('Indel Genotype Spreadsheet: *'),
+  //    '#upload_location' => "$genotype_upload_location",
+  //    '#upload_validators' => array(
+  //      'file_validate_extensions' => array('csv tsv xlsx'),
+  //    ),
+  //    '#description' => t('Please upload a spreadsheet containing your Indels data. The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain Indel data.'),
+  //    '#tree' => TRUE,
+  //  );
 
-    if (isset($fields['files']['indels']['#value']['fid'])) {
-      $fields['files']['indels']['#default_value'] = $fields['files']['indels']['#value']['fid'];
-    }
-    if (!empty($fields['files']['indels']['#default_value']) and ($file = file_load($fields['files']['indels']['#default_value']))) {
-      // Stop using the file so it can be deleted if the user clicks 'remove'.
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-    }
-  }
-  else {
-    $fields['files']['indels'] = array(
-      '#type' => 'managed_file',
-      '#tree' => TRUE,
-      '#access' => FALSE,
-    );
-  }
+  //  if (isset($fields['files']['indels']['#value']['fid'])) {
+  //    $fields['files']['indels']['#default_value'] = $fields['files']['indels']['#value']['fid'];
+  //  }
+  //  if (!empty($fields['files']['indels']['#default_value']) and ($file = file_load($fields['files']['indels']['#default_value']))) {
+  //    // Stop using the file so it can be deleted if the user clicks 'remove'.
+  //    file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+  //  }
+  //}
+  //else {
+  //  $fields['files']['indels'] = array(
+  //    '#type' => 'managed_file',
+  //    '#tree' => TRUE,
+  //    '#access' => FALSE,
+  //  );
+  //}
 
   if (!empty($other_file_check)) {
     $fields['files']['other'] = array(
@@ -1920,28 +1882,6 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#title' => t('<div class="fieldset-title">SNPs Information:</div>'),
     '#collapsible' => TRUE,
   ];
-  // [VS]
-  // @TODO Add validation.
-  // @TODO Update submit_all.php.
-  $fields['SNPs']['genotyping-type'] = [
-    '#type' => 'select',
-    '#title' => t('Genotyping type: *'),
-    '#options' => drupal_map_assoc([
-      t('Genotyping assay'),
-
-      // generate two upload fields - one for “SNP Assay File”
-      // and the other for “Assay design File”
-
-
-
-      t('Genotyping'),
-      // Generate dropdown titled “Genotyping file type” with options
-      // “SNP Assay file and Assay design file”,
-      // “VCF”
-
-    ]),
-  ];
-  // [/VS]
   $fields['SNPs']['genotyping-design'] = array(
     '#type' => 'select',
     '#title' => t('Define Experimental Design: *'),
@@ -2020,3 +1960,76 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#title' => t('Other Marker Type: *'),
   ];
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Helper functions.
+
+/**
+ * Adds checkbox to select existing file or upload new one.
+ *
+ * @param array $field
+ *   Form API array.
+ * @param string $id
+ *   Organism Id. Example: 'organism-1'.
+ * @param string $title
+ *   Human readable name of the related file upload field
+ *   (including trailing word 'File').
+ * @param string $key
+ *   Unique key to avoid field's duplication.
+ *
+ * @return mixed
+ *   Returns value of file field.
+ */
+function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, $key) {
+    $name = $key . '_file-selector';
+    $fields['files'][$name] = [
+      '#type' => 'checkbox',
+      '#title' => t('Reference Existing @title', ['@title' => $title]),
+      '#ajax' => [
+        'callback' => 'tpps_genotype_files_type_change_callback',
+        'wrapper' => "$id-genotype-files",
+      ],
+    ];
+    return tpps_get_ajax_value($form_state, [$id, 'genotype', 'files', $name]);
+}
+
+//tpps_build_file_field($fields, [
+//  'form_state' => $form_state,
+//  'id' => $id,
+//  'file_field_name' => $file_field_name,
+//  'title' => 'Assay Design File',
+//  'upload_location' => "$genotype_upload_location",
+//]);
+function tpps_build_file_field(array &$fields, array $meta) {
+  extract($meta);
+  $fields['files'][$file_field_name] = [
+    '#type' => 'managed_file',
+    '#title' => $title . ': *',
+    '#upload_location' => $upload_location,
+    '#upload_validators' => [
+      'file_validate_extensions' => ['csv tsv xlsx'],
+    ],
+    '#description' => ($description ?? ''),
+    '#tree' => TRUE,
+  ];
+  // SNP Assay used this:
+    //if (isset($fields['files'][$file_field_name]['#value']['fid'])) {
+    //  $fields['files'][$file_field_name]['#default_value']
+    //    = $fields['files'][$file_field_name]['#value']['fid'];
+    //}
+
+  if (isset($fields['files'][$file_field_name]['#value'])) {
+    $fields['files'][$file_field_name]['#default_value']
+      = $fields['files'][$file_field_name]['#value'];
+  }
+  $condition = (
+    !empty($fields['files'][$file_field_name]['#default_value'])
+    && ($file = file_load($fields['files'][$file_field_name]['#default_value']))
+  );
+  if ($condition) {
+    // Stop using the file so it can be deleted if the user clicks 'remove'.
+    file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+  }
+}
+
+
