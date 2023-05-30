@@ -673,7 +673,12 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
           if ($missing_snps !== array()) {
             $snps_id_str = implode(', ', $missing_snps);
-            form_set_error("$id][genotype][files][snps-association", t("SNPs Association File: We detected SNP IDs that were not in your Genotype Assay. Please either remove these SNPs from your Association file, or add them to your Genotype Assay. The SNP Identifiers we found were: @snps_id_str", array('@snps_id_str' => $snps_id_str)));
+            form_set_error("$id][genotype][files][snps-association",
+              t("SNP Association File: We detected SNP IDs that were not in "
+              . "your Genotype Assay. Please either remove these SNPs from "
+              . "your Association file, or add them to your Genotype Assay. "
+              . "The SNP Identifiers we found were: @snps_id_str",
+              ['@snps_id_str' => $snps_id_str]));
           }
 
           // Check that Phenotype names match phenotype metadata section.
@@ -697,7 +702,13 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
           $missing_phenotypes = array_diff($association_phenotypes, $phenotype_meta_names);
           if ($missing_phenotypes !== array()) {
             $phenotype_names_str = implode(', ', $missing_phenotypes);
-            form_set_error("$id][genotype][files][snps-association", "SNPs Association File: We detected Associated Traits that were not specified in the Phenotype Metadata Section. Please either remove these Traits from your Association file, or add them to your Phenotype Metadata section. The Trait names we foud were: $phenotype_names_str");
+            form_set_error("$id][genotype][files][snps-association",
+              t("SNP Association File: We detected Associated Traits that were "
+              . "not specified in the Phenotype Metadata Section. Please "
+              . "either remove these Traits from your Association file, "
+              . "or add them to your Phenotype Metadata section. The Trait "
+              . "names we foud were: $phenotype_names_str")
+            );
           }
 
           // Check that position values are correctly formatted.
@@ -705,7 +716,11 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
           $positions = tpps_parse_file_column($assoc_file, $position_col, $assoc_no_header);
           foreach ($positions as $position) {
             if (!preg_match('/^(\d+):(\d+)$/', $position)) {
-              form_set_error("$id][genotype][files][snps-association", t('SNPs Association File: We detected SNP positions that do not match the required format. The correct format is: "start:stop".'));
+              form_set_error("$id][genotype][files][snps-association",
+                t('SNP Association File: We detected SNP positions that do '
+                . 'not match the required format. '
+                . 'The correct format is: "start:stop".')
+              );
               break;
             }
           }

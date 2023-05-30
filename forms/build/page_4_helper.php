@@ -1058,11 +1058,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // SNPs Association File.
+  // SNP Association File.
 
   if ($genotyping_type_check == "Genotyping Assay") {
     $file_field_name = 'snps-association';
-    $title = t('SNPs Association File');
+    $title = t('SNP Association File');
     tpps_build_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
