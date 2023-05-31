@@ -2301,7 +2301,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $row_object = $results->fetchObject();
           $variant_id = $row_object->feature_id;
 
-          // SOME CODE FOR THIS IS OUTSIDE OF THE PER LINE PROCESSING ABOVE (OUTISDE FOR LOOP)
+          // SOME CODE FOR THIS IS OUTSIDE OF THE PER LINE PROCESSING ABOVE (OUTSIDE FOR LOOP)
           // 3/27/2023: Chromosome number and position (store this in featureloc table)
           // feature_id from marker or variant created
           // srcfeature_id for the genome / assembly used for reference (some sort of query - complicated)
@@ -2324,14 +2324,37 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             }
           }
 
+          // If reference genome found (analysis_id) but no srcfeature found
+          if (isset($analysis_id) && !isset($srcfeature_id)) {
+            throw new Exception("Genotype VCF processing found reference genome but no 
+              srcfeature could not be found. This action was recommended by Database Administrator.");
+          }
+
           // if srcfeature_id was found, then we have enough info to add featureloc data
           if (isset($srcfeature_id)) {
+            $fmax = $position;
+
+            // Check to see whether feature is an indel ($ref is non-singular value)
+            // split ref by comma (based on Emily's demo), go through each split value
+            $ref_comma_parts = explode(',', $ref); // eg G,GTAC
+            foreach ($ref_comma_parts as $ref_comma_part) {
+              $ref_comma_part = trim($ref_comma_part);
+              // Check length of comma_part
+              $len = strlen($ref_comma_part);
+              // If len is more than 1, use this value to calculate the fmax position
+              if($len > 1) {
+                $fmax = intval($position) + ($len - 1);
+                break;
+              }
+            }
+
+
             $featureloc_values = [
               'feature_id' => $marker_id,
               'srcfeature_id' => $srcfeature_id,
               'fmin' => $position,
-              'fmax' => $position // TODO We need to determine how to deal with indels
-            ];   
+              'fmax' => $fmax // ALPHA code above now caters for INDELS
+            ];
 
             // Since we haven't catered for deletion of these featureloc records
             // there may already exist, we have to make sure the record doesn't already exist
@@ -2367,7 +2390,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // foreach ($genotype_names as $genotype_name) { // eg scaffold_pos_A:G
           foreach ($detected_genotypes as $genotype_name => $genotype_name_without_combination) { // eg scaffold_pos_A:G
             $genotype_name_progress_count++;
-            $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description";
+            $genotype_desc = $genotype_name; // Ideally uniquename should be exactly the same as name with the gentoype read added to the end. (Emily 5/30/2023)
+            // $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description"; // Altered on advice from Emily 5/30/2023
             // print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
             
             // PETER'S CODE
