@@ -962,25 +962,22 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'visible' => [
         ':input[name="' . $id . '[genotype][files][genotyping-type]"]'
         => ['value' => 'Genotyping'],
-        //':input[name="' . $id . '[genotype][marker-type]"]'
-        //=> ['value' => 'SNPs'],
       ],
     ],
   ];
 
-  $parents = array_merge($file_type_parents, array('VCF'));
+  // Value is a string since only one option could be selected.
   $file_type_value = tpps_get_ajax_value($form_state, $file_type_parents);
-  //dpm(print_r($file_type_value, 1), 'file_type_value');
-
-  //$vcf_file_check = tpps_get_ajax_value($form_state, $file_type_parents);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNP Assay File.
   $title = t('SNP Assay File');
   $file_field_name = 'snps-assay';
-  if ($genotyping_type_check == "Genotyping Assay"
-    || in_array('SNP Assay file and Assay design file', $file_type_value))
-  {
+  $condition = (
+    $genotyping_type_check == 'Genotyping Assay'
+    || $file_type_value == 'SNP Assay file and Assay design file'
+  );
+  if ($condition) {
     if (empty(tpps_add_file_selector($form_state, $fields, $id, $title, ''))) {
       // Add file upload field if file selector wasn't checked.
       tpps_build_file_field($fields, [
@@ -1019,9 +1016,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // Assay Design File.
   $title = t('Assay Design File');
   $file_field_name = 'assay-design';
-  if ($genotyping_type_check == "Genotyping Assay"
-    || in_array('SNP Assay file and Assay design file', $file_type_value))
-  {
+  $condition = (
+    $genotyping_type_check == "Genotyping Assay"
+    || $file_type_value == 'SNP Assay file and Assay design file'
+  );
+  if ($condition) {
     // Add file upload field.
     tpps_build_file_field($fields, [
       'form_state' => $form_state,
@@ -1378,56 +1377,35 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     tpps_build_disabled_file_field($fields, 'other');
   }
 
-  if (in_array('VCF', $file_type_value)) {
-    // @TODO Replace!
-    $fields['files']['vcf'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('Genotype VCF File: *'),
-      '#upload_location' => "$genotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('gz tar zip'),
-      ),
-      '#tree' => TRUE,
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[genotype][files][local_vcf_check]"]' => array('checked' => FALSE),
-        ),
-      ),
-    );
-
-    if (isset($fields['files']['vcf']['#value'])) {
-      $fields['files']['vcf']['#default_value'] = $fields['files']['vcf']['#value'];
-    }
-    if (!empty($fields['files']['vcf']['#default_value']) and ($file = file_load($fields['files']['vcf']['#default_value']))) {
-      // Stop using the file so it can be deleted if the user clicks 'remove'.
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-    }
-
-    // Replace end.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Genotype VCF File.
+  $title = t('Genotype VCF File');
+  $file_field_name = 'vcf';
+  $condition = (
+    $genotyping_type_check == 'Genotyping'
+    && $file_type_value == 'VCF'
+  );
+  if ($condition) {
+    tpps_build_file_field($fields, [
+      'form_state' => $form_state,
+      'id' => $id,
+      'file_field_name' => $file_field_name,
+      'title' => $title,
+      'upload_location' => "$genotype_upload_location",
+      'description' => '',
+      'extensions' => ['gz tar zip'],
+    ]);
 
     if (isset($form_state['tpps_type']) and $form_state['tpps_type'] == 'tppsc') {
-      global $base_url;
-      $parts = explode('://', $base_url);
-      $hostname = $parts[1];
-      $fields['files']['local_vcf_check'] = array(
-        '#type' => 'checkbox',
-        '#title' => t("My VCF file is stored locally on @hostname", array('@hostname' => $hostname)),
-      );
-
-      $fields['files']['local_vcf'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Path to local VCF File: *'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $id . '[genotype][files][local_vcf_check]"]' => array('checked' => TRUE),
-          ),
-        ),
-        '#description' => t("Please provide the full path to your vcf file stored locally on @hostname", array('@hostname' => $hostname)),
-      );
+      tpps_add_dropdown_file_selector($fields, [
+        'form_state' => $form_state,
+        'file_field_name' => $file_field_name,
+        'id' => $id,
+      ]);
     }
   }
   else {
-    tpps_build_disabled_file_field($fields, 'vcf');
+    tpps_build_disabled_file_field($fields, $file_field_name);
   }
 
   return $fields;
@@ -1941,16 +1919,16 @@ function tpps_page_4_marker_info(array &$fields, $id) {
  *   Returns value of file field.
  */
 function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, $key) {
-    $name = $key . '_file-selector';
-    $fields['files'][$name] = [
-      '#type' => 'checkbox',
-      '#title' => t('Reference Existing @title', ['@title' => $title]),
-      '#ajax' => [
-        'callback' => 'tpps_genotype_files_type_change_callback',
-        'wrapper' => "$id-genotype-files",
-      ],
-    ];
-    return tpps_get_ajax_value($form_state, [$id, 'genotype', 'files', $name]);
+  $name = $key . '_file-selector';
+  $fields['files'][$name] = [
+    '#type' => 'checkbox',
+    '#title' => t('Reference Existing @title', ['@title' => $title]),
+    '#ajax' => [
+      'callback' => 'tpps_genotype_files_type_change_callback',
+      'wrapper' => "$id-genotype-files",
+    ],
+  ];
+  return tpps_get_ajax_value($form_state, [$id, 'genotype', 'files', $name]);
 }
 
 //tpps_build_file_field($fields, [
@@ -1968,10 +1946,11 @@ function tpps_build_file_field(array &$fields, array $meta) {
     '#title' => $title . ': *',
     '#upload_location' => $upload_location,
     '#upload_validators' => [
-      'file_validate_extensions' => ['csv tsv xlsx'],
+      'file_validate_extensions' => $extensions ? $extensions : ['csv tsv xlsx'],
     ],
     '#description' => ($description ?? ''),
     '#tree' => TRUE,
+    '#states' => $states ? $states : '',
   ];
 
   if ($file_field_name != 'snps-association') {
@@ -2003,3 +1982,61 @@ function tpps_build_disabled_file_field(array &$fields, $file_field_name) {
     '#access' => FALSE,
   ];
 }
+
+/**
+ * Gets domain name.
+ *
+ * @return string
+ *   Returns domain name.
+ *
+ */
+function tpps_get_hostname() {
+  global $base_url;
+  return explode('://', $base_url)[1];
+}
+
+/**
+ * Adds checkbox to select existing file or upload new one.
+ *
+ *
+ * @return mixed
+ *   Returns value of file field.
+ */
+function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
+  extract($meta);
+  $fields['files'][$file_field_name . '_file-location'] = [
+    '#type' => 'select',
+    '#title' => t('VCF File Location'),
+    '#options' => [
+      'local' => t('My VCF File is stored locally'),
+      'remote' => t('My VCF File is stored at @hostname',
+        ['@hostname' => tpps_get_hostname()]),
+    ],
+    '#weight' => 90,
+  ];
+  $fields['files'][$file_field_name]['#states'] = [
+    'visible' => [
+      ':input[name="' . $id . '[genotype][files]['
+        . $file_field_name . '_file-location]"]'
+        => ['value' => 'remote'],
+    ],
+  ];
+  $fields['files'][$file_field_name]['#weight'] = 100;
+  $fields['files']['local_' . $file_field_name] = [
+    '#type' => 'textfield',
+    '#title' => t('Path to local VCF File: *'),
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $id . '[genotype][files]['
+          . $file_field_name . '_file-location]"]'
+          => ['value' => 'local'],
+      ],
+    ],
+    '#description' => t('Please provide the full path to your vcf file '
+      . 'stored locally on @hostname',
+      ['@hostname' => tpps_get_hostname()]
+    ),
+    '#weight' => 100,
+  ];
+}
+
