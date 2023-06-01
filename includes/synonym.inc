@@ -182,7 +182,6 @@ function tpps_synonym_get_unit_name($unit_id = '') {
  *   Phenotype Id.
  */
 function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
-  // @TODO Combine with tpps_synonym_save().
   tpps_log('[INFO] Phenotype Synonyms processing started...');
   $j = 1;
   foreach (array_values($id_list) as $phenotype_id) {
