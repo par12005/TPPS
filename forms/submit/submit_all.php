@@ -1148,22 +1148,9 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     tpps_log('[INFO] - Inserting data into database using insert_multi...');
 
     // [VS] Store relations between Phenotype, Synonym, Unit.
-    if ($id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype'])) {
-      tpps_log('[INFO] Phenotype Synonyms processing started...');
-      $j = 1;
-      foreach (array_values($id_list) as $phenotype_id) {
-        tpps_synonym_save(
-          $phenotype['phenotypes-meta'][$j],
-          $phenotype_id
-        );
-        // Loop phenotypes to get correct Synonym Id.
-        if ($j < $phenotype_number) {
-          $j++;
-        } else {
-          $j = 1;
-        }
-      }
-      tpps_log('[INFO] Phenotype Synonyms processing completed.');
+    $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
+    if ($id_list) {
+      tpps_synonym_save($phenotype['phenotypes-meta'], $id_list);
     }
     // [/VS].
     tpps_log('[INFO] - Done.');
@@ -1196,31 +1183,13 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     tpps_log('[INFO] - Processing phenotype_data file data...');
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
     tpps_log('[INFO] - Inserting phenotype_data into database using insert_multi...');
-    //tpps_chado_insert_multi($options['records']);
     // [VS] Store relations between Phenotype, Synonym, Unit.
-    if ($id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype'])) {
-      tpps_log('[INFO] Phenotype Synonyms processing started...');
-      $j = 1;
-      foreach (array_values($id_list) as $phenotype_id) {
-        tpps_synonym_save(
-          $phenotype['phenotypes-meta'][$j],
-          $phenotype_id
-        );
-        // Loop phenotypes to get correct Synonym Id.
-        if ($j < $phenotype_number) {
-          $j++;
-        } else {
-          $j = 1;
-        }
-      }
-      tpps_log('[INFO] Phenotype Synonyms processing completed.');
+    //tpps_chado_insert_multi($options['records']);
+    $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
+    if ($id_list) {
+      tpps_synonym_save($phenotype['phenotypes-meta'], $id_list);
     }
     // [/VS].
-
-
-
-    // @TODO Store synonyms and units.
-    // tpps_log('[INFO] Process Synonym and Unit.');
     tpps_log('[INFO] - Done.');
   }
 }
