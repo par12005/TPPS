@@ -756,22 +756,6 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
     $options['pop_group'] = $tree_accession['pop-group'];
 
     // [VS] #8669py308
-    //
-    //
-    //
-    // @TODO Need some work!!!
-    //
-    // @TODO Remove outdate code.
-    //$options['exact'] = $tree_accession['exact_coords'] ?? NULL;
-    //$options['precision'] = NULL;
-    //if (!$options['exact']) {
-    //  $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
-    //  if (!array_key_exists(tpps_get_tag_id('No Location Information'), tpps_submission_get_tags($form_state['accession']))) {
-    //    tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
-    //  }
-    //}
-    // @TODO /Remove outdate code.
-
     switch ($tree_accession['location_accuracy']) {
       case 'exact':
         $options['exact'] = TRUE;
@@ -993,10 +977,11 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     'time' => tpps_load_cvterm('time')->cvterm_id,
     'desc' => tpps_load_cvterm('description')->cvterm_id,
     // @TODO [VS] Not sure this is needed since units are in separate table
-    // in database.
+    // in database and 'min/max not used for units.
     'unit' => tpps_load_cvterm('unit')->cvterm_id,
-    //'min' => tpps_load_cvterm('minimum')->cvterm_id,
-    //'max' => tpps_load_cvterm('maximum')->cvterm_id,
+    'min' => tpps_load_cvterm('minimum')->cvterm_id,
+    'max' => tpps_load_cvterm('maximum')->cvterm_id,
+    // [/VS]
     'environment' => tpps_load_cvterm('environment')->cvterm_id,
     'intensity' => tpps_load_cvterm('intensity')->cvterm_id,
   );
@@ -1053,14 +1038,11 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
       }
       // [VS] #8669rmrw5
-      // Unit is an integer here.
-
-vs_dump($phenotype['phenotypes-meta'][$j], $j);
-
       $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['unit'];
       if ($phenotype['phenotypes-meta'][$j]['unit'] == 'other') {
         $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
       }
+      $phenotypes_meta[$name]['synonym_id'] = $phenotype['phenotypes-meta'][$j]['synonym_id'];
       // [/VS] #8669rmrw5
       $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
       if ($phenotype['phenotypes-meta'][$j]['structure'] == 'other') {
@@ -1164,24 +1146,26 @@ vs_dump($phenotype['phenotypes-meta'][$j], $j);
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_log('[INFO] - Inserting data into database using insert_multi...');
-    // print_r($options['records']);
 
     // [VS] Store relations between Phenotype, Synonym, Unit.
-    if ($id_list = tpps_chado_insert_multi($options['records'])) {
-
-      // tpps_log('[DEBUG] ' . print_r($id_list, 1));
-      tpps_log('[INFO] Process Synonym and Unit.');
-      for ($j = 1; $j <= $phenotype_number; $j++) {
-        foreach (array_values($id_list['phenotype']) as $synonym_phenotype_id) {
-          tpps_synonym_save(
-            $phenotype['phenotypes-meta'][$j],
-            $synonym_phenotype_id
-          );
+    if ($id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype'])) {
+      tpps_log('[INFO] Phenotype Synonyms processing started...');
+      $j = 1;
+      foreach (array_values($id_list) as $phenotype_id) {
+        tpps_synonym_save(
+          $phenotype['phenotypes-meta'][$j],
+          $phenotype_id
+        );
+        // Loop phenotypes to get correct Synonym Id.
+        if ($j < $phenotype_number) {
+          $j++;
+        } else {
+          $j = 1;
         }
       }
+      tpps_log('[INFO] Phenotype Synonyms processing completed.');
     }
     // [/VS].
-
     tpps_log('[INFO] - Done.');
   }
 
@@ -1196,6 +1180,7 @@ vs_dump($phenotype['phenotypes-meta'][$j], $j);
     $options['organism_name'] = $organism_name;
     $options['meta'] = array(
       'desc' => "Mass Spectrometry",
+
 
       // @TODO Major. Replace with Unit Id.
       // CV Term for 'chemical substance'
@@ -1212,6 +1197,11 @@ vs_dump($phenotype['phenotypes-meta'][$j], $j);
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
     tpps_log('[INFO] - Inserting phenotype_data into database using insert_multi...');
     tpps_chado_insert_multi($options['records']);
+
+
+
+    // @TODO Store synonyms and units.
+    // tpps_log('[INFO] Process Synonym and Unit.');
     tpps_log('[INFO] - Done.');
   }
 }
@@ -3307,11 +3297,6 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   global $tpps_job;
   $job = $tpps_job;
   $iso = $options['iso'] ?? FALSE;
-
-vs_dump($options['attr_id'], '$options["attr_id"]');
-
-
-
   $records = &$options['records'];
   $meta_headers = $options['meta_headers'] ?? NULL;
   $file_headers = $options['file_headers'] ?? NULL;
@@ -3519,7 +3504,7 @@ vs_dump($options['attr_id'], '$options["attr_id"]');
         '#fk' => ['phenotype' => $phenotype_name],
       ];
     }
-    print_r($records['phenotype_cvterm']["$phenotype_name-unit"]);
+    //print_r($records);
     // [/VS]
 
     if (isset($meta[strtolower($name)]['min'])) {
@@ -3553,7 +3538,6 @@ vs_dump($options['attr_id'], '$options["attr_id"]');
       );
       // print_r($records['phenotype_cvterm']["$phenotype_name-env"]);
     }
-
 
 
     if ($phenotype_count > $record_group) {
@@ -4634,13 +4618,4 @@ function tpps_log($message, $variables = array(), $severity = TRIPAL_INFO) {
   global $tpps_job;
   tpps_job_logger_write($message, $variables);
   $tpps_job->logMessage($message, $variables, $severity);
-}
-
-
-
-function vs_dump($var, $message = '') {
-  print_r("\n[VS] ---------------------------------------------------\n");
-  print_r($message . "\n");
-  print_r($var);
-  print_r("\n[VS] ---------------------------------------------------\n");
 }
