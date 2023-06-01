@@ -87,3 +87,22 @@ function tpps_admin_no_synonym_report() {
   }
   return $page_title . simple_report($meta, $filter ?? []);
 }
+
+/**
+ * SQL query to test synonyms form @Emily.
+ * select
+ *   distinct s.uniquename as stock_uniquename,
+ *   sp.phenotype_id, phs.synonym,
+ *   pp.value,
+ *   c.name as unit_name
+ * from
+ *   project_stock ps join stock s on ps.stock_id = s.stock_id
+ *   join stock_phenotype sp on s.stock_id = sp.stock_id
+ *   join phenotype_to_synonym pts on sp.phenotype_id = pts.phenotype_id
+ *   join phenotype_synonyms phs on pts.phenotype_synonyms_id = phs.phenotype_synonyms_id
+ *   join phenotype_cvterm pc on pts.phenotype_id = pc.phenotype_id
+ *   join cvterm c on pc.cvterm_id = c.cvterm_id
+ *   join phenotypeprop pp on pts.phenotype_id = pp.phenotype_id
+ * where
+ *   ps.project_id = 3379;
+ **/
