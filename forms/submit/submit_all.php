@@ -1042,7 +1042,6 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       if ($phenotype['phenotypes-meta'][$j]['unit'] == 'other') {
         $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
       }
-      $phenotypes_meta[$name]['synonym_id'] = $phenotype['phenotypes-meta'][$j]['synonym_id'];
       // [/VS] #8669rmrw5
       $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
       if ($phenotype['phenotypes-meta'][$j]['structure'] == 'other') {
@@ -3217,7 +3216,6 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       'ontology' => 'po',
     ),
   );
-  print_r($meta);
   foreach ($meta as $name => $data) {
     foreach ($term_types as $type => $info) {
       $meta[$name]["{$type}_id"] = $data["{$type}"];
