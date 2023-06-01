@@ -1060,7 +1060,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     // throw new Exception('$phenotype[check]:' . $phenotype['check'] . "\n");
     if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
       $meta_fid = intval($phenotype['metadata']);
-      print_r('META_FID:' . $meta_fid . "\n");
+      //print_r('META_FID:' . $meta_fid . "\n");
       // Added because TGDR009 META FID was 0 which caused failures
       if ($meta_fid > 0) {
 
@@ -1141,7 +1141,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['file_empty'] = $phenotype['file-empty'];
     $options['organism_name'] = $organism_name;
 
-    print_r('DATA_FID:' . $data_fid . "\n");
+    //print_r('DATA_FID:' . $data_fid . "\n");
     tpps_log('[INFO] - Processing phenotype_data file data...');
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
@@ -1192,7 +1192,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id, // manual term for MASS Spec
     );
 
-    print_r('ISO_FID:' . $iso_fid . "\n");
+    //print_r('ISO_FID:' . $iso_fid . "\n");
     tpps_log('[INFO] - Processing phenotype_data file data...');
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
     tpps_log('[INFO] - Inserting phenotype_data into database using insert_multi...');
@@ -3561,7 +3561,6 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
 
     if ($phenotype_count > $record_group) {
       // print_r($records);
-      // print_r('------------' . "\n");
       tpps_log('[INFO] -- Inserting data into database using insert_multi...');
       // print_r($records);
       tpps_chado_insert_multi($records);
