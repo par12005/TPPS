@@ -130,13 +130,15 @@ function tpps_synonym_save(array $current_phenotype, $phenotype_id ) {
         'phenotype_synonyms_id' => $current_phenotype['synonym_id'],
       ))
       ->execute();
-    tpps_log('[INFO] Stored relation between Phenotype #@phenotype_id '
-      . 'and Synonym #@synonym_id.',
-      [
-        '@phenotype_id' => $phenotype_id,
-        '@synonym_id' => $current_phenotype['synonym_id'],
-      ]
-    );
+    if ($debug_mode) {
+      tpps_log('[INFO] Stored relation between Phenotype #@phenotype_id '
+        . 'and Synonym #@synonym_id.',
+        [
+          '@phenotype_id' => $phenotype_id,
+          '@synonym_id' => $current_phenotype['synonym_id'],
+        ]
+      );
+    }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Create a record in 'Unit Warning' table
