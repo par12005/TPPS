@@ -139,12 +139,15 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     $attr_options['other'] = 'My attribute term is not in this list';
 
     // [VS] #8669rmrw5
-    // Synonyms.
-    $synonym_list = tpps_synonym_get_list();
-    $default_synonym = array_key_first($synonym_list);
+    // Synonym.
+    $synonym_list = tpps_synonym_get_list(['debug' => TRUE]);
+    // We can't use tpps_get_ajax_value($form_state, $parents)
+    // because $parents must have current phenotype number ('!num') but
+    // we don't have it here.
+    $synonym_id = array_key_first($synonym_list) ?? NULL;
     // Unit.
-    $unit_list = tpps_synonym_get_unit_list($default_synonym, TRUE);
-    $default_unit = array_key_first($unit_list);
+    $unit_list = tpps_synonym_get_unit_list($synonym_id, ['debug' => TRUE]);
+    //$unit_id = array_key_first($unit_list);
     // [/VS] #8669rmrw5
 
     $struct_options = array();
@@ -205,7 +208,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#type' => 'select',
         '#title' => 'Synonym: *',
         '#options' => $synonym_list,
-        '#default_value' => $default_synonym,
+        '#default_value' => $synonym_id,
         // Unit dropdown must be updated in each synonym field change.
         '#ajax' => [
           'callback' => 'tpps_synonym_update_unit_list',
@@ -270,7 +273,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#type' => 'select',
         '#title' => 'Phenotype !num Unit: *',
         '#options' => $unit_list,
-        '#default_value' => $default_unit,
         '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
         '#validated' => TRUE,
