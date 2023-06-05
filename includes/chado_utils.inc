@@ -141,7 +141,7 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
         tpps_chado_insert_multi([$table => &$record_groups[$table]], $options);
       }
       else {
-        // Skip if genotype_call - don't worry, we do this at the end of the functio
+        // Skip if genotype_call - don't worry, we do this at the end of the function
       }
     }
   }
@@ -323,6 +323,10 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
     else {
       // This ends the copy insert data lines
       // chado_query("\\.\n");
+
+      echo "COPY $file_location DATA:\n";
+      // echo file_get_contents($file_location);
+      // echo "\n";
 
       $sql = $copy_cmd . " FROM  '" . $file_location . "' WITH DELIMITER AS ','";
       echo $sql . "\n";
