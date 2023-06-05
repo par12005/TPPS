@@ -728,7 +728,7 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
   $attr_options['other'] = 'My attribute term is not in this list';
 
   // [VS] #8669rmrw5
-  $unit_list = tpps_synonym_get_unit_list(NULL, TRUE);
+  $unit_list = tpps_synonym_get_unit_list(NULL);
   // [/VS] #8669rmrw5
 
   $struct_options = array();

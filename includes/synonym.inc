@@ -12,24 +12,36 @@
 /**
  * Gets list of Phenotype Synonyms.
  *
- * @param bool $not_in_list_option
- *   When TRUE extra item will be added to the unit list. Could be used in
- *   dropdown lists. When FALSE then only list of units will be returned.
+ * @param array $options
+ *   List of options which controls how list will look like.
+ *   Options and it's default value:
+ *     'not_in_list_option' => TRUE; - Item 'Can't find ...' will be added.
+ *     'debug' => FALSE; - options value will be shown in title.
  *
  * @return array
- *   Returns associative array where key is synonym_id and value is name.
+ *   Returns associative array with synonym_id as key
+ *   and synonym's name as label.
  */
-function tpps_synonym_get_list($not_in_list_option = TRUE) {
+function tpps_synonym_get_list(array $options = []) {
+  // Get defaults.
+  $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
+  $options = array_merge($defaults, $options);
+
   // Using chado_select_record() don't allow to use fetchAllKeyed().
   $query = db_select('chado.phenotype_synonyms', 'cps')
     ->fields('cps', ['phenotype_synonyms_id', 'synonym'])
     ->condition('cps.synonym', 0, '>');
-  $synonym_list = $query->execute()->fetchAllKeyed();
+  $list = $query->execute()->fetchAllKeyed();
   // This option must be last.
-  if ($not_in_list_option) {
-    $synonym_list[0] = t("I can't find synonym");
+  if ($options['not_in_list_option']) {
+    $list[0] = t("I can't find synonym");
   }
-  return $synonym_list;
+  if ($options['debug']) {
+    foreach ($list as $key => $value) {
+      $list[$key] = $key . ': ' . $value ;
+    }
+  }
+  return $list;
 }
 
 /**
@@ -107,7 +119,10 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  *  Returns all units if synonym not specified.
  *  Returns empty array if synonym not found.
  */
-function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = TRUE) {
+function tpps_synonym_get_unit_list($synonym_id = '', array $options = []) {
+  $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
+  $options = array_merge($defaults, $options);
+
   $query = db_select('chado.phenotype_units', 'cpu')
     ->fields('cpu', ['unit_cvterm_id', 'unit_name']);
   if (!empty($synonym_id)) {
@@ -116,12 +131,18 @@ function tpps_synonym_get_unit_list($synonym_id = '', $not_in_list_option = TRUE
     );
     $query->condition('cps.phenotype_synonyms_id', $synonym_id);
   }
-  $unit_list = $query->execute()->fetchAllKeyed();
+  $list = $query->execute()->fetchAllKeyed();
   // This option must be last.
-  if (!empty($unit_list) && $not_in_list_option) {
-    $unit_list['other'] = t('My unit is not in this list');
+  if (!empty($list) && $options['not_in_list_option']) {
+    $list['other'] = t('My unit is not in this list');
   }
-  return $unit_list;
+  if ($options['debug']) {
+    foreach ($list as $key => $value) {
+      $list[$key] = $key . ': ' . $value ;
+    }
+  }
+
+  return $list;
 }
 
 /**
@@ -143,7 +164,10 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   // Update list of units.
   $unit_field = drupal_array_get_nested_value($form, $parents, $key_exists);
   if ($key_exists) {
-    $unit_field['#options'] = tpps_synonym_get_unit_list($synonym_id, TRUE);
+    $unit_field['#options'] = tpps_synonym_get_unit_list($synonym_id,
+      ['debug' => TRUE]
+
+    );
     // https://www.drupal.org/forum/support/post-installation/2018-04-25/an-illegal-choice-has-been-detected-please-contact-the#comment-13254706
     //$unit_field['#validated'] = TRUE;
     return form_process_select($unit_field);
@@ -208,7 +232,7 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
     // Create a record in 'Unit Warning' table
     // when Synonym's Unit differs from Submitted Unit.
     //$unit_group = tpps_synonym_get_unit_list(
-    //  $phenotypes_meta[$j]['synonym_id'], FALSE
+    //  $phenotypes_meta[$j]['synonym_id']
     //);
 
     if ($phenotypes_meta[$j]['units'] == 0) {
