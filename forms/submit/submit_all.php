@@ -2133,7 +2133,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $vcf_fid = $genotype['files']['vcf'];
       tpps_add_project_file($form_state, $vcf_fid);
 
-      $marker = 'SNP';
+      
 
       $records['genotypeprop'] = array();
 
@@ -2219,14 +2219,17 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $qual = &$vcf_line[5];
           $filter = &$vcf_line[6];
           $info = &$vcf_line[7];
+          $marker_type = 'SNP';
 
           if (empty($variant_name) or $variant_name == '.') {
             // $variant_name = "{$scaffold_id}{$position}$ref:$alt";
             $variant_name = $scaffold_id . '_' . $position . 'SNP';
           }
           // $marker_name = $variant_name . $marker; // Original by Peter
-          $marker_name = $scaffold_id . '_' . $position; // Emily updated suggestion on Tuesday August 9th 2022
-          $description = "$ref:$alt";
+          $marker_name = $scaffold_id . '_' . $position . '-' . $species_code; // Emily updated suggestion on Tuesday August 9th 2022
+          
+          // $description = "$ref:$alt"; // Replaced with genotype_combination within $detected_genotypes array (5/31/2023)
+
           // $genotype_name = "$marker-$species_code-$scaffold_id-$position"; // Original by Peter
 
           // Instead, we have multiple genotypes we need to generate, so lets do a key val array
@@ -2235,15 +2238,33 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $count_columns = count($vcf_line);
           for ($j = 9; $j < $count_columns; $j++) {
 
-            $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt); // eg A:G
+            $genotype_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt); // eg AG (removed the : part of code on 5/31/2023)
 
-            $detected_genotypes[$marker_name . '_' . $genotype_combination] = $marker_name; // [scaffold_pos_A:G] = scaffold_pos
+            // Check if marker type is indel
+            // split ref by comma (based on Emily's demo), go through each split value
+            $ref_comma_parts = explode(',', $ref); // eg G,GTAC
+            foreach ($ref_comma_parts as $ref_comma_part) {
+              $ref_comma_part = trim($ref_comma_part);
+              // Check length of comma_part
+              $len = strlen($ref_comma_part);
+              // If len is more than 1, use this value to calculate the fmax position
+              if($len > 1) {
+                $marker_type = 'INDEL';
+                break;
+              }
+            }
+
+            $detected_genotypes[$marker_type . '-' . $marker_name . '-' . $genotype_combination] = [
+              'marker_name' => $marker_name,
+              'marker_type' => $marker_type,
+              'genotype_combination' => $genotype_combination,
+            ]; // [scaffold_pos_A:G] = scaffold_pos
             // $detected_genotypes[$marker_name] = TRUE;
 
             // Record the first genotype name to use for genotype_call table
             if($j == 9) {
               // print_r('[First Genotype]:' . $marker_name . $genotype_combination . "\n");
-              $first_genotypes[$marker_name . $genotype_combination] = TRUE;
+              $first_genotypes[$marker_type . '-' . $marker_name . '-' . $genotype_combination] = TRUE;
             }
             
           }
@@ -2387,10 +2408,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           print_r('genotypes per line: ' . count($genotype_names) . " ");
           
           $genotype_name_progress_count = 0;
-          // foreach ($genotype_names as $genotype_name) { // eg scaffold_pos_A:G
-          foreach ($detected_genotypes as $genotype_name => $genotype_name_without_combination) { // eg scaffold_pos_A:G
+          foreach ($detected_genotypes as $genotype_name => $genotype_info_array) { // eg SNP-scaffold_pos_-POTR-AG
+            $genotype_name_without_combination = $genotype_info_array['marker_name'];
+            $marker_type = $genotype_info_array['marker_type'];
+            $genotype_combination = $genotype_info_array['genotype_combination'];
             $genotype_name_progress_count++;
-            $genotype_desc = $genotype_name; // Ideally uniquename should be exactly the same as name with the gentoype read added to the end. (Emily 5/30/2023)
+            $genotype_desc = $genotype_name; // Includes marker type. Ideally uniquename should be exactly the same as name with the gentoype read added to the end. (Emily 5/30/2023)
             // $genotype_desc = "$marker-$species_code-$genotype_name-$position-$description"; // Altered on advice from Emily 5/30/2023
             // print_r('[DEBUG: Genotype] genotype_name: ' . $genotype_name . ' ' . 'genotype_desc: ' . $genotype_desc . "\n");
             
@@ -2417,21 +2440,27 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             
             try {
               $results = chado_insert_record('genotype', [
-                'name' => $genotype_name_without_combination,
+                'name' => $marker_type . '-' . $genotype_name_without_combination,
                 'uniquename' => $genotype_desc,
-                'description' => $description,
+                //'description' => $description, // Replaced since this produced weird values: G:A,N,NT,NC
+                'description' => $genotype_combination, // Genotype combination from the detected_genotypes array result (5/31/2023)
                 'type_id' => $snp_cvterm,
               ]);
+              print_r($results);
+              print_r("\n");
             }
             catch (Exception $ex) {
               
             }
+            // throw new Exception('DEBUG');
             // get the feature_id
             $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
               ':uniquename' => $genotype_desc
             ]);
             $row_object = $results->fetchObject();
-            $genotype_id = $row_object->genotype_id;            
+            $genotype_id = $row_object->genotype_id;
+            $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
+            echo("DEBUG INFO: $debug_info");
 
              // 3/27/2023 Meeting - FORMAT: REVIEW THIS IN TERMS OF IF WE NEED IT
             if ($format != "") {
@@ -2453,8 +2482,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               // Rish: This was added on 09/12/2022
               // This gets the name of the current genotype for the tree_id column
               // being checked.
-              $column_genotype_name = $marker_name . '_' . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
-              // echo 'Column genotype name: ' . $column_genotype_name . " vs Genotype name: $genotype_name\n";
+
+
+              $column_genotype_name = $marker_type . '-' . $marker_name . '-' . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+              echo 'Column Genotype Name: ' . $column_genotype_name . " Genotype Name: $genotype_name\n";
               if($column_genotype_name == $genotype_name) {
                 // Found a match between the tree_id genotype and the genotype_name from records
 
@@ -2487,7 +2518,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                 // );
               }
             }
-
+            // throw new Exception('DEBUG');
 
             // @TODO 3/28/2023 - Gabe thought we didn't need additional data from the VCF file
             // Basically chromosome and position
@@ -3076,9 +3107,10 @@ function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
   $count_indices = count($ref_alt_indices); // 2
   for($k = 0; $k < $count_indices; $k++) { // essentially generating A:G, A:A 
     $index_tmp = $ref_alt_indices[$k]; // 0 or 1 (actual value)
-    if($k > 0) {
-      $genotype_combination .= ':';
-    }
+    // Remove this code which used to add the :
+    // if($k > 0) {
+    //   $genotype_combination .= ':';
+    // }
     if($index_tmp == 0) {
       $genotype_combination .= $ref;
     }
