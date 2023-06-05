@@ -2446,8 +2446,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
                 'description' => $genotype_combination, // Genotype combination from the detected_genotypes array result (5/31/2023)
                 'type_id' => $snp_cvterm,
               ]);
-              print_r($results);
-              print_r("\n");
+              // print_r($results);
+              // print_r("\n");
             }
             catch (Exception $ex) {
               

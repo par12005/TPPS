@@ -325,8 +325,8 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
       // chado_query("\\.\n");
 
       echo "COPY $file_location DATA:\n";
-      echo file_get_contents($file_location);
-      echo "\n";
+      // echo file_get_contents($file_location);
+      // echo "\n";
 
       $sql = $copy_cmd . " FROM  '" . $file_location . "' WITH DELIMITER AS ','";
       echo $sql . "\n";
