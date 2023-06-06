@@ -383,7 +383,7 @@ function tpps_pre_validate_init($accession = NULL) {
           $file->filename = drupal_basename($fid);
           $file->filemime = file_get_mimetype($file->uri);
           $file->uid = $user->uid;
-          $file->status = 0;
+          $file->status = FILE_STATUS_PERMANENT;
           $file = file_save($file);
         }
 
