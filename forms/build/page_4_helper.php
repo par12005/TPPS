@@ -140,14 +140,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
     // [VS] #8669rmrw5
     // Synonym.
-    $synonym_list = tpps_synonym_get_list(['debug' => TRUE]);
+    $synonym_list = tpps_synonym_get_list();
     // We can't use tpps_get_ajax_value($form_state, $parents)
     // because $parents must have current phenotype number ('!num') but
     // we don't have it here.
     $synonym_id = array_key_first($synonym_list) ?? NULL;
     // Unit.
-    $unit_list = tpps_synonym_get_unit_list($synonym_id, ['debug' => TRUE]);
-    //$unit_id = array_key_first($unit_list);
+    $unit_list = tpps_synonym_get_unit_list($synonym_id);
     // [/VS] #8669rmrw5
 
     $struct_options = array();
