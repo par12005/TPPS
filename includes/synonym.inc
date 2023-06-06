@@ -188,42 +188,51 @@ function tpps_synonym_get_unit_name($unit_id = '') {
   if (empty($unit_id)) {
     return;
   }
-  return db_select('chado.phenotype_units', 'cpu')
+  $unit_name = db_select('chado.phenotype_units', 'cpu')
     ->fields('cpu', ['unit_name'])
     ->condition('cpu.unit_cvterm_id', $unit_id)
     ->range(0, 1)
     ->execute()
     ->fetchField();
+  if (empty($unit_name)) {
+    $unit_name = db_select('chado.cvterm', 'cc')
+      ->fields('cc', ['name'])
+      ->condition('cc.cvterm_id', $unit_id)
+      ->range(0, 1)
+      ->execute()
+      ->fetchField();
+  }
+  return $unit_name;
 }
 
 
 /**
  * Stores relation between Phenotype, Synonym and Unit [vs].
  *
- * @param array $current_phenotype
- *   Part of $form_state with currently processing Phenotype.
- * @param int $phenotype_id
- *   Phenotype Id.
+ * @param array $synonym_list
+ *   Associative array where key is a number of phenotype
+ *   (number of items is equal to number of phenotypes). Value is an
+ *   associative array with keys:
+ *   - 'unit' int Unit Id.
+ *   - 'synonym_id' int Synonym Id.
+ * @param array $id_list
+ *   List of Phenotype Ids received after saving into database.
  */
-function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
+function tpps_synonym_save(array $synonym_list, array $id_list) {
   tpps_log('[INFO] Phenotype Synonyms processing started...');
   $j = 1;
+  $count_synonym_list = count($synonym_list);
   foreach (array_values($id_list) as $phenotype_id) {
-    //tpps_synonym_save(
-    //  $phenotypes_meta[$j],
-    //  $phenotype_id
-    //);
-
     // Store Phenotype and Synonym relation.
-    if ($phenotypes_meta[$j]['synonym_id']) {
+    if ($synonym_list[$j]['synonym_id']) {
       db_merge('chado.phenotype_to_synonym')
         ->key([
           'phenotype_id' => $phenotype_id,
-          'phenotype_synonyms_id' => $phenotypes_meta[$j]['synonym_id'],
+          'phenotype_synonyms_id' => $synonym_list[$j]['synonym_id'],
         ])
         ->fields([
           'phenotype_id' => $phenotype_id,
-          'phenotype_synonyms_id' => $phenotypes_meta[$j]['synonym_id'],
+          'phenotype_synonyms_id' => $synonym_list[$j]['synonym_id'],
         ])
         ->execute();
     }
@@ -234,8 +243,7 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
     //$unit_group = tpps_synonym_get_unit_list(
     //  $phenotypes_meta[$j]['synonym_id']
     //);
-
-    if ($phenotypes_meta[$j]['units'] == 0) {
+    if ($synonym_list[$j]['unit'] == 0) {
       // Store phenotype Id which has custom unit.
       // Note: The same data could be found in column
       // 'public.tpps_submissions.submission_state' but it's serialized
@@ -245,13 +253,8 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
         ->fields(['phenotype_id' => $phenotype_id])
         ->execute();
     }
-
     // Loop phenotypes to get correct Synonym Id.
-    if ($j < count($phenotypes_meta)) {
-      $j++;
-    } else {
-      $j = 1;
-    }
+    $j = ($j < $count_synonym_list) ? ($j + 1) : 1;
   }
   tpps_log('[INFO] Phenotype Synonyms processing completed.');
 }

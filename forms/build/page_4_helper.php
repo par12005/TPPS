@@ -203,10 +203,14 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'synonym_description' => tpps_build_field_description() + [
         '#states' => ['visible' => [
           tpps_synonym_selector($id) => ['!value' => 0],
-      ]]],
+        ]]],
+
       'synonym_id' => [
         '#type' => 'select',
-        '#title' => 'Synonym: *',
+        // The label should just be "phenotype", no synonym anywhere. We use
+        // synonym to describe our phenotype setup behind the scenes but it's
+        // not relevant and would be confusing for the scientists using TPPS.
+        '#title' => 'Phenotype: *',
         '#options' => $synonym_list,
         '#default_value' => $synonym_id,
         // Unit dropdown must be updated in each synonym field change.
