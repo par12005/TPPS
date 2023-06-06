@@ -1004,9 +1004,19 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     'data' => &$form_state['data']['phenotype'],
     'job' => &$job,
   );
+  // [VS]
+  // Create a list of synonyms and units to save relation between synonym
+  // and phenotype and find missing units.
+  $phenotype_number = $phenotype['phenotypes-meta']['number'];
+  for ($j = 1; $j <= $phenotype_number; $j++) {
+    $synonym_list[$j] = [
+      'synonym_id' => $phenotype['phenotypes-meta'][$j]['synonym_id'],
+      'unit' => $phenotype['phenotypes-meta'][$j]['unit'],
+    ];
+  }
+  // [/VS]
 
   if (!empty($phenotype['normal-check'])) {
-    $phenotype_number = $phenotype['phenotypes-meta']['number'];
     $phenotypes_meta = array();
     $data_fid = $phenotype['file'];
     $phenos_edit = $form_state['phenotypes_edit'] ?? NULL;
@@ -1149,7 +1159,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     // [VS] Store relations between Phenotype, Synonym, Unit.
     $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
     if ($id_list) {
-      tpps_synonym_save($phenotype['phenotypes-meta'], $id_list);
+      tpps_synonym_save($synonym_list, $id_list);
     }
     // [/VS].
     tpps_log('[INFO] - Done.');
@@ -1186,7 +1196,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     //tpps_chado_insert_multi($options['records']);
     $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
     if ($id_list) {
-      tpps_synonym_save($phenotype['phenotypes-meta'], $id_list);
+      tpps_synonym_save($synonym_list, $id_list);
     }
     // [/VS].
     tpps_log('[INFO] - Done.');
@@ -3351,7 +3361,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   $phenotype_count = &$options['phenotype_count'];
   $organism_name = &$options['organism_name'];
   $record_group = variable_get('tpps_record_group', 10000);
-  // $record_group = 1;
+
 
   // Get genus and species from the organism name
   $organism_name_parts = explode(' ', $organism_name, 2);
@@ -3441,6 +3451,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   // throw new Exception('DEBUG');
   $phenotype_name_previous = "<none set>";
   foreach ($values as $id => $name) {
+
     if($name == null || $name == "") {
       throw new Exception('Phenotype name was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
     }
@@ -3531,7 +3542,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     // print_r($records['phenotypeprop']["$phenotype_name-desc"]);
 
     // [VS]
-    // $iso is probably means "intensity / mass spectrometry".
+    // $iso means "intensity / mass spectrometry".
     if ($iso) {
       $records['phenotypeprop']["$phenotype_name-unit"] = [
         'type_id' => 139527,
@@ -3542,12 +3553,10 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     }
     else {
       $records['phenotype_cvterm']["$phenotype_name-unit"] = [
-        'cvterm_id' => $meta[strtolower($name)]['unit_id'],
+        'cvterm_id' => $meta[strtolower($name)]['unit'],
         '#fk' => ['phenotype' => $phenotype_name],
       ];
     }
-    //print_r($records);
-    // [/VS]
 
     if (isset($meta[strtolower($name)]['min'])) {
       $records['phenotypeprop']["$phenotype_name-min"] = array(
