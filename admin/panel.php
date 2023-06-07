@@ -1322,9 +1322,6 @@ function tpps_admin_panel_validate($form, &$form_state) {
  * for file parsing.
  */
 function tpps_admin_panel_submit($form, &$form_state) {
-
-  //dpm($form_state);
-
   global $base_url;
   $type = $form_state['tpps_type'] ?? 'tpps';
   $type_label = ($type == 'tpps') ? 'TPPS' : 'TPPSC';

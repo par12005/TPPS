@@ -24,13 +24,6 @@ function tpps_admin_order_family_not_exist_report(array $filter = []) {
     'attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => variable_get('tpps_report_items_per_page', 25),
     'refresh_time' => variable_get('tpps_report_refresh_time', 0),
-
-    //'main_table' => [
-    //  'name' => $table,
-    //  'fields'  => ['organism_id', 'genus', 'species', 'type_id'],
-    //  'schema' => 'chado',
-    //],
-
     'tables' => [
       $table => [
         'schema' => 'chado',

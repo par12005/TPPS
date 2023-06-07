@@ -44,7 +44,7 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#title' => 'Database directory user',
     '#suffix' => '<div>The shared directory must be owned by the correct user in order for it to be read by the database process, this will try to set the directory permissions to the user your specify here (default: postgres)</div>',
     '#default_value' => $tpps_db_directory_user
-  );  
+  );
 
   $form['tpps_maps_api_key'] = array(
     '#type' => 'textfield',
@@ -237,6 +237,7 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_report_order_family_not_exist_title'),
     '#description' => t('Used on admin panel page and as page title on report page.'),
   ];
+  // [/VS]
 
   return system_settings_form($form);
 }

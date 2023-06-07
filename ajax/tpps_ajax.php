@@ -3,11 +3,6 @@
 /**
  * @file
  * Defines some ajax callback functions that TPPS uses often.
- *
- * To debug/test use:
- * $string = 's';
- * module_load_include('php', 'tpps', 'ajax/tpps_ajax');
- * dpm(print_r(tpps_unit_autocomplete($string), 1));
  */
 
 /**
