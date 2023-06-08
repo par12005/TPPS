@@ -32,14 +32,17 @@ function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
   // Use Drupal's cache in database instead of static caching.
   $synonym_cid = 'tpps_synonym_list';
   $cache = cache_get($synonym_cid);
-  if (empty($cache) || $reset) {
+  if (empty($cache->data) || $reset) {
     // Using chado_select_record() don't allow to use fetchAllKeyed().
     $query = db_select('chado.phenotype_synonyms', 'cps')
       ->fields('cps', ['phenotype_synonyms_id', 'synonym'])
       ->condition('cps.synonym', 0, '>');
     $cache = $query->execute()->fetchAllKeyed();
+    $list = $cache;
   }
-  $list = $cache;
+  else {
+    $list = $cache->data;
+  }
   // This option must be last.
   if ($options['not_in_list_option']) {
     $list[0] = t("I can't find synonym");
