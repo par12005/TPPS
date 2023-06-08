@@ -182,150 +182,160 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     // phenotypes. but unit list is unique per phenotype and
     // will be obtained later because depends on selected synonym.
     $synonym_list = tpps_synonym_get_list();
-    $field = array(
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-      '#prefix' => "<div id=\"org_{$id}_phenotype_!num_meta\">",
-      '#suffix' => "</div>",
-      // [VS] Synonym form.
-      'synonym_name' => tpps_build_field_name($id) + [
-        '#prefix' => "<label><b>Phenotype !num:</b></label>",
-        '#states' => ['visible' => [
-          tpps_synonym_selector($id) => ['!value' => 0],
-      ]]],
-      'synonym_description' => tpps_build_field_description() + [
-        '#states' => ['visible' => [
-          tpps_synonym_selector($id) => ['!value' => 0],
+    $phenotype_cid = 'tpps_phenotype_field';
+    $cache = cache_get($phenotype_cid);
+
+    if (!empty($cache)) {
+      $field = $cache->data;
+    }
+    else {
+      $field = array(
+        '#type' => 'fieldset',
+        '#tree' => TRUE,
+        '#prefix' => "<div id=\"org_{$id}_phenotype_!num_meta\">",
+        '#suffix' => "</div>",
+        // [VS] Synonym form.
+        'synonym_name' => tpps_build_field_name($id) + [
+          '#prefix' => "<label><b>Phenotype !num:</b></label>",
+          '#states' => ['visible' => [
+            tpps_synonym_selector($id) => ['!value' => 0],
         ]]],
+        'synonym_description' => tpps_build_field_description() + [
+          '#states' => ['visible' => [
+            tpps_synonym_selector($id) => ['!value' => 0],
+          ]]],
 
-      'synonym_id' => [
-        '#type' => 'select',
-        // The label should just be "phenotype", no synonym anywhere. We use
-        // synonym to describe our phenotype setup behind the scenes but it's
-        // not relevant and would be confusing for the scientists using TPPS.
-        '#title' => 'Phenotype: *',
-        '#options' => $synonym_list,
-        '#default_value' => array_key_first($synonym_list) ?? NULL,
-        // Unit dropdown must be updated in each synonym field change.
-        '#ajax' => [
-          'callback' => 'tpps_synonym_update_unit_list',
-          'wrapper' => 'unit-list-!num-wrapper',
-          'method' => 'replace',
-          'event' => 'change',
+        'synonym_id' => [
+          '#type' => 'select',
+          // The label should just be "phenotype", no synonym anywhere. We use
+          // synonym to describe our phenotype setup behind the scenes but it's
+          // not relevant and would be confusing for the scientists using TPPS.
+          '#title' => 'Phenotype: *',
+          '#options' => $synonym_list,
+          '#default_value' => array_key_first($synonym_list) ?? NULL,
+          // Unit dropdown must be updated in each synonym field change.
+          '#ajax' => [
+            'callback' => 'tpps_synonym_update_unit_list',
+            'wrapper' => 'unit-list-!num-wrapper',
+            'method' => 'replace',
+            'event' => 'change',
+          ],
         ],
-      ],
-      // [/VS]
+        // [/VS]
 
-      // Main form.
-      'name' => tpps_build_field_name($id) + ['#states' => ['visible' => [
-          tpps_synonym_selector($id) => ['value' => 0],
-      ]]],
-      'env-check' => array(
-        '#type' => 'checkbox',
-        '#title' => 'Phenotype !num is an environmental phenotype',
-        '#ajax' => array(
-          'callback' => 'tpps_update_phenotype_meta',
-          'wrapper' => "org_{$id}_phenotype_!num_meta",
-        ),
-        '#states' => ['visible' => [
-          tpps_synonym_selector($id) => ['value' => 0],
-        ]],
-      ),
-      'attribute' => array(
-        '#type' => 'select',
-        '#title' => 'Phenotype !num Attribute: *',
-        '#options' => $attr_options,
-        '#ajax' => array(
-          'callback' => 'tpps_update_phenotype_meta',
-          'wrapper' => "org_{$id}_phenotype_!num_meta",
-        ),
-        '#states' => ['visible' => [
-          tpps_synonym_selector($id) => ['value' => 0],
-        ]],
-      ),
-      'attr-other' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Custom Attribute: *',
-        '#autocomplete_path' => 'tpps/autocomplete/attribute',
-        '#attributes' => array(
-          'data-toggle' => array('tooltip'),
-          'data-placement' => array('right'),
-          'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-        ),
-        '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'
-              => array('value' => 'other'),
+        // Main form.
+        'name' => tpps_build_field_name($id) + ['#states' => ['visible' => [
             tpps_synonym_selector($id) => ['value' => 0],
+        ]]],
+        'env-check' => array(
+          '#type' => 'checkbox',
+          '#title' => 'Phenotype !num is an environmental phenotype',
+          '#ajax' => array(
+            'callback' => 'tpps_update_phenotype_meta',
+            'wrapper' => "org_{$id}_phenotype_!num_meta",
+          ),
+          '#states' => ['visible' => [
+            tpps_synonym_selector($id) => ['value' => 0],
+          ]],
+        ),
+        'attribute' => array(
+          '#type' => 'select',
+          '#title' => 'Phenotype !num Attribute: *',
+          '#options' => $attr_options,
+          '#ajax' => array(
+            'callback' => 'tpps_update_phenotype_meta',
+            'wrapper' => "org_{$id}_phenotype_!num_meta",
+          ),
+          '#states' => ['visible' => [
+            tpps_synonym_selector($id) => ['value' => 0],
+          ]],
+        ),
+        'attr-other' => array(
+          '#type' => 'textfield',
+          '#title' => 'Phenotype !num Custom Attribute: *',
+          '#autocomplete_path' => 'tpps/autocomplete/attribute',
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('right'),
+            'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
+          ),
+          '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'
+                => array('value' => 'other'),
+              tpps_synonym_selector($id) => ['value' => 0],
+            ),
           ),
         ),
-      ),
-      'description' => tpps_build_field_description()
-        + array('#states' => array('visible' => array(
-            tpps_synonym_selector($id) => ['value' => 0],
-        ))),
-      'unit' => [
-        '#type' => 'select',
-        '#title' => 'Phenotype !num Unit: *',
-        // List of units depends on selected synonym and will be populated later.
-        // The same for default value.
-        '#options' => tpps_synonym_get_unit_list(
-          array_key_first($synonym_list) ?? NULL
-        ),
-        '#prefix' => '<div id="unit-list-!num-wrapper">',
-        '#suffix' => '</div>',
-        '#validated' => TRUE,
-      ],
-      // [VS] #8669rmrw5.
-      'unit-other' => [
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Custom Unit: *',
-        '#autocomplete_path' => 'tpps/autocomplete/unit',
-        '#attributes' => [
-          'data-toggle' => ['tooltip'],
-          'data-placement' => ['right'],
-          'title' => ['If your unit is not in the autocomplete list, '
-            . 'don\'t worry about it! We will create new phenotype '
-            . 'metadata in the database for you.'],
-          ],
-        '#description' => t('Some examples of units include: "m", "meters", '
-          . '"in", "inches", "Degrees Celsius", "°C", etc.'),
-        '#states' => ['visible' => [
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
-            => ['value' => 'other'],
-        ]],
-      ],
-      // [/VS]
-      'structure' => array(
-        '#type' => 'select',
-        '#title' => 'Phenotype !num Structure: *',
-        '#options' => $struct_options,
-        '#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
-        '#states' => array(
-          'visible' => [
-            tpps_synonym_selector($id) => ['value' => 0],
-          ],
-        ),
-      ),
-      'struct-other' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Custom Structure: *',
-        '#autocomplete_path' => 'tpps/autocomplete/structure',
-        '#attributes' => array(
-          'data-toggle' => array('tooltip'),
-          'data-placement' => array('right'),
-          'title' => array('If your structure is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-        ),
-        '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]' => array('value' => 'other'),
+        'description' => tpps_build_field_description()
+          + array('#states' => array('visible' => array(
+              tpps_synonym_selector($id) => ['value' => 0],
+          ))),
+        'unit' => [
+          '#type' => 'select',
+          '#title' => 'Phenotype !num Unit: *',
+          // List of units depends on selected synonym and will be populated later.
+          // The same for default value.
+          '#options' => tpps_synonym_get_unit_list(
+            array_key_first($synonym_list) ?? NULL
+          ),
+          '#prefix' => '<div id="unit-list-!num-wrapper">',
+          '#suffix' => '</div>',
+          '#validated' => TRUE,
+        ],
+        // [VS] #8669rmrw5.
+        'unit-other' => [
+          '#type' => 'textfield',
+          '#title' => 'Phenotype !num Custom Unit: *',
+          '#autocomplete_path' => 'tpps/autocomplete/unit',
+          '#attributes' => [
+            'data-toggle' => ['tooltip'],
+            'data-placement' => ['right'],
+            'title' => ['If your unit is not in the autocomplete list, '
+              . 'don\'t worry about it! We will create new phenotype '
+              . 'metadata in the database for you.'],
+            ],
+          '#description' => t('Some examples of units include: "m", "meters", '
+            . '"in", "inches", "Degrees Celsius", "°C", etc.'),
+          '#states' => ['visible' => [
+            ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
+              => ['value' => 'other'],
+          ]],
+        ],
+        // [/VS]
+        'structure' => array(
+          '#type' => 'select',
+          '#title' => 'Phenotype !num Structure: *',
+          '#options' => $struct_options,
+          '#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
+          '#states' => array(
+            'visible' => [
+              tpps_synonym_selector($id) => ['value' => 0],
+            ],
           ),
         ),
-      ),
-    );
+        'struct-other' => array(
+          '#type' => 'textfield',
+          '#title' => 'Phenotype !num Custom Structure: *',
+          '#autocomplete_path' => 'tpps/autocomplete/structure',
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('right'),
+            'title' => array('If your structure is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
+          ),
+          '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]' => array('value' => 'other'),
+            ),
+          ),
+        ),
+      );
+      cache_set($phenotype_cid, $field);
+    }
 
+    // Loop phenotypes to get unique form fields for each phenotype.
     tpps_dynamic_list($form, $form_state, 'phenotypes-meta', $field, array(
       'label' => 'Phenotype',
       'title' => "",
