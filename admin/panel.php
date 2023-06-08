@@ -162,9 +162,13 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
         if ($phenotype['phenotypes-meta'][$j]['attribute'] === 'other') {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['attr-other'];
         }
-        if ($phenotype['phenotypes-meta'][$j]['unit'] === 'other') {
-          $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['unit-other'];
-        }
+        // [VS]
+        // Disabled creation of new units from Custom Unit because
+        // admin must create new units manuallye.
+        //if ($phenotype['phenotypes-meta'][$j]['unit'] === 'other') {
+        //  $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['unit-other'];
+        //}
+        // [/VS]
       }
     }
     // @todo get new/custom cvterms from metadata file.
@@ -1260,6 +1264,32 @@ function tpps_admin_panel_validate($form, &$form_state) {
       form_set_error('reject-reason', t('Please explain why the submission was rejected.'));
     }
 
+    // [VS]
+    // Custom Units are not allowed and must be manually reviewed/added
+    // by admin before study could be processed.
+    $condition = (in_array(
+      $form_state['triggering_element']['#value'],
+      // Allow to edit and approve (without saving changes).
+      ['Save phenotype changes', 'Approve']
+    ));
+    if ($condition) {
+      //dpm(print_r($form_state['values'], 1));
+      foreach ($form_state['values']['phenotypes_edit'] as $key => $phenotype_meta) {
+        if (!is_array($phenotype_meta)) {
+          // There is a button [phenotype_update] => Save phenotype changes
+          // and later could be added other form elements.
+          continue;
+        }
+        if ($phenotype_meta['unit'] == 'other') {
+          form_set_error("phenotypes_edit][$key][unit-other",
+            "Phenotype $key is using Custom Unit. "
+            . "Please review, add new or use existing unit."
+          );
+        }
+      }
+    }
+    // [/VS]
+
     if ($form_state['triggering_element']['#value'] == 'Approve') {
       $accession = $form_state['values']['accession'];
       $state = tpps_load_submission($accession);
@@ -1612,12 +1642,17 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $uid = $user->uid;
       $state['submitting_uid'] = $user->uid;
 
-      $params['subject'] = "$type_label Submission Approved: "
-        . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-      $params['accession'] = $state['accession'];
-      drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
-      drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
+      if ($form_state['triggering_element']['#value'] == 'Approve') {
+        $params['subject'] = "$type_label Submission Approved: "
+          . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+        $params['accession'] = $state['accession'];
+        drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
+        drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
 
+      }
+      else {
+        drupal_set_message(t('Submission saved.'), 'status');
+      }
       $state['revised_files'] = $state['revised_files'] ?? array();
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
