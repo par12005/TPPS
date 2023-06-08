@@ -677,23 +677,18 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
   );
 
   // [VS] #8669rmrw5
-  $phenotypes = $unit_list = [];
+  $phenotypes = [];
+  $unit_list = tpps_synonym_get_unit_list('all', ['debug' => FALSE]);
   for ($i = 1; $i <= $submission['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
     $phenotype = $submission['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
     for ($j = 1; $j <= $phenotype['phenotypes-meta']['number']; $j++) {
       $phenotypes[$j] = $phenotype['phenotypes-meta'][$j];
       // Add units from submission.
-      $unit_list[$phenotypes[$j]['unit']]
+      $unit_list[ $phenotypes[$j]['unit'] ]
         = tpps_synonym_get_unit_name($phenotypes[$j]['unit'])
         ?? $phenotypes[$j]['unit'];
     }
   }
-  // Add units which was used in submission to the list of units linked to
-  // synonyms.
-  $unit_list = array_replace(
-    $unit_list,
-    tpps_synonym_get_unit_list(NULL, ['debug' => FALSE])
-  );
   // [/VS] #8669rmrw5
 
   // @todo get phenotypes from metadata file.
