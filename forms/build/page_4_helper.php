@@ -138,16 +138,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
     $attr_options['other'] = 'My attribute term is not in this list';
 
-    // [VS] #8669rmrw5
-    // Synonym.
-    $synonym_list = tpps_synonym_get_list();
-    // We can't use tpps_get_ajax_value($form_state, $parents)
-    // because $parents must have current phenotype number ('!num') but
-    // we don't have it here.
-    $synonym_id = array_key_first($synonym_list) ?? NULL;
-    // Unit.
-    $unit_list = tpps_synonym_get_unit_list($synonym_id);
-    // [/VS] #8669rmrw5
 
     $struct_options = array();
     $terms = array(
@@ -210,8 +200,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         // synonym to describe our phenotype setup behind the scenes but it's
         // not relevant and would be confusing for the scientists using TPPS.
         '#title' => 'Phenotype: *',
-        '#options' => $synonym_list,
-        '#default_value' => $synonym_id,
+         // List of Phenotype synonyms. This list will be the same for all
+         // phenotypes. but unit list is unique per phenotype and
+         // will be obtained later because depends on selected synonym.
+        '#options' => tpps_synonym_get_list(),
+        '#default_value' => NULL,
         // Unit dropdown must be updated in each synonym field change.
         '#ajax' => [
           'callback' => 'tpps_synonym_update_unit_list',
@@ -271,29 +264,30 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         + array('#states' => array('visible' => array(
             tpps_synonym_selector($id) => ['value' => 0],
         ))),
-      // [VS] #8669rmrw5.
       'unit' => [
         '#type' => 'select',
         '#title' => 'Phenotype !num Unit: *',
-        '#options' => $unit_list,
+        // List of units depends on selected synonym and will be populated later.
+        // The same for default value.
+        '#options' => [],
         '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
         '#validated' => TRUE,
       ],
+      // [VS] #8669rmrw5.
       'unit-other' => [
         '#type' => 'textfield',
         '#title' => 'Phenotype !num Custom Unit: *',
         '#autocomplete_path' => 'tpps/autocomplete/unit',
-        '#attributes' => array(
-          'data-toggle' => array('tooltip'),
-          'data-placement' => array('right'),
-          'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-        ),
-        '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
-
-        // @TODO Major. Not work because unit field added by
-        // ajax has no name or id in browser.
-
+        '#attributes' => [
+          'data-toggle' => ['tooltip'],
+          'data-placement' => ['right'],
+          'title' => ['If your unit is not in the autocomplete list, '
+            . 'don\'t worry about it! We will create new phenotype '
+            . 'metadata in the database for you.'],
+          ],
+        '#description' => t('Some examples of units include: "m", "meters", '
+          . '"in", "inches", "Degrees Celsius", "°C", etc.'),
         '#states' => ['visible' => [
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
             => ['value' => 'other'],
@@ -407,7 +401,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ),
       ),
     ));
-
     $phenotypes = tpps_get_ajax_value($form_state, array(
       $id,
       'phenotype',
@@ -423,6 +416,21 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       if (empty($phenotypes[$i])) {
         continue;
       }
+      // [VS]
+      // Set default value for 'Synonym Id' and 'Unit' for each phenotype
+      // using previously submitted value.
+      // Get from $phenotypes array and set in $form_state
+      // Synonym Id.
+      $synonym_id = $phenotypes[$i]['synonym_id'] ?? NULL;
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['synonym_id']['#default_value']
+        = $synonym_id ?? NULL;
+      // Unit.
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options']
+        = tpps_synonym_get_unit_list($synonym_id);
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#default_value']
+        = $phenotypes[$i]['unit'] ?? NULL;
+      // [/VS]
+
       switch ($phenotypes[$i]['attribute']) {
         case tpps_load_cvterm('alive')->cvterm_id:
         case tpps_load_cvterm('bent')->cvterm_id:
