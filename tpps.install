@@ -280,12 +280,18 @@ function tpps_install() {
   tpps_add_dryad();
 
   // Set initial values of variables.
-  variable_set('tpps_report_no_synonym_title',
-    'List of phenotypes without Synonyms');
-  variable_set('tpps_report_unit_warning_title',
-    'Unit Warning (list of phenotypes which unit differs from Synonym)');
-  variable_set('tpps_report_order_family_not_exist_title',
-    'Order/Family not exist');
+  variable_set(
+    'tpps_report_no_synonym_title',
+    'List of phenotypes without Synonyms'
+  );
+  variable_set(
+    'tpps_report_unit_warning_title',
+    'Unit Warning (list of phenotypes which unit differs from Synonym)'
+  );
+  variable_set(
+    'tpps_report_order_family_not_exist_title',
+    'Order/Family not exist'
+  );
 }
 
 /**

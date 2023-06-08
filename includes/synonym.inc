@@ -164,9 +164,9 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   // Update list of units.
   $unit_field = drupal_array_get_nested_value($form, $parents, $key_exists);
   if ($key_exists) {
-    $unit_field['#options'] = tpps_synonym_get_unit_list($synonym_id,
-      ['debug' => TRUE]
-
+    $unit_field['#options'] = tpps_synonym_get_unit_list(
+      $synonym_id,
+      ['debug' => FALSE]
     );
     // https://www.drupal.org/forum/support/post-installation/2018-04-25/an-illegal-choice-has-been-detected-please-contact-the#comment-13254706
     //$unit_field['#validated'] = TRUE;
@@ -185,7 +185,7 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
  *  Returns name of unit.
  */
 function tpps_synonym_get_unit_name($unit_id = '') {
-  if (empty($unit_id)) {
+  if (empty($unit_id) || !is_numeric($unit_id)) {
     return;
   }
   $unit_name = db_select('chado.phenotype_units', 'cpu')
