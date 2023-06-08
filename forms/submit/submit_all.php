@@ -2176,6 +2176,19 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           }
         }
 
+        // If an analysis_id still was not found, it's possibly from the db data source
+        // instead of the genome directory. The genome directory code is in page_4_helper.php
+        // New code to cater for new analysis checks via db - query given by Emily Grau (6/6/2023)
+        if ($analysis_id == NULL) {
+          $genome_query_results = chado_query("select * from chado.tpps_ref_genomes WHERE name LIKE :ref_genome;", [
+            ':ref_genome' => $ref_genome
+          ]);
+          foreach ($genome_query_results as $genome_query_row) {
+            $analysis_id = $genome_query_row->analysis_id;
+          }
+        }
+
+
         // Once an analysis_id was found, try to get srcfeature_id
 
       }

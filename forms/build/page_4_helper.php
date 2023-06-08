@@ -47,6 +47,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     ), TRUE),
   );
 
+  
+
   $form[$id]['phenotype']['iso-check'] = array(
     '#type' => 'checkbox',
     '#title' => t('My phenotypes include results from a mass spectrometry or isotope analysis'),
@@ -545,6 +547,37 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       }
     }
 
+    // This was the beginning of code for phenotype reuse check but then Rish realized it would
+    // need the new phenotype code from Vlad to make sense (import wise): 6/8/2023
+    // $form[$id]['phenotype']['reuse_check'] = array(
+    //   '#type' => 'checkbox',
+    //   '#title' => t('I would like to reuse phenotype metadata and data from previous study'),
+    //   '#attributes' => array(
+    //     'data-toggle' => array('tooltip'),
+    //     'data-placement' => array('right'),
+    //     'title' => array('Upload a file'),
+    //   ),
+    //   '#states' => array(
+    //     'invisible' => array(
+    //       ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE),
+    //     ),
+    //   ),
+    //   '#description' => t(''),
+    // );
+
+    // $studies_options = [];
+    // $studies_results = chado_query('SELECT * FROM public.tpps_submission ORDER BY SUBSTRING(accession, 5) ASC;', []);
+    // foreach ($studies_results as $study_row) {
+    //   $studies_options[$study_row->accession] = $study_row->accession;
+    // }
+
+    // $form[$id]['phenotype']['reuse_check_study'] = array(
+    //   '#type' => 'select',
+    //   '#title' => t('Study with phenotype data'),
+    //   '#options' => $studies_options
+    // );
+
+
     $form[$id]['phenotype']['check'] = array(
       '#type' => 'checkbox',
       '#title' => t('I would like to upload a phenotype metadata file'),
@@ -554,6 +587,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         'title' => array('Upload a file'),
       ),
       '#description' => t('We encourage that you only upload a phenotype metadata file if you have > 20 phenotypes. Using the fields above instead of uploading a metadata file allows you to select from standardized controlled vocabulary terms, which makes your data more findable, interoperable, and reusable.'),
+      // '#states' => array(
+      //   'invisible' => array(
+      //     ':input[name="' . $id . '[phenotype][reuse_check]"]' => array('checked' => TRUE),
+      //   ),
+      // ),
     );
 
 
@@ -1643,9 +1681,33 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
         }
       }
     }
-    ksort($existing_genomes);
-    $ref_genome_arr += $existing_genomes;
+    
+    
   }
+
+  // Perform a database lookup as well using new query from Emily Grau (6/6/2023)
+  $time_now = time();
+  $time_expire_period = 3 * 24 * 60 * 60;
+  $time_genome_query_results_time = variable_get('tpps_genome_query_results_time', 0);
+  if ($time_now > ($time_genome_query_results_time + $time_expire_period)) {
+    chado_query("DROP TABLE IF EXISTS chado.tpps_ref_genomes;", []);
+    chado_query("CREATE TABLE chado.tpps_ref_genomes AS (
+      select distinct a.name, a.analysis_id, a.programversion, o.genus||' '||o.species as species from chado.analysis a 
+      join chado.analysisfeature af on a.analysis_id = af.analysis_id 
+      join chado.feature f on af.feature_id = f.feature_id 
+      join chado.organism o on f.organism_id = o.organism_id 
+      where f.type_id in (379,595,597,825,1245) AND a.name LIKE '% v%'
+    )",[]);
+    variable_set('tpps_genome_query_results_time', $time_now);
+  }
+  $genome_query_results = chado_query("select * FROM chado.tpps_ref_genomes;", []);
+  foreach ($genome_query_results as $genome_query_row) {
+    $genome_query_row->name = str_ireplace(' genome', '', $genome_query_row->name);
+    $genome_query_row->name = str_ireplace(' assembly', '', $genome_query_row->name);
+    $existing_genomes[$genome_query_row->name] = $genome_query_row->name;
+  }
+  ksort($existing_genomes);
+  $ref_genome_arr += $existing_genomes;
 
   $ref_genome_arr["url"] = 'I can provide a URL to the website of my reference file(s)';
   $ref_genome_arr["bio"] = 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list';
