@@ -25,11 +25,13 @@
  *   and synonym's name as label.
  */
 function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
-  $cache = &drupal_static(__FUNCTION__);
   // Get defaults.
   $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
   $options = array_merge($defaults, $options);
 
+  // Use Drupal's cache in database instead of static caching.
+  $synonym_cid = 'tpps_synonym_list';
+  $cache = cache_get($synonym_cid);
   if (empty($cache) || $reset) {
     // Using chado_select_record() don't allow to use fetchAllKeyed().
     $query = db_select('chado.phenotype_synonyms', 'cps')
@@ -116,6 +118,7 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  *
  * @param int $synonym_id
  *   Synonym Id. See db table 'chado.phenotype_synonyms'.
+ *   Default is 'all' (show all units).
  * @param bool $not_in_list_option
  *   When TRUE extra item will be added to the unit list. Could be used in
  *   dropdown lists. When FALSE then only list of units will be returned.
@@ -127,36 +130,59 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  *  Returns all units if synonym not specified.
  *  Returns empty array if synonym not found.
  */
-function tpps_synonym_get_unit_list($synonym_id = '', array $options = [], $reset = FALSE) {
-  $cache = &drupal_static(__FUNCTION__);
+function tpps_synonym_get_unit_list($synonym_id = 'all', array $options = [], $reset = FALSE) {
   $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
   $options = array_merge($defaults, $options);
 
-  // @TODO Statically cache list of units for each synonym (as key).
+  $synonym_cid = 'tpps_synonym_list';
+  $unit_cid = 'tpps_unit_list';
+  $cache = cache_get($unit_cid);
 
-  if (empty($cache) || (!empty($synonym_id) && empty($cache[$synonym_id])) || $reset) {
-    $query = db_select('chado.phenotype_units', 'cpu')
-      ->fields('cpu', ['unit_cvterm_id', 'unit_name']);
-    if (!empty($synonym_id)) {
-      $query->leftJoin('chado.phenotype_synonyms', 'cps',
-        'cps.unit_group = cpu.unit_group'
-      );
-      $query->condition('cps.phenotype_synonyms_id', $synonym_id);
+  if (empty($cache) || $reset) {
+    // Get synonyms and related unit groups.
+    $synonym_table = db_select('chado.phenotype_synonyms', 'cps')
+      ->fields('cps',[
+        'phenotype_synonyms_id',
+        'synonym',
+        'unit_group',
+      ])
+      ->condition('cps.synonym', 0, '>')
+      ->execute()
+      ->fetchAllAssoc('phenotype_synonyms_id', PDO::FETCH_ASSOC);
+    foreach ($synonym_table as $synonym) {
+      $synonym_list[$synonym['phenotype_synonyms_id']] = $synonym['synonym'];
+      $synonym_unit_group[$synonym['phenotype_synonyms_id']] = $synonym['unit_group'];
     }
-    if (empty($synonym_id)) {
-      $cache['all'] = $query->execute()->fetchAllKeyed();
+    ksort($synonym_list);
+    ksort($synonym_unit_group);
+    // Update cached list of synonyms.
+    cache_set($synonym_cid, $synonym_list);
+
+    // Get list of all units.
+    $unit_table = db_select('chado.phenotype_units', 'cpu')
+      ->fields('cpu', [
+        'unit_cvterm_id',
+        'unit_name',
+        'unit_group',
+      ])
+      ->execute()
+      ->fetchAllAssoc('unit_cvterm_id', PDO::FETCH_ASSOC);
+    // Create list of all units and list of unit groups.
+    foreach ($unit_table as $unit_id => $unit) {
+      $cache['all'][$unit_id] = $unit['unit_name'];
+      $groups[ $unit['unit_group'] ][ $unit['unit_cvterm_id'] ]
+        = $unit['unit_name'];
     }
-    else {
-      $cache[$synonym_id] = $query->execute()->fetchAllKeyed();
+    // Create list of units per synonym.
+    foreach ($synonym_unit_group as $synonym_id => $unit_group) {
+      $cache[$synonym_id] = ($groups[$unit_group] ?? NULL);
     }
-  }
-  if (empty($synonym_id)) {
-    $list = $cache['all'];
-  }
-  else {
+    cache_set($unit_cid, $cache);
     $list = $cache[$synonym_id];
   }
-
+  else {
+    $list = $cache->data[$synonym_id];
+  }
   // This option must be last.
   if (!empty($list) && $options['not_in_list_option']) {
     $list['other'] = t('My unit is not in this list');
@@ -166,7 +192,6 @@ function tpps_synonym_get_unit_list($synonym_id = '', array $options = [], $rese
       $list[$key] = $key . ': ' . $value ;
     }
   }
-
   return $list;
 }
 
