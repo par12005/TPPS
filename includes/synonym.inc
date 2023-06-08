@@ -17,21 +17,27 @@
  *   Options and it's default value:
  *     'not_in_list_option' => TRUE; - Item 'Can't find ...' will be added.
  *     'debug' => FALSE; - options value will be shown in title.
+ * @param bool $reset
+ *   When TRUE static caching will not be used. Default is FALSE.
  *
  * @return array
  *   Returns associative array with synonym_id as key
  *   and synonym's name as label.
  */
-function tpps_synonym_get_list(array $options = []) {
+function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
+  $cache = &drupal_static(__FUNCTION__);
   // Get defaults.
   $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
   $options = array_merge($defaults, $options);
 
-  // Using chado_select_record() don't allow to use fetchAllKeyed().
-  $query = db_select('chado.phenotype_synonyms', 'cps')
-    ->fields('cps', ['phenotype_synonyms_id', 'synonym'])
-    ->condition('cps.synonym', 0, '>');
-  $list = $query->execute()->fetchAllKeyed();
+  if (empty($cache) || $reset) {
+    // Using chado_select_record() don't allow to use fetchAllKeyed().
+    $query = db_select('chado.phenotype_synonyms', 'cps')
+      ->fields('cps', ['phenotype_synonyms_id', 'synonym'])
+      ->condition('cps.synonym', 0, '>');
+    $cache = $query->execute()->fetchAllKeyed();
+  }
+  $list = $cache;
   // This option must be last.
   if ($options['not_in_list_option']) {
     $list[0] = t("I can't find synonym");
@@ -113,25 +119,44 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  * @param bool $not_in_list_option
  *   When TRUE extra item will be added to the unit list. Could be used in
  *   dropdown lists. When FALSE then only list of units will be returned.
+ * @param bool $reset
+ *   When TRUE static caching will not be used. Default is FALSE.
  *
  * @return array
  *  Returns list of units related to given synonym.
  *  Returns all units if synonym not specified.
  *  Returns empty array if synonym not found.
  */
-function tpps_synonym_get_unit_list($synonym_id = '', array $options = []) {
+function tpps_synonym_get_unit_list($synonym_id = '', array $options = [], $reset = FALSE) {
+  $cache = &drupal_static(__FUNCTION__);
   $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
   $options = array_merge($defaults, $options);
 
-  $query = db_select('chado.phenotype_units', 'cpu')
-    ->fields('cpu', ['unit_cvterm_id', 'unit_name']);
-  if (!empty($synonym_id)) {
-    $query->leftJoin('chado.phenotype_synonyms', 'cps',
-      'cps.unit_group = cpu.unit_group'
-    );
-    $query->condition('cps.phenotype_synonyms_id', $synonym_id);
+  // @TODO Statically cache list of units for each synonym (as key).
+
+  if (empty($cache) || (!empty($synonym_id) && empty($cache[$synonym_id])) || $reset) {
+    $query = db_select('chado.phenotype_units', 'cpu')
+      ->fields('cpu', ['unit_cvterm_id', 'unit_name']);
+    if (!empty($synonym_id)) {
+      $query->leftJoin('chado.phenotype_synonyms', 'cps',
+        'cps.unit_group = cpu.unit_group'
+      );
+      $query->condition('cps.phenotype_synonyms_id', $synonym_id);
+    }
+    if (empty($synonym_id)) {
+      $cache['all'] = $query->execute()->fetchAllKeyed();
+    }
+    else {
+      $cache[$synonym_id] = $query->execute()->fetchAllKeyed();
+    }
   }
-  $list = $query->execute()->fetchAllKeyed();
+  if (empty($synonym_id)) {
+    $list = $cache['all'];
+  }
+  else {
+    $list = $cache[$synonym_id];
+  }
+
   // This option must be last.
   if (!empty($list) && $options['not_in_list_option']) {
     $list['other'] = t('My unit is not in this list');

@@ -178,6 +178,10 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
     $struct_options['other'] = 'My structure term is not in this list';
 
+    // List of Phenotype synonyms. This list will be the same for all
+    // phenotypes. but unit list is unique per phenotype and
+    // will be obtained later because depends on selected synonym.
+    $synonym_list = tpps_synonym_get_list();
     $field = array(
       '#type' => 'fieldset',
       '#tree' => TRUE,
@@ -200,11 +204,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         // synonym to describe our phenotype setup behind the scenes but it's
         // not relevant and would be confusing for the scientists using TPPS.
         '#title' => 'Phenotype: *',
-         // List of Phenotype synonyms. This list will be the same for all
-         // phenotypes. but unit list is unique per phenotype and
-         // will be obtained later because depends on selected synonym.
-        '#options' => tpps_synonym_get_list(),
-        '#default_value' => NULL,
+        '#options' => $synonym_list,
+        '#default_value' => array_key_first($synonym_list) ?? NULL,
         // Unit dropdown must be updated in each synonym field change.
         '#ajax' => [
           'callback' => 'tpps_synonym_update_unit_list',
@@ -269,7 +270,9 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#title' => 'Phenotype !num Unit: *',
         // List of units depends on selected synonym and will be populated later.
         // The same for default value.
-        '#options' => [],
+        '#options' => tpps_synonym_get_unit_list(
+          array_key_first($synonym_list) ?? NULL
+        ),
         '#prefix' => '<div id="unit-list-!num-wrapper">',
         '#suffix' => '</div>',
         '#validated' => TRUE,
@@ -420,15 +423,24 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       // Set default value for 'Synonym Id' and 'Unit' for each phenotype
       // using previously submitted value.
       // Get from $phenotypes array and set in $form_state
+
       // Synonym Id.
-      $synonym_id = $phenotypes[$i]['synonym_id'] ?? NULL;
-      $form[$id]['phenotype']['phenotypes-meta'][$i]['synonym_id']['#default_value']
-        = $synonym_id ?? NULL;
+      $synonym_id = (
+        $phenotypes[$i]['synonym_id']
+        ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['synonym_id']['#options'])
+        ?? NULL
+      );
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['synonym_id']['#default_value'] = $synonym_id;
+
       // Unit.
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options']
-        = tpps_synonym_get_unit_list($synonym_id);
+        = tpps_synonym_get_unit_list($synonym_id ?? NULL);
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#default_value']
-        = $phenotypes[$i]['unit'] ?? NULL;
+        = (
+        $phenotypes[$i]['unit']
+        ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options'])
+        ?? NULL
+      );
       // [/VS]
 
       switch ($phenotypes[$i]['attribute']) {
