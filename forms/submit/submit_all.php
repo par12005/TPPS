@@ -1004,30 +1004,17 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     'data' => &$form_state['data']['phenotype'],
     'job' => &$job,
   );
-  // [VS]
-  // Create a list of synonyms and units to save relation between synonym
-  // and phenotype and find missing units.
-  $phenotype_number = $phenotype['phenotypes-meta']['number'];
-  for ($j = 1; $j <= $phenotype_number; $j++) {
-    $synonym_list[$j] = [
-      'synonym_id' => $phenotype['phenotypes-meta'][$j]['synonym_id'],
-      'unit' => $phenotype['phenotypes-meta'][$j]['unit'],
-    ];
-  }
-  // [/VS]
 
+  $phenotype_number = $phenotype['phenotypes-meta']['number'];
   if (!empty($phenotype['normal-check'])) {
     $phenotypes_meta = array();
     $data_fid = $phenotype['file'];
     $phenos_edit = $form_state['phenotypes_edit'] ?? NULL;
-
     tpps_add_project_file($form_state, $data_fid);
-
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
-
       $phenotypes_meta[$name] = array();
       $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
       if (!empty($phenos_edit[$j])) {
@@ -1048,6 +1035,9 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
       }
       // [VS] #8669rmrw5
+      // Store casesensitive Phenotype name to use for synonym save.
+      $phenotypes_meta[$name]['name'] = $phenotype['phenotypes-meta'][$j]['name'];
+      $phenotypes_meta[$name]['synonym_id'] = $phenotype['phenotypes-meta'][$j]['synonym_id'];
       $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['unit'];
       if ($phenotype['phenotypes-meta'][$j]['unit'] == 'other') {
         $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
@@ -1102,7 +1092,9 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
         tpps_log('[INFO] - Done.');
       }
       else {
-        tpps_job_logger_write('[WARNING] - phenotype_meta file id looks incorrect but the UI checkbox was selected. Need to double check this!');
+        tpps_job_logger_write('[WARNING] - phenotype_meta file id looks '
+          . 'incorrect but the UI checkbox was selected. '
+          . 'Need to double check this!');
       }
     }
 
@@ -1152,15 +1144,48 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
 
     //print_r('DATA_FID:' . $data_fid . "\n");
     tpps_log('[INFO] - Processing phenotype_data file data...');
+    //print_r("\n"); print_r($options['meta']); print_r("\n");
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_log('[INFO] - Inserting data into database using insert_multi...');
 
+
     // [VS] Store relations between Phenotype, Synonym, Unit.
-    $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
-    if ($id_list) {
-      tpps_synonym_save($synonym_list, $id_list);
+    $condition = (!empty($id_list = tpps_chado_insert_multi(
+      $options['records'],
+      // Limit output to avoid huge datasets.
+      ['fks' => 'phenotype']
+    )));
+    // $id_list items example:
+    // $id_list = [
+    //   'phenotype' => [
+    //     ...
+    //     'TGDR824-ID_18-11-leaf A-154-Piln-unit] => 6443722,
+    //     ...
+    //   ],
+    //   'phenotypeprop' => [
+    //     ...
+    //     'TGDR824-ID_18-11-leaf A-154-Piln-desc' => 6443722,
+    //     ...
+    //     ],
+    //   'stock_phenotype' => [
+    //     ...
+    //     'TGDR824-ID_18-11-leaf A-154-Piln' => -1,
+    //     ...
+    //     ],
+    //   'phenotype_cvterm' => [
+    //     ...
+    //     'TGDR824-ID_18-11-leaf A-154-Piln-unit] => 1386234,
+    //     ...
+    //     ],
+    //  ];
+    if ($condition) {
+      tpps_synonym_save($phenotypes_meta, $id_list, $options);
     }
+
+    //print_r($options['data']);
+    //print_r($synonym_list);
+    //print_r( "\n");
     // [/VS].
     tpps_log('[INFO] - Done.');
   }
@@ -1196,7 +1221,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     //tpps_chado_insert_multi($options['records']);
     $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
     if ($id_list) {
-      tpps_synonym_save($synonym_list, $id_list);
+      tpps_synonym_save($phenotypes_meta, $id_list, $options);
     }
     // [/VS].
     tpps_log('[INFO] - Done.');
@@ -3557,6 +3582,7 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     // [VS]
     // $iso means "intensity / mass spectrometry".
     if ($iso) {
+      // "Iso Check"
       $records['phenotypeprop']["$phenotype_name-unit"] = [
         'type_id' => 139527,
         // value: the chemical name/identifier.
@@ -3565,10 +3591,12 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       ];
     }
     else {
+      // "Normal Check"
       $records['phenotype_cvterm']["$phenotype_name-unit"] = [
         'cvterm_id' => $meta[strtolower($name)]['unit'],
         '#fk' => ['phenotype' => $phenotype_name],
       ];
+      //print_r("Phenotype name: $name - Unit: " . $meta[strtolower($name)]['unit'] . "\n");
     }
 
     if (isset($meta[strtolower($name)]['min'])) {
