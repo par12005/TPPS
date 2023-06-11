@@ -154,8 +154,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
 
     for ($i = 1; $i <= $phenotype_number; $i++) {
       $current_phenotype = &$phenotype['phenotypes-meta']["$i"];
-      $unit = $current_phenotype['unit'];
-      // Synonym form.
+      // [VS] Synonym form.
       if (!empty($current_phenotype['synonym_id'])) {
         $synonym_name = $current_phenotype['synonym_name'];
         $synonym_description = $current_phenotype['synonym_description'];
@@ -172,6 +171,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
           tpps_synonym_restore_values($current_phenotype);
         }
       }
+      // [/VS]
       // Main form.
       $name = $current_phenotype['name'];
       $description = $current_phenotype['description'];
@@ -195,14 +195,28 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         form_set_error("$id][phenotype][phenotypes-meta][$i][attr-other",
           "Phenotype $i Custom Attribute: field is required.");
       }
+      // [VS]
+      $unit = $current_phenotype['unit'];
       if ($unit == '') {
         form_set_error("$id][phenotype][phenotypes-meta][$i][unit",
           "Phenotype $i Unit: field is required.");
       }
-      elseif ($unit == 'other' && $current_phenotype['unit-other'] == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][unit-other",
-          "Phenotype $i Custom Unit: field is required.");
+      elseif ($unit == 'other') {
+        if ($current_phenotype['unit-other'] == '') {
+          form_set_error("$id][phenotype][phenotypes-meta][$i][unit-other",
+            "Phenotype $i Custom Unit: field is required.");
+        }
+        else {
+          // Create a record in 'Unit Warning' table
+          // when Synonym's Unit differs from Submitted Unit.
+          db_merge('tpps_phenotype_unit_warning')
+              ->key(['phenotype_id' => $phenotype_id])
+              ->fields(['phenotype_id' => $phenotype_id])
+              ->execute();
+          }
+        }
       }
+      // [/VS]
 
       $condition = (
         $current_phenotype['structure'] == 'other'

@@ -1142,20 +1142,13 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['file_empty'] = $phenotype['file-empty'];
     $options['organism_name'] = $organism_name;
 
-    //print_r('DATA_FID:' . $data_fid . "\n");
     tpps_log('[INFO] - Processing phenotype_data file data...');
-    //print_r("\n"); print_r($options['meta']); print_r("\n");
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_log('[INFO] - Inserting data into database using insert_multi...');
 
-
     // [VS] Store relations between Phenotype, Synonym, Unit.
-    $condition = (!empty($id_list = tpps_chado_insert_multi(
-      $options['records'],
-      // Limit output to avoid huge datasets.
-      ['fks' => 'phenotype']
-    )));
+    $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
     // $id_list items example:
     // $id_list = [
     //   'phenotype' => [
@@ -1179,14 +1172,10 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     //     ...
     //     ],
     //  ];
-    if ($condition) {
-      tpps_synonym_save($phenotypes_meta, $id_list, $options);
+    if ($id_list) {
+      tpps_synonym_save($phenotypes_meta, $id_list);
     }
-
-    //print_r($options['data']);
-    //print_r($synonym_list);
-    //print_r( "\n");
-    // [/VS].
+    // [/VS]
     tpps_log('[INFO] - Done.');
   }
 
@@ -1202,13 +1191,11 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['meta'] = array(
       'desc' => "Mass Spectrometry",
 
-
-      // @TODO Major. Replace with Unit Id.
-      // CV Term for 'chemical substance'
-      // A chemical substance is a portion of matter of constant composition,
-      // composed of molecular entities of the same type or of different types.
-
-      'unit' => "intensity (arbitrary nits)",
+      // [VS]
+      // Unit name replaced with Unit Id (cvterm_id for 'chemical substance').
+      // 'unit' => "intensity (arbitrary nits)",
+      'unit' => 139527,
+      // [/VS]
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
       'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id, // manual term for MASS Spec
     );
@@ -1217,13 +1204,13 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     tpps_log('[INFO] - Processing phenotype_data file data...');
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
     tpps_log('[INFO] - Inserting phenotype_data into database using insert_multi...');
-    // [VS] Store relations between Phenotype, Synonym, Unit.
-    //tpps_chado_insert_multi($options['records']);
+    // [VS]
+    // Store relations between Phenotype, Synonym, Unit.
     $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
     if ($id_list) {
-      tpps_synonym_save($phenotypes_meta, $id_list, $options);
+      tpps_synonym_save($phenotypes_meta, $id_list);
     }
-    // [/VS].
+    // [/VS]
     tpps_log('[INFO] - Done.');
   }
 }
@@ -3279,9 +3266,6 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $meta[$name]['attr'] = 'other';
   $meta[$name]['attr-other'] = $row[$columns['attr']];
   $meta[$name]['desc'] = $row[$columns['desc']];
-  // [VS]
-  // @TODO Minor. Check if unit exists and reuse existing unit instead of
-  // creating new 'unit-other'.
   $meta[$name]['unit'] = 'other';
   $meta[$name]['unit-other'] = $row[$columns['unit']];
   if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {

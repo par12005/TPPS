@@ -259,7 +259,6 @@ function tpps_synonym_get_unit_name($unit_id = '') {
   return $unit_name;
 }
 
-
 /**
  * Stores relation between Phenotype, Synonym and Unit [vs].
  *
@@ -269,32 +268,18 @@ function tpps_synonym_get_unit_name($unit_id = '') {
  * @param array $id_list
  *   List of Phenotype Ids received after saving into database.
  *   Item format: $phenotype_name => $phenotype_id.
- * @param array $options
- *   Phenotype data from file. Example of the $options['data'] item:
- *   Note: Upper case of phenotype name!
-    [ID_18-11-leaf A-154] => Array
-        (
-            [uniquename] => ID_18-11-leaf A-154
-            [name] => leaf A
-            [stock_id] => 748945
-            [time] =>
-            [value] => 11.2853
-        )
  */
-function tpps_synonym_save(array $phenotypes_meta, array $id_list, array $options) {
+function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
   tpps_log('[INFO] Phenotype Synonyms processing started...');
 
   // Create a small array to make search of phenotype name easier.
   foreach ($phenotypes_meta as $item) {
     // $name is Phenotype name in lowser case. For example: 'leaf a'.
     // Phenotype uniquename is using the same name but not lowercased.
-    $synonym_list[ $item['name'] ] = [
-      'synonym_id' => $item['synonym_id'],
-      'unit' => $item['unit'],
-    ];
+    $synonym_list[ $item['synonym_id'] ] = $item['name'];
   }
   foreach ($id_list as $uniquename => $phenotype_id) {
-    foreach ($synonym_list as $phenotype_name => $item) {
+    foreach ($synonym_list as $synonym_id => $phenotype_name) {
       // $uniquename exampe: 'TGDR824-ID_18-11-leaf A-154-Piln-unit'
       // $phenotype_name exampe: 'leaf A'
       if (strpos($uniquename, $phenotype_name) !== FALSE) {
@@ -302,23 +287,15 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list, array $option
         db_merge('chado.phenotype_to_synonym')
           ->key([
             'phenotype_id' => $phenotype_id,
-            'phenotype_synonyms_id' => $item['synonym_id'],
+            'phenotype_synonyms_id' => $synonym_id,
           ])
           ->fields([
             'phenotype_id' => $phenotype_id,
-            'phenotype_synonyms_id' => $item['synonym_id'],
+            'phenotype_synonyms_id' => $synonym_id,
           ])
           ->execute();
-        // Create a record in 'Unit Warning' table
-        // when Synonym's Unit differs from Submitted Unit.
-        if ($item['unit'] == 'other' || $item['unit'] == 0) {
-          db_merge('tpps_phenotype_unit_warning')
-            ->key(['phenotype_id' => $phenotype_id])
-            ->fields(['phenotype_id' => $phenotype_id])
-            ->execute();
-        }
       }
     }
+    tpps_log('[INFO] Phenotype Synonyms processing completed.');
   }
-  tpps_log('[INFO] Phenotype Synonyms processing completed.');
 }
