@@ -207,12 +207,11 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
             "Phenotype $i Custom Unit: field is required.");
         }
         else {
-          // Create a record in 'Unit Warning' table
-          // when Synonym's Unit differs from Submitted Unit.
+          // Create a record in 'Unit Warning' table for Custom Unit.
           db_merge('tpps_phenotype_unit_warning')
-              ->key(['phenotype_id' => $phenotype_id])
-              ->fields(['phenotype_id' => $phenotype_id])
-              ->execute();
+            ->key(['study_name' => $form_state['accession'])
+            ->fields(['study_name' => $form_state['accession'])
+            ->execute();
           }
         }
       }

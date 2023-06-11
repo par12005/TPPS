@@ -279,6 +279,7 @@ function tpps_install() {
 
   tpps_add_dryad();
 
+  // [VS]
   // Set initial values of variables.
   variable_set(
     'tpps_report_no_synonym_title',
@@ -292,6 +293,7 @@ function tpps_install() {
     'tpps_report_order_family_not_exist_title',
     'Order/Family not exist'
   );
+  // [/VS]
 }
 
 /**
@@ -302,11 +304,12 @@ function tpps_install() {
  */
 function tpps_uninstall() {
 
+  // [VS]
   simple_report_uninstall();
-  // Remove variables.
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
   variable_del('tpps_report_order_family_not_exist_title');
+  // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.
   db_delete('public.variable')
@@ -669,25 +672,22 @@ function tpps_schema() {
     ),
   );
 
-  // #3kged9b Phenotypes synonyms table integrated on TPPS [VS].
-  $schema['tpps_phenotype_unit_warning'] = array(
-    'description' => 'Contains Phenotypes created by Synonym with custom Unit.',
-    'fields' => array(
-      'phenotype_id' => array(
-        'description' => 'The Phenotype Id.',
-        'type' => 'int',
-        'size' => 'big',
-        'unsigned' => TRUE,
-        'not null' => TRUE,
-      ),
-    ),
-    'foreign keys' => array(
-      'phenotype_id' => array(
-        'table' => 'chado.phenotype',
-        'columns' => array('phenotype_id' => 'phenotype_id'),
-      ),
-    ),
-  );
+  // [VS]
+  // #3kged9b Phenotypes synonyms table integrated on TPPS.
+  $schema['tpps_phenotype_unit_warning'] = [
+    'description' => 'List of studies with Custom Units.',
+    'fields' => [
+      'study_name' => [
+        'description' => 'Study Name.',
+        'type' => 'varchar',
+        'size' => 'normal',
+      ],
+    ],
+    'unique keys' => [
+      'study_name' => ['study_name'],
+    ],
+  ];
+  // [/VS]
 
   return $schema;
 }
@@ -2019,40 +2019,42 @@ function tpps_update_7118() {
 }
 
 /**
- * [VS] #3kged9b Creates table 'public.tpps_phenotype_unit_warning'.
+ * #3kged9b Creates table 'public.tpps_phenotype_unit_warning'.
  */
 function tpps_update_7119() {
+  // [VS]
   // Set initial values of variables.
-  variable_set('tpps_report_no_synonym_title',
-    'List of phenotypes without Synonyms');
-  variable_set('tpps_report_unit_warning_title',
-    'Unit Warning (list of phenotypes which unit differs from Synonym)');
-  variable_set('tpps_report_order_family_not_exist_title',
-    'Order/Family not exist');
-
+  variable_set(
+    'tpps_report_no_synonym_title',
+    'List of phenotypes without Synonyms'
+  );
+  variable_set(
+    'tpps_report_unit_warning_title',
+    'Unit Warning (list of phenotypes which unit differs from Synonym)'
+  );
+  variable_set(
+    'tpps_report_order_family_not_exist_title',
+    'Order/Family not exist'
+  );
   // Create new db table.
-  $table = 'tpps_phenotype_unit_warning';
-
-  if (!db_table_exists($table)) {
-    if ($table_schema = tpps_schema()[$table]) {
+  $table_name = 'tpps_phenotype_unit_warning';
+  if (!db_table_exists($table_name)) {
+    if ($table_schema = tpps_schema()[$table_name]) {
       $transaction = db_transaction();
       try {
-        db_create_table($table, $table_schema);
+        db_create_table($table_name, $table_schema);
       }
       catch (\Exception $e) {
         $transaction->rollback();
         throw $e;
       }
     }
-    // Add foreign key.
-    db_query('ALTER TABLE ' . $table . ' ADD CONSTRAINT phenotype_id '
-      . 'FOREIGN KEY (phenotype_id) REFERENCES chado.phenotype(phenotype_id) '
-      . 'ON DELETE CASCADE;'
-    );
   }
+  // Add simple reports.
   $module_name = 'simple_report';
   if (!module_exists($module_name)) {
     module_enable(array($module_name));
   }
   cache_clear_all();
+  // [/VS]
 }
