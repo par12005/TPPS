@@ -202,14 +202,15 @@ function tpps_synonym_get_unit_list($synonym_id = 'all', array $options = [], $r
 /**
  * Custom callback to build form fields.
  *
- * Creates a form element for 'Unit' dropdown which will replce existing one
- * at page when Synonym selectbox changed.
+ * Creates a form element for 'Unit' dropdown which will replace existing
+ * one at page when Synonym selectbox changed.
 */
 function tpps_synonym_update_unit_list($form, &$form_state) {
-
   // @TODO Cache list of units by phenotype id and $synonym_id because
   // adding 2+ phenotypes increases ajax request processing time.
-  $synonym_id = $form_state['triggering_element']['#value'];
+  if (isset($form_state['triggering_element']['#value'])) {
+    $synonym_id = $form_state['triggering_element']['#value'];
+  }
   $parents = $form_state['triggering_element']['#parents'];
   // This is true until 'synonym_id' and 'unit' fields are siblings.
   array_pop($parents);
@@ -219,7 +220,7 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   $unit_field = drupal_array_get_nested_value($form, $parents, $key_exists);
   if ($key_exists) {
     $unit_field['#options'] = tpps_synonym_get_unit_list(
-      $synonym_id,
+      $synonym_id ?? 'all',
       ['debug' => FALSE]
     );
     // https://www.drupal.org/forum/support/post-installation/2018-04-25/an-illegal-choice-has-been-detected-please-contact-the#comment-13254706
