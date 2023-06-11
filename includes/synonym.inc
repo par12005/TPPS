@@ -272,7 +272,6 @@ function tpps_synonym_get_unit_name($unit_id = '') {
  */
 function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
   tpps_log('[INFO] Phenotype Synonyms processing started...');
-
   // Create a small array to make search of phenotype name easier.
   foreach ($phenotypes_meta as $item) {
     // $name is Phenotype name in lowser case. For example: 'leaf a'.
@@ -297,6 +296,6 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
           ->execute();
       }
     }
-    tpps_log('[INFO] Phenotype Synonyms processing completed.');
   }
+  tpps_log('[INFO] Phenotype Synonyms processing completed.');
 }
