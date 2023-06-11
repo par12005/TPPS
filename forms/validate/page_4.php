@@ -209,10 +209,9 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         else {
           // Create a record in 'Unit Warning' table for Custom Unit.
           db_merge('tpps_phenotype_unit_warning')
-            ->key(['study_name' => $form_state['accession'])
-            ->fields(['study_name' => $form_state['accession'])
+            ->key(['study_name' => $form_state['accession']])
+            ->fields(['study_name' => $form_state['accession']])
             ->execute();
-          }
         }
       }
       // [/VS]
