@@ -21,6 +21,7 @@ function tpps_admin_unit_warning_report(array $filter = []) {
     'select_all' => FALSE,
     // To have common style.
     'attributes' => ['class' => ['view' , 'tpps_table']],
+    'formatter' => 'tpps_admin_unit_warning_report_formatter',
     'header' => [
       [
         'data' => t("Study"),
@@ -43,4 +44,38 @@ function tpps_admin_unit_warning_report(array $filter = []) {
     $page_title = '<h2>' . $title . '</h2>';
   }
   return $page_title . simple_report_tableselect($meta, $filter ?? []);
+}
+
+/**
+ * Values formatter for 'tpps_admin_unit_warning_report'.
+ *
+ * @param string $name
+ *   Required. Field name.
+ *   Machine table field name (column name) without table name and dot.
+ * @param mixed $value
+ *   Field value.
+ * @param array $row
+ *   Data of the whole table row with hidden fields.
+ *   This data could be used to format other fields. For example,
+ *   hidden field 'uid' or 'entity_id' could be used to build a link to
+ *   user profile page.
+ *
+ * @return mixed
+ *   Returns formatted value.
+ *   Empty value will not be formatted and returned as is.
+ */
+function tpps_admin_unit_warning_report_formatter(string $name, $value, array $row) {
+  $formatted = check_plain($value);
+  if (empty($name) || empty($value)) {
+    return $formatted;
+  }
+  $name = check_plain($name);
+  switch ($name) {
+    case 'study_name':
+      if (!empty($value)) {
+        $formatted = l($formatted, 'tpps-admin-panel/' . $formatted);
+      }
+      break;
+  }
+  return $formatted;
 }
