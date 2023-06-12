@@ -789,6 +789,10 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     tpps_ssr_valid_ploidy($genotype['files']['ploidy'], $num_columns,
       $num_unique_columns, "$id][genotype][files][ssrs");
 
+
+    // @TODO Field 'ssr-extra-check' must be replaced with check if
+    // Define SSRs/cpSSRs Type:
+    //   cpSSR or Both SSRs and cpSSRs
     if (!empty($genotype['files']['ssr-extra-check'])) {
       if (empty($genotype['files']['extra-ssr-type'])) {
         form_set_error("$id][genotype][files][extra-ssr-type",

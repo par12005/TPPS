@@ -47,7 +47,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     ), TRUE),
   );
 
-  
+
 
   $form[$id]['phenotype']['iso-check'] = array(
     '#type' => 'checkbox',
@@ -926,26 +926,26 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     '#suffix' => '</div>',
   ];
 
-  if ($genotype_marker_type == 'SSRs/cpSSRs') {
-    $fields['files']['ploidy'] = array(
+  // [VS]
+  if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
+    $fields['files']['ploidy'] = [
       '#type' => 'select',
       '#title' => t('Ploidy'),
-      '#options' => array(
+      '#options' => [
         0 => t('- Select -'),
         'Haploid' => t('Haploid'),
         'Diploid' => t('Diploid'),
         'Polyploid' => t('Polyploid'),
-      ),
-      '#ajax' => array(
+      ],
+      '#ajax' => [
         'callback' => 'tpps_genotype_files_callback',
         'wrapper' => "$id-genotype-files",
-      ),
-    );
+      ],
+    ];
   }
+  // [/VS]
 
   $genotyping_type_parents = [$id, 'genotype', 'files', 'genotyping-type'];
-  // @TODO Add other options.
-  $options = [];
   $file_type_parents = [$id, 'genotype', 'files', 'file-type'];
 
     //dpm($genotype_marker_type);
@@ -968,44 +968,31 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       ],
     ];
     $genotyping_type_check = tpps_get_ajax_value($form_state, $genotyping_type_parents);
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
-    $options['SSRs/cpSSRs Genotype Spreadsheet'] = 'SSRs/cpSSRs Genotype Spreadsheet';
-    $parents = array_merge($file_type_parents, array('SSRs/cpSSRs Genotype Spreadsheet'));
-    $ssrs_file_check = tpps_get_ajax_value($form_state, $parents);
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if (in_array('Other', $genotype_marker_type)) {
-    $options['Other Marker Genotype Spreadsheet'] = 'Other Marker Genotype Spreadsheet';
-    $parents = array_merge($file_type_parents, array('Other Marker Genotype Spreadsheet'));
-    $other_file_check = tpps_get_ajax_value($form_state, $parents);
-  }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Genotype File Type.
-  $options['SNP Assay file and Assay design file']
-    = t('SNP Assay file and Assay design file');
-  $options['VCF'] = t('VCF');
-
-  $fields['files']['file-type'] = [
-    '#type' => 'select',
-    '#title' => t('Genotyping file type: *'),
-    '#options' => $options,
-    '#ajax' => [
-      'callback' => 'tpps_genotype_files_callback',
-      'wrapper' => "$id-genotype-files",
-    ],
-    '#states' => [
-      'visible' => [
-        ':input[name="' . $id . '[genotype][files][genotyping-type]"]'
-        => ['value' => 'Genotyping'],
+    // Genotype File Type.
+    $fields['files']['file-type'] = [
+      '#type' => 'select',
+      '#title' => t('Genotyping file type: *'),
+      '#options' => [
+        'SNP Assay file and Assay design file'
+          => t('SNP Assay file and Assay design file'),
+        'VCF' => t('VCF'),
       ],
-    ],
-  ];
+      '#ajax' => [
+        'callback' => 'tpps_genotype_files_callback',
+        'wrapper' => "$id-genotype-files",
+      ],
+      '#states' => [
+        'visible' => [
+          ':input[name="' . $id . '[genotype][files][genotyping-type]"]'
+          => ['value' => 'Genotyping'],
+        ],
+      ],
+    ];
+    // Value is a string because mutiple values not allowed.
+    $file_type_value = tpps_get_ajax_value($form_state, $file_type_parents);
+  }
 
-  // Value is a string since only one option could be selected.
-  $file_type_value = tpps_get_ajax_value($form_state, $file_type_parents);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNP Assay File.
@@ -1192,44 +1179,32 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if (!empty($ssrs_file_check)) {
-    $fields['files']['ssrs'] = array(
+  // [VS]
+  if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
+    $fields['files']['ssrs'] = [
       '#type' => 'managed_file',
-      '#title' => t('SSRs/cpSSRs Spreadsheet: *'),
+      '#title' => t('SSRs Spreadsheet: *'),
       '#upload_location' => "$genotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
-      ),
-      '#description' => t('Please upload a spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
+      '#upload_validators' => [
+        'file_validate_extensions' => ['csv tsv xlsx'],
+      ],
+      '#description' => t('Please upload a spreadsheet containing your SSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
       '#tree' => TRUE,
-      'empty' => array(
-        '#default_value' => isset($values["organism-$id"]['genotype']['files']['ssrs']) ? $values["organism-$id"]['genotype']['files']['ssrs'] : 'NA',
-      ),
-    );
-
-    $ploidy = tpps_get_ajax_value($form_state, array(
-      $id,
-      'genotype',
-      'files',
-      'ploidy',
-    ));
-
-    switch ($ploidy) {
-      case 'Haploid':
-        $fields['files']['ssrs']['#description'] .= ' For haploid, TPPS assumes that each remaining column in the spreadsheet is a marker.';
-        break;
-
-      case 'Diploid':
-        $fields['files']['ssrs']['#description'] .= ' For diploid, TPPS will assume that pairs of columns together are describing an individual marker, so the second and third columns would be the first marker, the fourth and fifth columns would be the second marker, etc.';
-        break;
-
-      case 'Polyploid':
-        $fields['files']['ssrs']['#description'] .= ' For polyploid, TPPS will read columns until it arrives at a non-empty column with a different name from the last.';
-        break;
-
-      default:
-        break;
-    }
+      'empty' => [
+        '#default_value' =>
+          isset($values["organism-$id"]['genotype']['files']['ssrs'])
+          ? $values["organism-$id"]['genotype']['files']['ssrs'] : 'NA',
+      ],
+      // @TODO Update validation.
+      '#states' => [
+        'visible' => [
+          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+            => ['value' => 'SSRs'],
+          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+            => ['value' => 'Both SSRs and cpSSRs'],
+        ],
+      ],
+    ];
 
     if (isset($fields['files']['ssrs']['#value']['fid'])) {
       $fields['files']['ssrs']['#default_value'] = $fields['files']['ssrs']['#value']['fid'];
@@ -1239,92 +1214,71 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     }
 
-    $fields['files']['ssr-extra-check'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('I would like to include an additional SSRs/cpSSRs Spreadsheet (this is typically used when the study includes both SSR and cpSSR data)'),
-      '#ajax' => array(
-        'callback' => 'tpps_genotype_files_callback',
-        'wrapper' => "$id-genotype-files",
-      ),
-    );
+    tpps_genotype_update_ploidy_description($fields, [
+      'id' => $id,
+      'form_state' => $form_state,
+      'field_name' => 'ploidy',
+      'file_field_name' => 'ssrs',
+    ]);
+    // [/VS]
 
-    $ssrs_extra_check = tpps_get_ajax_value($form_state, array(
-      $id,
-      'genotype',
-      'files',
-      'ssr-extra-check',
-    ));
-
-    if ($ssrs_extra_check) {
-      $fields['files']['extra-ssr-type'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Define Additional SSRs/cpSSRs Type: *'),
-      );
-
+    // @TODO Show when cpSSR or both selected.
+    if (1) {
+      // @TODO [VS] Rename field machine name.
       $fields['files']['extra-ploidy'] = array(
         '#type' => 'select',
-        '#title' => t('Additional SSRs/cpSSRs Ploidy'),
+        '#title' => t('cpSSRs Ploidy'),
         '#options' => array(
           0 => t('- Select -'),
           'Haploid' => t('Haploid'),
           'Diploid' => t('Diploid'),
           'Polyploid' => t('Polyploid'),
         ),
-        '#ajax' => array(
+        '#ajax' => [
           'callback' => 'tpps_genotype_files_callback',
           'wrapper' => "$id-genotype-files",
-        ),
+        ],
       );
 
+      // @TODO [VS] Rename field machine name.
       $fields['files']['ssrs_extra'] = array(
         '#type' => 'managed_file',
-        '#title' => t('SSRs/cpSSRs Additional Spreadsheet: *'),
+        '#title' => t('cpSSRs Spreadsheet: *'),
         '#upload_location' => "$genotype_upload_location",
         '#upload_validators' => array(
           'file_validate_extensions' => array('csv tsv xlsx'),
         ),
-        '#description' => t('Please upload an additional spreadsheet containing your SSRs/cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
+        // Differs only 'cpSSRs' string.
+        '#description' => t('Please upload an additional spreadsheet containing your cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
         '#tree' => TRUE,
       );
 
-      $extra_ploidy = tpps_get_ajax_value($form_state, array(
-        $id,
-        'genotype',
-        'files',
-        'extra-ploidy',
-      ));
 
-      switch ($extra_ploidy) {
-        case 'Haploid':
-          $fields['files']['ssrs_extra']['#description'] .= ' For haploid, TPPS assumes that each remaining column in the spreadsheet is a marker.';
-          break;
-
-        case 'Diploid':
-          $fields['files']['ssrs_extra']['#description'] .= ' For diploid, TPPS will assume that pairs of columns together are describing an individual marker, so the second and third columns would be the first marker, the fourth and fifth columns would be the second marker, etc.';
-          break;
-
-        case 'Polyploid':
-          $fields['files']['ssrs_extra']['#description'] .= ' For polyploid, TPPS will read columns until it arrives at a non-empty column with a different name from the last.';
-          break;
-
-        default:
-          break;
-      }
-
+      // @TODO replace with function tpps_build_file_field().
       if (isset($fields['files']['ssrs_extra']['#value']['fid'])) {
-        $fields['files']['ssrs_extra']['#default_value'] = $fields['files']['ssrs_extra']['#value']['fid'];
+        $fields['files']['ssrs_extra']['#default_value']
+          = $fields['files']['ssrs_extra']['#value']['fid'];
       }
       if (!empty($fields['files']['ssrs_extra']['#default_value']) and ($file = file_load($fields['files']['ssrs_extra']['#default_value']))) {
         // Stop using the file so it can be deleted if the user clicks 'remove'.
         file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
       }
+
+      // [VS]
+      tpps_genotype_update_ploidy_description($fields, [
+        'id' => $id,
+        'form_state' => $form_state,
+        'field_name' => 'extra-ploidy',
+        'file_field_name' => 'ssrs_extra',
+      ]);
+      // [/VS]
     }
     else {
-      tpps_build_disabled_file_field($fields, 'ssrs-extra');
+      tpps_build_disabled_file_field($fields, 'ssrs_extra');
     }
   }
   else {
-    $file_field_list = ['ssrs', 'ssrs-extra'];
+    $file_field_list = ['ssrs', 'ssrs_extra'];
     foreach ($file_field_list as $file_field_name) {
       tpps_build_disabled_file_field($fields, $file_field_name);
     }
@@ -1360,7 +1314,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   //  );
   //}
 
-  if (!empty($other_file_check)) {
+  if (in_array('Other', $genotype_marker_type)) {
     $fields['files']['other'] = array(
       '#type' => 'managed_file',
       '#title' => t('Other Marker Genotype Spreadsheet: please provide a spreadsheet with columns for the Plant ID of genotypes used in this study: *'),
@@ -1697,8 +1651,8 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
         }
       }
     }
-    
-    
+
+
   }
 
   // Perform a database lookup as well using new query from Emily Grau (6/6/2023)
@@ -1708,10 +1662,10 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   if ($time_now > ($time_genome_query_results_time + $time_expire_period)) {
     chado_query("DROP TABLE IF EXISTS chado.tpps_ref_genomes;", []);
     chado_query("CREATE TABLE chado.tpps_ref_genomes AS (
-      select distinct a.name, a.analysis_id, a.programversion, o.genus||' '||o.species as species from chado.analysis a 
-      join chado.analysisfeature af on a.analysis_id = af.analysis_id 
-      join chado.feature f on af.feature_id = f.feature_id 
-      join chado.organism o on f.organism_id = o.organism_id 
+      select distinct a.name, a.analysis_id, a.programversion, o.genus||' '||o.species as species from chado.analysis a
+      join chado.analysisfeature af on a.analysis_id = af.analysis_id
+      join chado.feature f on af.feature_id = f.feature_id
+      join chado.organism o on f.organism_id = o.organism_id
       where f.type_id in (379,595,597,825,1245) AND a.name LIKE '% v%'
     )",[]);
     variable_set('tpps_genome_query_results_time', $time_now);
@@ -1860,20 +1814,22 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
  */
 function tpps_page_4_marker_info(array &$fields, $id) {
 
-  $fields['marker-type'] = array(
+  // [VS]
+  $fields['marker-type'] = [
     '#type' => 'select',
     '#multiple' => TRUE,
     '#title' => t('Marker Type: *'),
-    '#options' => drupal_map_assoc([
-      t('SNPs'),
-      t('SSRs/cpSSRs'),
-      t('Other'),
-    ]),
+    '#options' => [
+      'SNPs' => t('SNPs'),
+      'SSRs/cpSSRs' => t('SSRs/cpSSRs'),
+      'Other' => t('Other'),
+    ],
     '#ajax' => [
       'callback' => 'tpps_genotype_files_callback',
       'wrapper' => "$id-genotype-files",
     ],
-  );
+  ];
+  // [/VS]
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNPs
@@ -1946,14 +1902,20 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     ),
   );
 
+  // [VS]
+  // @TODO Major.
+  // On select different set of Ploidy/File upload field must be shown.
+  // On both must be shown both.
   $fields['SSRs/cpSSRs'] = [
     '#type' => 'select',
-    '#title' => t('SSRs/cpSSRs Type: *'),
-    '#options' => drupal_map_assoc([
-      t('SSRs'), t('cpSSRs'), t('Both SSRs and cpSSRs')
-    ]),
-
+    '#title' => t('Define SSRs/cpSSRs Type: *'),
+    '#options' => [
+      'SSRs' => t('SSRs'),
+      'cpSSRs' => t('cpSSRs'),
+      'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
+    ],
   ];
+  // [/VS]
 
   $fields['other-marker'] = [
     '#type' => 'textfield',
@@ -2102,3 +2064,54 @@ function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
   ];
 }
 
+
+
+/**
+ * Updates description of related file field on 'Ploidy' field value change.
+ *
+ * @param array $fields
+ *   Drupal Form API array with Genotype form.
+ * @param array $meta
+ *   Metadata for function. Associative array with keys:
+ *     'form_state', 'field_name', 'file_field_name'.
+ *   Example:
+ *   tpps_genotype_update_ploidy_description($fields, [
+ *     'id' => $id, // Organism Number.
+ *     'form_state' => $form_state, // Drupal Form API $form_state.
+ *     'field_name' => 'ploidy', // Selectbox name.
+ *      'file_field_name' => 'ssrs', // Related file upload field name.
+ *    ]);
+ */
+function tpps_genotype_update_ploidy_description(array &$fields, array $meta) {
+  $ploidy = tpps_get_ajax_value($meta['form_state'], [
+    $meta['id'],
+    'genotype',
+    'files',
+    $meta['field_name'],
+  ]);
+
+  switch ($ploidy) {
+    case 'Haploid':
+      $fields['files'][$meta['file_field_name']]['#description']
+        .= ' For haploid, TPPS assumes that each remaining column in the '
+        . 'spreadsheet is a marker.';
+      break;
+
+    case 'Diploid':
+      $fields['files'][$meta['file_field_name']]['#description']
+        .= ' For diploid, TPPS will assume that pairs of columns together '
+        . 'are describing an individual marker, so the second and third '
+        . 'columns would be the first marker, the fourth and fifth columns '
+        . 'would be the second marker, etc.';
+      break;
+
+    case 'Polyploid':
+      $fields['files'][$meta['file_field_name']]['#description']
+        .= ' For polyploid, TPPS will read columns until it arrives at a '
+        . 'non-empty column with a different name from the last.';
+      break;
+
+    default:
+      break;
+  }
+}

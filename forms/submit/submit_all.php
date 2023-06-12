@@ -1439,11 +1439,16 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $options['records'] = $records;
     $genotype_count = 0;
 
+    // @TODO [VS] Field 'ssr-extra-check' must be replaced with check if
+    // Define SSRs/cpSSRs Type:
+    //   cpSSR or Both SSRs and cpSSRs
     if (!empty($genotype['files']['ssr-extra-check'])) {
       $extra_fid = $genotype['files']['ssrs_extra'];
       tpps_add_project_file($form_state, $extra_fid);
 
+      // @TODO [VS] Field 'extra-ssr-type' was removed.
       $options['marker'] = $genotype['files']['extra-ssr-type'];
+
       $options['headers'] = tpps_ssrs_headers($extra_fid, $genotype['files']['extra-ploidy']);
       tpps_job_logger_write('[INFO] - Processing genotype_spreadsheet file data...');
       $job->logMessage('[INFO] - Processing genotype_spreadsheet file data...');
