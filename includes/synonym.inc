@@ -278,11 +278,15 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
     // Phenotype uniquename is using the same name but not lowercased.
     $synonym_list[ $item['synonym_id'] ] = $item['name'];
   }
+  if (empty($synonym_list) || empty($id_list)) {
+    return;
+  }
   foreach ($id_list as $uniquename => $phenotype_id) {
+    // $uniquename exampe: 'TGDR824-ID_18-11-leaf A-154-Piln-unit'
+    // $phenotype_name exampe: 'leaf A'
+    // But phenotype name could be a one letter!..
     foreach ($synonym_list as $synonym_id => $phenotype_name) {
-      // $uniquename exampe: 'TGDR824-ID_18-11-leaf A-154-Piln-unit'
-      // $phenotype_name exampe: 'leaf A'
-      if (strpos($uniquename, $phenotype_name) !== FALSE) {
+      if ($phenotype_name == explode('-', $uniquename)[2]) {
         // Store relation between Phenotype Id and Synonym Id.
         db_merge('chado.phenotype_to_synonym')
           ->key([
