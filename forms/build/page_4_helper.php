@@ -917,6 +917,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   tpps_page_4_marker_info($fields, $id);
   tpps_page_4_ref($fields, $form_state, $id);
 
+
   $marker_parents = [$id, 'genotype', 'marker-type'];
   // @TODO Minor. Rename to 'Other marker'. Check validation and submit.
   $genotype_marker_type = array_keys(
@@ -1944,8 +1945,12 @@ function tpps_page_4_marker_info(array &$fields, $id) {
       'cpSSRs' => t('cpSSRs'),
       'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
     ],
-    // Set default to 'both' because Drupal States show both by default.
+    // @TODO Show only one field by default and remove default value.
+    // Default value it not required but by default all related fields are
+    // shown so this is workaround.
     '#default_value' => 'Both SSRs and cpSSRs',
+    // Default value on form creation.
+    // dpm(tpps_get_ajax_value($form_state, [$id, 'genotype','SSRs/cpSSRs']));
   ];
   // [/VS]
 
