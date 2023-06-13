@@ -928,9 +928,10 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   // [VS]
   if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
+    // @TODO Change name of field and update validation/submit.
     $fields['files']['ploidy'] = [
       '#type' => 'select',
-      '#title' => t('Ploidy'),
+      '#title' => t('SSRs Ploidy'),
       '#options' => [
         0 => t('- Select -'),
         'Haploid' => t('Haploid'),
@@ -1181,22 +1182,23 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // [VS]
   if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
-    $fields['files']['ssrs'] = [
-      '#type' => 'managed_file',
-      '#title' => t('SSRs Spreadsheet: *'),
-      '#upload_location' => "$genotype_upload_location",
-      '#upload_validators' => [
-        'file_validate_extensions' => ['csv tsv xlsx'],
-      ],
-      '#description' => t('Please upload a spreadsheet containing your SSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
-      '#tree' => TRUE,
-      'empty' => [
-        '#default_value' =>
-          isset($values["organism-$id"]['genotype']['files']['ssrs'])
-          ? $values["organism-$id"]['genotype']['files']['ssrs'] : 'NA',
-      ],
-      // @TODO Update validation.
-      '#states' => [
+
+    $title = t('SSRs Spreadsheet');
+    $file_field_name = 'ssrs';
+    tpps_build_file_field($fields, [
+      'form_state' => $form_state,
+      'id' => $id,
+      'file_field_name' => $file_field_name,
+      'title' => $title,
+      'upload_location' => "$genotype_upload_location",
+      'description' => t('Please upload a spreadsheet containing your '
+        . 'SSRs data. The format of this file is very important! TPPS will '
+        . 'parse your file based on the ploidy you have selected above. '
+        . 'For any ploidy, TPPS will assume that the first column of your '
+        . 'file is the column that holds the Plant Identifier that matches '
+        . 'your accession file.'),
+      // @TODO [VS] Update validation.
+      'states' => [
         'visible' => [
           ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
             => ['value' => 'SSRs'],
@@ -1204,21 +1206,25 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
             => ['value' => 'Both SSRs and cpSSRs'],
         ],
       ],
-    ];
-
-    if (isset($fields['files']['ssrs']['#value']['fid'])) {
-      $fields['files']['ssrs']['#default_value'] = $fields['files']['ssrs']['#value']['fid'];
-    }
-    if (!empty($fields['files']['ssrs']['#default_value']) and ($file = file_load($fields['files']['ssrs']['#default_value']))) {
-      // Stop using the file so it can be deleted if the user clicks 'remove'.
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-    }
-
+      // Note: There is no 'empty' attribute in D7 Form API for 'managed_file'
+      // but this non-standard element could be used by custom code later.
+      // Leave it now as is to avoid possible errors.
+      // @TODO Check if element 'empty' is used and remove if not.
+      'extra_elements' => [
+        'empty' => [
+          '#default_value' =>
+            isset($values["organism-$id"]['genotype']['files'][$file_field_name])
+            ? $values["organism-$id"]['genotype']['files'][$file_field_Name] : 'NA',
+        ],
+      ]
+    ]);
     tpps_genotype_update_ploidy_description($fields, [
       'id' => $id,
       'form_state' => $form_state,
+      // Source field.
       'field_name' => 'ploidy',
-      'file_field_name' => 'ssrs',
+      // Target field.
+      'file_field_name' => $file_field_name,
     ]);
     // [/VS]
 
@@ -1240,36 +1246,41 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         ],
       );
 
-      // @TODO [VS] Rename field machine name.
-      $fields['files']['ssrs_extra'] = array(
-        '#type' => 'managed_file',
-        '#title' => t('cpSSRs Spreadsheet: *'),
-        '#upload_location' => "$genotype_upload_location",
-        '#upload_validators' => array(
-          'file_validate_extensions' => array('csv tsv xlsx'),
-        ),
-        // Differs only 'cpSSRs' string.
-        '#description' => t('Please upload an additional spreadsheet containing your cpSSRs data. The format of this file is very important! TPPS will parse your file based on the ploidy you have selected above. For any ploidy, TPPS will assume that the first column of your file is the column that holds the Plant Identifier that matches your accession file.'),
-        '#tree' => TRUE,
-      );
-
-
-      // @TODO replace with function tpps_build_file_field().
-      if (isset($fields['files']['ssrs_extra']['#value']['fid'])) {
-        $fields['files']['ssrs_extra']['#default_value']
-          = $fields['files']['ssrs_extra']['#value']['fid'];
-      }
-      if (!empty($fields['files']['ssrs_extra']['#default_value']) and ($file = file_load($fields['files']['ssrs_extra']['#default_value']))) {
-        // Stop using the file so it can be deleted if the user clicks 'remove'.
-        file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      }
-
       // [VS]
+      // @TODO [VS] Change field machine name.
+      $title = t('cpSSRs Spreadsheet');
+      $file_field_name = 'ssrs_extra';
+      tpps_build_file_field($fields, [
+        'form_state' => $form_state,
+        'id' => $id,
+        'file_field_name' => $file_field_name,
+        'title' => $title,
+        'upload_location' => "$genotype_upload_location",
+        // Note:
+        // Difference from form 'ssrs' field: 'cpSSRs' (2nd line).
+        'description' => t('Please upload a spreadsheet containing your '
+          . 'cpSSRs data. The format of this file is very important! TPPS will '
+          . 'parse your file based on the ploidy you have selected above. '
+          . 'For any ploidy, TPPS will assume that the first column of your '
+          . 'file is the column that holds the Plant Identifier that matches '
+          . 'your accession file.'),
+        // @TODO [VS] Update validation.
+        'states' => [
+          'visible' => [
+            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+              => ['value' => 'cpSSRs'],
+            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+              => ['value' => 'Both SSRs and cpSSRs'],
+          ],
+        ],
+      ]);
       tpps_genotype_update_ploidy_description($fields, [
         'id' => $id,
         'form_state' => $form_state,
+        // Source.
         'field_name' => 'extra-ploidy',
-        'file_field_name' => 'ssrs_extra',
+        // Target.
+        'file_field_name' => $file_field_name,
       ]);
       // [/VS]
     }
@@ -1959,9 +1970,11 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
 //  'form_state' => $form_state,
 //  'id' => $id,
 //  'file_field_name' => $file_field_name,
-//  'title' => 'Assay Design File',
+//  'title' => $title,
 //  'upload_location' => "$genotype_upload_location",
 //  'description' => $description,
+//  'extensions' => $extensions, // Default: ['csv tsv xlsx']
+//  'states' => $states, // Default is ''.
 //]);
 function tpps_build_file_field(array &$fields, array $meta) {
   extract($meta);
@@ -1976,9 +1989,22 @@ function tpps_build_file_field(array &$fields, array $meta) {
     '#tree' => TRUE,
     '#states' => $states ? $states : '',
   ];
+  // Element 'extra_elements' allow to add any not expected form elements.
+  if (!empty($extra_elements)) {
+    $fields['files'][$file_field_name] = array_merge(
+      $fields['files'][$file_field_name], $extra_elements
+    );
+  }
 
+  // Note:
+  // Field 'snps-association' excluded because it didn't have this code.
+  // @TODO Discuss if it's needed and remove this check.
   if ($file_field_name != 'snps-association') {
-    // SNP Assay used this:
+    // Some fields used this code:
+    // - 'SNP Assay'
+    // - 'ssrs' / 'SSRs Spreadsheet'
+    // - 'ssrs_extra' / 'cpSSRs Spreadsheet'
+    //
     //if (isset($fields['files'][$file_field_name]['#value']['fid'])) {
     //  $fields['files'][$file_field_name]['#default_value']
     //    = $fields['files'][$file_field_name]['#value']['fid'];
