@@ -47,8 +47,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     ), TRUE),
   );
 
-
-
   $form[$id]['phenotype']['iso-check'] = array(
     '#type' => 'checkbox',
     '#title' => t('My phenotypes include results from a mass spectrometry or isotope analysis'),
@@ -712,7 +710,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       // ),
     );
 
-
     $form[$id]['phenotype']['metadata'] = array(
       '#type' => 'managed_file',
       '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
@@ -905,13 +902,6 @@ function tpps_phenotype_number_clear($button_name, $value) {
  */
 function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // [VS]
-
-
-  // @TODO [VS] Implements this.
-
-  // @TODO $values probably could be obtained here but maybe this array was
-  // modified before we use it here. Need to check this.
-  // $values = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'pps_genotype');
   $fields = array(
     '#type' => 'fieldset',
@@ -921,9 +911,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   tpps_page_4_marker_info($fields, $id);
   tpps_page_4_ref($fields, $form_state, $id);
 
-
   $marker_parents = [$id, 'genotype', 'marker-type'];
-  // @TODO Minor. Rename to 'Other marker'. Check validation and submit.
   $genotype_marker_type = array_keys(
     tpps_get_ajax_value($form_state, $marker_parents)
   );
@@ -964,19 +952,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         [$id, 'genotype', 'files', 'snp_association']
       );
     }
-
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Note: Marker Type allows multiple values to be selected.
-  $condition = (
-    in_array('SNPs', $genotype_marker_type)
-    && (
-      !$is_step2_genotype
-      || $snp_association_check == 'No'
-    )
-  );
-  if ($condition) {
+  if (in_array('SNPs', $genotype_marker_type)) {
     $fields['files']['genotyping-type'] = [
       '#type' => 'select',
       '#title' => t('Genotyping Type: *'),
@@ -1016,7 +996,6 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     // Value is a string because mutiple values not allowed.
     $file_type_value = tpps_get_ajax_value($form_state, $file_type_parents);
   }
-
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNP Assay File.
@@ -1146,7 +1125,6 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       ]
     );
 
-
     $fields['files']['snps-association-type'] = [
       '#type' => 'select',
       '#title' => t('Confidence Value Type: *'),
@@ -1201,10 +1179,8 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // [VS]
   if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
     // SSRs.
-    // @TODO Change name of field and update validation/submit.
     $fields['files']['ploidy'] = [
       '#type' => 'select',
       '#title' => t('SSRs Ploidy'),
@@ -1371,37 +1347,31 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Other Columns.
     $default_dynamic = !empty($values[$id]['genotype']['files']['other-columns']);
-    $fields['files']['other']['dynamic'] = array(
+    $fields['files']['other']['dynamic'] = [
       '#type' => 'checkbox',
       '#title' => t('This file needs dynamic dropdown options for column data type specification'),
-      '#ajax' => array(
+      '#ajax' => [
         'wrapper' => "edit-$id-genotype-files-other-ajax-wrapper",
         'callback' => 'tpps_page_4_file_dynamic',
-      ),
+      ],
       '#default_value' => $default_dynamic,
+    ];
+    $dynamic = tpps_get_ajax_value($form_state,
+      [$id, 'genotype', 'files', 'other', 'dynamic'],
+      $default_dynamic,
+      'other'
     );
 
-    $dynamic = tpps_get_ajax_value($form_state, array(
-      $id,
-      'genotype',
-      'files',
-      'other',
-      'dynamic',
-    ), $default_dynamic, 'other');
-
     if ($dynamic) {
-      $fields['files']['other']['columns'] = array(
-        '#description' => t('Please define which columns hold the required data: Plant Identifier, Genotype Data'),
-      );
-
-      $fields['files']['other']['columns-options'] = array(
-        '#type' => 'hidden',
-        '#value' => array(
-          'Genotype Data',
-          'Plant Identifier',
-          'N/A',
+      $fields['files']['other']['columns'] = [
+        '#description' => t('Please define which columns hold the required data: '
+          . '<br />Plant Identifier, Genotype Data'
         ),
-      );
+      ];
+      $fields['files']['other']['columns-options'] = [
+        '#type' => 'hidden',
+        '#value' => ['Genotype Data', 'Plant Identifier', 'N/A'],
+      ];
     }
     $fields['files']['other']['no-header'] = [];
   }

@@ -457,7 +457,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     form_set_error("$id][genotype][SSRs/cpSSRs", t("SSRs/cpSSRs: field is required."));
   }
   elseif ($genotype['marker-type']['SSRs/cpSSRs'] and empty($genotype['files']['ploidy'])) {
-    form_set_error("$id][genotype][files][ploidy", t("Ploidy: field is required."));
+    form_set_error("$id][genotype][files][ploidy", t("SSRs Ploidy: field is required."));
   }
   elseif ($genotype['marker-type']['Other'] and empty($genotype['other-marker'])) {
     form_set_error("$id][genotype][other-marker", t("Other Genotype marker: field is required."));
