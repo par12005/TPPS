@@ -905,7 +905,10 @@ function tpps_phenotype_number_clear($button_name, $value) {
  */
 function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // [VS]
-  $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+  // @TODO $values probably could be obtained here but maybe this array was
+  // modified before we use it here. Need to check this.
+  // $values = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'pps_genotype');
   $fields = array(
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">Genotype Information:</div>'),
@@ -1206,25 +1209,14 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
             => ['value' => 'Both SSRs and cpSSRs'],
         ],
       ],
-      // Note: There is no 'empty' attribute in D7 Form API for 'managed_file'
-      // but this non-standard element could be used by custom code later.
-      // Leave it now as is to avoid possible errors.
-      // @TODO Check if element 'empty' is used and remove if not.
-      'extra_elements' => [
-        'empty' => [
-          '#default_value' =>
-            isset($values["organism-$id"]['genotype']['files'][$file_field_name])
-            ? $values["organism-$id"]['genotype']['files'][$file_field_Name] : 'NA',
-        ],
-      ]
+      // Add extra text field for empty field value.
+      'empty_field_value' => 'NA',
     ]);
-    tpps_genotype_update_ploidy_description($fields, [
+    tpps_genotype_update_description($fields, [
       'id' => $id,
       'form_state' => $form_state,
-      // Source field.
-      'field_name' => 'ploidy',
-      // Target field.
-      'file_field_name' => $file_field_name,
+      'source_field_name' => 'ploidy',
+      'target_field_name' => $file_field_name,
     ]);
     // [/VS]
 
@@ -1273,14 +1265,14 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
               => ['value' => 'Both SSRs and cpSSRs'],
           ],
         ],
+        // Add extra text field for empty field value.
+        'empty_field_value' => 'NA',
       ]);
-      tpps_genotype_update_ploidy_description($fields, [
+      tpps_genotype_update_description($fields, [
         'id' => $id,
         'form_state' => $form_state,
-        // Source.
-        'field_name' => 'extra-ploidy',
-        // Target.
-        'file_field_name' => $file_field_name,
+        'source_field_name' => 'extra-ploidy',
+        'target_field_name' => $file_field_name,
       ]);
       // [/VS]
     }
@@ -1975,6 +1967,9 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
 //  'description' => $description,
 //  'extensions' => $extensions, // Default: ['csv tsv xlsx']
 //  'states' => $states, // Default is ''.
+//  'empty_field_value' => TRUE,
+//  // Element 'extra_elements' allow to add any not expected form elements.
+//  'extra_elements' => [],
 //]);
 function tpps_build_file_field(array &$fields, array $meta) {
   extract($meta);
@@ -1989,8 +1984,20 @@ function tpps_build_file_field(array &$fields, array $meta) {
     '#tree' => TRUE,
     '#states' => $states ? $states : '',
   ];
-  // Element 'extra_elements' allow to add any not expected form elements.
-  if (!empty($extra_elements)) {
+  // Add extra text field for empty field value. Default is FALSE.
+  if ($empty_field_value) {
+    $values = $form_state['saved_values'][TPPS_PAGE_4];
+    // Note:
+    // Element 'empty' is a custom solution to add textfield.
+    $fields['files'][$file_field_name]['empty'] = [
+      '#default_value' =>
+        isset($values["organism-$id"]['genotype']['files'][$file_field_name])
+        ? $values["organism-$id"]['genotype']['files'][$file_field_name]
+        : $empty_field_value,
+    ];
+  }
+
+  if ($extra_elements) {
     $fields['files'][$file_field_name] = array_merge(
       $fields['files'][$file_field_name], $extra_elements
     );
@@ -2099,32 +2106,35 @@ function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
  *   Drupal Form API array with Genotype form.
  * @param array $meta
  *   Metadata for function. Associative array with keys:
- *     'form_state', 'field_name', 'file_field_name'.
+ *     'id', 'form_state', 'source_field_name', 'target_field_name'.
  *   Example:
- *   tpps_genotype_update_ploidy_description($fields, [
+ *   tpps_genotype_update_description($fields, [
  *     'id' => $id, // Organism Number.
- *     'form_state' => $form_state, // Drupal Form API $form_state.
- *     'field_name' => 'ploidy', // Selectbox name.
- *      'file_field_name' => 'ssrs', // Related file upload field name.
- *    ]);
+ *     // Drupal Form API $form_state.
+ *     'form_state' => $form_state,
+ *     // Source field name. Usually selectbox.
+ *     'source_field_name' => 'ploidy',
+ *     // Genotype file field name which must be updated.
+ *     'file_field_name' => 'ssrs',
+ *   ]);
  */
-function tpps_genotype_update_ploidy_description(array &$fields, array $meta) {
+function tpps_genotype_update_description(array &$fields, array $meta) {
   $ploidy = tpps_get_ajax_value($meta['form_state'], [
     $meta['id'],
     'genotype',
     'files',
-    $meta['field_name'],
+    $meta['source_field_name'],
   ]);
 
   switch ($ploidy) {
     case 'Haploid':
-      $fields['files'][$meta['file_field_name']]['#description']
+      $fields['files'][$meta['target_field_name']]['#description']
         .= ' For haploid, TPPS assumes that each remaining column in the '
         . 'spreadsheet is a marker.';
       break;
 
     case 'Diploid':
-      $fields['files'][$meta['file_field_name']]['#description']
+      $fields['files'][$meta['target_field_name']]['#description']
         .= ' For diploid, TPPS will assume that pairs of columns together '
         . 'are describing an individual marker, so the second and third '
         . 'columns would be the first marker, the fourth and fifth columns '
@@ -2132,7 +2142,7 @@ function tpps_genotype_update_ploidy_description(array &$fields, array $meta) {
       break;
 
     case 'Polyploid':
-      $fields['files'][$meta['file_field_name']]['#description']
+      $fields['files'][$meta['target_field_name']]['#description']
         .= ' For polyploid, TPPS will read columns until it arrives at a '
         . 'non-empty column with a different name from the last.';
       break;
