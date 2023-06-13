@@ -35,7 +35,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
   $form[$id]['phenotype']['normal-check'] = array(
     '#type' => 'checkbox',
-    '#title' => t('My phenotypes include traits and/or environmental information other than mass spectrometry or isotope analysis'),
+    '#title' => t('My phenotypes include traits and/or environmental '
+      . 'information other than mass spectrometry or isotope analysis'),
     '#ajax' => array(
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
@@ -46,8 +47,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'normal-check',
     ), TRUE),
   );
-
-  
 
   $form[$id]['phenotype']['iso-check'] = array(
     '#type' => 'checkbox',
@@ -447,8 +446,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       // Unit.
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options']
         = tpps_synonym_get_unit_list($synonym_id ?? NULL);
-      $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#default_value']
-        = (
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#default_value'] = (
         $phenotypes[$i]['unit']
         ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options'])
         ?? NULL
@@ -1681,8 +1679,8 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
         }
       }
     }
-    
-    
+
+
   }
 
   // Perform a database lookup as well using new query from Emily Grau (6/6/2023)
@@ -1692,10 +1690,10 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   if ($time_now > ($time_genome_query_results_time + $time_expire_period)) {
     chado_query("DROP TABLE IF EXISTS chado.tpps_ref_genomes;", []);
     chado_query("CREATE TABLE chado.tpps_ref_genomes AS (
-      select distinct a.name, a.analysis_id, a.programversion, o.genus||' '||o.species as species from chado.analysis a 
-      join chado.analysisfeature af on a.analysis_id = af.analysis_id 
-      join chado.feature f on af.feature_id = f.feature_id 
-      join chado.organism o on f.organism_id = o.organism_id 
+      select distinct a.name, a.analysis_id, a.programversion, o.genus||' '||o.species as species from chado.analysis a
+      join chado.analysisfeature af on a.analysis_id = af.analysis_id
+      join chado.feature f on af.feature_id = f.feature_id
+      join chado.organism o on f.organism_id = o.organism_id
       where f.type_id in (379,595,597,825,1245) AND a.name LIKE '% v%'
     )",[]);
     variable_set('tpps_genome_query_results_time', $time_now);
@@ -1968,17 +1966,33 @@ function tpps_page_4_marker_info(array &$fields, $id) {
  *   Returns Form API field.
  */
 function tpps_build_field_name($id) {
-  return array(
+  return [
     '#type' => 'textfield',
     '#title' => 'Phenotype !num Name: *',
-    '#attributes' => array(
-      'data-toggle' => array('tooltip'),
-      'data-placement' => array('right'),
-      // 'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-      'title' => array('If your phenotype name does not exist in our database, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
+    '#attributes' => [
+      'data-toggle' => ['tooltip'],
+      'data-placement' => ['right'],
+      'title' => ['If your phenotype name does not exist in our database, '
+        . 'don\'t worry about it! We will create new phenotype metadata '
+        . 'in the database for you.'],
+      // Alternative title for one of fields:
+      // 'title' => ['If your phenotype name is not in the '
+      // . 'autocomplete list, don\'t worry about it! We will create new '
+      // . 'phenotype metadata in the database for you.'],
+      ],
+    '#description' => t('Phenotype "name" is the human-readable name of the '
+      . 'phenotype, where "attribute" is the thing that the phenotype is '
+      . 'describing. Phenotype "name" should match the data in the '
+      . '"Phenotype Name/Identifier" column that you select in your '
+      . '<a href="@url">Phenotype file</a> below.',
+      [
+        '@url' => url(
+          '/tpps',
+          ['fragment' => "edit-$id-phenotype-file-ajax-wrapper"]
+        ),
+      ]
     ),
-    '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your <a href="@url">Phenotype file</a> below.', array('@url' => url('/tpps', array('fragment' => "edit-$id-phenotype-file-ajax-wrapper")))),
-  );
+  ];
 }
 
 /**
@@ -1991,11 +2005,11 @@ function tpps_build_field_name($id) {
  *   Returns Form API field.
  */
 function tpps_build_field_description() {
-  return array(
+  return [
     '#type' => 'textfield',
     '#title' => 'Phenotype !num Description: *',
     '#description' => t('Please provide a short description of Phenotype !num'),
-  );
+  ];
 }
 
 /**

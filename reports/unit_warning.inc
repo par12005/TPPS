@@ -9,6 +9,9 @@
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
 function tpps_admin_unit_warning_report(array $filter = []) {
+  if (!function_exists('simple_report')) {
+    return '';
+  }
   $table = 'tpps_phenotype_unit_warning';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.

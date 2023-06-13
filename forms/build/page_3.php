@@ -285,14 +285,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       if ($found_lat and $found_lng) {
         unset($form['tree-accession']["species-$i"]['pop-group']['#suffix']);
         // [VS] #8669py308
-        // @TODO Remove outdated field after testing.
-        /*
-        $form['tree-accession']["species-$i"]['exact_coords'] = array(
-          '#type' => 'checkbox',
-          '#title' => t('The provided GPS coordinates are exact'),
-          '#default_value' => $form_state['saved_values'][TPPS_PAGE_3]['tree-accession']["species-$i"]['exact_coords'] ?? TRUE,
-        );
-         */
         $form['tree-accession']["species-$i"]['location_accuracy'] = [
           '#type' => 'select',
           '#title' => t('Location accuracy: *'),

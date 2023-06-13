@@ -854,7 +854,7 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#states' => [
           'visible' => [
             ':input[name="phenotypes_edit[' . $num . '][unit]"]'
-              =>  ['value' => 'other'],
+              => ['value' => 'other'],
           ],
         ],
         '#default_value' => $submission['phenotypes_edit'][$num]['unit-other']
@@ -1268,7 +1268,6 @@ function tpps_admin_panel_validate($form, &$form_state) {
       ['Save phenotype changes', 'Approve']
     ));
     if ($condition) {
-      //dpm(print_r($form_state['values'], 1));
       foreach ($form_state['values']['phenotypes_edit'] as $key => $phenotype_meta) {
         if (!is_array($phenotype_meta)) {
           // There is a button [phenotype_update] => Save phenotype changes

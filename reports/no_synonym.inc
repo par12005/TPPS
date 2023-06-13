@@ -9,6 +9,9 @@
  * Menu callback. Shows list of all phenotypes without synonym.
  */
 function tpps_admin_no_synonym_report() {
+  if (!function_exists('simple_report')) {
+    return '';
+  }
   // Query to get Study name.
   $sub_query = db_select('chado.phenotype', 'cte')->fields('cte', []);
   $sub_query->addExpression(

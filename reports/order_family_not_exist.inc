@@ -10,13 +10,15 @@
  * is not already present in database.
  */
 function tpps_admin_order_family_not_exist_report(array $filter = []) {
+  if (!function_exists('simple_report')) {
+    return '';
+  }
   $list = db_select('chado.organismprop', 'op')
     ->fields('op', ['organism_id'])
     ->condition('type_id', [9, 10], 'IN')
     ->distinct()
     ->execute()
     ->fetchCol();
-
   $table = 'organism';
   $meta = [
     // @DEBUG Shows SQL-query at page and table rows dump in watchdog.

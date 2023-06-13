@@ -5,5 +5,5 @@ vendor/
 docs/build/
 modules/
 tags
-*.swp
+*.sw*
 .vimrc*
