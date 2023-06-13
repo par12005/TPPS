@@ -905,6 +905,10 @@ function tpps_phenotype_number_clear($button_name, $value) {
  */
 function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // [VS]
+
+
+  // @TODO [VS] Implements this.
+
   // @TODO $values probably could be obtained here but maybe this array was
   // modified before we use it here. Need to check this.
   // $values = $form_state['saved_values'][TPPS_PAGE_4];
@@ -933,19 +937,54 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $genotyping_type_parents = [$id, 'genotype', 'files', 'genotyping-type'];
   $file_type_parents = [$id, 'genotype', 'files', 'file-type'];
 
-    //dpm($genotype_marker_type);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  if (in_array('SNPs', $genotype_marker_type)) {
+    $is_step2_genotype = in_array(
+      $form_state['saved_values'][TPPS_PAGE_2]['data_type'],
+      [
+        'Genotype x Environment',
+        'Genotype x Phenotype x Environment',
+        'Genotype x Phenotype',
+      ]
+    );
+    if ($is_step2_genotype) {
+      $fields['files']['snp_association'] = [
+        '#type' => 'select',
+        '#title' => t('Would you like to upload a SNP association file?'),
+        '#options' => [
+          'Yes' => t('Yes'),
+          'No' => t('No'),
+        ],
+        '#ajax' => [
+          'callback' => 'tpps_genotype_files_callback',
+          'wrapper' => "$id-genotype-files",
+        ],
+      ];
+      $snp_association_check = tpps_get_ajax_value($form_state,
+        [$id, 'genotype', 'files', 'snp_association']
+      );
+    }
+
+  }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Note: Marker Type allows multiple values to be selected.
-  if (in_array('SNPs', $genotype_marker_type)) {
+  $condition = (
+    in_array('SNPs', $genotype_marker_type)
+    && (
+      !$is_step2_genotype
+      || $snp_association_check == 'No'
+    )
+  );
+  if ($condition) {
     $fields['files']['genotyping-type'] = [
       '#type' => 'select',
       '#title' => t('Genotyping Type: *'),
       '#options' => [
         0 => '- Select -',
-        // @TODO Minor. Do we need t() here?
-        'Genotyping Assay' => 'Genotyping Assay',
-        // @TODO This is new value. Implement validation. Submit_all?
-        'Genotyping' => 'Genotyping',
+        'Genotyping Assay' => t('Genotyping Assay'),
+        // @TODO [VS] This is new value. Implement validation. Submit_all?
+        'Genotyping' => t('Genotyping'),
       ],
       '#ajax' => [
         'callback' => 'tpps_genotype_files_callback',
@@ -1052,8 +1091,8 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNP Association File.
-
-  if ($genotyping_type_check == "Genotyping Assay") {
+  if ($snp_association_check == 'Yes') {
+  //if ($genotyping_type_check == "Genotyping Assay") {
     $file_field_name = 'snps-association';
     $title = t('SNP Association File');
     tpps_build_file_field($fields, [
@@ -1305,36 +1344,6 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       tpps_build_disabled_file_field($fields, $file_field_name);
     }
   }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Disabled in #861muzfu4 but probably by mistake.
-  //if (!empty($indel_file_check)) {
-  //  $fields['files']['indels'] = array(
-  //    '#type' => 'managed_file',
-  //    '#title' => t('Indel Genotype Spreadsheet: *'),
-  //    '#upload_location' => "$genotype_upload_location",
-  //    '#upload_validators' => array(
-  //      'file_validate_extensions' => array('csv tsv xlsx'),
-  //    ),
-  //    '#description' => t('Please upload a spreadsheet containing your Indels data. The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain Indel data.'),
-  //    '#tree' => TRUE,
-  //  );
-
-  //  if (isset($fields['files']['indels']['#value']['fid'])) {
-  //    $fields['files']['indels']['#default_value'] = $fields['files']['indels']['#value']['fid'];
-  //  }
-  //  if (!empty($fields['files']['indels']['#default_value']) and ($file = file_load($fields['files']['indels']['#default_value']))) {
-  //    // Stop using the file so it can be deleted if the user clicks 'remove'.
-  //    file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-  //  }
-  //}
-  //else {
-  //  $fields['files']['indels'] = array(
-  //    '#type' => 'managed_file',
-  //    '#tree' => TRUE,
-  //    '#access' => FALSE,
-  //  );
-  //}
 
   if (in_array('Other', $genotype_marker_type)) {
     $title = t('Other Marker Genotype Spreadsheet: '
@@ -2095,13 +2104,14 @@ function tpps_get_hostname() {
  */
 function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
   extract($meta);
+  $hostname = tpps_get_hostname();
   $fields['files'][$file_field_name . '_file-location'] = [
     '#type' => 'select',
     '#title' => t('VCF File Location'),
     '#options' => [
       'local' => t('My VCF File is stored locally'),
       'remote' => t('My VCF File is stored at @hostname',
-        ['@hostname' => tpps_get_hostname()]),
+        ['@hostname' => $hostname]),
     ],
     '#weight' => 90,
   ];
@@ -2109,23 +2119,24 @@ function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
     'visible' => [
       ':input[name="' . $id . '[genotype][files]['
         . $file_field_name . '_file-location]"]'
-        => ['value' => 'remote'],
+        => ['value' => 'local'],
     ],
   ];
   $fields['files'][$file_field_name]['#weight'] = 100;
   $fields['files']['local_' . $file_field_name] = [
     '#type' => 'textfield',
-    '#title' => t('Path to local VCF File: *'),
+    '#title' => t('Path to VCF File at @hostname: *',
+      ['@hostname' => $hostname]
+    ),
     '#states' => [
       'visible' => [
         ':input[name="' . $id . '[genotype][files]['
           . $file_field_name . '_file-location]"]'
-          => ['value' => 'local'],
+          => ['value' => 'remote'],
       ],
     ],
     '#description' => t('Please provide the full path to your vcf file '
-      . 'stored locally on @hostname',
-      ['@hostname' => tpps_get_hostname()]
+      . 'stored on @hostname', ['@hostname' => $hostname]
     ),
     '#weight' => 100,
   ];
@@ -2185,3 +2196,4 @@ function tpps_genotype_update_description(array &$fields, array $meta) {
       break;
   }
 }
+
