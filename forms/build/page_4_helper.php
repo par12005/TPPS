@@ -1959,7 +1959,7 @@ function tpps_page_4_marker_info(array &$fields, $id) {
  *   Returns value of file field.
  */
 function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, $key) {
-  $name = $key . '_file-selector';
+  $name = ($key ? $key . '_' : '') . 'file-selector';
   $fields['files'][$name] = [
     '#type' => 'checkbox',
     '#title' => t('Reference Existing @title', ['@title' => $title]),
@@ -2111,8 +2111,6 @@ function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
     '#weight' => 100,
   ];
 }
-
-
 
 /**
  * Updates description of related file field on 'Ploidy' field value change.
