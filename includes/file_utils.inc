@@ -1027,12 +1027,13 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
   foreach (tpps_file_generator($fid, $options) as $item) {
     $item_count = $item_count + 1;
     // echo "ITEM COUNT: " . $item_count . "\n";
-    if(isset($options['test_1'])) {
+    if(isset($options['test'])) {
       // This will reduce the amount of processing in the file iterator
       // This is an attempt to speed up coding and testing by just not
       // processing all files per file (and may not always work)
-      if ($item_count > 1) {
-        echo "TEST_1 detected - only processing 1 lines and exiting the loop.\n";
+      $iteration_count = $options['test'];
+      if ($item_count > $iteration_count) {
+        echo "TEST detected - only processing $iteration_count iterations and exiting the loop.\n";
         return TRUE;
       }
     }
