@@ -134,7 +134,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     foreach ($terms as $term => $label) {
       $attr_id = tpps_load_cvterm($term)->cvterm_id;
       $attr_options[$attr_id] = $label;
-      // drupal_set_message($term . "," . $label . "," . $attr_id);
     }
     $attr_options['other'] = 'My attribute term is not in this list';
 
@@ -185,7 +184,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     foreach ($terms as $term => $label) {
       $unit_id = tpps_load_cvterm($term)->cvterm_id;
       $unit_options[$unit_id] = $label;
-      // drupal_set_message($term . "," . $label . "," . $unit_id);
     }
     $unit_options['other'] = 'My unit is not in this list';
 
@@ -224,7 +222,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     foreach ($terms as $term => $label) {
       $struct_id = tpps_load_cvterm($term)->cvterm_id;
       $struct_options[$struct_id] = $label;
-      // drupal_set_message($term . "," . $label . "," . $struct_id);
     }
     $struct_options['other'] = 'My structure term is not in this list';
 
@@ -977,7 +974,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         '#title' => t('Genotyping file type: *'),
         '#options' => [
           'SNP Assay file and Assay design file'
-            => t('SNP Assay file and Assay design file'),
+          => t('SNP Assay file and Assay design file'),
           'VCF' => t('VCF'),
         ],
         '#ajax' => [
@@ -1183,9 +1180,8 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     // SSRs.
     $fields['files']['ploidy'] = [
       '#type' => 'select',
-      '#title' => t('SSRs Ploidy'),
+      '#title' => t('SSRs Ploidy: *'),
       '#options' => [
-        0 => t('- Select -'),
         'Haploid' => t('Haploid'),
         'Diploid' => t('Diploid'),
         'Polyploid' => t('Polyploid'),
@@ -1203,12 +1199,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'visible' => [
           [
             ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'SSRs']
+            => ['value' => 'SSRs'],
           ],
           'or',
           [
             ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'Both SSRs and cpSSRs']
+            => ['value' => 'Both SSRs and cpSSRs'],
           ],
         ],
       ],
@@ -1254,15 +1250,14 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // cpSSRs.
     // @todo [VS] Rename field machine name.
-    $fields['files']['extra-ploidy'] = array(
+    $fields['files']['extra-ploidy'] = [
       '#type' => 'select',
-      '#title' => t('cpSSRs Ploidy'),
-      '#options' => array(
-        0 => t('- Select -'),
+      '#title' => t('cpSSRs Ploidy: *'),
+      '#options' => [
         'Haploid' => t('Haploid'),
         'Diploid' => t('Diploid'),
         'Polyploid' => t('Polyploid'),
-      ),
+      ],
       // Note:
       // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
       // description. See function tpps_genotype_update_description().
@@ -1276,16 +1271,16 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'visible' => [
           [
             ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'cpSSRs']
+            => ['value' => 'cpSSRs'],
           ],
           'or',
           [
             ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'Both SSRs and cpSSRs']
+             => ['value' => 'Both SSRs and cpSSRs'],
           ],
         ],
       ],
-    );
+    ];
 
     // [VS]
     // @todo [VS] Change field machine name.
