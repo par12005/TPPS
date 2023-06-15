@@ -14,7 +14,6 @@
  *   The state of the form that is being validated.
  */
 function tpps_page_4_validate_form(array &$form, array &$form_state) {
-
   if ($form_state['submitted'] == '1') {
     unset($form_state['file_info'][TPPS_PAGE_4]);
 
@@ -369,14 +368,18 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
   // @todo Remove debug code:
   //dpm(print_r($genotype, 1));
-  form_set_error("$id][genotype][ref-genome", t("Debug."));
+  form_set_error("$id][genotype][debug", t("Debug."));
 
   if (!$ref_genome) {
-    form_set_error("$id][genotype][ref-genome", t("Reference Genome: field is required."));
+    tpps_form_error_required($form_state,
+      [$id, 'genotype', 'ref-genome']
+    );
   }
   elseif ($ref_genome === 'bio') {
     if (!$genotype['tripal_eutils']['accession']) {
-      form_set_error("$id][genotype][tripal_eutils][accession", t('NCBI Accession Number: field is required.'));
+      tpps_form_error_required($form_state,
+       [$id, 'genotype', 'tripal_eutils', 'accession']
+      );
     }
     $connection = new \EUtils();
     try {
@@ -397,36 +400,49 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][tripal_eutils][accession", $e->getMessage());
     }
   }
-  elseif ($ref_genome === 'url' or $ref_genome === 'manual' or $ref_genome === 'manual2') {
 
+  elseif (in_array($ref_genome, ['url', 'manual', 'manual2'])) {
     $class = 'FASTAImporter';
     tripal_load_include_importer_class($class);
     $fasta_vals = $genotype['tripal_fasta'];
 
-    $file_upload = isset($fasta_vals['file']['file_upload']) ? trim($fasta_vals['file']['file_upload']) : 0;
-    $file_existing = isset($fasta_vals['file']['file_upload_existing']) ? trim($fasta_vals['file']['file_upload_existing']) : 0;
-    $file_remote = isset($fasta_vals['file']['file_remote']) ? trim($fasta_vals['file']['file_remote']) : 0;
+    $file_upload = isset($fasta_vals['file']['file_upload'])
+      ? trim($fasta_vals['file']['file_upload']) : 0;
+    $file_existing = isset($fasta_vals['file']['file_upload_existing'])
+      ? trim($fasta_vals['file']['file_upload_existing']) : 0;
+    $file_remote = isset($fasta_vals['file']['file_remote'])
+      ? trim($fasta_vals['file']['file_remote']) : 0;
     $db_id = trim($fasta_vals['db']['db_id']);
     $re_accession = trim($fasta_vals['db']['re_accession']);
     $analysis_id = trim($fasta_vals['analysis_id']);
     $seqtype = trim($fasta_vals['seqtype']);
 
     if (!$file_upload and !$file_existing and !$file_remote) {
-      form_set_error("$id][genotype][tripal_fasta][file", t("Assembly file: field is required."));
+      tpps_form_error_required($form_state,
+        [$id, 'genotype', 'tripal_fasta', 'file']
+      );
     }
 
     if ($db_id and !$re_accession) {
-      form_set_error("$id][genotype][tripal_fasta][additional][re_accession", t('Accession regular expression: field is required.'));
+      tpps_form_error_required($form_state,
+        [$id, 'genotype', 'tripal_fasta', 'additional', 're_accession']
+      );
     }
     if ($re_accession and !$db_id) {
-      form_set_error("$id][genotype][tripal_fasta][additional][db_id", t('External Database: field is required.'));
+      tpps_form_error_required($form_state,
+        [$id, 'genotype', 'tripal_fasta', 'additional', 'db_id']
+      );
     }
 
     if (!$analysis_id) {
-      form_set_error("$id][genotype][tripal_fasta][analysis_id", t('Analysis: field is required.'));
+      tpps_form_error_required($form_state,
+        [$id, 'genotype', 'tripal_fasta', 'analysis_id']
+      );
     }
     if (!$seqtype) {
-      form_set_error("$id][genotype][tripal_fasta][seqtype", t('Sequence Type: field is required.'));
+      tpps_form_error_required($form_state,
+        [$id, 'genotype', 'tripal_fasta', 'seqtype']
+      );
     }
 
     if (!form_get_errors()) {
@@ -436,59 +452,67 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // [VS]
-  tpps_check_required($genotype, $id, 'marker-type', 'Genotype Marker Type');
+  tpps_check_required($form_state, [$id, 'genotype', 'marker-type']);
 
   // @todo Make field required:
   // SSRs/cpSSRs Type:
   // Note: 'maker-type' is array (allows multiple values).
   if (isset($genotype['marker-type']['SNPs'])) {
     if (!$snps['genotyping-design']) {
-      form_set_error("$id][genotype][SNPs][genotyping-design",
-        t("Genotyping Design: field is required."));
+      tpps_form_error_required($form_state,
+        [$id, 'genotype', 'SNPs', 'genotyping-design']
+      );
     }
     elseif ($snps['genotyping-design'] == '1') {
       if (!$snps['GBS']) {
-        form_set_error("$id][genotype][SNPs][GBS",
-          t("GBS Type: field is required."));
+        tpps_form_error_required($form_state,
+          [$id, 'genotype', 'SNPs', 'GBS']
+        );
       }
       elseif ($snps['GBS'] == '5' and !$snps['GBS-other']) {
-        form_set_error("$id][genotype][SNPs][GBS=other",
-          t("Custom GBS Type: field is required."));
+        // @todo Check if '=other' works?..
+        tpps_form_error_required($form_state,
+          [$id, 'genotype', 'SNPs', 'GBS=other']
+        );
       }
     }
     elseif ($snps['genotyping-design'] == '2') {
       if (!$snps['targeted-capture']) {
-        form_set_error("$id][genotype][SNPs][targeted-capture",
-          t("Targeted Capture: field is required."));
+        tpps_form_error_required($form_state,
+          [$id, 'genotype', 'SNPs', 'targeted-capture']
+        );
       }
       elseif ($snps['targeted-capture'] == '2' and !$snps['targeted-capture-other']) {
-        form_set_error("$id][genotype][SNPs][targeted-capture-other",
-          t("Custom Targeted Capture: field is required."));
+        tpps_form_error_required($form_state,
+          [$id, 'genotype', 'SNPs', 'targeted-capture-other']
+        );
       }
     }
   }
 
   elseif (isset($genotype['marker-type']['SSRs/cpSSRs'])) {
-    tpps_check_required($genotype, $id, 'SSRs/cpSSRs', 'SSRs/cpSSRs');
+    tpps_check_required($form_state, [$id, 'genotype', 'SSRs/cpSSRs']);
     if (in_array($genotype['SSRs/cpSSRs'], ['SSRs', 'Both SSRs and cpSSRs'])) {
-      tpps_check_required($genotype, $id, 'files][ploidy', 'SSRs Ploidy');
-      tpps_check_required($genotype, $id, 'files][ssrs', 'SSRs Spreadsheet');
+      tpps_check_required($form_state, [$id, 'genotype', 'files', 'ploidy']);
+      tpps_check_required($form_state, [$id, 'genotype', 'files', 'ssrs']);
     }
     if (in_array($genotype['SSRs/cpSSRs'], ['cpSSRs', 'Both SSRs and cpSSRs'])) {
-      tpps_check_required($genotype, $id, 'files][extra-ploidy', 'cpSSRs Ploidy');
-      tpps_check_required($genotype, $id, 'files][ssrs_extra', 'cpSSRs Spreadsheet');
+      tpps_check_required($form_state, [$id, 'genotype', 'files', 'extra-ploidy']);
+      tpps_check_required($form_state, [$id, 'genotype', 'files', 'ssrs_extra']);
     }
   }
 
   elseif (isset($genotype['marker-type']['Other'])) {
-    tpps_check_required($genotype, $id, 'other-marker', 'Other Genotype marker');
-    tpps_check_required($genotype, $id, 'files][other', 'Other marker type');
+    tpps_check_required($form_state, [$id, 'genotype', 'other-marker']);
+    tpps_check_required($form_state, [$id, 'genotype', 'files', 'other']);
   }
   // [/VS]
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   if (preg_match('/^0+$/', implode('', $file_type))) {
-    form_set_error("$id][genotype][files][file-type", t("Genotype File Type: field is required."));
+    tpps_form_error_required($form_state,
+      [$id, 'genotype', 'files', 'file-type']
+    );
     return;
   }
   $loaded_state = tpps_load_submission($form_state['accession']);
@@ -501,7 +525,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf'] = NULL;
       }
       if (!file_load($fid)) {
-        form_set_error("$org_num][genotype][files][local_vcf", t("Local VCF File: File could not be loaded properly."));
+        form_set_error("$org_num][genotype][files][local_vcf",
+          t("Local VCF File: File could not be loaded properly.")
+        );
       }
     }
   }
@@ -664,7 +690,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   }
 
   if (!empty($file_type['SNPs Genotype Assay']) and !$snps_assay) {
-    form_set_error("$id][genotype][files][snps-assay", t("SNPs Assay file: field is required."));
+    tpps_form_error_required($form_state,
+      [$id, 'genotype', 'files', 'snps-assay']
+    );
   }
   elseif (!empty($file_type['SNPs Genotype Assay'])) {
     $headers = tpps_file_headers($snps_assay);
@@ -1134,21 +1162,54 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $name
 /**
  * Check if required field is not empty.
  *
- * @param array $genotype
- *   Genotype part of $form_state.
- * @param int $id
- *   Organism Id ?
- * @param string $name
- *   Machine field name.
- *   For files (and other fieldsets) use: 'files][name'.
- * @param string $title
- *   Human readable field title.
+ * @param array $form_state
+ *   Drupal Form API array with submitted values.
+ * @param array $parents
+ *   Path to field. For example:
+ *   ['organism-1', 'genotype', 'files', 'marker-type'].
  */
-function tpps_check_required(array $genotype, $id, $name, $title) {
-  if (empty($genotype[$name])) {
-    form_set_error(
-      "$id][genotype][$name",
-      t("@title: field is required.", ['@title' => $title])
-    );
+function tpps_check_required(array $form_state, array $parents) {
+  $value = drupal_array_get_nested_value($form_state['values'], $parents);
+  if (empty($value)) {
+    tpps_form_error_required($form_state, $parents);
   }
+}
+
+/**
+ * Shows form_validation error message that field is required.
+ *
+ * @param array $form_state
+ *   Drupal Form API array with submitted values.
+ * @param array $parents
+ *   Path to field. For example:
+ *   ['organism-1', 'genotype', 'files', 'marker-type'].
+ */
+function tpps_form_error_required(array $form_state, array $parents) {
+  tpps_form_error($form_state, $parents, 'field is required.');
+}
+
+/**
+ * Shows form validation error message.
+ *
+ * @param array $form_state
+ *   Drupal Form API array with submitted values.
+ * @param array $parents
+ *   Path to field. For example:
+ *   ['organism-1', 'genotype', 'files', 'marker-type'].
+ * @param string $message
+ *   Error message text.
+ */
+function tpps_form_error(array $form_state, array $parents, $message) {
+  $title = drupal_array_get_nested_value(
+    $form_state['complete form'],
+    $parents
+  )['#title'];
+  form_set_error(
+    implode('][', $parents),
+    // @todo Should field name and message be separated?
+    t("@title: @message", [
+      '@title' => strtok($title, ': '),
+      '@message' => $message,
+    ])
+  );
 }
