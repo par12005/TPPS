@@ -1822,7 +1822,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   );
   $fasta['file']['file_remote']['#states'] = array(
     'visible' => array(
-      ':input[name="]' . $id . '[genotype][ref-genome]"]' => array('value' => 'url'),
+      ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url'),
     ),
   );
 
