@@ -1251,6 +1251,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   );
 
   $options = array(
+    'test' => 1, //TEST mode
     'records' => $records,
     'tree_info' => $form_state['tree_info'],
     'species_codes' => $species_codes,
@@ -1305,8 +1306,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $ref_genome = $genotype['ref-genome'];
     echo "Ref-genome: $ref_genome\n";
 
-    // For TESTING instead of full loads (only 1 iteration (not line) will be processed)
-    // $options['test_1'] = TRUE;
+
 
     // Lookup analysis id from reference genome and add it to options array
     $options['analysis_id'] = tpps_get_analysis_id_from_ref_genome($ref_genome);
@@ -1354,7 +1354,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           break;
       }
       tpps_job_logger_write('[INFO] - Processing snp_association file data...');
-      $job->logMessage('[INFO] - Processing snp_association file data...');  
+      $job->logMessage('[INFO] - Processing snp_association file data...'); 
+
       tpps_file_iterator($assoc_fid, 'tpps_process_snp_association', $options);
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.');        
@@ -1393,7 +1394,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     tpps_job_logger_write('[INFO] - Processing SNP genotype_spreadsheet file data...');
     $job->logMessage('[INFO] - Processing SNP genotype_spreadsheet file data...');
     echo "trace 1\n";
-    // $options['test_1'] = TRUE;
     tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
     tpps_job_logger_write('[INFO] - Done.');
     $job->logMessage('[INFO] - Done.');  
@@ -1446,9 +1446,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       // Initialize new records with featureloc array to store records
       $options['records']['featureloc'] = array();
 
-      // For TESTING instead of full loads (only 1 iteration (not line) will be processed)
-      // $options['test_1'] = TRUE;
-
       print_r("HEADERS:\n");
       print_r($options['headers']);
       print_r("\n");
@@ -1461,9 +1458,15 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           case 'marker name':
             $options['file_columns']['marker_name'] = $column;
             break;
-          case 'scaffold':
-            $options['file_columns']['scaffold'] = $column;
+          case 'chr':
+            $options['file_columns']['chr'] = $column;
             break;
+          case 'forward sequence':
+            $options['file_columns']['forward_sequence'] = $column;
+            break;  
+          case 'reverse sequence':
+            $options['file_columns']['reverse_sequence'] = $column;
+            break;                       
           case 'snp':
             $options['file_columns']['snp'] = $column;
             break;
@@ -1471,12 +1474,11 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
         if(strpos($column_name, 'position') !== FALSE) {
           $options['file_columns']['position'] = $column;
         }
-
       }
 
       // We want to process this Genotype SNP Assay Design file before we add it as a project file
       tpps_job_logger_write('[INFO] - Processing genotype_snp_assay_design file data...');
-      $job->logMessage('[INFO] - Processing snp_association file data...');  
+      $job->logMessage('[INFO] - Processing snp_association file data...');
       tpps_file_iterator($design_fid, 'tpps_process_genotype_snp_assay_design', $options);
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.'); 
@@ -4038,6 +4040,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
  * Initially done to get position data from the assay design file
  */
 function tpps_process_genotype_snp_assay_design($row, array &$options = array()) {
+  $line_rows = $row;
   $analysis_id = $options['analysis_id']; // needed to lookup source features
   $headers = $options['headers'];
   $records = &$options['records'];
@@ -4049,23 +4052,27 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
   print_r($row);
   print_r("\n");
 
-  $scaffold_name = $row[$columns['scaffold']];
-  // if the scaffold is only the number, we append scaffold_ to it
-  if (is_numeric($scaffold_name)) {
-    $scaffold_name = "scaffold_" . $scaffold_name;
-  }
+  $chr_name = $line_rows[$columns['chr']];
+  // // if the scaffold is only the number, we append scaffold_ to it (TGDR665)
+  // if (is_numeric($chr_name)) {
+  //   $chr_name = "scaffold_" . $chr_name;
+  // }
+  // // if TGDR665, replace chr with scaffold_
+  // if (substr($chr_name,0,3) == 'chr') {
+  //   $chr_name = str_replace('chr', 'scaffold_', $chr_name);
+  // }
 
-  $marker_name_raw = $row[$columns['marker_name']];
-  $position = intval($row[$columns['position']]);
+  $marker_name_raw = $line_rows[$columns['marker_name']];
+  $position = intval($line_rows[$columns['position']]);
   $marker_type = $options['marker_type']; // we could force 'SNP' here
 
   $srcfeature_id = NULL;
   // Get the srcfeature_id
   $srcfeature_results = chado_query('select feature.feature_id from chado.feature 
     join chado.analysisfeature on feature.feature_id = analysisfeature.feature_id 
-    where feature.name = :scaffold_id and analysisfeature.analysis_id = :analysis_id',
+    where feature.name = :chr_name and analysisfeature.analysis_id = :analysis_id',
     [
-      ':scaffold_id' => $scaffold_name,
+      ':chr_name' => $chr_name,
       ':analysis_id' => $analysis_id
     ]
   );
@@ -4075,7 +4082,7 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
   }
 
   if ($srcfeature_id != NULL) {
-    echo "[GOOD] srcfeature_id for $scaffold_name: " . $srcfeature_id . "\n";
+    echo "[GOOD] srcfeature_id for $chr_name: " . $srcfeature_id . "\n";
 
     $marker_name = $marker_name_raw . $marker_type;
 
@@ -4107,15 +4114,21 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
       // This means no featureloc exists, so insert it
       if ($featureloc_count == 0) {
         // Check for indels (longer than 1 reads)
-        $snp = trim($row[$columns['snp']]);
+        $snp = trim($line_rows[$columns['snp']]);
         $snp_possible_reads = explode('/', $snp);
-        $read_length = 1;
+        $read_length = 0; // default for non-indels
         foreach ($snp_possible_reads as $read) {
           $tmp_read_length = strlen($read);
-          if ($tmp_read_length > $read_length) {
-            $read_length = $tmp_read_length;
+          if ($tmp_read_length > 1) { // only for indels, we need a read_length of more than 0
+            if ($tmp_read_length > $read_length) {
+              $read_length = $tmp_read_length;
+            }
           }
         }
+
+        // TODO: if read_length is more than 1, it is an indel, change marker type
+        // Also check code in tpps_process_genotype_sheet to check this or else
+        // these 2 things will cause a submit failure - after conference (6/15/2023)
 
         $records['featureloc'][$marker_name] = [
           'fmin' => $position,
@@ -4127,14 +4140,68 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
       }
       else {
         echo "[GOOD ALTERNATIVE] Featureloc record already exists, no need to add\n";
-      }  
+      } 
+      
+      // Check if forward sequence information has been added
+      $forward_sequence_cvterm_id = NULL;
+      // Get cvterm_id (assuming it exists)
+      $results = chado_query("SELECT * FROM cvterm 
+        WHERE name = 'five_prime_flanking_region' LIMIT 1;", []);
+      foreach ($results as $row) {
+        $forward_sequence_cvterm_id = $row->cvterm_id;
+      }
+
+      // Check if record already exists
+      $results = chado_query("SELECT count(*) as c1 FROM featureprop 
+        WHERE feature_id = :feature_id AND type_id = :type_id;", [
+          ':feature_id' => $feature_id,
+          ':type_id' => $forward_sequence_cvterm_id
+      ]);
+      $count = $results->fetchObject()->c1;
+      // If record not found
+      if ($count == 0) {
+        // add to record to featureprop table
+        $records['featureprop'][$feature_id . $forward_sequence_cvterm_id] = [
+          'feature_id' => $feature_id,
+          'type_id' => $forward_sequence_cvterm_id,
+          'value' => $line_rows[$columns['forward_sequence']]
+        ];
+      }
+      
+
+      // Check if reverse sequence information has been added
+      $reverse_sequence_cvterm_id = NULL;
+      // Get cvterm_id (assuming it exists)
+      $results = chado_query("SELECT * FROM cvterm 
+        WHERE name = 'three_prime_flanking_region' LIMIT 1;", []);
+      foreach ($results as $row) {
+        $reverse_sequence_cvterm_id = $row->cvterm_id;
+      }
+
+      // Check if record already exists
+      $results = chado_query("SELECT count(*) as c1 FROM featureprop 
+        WHERE feature_id = :feature_id AND type_id = :type_id;", [
+          ':feature_id' => $feature_id,
+          ':type_id' => $reverse_sequence_cvterm_id
+      ]);
+      $count = $results->fetchObject()->c1;
+      // If record not found
+      if ($count == 0) {
+        // add record to featureprop table
+        $records['featureprop'][$feature_id . $reverse_sequence_cvterm_id] = [
+          'feature_id' => $feature_id,
+          'type_id' => $reverse_sequence_cvterm_id,
+          'value' => $line_rows[$columns['reverse_sequence']]
+        ];
+      }    
+      
     }
     else {
       echo "[ERROR] Marker name $marker_name feature_id could not be found\n";
     }
   }
   else {
-    echo "[ERROR] srcfeature_id for $scaffold_name could not be found - we cannot add featureloc data.\n";
+    echo "[ERROR] srcfeature_id for $chr_name could not be found - we cannot add featureloc data.\n";
   }
 }
 
