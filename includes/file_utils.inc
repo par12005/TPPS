@@ -1021,7 +1021,22 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
   $file = file_load($fid);
   $file_location = tpps_get_location($file->uri);
 
+  // Item / line counter
+  $item_count = 0;
+
   foreach (tpps_file_generator($fid, $options) as $item) {
+    $item_count = $item_count + 1;
+    // echo "ITEM COUNT: " . $item_count . "\n";
+    if(isset($options['test_1'])) {
+      // This will reduce the amount of processing in the file iterator
+      // This is an attempt to speed up coding and testing by just not
+      // processing all files per file (and may not always work)
+      if ($item_count > 1) {
+        echo "TEST_1 detected - only processing 1 lines and exiting the loop.\n";
+        return TRUE;
+      }
+    }
+
     // Assume the item IS NOT EMPTY
     $item_is_not_empty = true;
     if(is_array($item)) {  
