@@ -376,15 +376,16 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     );
   }
   elseif ($ref_genome === 'bio') {
-    if (!$genotype['tripal_eutils']['accession']) {
-      tpps_form_error_required($form_state,
-       [$id, 'genotype', 'tripal_eutils', 'accession']
-      );
-    }
+    tpps_check_required(
+      $form_state, [$id, 'genotype', 'tripal_eutils', 'accession']
+    );
     $connection = new \EUtils();
     try {
       $connection->setPreview();
-      $parsed = $connection->get($genotype['tripal_eutils']['db'], $genotype['tripal_eutils']['accession']);
+      $parsed = $connection->get(
+        $genotype['tripal_eutils']['db'],
+        $genotype['tripal_eutils']['accession']
+      );
       foreach ($_SESSION['messages']['status'] as $key => $message) {
         if ($message == '<pre>biosample</pre>') {
           unset($_SESSION['messages']['status'][$key]);
@@ -458,33 +459,32 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   // SSRs/cpSSRs Type:
   // Note: 'maker-type' is array (allows multiple values).
   if (isset($genotype['marker-type']['SNPs'])) {
-    if (!$snps['genotyping-design']) {
-      tpps_form_error_required($form_state,
-        [$id, 'genotype', 'SNPs', 'genotyping-design']
+    $condition = (
+      tpps_check_required(
+        $form_state, [$id, 'genotype', 'SNPs', 'genotyping-design']
+      )
+      && $snps['genotyping-design'] == '1'
+    );
+    if ($condition) {
+      $condition = (
+        tpps_check_required($form_state, [$id, 'genotype', 'SNPs', 'GBS'])
+        // 5 = 'Genotyping Array'
+        && $snps['GBS'] == '5'
       );
-    }
-    elseif ($snps['genotyping-design'] == '1') {
-      if (!$snps['GBS']) {
-        tpps_form_error_required($form_state,
-          [$id, 'genotype', 'SNPs', 'GBS']
-        );
-      }
-      elseif ($snps['GBS'] == '5' and !$snps['GBS-other']) {
-        // @todo Check if '=other' works?..
-        tpps_form_error_required($form_state,
-          [$id, 'genotype', 'SNPs', 'GBS=other']
-        );
+      if ($condition) {
+        tpps_check_required($form_state, [$id, 'genotype', 'SNPs', 'GBS-other']);
       }
     }
     elseif ($snps['genotyping-design'] == '2') {
-      if (!$snps['targeted-capture']) {
-        tpps_form_error_required($form_state,
-          [$id, 'genotype', 'SNPs', 'targeted-capture']
-        );
-      }
-      elseif ($snps['targeted-capture'] == '2' and !$snps['targeted-capture-other']) {
-        tpps_form_error_required($form_state,
-          [$id, 'genotype', 'SNPs', 'targeted-capture-other']
+      $condition = (
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'SNPs', 'targeted-capture']
+        )
+        && $snps['targeted-capture'] == '2'
+      );
+      if ($condition) {
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'SNPs', 'targeted-capture-other']
         );
       }
     }
@@ -497,7 +497,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       tpps_check_required($form_state, [$id, 'genotype', 'files', 'ssrs']);
     }
     if (in_array($genotype['SSRs/cpSSRs'], ['cpSSRs', 'Both SSRs and cpSSRs'])) {
-      tpps_check_required($form_state, [$id, 'genotype', 'files', 'extra-ploidy']);
+      tpps_check_required(
+        $form_state, [$id, 'genotype', 'files', 'extra-ploidy']
+      );
       tpps_check_required($form_state, [$id, 'genotype', 'files', 'ssrs_extra']);
     }
   }
@@ -1167,12 +1169,17 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $name
  * @param array $parents
  *   Path to field. For example:
  *   ['organism-1', 'genotype', 'files', 'marker-type'].
+ *
+ * @return bool
+ *   Returns TRUE if required field is not empty and FALSE other was.
  */
 function tpps_check_required(array $form_state, array $parents) {
   $value = drupal_array_get_nested_value($form_state['values'], $parents);
   if (empty($value)) {
     tpps_form_error_required($form_state, $parents);
+    return FALSE;
   }
+  return TRUE;
 }
 
 /**
@@ -1208,7 +1215,7 @@ function tpps_form_error(array $form_state, array $parents, $message) {
     implode('][', $parents),
     // @todo Should field name and message be separated?
     t("@title: @message", [
-      '@title' => strtok($title, ': '),
+      '@title' => strtok($title, ':'),
       '@message' => $message,
     ])
   );
