@@ -1251,7 +1251,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   );
 
   $options = array(
-    'test' => 1, //TEST mode
     'records' => $records,
     'tree_info' => $form_state['tree_info'],
     'species_codes' => $species_codes,
@@ -1427,9 +1426,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     // Setup the options array which the tpps_file_iterator custom function
     // will be able to access necessary details
     $options['type'] = 'snp';
-    $options['headers'] = tpps_file_headers($design_fid);
-    print_r("FILE HEADERS:\n");
-    print_r($options['headers']);
+
     print_r("\n");
     $options['marker'] = 'SNP';
     $options['type_cvterm'] = tpps_load_cvterm('snp')->cvterm_id;
@@ -1445,7 +1442,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     if ($options['analysis_id'] != NULL) {
       // Initialize new records with featureloc array to store records
       $options['records']['featureloc'] = array();
+      $options['records']['featureprop'] = array();
 
+      $options['headers'] = tpps_file_headers($design_fid);
       print_r("HEADERS:\n");
       print_r($options['headers']);
       print_r("\n");
@@ -1453,11 +1452,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       // Find the marker name header
       $options['file_columns'] = [];
       foreach ($options['headers'] as $column => $column_name) {
-        $column_name = strtolower($column_name);
+        $column_name = strtolower(trim($column_name));
+        print_r("spreadsheet column name:" . $column_name . " column: $column\n");
         switch ($column_name) {
-          case 'marker name':
-            $options['file_columns']['marker_name'] = $column;
-            break;
           case 'chr':
             $options['file_columns']['chr'] = $column;
             break;
@@ -1474,6 +1471,11 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
         if(strpos($column_name, 'position') !== FALSE) {
           $options['file_columns']['position'] = $column;
         }
+        else if(strpos($column_name, 'marker name') !== FALSE) {
+          $options['file_columns']['marker_name'] = $column;
+        }              
+        print($options['file_columns']);
+        print_r($options['file_columns']);
       }
 
       // We want to process this Genotype SNP Assay Design file before we add it as a project file
@@ -4042,14 +4044,14 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
 function tpps_process_genotype_snp_assay_design($row, array &$options = array()) {
   $line_rows = $row;
   $analysis_id = $options['analysis_id']; // needed to lookup source features
-  $headers = $options['headers'];
+  $headers = &$options['headers'];
   $records = &$options['records'];
   $columns = $options['file_columns'];
   print_r("File columns: ");
   print_r($columns);
   print_r("\n");
   print_r("Data in row:");
-  print_r($row);
+  print_r($line_rows);
   print_r("\n");
 
   $chr_name = $line_rows[$columns['chr']];
@@ -4145,14 +4147,14 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
       // Check if forward sequence information has been added
       $forward_sequence_cvterm_id = NULL;
       // Get cvterm_id (assuming it exists)
-      $results = chado_query("SELECT * FROM cvterm 
+      $results = chado_query("SELECT * FROM chado.cvterm 
         WHERE name = 'five_prime_flanking_region' LIMIT 1;", []);
       foreach ($results as $row) {
         $forward_sequence_cvterm_id = $row->cvterm_id;
       }
 
       // Check if record already exists
-      $results = chado_query("SELECT count(*) as c1 FROM featureprop 
+      $results = chado_query("SELECT count(*) as c1 FROM chado.featureprop 
         WHERE feature_id = :feature_id AND type_id = :type_id;", [
           ':feature_id' => $feature_id,
           ':type_id' => $forward_sequence_cvterm_id
@@ -4172,14 +4174,14 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
       // Check if reverse sequence information has been added
       $reverse_sequence_cvterm_id = NULL;
       // Get cvterm_id (assuming it exists)
-      $results = chado_query("SELECT * FROM cvterm 
+      $results = chado_query("SELECT * FROM chado.cvterm 
         WHERE name = 'three_prime_flanking_region' LIMIT 1;", []);
       foreach ($results as $row) {
         $reverse_sequence_cvterm_id = $row->cvterm_id;
       }
 
       // Check if record already exists
-      $results = chado_query("SELECT count(*) as c1 FROM featureprop 
+      $results = chado_query("SELECT count(*) as c1 FROM chado.featureprop 
         WHERE feature_id = :feature_id AND type_id = :type_id;", [
           ':feature_id' => $feature_id,
           ':type_id' => $reverse_sequence_cvterm_id
@@ -4193,8 +4195,7 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
           'type_id' => $reverse_sequence_cvterm_id,
           'value' => $line_rows[$columns['reverse_sequence']]
         ];
-      }    
-      
+      } 
     }
     else {
       echo "[ERROR] Marker name $marker_name feature_id could not be found\n";
