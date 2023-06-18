@@ -488,6 +488,17 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         );
       }
     }
+
+    // Check required files:
+    tpps_check_required(
+      $form_state, [$id, 'genotype', 'files', 'snps-association']
+    );
+    tpps_check_required(
+      $form_state, [$id, 'genotype', 'files', 'snps-pop-struct']
+    );
+    tpps_check_required(
+      $form_state, [$id, 'genotype', 'files', 'snps-kinship']
+    );
   }
 
   elseif (isset($genotype['marker-type']['SSRs/cpSSRs'])) {

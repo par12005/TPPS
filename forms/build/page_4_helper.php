@@ -2031,6 +2031,7 @@ function tpps_build_file_field(array &$fields, array $meta) {
   // Field 'snps-association' excluded because it didn't have this code.
   // @todo Discuss if it's needed and remove this check.
   if ($file_field_name != 'snps-association') {
+    // 'fid' is a hidden field which holds Managed File Id.
     // Some fields used this code:
     // - 'SNP Assay'
     // - 'ssrs' / 'SSRs Spreadsheet'
