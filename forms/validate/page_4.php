@@ -454,11 +454,46 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // [VS]
   tpps_check_required($form_state, [$id, 'genotype', 'marker-type']);
-
-  // @todo Make field required:
-  // SSRs/cpSSRs Type:
   // Note: 'maker-type' is array (allows multiple values).
   if (isset($genotype['marker-type']['SNPs'])) {
+
+    if ($is_step2_genotype) {
+      $upload_snp_association = ('Yes' ==
+        $form_state['values'][$id]['genotype']['files']['upload_snp_association']
+      );
+      if ($upload_snp_association) {
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'files', 'snps-association']
+        );
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'files', 'snps-association-type']
+        );
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'files', 'snps-association-tool']
+        );
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'files', 'snps-pop-struct']
+        );
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'files', 'snps-kinship']
+        );
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'files', 'snps-assay']
+        );
+      }
+      else {
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'files', 'genotyping-type']
+        );
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'files', 'snps-assay']
+        );
+        tpps_check_required(
+          $form_state, [$id, 'genotype', 'files', 'assay-design']
+        );
+      }
+    }
+
     $condition = (
       tpps_check_required(
         $form_state, [$id, 'genotype', 'SNPs', 'genotyping-design']
@@ -489,18 +524,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
     }
 
-    // Check required files:
-    tpps_check_required(
-      $form_state, [$id, 'genotype', 'files', 'snps-association']
-    );
-    tpps_check_required(
-      $form_state, [$id, 'genotype', 'files', 'snps-pop-struct']
-    );
-    tpps_check_required(
-      $form_state, [$id, 'genotype', 'files', 'snps-kinship']
-    );
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   elseif (isset($genotype['marker-type']['SSRs/cpSSRs'])) {
     tpps_check_required($form_state, [$id, 'genotype', 'SSRs/cpSSRs']);
     if (in_array($genotype['SSRs/cpSSRs'], ['SSRs', 'Both SSRs and cpSSRs'])) {
@@ -550,7 +576,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     and !$vcf
     and trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) == ''
   ) {
-    form_set_error("$id][genotype][files][vcf", t("Genotype VCF File: field is required."));
+    tpps_form_error_required($form_state, [$id, 'genotype', 'files', 'vcf']);
   }
 
   elseif (!empty($file_type['VCF'])) {
@@ -1222,6 +1248,7 @@ function tpps_form_error(array $form_state, array $parents, $message) {
     $form_state['complete form'],
     $parents
   )['#title'];
+
   form_set_error(
     implode('][', $parents),
     // @todo Should field name and message be separated?

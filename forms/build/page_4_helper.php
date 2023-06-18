@@ -56,17 +56,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     ),
   );
 
-  $normal_check = tpps_get_ajax_value($form_state, array(
-    $id,
-    'phenotype',
-    'normal-check',
-  ), NULL);
-
-  $iso_check = tpps_get_ajax_value($form_state, array(
-    $id,
-    'phenotype',
-    'iso-check',
-  ), NULL);
+  $normal_check = tpps_get_ajax_value(
+    $form_state, [$id, 'phenotype', 'normal-check'], NULL
+  );
+  $iso_check = tpps_get_ajax_value(
+    $form_state, [$id, 'phenotype', 'iso-check'], NULL
+  );
 
   if (!empty($iso_check)) {
     $form[$id]['phenotype']['iso'] = array(
@@ -934,25 +929,25 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'Genotype x Phenotype',
       ]
     );
+    $upload_snp_association = tpps_get_ajax_value(
+      $form_state, [$id, 'genotype', 'files', 'upload_snp_association'], 'Yes'
+    );
     if ($is_step2_genotype) {
-      $fields['files']['snp_association'] = [
+      $fields['files']['upload_snp_association'] = [
         '#type' => 'select',
         '#title' => t('Would you like to upload a SNP association file?'),
         '#options' => [
           'Yes' => t('Yes'),
           'No' => t('No'),
         ],
-        '#default_value' => 'Yes',
+        '#default_value' => $upload_snp_association,
         '#ajax' => [
           'callback' => 'tpps_genotype_files_callback',
           'wrapper' => "$id-genotype-files",
         ],
       ];
     }
-    $snp_association_check = tpps_get_ajax_value($form_state,
-      [$id, 'genotype', 'files', 'snp_association'], 'Yes'
-    );
-    if ($snp_association_check == 'No') {
+    if ($upload_snp_association == 'No') {
       $fields['files']['genotyping-type'] = [
         '#type' => 'select',
         '#title' => t('Genotyping Type: *'),
@@ -1067,7 +1062,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNP Association File.
-  if ($snp_association_check == 'Yes') {
+  if ($upload_snp_association == 'Yes') {
   //if ($genotyping_type_check == "Genotyping Assay") {
     $file_field_name = 'snps-association';
     $title = t('SNP Association File');
