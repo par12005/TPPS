@@ -558,10 +558,10 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   if (!empty($loaded_state['vcf_replace'])) {
     foreach ($loaded_state['vcf_replace'] as $org_num => $fid) {
       if (file_load($fid)) {
-        $form_state['values']["organism-$org_num"]['genotype']['files']['vcf'] = $fid;
+        $form_state['values'][$id]['genotype']['files']['vcf'] = $fid;
         $vcf = $fid;
-        $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf_check'] = NULL;
-        $form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf'] = NULL;
+        $form_state['values'][$id]['genotype']['files']['local_vcf_check'] = NULL;
+        $form_state['values'][$id]['genotype']['files']['local_vcf'] = NULL;
       }
       if (!file_load($fid)) {
         form_set_error("$org_num][genotype][files][local_vcf",
@@ -574,7 +574,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   if (
     !empty($file_type['VCF'])
     and !$vcf
-    and trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) == ''
+    and trim($form_state['values'][$id]['genotype']['files']['local_vcf']) == ''
   ) {
     tpps_form_error_required($form_state, [$id, 'genotype', 'files', 'vcf']);
   }
