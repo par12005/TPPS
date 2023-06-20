@@ -11,7 +11,7 @@
   margin-right: 10px;
   margin-top: 10px;
   margin-bottom: 10px;
-  width: 48%; 
+  width: 48%;
 }
 
 .tag-admin-container * {
@@ -154,3 +154,34 @@ div.media-widget.form-media a.browse {
     color: white;
     padding: 10px 15px;
 }
+
+/* [VS] */
+
+/* Highlight active button when using TAB key to switch. */
+.btn:focus:focus-visible {
+  outline: black solid 2px;
+}
+
+/**
+ * Make visible all options of dropdown when multiple options enabled.
+ * @TODO This must be done for all site pages.
+ **/
+select.form-select {
+  max-width: 100%;
+  height: auto;
+  min-height: 28px;
+}
+/**
+ * To have ability to see nested elements.
+ **/
+form#tppsc-main fieldset {
+  padding-left: 10px;
+}
+form#tppsc-main fieldset legend {
+  margin-left: -10px;
+}
+/* For debug only */
+label {
+  font-weight: bold;
+}
+/* [/VS] */
