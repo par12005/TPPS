@@ -1293,7 +1293,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     ));
   }
 
-  if (!empty($genotype['files']['file-type']['SNPs Genotype Assay'])) {
+  if (!empty($genotype['files']['snps-assay'])) {
     $snp_fid = $genotype['files']['snps-assay'];
     tpps_add_project_file($form_state, $snp_fid);
 
@@ -1310,7 +1310,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     // Lookup analysis id from reference genome and add it to options array
     $options['analysis_id'] = tpps_get_analysis_id_from_ref_genome($ref_genome);
 
-    if (!empty($genotype['files']['file-type']['SNPs Associations'])) {
+    if (!empty($genotype['files']['snps-association'])) {
       $assoc_fid = $genotype['files']['snps-association'];
       print_r("Association file ID: " . $assoc_fid . "\n");
       tpps_add_project_file($form_state, $assoc_fid);
@@ -1412,18 +1412,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   // This is usually also accompanied with the Genotype SNP Assay (which holds the snps)
   // We want to insert location data into the database if both are found and the marker-type is snp
   // The previous step took care of the SNPs insertion via the Genotype SNP Assay (not to be confused with genotype SNP assay design file)
-  if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
-    if ($genotype['files']['assay-load'] == 'new') {
-      $design_fid = $genotype['files']['assay-design'];
-    }
-    if ($genotype['files']['assay-load'] != 'new') {
-      $design_fid = $genotype['files']['assay-load'];
-    }
-
+  if (!empty($genotype['files']['assay-design'])) {
+    $design_fid = $genotype['files']['assay-design'];
     tpps_add_project_file($form_state, $design_fid);
 
     // Setup the options array which the tpps_file_iterator custom function
-    // will be able to access necessary details
+    // will be able to access necessary details.
     $options['type'] = 'snp';
 
     print_r("\n");
@@ -1432,14 +1426,13 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $options['ref-genome'] = $genotype['ref-genome'];
     $ref_genome = $genotype['ref-genome'];
     echo "Ref-genome: $ref_genome\n";
-    // Lookup analysis id from reference genome and add it to options array
+    // Lookup analysis id from reference genome and add it to options array.
     $options['analysis_id'] = tpps_get_analysis_id_from_ref_genome($ref_genome);
     print_r("ANALYSIS ID: " . $options['analysis_id'] . "\n");
 
-
-    // We must have an analysis_id to tie back to the srcfeature
+    // We must have an analysis_id to tie back to the srcfeature.
     if ($options['analysis_id'] != NULL) {
-      // Initialize new records with featureloc array to store records
+      // Initialize new records with featureloc array to store records.
       $options['records']['featureloc'] = array();
       $options['records']['featureprop'] = array();
 
@@ -1448,7 +1441,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       print_r($options['headers']);
       print_r("\n");
 
-      // Find the marker name header
+      // Find the marker name header.
       $options['file_columns'] = [];
       foreach ($options['headers'] as $column => $column_name) {
         $column_name = strtolower(trim($column_name));
@@ -1457,27 +1450,31 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
           case 'chr':
             $options['file_columns']['chr'] = $column;
             break;
+
           case 'forward sequence':
             $options['file_columns']['forward_sequence'] = $column;
             break;
+
           case 'reverse sequence':
             $options['file_columns']['reverse_sequence'] = $column;
             break;
+
           case 'snp':
             $options['file_columns']['snp'] = $column;
             break;
         }
-        if(strpos($column_name, 'position') !== FALSE) {
+        if (strpos($column_name, 'position') !== FALSE) {
           $options['file_columns']['position'] = $column;
         }
-        else if(strpos($column_name, 'marker name') !== FALSE) {
+        elseif (strpos($column_name, 'marker name') !== FALSE) {
           $options['file_columns']['marker_name'] = $column;
         }
         print($options['file_columns']);
         print_r($options['file_columns']);
       }
 
-      // We want to process this Genotype SNP Assay Design file before we add it as a project file
+      // We want to process this Genotype SNP Assay Design file before
+      // we add it as a project file.
       tpps_job_logger_write('[INFO] - Processing genotype_snp_assay_design file data...');
       $job->logMessage('[INFO] - Processing snp_association file data...');
       tpps_file_iterator($design_fid, 'tpps_process_genotype_snp_assay_design', $options);
@@ -1489,7 +1486,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       tpps_chado_insert_multi($options['records'], []);
       tpps_job_logger_write('[INFO] - Done');
       $job->logMessage('[INFO] - Done');
-      // Reset options[records] with empty records arrays
+      // Reset options[records] with empty records arrays.
       $options['records'] = $records;
 
     }
@@ -1497,11 +1494,8 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       tpps_job_logger_write('[ERROR] - Analysis ID could not be found, skipping assay design file processing.');
       $job->logMessage('[ERROR] - Analysis ID could not be found, skipping assay design file processing.');
     }
-
   }
-  // [/VS]
-
-  if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
+  if (!empty($genotype['files']['ssrs'])) {
     $ssr_fid = $genotype['files']['ssrs'];
     tpps_add_project_file($form_state, $ssr_fid);
 
@@ -1525,15 +1519,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $options['records'] = $records;
     $genotype_count = 0;
 
-    // @TODO [VS] Field 'ssr-extra-check' must be replaced with check if
-    // Define SSRs/cpSSRs Type:
-    //   cpSSR or Both SSRs and cpSSRs
-    if (!empty($genotype['files']['ssr-extra-check'])) {
+    if (!empty($genotype['files']['ssrs_extra'])) {
       $extra_fid = $genotype['files']['ssrs_extra'];
       tpps_add_project_file($form_state, $extra_fid);
-
-      // @TODO [VS] Field 'extra-ssr-type' was removed.
-      $options['marker'] = $genotype['files']['extra-ssr-type'];
 
       $options['headers'] = tpps_ssrs_headers($extra_fid, $genotype['files']['extra-ploidy']);
       tpps_job_logger_write('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
@@ -1553,34 +1541,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     }
   }
 
-  if (!empty($genotype['files']['file-type']['Indel Genotype Spreadsheet'])) {
-    $indel_fid = $genotype['files']['indels'];
-    tpps_add_project_file($form_state, $indel_fid);
-
-    $options['type'] = 'indel';
-    $options['headers'] = tpps_file_headers($indel_fid);
-    $options['marker'] = 'Indel';
-    $options['type_cvterm'] = tpps_load_cvterm('indel')->cvterm_id;
-    tpps_job_logger_write('[INFO] - Processing INDEL genotype_spreadsheet file data...');
-    $job->logMessage('[INFO] - Processing INDEL genotype_spreadsheet file data...');
-    echo "trace 4\n";
-    tpps_file_iterator($indel_fid, 'tpps_process_genotype_spreadsheet', $options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
-
-    tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
-    tpps_chado_insert_multi($options['records'], $multi_insert_options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
-    $options['records'] = $records;
-    $genotype_total += $genotype_count;
-    tpps_job_logger_write('[INFO] - Genotype count:' . $genotype_total);
-    $job->logMessage('[INFO] - Genotype count:' . $genotype_total);
-    $genotype_count = 0;
-  }
-
-  if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
+  if (!empty($genotype['files']['other'])) {
     $other_fid = $genotype['files']['other'];
     tpps_add_project_file($form_state, $other_fid);
 
@@ -2215,16 +2176,16 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
     'job' => &$job,
   );
 
-  // check to make sure admin has not set disable_vcf_importing
+  // check to make sure admin has not set disable_vcf_importing.
   $disable_vcf_import = 0;
-  if(isset($firstpage['disable_vcf_import'])) {
+  if (isset($firstpage['disable_vcf_import'])) {
     $disable_vcf_import = $firstpage['disable_vcf_import'];
   }
   tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
 
 
   if (!empty($genotype['files']['file-type']['VCF'])) {
-    if($disable_vcf_import == 0) {
+    if ($disable_vcf_import == 0) {
 
       // DROP INDEXES FROM GENOTYPE_CALL TABLE
       // tpps_job_logger_write('[INFO] - Dropping indexes...');
