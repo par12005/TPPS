@@ -894,7 +894,7 @@ function tpps_phenotype_number_clear($button_name, $value) {
  */
 function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // [VS]
-  $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'pps_genotype');
+  $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
   $fields = array(
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">Genotype Information:</div>'),
@@ -954,7 +954,6 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         '#options' => [
           0 => '- Select -',
           'Genotyping Assay' => t('Genotyping Assay'),
-          // @todo [VS] This is new value. Implement validation. Submit_all?
           'Genotyping' => t('Genotyping'),
         ],
         '#ajax' => [
@@ -1921,9 +1920,6 @@ function tpps_page_4_marker_info(array &$fields, $id) {
   );
 
   // [VS]
-  // @todo Major.
-  // On select different set of Ploidy/File upload field must be shown.
-  // On both must be shown both.
   $fields['SSRs/cpSSRs'] = [
     '#type' => 'select',
     '#title' => t('Define SSRs/cpSSRs Type: *'),
@@ -1939,7 +1935,6 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     // Default value on form creation.
     // tpps_get_ajax_value($form_state, [$id, 'genotype','SSRs/cpSSRs'])).
   ];
-
   // [/VS]
 }
 
@@ -1977,19 +1972,28 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
   return tpps_get_ajax_value($form_state, [$id, 'genotype', 'files', $name]);
 }
 
-//tpps_build_file_field($fields, [
-//  'form_state' => $form_state,
-//  'id' => $id,
-//  'file_field_name' => $file_field_name,
-//  'title' => $title,
-//  'upload_location' => "$genotype_upload_location",
-//  'description' => $description,
-//  'extensions' => $extensions, // Default: ['csv tsv xlsx']
-//  'states' => $states, // Default is ''.
-//  'empty_field_value' => 'NA',
-//  // Element 'extra_elements' allow to add any not expected form elements.
-//  'extra_elements' => [],
-//]);
+/**
+ * Generates file field.
+ *
+ * @param array $fields
+ *   Drupal Form API array with fields.
+ * @param array $meta
+ *   File field metadata. Example:
+ *
+ *   tpps_build_file_field($fields, [
+ *     'form_state' => $form_state,
+ *     'id' => $id,
+ *     'file_field_name' => $file_field_name,
+ *     'title' => $title,
+ *     'upload_location' => "$genotype_upload_location",
+ *     'description' => $description,
+ *     'extensions' => $extensions, // Default: ['csv tsv xlsx']
+ *     'states' => $states, // Default is ''.
+ *     'empty_field_value' => 'NA',
+ *     // Element 'extra_elements' allow to add any not expected form elements.
+ *     'extra_elements' => [],
+ *   ]); //.
+ */
 function tpps_build_file_field(array &$fields, array $meta) {
   extract($meta);
   // When enabled field's machine name will be shown in field's decription.
@@ -2105,8 +2109,7 @@ function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
   $fields['files'][$file_field_name]['#states'] = [
     'visible' => [
       ':input[name="' . $id . '[genotype][files]['
-        . $file_field_name . '_file-location]"]'
-        => ['value' => 'local'],
+        . $file_field_name . '_file-location]"]' => ['value' => 'local'],
     ],
   ];
   $fields['files'][$file_field_name]['#weight'] = 100;
@@ -2118,8 +2121,7 @@ function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
     '#states' => [
       'visible' => [
         ':input[name="' . $id . '[genotype][files]['
-          . $file_field_name . '_file-location]"]'
-          => ['value' => 'remote'],
+          . $file_field_name . '_file-location]"]' => ['value' => 'remote'],
       ],
     ],
     '#description' => t('Please provide the full path to your vcf file '
@@ -2146,7 +2148,7 @@ function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
  *     'source_field_name' => 'ploidy',
  *     // Genotype file field name which must be updated.
  *     'file_field_name' => 'ssrs',
- *   ]);
+ *   ]); //.
  */
 function tpps_genotype_update_description(array &$fields, array $meta) {
   $ploidy = tpps_get_ajax_value($meta['form_state'], [
@@ -2181,4 +2183,3 @@ function tpps_genotype_update_description(array &$fields, array $meta) {
       break;
   }
 }
-
