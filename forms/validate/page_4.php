@@ -518,11 +518,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         );
       }
     }
-
   }
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  elseif (isset($genotype['marker-type']['SSRs/cpSSRs'])) {
+  if (isset($genotype['marker-type']['SSRs/cpSSRs'])) {
     tpps_check_required($form_state, [$id, 'genotype', 'SSRs/cpSSRs']);
     if (in_array($genotype['SSRs/cpSSRs'], ['SSRs', 'Both SSRs and cpSSRs'])) {
       tpps_check_required($form_state, [$id, 'genotype', 'files', 'ploidy']);
@@ -535,14 +533,13 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       tpps_check_required($form_state, [$id, 'genotype', 'files', 'ssrs_extra']);
     }
   }
-
-  elseif (isset($genotype['marker-type']['Other'])) {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  if (isset($genotype['marker-type']['Other'])) {
     tpps_check_required($form_state, [$id, 'genotype', 'other-marker']);
     tpps_check_required($form_state, [$id, 'genotype', 'files', 'other']);
   }
   // [/VS]
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
   if (preg_match('/^0+$/', implode('', $file_type))) {
     tpps_form_error_required($form_state,
       [$id, 'genotype', 'files', 'file-type']
