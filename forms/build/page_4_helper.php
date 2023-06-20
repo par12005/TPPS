@@ -1992,6 +1992,8 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
 //]);
 function tpps_build_file_field(array &$fields, array $meta) {
   extract($meta);
+  // When enabled field's machine name will be shown in field's decription.
+  $debug_mode = FALSE;
   $fields['files'][$file_field_name] = [
     '#type' => 'managed_file',
     '#title' => $title . ': *',
@@ -1999,7 +2001,8 @@ function tpps_build_file_field(array &$fields, array $meta) {
     '#upload_validators' => [
       'file_validate_extensions' => $extensions ? $extensions : ['csv tsv xlsx'],
     ],
-    '#description' => ($description ?? ''),
+    '#description' => ($description ?? '')
+    . ($debug_mode ? '<br/>Field name: <strong>' . $file_field_name . '</strong>' : ''),
     '#tree' => TRUE,
     '#states' => $states ? $states : '',
   ];
