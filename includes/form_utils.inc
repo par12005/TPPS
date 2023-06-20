@@ -215,8 +215,9 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
 /**
  * Retrieves the value of a field that may have been altered through ajax.
  *
- * This function first checks the 'complete form' of the form state, then the
- * saved_values, and finally returns the default if it cannot find the value.
+ * This function first checks the 'values' of the form state,
+ * then 'complete form', then the 'saved_values', and finally
+ * returns the default if it cannot find the value.
  * If the value we are trying to reach is part of a TPPS managed_file, then we
  * can also pass the file name in order to find saved_values such as
  * 'file-columns', or 'file-no-header'.
@@ -246,6 +247,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
     return $val;
   }
 
+  // @TODO [VS] Avoid code duplication. See above.
   $complete_parents = $parents;
   array_unshift($complete_parents, 'complete form');
   $element = drupal_array_get_nested_value($state, $complete_parents);

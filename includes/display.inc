@@ -347,7 +347,7 @@ function tpps_flatten(array $state) {
 
           // Rish comments: 21 March 2023
           // Based on the example of TGDR465, there is a single ISO file that can be uploaded
-          // I *think* the headers should match each phenotype name that is added manually 
+          // I *think* the headers should match each phenotype name that is added manually
           // from the previous part of page 4
           if (isset($pheno['file']) and $pheno['file']) {
             $data["$org_name Phenotype File"] = $pheno['file'];
@@ -447,7 +447,7 @@ function tpps_flatten(array $state) {
           }
 
           if (!empty($geno['files']['snps-assay'])) {
-            $data["$org_name SNPs Genotype Assay File"] = $geno['files']['snps-assay'];
+            $data["$org_name SNP Genotype Assay File"] = $geno['files']['snps-assay'];
           }
 
           if (!empty($geno['files']['assay-design'])) {
@@ -462,9 +462,9 @@ function tpps_flatten(array $state) {
             $data["$org_name SSRs/cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
           }
 
-          if (!empty($geno['files']['indels'])) {
-            $data["$org_name Indel Genotype File"] = $geno['files']['indels'];
-          }
+          //if (!empty($geno['files']['indels'])) {
+          //  $data["$org_name Indel Genotype File"] = $geno['files']['indels'];
+          //}
 
           if (!empty($geno['files']['other'])) {
             $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
@@ -727,7 +727,7 @@ function tpps_completed_display($accession = NULL) {
     border: 1px solid #cccccc;
     border-radius: 4px;
     padding: 0px 10px;
-  }		
+  }
   ";
   drupal_add_css($css, 'inline');
 
