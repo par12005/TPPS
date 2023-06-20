@@ -360,15 +360,10 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       'Genotype x Phenotype',
     ]
   );
-  //dpm($is_step2_genotype);
   // [/VS]
   $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
   $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
   $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
-
-  // @todo Remove debug code:
-  //dpm(print_r($genotype, 1));
-  form_set_error("$id][genotype][debug", t("Debug."));
 
   if (!$ref_genome) {
     tpps_form_error_required($form_state,
