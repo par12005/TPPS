@@ -32,16 +32,16 @@ require_once 'includes/ncbi_utils.inc';
 require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'includes/cvterm_utils.inc';
+// [VS]
 require_once 'includes/synonym.inc';
+require_once 'includes/report.inc';
+// [/VS]
 require_once 'api/tpps.api.inc';
 
 /**
  * Implements hook_menu().
  */
 function tpps_menu() {
-
-  $items = array();
-
   $items['tpps'] = array(
     'title' => 'Tripal Plant PopGen Submit',
     'page callback' => 'drupal_get_form',
@@ -60,8 +60,6 @@ function tpps_menu() {
     'access arguments' => array('access tpps form', 1),
     'type' => MENU_NORMAL_ITEM,
   );
-
-
 
   $items['tpps/%/pre-validate'] = array(
     'title' => 'TPPS File Pre-Validation',
@@ -1336,47 +1334,49 @@ function tpps_snpassay_file_selector($string) {
     ->orderBy('f.timestamp', 'DESC')
     ->execute();
 
-  // save the query to matches
+  // Save the query to matches.
   foreach ($result as $row) {
     $value = $row->filename . ' (' . $row->fid . ')';
     $matches[$row->fid] = $row->filename;
   }
 
-  // Return the result to the form in json
+  // Return the result to the form in json.
   drupal_json_output($matches);
 }
 
+/**
+ * Implements hook_media_browser_plugins_alter().
+ */
 function tpps_media_browser_plugins_alter(&$plugins) {
-  //if (variable_get('disable_media_upload', 0)) {
-   unset($plugins['upload']);
-   unset($plugins['media_default--media_browser_my_files']);
- // }
+  unset($plugins['upload']);
+  unset($plugins['media_default--media_browser_my_files']);
 }
 
+// WARNING: Required because dev-server has PHP 7.0.2.
+//
 // There are several ways to provide this functionality for versions
 // prior to PHP 7.3.0. It is possible to use array_keys(),
-//  but that may be rather inefficient.
-//  It is also possible to use reset() and key(),
-//  but that may change the internal array pointer.
-//  An efficient solution, which does not change the internal array pointer, written as polyfill:
+// but that may be rather inefficient.
+// It is also possible to use reset() and key(),
+// but that may change the internal array pointer.
+// An efficient solution, which does not change the internal
+// array pointer, written as polyfill.
 if (!function_exists('array_key_first')) {
+
+  /**
+   * Polifill for array_key_first() implemented in PHP 7.3.0 and higher.
+   *
+   * @param array $arr
+   *   Array to be processed.
+   *
+   * @return string
+   *   Returns key of the first element of the given array.
+   */
   function array_key_first(array $arr) {
-    foreach($arr as $key => $unused) {
+    foreach ($arr as $key => $unused) {
       return $key;
     }
     return NULL;
   }
-}
 
-/**
- * Implements hook_form_FORM_ID_alter().
- *
- * Changes label of default action of Simple Report tableselect report.
- */
-function tpps_form_simple_report_tableselect_form_alter(&$form, &$form_state) {
-  $option_name = 'simple_report_tableselect_action_remove';
-  if (empty($form['action']['#options'][$option_name])) {
-    return;
-  }
-  $form['action']['#options'][$option_name] = t('Remove');
 }
