@@ -160,13 +160,26 @@ div.media-widget.form-media a.browse {
 .btn:focus:focus-visible {
   outline: black solid 2px;
 }
-
 /**
  * Make visible all options of dropdown when multiple options enabled.
  * @TODO This must be done for all site pages.
  **/
 select.form-select {
+  max-width: 100%;
   height: auto;
   min-height: 28px;
+}
+/**
+ * To have ability to see nested elements.
+ **/
+form#tppsc-main fieldset {
+  padding-left: 10px;
+}
+form#tppsc-main fieldset legend {
+  margin-left: -10px;
+}
+/* For debug only */
+label {
+  font-weight: bold;
 }
 /* [/VS] */

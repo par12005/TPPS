@@ -456,7 +456,7 @@ function tpps_flatten(array $state) {
           }
 
           if (!empty($geno['files']['snps-assay'])) {
-            $data["$org_name SNPs Genotype Assay File"] = $geno['files']['snps-assay'];
+            $data["$org_name SNP Genotype Assay File"] = $geno['files']['snps-assay'];
           }
 
           if (!empty($geno['files']['assay-design'])) {
@@ -471,9 +471,9 @@ function tpps_flatten(array $state) {
             $data["$org_name SSRs/cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
           }
 
-          if (!empty($geno['files']['indels'])) {
-            $data["$org_name Indel Genotype File"] = $geno['files']['indels'];
-          }
+          //if (!empty($geno['files']['indels'])) {
+          //  $data["$org_name Indel Genotype File"] = $geno['files']['indels'];
+          //}
 
           if (!empty($geno['files']['other'])) {
             $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
