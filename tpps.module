@@ -33,7 +33,8 @@ require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'includes/cvterm_utils.inc';
 // [VS]
-require_once 'includes/synonym.inc';
+require_once 'includes/phenotype_synonym.inc';
+require_once 'includes/phenotype_unit.inc';
 require_once 'includes/report.inc';
 // [/VS]
 require_once 'api/tpps.api.inc';
