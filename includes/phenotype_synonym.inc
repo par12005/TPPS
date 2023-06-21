@@ -156,3 +156,16 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
   }
   tpps_log('[INFO] Phenotype Synonyms processing completed.');
 }
+
+/**
+ * Builds a selector for 'Synonym Missing' checkbox for form states.
+ *
+ * @param string $id
+ *   Organism Id.
+ *
+ * @return string
+ *   Ready for form state selector.
+ */
+function tpps_synonym_selector($id) {
+  return ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][synonym_id]"]';
+}
