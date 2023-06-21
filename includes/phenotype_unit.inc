@@ -23,7 +23,7 @@
  *   Returns all units if synonym not specified.
  *   Returns empty array if synonym not found.
  */
-function tpps_synonym_get_unit_list($synonym_id = 'all', array $options = [], $reset = FALSE) {
+function tpps_unit_get_unit_list($synonym_id = 'all', array $options = [], $reset = FALSE) {
   $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
   $options = array_merge($defaults, $options);
 
@@ -94,7 +94,7 @@ function tpps_synonym_get_unit_list($synonym_id = 'all', array $options = [], $r
  * Creates a form element for 'Unit' dropdown which will replace existing
  * one at page when Synonym selectbox changed.
  */
-function tpps_synonym_update_unit_list($form, &$form_state) {
+function tpps_unit_update_list($form, &$form_state) {
   // @TODO Cache list of units by phenotype id and $synonym_id because
   // adding 2+ phenotypes increases ajax request processing time.
   if (isset($form_state['triggering_element']['#value'])) {
@@ -108,7 +108,7 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
   // Update list of units.
   $unit_field = drupal_array_get_nested_value($form, $parents, $key_exists);
   if ($key_exists) {
-    $unit_field['#options'] = tpps_synonym_get_unit_list(
+    $unit_field['#options'] = tpps_unit_get_list(
       $synonym_id ?? 'all',
       ['debug' => FALSE]
     );
@@ -127,7 +127,7 @@ function tpps_synonym_update_unit_list($form, &$form_state) {
  * @return string
  *   Returns name of unit.
  */
-function tpps_synonym_get_unit_name($unit_id = '') {
+function tpps_unit_get_name($unit_id = '') {
   if (empty($unit_id) || !is_numeric($unit_id)) {
     return '';
   }

@@ -208,7 +208,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           '#default_value' => array_key_first($synonym_list) ?? NULL,
           // Unit dropdown must be updated in each synonym field change.
           '#ajax' => [
-            'callback' => 'tpps_synonym_update_unit_list',
+            'callback' => 'tpps_unit_update_list',
             'wrapper' => 'unit-list-!num-wrapper',
             'method' => 'replace',
             'event' => 'change',
@@ -270,7 +270,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           '#title' => 'Phenotype !num Unit: *',
           // List of units depends on selected synonym and will be populated later.
           // The same for default value.
-          '#options' => tpps_synonym_get_unit_list(
+          '#options' => tpps_unit_get_list(
             array_key_first($synonym_list) ?? NULL
           ),
           '#prefix' => '<div id="unit-list-!num-wrapper">',
@@ -437,7 +437,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
       // Unit.
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options']
-        = tpps_synonym_get_unit_list($synonym_id ?? NULL);
+        = tpps_unit_get_list($synonym_id ?? NULL);
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#default_value'] = (
         $phenotypes[$i]['unit']
         ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options'])

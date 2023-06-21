@@ -333,7 +333,7 @@ function tpps_flatten(array $state) {
                   if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
                     if ($field == 'unit') {
                       $value = $pheno_meta[$j][$field];
-                      $value = tpps_synonym_get_unit_name($value);
+                      $value = tpps_unit_get_name($value);
                     }
                     else {
                       $value = $pheno_meta[$j][$field];
