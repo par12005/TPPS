@@ -23,7 +23,7 @@
  *   Returns all units if synonym not specified.
  *   Returns empty array if synonym not found.
  */
-function tpps_unit_get_unit_list($synonym_id = 'all', array $options = [], $reset = FALSE) {
+function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = FALSE) {
   $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
   $options = array_merge($defaults, $options);
 
