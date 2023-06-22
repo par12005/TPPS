@@ -1861,18 +1861,16 @@ function tpps_admin_panel_get_reports() {
  *   The form element of the TPPS admin panel page.
  */
 function tpps_admin_panel_reports(array &$form) {
-  if (function_exists('simple_report_form')) {
-    foreach (tpps_admin_panel_get_reports() as $report_key => $panel_url) {
-      if ($title = variable_get('tpps_report_' . $report_key . '_title')) {
-        $items[] = l(t($title), $panel_url);
-      }
+  foreach (tpps_admin_panel_get_reports() as $report_key => $panel_url) {
+    if ($title = variable_get('tpps_report_' . $report_key . '_title')) {
+      $items[] = l(t($title), $panel_url);
     }
-    $form['report_menu'] = [
-      '#type' => 'fieldset',
-      '#title' => t('TPPS Reports'),
-      '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
-      'table' => ['#markup' => theme('item_list', ['items' => $items])],
-    ];
   }
+  $form['report_menu'] = [
+    '#type' => 'fieldset',
+    '#title' => t('TPPS Reports'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    'table' => ['#markup' => theme('item_list', ['items' => $items])],
+  ];
 }

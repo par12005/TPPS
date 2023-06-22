@@ -18,10 +18,6 @@
  */
 function tpps_admin_settings(array $form, array &$form_state) {
 
-  if (function_exists('simple_report_form')) {
-    $form = simple_report_form();
-  }
-
   $authors = variable_get('tpps_author_files_dir', 'tpps_authors');
   $photos = variable_get('tpps_study_photo_files_dir', 'tpps_study_photos');
   $accession = variable_get('tpps_accession_files_dir', 'tpps_accession');
