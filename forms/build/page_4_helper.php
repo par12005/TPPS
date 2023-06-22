@@ -76,7 +76,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv xlsx'),
       ),
-      '#description' => t('Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain isotope or mass spectrometry data.'),
+      '#description' => t('Please upload a file containing all of your '
+        . 'isotope/mass spectrometry data. The format of this file is very '
+        . 'important! The first column of your file should contain plant '
+        . 'identifiers which match the plant identifiers you provided in '
+        . 'your plant accession file, and all of the remaining columns '
+        . 'should contain isotope or mass spectrometry data.'),
     );
   }
 
