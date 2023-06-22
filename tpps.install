@@ -2016,10 +2016,10 @@ function tpps_update_7118() {
 }
 
 /**
- * #3kged9b Creates table 'public.tpps_phenotype_unit_warning'.
+ * Creates table 'public.tpps_phenotype_unit_warning'.
  */
 function tpps_update_7119() {
-  // [VS]
+  //  [VS] #3kged9b.
   // Set initial values of variables.
   variable_set(
     'tpps_report_no_synonym_title',
@@ -2048,5 +2048,4 @@ function tpps_update_7119() {
     }
   }
   cache_clear_all();
-  // [/VS]
 }
