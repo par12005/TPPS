@@ -564,6 +564,7 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
  *     'id' => $id,
  *     'file_field_name' => $file_field_name,
  *     'title' => $title,
+ *     'optional' => TRUE,
  *     'upload_location' => "$genotype_upload_location",
  *     'description' => $description,
  *     'extensions' => $extensions, // Default: ['csv tsv xlsx']
@@ -579,7 +580,7 @@ function tpps_build_file_field(array &$fields, array $meta) {
   $debug_mode = FALSE;
   $fields[$file_field_name] = [
     '#type' => 'managed_file',
-    '#title' => $title . ': *',
+    '#title' => $title . (!empty($optional) ? ':' : ': *'),
     '#upload_location' => $upload_location,
     '#upload_validators' => [
       'file_validate_extensions' => $extensions ? $extensions : ['csv tsv xlsx'],
