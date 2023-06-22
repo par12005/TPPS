@@ -37,32 +37,31 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#collapsible' => TRUE,
   ];
 
-  $form[$id]['phenotype']['normal-check'] = array(
+  $form[$id]['phenotype']['normal-check'] = [
     '#type' => 'checkbox',
     '#title' => t('My phenotypes include traits and/or environmental '
       . 'information other than mass spectrometry or isotope analysis'),
-    '#ajax' => array(
+    '#ajax' => [
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
+    ],
+    // @todo Must be checked by default.
+    '#default_value' => tpps_get_ajax_value(
+      $form_state, [$id, 'phenotype', 'normal-check'], TRUE
     ),
-    '#default_value' => tpps_get_ajax_value($form_state, array(
-      $id,
-      'phenotype',
-      'normal-check',
-    ), TRUE),
-  );
+  ];
 
-  $form[$id]['phenotype']['iso-check'] = array(
+  $form[$id]['phenotype']['iso-check'] = [
     '#type' => 'checkbox',
     '#title' => t('My phenotypes include results from a mass spectrometry or isotope analysis'),
-    '#ajax' => array(
+    '#ajax' => [
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
-    ),
-  );
+    ],
+  ];
 
   $normal_check = tpps_get_ajax_value(
-    $form_state, [$id, 'phenotype', 'normal-check'], NULL
+    $form_state, [$id, 'phenotype', 'normal-check'], TRUE
   );
   $iso_check = tpps_get_ajax_value(
     $form_state, [$id, 'phenotype', 'iso-check'], NULL
@@ -199,13 +198,15 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         // [VS] Synonym form.
         'synonym_name' => tpps_build_field_name($id) + [
           '#prefix' => "<label><b>Phenotype !num:</b></label>",
-          '#states' => ['visible' => [
-            tpps_synonym_selector($id) => ['!value' => 0],
-        ]]],
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['!value' => 0]],
+          ],
+        ],
         'synonym_description' => tpps_build_field_description() + [
-          '#states' => ['visible' => [
-            tpps_synonym_selector($id) => ['!value' => 0],
-          ]]],
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['!value' => 0]],
+          ],
+        ],
 
         'synonym_id' => [
           '#type' => 'select',
@@ -226,9 +227,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         // [/VS]
 
         // Main form.
-        'name' => tpps_build_field_name($id) + ['#states' => ['visible' => [
-            tpps_synonym_selector($id) => ['value' => 0],
-        ]]],
+        'name' => tpps_build_field_name($id) + [
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+          ],
+        ],
         'env-check' => array(
           '#type' => 'checkbox',
           '#title' => 'Phenotype !num is an environmental phenotype',
@@ -236,9 +239,9 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
             'callback' => 'tpps_update_phenotype_meta',
             'wrapper' => "org_{$id}_phenotype_!num_meta",
           ),
-          '#states' => ['visible' => [
-            tpps_synonym_selector($id) => ['value' => 0],
-          ]],
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+          ],
         ),
         'attribute' => array(
           '#type' => 'select',
@@ -248,9 +251,9 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
             'callback' => 'tpps_update_phenotype_meta',
             'wrapper' => "org_{$id}_phenotype_!num_meta",
           ),
-          '#states' => ['visible' => [
-            tpps_synonym_selector($id) => ['value' => 0],
-          ]],
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+          ],
         ),
         'attr-other' => array(
           '#type' => 'textfield',
@@ -265,19 +268,20 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           '#states' => array(
             'visible' => array(
               ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'
-                => array('value' => 'other'),
+              => ['value' => 'other'],
               tpps_synonym_selector($id) => ['value' => 0],
             ),
           ),
         ),
-        'description' => tpps_build_field_description()
-          + array('#states' => array('visible' => array(
-              tpps_synonym_selector($id) => ['value' => 0],
-          ))),
+        'description' => tpps_build_field_description() + [
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+          ],
+        ],
         'unit' => [
           '#type' => 'select',
           '#title' => 'Phenotype !num Unit: *',
-          // List of units depends on selected synonym and will be populated later.
+          // List of units depends on selected synonym. Will be populated later.
           // The same for default value.
           '#options' => tpps_unit_get_list(
             array_key_first($synonym_list) ?? NULL
@@ -296,14 +300,17 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
             'data-placement' => ['right'],
             'title' => ['If your unit is not in the autocomplete list, '
               . 'don\'t worry about it! We will create new phenotype '
-              . 'metadata in the database for you.'],
+              . 'metadata in the database for you.'
             ],
+          ],
           '#description' => t('Some examples of units include: "m", "meters", '
             . '"in", "inches", "Degrees Celsius", "°C", etc.'),
-          '#states' => ['visible' => [
-            ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
+          '#states' => [
+            'visible' => [
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
               => ['value' => 'other'],
-          ]],
+            ],
+          ],
         ],
         // [/VS]
         'structure' => array(
@@ -1571,11 +1578,9 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
         }
       }
     }
-
-
   }
 
-  // Perform a database lookup as well using new query from Emily Grau (6/6/2023)
+  // Perform a database lookup as well using new query from Emily Grau (6/6/2023).
   $time_now = time();
   $time_expire_period = 3 * 24 * 60 * 60;
   $time_genome_query_results_time = variable_get('tpps_genome_query_results_time', 0);
@@ -1587,7 +1592,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
       join chado.feature f on af.feature_id = f.feature_id
       join chado.organism o on f.organism_id = o.organism_id
       where f.type_id in (379,595,597,825,1245) AND a.name LIKE '% v%'
-    )",[]);
+    )", []);
     variable_set('tpps_genome_query_results_time', $time_now);
   }
   $genome_query_results = chado_query("select * FROM chado.tpps_ref_genomes;", []);
@@ -1694,15 +1699,21 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fasta['db']['#collapsible'] = TRUE;
   unset($fasta['button']);
 
-  $upload = array(
+  $upload = [
     '#type' => 'managed_file',
     '#title' => '',
-    '#description' => t('Remember to click the "Upload" button below to send your file to the server.  This interface is capable of uploading very large files.  If you are disconnected you can return, reload the file and it will resume where it left off.  Once the file is uploaded the "Upload Progress" will indicate "Complete".  If the file is already present on the server then the status will quickly update to "Complete".'),
-    '#upload_validators' => array(
-      'file_validate_extensions' => array(implode(' ', $class::$file_types)),
-    ),
+    '#description' => t('Remember to click the "Upload" button below to send '
+      . 'your file to the server. <br />This interface is capable of uploading '
+      . 'very large files. <br />If you are disconnected you can return, '
+      . 'reload the file and it will resume where it left off. <br />Once the '
+      . 'file is uploaded the "Upload Progress" will indicate "Complete". '
+      . '<br />If the file is already present on the server then the status '
+      . 'will quickly update to "Complete".'),
+    '#upload_validators' => [
+      'file_validate_extensions' => [implode(' ', $class::$file_types)],
+    ],
     '#upload_location' => $tripal_upload_location,
-  );
+  ];
 
   $fasta['file']['file_upload'] = $upload;
   $fasta['analysis_id']['#required'] = $fasta['seqtype']['#required'] = FALSE;
@@ -1838,4 +1849,3 @@ function tpps_page_4_marker_info(array &$fields, $id) {
   ];
   // [/VS]
 }
-
