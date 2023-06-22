@@ -884,7 +884,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   if ($condition) {
     if (empty(tpps_add_file_selector($form_state, $fields, $id, $title, ''))) {
       // Add file upload field if file selector wasn't checked.
-      tpps_build_file_field($fields, [
+      tpps_build_file_field($fields['files'], [
         'form_state' => $form_state,
         'id' => $id,
         'file_field_name' => $file_field_name,
@@ -931,7 +931,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   );
   if ($condition) {
     // Add file upload field.
-    tpps_build_file_field($fields, [
+    tpps_build_file_field($fields['files'], [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -955,7 +955,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   //if ($genotyping_type_check == "Genotyping Assay") {
     $file_field_name = 'snps-association';
     $title = t('SNP Association File');
-    tpps_build_file_field($fields, [
+    tpps_build_file_field($fields['files'], [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1036,7 +1036,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     ];
 
     // SNPs Population Structure File.
-    tpps_build_file_field($fields, [
+    tpps_build_file_field($fields['files'], [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => 'snps-pop-struct',
@@ -1044,7 +1044,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'upload_location' => "$genotype_upload_location",
     ]);
     // SNPs Kinship File.
-    tpps_build_file_field($fields, [
+    tpps_build_file_field($fields['files'], [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => 'snps-kinship',
@@ -1095,7 +1095,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     ];
     $title = t('SSRs Spreadsheet');
     $file_field_name = 'ssrs';
-    tpps_build_file_field($fields, [
+    tpps_build_file_field($fields['files'], [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1112,17 +1112,19 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'visible' => [
           [
             ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'SSRs']
+            => ['value' => 'SSRs'],
           ],
           'or',
           [
             ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'Both SSRs and cpSSRs']
+            => ['value' => 'Both SSRs and cpSSRs'],
           ],
         ],
       ],
       // Add extra text field for empty field value.
-      'empty_field_value' => 'NA',
+      'empty_field_value' => tpps_get_empty_field_value(
+        $form_state, $id, $file_field_name
+      ),
     ]);
     tpps_genotype_update_description($fields, [
       'id' => $id,
@@ -1170,7 +1172,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     // @todo [VS] Change field machine name.
     $title = t('cpSSRs Spreadsheet');
     $file_field_name = 'ssrs_extra';
-    tpps_build_file_field($fields, [
+    tpps_build_file_field($fields['files'], [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1199,7 +1201,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         ],
       ],
       // Add extra text field for empty field value.
-      'empty_field_value' => 'NA',
+      'empty_field_value' => tpps_get_empty_field_value(
+        $form_state, $id, $file_field_name
+      ),
     ]);
     tpps_genotype_update_description($fields, [
       'id' => $id,
@@ -1232,14 +1236,16 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       . 'If a column data type does not fit any of the options in the '
       . 'drop-down menu, you may set that drop-down menu to "N/A". '
       . 'Your file must contain one column with the Plant Identifier.');
-    tpps_build_file_field($fields, [
+    tpps_build_file_field($fields['files'], [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
       'title' => $title,
       'upload_location' => "$genotype_upload_location",
       'description' => $description,
-      'empty_field_value' => 'NA',
+      'empty_field_value' => tpps_get_empty_field_value(
+        $form_state, $id, $file_field_name
+      ),
     ]);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1285,7 +1291,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     $genotyping_type_check == 'Genotyping'
     && $file_type_value == 'VCF'
   ) {
-    tpps_build_file_field($fields, [
+    tpps_build_file_field($fields['files'], [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1827,3 +1833,4 @@ function tpps_page_4_marker_info(array &$fields, $id) {
   ];
   // [/VS]
 }
+

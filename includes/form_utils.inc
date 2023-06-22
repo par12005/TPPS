@@ -555,7 +555,7 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
  * Generates file field.
  *
  * @param array $fields
- *   Drupal Form API array with fields.
+ *   Parent element in Drupal Form API array.
  * @param array $meta
  *   File field metadata. Example:
  *
@@ -577,7 +577,7 @@ function tpps_build_file_field(array &$fields, array $meta) {
   extract($meta);
   // When enabled field's machine name will be shown in field's decription.
   $debug_mode = FALSE;
-  $fields['files'][$file_field_name] = [
+  $fields[$file_field_name] = [
     '#type' => 'managed_file',
     '#title' => $title . ': *',
     '#upload_location' => $upload_location,
@@ -592,20 +592,14 @@ function tpps_build_file_field(array &$fields, array $meta) {
   ];
   // Add extra text field for empty field value. Default is FALSE.
   if ($empty_field_value) {
-    $values = $form_state['saved_values'][TPPS_PAGE_4];
     // Note:
     // Element 'empty' is a custom solution to add textfield.
-    $fields['files'][$file_field_name]['empty'] = [
-      '#default_value' =>
-      isset($values["organism-$id"]['genotype']['files'][$file_field_name]['other'])
-      ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
-      : $empty_field_value,
-    ];
+    $fields[$file_field_name]['empty'] = ['#default_value' => $empty_field_value];
   }
 
   if ($extra_elements) {
-    $fields['files'][$file_field_name] = array_merge(
-      $fields['files'][$file_field_name], $extra_elements
+    $fields[$file_field_name] = array_merge(
+      $fields[$file_field_name], $extra_elements
     );
   }
 
@@ -619,17 +613,17 @@ function tpps_build_file_field(array &$fields, array $meta) {
     // - 'ssrs' / 'SSRs Spreadsheet'
     // - 'ssrs_extra' / 'cpSSRs Spreadsheet'
     //
-    //if (isset($fields['files'][$file_field_name]['#value']['fid'])) {
-    //  $fields['files'][$file_field_name]['#default_value']
-    //    = $fields['files'][$file_field_name]['#value']['fid'];
-    //}
-    if (isset($fields['files'][$file_field_name]['#value'])) {
-      $fields['files'][$file_field_name]['#default_value']
-        = $fields['files'][$file_field_name]['#value'];
+    // if (isset($fields[$file_field_name]['#value']['fid'])) {
+    //   $fields[$file_field_name]['#default_value']
+    //     = $fields[$file_field_name]['#value']['fid'];
+    // }
+    if (isset($fields[$file_field_name]['#value'])) {
+      $fields[$file_field_name]['#default_value']
+        = $fields[$file_field_name]['#value'];
     }
     $condition = (
-      !empty($fields['files'][$file_field_name]['#default_value'])
-      && ($file = file_load($fields['files'][$file_field_name]['#default_value']))
+      !empty($fields[$file_field_name]['#default_value'])
+      && ($file = file_load($fields[$file_field_name]['#default_value']))
     );
     if ($condition) {
       // Stop using the file so it can be deleted if the user clicks 'remove'.
@@ -807,7 +801,6 @@ function tpps_build_field_description() {
   ];
 }
 
-
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // Helper functions.
 
@@ -820,4 +813,26 @@ function tpps_build_field_description() {
 function tpps_get_hostname() {
   global $base_url;
   return explode('://', $base_url)[1];
+}
+
+/**
+ * Gets value of the empty field.
+ *
+ * @param array $form_state
+ *   Drupal Form API state.
+ * @param int $id
+ *   Organism Id.
+ * @param string $file_field_name
+ *   Machine file upload field name.
+ *
+ * @return string
+ *   Returns value of empty fields in file. Usually it will be 'NA'.
+ */
+function tpps_get_empty_field_value(array $form_state, $id, $file_field_name) {
+  $values = $form_state['saved_values'][TPPS_PAGE_4];
+  return (isset(
+    $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
+    ) ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
+    : $empty_field_value
+  );
 }
