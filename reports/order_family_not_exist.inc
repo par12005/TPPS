@@ -21,7 +21,7 @@ function tpps_admin_order_family_not_exist_report() {
     ->execute()
     ->fetchCol();
   // Build base query.
-  $base_query = db_select($table, $table_alias)
+  $query = db_select($table, $table_alias)
     ->fields($table_alias, ['organism_id', 'genus', 'species', 'type_id'])
     ->condition($table_alias . '.organism_id', $list, 'NOT IN');
 
@@ -48,6 +48,6 @@ function tpps_admin_order_family_not_exist_report() {
         'field' => $table_alias . '.type_id',
       ],
     ],
-    'query' => $base_query,
+    'query' => $query,
   ]);
 }

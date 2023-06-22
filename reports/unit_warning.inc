@@ -9,44 +9,45 @@
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
 function tpps_admin_unit_warning_report(array $filter = []) {
-  if (!function_exists('simple_report')) {
-    return '';
-  }
-  $table = 'tpps_phenotype_unit_warning';
-  $meta = [
-    // @DEBUG Shows SQL-query at page and table rows dump in watchdog.
-    //'tag' => 'debug',
-    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
-    'refresh_time' => variable_get('tpps_report_refresh_time', 0),
-    // Manually set 'primary_key' because DB table has no PK
-    // but 'unique keys' index.
-    'primary_key' => 'study_name',
-    'select_all' => FALSE,
-    // To have common style.
-    'attributes' => ['class' => ['view' , 'tpps_table']],
-    'formatter' => 'tpps_admin_unit_warning_report_formatter',
-    'header' => [
-      [
-        'data' => t("Study"),
-        'field' => 'public.' . $table . '.study_name',
-        'theme' => 'none',
-      ],
-    ],
-    'main_table' => [
-      'schema' => 'public',
-      'name' => $table,
-    ],
-  ];
-
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-  $title = variable_set(
+  $table = 'public.tpps_phenotype_unit_warning';
+  $table_alias = str_replace('.', '', $table);
+  $page_title = variable_set(
     'tpps_report_unit_warning_title',
     'Unit Warning (list of phenotypes which unit differs from Synonym)'
   );
-  if ($title) {
-    $page_title = '<h2>' . $title . '</h2>';
+
+  // Remove selected item.
+  if (!empty($_GET['remove'])) {
+    db_delete($table)
+      ->condition('study_name', check_plain($_GET['remove']))
+      ->execute();
+    drupal_set_message(t(
+      'Removed record for study @study_name.',
+      ['@study_name' => $_GET['remove']]
+    ));
+    drupal_goto($_GET['q']);
   }
-  return $page_title . simple_report_tableselect($meta, $filter ?? []);
+
+  $query = db_select($table, $table_alias)
+    ->fields($table_alias, [
+      'study_name',
+      // 2nd column is required to emulate 'Actions' column.
+      // See formatter-function.
+      'study_name'
+    ]);
+
+  return '<h2>' . $page_title . '</h2>' . easy_report([
+    'css_path' => drupal_get_path('module', 'tpps') . TPPS_CSS_PATH,
+    'formatter' => 'tpps_admin_unit_warning_report_formatter',
+    'page_title' => $page_title,
+    'table_attributes' => ['class' => ['view' , 'tpps_table']],
+    'items_per_page' => variable_get('tpps_report_items_per_page', 15),
+    'header' => [
+      ['data' => t('Study'), 'field' => $table_alias . '.study_name'],
+      ['data' => t('Actions'), 'field' => 'actions'],
+    ],
+    'query' => $query,
+  ]);
 }
 
 /**
@@ -67,7 +68,7 @@ function tpps_admin_unit_warning_report(array $filter = []) {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_admin_unit_warning_report_formatter(string $name, $value, array $row) {
+function tpps_admin_unit_warning_report_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;
@@ -78,6 +79,10 @@ function tpps_admin_unit_warning_report_formatter(string $name, $value, array $r
       if (!empty($value)) {
         $formatted = l($formatted, 'tpps-admin-panel/' . $formatted);
       }
+      break;
+
+    case 'publictpps_phenotype_unit_warning_study_name':
+      $formatted = l(t('Remove'), $_GET['q'], ['query' => ['remove' => $formatted]]);
       break;
   }
   return $formatted;

@@ -51,7 +51,7 @@ function tpps_admin_no_synonym_report() {
   $base_query->groupBy('chadophenotype_to_synonym.phenotype_synonyms_id');
 
   return '<h2>' . $page_title . '</h2>' . easy_report([
-    'formatter' => 'tpps_report_formatter',
+    'formatter' => 'tpps_admin_no_synonym_report_formatter',
     'debug_mode' => FALSE,
     'css_path' => drupal_get_path('module', 'tpps') . TPPS_CSS_PATH,
     'page_title' => $page_title,
@@ -68,4 +68,38 @@ function tpps_admin_no_synonym_report() {
     ],
     'query' => $base_query,
   ]);
+}
+
+/**
+ * Values formatter for 'easy_report()'.
+ *
+ * @param string $name
+ *   Required. Field name.
+ *   Machine table field name (column name) without table name and dot.
+ * @param mixed $value
+ *   Field value.
+ * @param array $row
+ *   Data of the whole table row with hidden fields.
+ *   This data could be used to format other fields. For example,
+ *   hidden field 'uid' or 'entity_id' could be used to build a link to
+ *   user profile page.
+ *
+ * @return mixed
+ *   Returns formatted value.
+ *   Empty value will not be formatted and returned as is.
+ */
+function tpps_admin_no_synonym_report_formatter(string $name, $value, array $row) {
+  $formatted = check_plain($value);
+  if (empty($name) || empty($value)) {
+    return $formatted;
+  }
+  $name = check_plain($name);
+  switch ($name) {
+    case 'publicctestudy_name':
+      if (!empty($value)) {
+        $formatted = l($formatted, 'tpps-admin-panel/' . $formatted);
+      }
+      break;
+  }
+  return $formatted;
 }
