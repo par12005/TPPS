@@ -467,12 +467,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
           $form_state, [$id, 'genotype', 'files', 'snps-association-tool']
         );
         tpps_check_required(
-          $form_state, [$id, 'genotype', 'files', 'snps-pop-struct']
-        );
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'files', 'snps-kinship']
-        );
-        tpps_check_required(
           $form_state, [$id, 'genotype', 'files', 'snps-assay']
         );
       }

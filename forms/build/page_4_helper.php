@@ -1150,6 +1150,8 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => 'snps-pop-struct',
+      // @todo [VS] Replace with 'required' with default value 'TRUE'.
+      'optional' => TRUE,
       'title' => t('SNPs Population Structure File'),
       'upload_location' => "$genotype_upload_location",
     ]);
@@ -1158,6 +1160,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => 'snps-kinship',
+      'optional' => TRUE,
       'title' => t('SNPs Kinship File'),
       'upload_location' => "$genotype_upload_location",
     ]);
@@ -1984,6 +1987,7 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
  *     'form_state' => $form_state,
  *     'id' => $id,
  *     'file_field_name' => $file_field_name,
+ *     'optional' => TRUE,
  *     'title' => $title,
  *     'upload_location' => "$genotype_upload_location",
  *     'description' => $description,
@@ -2000,7 +2004,7 @@ function tpps_build_file_field(array &$fields, array $meta) {
   $debug_mode = FALSE;
   $fields['files'][$file_field_name] = [
     '#type' => 'managed_file',
-    '#title' => $title . ': *',
+    '#title' => $title . (!empty($optional) ?  ':' : ': *'),
     '#upload_location' => $upload_location,
     '#upload_validators' => [
       'file_validate_extensions' => $extensions ? $extensions : ['csv tsv xlsx'],
