@@ -51,7 +51,7 @@ function tpps_admin_no_synonym_report() {
   $base_query->groupBy('chadophenotype_to_synonym.phenotype_synonyms_id');
 
   return '<h2>' . $page_title . '</h2>' . easy_report([
-    'formatter' => 'easy_report_formatter',
+    'formatter' => 'tpps_report_formatter',
     'debug_mode' => FALSE,
     'css_path' => drupal_get_path('module', 'tpps') . TPPS_CSS_PATH,
     'page_title' => $page_title,
@@ -66,6 +66,6 @@ function tpps_admin_no_synonym_report() {
         'field' => 'publiccte.study_name',
       ],
     ],
-    'base_query' => $base_query,
+    'query' => $base_query,
   ]);
 }

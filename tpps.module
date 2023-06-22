@@ -35,7 +35,7 @@ require_once 'includes/cvterm_utils.inc';
 // [VS]
 require_once 'includes/phenotype_synonym.inc';
 require_once 'includes/phenotype_unit.inc';
-require_once 'includes/report.inc';
+require_once 'includes/easy_report.inc';
 // [/VS]
 require_once 'api/tpps.api.inc';
 
