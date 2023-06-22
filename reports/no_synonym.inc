@@ -11,24 +11,7 @@
 function tpps_admin_no_synonym_report() {
   $table = 'chado.phenotype';
   $table_alias = str_replace('.', '', $table);
-  $meta = [
-    'table' => $table,
-    'formatter' => 'tpps_report_formatter',
-    'debug_mode' => FALSE,
-    'css_path' => drupal_get_path('module', 'tpps') . TPPS_CSS_PATH,
-    'page_title' => variable_get('tpps_report_no_synonym_title'),
-    'table_attributes' => ['class' => ['view' , 'tpps_table']],
-    'header' => [
-      [
-        'data' => t('Phenotype Name'),
-        'field' => $table_alias . '.name',
-      ],
-      [
-        'data' => t('Study'),
-        'field' => 'publiccte.study_name',
-      ],
-    ],
-  ];
+  $page_title = variable_get('tpps_report_no_synonym_title');
 
   // Query to get Study name.
   $sub_query = db_select('chado.phenotype', 'cte')->fields('cte', []);
@@ -67,6 +50,22 @@ function tpps_admin_no_synonym_report() {
   $base_query->groupBy('chadophenotype.name');
   $base_query->groupBy('chadophenotype_to_synonym.phenotype_synonyms_id');
 
-  $meta['base_query'] = $base_query;
-  return tpps_report($meta);
+  return '<h2>' . $page_title . '</h2>' . easy_report([
+    'formatter' => 'easy_report_formatter',
+    'debug_mode' => FALSE,
+    'css_path' => drupal_get_path('module', 'tpps') . TPPS_CSS_PATH,
+    'page_title' => $page_title,
+    'table_attributes' => ['class' => ['view' , 'tpps_table']],
+    'header' => [
+      [
+        'data' => t('Phenotype Name'),
+        'field' => $table_alias . '.name',
+      ],
+      [
+        'data' => t('Study'),
+        'field' => 'publiccte.study_name',
+      ],
+    ],
+    'base_query' => $base_query,
+  ]);
 }

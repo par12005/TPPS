@@ -11,9 +11,6 @@
  * @param array $meta
  *   Metadata for report. Associative array. Example:
  *   $meta = [
-      // Table name must include schema (if any).
- *     // For example: 'chado.phenotype'.
- *     'table' => $table,
  *     'formatter' => '',
  *     'debug_mode' => TRUE,
  *     // Optional. Default: 25.
@@ -37,7 +34,7 @@
  * @return string
  *   Returns themed table with pagers.
  */
-function tpps_report(array $meta) {
+function easy_report(array $meta) {
   extract($meta);
   if (!empty($debug_mode)) {
     $base_query->addTag('debug');
@@ -65,7 +62,6 @@ function tpps_report(array $meta) {
   }
   $output = '';
   if (!empty($page_title)) {
-    $output = '<h2>' . $page_title . '</h2>';
     drupal_set_title($page_title);
   }
   $output .= theme('pager');
@@ -99,7 +95,7 @@ function tpps_report(array $meta) {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_report_formatter(string $name, $value, array $row) {
+function easy_report_formatter(string $name, $value, array $row) {
   $formatted = check_plain($value);
   if (empty($name) || empty($value)) {
     return $formatted;

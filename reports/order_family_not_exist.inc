@@ -11,11 +11,24 @@
 function tpps_admin_order_family_not_exist_report() {
   $table = 'chado.organism';
   $table_alias = str_replace('.', '', $table);
-  $meta = [
-    'table' => $table,
+  $page_title = variable_get('tpps_report_order_family_not_exist_title');
+
+  // Ids to exclude.
+  $list = db_select('chado.organismprop', 'op')
+    ->fields('op', ['organism_id'])
+    ->condition('type_id', [9, 10], 'IN')
+    ->distinct()
+    ->execute()
+    ->fetchCol();
+  // Build base query.
+  $base_query = db_select($table, $table_alias)
+    ->fields($table_alias, ['organism_id', 'genus', 'species', 'type_id'])
+    ->condition($table_alias . '.organism_id', $list, 'NOT IN');
+
+  return '<h2>' . $page_title . '</h2>' . easy_report([
     'debug_mode' => FALSE,
     'css_path' => drupal_get_path('module', 'tpps') . TPPS_CSS_PATH,
-    'page_title' => variable_get('tpps_report_order_family_not_exist_title'),
+    'page_title' => $page_title,
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'header' => [
       [
@@ -36,18 +49,6 @@ function tpps_admin_order_family_not_exist_report() {
         'field' => $table_alias . '.type_id',
       ],
     ],
-    'base_query' => '',
-  ];
-  // Ids to exclude.
-  $list = db_select('chado.organismprop', 'op')
-    ->fields('op', ['organism_id'])
-    ->condition('type_id', [9, 10], 'IN')
-    ->distinct()
-    ->execute()
-    ->fetchCol();
-  // Build base query.
-  $meta['base_query'] = db_select($table, $table_alias)
-    ->fields($table_alias, ['organism_id', 'genus', 'species', 'type_id'])
-    ->condition($table_alias . '.organism_id', $list, 'NOT IN');
-  return tpps_report($meta);
+    'base_query' => $base_query,
+  ]);
 }
