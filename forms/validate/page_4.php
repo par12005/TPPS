@@ -1267,12 +1267,19 @@ function tpps_form_error(array $form_state, array $parents, $message) {
     $parents
   )['#title'];
 
-  form_set_error(
-    implode('][', $parents),
-    // @todo Should field name and message be separated?
-    t("@title: @message", [
-      '@title' => strtok($title, ':'),
-      '@message' => $message,
-    ])
-  );
+  if (!empty($title)) {
+    form_set_error(
+      implode('][', $parents),
+      // @todo Should field name and message be separated?
+      t("@title: @message", [
+        '@title' => strtok($title, ':'),
+        '@message' => $message,
+      ])
+    );
+  }
+  else {
+    watchdog('tpps', "Field didn't pass validation but it's missing at form."
+      . '@parents', ['@parents' => implode(' > ', $parents)], WATCHDOG_ERROR
+    );
+  }
 }
