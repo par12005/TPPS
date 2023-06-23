@@ -95,10 +95,12 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
  * one at page when Synonym selectbox changed.
  */
 function tpps_unit_update_list($form, &$form_state) {
-  // @TODO Cache list of units by phenotype id and $synonym_id because
-  // adding 2+ phenotypes increases ajax request processing time.
   if (isset($form_state['triggering_element']['#value'])) {
     $synonym_id = $form_state['triggering_element']['#value'];
+  }
+  if (empty($synonym_id)) {
+    // When '0' then show all units.
+    $synonym_id = 'all';
   }
   $parents = $form_state['triggering_element']['#parents'];
   // This is true until 'synonym_id' and 'unit' fields are siblings.
@@ -108,11 +110,7 @@ function tpps_unit_update_list($form, &$form_state) {
   // Update list of units.
   $unit_field = drupal_array_get_nested_value($form, $parents, $key_exists);
   if ($key_exists) {
-    $unit_field['#options'] = tpps_unit_get_list(
-      $synonym_id ?? 'all',
-      ['debug' => FALSE]
-    );
-    // @see https://www.drupal.org/forum/support/post-installation/2018-04-25/an-illegal-choice-has-been-detected-please-contact-the#comment-13254706
+    $unit_field['#options'] = tpps_unit_get_list($synonym_id);
     return form_process_select($unit_field);
   }
   watchdog('tpps', 'Field "unit" not found in AJAX callback.', [], WATCHDOG_ERROR);

@@ -45,7 +45,7 @@ function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
   }
   // This option must be last.
   if ($options['not_in_list_option']) {
-    $list[0] = t("I can't find synonym");
+    $list[0] = t("I can't find phenotype");
   }
   if ($options['debug']) {
     foreach ($list as $key => $value) {
