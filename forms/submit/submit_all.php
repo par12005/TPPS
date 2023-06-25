@@ -3418,6 +3418,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       $meta[$name]["{$type}_id"] = $data["{$type}"];
       if ($data["{$type}"] == 'other') {
         $meta[$name]["{$type}_id"] = $cvt_cache[$data["{$type}-other"]] ?? NULL;
+
         if (empty($meta[$name]["{$type}_id"])) {
           $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
           if ($result !== FALSE) {
@@ -3426,14 +3427,10 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
           }
 
           if (empty($meta[$name]["{$type}_id"])) {
-            $term = chado_select_record('cvterm', ['cvterm_id'], [
-              'name' => [
-                'data' => $data["{$type}-other"],
-                'op' => 'LIKE',
-              ],
-            ], [
-              'limit' => 1,
-            ]);
+            $term = chado_select_record('cvterm', ['cvterm_id'],
+              ['name' => ['data' => $data["{$type}-other"], 'op' => 'LIKE']],
+              ['limit' => 1]
+            );
             // @todo When new custom unit in Phenotype Metafile was used
             // then $term will be empty array.
             $meta[$name]["{$type}_id"] = current($term)->cvterm_id ?? NULL;
@@ -3441,12 +3438,12 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
 
           if (empty($meta[$name]["{$type}_id"])) {
             // [VS] Create new CVTerm for new (custom) unit from Metafile.
-            $meta[$name]["{$type}_id"] = chado_insert_cvterm(array(
+            $meta[$name]["{$type}_id"] = chado_insert_cvterm([
               'id' => "{$local_db->name}:{$data["{$type}-other"]}",
               'name' => $data["{$type}-other"],
               'definition' => '',
               'cv_name' => $local_cv->name,
-            ))->cvterm_id;
+            ])->cvterm_id;
             // [/VS]
             if (!empty($meta[$name]["{$type}_id"])) {
               $job->logMessage("[INFO] New Local '{$info['label']}' Term '{$data["{$type}-other"]}' installed");

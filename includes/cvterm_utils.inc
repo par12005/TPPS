@@ -245,8 +245,8 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
     }
     $result = chado_get_cvterm($identifiers, $options);
 
-    // Cater for CV types like GO: Biological Process
-    if(empty($result)) {
+    // Cater for CV types like GO: Biological Process.
+    if (empty($result)) {
       preg_match('/^([\w]*):([\s]+[\w\s]*):([\s\w]*):?([\s\w]*)?$/', $info, $matches2);
       if(count($matches2) > 0) {
         // dpm($matches2);
@@ -267,8 +267,8 @@ function tpps_load_cvterm($term, array $options = array(), $version = NULL, $ref
       }
     }
 
-    if(empty($result) && $ontology == 'local') {
-        // Added by Rish (1/5/2022)
+    if (empty($result) && $ontology == 'local') {
+        // Added by Rish (1/5/2022).
         unset($identifiers['definition']);
         $identifiers['name'] = $name;
         $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
@@ -777,27 +777,25 @@ function tpps_ols_install_term($info) {
     }
   }
 
-  if(!$cvt) {
-    // Double check original term
+  if (!$cvt) {
+    // Double check original term.
     try {
       // Since tpps_load_cvterm is used else where for require data
       // we had set this to throw Exceptions if a cvterm isn't found
-      // so this is why it is placed in a try clause
+      // so this is why it is placed in a try clause.
       $cvt = tpps_load_cvterm($term);
     }
     catch (Exception $ex) {
-
     }
   }
 
-  // Try searching for the term with the lowercase of the term
-  // Added by Rish on 02/20/2023
-  if(!$cvt) {
+  // Try searching for the term with the lowercase of the term.
+  // Added by Rish on 02/20/2023.
+  if (!$cvt) {
     try {
       $cvt = tpps_load_cvterm(strtolower($term));
     }
     catch (Exception $ex) {
-
     }
   }
 
@@ -810,7 +808,8 @@ function tpps_ols_install_term($info) {
 
     }
     $response = tpps_ols_search($term, $ontology)->response;
-    $doc_index = 0; // default value of 0 (index from OLS search for first value found)
+    // default value of 0 (index from OLS search for first value found).
+    $doc_index = 0;
     if ($response->numFound == 0) {
       return FALSE;
     }
