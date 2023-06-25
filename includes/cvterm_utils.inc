@@ -757,8 +757,6 @@ function tpps_ols_add_cvterm($term) {
  *   The resulting cvterm object, or "local", or FALSE on failure.
  */
 function tpps_ols_install_term($info) {
-  // print_r('tpps_ols_install_term:');
-  // print_r('overall_info:' . $info . "\n");
   $parts = explode(':', $info);
   $ontology = $parts[0];
   if ($ontology == 'local') {
@@ -771,22 +769,11 @@ function tpps_ols_install_term($info) {
   if (!$cv) {
     $cv = tpps_ols_add_cv($ontology);
   }
-
-
-  // print_r('term:' . $term . "\n");
-  // print_r('cv_id:' . $cv->cv_id . "\n");
-  $cvt = chado_get_cvterm(array(
-    'name' => $term,
-    'cv_id' => $cv->cv_id,
-  ));
-
+  $cvt = chado_get_cvterm(['name' => $term, 'cv_id' => $cv->cv_id]);
   if (!$cvt and !empty($alt_ontology)) {
     $cv = tpps_load_cv($alt_ontology);
     if ($cv) {
-      $cvt = chado_get_cvterm(array(
-        'name' => $term,
-        'cv_id' => $cv->cv_id,
-      ));
+      $cvt = chado_get_cvterm(['name' => $term, 'cv_id' => $cv->cv_id]);
     }
   }
 
@@ -812,7 +799,7 @@ function tpps_ols_install_term($info) {
     catch (Exception $ex) {
 
     }
-  }  
+  }
 
   if (!$cvt) {
     print_r("Searching OLS search for term: $term with ontology: $ontology\n");

@@ -3405,23 +3405,14 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
  *   The TripalJob object for the submission job.
  */
 function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(), TripalJob &$job = NULL) {
-  $cvt_cache = array();
-  $local_cv = chado_get_cv(array('name' => 'local'));
+  $cvt_cache = [];
+  $local_cv = chado_get_cv(['name' => 'local']);
   $local_db = variable_get('tpps_local_db');
-  $term_types = array(
-    'attr' => array(
-      'label' => 'Attribute',
-      'ontology' => 'pato',
-    ),
-    'unit' => array(
-      'label' => 'Unit',
-      'ontology' => 'po',
-    ),
-    'struct' => array(
-      'label' => 'Structure',
-      'ontology' => 'po',
-    ),
-  );
+  $term_types = [
+    'attr' => ['label' => 'Attribute', 'ontology' => 'pato'],
+    'unit' => ['label' => 'Unit', 'ontology' => 'po'],
+    'struct' => ['label' => 'Structure', 'ontology' => 'po'],
+  ];
   foreach ($meta as $name => $data) {
     foreach ($term_types as $type => $info) {
       $meta[$name]["{$type}_id"] = $data["{$type}"];
@@ -3435,25 +3426,28 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
           }
 
           if (empty($meta[$name]["{$type}_id"])) {
-            $term = chado_select_record('cvterm', array('cvterm_id'), array(
-              'name' => array(
+            $term = chado_select_record('cvterm', ['cvterm_id'], [
+              'name' => [
                 'data' => $data["{$type}-other"],
                 'op' => 'LIKE',
-              ),
-            ), array(
+              ],
+            ], [
               'limit' => 1,
-            ));
+            ]);
+            // @todo When new custom unit in Phenotype Metafile was used
+            // then $term will be empty array.
             $meta[$name]["{$type}_id"] = current($term)->cvterm_id ?? NULL;
           }
 
           if (empty($meta[$name]["{$type}_id"])) {
+            // [VS] Create new CVTerm for new (custom) unit from Metafile.
             $meta[$name]["{$type}_id"] = chado_insert_cvterm(array(
               'id' => "{$local_db->name}:{$data["{$type}-other"]}",
-              // 'name' => $data["{$type}-other"],
-              'name' => $data["{$type}"] . '-other',
+              'name' => $data["{$type}-other"],
               'definition' => '',
               'cv_name' => $local_cv->name,
             ))->cvterm_id;
+            // [/VS]
             if (!empty($meta[$name]["{$type}_id"])) {
               $job->logMessage("[INFO] New Local '{$info['label']}' Term '{$data["{$type}-other"]}' installed");
             }
