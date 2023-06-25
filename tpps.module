@@ -1107,6 +1107,11 @@ function tpps_main_submit($form, &$form_state) {
 
     case TPPS_PAGE_2:
       if ($form_state['triggering_element']['#value'] == 'Back') {
+        // [VS]
+        // This is not required but to have always up-to-date form fields
+        // values which could be modified on validation step.
+        $form_state['rebuild'] = TRUE;
+        // [/VS]
         $form_state['stage'] = TPPS_PAGE_1;
       }
       else {
@@ -1116,6 +1121,11 @@ function tpps_main_submit($form, &$form_state) {
 
     case TPPS_PAGE_3:
       if ($form_state['triggering_element']['#value'] == 'Back') {
+        // [VS]
+        // This is not required but to have always up-to-date form fields
+        // values which could be modified on validation step.
+        $form_state['rebuild'] = TRUE;
+        // [/VS]
         $form_state['stage'] = TPPS_PAGE_2;
       }
       else {
@@ -1125,6 +1135,11 @@ function tpps_main_submit($form, &$form_state) {
 
     case TPPS_PAGE_4:
       if ($form_state['triggering_element']['#value'] == 'Back') {
+        // [VS]
+        // This is not required but to have always up-to-date form fields
+        // values which could be modified on validation step.
+        $form_state['rebuild'] = TRUE;
+        // [/VS]
         $form_state['stage'] = TPPS_PAGE_3;
       }
       else {
@@ -1134,6 +1149,11 @@ function tpps_main_submit($form, &$form_state) {
 
     case 'summarypage':
       if ($form_state['triggering_element']['#value'] == 'Back') {
+        // [VS]
+        // On validation metadata field or file could be update so
+        // we need to update form.
+        $form_state['rebuild'] = TRUE;
+        // [/VS]
         $form_state['stage'] = TPPS_PAGE_4;
       }
       else {

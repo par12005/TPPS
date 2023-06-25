@@ -3382,7 +3382,11 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $meta[$name]['desc'] = $row[$columns['desc']];
   $meta[$name]['unit'] = 'other';
   $meta[$name]['unit-other'] = $row[$columns['unit']];
-  if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
+  if (
+    !empty($columns['struct'])
+    and isset($row[$columns['struct']])
+    and $row[$columns['struct']] != ''
+  ) {
     $meta[$name]['struct'] = 'other';
     $meta[$name]['struct-other'] = $row[$columns['struct']];
   }
@@ -3673,9 +3677,6 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
         'phenotype' => $phenotype_name,
       ),
     );
-    // print_r($phenotype_name-desc . "\n");
-    // print_r($records['phenotypeprop']["$phenotype_name-desc"]);
-
     // [VS]
     // $iso means "intensity / mass spectrometry".
     if ($iso) {
@@ -3690,10 +3691,9 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     else {
       // "Normal Check"
       $records['phenotype_cvterm']["$phenotype_name-unit"] = [
-        'cvterm_id' => $meta[strtolower($name)]['unit'],
+        'cvterm_id' => $meta[strtolower($name)]['unit_id'],
         '#fk' => ['phenotype' => $phenotype_name],
       ];
-      //print_r("Phenotype name: $name - Unit: " . $meta[strtolower($name)]['unit'] . "\n");
     }
 
     if (isset($meta[strtolower($name)]['min'])) {
@@ -3704,7 +3704,6 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
           'phenotype' => $phenotype_name,
         ),
       );
-      // print_r($records['phenotypeprop']["$phenotype_name-min"]);
     }
 
     if (isset($meta[strtolower($name)]['max'])) {

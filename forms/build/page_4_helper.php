@@ -349,8 +349,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'label' => 'Phenotype',
       'title' => "",
       'callback' => 'tpps_update_phenotype',
-      'parents' => array($id, 'phenotype'),
+      'parents' => [$id, 'phenotype'],
       'wrapper' => "phenotype-main-$id",
+      'states' => [
+        'visible' => [
+          ':input[name="' . $id . '[phenotype][check]"]' => ['checked' => FALSE],
+        ],
+      ],
       'name_suffix' => $id,
       // [VS] #8669py3z7
       'alternative_buttons' => [
@@ -422,7 +427,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]',
         ),
       ),
-    ));
+    )); // End of tpps_dynamic_list().
+
     $phenotypes = tpps_get_ajax_value($form_state, array(
       $id,
       'phenotype',
@@ -603,9 +609,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       . 'containing columns with the name, attribute, structure, '
       . 'description, and units of each of your phenotypes: *'),
       '#upload_location' => "$phenotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
-      ),
+      '#upload_validators' => ['file_validate_extensions' => ['csv tsv xlsx']],
       '#states' => array(
         'visible' => array(
           ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE),
@@ -666,11 +670,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'metadata',
       'columns',
     ), array(), 'metadata');
-    $meta_fid = tpps_get_ajax_value($form_state, array(
-      $id,
-      'phenotype',
-      'metadata',
-    ));
+    $meta_fid = tpps_get_ajax_value($form_state, [$id, 'phenotype', 'metadata']);
     $name_col = NULL;
     foreach ($columns as $key => $info) {
       if (preg_match('/^[A-Z]+$/', $key)) {

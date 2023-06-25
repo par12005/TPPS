@@ -28,7 +28,7 @@
  */
 function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat, array $options = array()) {
   $label = $options['label'] ?? $id;
-  $parents = $options['parents'] ?? array();
+  $parents = $options['parents'] ?? [];
   $number_parents = $parents;
   array_push($number_parents, $id, 'number');
   $up = $options['up'] ?? "Add $label";
@@ -52,6 +52,9 @@ function tpps_dynamic_list(array &$form, array &$form_state, $id, array $repeat,
     '#collapsible' => $options['collapsible'] ?? TRUE,
     '#prefix' => "<div id=\"$list_wrapper\">",
     '#suffix' => '</div>',
+    // [VS] Added ability to set Drupal States for fieldsets.
+    '#states' => $options['states'] ?? [],
+    // [/VS]
     'add' => array(
       '#type' => 'button',
       '#button_type' => 'button',

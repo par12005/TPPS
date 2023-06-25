@@ -27,7 +27,12 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
         unset($form_state['values']["organism-$i"]['phenotype']);
       }
       if (isset($form_state['values']["organism-$i"]['phenotype'])) {
-        tpps_validate_phenotype($form_state['values']["organism-$i"]['phenotype'], $i, $form, $form_state);
+        tpps_validate_phenotype(
+          $form_state['values']["organism-$i"]['phenotype'],
+          $i,
+          $form,
+          $form_state
+        );
       }
 
       if ($i > 1 and isset($organism['genotype-repeat-check']) and $organism['genotype-repeat-check'] == '1') {
@@ -109,119 +114,141 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
 
   if (empty($normal_check) and empty($iso_check)) {
-    form_set_error("$id][phenotype][normal-check", t("Please choose at least one category of phenotypes to upload"));
+    form_set_error("$id][phenotype][normal-check",
+      t("Please choose at least one category of phenotypes to upload")
+    );
   }
 
   if ($normal_check) {
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
-    $phenotype_check = $phenotype['check'];
+    $is_metadata_file = (bool) $phenotype['check'];
+    // File Id of metadata file.
     $phenotype_meta = $phenotype['metadata'];
     $phenotype_file = $phenotype['file'];
 
-    if ($phenotype_check == '1' and empty($phenotype_meta)) {
-      form_set_error("$id][phenotype][metadata", t("Phenotype Metadata File: field is required."));
-    }
-    if ($phenotype_check == '1' and !empty($phenotype_meta)) {
-      $required_groups = array(
-        'Phenotype Id' => array(
-          'id' => [1],
-        ),
-        'Attribute' => array(
-          'attr' => [2],
-        ),
-        'Description' => array(
-          'desc' => [3],
-        ),
-        'Unit' => array(
-          'unit' => [4],
-        ),
-        'Structure' => array(
-          'structure' => [5],
-        ),
-      );
-
-      $file_element = $form[$id]['phenotype']['metadata'];
-      $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
-      if (!form_get_errors()) {
-        // Get phenotype name column.
-        $phenotype_name_col = $groups['Phenotype Id']['1'];
-
-        // Preserve file if it is valid.
-        tpps_preserve_valid_file($form_state, $form_state['values'][$id]['phenotype']['metadata'], $org_num, "Phenotype_Metadata");
+    // Metafile was checked.
+    if ($is_metadata_file) {
+      // Clear manually added metadata to show correct data at edit page.
+      if (!empty($phenotype['phenotypes-meta']['number'])) {
+        for ($i = 1; $i <= $phenotype_number; $i++) {
+          unset($phenotype['phenotypes-meta'][$i]);
+        }
+        $phenotype['phenotypes-meta']['number'] = 0;
+      }
+      if (empty($phenotype['metadata'])) {
+        // $phenotype['metadata'] holds File Id of Phenotype Metadata file.
+        //tpps_form_error_required($form_state, [$id, 'phenotype', 'metadata']);
+        form_set_error("$id][phenotype][metadata",
+          t("Phenotype Metadata File: field is required.")
+        );
+      }
+      else {
+        // Metadata file was used.
+        $required_groups = [
+          'Phenotype Id' => ['id' => [1]],
+          'Attribute' => ['attr' => [2]],
+          'Description' => ['desc' => [3]],
+          'Unit' => ['unit' => [4]],
+          'Structure' => ['structure' => [5]],
+        ];
+        $file_element = $form[$id]['phenotype']['metadata'];
+        $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
+        if (!form_get_errors()) {
+          // Get phenotype name column.
+          $phenotype_name_col = $groups['Phenotype Id']['1'];
+          // Preserve file if it is valid.
+          tpps_preserve_valid_file(
+            $form_state,
+            $form_state['values'][$id]['phenotype']['metadata'],
+            $org_num,
+            "Phenotype_Metadata"
+          );
+        }
       }
     }
+    else {
+      // Metafile was NOT checked. Manually added metadata.
+      // $phenotype['metadata'] holds Phenotype Metadata File Id.
+      if (!empty($phenotype['metadata'])) {
+        // Remove already uploaded file.
+        $file = file_load($phenotype['metadata']);
+        file_delete($file);
+        // Clear metadatafile field.
+        unset($phenotype['metadata']);
+      }
 
-    for ($i = 1; $i <= $phenotype_number; $i++) {
-      $current_phenotype = &$phenotype['phenotypes-meta']["$i"];
-      // [VS] Synonym form.
-      if (!empty($current_phenotype['synonym_id'])) {
-        $synonym_name = $current_phenotype['synonym_name'];
-        $synonym_description = $current_phenotype['synonym_description'];
-        if ($synonym_name == '') {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][synonym_name",
+      for ($i = 1; $i <= $phenotype_number; $i++) {
+        $current_phenotype = &$phenotype['phenotypes-meta']["$i"];
+        // [VS] Synonym form.
+        if (!empty($current_phenotype['synonym_id'])) {
+          $synonym_name = $current_phenotype['synonym_name'];
+          $synonym_description = $current_phenotype['synonym_description'];
+          if ($synonym_name == '') {
+            form_set_error("$id][phenotype][phenotypes-meta][$i][synonym_name",
+              "Phenotype $i Name: field is required.");
+          }
+          if ($synonym_description == '') {
+            form_set_error("$id][phenotype][phenotypes-meta][$i][synonym_description",
+              "Phenotype $i Description: field is required.");
+          }
+          if (!empty($current_phenotype['synonym_id'])) {
+            // Restore only if there is Synonym Id.
+            tpps_synonym_restore_values($current_phenotype);
+          }
+        }
+        // [/VS]
+        // Main form.
+        $name = $current_phenotype['name'];
+        $description = $current_phenotype['description'];
+        if ($name == '') {
+          form_set_error("$id][phenotype][phenotypes-meta][$i][name",
             "Phenotype $i Name: field is required.");
         }
-        if ($synonym_description == '') {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][synonym_description",
+        if ($description == '') {
+          form_set_error("$id][phenotype][phenotypes-meta][$i][description",
             "Phenotype $i Description: field is required.");
         }
-        if (!empty($current_phenotype['synonym_id'])) {
-          // Restore only if there is Synonym Id.
-          tpps_synonym_restore_values($current_phenotype);
+        if (!$current_phenotype['attribute']) {
+          form_set_error("$id][phenotype][phenotypes-meta][$i][attribute",
+            "Phenotype $i Attribute: field is required.");
         }
-      }
-      // [/VS]
-      // Main form.
-      $name = $current_phenotype['name'];
-      $description = $current_phenotype['description'];
-      if ($name == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][name",
-          "Phenotype $i Name: field is required.");
-      }
-      if ($description == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][description",
-          "Phenotype $i Description: field is required.");
-      }
-      if (!$current_phenotype['attribute']) {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][attribute",
-          "Phenotype $i Attribute: field is required.");
-      }
-      $condition = (
-        $current_phenotype['attribute'] == 'other'
-        && $current_phenotype['attr-other'] == ''
-      );
-      if ($condition) {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][attr-other",
-          "Phenotype $i Custom Attribute: field is required.");
-      }
-      // [VS]
-      $unit = $current_phenotype['unit'];
-      if ($unit == '') {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][unit",
-          "Phenotype $i Unit: field is required.");
-      }
-      elseif ($unit == 'other') {
-        if ($current_phenotype['unit-other'] == '') {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][unit-other",
-            "Phenotype $i Custom Unit: field is required.");
+        $condition = (
+          $current_phenotype['attribute'] == 'other'
+          && $current_phenotype['attr-other'] == ''
+        );
+        if ($condition) {
+          form_set_error("$id][phenotype][phenotypes-meta][$i][attr-other",
+            "Phenotype $i Custom Attribute: field is required.");
         }
-        else {
-          // Create a record in 'Unit Warning' table for Custom Unit.
-          db_merge('tpps_phenotype_unit_warning')
-            ->key(['study_name' => $form_state['accession']])
-            ->fields(['study_name' => $form_state['accession']])
-            ->execute();
+        // [VS]
+        $unit = $current_phenotype['unit'];
+        if ($unit == '') {
+          form_set_error("$id][phenotype][phenotypes-meta][$i][unit",
+            "Phenotype $i Unit: field is required.");
         }
-      }
-      // [/VS]
+        elseif ($unit == 'other') {
+          if ($current_phenotype['unit-other'] == '') {
+            form_set_error("$id][phenotype][phenotypes-meta][$i][unit-other",
+              "Phenotype $i Custom Unit: field is required.");
+          }
+          else {
+            // Create a record in 'Unit Warning' table for Custom Unit.
+            db_merge('tpps_phenotype_unit_warning')
+              ->key(['study_name' => $form_state['accession']])
+              ->fields(['study_name' => $form_state['accession']])
+              ->execute();
+          }
+        }
+        // [/VS]
 
-      $condition = (
-        $current_phenotype['structure'] == 'other'
-        && $current_phenotype['struct-other'] == ''
-      );
-      if ($condition) {
-        form_set_error("$id][phenotype][phenotypes-meta][$i][struct-other",
-          "Phenotype $i Custom Structure: field is required.");
+        $condition = (
+          $current_phenotype['structure'] == 'other'
+          && $current_phenotype['struct-other'] == ''
+        );
+        if ($condition) {
+          form_set_error("$id][phenotype][phenotypes-meta][$i][struct-other",
+            "Phenotype $i Custom Structure: field is required.");
+        }
       }
     }
 
@@ -238,9 +265,11 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     }
 
     if (empty($phenotype_file)) {
-      form_set_error("$id][phenotype][file", t("Phenotypes: field is required."));
+      form_set_error("$id][phenotype][file",
+        t("Phenotype File: field is required.")
+      );
     }
-    if (!empty($phenotype_file)) {
+    else {
       $required_groups = array(
         'Tree Identifier' => array(
           'id' => array(1),
@@ -321,9 +350,13 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     }
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Iso/Mass Spectrometry.
   if ($iso_check) {
     if (empty($phenotype['iso'])) {
-      form_set_error("$id][phenotype][iso", t("Phenotype Isotope/Mass Spectrometry File: field is required."));
+      form_set_error("$id][phenotype][iso",
+        t("Phenotype Isotope/Mass Spectrometry File: field is required.")
+      );
     }
 
     if (!form_get_errors()) {
@@ -341,14 +374,15 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     }
 
     if (!form_get_errors()) {
-      $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-      $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
-      $id_col_accession_name = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+      $species_index = empty($thirdpage['tree-accession']['check'])
+        ? 'species-1' : "species-$org_num";
+      $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
+      $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
-      $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
+      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
       $missing_trees = tpps_compare_files($phenotype['iso'], $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
-      if ($missing_trees !== array()) {
+      if ($missing_trees !== []) {
         $tree_id_str = implode(', ', $missing_trees);
         form_set_error("$id][phenotype][iso", "Mass spectrometry/Isotope file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
       }
@@ -1262,19 +1296,13 @@ function tpps_form_error_required(array $form_state, array $parents) {
  *   Error message text.
  */
 function tpps_form_error(array $form_state, array $parents, $message) {
-  $title = drupal_array_get_nested_value(
-    $form_state['complete form'],
-    $parents
-  )['#title'];
-
-  if (!empty($title)) {
+  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
+  if (!empty($field['#title'])) {
+    $title = strtok($field['#title'], ':');
     form_set_error(
       implode('][', $parents),
       // @todo Should field name and message be separated?
-      t("@title: @message", [
-        '@title' => strtok($title, ':'),
-        '@message' => $message,
-      ])
+      t('@title: @message', ['@title' => $title, '@message' => $message])
     );
   }
   else {
