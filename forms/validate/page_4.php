@@ -113,6 +113,8 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
   $id = "organism-$org_num";
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
 
+  // @todo Show error if column 'unit' in metafile has empty values.
+
   if (empty($normal_check) and empty($iso_check)) {
     form_set_error("$id][phenotype][normal-check",
       t("Please choose at least one category of phenotypes to upload")
