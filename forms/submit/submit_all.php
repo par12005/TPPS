@@ -3433,8 +3433,6 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
               ['name' => ['data' => $data["{$type}-other"], 'op' => 'LIKE']],
               ['limit' => 1]
             );
-            // @todo When new custom unit in Phenotype Metafile was used
-            // then $term will be empty array.
             $meta[$name]["{$type}_id"] = current($term)->cvterm_id ?? NULL;
           }
 
@@ -3442,17 +3440,11 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
           if (empty($meta[$name]["{$type}_id"])) {
             if (empty($data["{$type}-other"])) {
               // Usually it will be 'other-other'.
-              $cvterm_name = $data[$type] . '-other';
-              // @todo What to do if unit in metadata is empty?
-              //echo "\n\n===================\n\n";
-              //print_r($meta[$name]);
-              //echo "\n\n===================\n\n";
+              // @todo Check empty units in metafile on validation stage.
+              $cvterm_name = 'no unit';
             }
             else {
               $cvterm_name = $data["{$type}-other"];
-              //echo "\n\n===================\n\n";
-              //print_r($meta[$name]["{$type}_id"]);
-              //echo "\n\n===================\n\n";
             }
             $meta[$name]["{$type}_id"] = chado_insert_cvterm([
               'id' => "{$local_db->name}:{$data["{$type}-other"]}",
@@ -3461,7 +3453,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
               'cv_name' => $local_cv->name,
             ])->cvterm_id;
             if (!empty($meta[$name]["{$type}_id"])) {
-              if ($cvterm_name == $data[$type] . '-other') {
+              if ($cvterm_name == 'no unit') {
                 // 'other-other'.
                 $job->logMessage("[INFO] Used Local '{$info['label']}' Term '{$cvterm_name}'.");
               }
