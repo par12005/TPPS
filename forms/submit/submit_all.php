@@ -1077,8 +1077,8 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
           'desc' => $groups['Description']['3'],
           'unit' => $groups['Unit']['4'],
           'struct' => !empty($struct) ? $struct : NULL,
-          //'min' => !empty($min) ? $min : NULL,
-          //'max' => !empty($max) ? $max : NULL,
+          'min' => !empty($min) ? $min : NULL,
+          'max' => !empty($max) ? $max : NULL,
         );
 
         $meta_options = array(

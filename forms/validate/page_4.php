@@ -113,11 +113,12 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
   $id = "organism-$org_num";
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
 
-  // @todo Show error if column 'unit' in metafile has empty values.
+  // Uncomment to block form submission and test validation.
+  //form_set_error("$id][phenotype][normal-check", 'Debug');
 
   if (empty($normal_check) and empty($iso_check)) {
     form_set_error("$id][phenotype][normal-check",
-      t("Please choose at least one category of phenotypes to upload")
+      t('Please choose at least one category of phenotypes to upload')
     );
   }
 
@@ -167,6 +168,18 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
           );
         }
       }
+      // Do not allow empty units in metadata file.
+      $groups = $phenotype['metadata-groups'];
+      $columns = [
+        'name' => $groups['Phenotype Id']['1'],
+        'attr' => $groups['Attribute']['2'],
+        'desc' => $groups['Description']['3'],
+        'unit' => $groups['Unit']['4'],
+      ];
+      tpps_file_iterator($phenotype_meta, 'tpps_unit_validate_metafile', [
+        'meta_columns' => $columns,
+        'id' => $id,
+      ]);
     }
     else {
       // Metafile was NOT checked. Manually added metadata.
@@ -1310,6 +1323,23 @@ function tpps_form_error(array $form_state, array $parents, $message) {
   else {
     watchdog('tpps', "Field didn't pass validation but it's missing at form."
       . '@parents', ['@parents' => implode(' > ', $parents)], WATCHDOG_ERROR
+    );
+  }
+}
+
+/**
+ * Check if 'unit' column has empty values.
+ *
+ * @param mixed $row
+ *   The item yielded by the TPPS file generator.
+ * @param array $options
+ *   Additional options set when calling tpps_file_iterator().
+ */
+function tpps_unit_validate_metafile($row, array &$options = array()) {
+  $columns = $options['meta_columns'];
+  if (empty($row[$columns['unit']])) {
+    form_set_error("${options['id']}][phenotype][metadata",
+      t('Phenotype Metadata File: Empty unit not allowed.')
     );
   }
 }
