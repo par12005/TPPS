@@ -176,10 +176,11 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         'desc' => $groups['Description']['3'],
         'unit' => $groups['Unit']['4'],
       ];
-      tpps_file_iterator($phenotype_meta, 'tpps_unit_validate_metafile', [
+      $meta_options = [
         'meta_columns' => $columns,
         'id' => $id,
-      ]);
+      ];
+      tpps_file_iterator($phenotype_meta, 'tpps_unit_validate_metafile', $meta_options);
     }
     else {
       // Metafile was NOT checked. Manually added metadata.
@@ -1340,6 +1341,7 @@ function tpps_unit_validate_metafile($row, array &$options = array()) {
   if (empty($row[$columns['unit']])) {
     form_set_error("${options['id']}][phenotype][metadata",
       t('Phenotype Metadata File: Empty unit not allowed.')
+      . '<br />Row: ' . implode(', ', $row)
     );
   }
 }
