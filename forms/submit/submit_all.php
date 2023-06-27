@@ -3420,35 +3420,49 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
         $meta[$name]["{$type}_id"] = $cvt_cache[$data["{$type}-other"]] ?? NULL;
 
         if (empty($meta[$name]["{$type}_id"])) {
-          $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
-          if ($result !== FALSE) {
-            $meta[$name]["{$type}_id"] = $result->cvterm_id;
-            $job->logMessage("[INFO] New OLS Term '{$info['ontology']}:{$data["{$type}-other"]}' installed");
+          if (!empty($data["{$type}-other"])) {
+            $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
+            if ($result !== FALSE) {
+              $meta[$name]["{$type}_id"] = $result->cvterm_id;
+              $job->logMessage("[INFO] New OLS Term '{$info['ontology']}:{$data["{$type}-other"]}' installed");
+            }
           }
 
-          if (empty($meta[$name]["{$type}_id"])) {
+          if (empty($meta[$name]["{$type}_id"]) && !empty($data["{$type}-other"])) {
             $term = chado_select_record('cvterm', ['cvterm_id'],
               ['name' => ['data' => $data["{$type}-other"], 'op' => 'LIKE']],
               ['limit' => 1]
             );
-            // @todo When new custom unit in Phenotype Metafile was used
-            // then $term will be empty array.
             $meta[$name]["{$type}_id"] = current($term)->cvterm_id ?? NULL;
           }
 
+          // [VS] Create new CVTerm for new (custom) unit from Metafile.
           if (empty($meta[$name]["{$type}_id"])) {
-            // [VS] Create new CVTerm for new (custom) unit from Metafile.
+            if (empty($data["{$type}-other"])) {
+              // Usually it will be 'other-other'.
+              // @todo Check empty units in metafile on validation stage.
+              $cvterm_name = 'no unit';
+            }
+            else {
+              $cvterm_name = $data["{$type}-other"];
+            }
             $meta[$name]["{$type}_id"] = chado_insert_cvterm([
               'id' => "{$local_db->name}:{$data["{$type}-other"]}",
-              'name' => $data["{$type}-other"],
+              'name' => $cvterm_name,
               'definition' => '',
               'cv_name' => $local_cv->name,
             ])->cvterm_id;
-            // [/VS]
             if (!empty($meta[$name]["{$type}_id"])) {
-              $job->logMessage("[INFO] New Local '{$info['label']}' Term '{$data["{$type}-other"]}' installed");
+              if ($cvterm_name == 'no unit') {
+                // 'other-other'.
+                $job->logMessage("[INFO] Used Local '{$info['label']}' Term '{$cvterm_name}'.");
+              }
+              else {
+                $job->logMessage("[INFO] New Local '{$info['label']}' Term '{$cvterm_name}' installed");
+              }
             }
           }
+          // [/VS]
           $cvt_cache[$data["{$type}-other"]] = $meta[$name]["{$type}_id"];
         }
       }

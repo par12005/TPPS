@@ -8,7 +8,7 @@
 /**
  * Menu callback. Shows simple report of 'tpps_phenotype_unit_warning' table.
  */
-function tpps_admin_unit_warning_report(array $filter = []) {
+function tpps_admin_unit_warning_report() {
   $table = 'public.tpps_phenotype_unit_warning';
   $table_alias = str_replace('.', '', $table);
   $page_title = variable_set(
@@ -33,7 +33,7 @@ function tpps_admin_unit_warning_report(array $filter = []) {
       'study_name',
       // 2nd column is required to emulate 'Actions' column.
       // See formatter-function.
-      'study_name'
+      'study_name',
     ]);
 
   return '<h2>' . $page_title . '</h2>' . easy_report([

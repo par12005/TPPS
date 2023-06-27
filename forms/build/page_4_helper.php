@@ -36,6 +36,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       . 'to provide us with metadata about your phenotypes.'),
     '#collapsible' => TRUE,
   ];
+  // 'Normal Check' must be enabled by default to have buttons
+  // to add phenotypes shown.
+  $normal_check = tpps_get_ajax_value(
+    $form_state, [$id, 'phenotype', 'normal-check'], TRUE
+  );
 
   $form[$id]['phenotype']['normal-check'] = [
     '#type' => 'checkbox',
@@ -45,10 +50,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
     ],
-    // @todo Must be checked by default.
-    '#default_value' => tpps_get_ajax_value(
-      $form_state, [$id, 'phenotype', 'normal-check'], TRUE
-    ),
+    '#default_value' => $normal_check,
   ];
 
   $form[$id]['phenotype']['iso-check'] = [
@@ -60,13 +62,9 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     ],
   ];
 
-  $normal_check = tpps_get_ajax_value(
-    $form_state, [$id, 'phenotype', 'normal-check'], TRUE
-  );
   $iso_check = tpps_get_ajax_value(
     $form_state, [$id, 'phenotype', 'iso-check'], NULL
   );
-
   if (!empty($iso_check)) {
     $form[$id]['phenotype']['iso'] = array(
       '#type' => 'managed_file',

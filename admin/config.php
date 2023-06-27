@@ -211,7 +211,7 @@ function tpps_admin_settings(array $form, array &$form_state) {
   // Custom Reports.
   $form['custom_reports'] = [
     '#type' => 'fieldset',
-    '#title' => 'Custom Reports',
+    '#title' => t('Custom Reports'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   ];
