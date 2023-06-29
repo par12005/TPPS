@@ -1225,17 +1225,18 @@ function tpps_form_error_required(array $form_state, array $parents) {
  *   Error message text.
  */
 function tpps_form_error(array $form_state, array $parents, $message) {
-  $title = drupal_array_get_nested_value(
-    $form_state['complete form'],
-    $parents
-  )['#title'];
-
-  form_set_error(
-    implode('][', $parents),
-    // @todo Should field name and message be separated?
-    t("@title: @message", [
-      '@title' => strtok($title, ':'),
-      '@message' => $message,
-    ])
-  );
+  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
+  if (!empty($field['#title'])) {
+    $title = strtok($field['#title'], ':');
+    form_set_error(
+      implode('][', $parents),
+      // @todo Should field name and message be separated?
+      t('@title: @message', ['@title' => $title, '@message' => $message])
+    );
+  }
+  else {
+    watchdog('tpps', "Field didn't pass validation but it's missing at form."
+      . '@parents', ['@parents' => implode(' > ', $parents)], WATCHDOG_ERROR
+    );
+  }
 }

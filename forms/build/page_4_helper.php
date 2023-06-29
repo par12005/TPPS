@@ -951,7 +951,6 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#type' => 'select',
       '#title' => t('Genotyping Type: *'),
       '#options' => [
-        0 => '- Select -',
         'Genotyping Assay' => t('Genotyping Assay'),
         'Genotyping' => t('Genotyping'),
       ],
@@ -1406,16 +1405,18 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'extensions' => ['gz tar zip'],
     ]);
 
-    if (
-      isset($form_state['tpps_type'])
-      && $form_state['tpps_type'] == 'tppsc'
-    ) {
+    // @todo This field must be shown for admins/curators only but condition
+    // didn't work correctly and was commented out.
+    //if (
+    //  isset($form_state['tpps_type'])
+    //  && $form_state['tpps_type'] == 'tppsc'
+    //) {
       tpps_add_dropdown_file_selector($fields, [
         'form_state' => $form_state,
         'file_field_name' => $file_field_name,
         'id' => $id,
       ]);
-    }
+    //}
   }
   else {
     tpps_build_disabled_file_field($fields, $file_field_name);
@@ -2002,18 +2003,18 @@ function tpps_build_file_field(array &$fields, array $meta) {
   $debug_mode = FALSE;
   $fields['files'][$file_field_name] = [
     '#type' => 'managed_file',
-    '#title' => $title . (!empty($optional) ?  ':' : ': *'),
+    '#title' => $title . (!empty($optional) ? ':' : ': *'),
     '#upload_location' => $upload_location,
     '#upload_validators' => [
-      'file_validate_extensions' => $extensions ? $extensions : ['csv tsv xlsx'],
+      'file_validate_extensions' => !empty($extensions) ? $extensions : ['csv tsv xlsx'],
     ],
     '#description' => ($description ?? '')
     . ($debug_mode ? '<br/>Field name: <strong>' . $file_field_name . '</strong>' : ''),
     '#tree' => TRUE,
-    '#states' => $states ? $states : '',
+    '#states' => !empty($states) ? $states : '',
   ];
   // Add extra text field for empty field value. Default is FALSE.
-  if ($empty_field_value) {
+  if (!empty($empty_field_value)) {
     $values = $form_state['saved_values'][TPPS_PAGE_4];
     // Note:
     // Element 'empty' is a custom solution to add textfield.
@@ -2025,7 +2026,7 @@ function tpps_build_file_field(array &$fields, array $meta) {
     ];
   }
 
-  if ($extra_elements) {
+  if (!empty($extra_elements)) {
     $fields['files'][$file_field_name] = array_merge(
       $fields['files'][$file_field_name], $extra_elements
     );
