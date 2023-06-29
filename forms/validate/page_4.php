@@ -836,7 +836,10 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       );
     }
 
-    if (!form_get_errors()) {
+    // #86782z4xu Skip this check if we reuse files from existing study.
+    // @todo Minor. Maybe better to get new list of trees and use it in
+    // all other checks to be sure we have the same list in other files.
+    if (!form_get_errors() && empty($thirdpage['existing_trees'])) {
       $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
       $missing_trees = tpps_compare_files(
         $snps_assay,
@@ -846,9 +849,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         FALSE,
         $acc_no_header
       );
-      // @todo Minor. Maybe better to get new list of trees and use it in
-      // all other checks to be sure we have the same list in other files.
-      if ($missing_trees !== [] && empty($thirdpage['existing_trees'])) {
+      if ($missing_trees !== []) {
         form_set_error("$id][genotype][files][snps-assay",
           t(
             "SNPs Assay file: We detected Plant Identifiers that were "
@@ -872,27 +873,14 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         );
       }
       elseif (!empty($file_type['SNPs Associations'])) {
-        $required_groups = array(
-          'SNP ID' => array(
-            'id' => array(1),
-          ),
-          'Scaffold' => array(
-            'scaffold' => array(2),
-          ),
-          'Position' => array(
-            'position' => array(3),
-          ),
-          'Allele' => array(
-            'allele' => array(4),
-          ),
-          'Associated Trait' => array(
-            'trait' => array(5),
-          ),
-          'Confidence Value' => array(
-            'confidence' => array(6),
-          ),
-        );
-
+        $required_groups = [
+          'SNP ID' => ['id' => [1]],
+          'Scaffold' => ['scaffold' => [2]],
+          'Position' => ['position' => [3]],
+          'Allele' => ['allele' => [4]],
+          'Associated Trait' => ['trait' => [5]],
+          'Confidence Value' => ['confidence' => [6]],
+        ];
         $file_element = $form[$id]['genotype']['files']['snps-association'];
         $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
 
