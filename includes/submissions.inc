@@ -798,6 +798,52 @@ function tpps_submission_clear_db_extra($accession) {
   }
 }
 
+function tpps_submission_full_clear_db($project_id) {
+  // Create index in genotype_call if they don't exist
+  echo "Creating genotype_call indexes if they do not exist...\n";
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_genotype_id_idx ON chado.genotype_call USING btree (genotype_id)",[]);
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_project_id_idx ON chado.genotype_call USING btree (project_id)",[]);
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_stock_id_idx ON chado.genotype_call USING btree (stock_id)",[]);
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_marker_id_idx ON chado.genotype_call USING btree (marker_id)",[]);
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_variant_id_idx ON chado.genotype_call USING btree (variant_id)",[]);
+  
+  echo "Delete the temporary feature_ids_$project_id table...\n";
+  chado_query("DROP TABLE IF EXISTS chado.feature_ids_" . $project_id . "", []);
+
+  echo "Create table to get features for deletion...\n";
+  chado_query("create table chado.feature_ids_" . $project_id . " as 
+    ((select variant_id  as feature_id from chado.genotype_call where project_id = :project_id_1) 
+    union 
+    (select marker_id  as feature_id from chado.genotype_call where project_id = :project_id_2));", [
+      ':project_id_1' => $project_id,
+      ':project_id_2' => $project_id
+  ]);
+
+
+  echo "Delete genotype_calls...\n";
+  chado_query("delete from chado.genotype_call where variant_id in 
+    (select feature_id from chado.feature_ids_" . $project_id . ") 
+    or marker_id in (select feature_id from chado.feature_ids_" . $project_id . ");", [
+  ]);
+
+  echo "DELETE featurelocs...\n";
+  chado_query("delete from chado.featureloc where feature_id in 
+    (select feature_id from chado.feature_ids_" . $project_id . ");", []);
+
+  echo "DELETE feature_relationship records...\n";
+  chado_query("delete from chado.feature_relationship where subject_id in 
+  (select feature_id from chado.feature_ids_" . $project_id . ") or object_id in 
+  (select feature_id from chado.feature_ids_" . $project_id .  ");", []);
+
+  echo "DELETE feature records...\n";
+  chado_query("delete from chado.feature where feature_id in 
+  (select feature_id from chado.feature_ids_" . $project_id . ");", []);
+
+  echo "Delete the temporary feature_ids_$project_id table...\n";
+  chado_query("DROP TABLE IF EXISTS chado.feature_ids_" . $project_id, []);
+
+}
+
 /**
  * Clears submission data from the database.
  *
@@ -811,7 +857,7 @@ function tpps_submission_clear_db_extra($accession) {
  * @return bool
  *   Returns TRUE if submission successfully cleared.
  */
-function tpps_submission_clear_db($accession) {
+function tpps_submission_clear_db($accession, $options = []) {
   $state = tpps_load_submission($accession);
   // print_r(array_keys($state['saved_values'][1]['organism']));
 
@@ -826,8 +872,43 @@ function tpps_submission_clear_db($accession) {
 
   $time_start = time();
 
+  // This will perform a full delete of feature ids as well (used to delete features
+  // from TGDR665 6/29/2023)
+  // tpps_submission_full_clear_db($project_id);
+
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
   echo $stocks_sql . "\n";
+
+
+  // if ($options['full_delete'] == true) {
+    // echo "DELETE feature values for project...\n";
+    // try {
+    //   chado_query("delete from chado.feature where feature_id in 
+    //   ((select variant_id  as feature_id from chado.genotype_call where project_id = :project_id_1) 
+    //   union (select marker_id  as feature_id from chado.genotype_call where project_id = :project_id_2));", [
+    //     ':project_id_1' => $project_id,
+    //     ':project_id_2' => $project_id
+    //   ]);
+    // }
+    // catch (Exeption $ex) {
+    //   echo "Error trying to delete features\n";
+    // }
+    // echo "DELETE featurelocs from project...\n";
+    // try {
+    //   chado_query("delete from chado.featureloc where feature_id in 
+    //   ((select variant_id  as feature_id from chado.genotype_call where project_id = :project_id_1) 
+    //   union (select marker_id  as feature_id from chado.genotype_call where project_id = :project_id_2));", [
+    //     ':project_id_1' => $project_id,
+    //     ':project_id_2' => $project_id
+    //   ]);
+    // }
+    // catch (Excepion $ex) {
+    //   echo "Error trying to delete featurelocs\n";
+    // }
+
+  // } // end of options['full_delete']
+
+
   chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
   echo "DELETE chado.project_organism values for project...\n";
   chado_query("DELETE FROM chado.project_organism WHERE project_id = $project_id");
@@ -843,8 +924,10 @@ function tpps_submission_clear_db($accession) {
   chado_query("DELETE FROM chado.phenotype_to_synonym WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
   echo "DELETE chado.phenotype values for project...\n";
   chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
-  echo "DELETE chado.genotype_call values for project...\n";
-  chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");
+  
+  // This is done above with Emily's new SQL statements 6/27/2023
+  // echo "DELETE chado.genotype_call values for project...\n";
+  // chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");
   echo "DELETE chado.stock_genotype values for project...\n";
   chado_query("DELETE FROM chado.stock_genotype WHERE stock_id IN ($stocks_sql)");
   echo "DELETE chado.stock_phenotype values for project...\n";
