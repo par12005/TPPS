@@ -171,17 +171,30 @@ function tpps_unit_get_synonym($unit_id) {
   return $query->execute()->fetchField() ?? FALSE;
 }
 
-// The same function defined in submit_all.php but it dumps to terminal.
-if (!function_exists('fd')) {
-
-  /**
-   * Fast dump variable.
-   *
-   * @param mixed $var
-   *   Varible to be dumped to browser.
-   */
-  function fd($var) {
-    dpm(print_r($var, 1));
+/**
+ * Fast dump of variable's value.
+ *
+ * For non-arrays and non-objects will be added type of variable.
+ * To dump variable name use arrays:
+ *   fd(['var_name' => $value]);
+ * To dump more then one variable use arrays:
+ *   fd(['var_name' => $value]);
+ *   fd([$var1, $var2, $var3]);
+ *
+ * @param mixed $variable
+ *   Variable's value to dump.
+ */
+function fd($variable) {
+  if (php_sapi_name() === 'cli') {
+    echo "\n| -------------------------------------------------------------\n";
+    if (!is_array($variable) && !is_object($variable)) {
+      echo '(' . gettype($variable) . ') ';
+    }
+    print_r($variable);
+    echo "\n------------------------------------------------------------- |\n";
   }
+  else {
+    dpm(print_r($var, 1));
 
+  }
 }

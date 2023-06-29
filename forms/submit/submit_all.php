@@ -5126,25 +5126,3 @@ function tpps_log($message, $variables = array(), $severity = TRIPAL_INFO) {
   tpps_job_logger_write($message, $variables);
   $tpps_job->logMessage($message, $variables, $severity);
 }
-
-/**
- * Fast Dump of variable's value.
- *
- * For non-arrays and non-objects will be added type of variable.
- * To dump variable name use arrays:
- *   fd(['var_name' => $value]);
- * To dump more then one variable use arrays:
- *   fd(['var_name' => $value]);
- *   fd([$var1, $var2, $var3]);
- *
- * @param mixed $variable
- *   Variable's value to dump.
- */
-function fd($variable) {
-  echo "\n| ---------------------------------------------------------------\n";
-  if (!is_array($variable) && !is_object($variable)) {
-    echo '(' . gettype($variable) . ') ';
-  }
-  print_r($variable);
-  echo "\n--------------------------------------------------------------- |\n";
-}
