@@ -119,6 +119,9 @@ function tpps_synonym_restore_values(array &$current_phenotype) {
  * @param array $phenotypes_meta
  *   Associative array where key is a phenotype name in lowercase and value
  *   is an associative array with phenotype metadata.
+ *   If there will be no 'synonym_id' key or it has empty value we will
+ *   try to get Synonym Id using Unit Id but it's not exact match because
+ *   Unit could belong to many Synonyms. We will use 1st Synonym from the list.
  * @param array $id_list
  *   List of Phenotype Ids received after saving into database.
  *   Item format: $phenotype_name => $phenotype_id.
@@ -127,9 +130,14 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
   tpps_log('[INFO] Phenotype Synonyms processing started...');
   // Create a small array to make search of phenotype name easier.
   foreach ($phenotypes_meta as $item) {
-    // $name is Phenotype name in lowser case. For example: 'leaf a'.
-    // Phenotype uniquename is using the same name but not lowercased.
-    $synonym_list[$item['synonym_id']] = $item['name'];
+    // Note: It's possible that synonym not exists when it was automatically
+    // detected by unit from Metadata File.
+    if (!empty($item['synonym_id'])) {
+      // $item['name'] is Phenotype name in lowser case. For example: 'leaf a'.
+      // Phenotype uniquename is using the same name but not lowercased so
+      // it couldn't be used.
+      $synonym_list[$item['synonym_id']] = $item['name'];
+    }
   }
   if (empty($synonym_list) || empty($id_list)) {
     return;

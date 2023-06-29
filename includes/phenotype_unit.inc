@@ -145,3 +145,27 @@ function tpps_unit_get_name($unit_id = '') {
   }
   return $unit_name;
 }
+
+/**
+ * Gets Synonym's Id by Unit Id.
+ *
+ * Notes:
+ *   1. We assume that unit already was added by admin. This is required
+ *      to pass validation and approve study.
+ *   2. Unit could belong to many Synonyms but we use 1st one.
+ *
+ * @param int $unit_id
+ *   Phenotype Unit Id.
+ *
+ * @return int
+ *   Returns Phenotype Synonym Id.
+ *   Returns FALSE if synonym wasn't found.
+ */
+function tpps_unit_get_synonym($unit_id) {
+  $query = db_select('chado.phenotype_units', 'cpu')
+    ->condition('cpu.unit_cvterm_id', $unit_id)
+    ->range(0, 1);
+  $query->leftJoin('chado.phenotype_synonyms', 'cps', 'cps.unit_group = cpu.unit_group');
+  $query->fields('cps', ['phenotype_synonyms_id']);
+  return $query->execute()->fetchField() ?? FALSE;
+}

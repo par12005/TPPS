@@ -1007,7 +1007,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
 
   $phenotype_number = $phenotype['phenotypes-meta']['number'];
   if (!empty($phenotype['normal-check'])) {
-    $phenotypes_meta = array();
+    $phenotypes_meta = [];
     $data_fid = $phenotype['file'];
     $phenos_edit = $form_state['phenotypes_edit'] ?? NULL;
     tpps_add_project_file($form_state, $data_fid);
@@ -1015,7 +1015,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
-      $phenotypes_meta[$name] = array();
+      $phenotypes_meta[$name] = [];
       $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
       if (!empty($phenos_edit[$j])) {
         // (Rish) BUGFIX related to sex -> age
@@ -1056,15 +1056,13 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       tpps_submission_add_tag($form_state['accession'], 'Environment');
     }
 
-    // throw new Exception('$phenotype[check]:' . $phenotype['check'] . "\n");
     if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
+      // @todo Check Phenotype Data file at validation stage. Check if it's
+      // actually integer and not zero.
       $meta_fid = intval($phenotype['metadata']);
-      //print_r('META_FID:' . $meta_fid . "\n");
       // Added because TGDR009 META FID was 0 which caused failures
       if ($meta_fid > 0) {
-
         tpps_add_project_file($form_state, $meta_fid);
-
         // Get metadata column values.
         $groups = $phenotype['metadata-groups'];
         $column_vals = $phenotype['metadata-columns'];
@@ -1103,7 +1101,6 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       $time_options = $phenotype['time'];
     }
     tpps_refine_phenotype_meta($phenotypes_meta, $time_options, $job);
-
     // Get metadata header values.
     $groups = $phenotype['file-groups'];
     $column_vals = $phenotype['file-columns'];
@@ -1119,10 +1116,14 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     );
 
     // Get data header values.
+    // [VS]
     if ($phenotype['format'] == 0) {
       $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
-      $data_columns = array();
-      if(is_array($groups['Phenotype Data']['0']) && !empty($groups['Phenotype Data']['0'])) {
+      $data_columns = [];
+      if (
+        is_array($groups['Phenotype Data']['0'])
+        && !empty($groups['Phenotype Data']['0'])
+      ) {
         foreach ($groups['Phenotype Data']['0'] as $col) {
           $data_columns[$col] = $file_headers[$col];
         }
@@ -1148,35 +1149,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
     tpps_log('[INFO] - Inserting data into database using insert_multi...');
 
-    // [VS] Store relations between Phenotype, Synonym, Unit.
     $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
-    // $id_list items example:
-    // $id_list = [
-    //   'phenotype' => [
-    //     ...
-    //     'TGDR824-ID_18-11-leaf A-154-Piln-unit] => 6443722,
-    //     ...
-    //   ],
-    //   'phenotypeprop' => [
-    //     ...
-    //     'TGDR824-ID_18-11-leaf A-154-Piln-desc' => 6443722,
-    //     ...
-    //     ],
-    //   'stock_phenotype' => [
-    //     ...
-    //     'TGDR824-ID_18-11-leaf A-154-Piln' => -1,
-    //     ...
-    //     ],
-    //   'phenotype_cvterm' => [
-    //     ...
-    //     'TGDR824-ID_18-11-leaf A-154-Piln-unit] => 1386234,
-    //     ...
-    //     ],
-    //  ];
-    if ($id_list) {
-      tpps_synonym_save($phenotypes_meta, $id_list);
-    }
-    // [/VS]
     tpps_log('[INFO] - Done.');
   }
 
@@ -1191,14 +1164,13 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['organism_name'] = $organism_name;
     $options['meta'] = array(
       'desc' => "Mass Spectrometry",
-
-      // [VS]
       // Unit name replaced with Unit Id (cvterm_id for 'chemical substance').
-      // 'unit' => "intensity (arbitrary nits)",
+      // Outdated: 'unit' => "intensity (arbitrary nits)".
       'unit' => 139527,
-      // [/VS]
+      'unit_id' => 139527,
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
-      'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id, // manual term for MASS Spec
+      // Manual term for MASS Spec.
+      'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id,
     );
 
     print_r('ISO_FID:' . $iso_fid . "\n");
@@ -1206,14 +1178,14 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
     tpps_log('[INFO] - Inserting phenotype_data into database using insert_multi...');
     // [VS]
-    // Store relations between Phenotype, Synonym, Unit.
     $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
-    if ($id_list) {
-      tpps_synonym_save($phenotypes_meta, $id_list);
-    }
     tpps_log('[INFO] - Done.');
-    // [/VS]
   }
+  // Store relations between Phenotype, Synonym, Unit.
+  if ($id_list) {
+    tpps_synonym_save($phenotypes_meta, $id_list);
+  }
+  // [/VS].
 }
 
 /**
@@ -3424,7 +3396,9 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
             $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
             if ($result !== FALSE) {
               $meta[$name]["{$type}_id"] = $result->cvterm_id;
-              $job->logMessage("[INFO] New OLS Term '{$info['ontology']}:{$data["{$type}-other"]}' installed");
+              $job->logMessage(
+                "[INFO] New OLS Term '{$info['ontology']}:{$data["{$type}-other"]}' installed"
+              );
             }
           }
 
@@ -3474,6 +3448,19 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
         $meta[$name]['time'] = TRUE;
       }
     }
+
+    // When Metadata File was used we have no Synonym Id in $meta
+    // so we need to get Synonym Id by Unit Id.
+    // WARNING: Must be called when $meta[$name]['unit_id'] already set.
+    //
+    // @todo Minor. Implement ability to admin to set synonym on Phenotype
+    // edit form when Metadata File is used. List of synonyms must be
+    // limited by Unit from Metadata File.
+    if (empty($meta[$name]['synonym_id'])) {
+      // Note: Unit Id could belong to many Synonyms and we are
+      // using 1st Synonym Id from the list.
+      $meta[$name]['synonym_id'] = tpps_unit_get_synonym($meta[$name]['unit_id']);
+    }
   }
 }
 
@@ -3490,7 +3477,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_process_phenotype_data($row, array &$options = array()) {
+function tpps_process_phenotype_data($row, array &$options = []) {
   global $tpps_job;
   $job = $tpps_job;
   $iso = $options['iso'] ?? FALSE;
@@ -3507,77 +3494,77 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   $organism_name = &$options['organism_name'];
   $record_group = variable_get('tpps_record_group', 10000);
 
-
-  // Get genus and species from the organism name
+  // Get genus and species from the organism name.
   $organism_name_parts = explode(' ', $organism_name, 2);
   $genus = $organism_name_parts[0];
   $species = $organism_name_parts[1];
 
-  // Ensure that we got the genus and species or error out
+  // Ensure that we got the genus and species or error out.
   if ($genus == "" || $species == "") {
-    throw new Exception('Organism genus and species could not be processed. Please ensure you added an organism that exists within the chado.organism table!');
+    throw new Exception('Organism genus and species could not be processed. '
+      . 'Please ensure you added an organism that exists within the chado.organism table!');
   }
 
-  // Query the organism table to get the organism id
-  $organism_id_results = chado_query('SELECT * FROM chado.organism WHERE genus = :genus and species = :species ORDER BY organism_id ASC LIMIT 1', array(
-    ':genus' => $genus,
-    ':species' => $species
-  ));
+  // Query the organism table to get the organism id.
+  $organism_id_results = chado_query(
+    'SELECT * FROM chado.organism
+    WHERE genus = :genus
+      AND species = :species
+    ORDER BY organism_id ASC
+    LIMIT 1',
+    [':genus' => $genus, ':species' => $species]
+  );
 
-  // Dummy value for organism_id until we get it from the sql results row
+  // Dummy value for organism_id until we get it from the sql results row.
   $organism_id = -1;
-  foreach($organism_id_results as $organism_id_row) {
+  foreach ($organism_id_results as $organism_id_row) {
     $organism_id = $organism_id_row->organism_id;
   }
 
-  // Check that the organism id is valid
-  if($organism_id == -1 || $organism_id == "") {
-    throw new Exception('Could not find organism id for ' . $organism_name. '. This organism does not seem to exist in the chado.organism table!');
+  // Check that the organism id is valid.
+  if ($organism_id == -1 || $organism_id == "") {
+    throw new Exception('Could not find organism id for ' . $organism_name
+      . '. This organism does not seem to exist in the chado.organism table!');
   }
 
   $cvterm_id_4lettercode = -1;
-  // Get the cvterm_id (which is the type_id) for the organism 4 letter code
-  $cvterm_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name LIMIT 1', array(
-    ':name' => 'organism 4 letter code'
-  ));
-  foreach($cvterm_results as $cvterm_row) {
+  // Get the cvterm_id (which is the type_id) for the organism 4 letter code.
+  $cvterm_results = chado_query(
+    'SELECT * FROM chado.cvterm WHERE name = :name LIMIT 1',
+    [':name' => 'organism 4 letter code']
+  );
+  foreach ($cvterm_results as $cvterm_row) {
     $cvterm_id_4lettercode = $cvterm_row->cvterm_id;
   }
-  if($cvterm_id_4lettercode == -1 || $cvterm_id_4lettercode == "") {
-    throw new Exception('Could not find the cvterm id for organism 4 letter code within the chado.cvterm table. This is needed to generate the phenotype name.');
+  if ($cvterm_id_4lettercode == -1 || $cvterm_id_4lettercode == "") {
+    throw new Exception('Could not find the cvterm id for organism '
+      . '4 letter code within the chado.cvterm table. '
+      . 'This is needed to generate the phenotype name.');
   }
 
-  // We need to use the cvterm_id 4 letter code to find the actual code within the organismprop table (using the organism_id)
+  // We need to use the cvterm_id 4 letter code to find the actual code
+  // within the organismprop table (using the organism_id).
   $value_4lettercode = "";
-  $organismprop_results = chado_query('SELECT * FROM chado.organismprop WHERE type_id = :type_id AND organism_id = :organism_id LIMIT 1', array(
-    ':type_id' => $cvterm_id_4lettercode,
-    ':organism_id' => $organism_id
-  ));
+  $organismprop_results = chado_query('
+    SELECT *
+    FROM chado.organismprop
+    WHERE type_id = :type_id
+      AND organism_id = :organism_id
+    LIMIT 1',
+    [':type_id' => $cvterm_id_4lettercode, ':organism_id' => $organism_id]
+  );
   foreach ($organismprop_results as $organismprop_row) {
     $value_4lettercode = $organismprop_row->value;
   }
 
-  if($value_4lettercode == "" || $value_4lettercode == null) {
-    throw new Exception('4 letter code could not be found for ' . $organism_name . ' in the chado.organismprop table. This is needed to create the phenotype_name.');
+  if ($value_4lettercode == "" || $value_4lettercode == NULL) {
+    throw new Exception('4 letter code could not be found for '
+      . $organism_name . ' in the chado.organismprop table. '
+      . 'This is needed to create the phenotype_name.');
   }
 
-  if (!$iso) {
-    if (isset($meta_headers['name']) and (isset($meta_headers['value']))) {
-      $id = $row[$meta_headers['value']];
-      $values = array($id => $row[$meta_headers['name']]);
-    }
-
-    if (!empty($options['data_columns'])) {
-      $values = $options['data_columns'];
-    }
-
-    $tree_id = $row[$options['tree_id']];
-    $clone_col = $meta_headers['clone'] ?? NULL;
-    if (isset($clone_col) and !empty($row[$clone_col]) and $row[$clone_col] !== $empty) {
-      $tree_id .= "-" . $row[$clone_col];
-    }
-  }
   if ($iso) {
+    // 'Iso/Mass Spectrometry'.
     foreach ($row as $id => $value) {
       if (empty($tree_id)) {
         $tree_id = $value;
@@ -3586,27 +3573,51 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       $values[$id] = $file_headers[$id];
     }
   }
-
-  if($tree_id == null || $tree_id == "") {
-    throw new Exception('tree_id was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
+  else {
+    // 'Normal Check'.
+    if (isset($meta_headers['name']) and (isset($meta_headers['value']))) {
+      $id = $row[$meta_headers['value']];
+      $values = [$id => $row[$meta_headers['name']]];
+    }
+    if (!empty($options['data_columns'])) {
+      $values = $options['data_columns'];
+    }
+    $tree_id = $row[$options['tree_id']];
+    $clone_col = $meta_headers['clone'] ?? NULL;
+    if (isset($clone_col)
+      and !empty($row[$clone_col])
+      and $row[$clone_col] !== $empty
+    ) {
+      $tree_id .= "-" . $row[$clone_col];
+    }
   }
 
-
-  // print_r($values);
-  // throw new Exception('DEBUG');
+  if ($tree_id == NULL || $tree_id == "") {
+    throw new Exception('tree_id was NULL or empty - there might be '
+      . 'a problem with the format of the phenotype data file or '
+      . 'selected column options for the file via the user information, '
+      . 'cannot continue until resolved.'
+    );
+  }
   $phenotype_name_previous = "<none set>";
   foreach ($values as $id => $name) {
-    if($name == null || $name == "") {
-      throw new Exception('Phenotype name was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
+    // $name is a phenotype name. For example: 'flower color'.
+    // $id is column name. For example: 'D'.
+    if ($name == NULL || $name == "") {
+      throw new Exception('Phenotype name was NULL or empty - there might be '
+        . 'a problem with the format of the phenotype data file or '
+        . 'selected column options for the file via the user information, '
+        . 'cannot continue until resolved.'
+      );
     }
     $attr_id = $iso ? $meta['attr_id'] : $meta[strtolower($name)]['attr_id'];
-    // throw new Exception('debug');
-    if($attr_id == null || $attr_id == "") {
+    if ($attr_id == NULL || $attr_id == "") {
       print_r('$meta[attr_id]:' . $meta['attr_id'] . "\n");
       print_r('$name:' . $name . "\n");
       print_r('$meta[$name]:' . $meta[strtolower($name)]['attr_id'] . "\n");
       print_r('$attr_id:' . $attr_id . "\n");
-      throw new Exception('Attribute id is null which causes phenotype data to not be added to database correctly.');
+      throw new Exception('Attribute id is NULL which causes phenotype '
+        . 'data to not be added to database correctly.');
     }
     $value = $row[$id];
     $phenotype_name = "$accession-$tree_id-$name-$suffix";
@@ -3623,7 +3634,8 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     if (isset($meta[strtolower($name)]['struct_id'])) {
       $struct_id = $meta[strtolower($name)]['struct_id'];
     }
-    else if ($iso) { //override the value - likely for intensity / mass spectrometry
+    elseif ($iso) {
+      // Override the value - likely for intensity / mass spectrometry.
       $struct_id = $meta['struct_id'];
     }
 
@@ -3631,31 +3643,22 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       'uniquename' => $phenotype_name,
       'name' => $name,
       'attr_id' => $attr_id,
-      // removed this old obserable_id to cater for mass spectrometry
+      // Removed this old obserable_id to cater for mass spectrometry.
       // 'observable_id' => $meta[strtolower($name)]['struct_id'] ?? NULL,
-      // this is the new way of adding observable_id to cater for mass spectrometry as well
+      // this is the new way of adding observable_id to cater for mass spectrometry as well.
       'observable_id' => $struct_id,
       'value' => $value,
     );
-    // print_r($records['phenotype'][$phenotype_name]);
-
     $records['stock_phenotype'][$phenotype_name] = array(
       'stock_id' => $tree_info[$tree_id]['stock_id'],
-      '#fk' => array(
-        'phenotype' => $phenotype_name,
-      ),
+      '#fk' => ['phenotype' => $phenotype_name],
     );
-    // print_r($records['stock_phenotype'][$phenotype_name]);
-
     if (isset($meta[strtolower($name)]['time'])) {
       $records['phenotypeprop']["$phenotype_name-time"] = array(
         'type_id' => $cvterms['time'],
         'value' => $meta[strtolower($name)]['time'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
+        '#fk' => ['phenotype' => $phenotype_name],
       );
-      // print_r($records['phenotypeprop']["$phenotype_name-time"]);
       $options['data'][$phenotype_name]['time'] = $meta[strtolower($name)]['time'];
     }
     elseif (isset($meta_headers['time'])) {
@@ -3666,23 +3669,15 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       $records['phenotypeprop']["$phenotype_name-time"] = array(
         'type_id' => $cvterms['time'],
         'value' => $val,
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
+        '#fk' => ['phenotype' => $phenotype_name],
       );
-      // print_r($records['phenotypeprop']["$phenotype_name-time"]);
       $options['data'][$phenotype_name]['time'] = $val;
     }
-
-    // print_r($meta);
     $records['phenotypeprop']["$phenotype_name-desc"] = array(
       'type_id' => $cvterms['desc'],
       'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
-      '#fk' => array(
-        'phenotype' => $phenotype_name,
-      ),
+      '#fk' => ['phenotype' => $phenotype_name],
     );
-    // [VS]
     // $iso means "intensity / mass spectrometry".
     if ($iso) {
       // "Iso Check"
@@ -3700,57 +3695,49 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
         '#fk' => ['phenotype' => $phenotype_name],
       ];
     }
-
+    // @todo Remove 'min' and 'max' processing.
+    // Min and max not used anymore.
     if (isset($meta[strtolower($name)]['min'])) {
-      $records['phenotypeprop']["$phenotype_name-min"] = array(
+      $records['phenotypeprop']["$phenotype_name-min"] = [
         'type_id' => $cvterms['min'],
         'value' => $meta[strtolower($name)]['min'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
-
     if (isset($meta[strtolower($name)]['max'])) {
-      $records['phenotypeprop']["$phenotype_name-max"] = array(
+      $records['phenotypeprop']["$phenotype_name-max"] = [
         'type_id' => $cvterms['max'],
         'value' => $meta[strtolower($name)]['max'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-      // print_r($records['phenotypeprop']["$phenotype_name-max"]);
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
-
     if (!empty($meta[strtolower($name)]['env'])) {
-      $records['phenotype_cvterm']["$phenotype_name-env"] = array(
+      $records['phenotype_cvterm']["$phenotype_name-env"] = [
         'cvterm_id' => $cvterms['environment'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-      // print_r($records['phenotype_cvterm']["$phenotype_name-env"]);
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
-
     if ($phenotype_count > $record_group) {
-      // print_r($records);
-      tpps_log('[INFO] -- Inserting data into database using insert_multi...');
-      // print_r($records);
+      tpps_log(
+        '[INFO] -- Inserting phenotype data (@count records) into database ...',
+        ['@count' => $phenotype_count]
+      );
       tpps_chado_insert_multi($records);
       tpps_log('[INFO] - Done.');
 
-      // $temp_results = chado_query('SELECT * FROM chado.phenotype WHERE uniquename ILIKE :phenotype_name', array(
+      // $temp_results = chado_query(
+      //   'SELECT * FROM chado.phenotype
+      //   WHERE uniquename ILIKE :phenotype_name', array(
       //   ':phenotype_name' => $phenotype_name
       // ));
       // foreach($temp_results as $temp_row) {
       //   echo "Found phenotype saved: " . $temp_row->uniquename . "\n";
       // }
-
-      $records = array(
-        'phenotype' => array(),
-        'phenotypeprop' => array(),
-        'stock_phenotype' => array(),
-      );
+      $records = [
+        'phenotype' => [],
+        'phenotypeprop' => [],
+        'stock_phenotype' => [],
+      ];
       $phenotype_count = 0;
     }
     $phenotype_count++;
@@ -4335,27 +4322,35 @@ function tpps_other_marker_headers($fid, array $cols) {
 }
 
 /**
- * This will generate all genotype materialized views
+ * This will generate all genotype materialized views.
  */
 function tpps_generate_all_genotype_materialized_views() {
-  // Get count of all studies
-  $results = chado_query('SELECT COUNT(DISTINCT(accession)) as c1 FROM "public"."tpps_submission";',[]);
+  // Get count of all studies.
+  $results = chado_query(
+    'SELECT COUNT(DISTINCT(accession)) as c1
+    FROM "public"."tpps_submission";',
+    []
+  );
   $total = 0;
   foreach ($results as $row) {
     $total = $row->c1;
   }
   $current_count = 0;
-
-  // Get all the study accessions from database
-  $results = chado_query('SELECT DISTINCT(accession) as accession FROM "public"."tpps_submission" ORDER BY accession;',[]);
+  // Get all the study accessions from database.
+  $results = chado_query(
+    'SELECT DISTINCT(accession) as accession
+    FROM "public"."tpps_submission"
+    ORDER BY accession;',
+    []
+  );
   foreach ($results as $row) {
-    $current_count = $current_count+1;
+    $current_count = $current_count + 1;
     echo "Processing genotype materialized view: $current_count of $total\n";
-    // Get the submission state
+    // Get the submission state.
     $state = tpps_load_submission($row->accession);
-    // Check if there's a project_id in the submission state
+    // Check if there's a project_id in the submission state.
     $project_id = $state['ids']['project_id'] ?? NULL;
-    // Once the project_id is not null, we're good
+    // Once the project_id is not NULL, we're good.
     if (isset($project_id)) {
       tpps_generate_genotype_materialized_view($project_id);
     }
@@ -4363,18 +4358,16 @@ function tpps_generate_all_genotype_materialized_views() {
 }
 
 /**
- * This function will generate a genotype materialized view for
- * the specific project_id (which you must get from the state object).
- * This is used for the tpps/details genotypes tab
+ * Generate a genotype materialized view for the specific project_id.
  *
+ * Project Id you must get from the state object.
+ * This is used for the tpps/details genotypes tab.
  *
  * @param mixed $project_id
  *   The project ID of the study. NOT THE STUDY ACCESSION!
- *
- *
  */
 function tpps_generate_genotype_materialized_view($project_id) {
-  // Ensure the project_id is an integer
+  // Ensure the project_id is an integer.
   $project_id = intval($project_id);
   if ($project_id <= 0) {
     return;
@@ -4964,8 +4957,9 @@ function tpps_clean_state(array &$form_state) {
 }
 
 /**
- * Lookup analysis_id from ref_genome string
- * The ref_genome string usually comes from TPPS form select
+ * Lookup analysis_id from ref_genome string.
+ *
+ * The ref_genome string usually comes from TPPS form select.
  */
 function tpps_get_analysis_id_from_ref_genome($ref_genome) {
     // We need to find the analysis id from the ref genome
@@ -5111,10 +5105,10 @@ function tpps_get_code_parts($part) {
  * @param string $message
  *   The message to store in the logs.
  * @param array $variables
- *    Array of variables to replace in the message on display
- *    or NULL if message is already translated or not possible to translate.
- *  @param string $severity
- *    The severity of the message; one of the following values:
+ *   Array of variables to replace in the message on display.
+ *   or NULL if message is already translated or not possible to translate.
+ * @param string $severity
+ *   The severity of the message; one of the following values:
  *      TRIPAL_CRITICAL: Critical conditions.
  *      TRIPAL_ERROR: Error conditions.
  *      TRIPAL_WARNING: Warning conditions.
@@ -5126,4 +5120,26 @@ function tpps_log($message, $variables = array(), $severity = TRIPAL_INFO) {
   global $tpps_job;
   tpps_job_logger_write($message, $variables);
   $tpps_job->logMessage($message, $variables, $severity);
+}
+
+/**
+ * Fast Dump of variable's value.
+ *
+ * For non-arrays and non-objects will be added type of variable.
+ * To dump variable name use arrays:
+ *   fd(['var_name' => $value]);
+ * To dump more then one variable use arrays:
+ *   fd(['var_name' => $value]);
+ *   fd([$var1, $var2, $var3]);
+ *
+ * @param mixed $variable
+ *   Variable's value to dump.
+ */
+function fd($variable) {
+  echo "\n| ---------------------------------------------------------------\n";
+  if (!is_array($variable) && !is_object($variable)) {
+    echo '(' . gettype($variable) . ') ';
+  }
+  print_r($variable);
+  echo "\n--------------------------------------------------------------- |\n";
 }
