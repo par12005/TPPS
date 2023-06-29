@@ -813,17 +813,44 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     if ($num_unique_columns != $num_columns) {
       $duplicates = array_diff_assoc($headers, array_unique($headers));
       if (!empty($duplicates)) {
-        drupal_set_message(t('Following header values are duplicate in provided snp file. %data', array('%data' => implode(',', $duplicates))), 'error');
+        drupal_set_message(
+          t('Following header values are duplicate in provided snp file. %data',
+          array('%data' => implode(',', $duplicates))),
+        'error'
+        );
       }
-      form_set_error("$id][genotype][files][snps-assay", t("SNPs Assay file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file."));
+      form_set_error("$id][genotype][files][snps-assay",
+        t("SNPs Assay file: some columns in the file you provided are "
+          . "missing or have duplicate header values. Please either enter "
+          . "valid header values for those columns or remove those columns, "
+          . "then reupload your file."
+        )
+      );
     }
 
     if (!form_get_errors()) {
       $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
-      $missing_trees = tpps_compare_files($snps_assay, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
-      if ($missing_trees !== array()) {
-        $tree_id_str = implode(', ', $missing_trees);
-        form_set_error("$id][genotype][files][snps-assay", t("SNPs Assay file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: @tree_id_str", array('@tree_id_str' => $tree_id_str)));
+      $missing_trees = tpps_compare_files(
+        $snps_assay,
+        $tree_accession_file,
+        $id_col_name,
+        $id_col_accession_name,
+        FALSE,
+        $acc_no_header
+      );
+      // @todo Minor. Maybe better to get new list of trees and use it in
+      // all other checks to be sure we have the same list in other files.
+      if ($missing_trees !== [] && empty($thirdpage['existing_trees'])) {
+        form_set_error("$id][genotype][files][snps-assay",
+          t(
+            "SNPs Assay file: We detected Plant Identifiers that were "
+            . "not in your Plant Accession file. Please either remove these "
+            . "plants from your Genotype file, or add them to your "
+            . "Plant Accession file. "
+            . "The Plant Identifiers we found were: @tree_id_str",
+            ['@tree_id_str' => implode(', ', $missing_trees)]
+          )
+        );
       }
     }
 
@@ -832,7 +859,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
     if (!form_get_errors()) {
       if (!empty($file_type['SNPs Associations']) and !$assoc_file) {
-        form_set_error("$id][genotype][files][snps-association", t("SNPs Associations file: field is required."));
+        form_set_error("$id][genotype][files][snps-association",
+          t("SNPs Associations file: field is required.")
+        );
       }
       elseif (!empty($file_type['SNPs Associations'])) {
         $required_groups = array(
