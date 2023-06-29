@@ -32,6 +32,7 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
   $cache = cache_get($unit_cid);
 
   if (empty($cache) || $reset) {
+    $cache = [];
     // Get synonyms and related unit groups.
     $synonym_table = db_select('chado.phenotype_synonyms', 'cps')
       ->fields('cps', [
@@ -44,10 +45,10 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
       ->fetchAllAssoc('phenotype_synonyms_id', PDO::FETCH_ASSOC);
     foreach ($synonym_table as $synonym) {
       $synonym_list[$synonym['phenotype_synonyms_id']] = $synonym['synonym'];
-      $synonym_unit_group[$synonym['phenotype_synonyms_id']] = $synonym['unit_group'];
+      $synonym_unit_group_list[$synonym['phenotype_synonyms_id']] = $synonym['unit_group'];
     }
     ksort($synonym_list);
-    ksort($synonym_unit_group);
+    ksort($synonym_unit_group_list);
     // Update cached list of synonyms.
     cache_set($synonym_cid, $synonym_list);
 
@@ -67,8 +68,8 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
         = $unit['unit_name'];
     }
     // Create list of units per synonym.
-    foreach ($synonym_unit_group as $synonym_id => $unit_group) {
-      $cache[$synonym_id] = ($groups[$unit_group] ?? NULL);
+    foreach ($synonym_unit_group_list as $id => $unit_group) {
+      $cache[$id] = ($groups[$unit_group] ?? NULL);
     }
     cache_set($unit_cid, $cache);
     $list = $cache[$synonym_id];
@@ -168,4 +169,19 @@ function tpps_unit_get_synonym($unit_id) {
   $query->leftJoin('chado.phenotype_synonyms', 'cps', 'cps.unit_group = cpu.unit_group');
   $query->fields('cps', ['phenotype_synonyms_id']);
   return $query->execute()->fetchField() ?? FALSE;
+}
+
+// The same function defined in submit_all.php but it dumps to terminal.
+if (!function_exists('fd')) {
+
+  /**
+   * Fast dump variable.
+   *
+   * @param mixed $var
+   *   Varible to be dumped to browser.
+   */
+  function fd($var) {
+    dpm(print_r($var, 1));
+  }
+
 }
