@@ -466,21 +466,16 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         tpps_check_required(
           $form_state, [$id, 'genotype', 'files', 'snps-association-tool']
         );
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'files', 'snps-assay']
-        );
       }
-      else {
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'files', 'genotyping-type']
-        );
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'files', 'snps-assay']
-        );
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'files', 'assay-design']
-        );
-      }
+      tpps_check_required(
+        $form_state, [$id, 'genotype', 'files', 'genotyping-type']
+      );
+      tpps_check_required(
+        $form_state, [$id, 'genotype', 'files', 'snps-assay']
+      );
+      tpps_check_required(
+        $form_state, [$id, 'genotype', 'files', 'assay-design']
+      );
     }
 
     $condition = (
