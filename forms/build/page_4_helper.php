@@ -842,42 +842,39 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         ],
       ];
     }
-    if ($upload_snp_association == 'No') {
-      $fields['files']['genotyping-type'] = [
-        '#type' => 'select',
-        '#title' => t('Genotyping Type: *'),
-        '#options' => [
-          0 => '- Select -',
-          'Genotyping Assay' => t('Genotyping Assay'),
-          'Genotyping' => t('Genotyping'),
-        ],
-        '#ajax' => [
-          'callback' => 'tpps_genotype_files_callback',
-          'wrapper' => "$id-genotype-files",
-        ],
-      ];
+    $fields['files']['genotyping-type'] = [
+      '#type' => 'select',
+      '#title' => t('Genotyping Type: *'),
+      '#options' => [
+        'Genotyping Assay' => t('Genotyping Assay'),
+        'Genotyping' => t('Genotyping'),
+      ],
+      '#ajax' => [
+        'callback' => 'tpps_genotype_files_callback',
+        'wrapper' => "$id-genotype-files",
+      ],
+    ];
 
-      // Genotype File Type.
-      $fields['files']['file-type'] = [
-        '#type' => 'select',
-        '#title' => t('Genotyping file type: *'),
-        '#options' => [
-          'SNP Assay file and Assay design file'
-          => t('SNP Assay file and Assay design file'),
-          'VCF' => t('VCF'),
+    // Genotype File Type.
+    $fields['files']['file-type'] = [
+      '#type' => 'select',
+      '#title' => t('Genotyping file type: *'),
+      '#options' => [
+        'SNP Assay file and Assay design file'
+        => t('SNP Assay file and Assay design file'),
+        'VCF' => t('VCF'),
+      ],
+      '#ajax' => [
+        'callback' => 'tpps_genotype_files_callback',
+        'wrapper' => "$id-genotype-files",
+      ],
+      '#states' => [
+        'visible' => [
+          ':input[name="' . $id . '[genotype][files][genotyping-type]"]'
+          => ['value' => 'Genotyping'],
         ],
-        '#ajax' => [
-          'callback' => 'tpps_genotype_files_callback',
-          'wrapper' => "$id-genotype-files",
-        ],
-        '#states' => [
-          'visible' => [
-            ':input[name="' . $id . '[genotype][files][genotyping-type]"]'
-            => ['value' => 'Genotyping'],
-          ],
-        ],
-      ];
-    }
+      ],
+    ];
     // Value is a string because mutiple values not allowed.
     $genotyping_type_check = tpps_get_ajax_value($form_state, $genotyping_type_parents);
     $file_type_value = tpps_get_ajax_value($form_state, $file_type_parents);
@@ -1314,16 +1311,18 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'extensions' => ['gz tar zip'],
     ]);
 
-    if (
-      isset($form_state['tpps_type'])
-      && $form_state['tpps_type'] == 'tppsc'
-    ) {
+    // @todo This field must be shown for admins/curators only but condition
+    // didn't work correctly and was commented out.
+    //if (
+    //  isset($form_state['tpps_type'])
+    //  && $form_state['tpps_type'] == 'tppsc'
+    //) {
       tpps_add_dropdown_file_selector($fields, [
         'form_state' => $form_state,
         'file_field_name' => $file_field_name,
         'id' => $id,
       ]);
-    }
+    //}
   }
   else {
     tpps_build_disabled_file_field($fields, $file_field_name);
