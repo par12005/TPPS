@@ -798,6 +798,53 @@ function tpps_submission_clear_db_extra($accession) {
   }
 }
 
+function tpps_submission_full_clear_db($project_id) {
+  // Create index in genotype_call if they don't exist
+  echo "Creating genotype_call indexes if they do not exist...\n";
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_genotype_id_idx ON chado.genotype_call USING btree (genotype_id)",[]);
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_project_id_idx ON chado.genotype_call USING btree (project_id)",[]);
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_stock_id_idx ON chado.genotype_call USING btree (stock_id)",[]);
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_marker_id_idx ON chado.genotype_call USING btree (marker_id)",[]);
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_variant_id_idx ON chado.genotype_call USING btree (variant_id)",[]);
+  
+  echo "Delete the temporary feature_ids_$project_id table...\n";
+  chado_query("DROP TABLE IF EXISTS chado.feature_ids_" . $project_id . "", []);
+
+  echo "Create table to get features for deletion...\n";
+  chado_query("create table chado.feature_ids_" . $project_id . " as 
+    ((select variant_id  as feature_id from chado.genotype_call where project_id = :project_id_1) 
+    union 
+    (select marker_id  as feature_id from chado.genotype_call where project_id = :project_id_2));", [
+      ':project_id_1' => $project_id,
+      ':project_id_2' => $project_id
+  ]);
+
+
+  echo "Delete genotype_calls...\n";
+  chado_query("delete from chado.genotype_call where variant_id in 
+    (select feature_id from chado.feature_ids_" . $project_id . ") 
+    or marker_id in (select feature_id from chado.feature_ids_" . $project_id . ");", [
+  ]);
+
+  echo "DELETE featurelocs...\n";
+  chado_query("delete from chado.featureloc where feature_id in 
+    (select feature_id from chado.feature_ids_" . $project_id . ");", []);
+
+  echo "DELETE feature_relationship records...\n";
+  chado_query("delete from chado.feature_relationship where subject_id in 
+  (select feature_id from chado.feature_ids_" . $project_id . ") or object_id in 
+  (select feature_id from chado.feature_ids_" . $project_id .  ");", []);
+
+  echo "DELETE feature records...\n";
+  chado_query("delete from chado.feature where feature_id in 
+  (select feature_id from chado.feature_ids_" . $project_id . ");", []);
+
+  echo "Delete the temporary feature_ids_$project_id table...\n";
+  chado_query("DROP TABLE IF EXISTS chado.feature_ids_" . $project_id, []);
+
+}
+
+
 /**
  * Clears submission data from the database.
  *
@@ -825,6 +872,11 @@ function tpps_submission_clear_db($accession) {
   }
 
   $time_start = time();
+
+  // This will perform a full delete of feature ids as well (used to delete features
+  // from TGDR665 6/29/2023)
+  // tpps_submission_full_clear_db($project_id);
+
 
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
   echo $stocks_sql . "\n";
