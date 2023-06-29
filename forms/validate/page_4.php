@@ -286,26 +286,16 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
       );
     }
     else {
-      $required_groups = array(
-        'Tree Identifier' => array(
-          'id' => array(1),
-        ),
-        'Phenotype Data' => array(
-          'phenotype-data' => array(0),
-        ),
-      );
+      $required_groups = [
+        'Tree Identifier' => ['id' => [1]],
+        'Phenotype Data' => ['phenotype-data' => [0]],
+      ];
       if ($phenotype['format'] != 0) {
-        $required_groups = array(
-          'Tree Identifier' => array(
-            'id' => array(1),
-          ),
-          'Phenotype Name/Identifier' => array(
-            'phenotype-name' => array(2),
-          ),
-          'Phenotype Value(s)' => array(
-            'val' => array(3),
-          ),
-        );
+        $required_groups = [
+          'Tree Identifier' => ['id' => [1]],
+          'Phenotype Name/Identifier' => ['phenotype-name' => [2]],
+          'Phenotype Value(s)' => ['val' => [3]],
+        ];
       }
 
       $file_element = $form[$id]['phenotype']['file'];
@@ -353,16 +343,34 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
           }
           $acc_no_header = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-no-header'];
           $phenotype_no_header = $form_state['values'][$id]['phenotype']['file-no-header'];
-          $missing_trees = tpps_compare_files($form_state['values'][$id]['phenotype']['file'], $tree_accession_file, $phenotype_file_tree_col, $id_col_accession_name, $phenotype_no_header, $acc_no_header);
+
+          $missing_trees = tpps_compare_files(
+            $form_state['values'][$id]['phenotype']['file'],
+            $tree_accession_file,
+            $phenotype_file_tree_col,
+            $id_col_accession_name,
+            $phenotype_no_header,
+            $acc_no_header
+          );
           if ($missing_trees !== array()) {
             $tree_id_str = implode(', ', $missing_trees);
-            form_set_error("$id][phenotype][file", "Phenotype file: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Phenotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
+            form_set_error("$id][phenotype][file",
+              "Phenotype file: We detected Plant Identifiers that were not "
+              . "in your Plant Accession file. Please either remove these "
+              . "plants from your Phenotype file, or add them to your Plant "
+              . "Accession file. The Plant Identifiers we found were: $tree_id_str"
+            );
           }
         }
       }
 
       // Preserve file if it is valid.
-      tpps_preserve_valid_file($form_state, $form_state['values'][$id]['phenotype']['file'], $org_num, "Phenotype_Data");
+      tpps_preserve_valid_file(
+        $form_state,
+        $form_state['values'][$id]['phenotype']['file'],
+        $org_num,
+        "Phenotype_Data"
+      );
     }
   }
 

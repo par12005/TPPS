@@ -194,7 +194,6 @@ function fd($variable) {
     echo "\n------------------------------------------------------------- |\n";
   }
   else {
-    dpm(print_r($var, 1));
-
+    dpm(print_r($variable, 1));
   }
 }
