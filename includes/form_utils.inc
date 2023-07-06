@@ -415,6 +415,103 @@ function tpps_pre_validate_init($accession = NULL) {
   drupal_json_output($jobs);
 }
 
+
+/**
+ * This code can be used to check missing tree ids in accession file
+ * It gets all vcf tree_ids and compares it with the accession file to see
+ * what is missing from the accession file.
+ */
+function tpps_vcf_tree_validation($accession = NULL) {
+  $state = tpps_load_submission($accession);
+  $firstpage = $state['saved_values'][TPPS_PAGE_1];
+  $thirdpage = $state['saved_values'][TPPS_PAGE_3];
+  $fourthpage = $state['saved_values'][TPPS_PAGE_4];
+  $organism_number = $firstpage['organism']['number'];
+  for ($i = 1; $i <= $organism_number; $i++) {
+    $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+    $vcf_fid = $genotype['files']['vcf'];
+
+    // Check the type of VCF file (uploaded or in the cluser)
+    // Get file location
+    if ($vcf_fid > 0) {
+      // File uploaded
+      $vcf_file = file_load($vcf_fid);
+      $location = tpps_get_location($vcf_file->uri);
+    }
+    else {
+      // File linked by curation in the cluster
+      $location = $genotype['files']['local_vcf'];
+    }
+    if ($location == null || $location == "") {
+      throw new Exception('Could not find location of VCF even though the VCF option was specified.
+      File ID was 0 so its not an uploaded file. local_vcf variable returned empty so cannot use that');
+    }
+    echo "VCF location: $location\n";
+
+    $vcf_content = gzopen($location, 'r');
+    $columns = [];
+    $tree_ids_vcf = [];
+    while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
+      if (strpos($vcf_line, '#CHROM') !== FALSE) {
+        // get tabbed values
+        $columns = explode("\t", $vcf_line);
+        $columns_count = count($columns);
+        for ($j = 9; $j < $columns_count; $j++) {
+          $tree_ids_vcf[trim($columns[$j])] = true; 
+        }
+        break;
+      }
+    }
+    echo $tree_ids_vcf['ALAA-20-1'];
+    // Now we have the tree_ids from the VCF in $tree_ids_vcf
+    // print_r($tree_ids_vcf);
+
+    // Step 2, get all tree_ids from the accession file
+    $tree_accession = $thirdpage['tree-accession']["species-$i"];
+    $column_vals = $tree_accession['file-columns'];
+    $groups = $tree_accession['file-groups'];
+    $fid = $tree_accession['file'];
+    $tree_ids_accession = [];
+    $options['tree_ids'] = &$tree_ids_accession;
+    $options['column_tree_id'] = $groups['Tree Id']['1'];
+    $options['no_header'] = !empty($tree_accession['file-no-header']);
+    
+
+    tpps_file_iterator($fid, 'tpps_get_tree_ids_from_iterator', $options);
+    // print_r($tree_ids_accession);
+
+    // Step 3, compare vcf tree_ids count with accession tree_ids count
+    $trees_ids_count_vcf = count(array_keys($tree_ids_vcf));
+    $trees_ids_count_accession = count(array_keys($tree_ids_accession));
+    echo $tree_ids_accession['ALAA-20-1'];
+    echo "Unique Tree ID count from VCF: $trees_ids_count_vcf\n";
+    echo "Unique Tree ID count from accession: $trees_ids_count_accession\n";
+
+    if ($trees_ids_count_vcf != $trees_ids_count_accession) {
+      // Perform a diff between VCF and Accession Tree Ids
+      $trees_ids_vcf_array = array_keys($tree_ids_vcf);
+      $trees_ids_accession_array = array_keys($tree_ids_accession);
+
+      $missing_tree_ids = [];
+      foreach ($trees_ids_vcf_array as $tree_id_vcf) {
+        $tree_id_vcf = trim($tree_id_vcf);
+        if (array_search(trim($tree_id_vcf), $trees_ids_accession_array) === false) {
+          $missing_tree_ids[$tree_id_vcf] = true;
+        }
+      }
+      echo "The following trees are missing from accession file:\n";
+      $results = implode(',', array_keys($missing_tree_ids));
+      echo $results;
+    }
+  }
+}
+
+function tpps_get_tree_ids_from_iterator($row, array &$options, $job = NULL) {
+  // print_r($options);
+  // print_r($row);
+  $options['tree_ids'][trim($row[$options['column_tree_id']])] = true;
+}
+
 /**
  * Check the status of a TPPS pre-validation job.
  *

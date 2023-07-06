@@ -69,7 +69,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Phenotype Isotope/Mass Spectrometry file: *'),
       '#upload_location' => $phenotype_upload_location,
       '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
+        'file_validate_extensions' => array('csv tsv'),
       ),
       '#description' => t('Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain isotope or mass spectrometry data.'),
     );
@@ -707,7 +707,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
       '#upload_location' => "$phenotype_upload_location",
       '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
+        'file_validate_extensions' => array('csv tsv'),
       ),
       '#states' => array(
         'visible' => array(
@@ -2006,7 +2006,7 @@ function tpps_build_file_field(array &$fields, array $meta) {
     '#title' => $title . (!empty($optional) ? ':' : ': *'),
     '#upload_location' => $upload_location,
     '#upload_validators' => [
-      'file_validate_extensions' => !empty($extensions) ? $extensions : ['csv tsv xlsx'],
+      'file_validate_extensions' => !empty($extensions) ? $extensions : ['csv tsv'],
     ],
     '#description' => ($description ?? '')
     . ($debug_mode ? '<br/>Field name: <strong>' . $file_field_name . '</strong>' : ''),

@@ -207,6 +207,7 @@ function tpps_load_cv($info) {
  */
 function tpps_load_cvterm($term, array $options = array(), $version = NULL, $refresh_cache = FALSE) {
   $check_cache = variable_get('tpps_load_cvterm_' . md5($term), null);
+  // $refresh_cache = true;
   if($refresh_cache == TRUE) {
     $check_cache = null;
   }
@@ -757,8 +758,8 @@ function tpps_ols_add_cvterm($term) {
  *   The resulting cvterm object, or "local", or FALSE on failure.
  */
 function tpps_ols_install_term($info) {
-  // print_r('tpps_ols_install_term:');
-  // print_r('overall_info:' . $info . "\n");
+  print_r('tpps_ols_install_term:');
+  print_r('overall_info:' . $info . "\n");
   $parts = explode(':', $info);
   $ontology = $parts[0];
   if ($ontology == 'local') {

@@ -41,6 +41,26 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   $job->logMessage('[INFO] Setting up...');
   $job->setInterval(1);
   $form_state = tpps_load_submission($accession);
+
+  // PATCH to check if VCF exists, then remove the assay design
+  // Advised by Meghan 7/6/2023
+  
+
+  // Do check for missing files, this is a bit crude but it works
+  $display_results = strip_tags(tpps_table_display($form_state));
+  // Find 'missing file' string
+  echo $display_results;
+  if(stripos($display_results, 'file missing') !== FALSE) {
+    $display_results_lines = explode("\n", $display_results);
+    foreach ($display_results_lines as $line) {
+      if (stripos($line, 'file missing') !== FALSE) {
+        tpps_job_logger_write('[FATAL] ' . $line . "\n");
+        $job->logMessage('[FATAL] ' . $line . "\n");
+      }
+    }
+    throw new Exception('Detected a missing file, please ensure missing files are resolved in the tpps-admin-panel and then rerun the study');
+  }
+
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
   $transaction = db_transaction();
@@ -1094,6 +1114,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
           'min' => !empty($min) ? $min : NULL,
           'max' => !empty($max) ? $max : NULL,
         );
+        // print_r($columns);
 
         $meta_options = array(
           'no_header' => $phenotype['metadata-no-header'],
@@ -1111,6 +1132,10 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
         tpps_job_logger_write('[WARNING] - phenotype_meta file id looks incorrect but the UI checkbox was selected. Need to double check this!');
       }
     }
+
+    // print_r("Phenotypes Meta:\n");
+    // print_r($phenotypes_meta);
+    // print_r("\n");
 
     $time_options = array();
     if ($phenotype['time']['time-check']) {
@@ -1194,7 +1219,9 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     tpps_chado_insert_multi($options['records']);
     tpps_job_logger_write('[INFO] - Done.');
     $job->logMessage('[INFO] - Done.');
+
   }
+  // throw new Exception('DEBUG');
 }
 
 /**
@@ -1249,6 +1276,10 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     'genotype_call' => array(),
     'stock_genotype' => array(),
   );
+  // For COPY / HYBRID inserts
+  $records2 = array(
+    'genotype_call' => array()
+  );
 
   $multi_insert_options = array(
     'fk_overrides' => $overrides,
@@ -1261,6 +1292,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   $options = array(
     // 'test' => 1, // This variable will cause tpps_iterator stop do only 1 iteration
     'records' => $records,
+    'records2' => $records2,
     'tree_info' => $form_state['tree_info'],
     'species_codes' => $species_codes,
     'genotype_count' => &$genotype_count,
@@ -1302,6 +1334,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       'value' => $genotype['ref-genome'],
     ));
   }
+
 
   if (!empty($genotype['files']['snps-assay'])) {
     $snp_fid = $genotype['files']['snps-assay'];
@@ -1399,6 +1432,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       tpps_add_project_file($form_state, $kinship_fid);
     }
 
+    // DROP INDEXES FROM GENOTYPE_CALL TABLE
+    tpps_drop_genotype_call_indexes($job);
+
     tpps_job_logger_write('[INFO] - Processing SNP genotype_spreadsheet file data...');
     $job->logMessage('[INFO] - Processing SNP genotype_spreadsheet file data...');
     echo "trace 1\n";
@@ -1413,8 +1449,17 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     tpps_job_logger_write('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_multi...');
     $job->logMessage('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_multi...');
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
+
+    tpps_job_logger_write('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_hybrid...');
+    $job->logMessage('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_hybrid...');
+    tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
+
     tpps_job_logger_write('[INFO] - Done');
     $job->logMessage('[INFO] - Done');
+
+    // RECREATE INDEXES FROM GENOTYPE_CALL TABLE
+    tpps_create_genotype_call_indexes($job);
+
     $options['records'] = $records;
     $genotype_total += $genotype_count;
     tpps_job_logger_write('[INFO] - Genotype count:' . $genotype_count);
@@ -1513,6 +1558,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $ssr_fid = $genotype['files']['ssrs'];
     tpps_add_project_file($form_state, $ssr_fid);
 
+    // DROP INDEXES FROM GENOTYPE_CALL TABLE
+    tpps_drop_genotype_call_indexes($job);
+
     $options['type'] = 'ssrs';
     $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
     $options['marker'] = $genotype['SSRs/cpSSRs'];
@@ -1528,14 +1576,26 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
     $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
+
+    tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
+    $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
+    tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);    
+
     tpps_job_logger_write('[INFO] - Done');
     $job->logMessage('[INFO] - Done.');
+
+    // RECREATE INDEXES FROM GENOTYPE_CALL TABLE
+    tpps_create_genotype_call_indexes($job);
+
     $options['records'] = $records;
     $genotype_count = 0;
 
     if (!empty($genotype['files']['ssrs_extra'])) {
       $extra_fid = $genotype['files']['ssrs_extra'];
       tpps_add_project_file($form_state, $extra_fid);
+
+      // DROP INDEXES FROM GENOTYPE_CALL TABLE
+      tpps_drop_genotype_call_indexes($job);
 
       $options['headers'] = tpps_ssrs_headers($extra_fid, $genotype['files']['extra-ploidy']);
       tpps_job_logger_write('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
@@ -1548,8 +1608,17 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
       $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
       tpps_chado_insert_multi($options['records'], $multi_insert_options);
+
+      tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
+      $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
+      tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);  
+
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.');
+
+      // CREATE INDEXES FROM GENOTYPE_CALL TABLE
+      tpps_create_genotype_call_indexes($job);
+
       $options['records'] = $records;
       $genotype_count = 0;
     }
@@ -1566,6 +1635,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $options['tree_id'] = $groups['Tree Id'][1];
     }
 
+    // DROP INDEXES FROM GENOTYPE_CALL TABLE
+    tpps_drop_genotype_call_indexes($job);
+
     $options['type'] = 'other';
     $options['marker'] = $genotype['other-marker'];
     $options['type_cvterm'] = tpps_load_cvterm('genetic_marker')->cvterm_id;
@@ -1579,8 +1651,17 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
     $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
+
+    tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
+    $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
+    tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
+
     tpps_job_logger_write('[INFO] - Done.');
     $job->logMessage('[INFO] - Done.');
+
+    // CREATE INDEXES FROM GENOTYPE_CALL TABLE
+    tpps_create_genotype_call_indexes($job);
+
     $options['records'] = $records;
     $genotype_count = 0;
   }
@@ -2123,6 +2204,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
  * to utilize the COPY keyword for inserting data which is dramatically faster.
  */
 function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
+  $organism_index = $i;
   // Some initial variables previously inherited from the parent function code. So we're reusing it to avoid
   // missing any important variables if we rewrote it.
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
@@ -2197,20 +2279,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
   }
   tpps_job_logger_write('[INFO] Disable VCF Import is set to ' . $disable_vcf_import . ' (0 means allow vcf import, 1 ignore vcf import)');
 
-
-  if (!empty($genotype['files']['file-type']['VCF'])) {
+  if ($genotype['files']['file-type'] == 'VCF') {
     if ($disable_vcf_import == 0) {
-
       // DROP INDEXES FROM GENOTYPE_CALL TABLE
-      tpps_job_logger_write('[INFO] - Dropping indexes...');
-      $job->logMessage('[INFO] - Dropping indexes...'); 
-      chado_query("DROP INDEX IF EXISTS chado.genotype_call_genotype_id_idx;", []);
-      chado_query("DROP INDEX IF EXISTS chado.genotype_call_project_id_idx;", []);
-      chado_query("DROP INDEX IF EXISTS chado.genotype_call_stock_id_idx;", []);
-      chado_query("DROP INDEX IF EXISTS chado.genotype_call_marker_id_idx;", []);
-      chado_query("DROP INDEX IF EXISTS chado.genotype_call_variant_id_idx;", []);
-      tpps_job_logger_write('[INFO] - Done.');
-      $job->logMessage('[INFO] - Done.'); 
+      tpps_drop_genotype_call_indexes($job);
 
 
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
@@ -2229,16 +2301,49 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       $depth_cvterm = tpps_load_cvterm('read_depth')->cvterm_id;
       $n_sample_cvterm = tpps_load_cvterm('number_samples')->cvterm_id;
 
-      $vcf_file = file_load($vcf_fid);
-      $location = tpps_get_location($vcf_file->uri);
+      // This means it was uploaded
+      if ($vcf_fid > 0) {
+        $vcf_file = file_load($vcf_fid);
+        $location = tpps_get_location($vcf_file->uri);
+      }
+      else {
+        $location = $genotype['files']['local_vcf'];
+      }
+      if ($location == null || $location == "") {
+        throw new Exception('Could not find location of VCF even though the VCF option was specified.
+        File ID was 0 so its not an uploaded file. local_vcf variable returned empty so cannot use that');
+      }
       echo "VCF location: $location\n";
 
       $vcf_content = gzopen($location, 'r');
       $stocks = array();
       $format = "";
+      // This was done by Peter
       $current_id = $form_state['ids']['organism_ids'][$i];
       $species_code = $species_codes[$current_id];
 
+
+      // Override the above code done by Rish to use organism_id from page 4
+      // RISH NOTES: This addition uses the organism_id based on the organism order
+      // of the fourth page (we likely have to pass the i from previous function here)
+      // THIS TECHNICALLY OVERRIDES PETER'S LOGIC ABOVE. TO BE DETERMINED IF RISH'S WAY IS CORRECT
+      // OR NOT [7/1/2023]
+      // THIS WAS AN ISSUE BROUGHT UP BY EMILY REGARDING SNPS NOT BEING ASSOCIATED WITH POP TRICH (665 STUDY)
+      $species_code = null;
+      $organism_id = null;
+      $count_tmp = 0;
+      foreach ($species_codes as $organism_id_tmp => $species_code_tmp) {
+        $count_tmp = $count_tmp + 1; // increment
+        // Check if count_tmp matches $organism_index
+        if ($count_tmp == $organism_index) {
+          $species_code = $species_code_tmp;
+          $organism_id = $organism_id_tmp;
+          $current_id = $organism_id;
+          break;
+        }
+      }
+      echo "Organism id: $current_id\n";
+      echo "Species code: $species_codes[$current_id]\n";
 
       // The following code is used to get the analysis_id from the genome assemble if it's selected
       // WE NEED THIS TO DO FEATURELOC INSERTS (basically to get to the point of srcfeature_id later on)
@@ -2326,6 +2431,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
           $line_process_start_time = microtime(true);
           $record_count = $record_count + 1;
+          // DEBUG - TEST ONLY 100 records
+          // if ($record_count > 100) {
+          //   break;
+          // } 
           print_r('Record count:' . $record_count . "\n");
           $genotype_count += count($stocks);
           $vcf_line = explode("\t", $vcf_line);
@@ -2338,6 +2447,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $filter = &$vcf_line[6];
           $info = &$vcf_line[7];
           $marker_type = 'SNP';
+
+          $cache_srcfeatures = []; // stores key = name of source feature, value is the feature_id
 
           if (empty($variant_name) or $variant_name == '.') {
             // $variant_name = "{$scaffold_id}{$position}$ref:$alt";
@@ -2440,77 +2551,92 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $row_object = $results->fetchObject();
           $variant_id = $row_object->feature_id;
 
-          // SOME CODE FOR THIS IS OUTSIDE OF THE PER LINE PROCESSING ABOVE (OUTSIDE FOR LOOP)
-          // 3/27/2023: Chromosome number and position (store this in featureloc table)
-          // feature_id from marker or variant created
-          // srcfeature_id for the genome / assembly used for reference (some sort of query - complicated)
-          // store where marker starts on chromosome etc.
-          $srcfeature_id = NULL;
-          if (isset($analysis_id)) {
-            // Get the srcfeature_id
-            echo 'Scaffold ID (srcfeature_id search): ' . $scaffold_id . "\n";
-            $srcfeature_results = chado_query('select feature.feature_id from chado.feature
-              join chado.analysisfeature on feature.feature_id = analysisfeature.feature_id
-              where feature.name = :scaffold_id and analysisfeature.analysis_id = :analysis_id',
-              [
-                ':scaffold_id' => $scaffold_id,
-                ':analysis_id' => $analysis_id
-              ]
-            );
+          // Lookup whether marker is already inserted into the features table
+          $result = chado_query("SELECT * FROM chado.feature WHERE uniquename = :marker_name AND organism_id = :organism_id", [
+            ':marker_name' => $variant_name, // column 3 of VCF
+            ':organism_id' => $current_id
+          ]);
 
-            foreach ($srcfeature_results as $row) {
-              $srcfeature_id = $row->feature_id;
-            }
+          $feature_exists = false;
+          foreach ($result as $row) {
+            $feature_exists = true;
           }
 
-          // If reference genome found (analysis_id) but no srcfeature found
-          if (isset($analysis_id) && !isset($srcfeature_id)) {
-            throw new Exception("Genotype VCF processing found reference genome but no
-              srcfeature could be found. This action was recommended by Database Administrator.");
-          }
+          if ($feature_exists != true) {
+            // SOME CODE FOR THIS IS OUTSIDE OF THE PER LINE PROCESSING ABOVE (OUTSIDE FOR LOOP)
+            // 3/27/2023: Chromosome number and position (store this in featureloc table)
+            // feature_id from marker or variant created
+            // srcfeature_id for the genome / assembly used for reference (some sort of query - complicated)
+            // store where marker starts on chromosome etc.
+            $srcfeature_id = NULL;
+            if (isset($analysis_id)) {
+              // Get the srcfeature_id
+              echo 'Scaffold ID (srcfeature_id search): ' . $scaffold_id . "\n";
 
-          // if srcfeature_id was found, then we have enough info to add featureloc data
-          if (isset($srcfeature_id)) {
-            $fmax = $position;
+              // the scaffold_id is not an integer value, proceed as normal lookup
+              $srcfeature_results = chado_query('select feature.feature_id from chado.feature
+                join chado.analysisfeature on feature.feature_id = analysisfeature.feature_id
+                where feature.name = :scaffold_id and analysisfeature.analysis_id = :analysis_id',
+                [
+                  ':scaffold_id' => $scaffold_id,
+                  ':analysis_id' => $analysis_id
+                ]
+              );
 
-            // Check to see whether feature is an indel ($ref is non-singular value)
-            // split ref by comma (based on Emily's demo), go through each split value
-            $ref_comma_parts = explode(',', $ref); // eg G,GTAC
-            foreach ($ref_comma_parts as $ref_comma_part) {
-              $ref_comma_part = trim($ref_comma_part);
-              // Check length of comma_part
-              $len = strlen($ref_comma_part);
-              // If len is more than 1, use this value to calculate the fmax position
-              if($len > 1) {
-                $fmax = intval($position) + ($len - 1);
-                break;
+              foreach ($srcfeature_results as $row) {
+                $srcfeature_id = $row->feature_id;
               }
             }
 
-
-            $featureloc_values = [
-              'feature_id' => $marker_id,
-              'srcfeature_id' => $srcfeature_id,
-              'fmin' => $position,
-              'fmax' => $fmax // ALPHA code above now caters for INDELS
-            ];
-
-            // Since we haven't catered for deletion of these featureloc records
-            // there may already exist, we have to make sure the record doesn't already exist
-            $featureloc_results = chado_query('SELECT count(*) as c1 FROM chado.featureloc
-              WHERE feature_id = :feature_id AND srcfeature_id = :srcfeature_id;', [
-                ':feature_id' => $marker_id,
-                ':srcfeature_id' => $srcfeature_id
-              ]
-            );
-            $featureloc_count = 0;
-            foreach ($featureloc_results as $row) {
-              $featureloc_count = $row->c1;
+            // If reference genome found (analysis_id) but no srcfeature found
+            if (isset($analysis_id) && !isset($srcfeature_id)) {
+              throw new Exception("Genotype VCF processing found reference genome but no
+                srcfeature could be found. This action was recommended by Database Administrator.");
             }
-            // This means no featureloc exists, so insert it
-            if ($featureloc_count == 0) {
-              // This will add it to the multiinsert record system for insertion
-              $records['featureloc'][$marker_name] = $featureloc_values;
+
+            // if srcfeature_id was found, then we have enough info to add featureloc data
+            if (isset($srcfeature_id)) {
+              $fmax = $position;
+
+              // Check to see whether feature is an indel ($ref is non-singular value)
+              // split ref by comma (based on Emily's demo), go through each split value
+              $ref_comma_parts = explode(',', $ref); // eg G,GTAC
+              foreach ($ref_comma_parts as $ref_comma_part) {
+                $ref_comma_part = trim($ref_comma_part);
+                // Check length of comma_part
+                $len = strlen($ref_comma_part);
+                // If len is more than 1, use this value to calculate the fmax position
+                if($len > 1) {
+                  $fmax = intval($position) + ($len - 1);
+                  break;
+                }
+              }
+
+
+              $featureloc_values = [
+                'feature_id' => $marker_id,
+                'srcfeature_id' => $srcfeature_id,
+                'fmin' => $position,
+                'fmax' => $fmax // ALPHA code above now caters for INDELS
+              ];
+
+              // Since we haven't catered for deletion of these featureloc records
+              // there may already exist, we have to make sure the record doesn't already exist
+              $featureloc_results = chado_query('SELECT count(*) as c1 FROM chado.featureloc
+                WHERE feature_id = :feature_id AND srcfeature_id = :srcfeature_id;', [
+                  ':feature_id' => $marker_id,
+                  ':srcfeature_id' => $srcfeature_id
+                ]
+              );
+              $featureloc_count = 0;
+              foreach ($featureloc_results as $row) {
+                $featureloc_count = $row->c1;
+              }
+              // This means no featureloc exists, so insert it
+              if ($featureloc_count == 0) {
+                // This will add it to the multiinsert record system for insertion
+                $records['featureloc'][$marker_name] = $featureloc_values;
+              }
             }
           }
 
@@ -2577,8 +2703,9 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             ]);
             $row_object = $results->fetchObject();
             $genotype_id = $row_object->genotype_id;
-            $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
-            echo("DEBUG INFO: $debug_info");
+            // $debug_info = "Uniquename: $genotype_desc Type_id:$format_cvterm Value:$format Genotype_id:$genotype_id Variant_id:$variant_id Marker_id:$marker_id\n";
+            // $debug_info = "Variant_name: $variant_name, Variant_id: $variant_id\n";
+            // echo("DEBUG INFO: $debug_info");
 
              // 3/27/2023 Meeting - FORMAT: REVIEW THIS IN TERMS OF IF WE NEED IT
             if ($format != "") {
@@ -2603,9 +2730,10 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
 
               $column_genotype_name = $marker_type . '-' . $marker_name . '-' . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
-              echo 'Column Genotype Name: ' . $column_genotype_name . " Genotype Name: $genotype_name\n";
+              // echo 'Column Genotype Name: ' . $column_genotype_name . " Genotype Name: $genotype_name\n";
               if($column_genotype_name == $genotype_name) {
                 // Found a match between the tree_id genotype and the genotype_name from records
+                // echo "Found match (and using variant_name $variant_name ($variant_id) to add to genotype call\n";
 
                 // print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
                 $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
@@ -2825,17 +2953,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         tpps_chado_insert_hybrid($records, $multi_insert_options);
       }
 
-      // RECREATE INDEXES
-      tpps_job_logger_write('[INFO] - Recreating indexes...');
-      $job->logMessage('[INFO] - Recreating indexes...'); 
-      chado_query("CREATE INDEX IF NOT EXISTS genotype_call_genotype_id_idx ON chado.genotype_call USING btree (genotype_id)");
-      chado_query("CREATE INDEX IF NOT EXISTS genotype_call_project_id_idx ON chado.genotype_call USING btree (project_id)");
-      chado_query("CREATE INDEX IF NOT EXISTS genotype_call_stock_id_idx ON chado.genotype_call USING btree (stock_id)");
-      chado_query("CREATE INDEX IF NOT EXISTS genotype_call_marker_id_idx ON chado.genotype_call USING btree (marker_id)");
-      chado_query("CREATE INDEX IF NOT EXISTS genotype_call_variant_id_idx ON chado.genotype_call USING btree (variant_id)");
-      tpps_job_logger_write('[INFO] - Recreating INDEXES - Done.');
-      $job->logMessage('[INFO] - Recreating INDEXES - Done.'); 
-
+      // THIS RECREATES THE INDEXES
+      tpps_create_genotype_call_indexes($job);
 
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.');
@@ -3387,6 +3506,11 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $columns = $options['meta_columns'];
   $meta = &$options['meta'];
 
+  // print_r("COLUMNS:\n");
+  // print_r($columns);
+  // print_r("ROW:\n");
+  // print_r($row);
+
   $name = strtolower($row[$columns['name']]);
   $meta[$name] = array();
   $meta[$name]['attr'] = 'other';
@@ -3436,10 +3560,15 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       'ontology' => 'po',
     ),
   );
-  print_r($meta);
+  // print_r($meta);
   foreach ($meta as $name => $data) {
+    // echo "Name: $name\n";
+    // echo "Data:\n";
+    // print_r ($data);
+    // echo "\n";
     foreach ($term_types as $type => $info) {
       $meta[$name]["{$type}_id"] = $data["{$type}"];
+      
       if ($data["{$type}"] == 'other') {
         $meta[$name]["{$type}_id"] = $cvt_cache[$data["{$type}-other"]] ?? NULL;
         if (empty($meta[$name]["{$type}_id"])) {
@@ -3485,6 +3614,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       }
     }
   }
+  print_r($meta);
 }
 
 /**
@@ -3800,6 +3930,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $type = $options['type'];
   $organism_index = $options['organism_index'];
   $records = &$options['records'];
+  $records2 = &$options['records2']; // hybrid / copy such as genotype_call records
   $headers = $options['headers'];
   $tree_info = &$options['tree_info'];
   $species_codes = $options['species_codes'];
@@ -3882,20 +4013,56 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     //   ]);
     // }   
 
-
-    $records['feature'][$marker_name] = array(
-      // 'organism_id' => $current_id, // PETER's original code
-      'organism_id' => $organism_id, // RISH code override 6/22/2023
+    // [RISH] 07/06/2023 - REMOVED SO WE CAN INSERT TO GET FEATURE ID
+    // $records['feature'][$marker_name] = array(
+    //   // 'organism_id' => $current_id, // PETER's original code
+    //   'organism_id' => $organism_id, // RISH code override 6/22/2023
+    //   'uniquename' => $marker_name,
+    //   'type_id' => $seq_var_cvterm,
+    // );
+    chado_insert_record('feature', [
+      'name' => $marker_name,
+      'organism_id' => $organism_id,
       'uniquename' => $marker_name,
-      'type_id' => $seq_var_cvterm,
-    );
+      'type_id' => $seq_var_cvterm
+    ]);
+    
+    // Lookup the marker_name_id
+    $results = chado_query("SELECT feature_id FROM chado.feature 
+      WHERE uniquename = :uniquename AND organism_id = :organism_id", [
+        ':uniquename' => $marker_name,
+        ':organism_id' => $organism_id
+    ]);
+    $marker_name_id = NULL;
+    foreach ($results as $row) {
+      $marker_name_id = $row->feature_id;
+    }
 
-    $records['feature'][$variant_name] = array(
-      // 'organism_id' => $current_id, // PETER's original code
-      'organism_id' => $organism_id, // RISH code override 6/22/2023
+    // [RISH] 07/06/2023 - REMOVED SO WE CAN INSERT TO GET FEATURE ID
+    // $records['feature'][$variant_name] = array(
+    //   // 'organism_id' => $current_id, // PETER's original code
+    //   'organism_id' => $organism_id, // RISH code override 6/22/2023
+    //   'uniquename' => $variant_name,
+    //   'type_id' => $seq_var_cvterm,
+    // );
+
+    chado_insert_record('feature', [
+      'name' => $variant_name,
+      'organism_id' => $organism_id,
       'uniquename' => $variant_name,
-      'type_id' => $seq_var_cvterm,
-    );
+      'type_id' => $seq_var_cvterm
+    ]);
+    
+    // Lookup the marker_name_id
+    $results = chado_query("SELECT feature_id FROM chado.feature 
+      WHERE uniquename = :uniquename AND organism_id = :organism_id", [
+        ':uniquename' => $variant_name,
+        ':organism_id' => $organism_id
+    ]);
+    $variant_name_id = NULL;
+    foreach ($results as $row) {
+      $variant_name_id = $row->feature_id;
+    }    
 
 
     if (!empty($associations) and !empty($associations[$variant_name])) {
@@ -3962,21 +4129,44 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       );
     }
 
-    $records['genotype'][$genotype_name] = array(
+    // [RISH] 07/06/2023 - REMOVED SO WE CAN INSERT TO GET ID
+    // $records['genotype'][$genotype_name] = array(
+    //   'name' => $genotype_name,
+    //   'uniquename' => $genotype_name,
+    //   'description' => $val,
+    //   'type_id' => $type_cvterm,
+    // );
+    chado_insert_record('genotype', [
       'name' => $genotype_name,
       'uniquename' => $genotype_name,
       'description' => $val,
-      'type_id' => $type_cvterm,
-    );
+      'type_id' => $type_cvterm,      
+    ]);
 
-    $records['genotype_call']["$stock_id-$genotype_name"] = array(
+    $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
+      ':uniquename' => $genotype_name
+    ]);
+    $genotype_id = NULL;
+    foreach ($results as $row) {
+      $genotype_id = $row->genotype_id;
+    }     
+
+    // [RISH] 07/06/2023 - REMOVED SO WE CAN USE HYBRID COPY SYSTEM
+    // $records['genotype_call']["$stock_id-$genotype_name"] = array(
+    //   'project_id' => $project_id,
+    //   'stock_id' => $stock_id,
+    //   '#fk' => array(
+    //     'genotype' => $genotype_name,
+    //     'variant' => $variant_name,
+    //     'marker' => $marker_name,
+    //   ),
+    // );
+    $records2['genotype_call']["$stock_id-$genotype_name"] = array(
       'project_id' => $project_id,
       'stock_id' => $stock_id,
-      '#fk' => array(
-        'genotype' => $genotype_name,
-        'variant' => $variant_name,
-        'marker' => $marker_name,
-      ),
+      'genotype_id' => $genotype_id,
+      'variant_id' => $variant_name_id,
+      'marker_id' => $marker_name_id,
     );
 
     $records['stock_genotype']["$stock_id-$genotype_name"] = array(
@@ -3990,6 +4180,9 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
       $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
       tpps_chado_insert_multi($records, $multi_insert_options);
+      tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
+      $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
+      tpps_chado_insert_hybrid($records, $multi_insert_options);      
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.');
       $records = array(
@@ -3997,6 +4190,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         'genotype' => array(),
         'genotype_call' => array(),
         'stock_genotype' => array(),
+      );
+      // Do this for the hybrid (COPY) command
+      $records2 = array(
+        'genotype_call' => array(),
       );
       if (!empty($associations)) {
         $records['featureloc'] = array();
@@ -4577,6 +4774,43 @@ function tpps_process_environment_layers($row, array &$options = array()) {
     }
   }
   $suffix++;
+}
+
+/**
+ * This function will add back genotype_call indexes
+ */
+function tpps_create_genotype_call_indexes($job) {
+  echo "SET CONSTRAINTS ALL IMMEDIATE\n";
+  chado_query("SET CONSTRAINTS ALL IMMEDIATE;",[]);
+  
+  // RECREATE INDEXES
+  tpps_job_logger_write('[INFO] - Recreating indexes...');
+  $job->logMessage('[INFO] - Recreating indexes...'); 
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_genotype_id_idx ON chado.genotype_call USING btree (genotype_id)");
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_project_id_idx ON chado.genotype_call USING btree (project_id)");
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_stock_id_idx ON chado.genotype_call USING btree (stock_id)");
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_marker_id_idx ON chado.genotype_call USING btree (marker_id)");
+  chado_query("CREATE INDEX IF NOT EXISTS genotype_call_variant_id_idx ON chado.genotype_call USING btree (variant_id)");
+  tpps_job_logger_write('[INFO] - Recreating INDEXES - Done.');
+  $job->logMessage('[INFO] - Recreating INDEXES - Done.'); 
+  chado_query("SET CONSTRAINTS ALL DEFERRED;",[]);
+
+
+}
+
+/**
+ * This function will drop genotype_call indexes from the database
+ */
+function tpps_drop_genotype_call_indexes($job) {
+  tpps_job_logger_write('[INFO] - Dropping indexes...');
+  $job->logMessage('[INFO] - Dropping indexes...'); 
+  chado_query("DROP INDEX IF EXISTS chado.genotype_call_genotype_id_idx;", []);
+  chado_query("DROP INDEX IF EXISTS chado.genotype_call_project_id_idx;", []);
+  chado_query("DROP INDEX IF EXISTS chado.genotype_call_stock_id_idx;", []);
+  chado_query("DROP INDEX IF EXISTS chado.genotype_call_marker_id_idx;", []);
+  chado_query("DROP INDEX IF EXISTS chado.genotype_call_variant_id_idx;", []);
+  tpps_job_logger_write('[INFO] - Done.');
+  $job->logMessage('[INFO] - Done.'); 
 }
 
 /**

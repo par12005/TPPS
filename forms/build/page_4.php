@@ -102,7 +102,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           '#title' => t('Phenotype file: Please upload a file containing columns for Plant Identifier, Phenotype Data: *'),
           '#upload_location' => 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype'),
           '#upload_validators' => array(
-            'file_validate_extensions' => array('csv tsv xlsx'),
+            'file_validate_extensions' => array('csv tsv'),
           ),
           '#tree' => TRUE,
           '#states' => array(

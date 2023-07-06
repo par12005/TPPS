@@ -874,7 +874,7 @@ function tpps_submission_clear_db($accession) {
   $time_start = time();
 
   // This will perform a full delete of feature ids as well (used to delete features
-  // from TGDR665 6/29/2023)
+  // from TGDR665 and 674 6/29/2023)
   // tpps_submission_full_clear_db($project_id);
 
 

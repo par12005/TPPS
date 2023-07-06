@@ -184,6 +184,7 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
   $copy_cmd = 'copy chado.' . $table . ' (';
   // Assume this is CHADO since the name of the function also has chado in it
   foreach ($records as $unique_field_name_value  => $row) {
+    $row_contains_empty_values = false;
     // print_r("row:\n");
     // print_r($row);
     // print_r("\n");
@@ -226,6 +227,11 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
         $copy_cmd .= $field_name . ',';
       }
 
+      // Check if a value is empty, COPY command will likely fail due to table constraints
+      if (!isset($value) || $value == '' || $value == null) {
+        $row_contains_empty_values = true;
+      }
+
       // GENERATE THE ROW DATA LINE USING THIS VALUE
       // if (!$use_external_copy) {
       //   $row_data .= $value . ',';
@@ -240,7 +246,13 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
       $found_field_names = TRUE;
     }
 
-    fputcsv($csv_file, $row);
+    if($row_contains_empty_values == false) {
+      fputcsv($csv_file, $row);
+    }
+    else {
+      echo "Could not add row to COPY because it was missing a value\n";
+      print_r($row);
+    }
 
     if ($use_external_copy) {
       
