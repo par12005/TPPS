@@ -15,6 +15,10 @@
  *   Returns themed table with pagers.
  */
 function easy_report(array $meta) {
+  if (empty($meta['header']) || empty($meta['query'])) {
+    drupal_set_message('No metadata to build report.');
+    return '';
+  }
   extract($meta);
   if (!empty($debug_mode)) {
     $query->addTag('debug');
