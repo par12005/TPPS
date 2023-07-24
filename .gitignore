@@ -7,3 +7,5 @@ modules/
 tags
 *.sw*
 .vimrc*
+cscope.files
+cscope.out
