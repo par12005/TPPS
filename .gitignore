@@ -6,3 +6,5 @@ docs/build/
 modules/
 .vimrc
 tags
+cscope.files
+cscope.out
