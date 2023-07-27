@@ -96,7 +96,7 @@ function tpps_publication(array &$form, array $values, array $form_state) {
   );
   // if(isset($values['publication']['title']) && $values['publication']['title'] != "") {
   //   $form['publication']['title']['#value'] = $values['publication']['title'];
-  // }  
+  // }
 
   $form['publication']['abstract'] = array(
     '#type' => 'textarea',
@@ -113,7 +113,7 @@ function tpps_publication(array &$form, array $values, array $form_state) {
   );
   // if(isset($values['publication']['journal']) && $values['publication']['journal'] != "") {
   //   $form['publication']['journal']['#value'] = $values['publication']['journal'];
-  // }  
+  // }
 
   return $form;
 }
@@ -142,6 +142,11 @@ function tpps_organism(array &$form, array &$form_state) {
         'data-placement' => array('right'),
         'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
       ),
+      // [VS]
+      // Note: This code actually doesn't work. See module TPPS.
+      '#description' => 'Example: '
+        . '<a href"#" class="tpps-suggestion">Arabidopsis thaliana</a>.',
+      // [/VS]
     ),
     'is_tree' => array(
       '#type' => 'checkbox',
