@@ -155,7 +155,7 @@ function tpps_menu() {
     'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/panel.php',
-  );  
+  );
 
   $items['tpps-admin-panel/%'] = array(
     'title' => 'TPPS Admin Panel',
@@ -175,8 +175,8 @@ function tpps_menu() {
     'access arguments' => array('approve tpps submissions'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/logs.php',
-  ); 
-  
+  );
+
   $items['tpps-admin-panel/file-diagnostics/%'] = array(
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
@@ -185,7 +185,7 @@ function tpps_menu() {
     'access arguments' => array('administer tpps module'),
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/pages.php',
-  ); 
+  );
 
   $items['tpps/doi/%'] = array(
     'title' => 'TPPS DOI',
@@ -466,7 +466,6 @@ function tpps_mail($key, array &$message, array $params) {
       $message['body'][] = "Congratulations!<br><br>
       Your TPPS submission has been received and is pending approval from a site administrator! Here's a brief summary of the information you provided:<ul>
       <li>Primary Author: {$params['author']}</li>
-      <li>Organization: {$params['org']}</li>
       <li>Publication title: {$params['title']}</li>
       <li>Journal: {$params['journal']}</li>
       <li>Organisms: {$params['organisms']['number']}</li>";
@@ -873,9 +872,15 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 
   tpps_status_bar($form, $form_state);
 
-  
-  if ((!isset($form_state['tpps_type']) or $form_state['tpps_type'] != 'tppsc') and (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization']))) {
-    
+
+  if (
+    !isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])
+    && (
+      !isset($form_state['tpps_type'])
+      or $form_state['tpps_type'] != 'tppsc'
+    )
+  ) {
+
     $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
     if ($contact_bundle) {
       $query = new EntityFieldQuery();
@@ -886,7 +891,6 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
         ->execute();
       $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
       $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] ?? $entity->title;
-      $form_state['saved_values'][TPPS_PAGE_1]['organization'] = $form_state['saved_values'][TPPS_PAGE_1]['organization'] ?? $entity->tcontact__organization[LANGUAGE_NONE][0]['value'];
     }
   }
 
@@ -924,7 +928,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   $suffix = '
     <script>
     jQuery(document).ready(function(){
-      jQuery(\'[data-toggle="tooltip"]\').tooltip();   
+      jQuery(\'[data-toggle="tooltip"]\').tooltip();
     });
     </script>';
 
@@ -1134,7 +1138,7 @@ function tpps_block_view_alter(&$data, $block) {
           vertical-align: middle;
           margin-bottom: 4px;
           margin-right: 2px;
-      }		
+      }
       ";
       drupal_add_css($css, 'inline');
 

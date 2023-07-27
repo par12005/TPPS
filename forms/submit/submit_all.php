@@ -285,19 +285,6 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     'pub_id' => $publication_id,
   ));
 
-  if (!empty($firstpage['organization'])) {
-    $organization_id = tpps_chado_insert_record('contact', array(
-      'name' => $firstpage['organization'],
-      'type_id' => tpps_load_cvterm('organization')->cvterm_id,
-    ));
-
-    tpps_chado_insert_record('contact_relationship', array(
-      'type_id' => tpps_load_cvterm('contact_part_of')->cvterm_id,
-      'subject_id' => $primary_author_id,
-      'object_id' => $organization_id,
-    ));
-  }
-
   $names = explode(" ", $firstpage['primaryAuthor']);
   $first_name = implode(" ", array_slice($names, 0, -1));
   $last_name = end($names);
@@ -965,7 +952,7 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
   if (isset($project_id) && $test != true) {
     tpps_generate_genotype_materialized_view($project_id);
   }
-  
+
 }
 
 /**
@@ -2203,14 +2190,14 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       // DROP INDEXES FROM GENOTYPE_CALL TABLE
       tpps_job_logger_write('[INFO] - Dropping indexes...');
-      $job->logMessage('[INFO] - Dropping indexes...'); 
+      $job->logMessage('[INFO] - Dropping indexes...');
       chado_query("DROP INDEX IF EXISTS chado.genotype_call_genotype_id_idx;", []);
       chado_query("DROP INDEX IF EXISTS chado.genotype_call_project_id_idx;", []);
       chado_query("DROP INDEX IF EXISTS chado.genotype_call_stock_id_idx;", []);
       chado_query("DROP INDEX IF EXISTS chado.genotype_call_marker_id_idx;", []);
       chado_query("DROP INDEX IF EXISTS chado.genotype_call_variant_id_idx;", []);
       tpps_job_logger_write('[INFO] - Done.');
-      $job->logMessage('[INFO] - Done.'); 
+      $job->logMessage('[INFO] - Done.');
 
 
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
@@ -2827,14 +2814,14 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       // RECREATE INDEXES
       tpps_job_logger_write('[INFO] - Recreating indexes...');
-      $job->logMessage('[INFO] - Recreating indexes...'); 
+      $job->logMessage('[INFO] - Recreating indexes...');
       chado_query("CREATE INDEX IF NOT EXISTS genotype_call_genotype_id_idx ON chado.genotype_call USING btree (genotype_id)");
       chado_query("CREATE INDEX IF NOT EXISTS genotype_call_project_id_idx ON chado.genotype_call USING btree (project_id)");
       chado_query("CREATE INDEX IF NOT EXISTS genotype_call_stock_id_idx ON chado.genotype_call USING btree (stock_id)");
       chado_query("CREATE INDEX IF NOT EXISTS genotype_call_marker_id_idx ON chado.genotype_call USING btree (marker_id)");
       chado_query("CREATE INDEX IF NOT EXISTS genotype_call_variant_id_idx ON chado.genotype_call USING btree (variant_id)");
       tpps_job_logger_write('[INFO] - Recreating INDEXES - Done.');
-      $job->logMessage('[INFO] - Recreating INDEXES - Done.'); 
+      $job->logMessage('[INFO] - Recreating INDEXES - Done.');
 
 
       tpps_job_logger_write('[INFO] - Done.');
@@ -3880,7 +3867,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     //   chado_query("DELETE FROM chado.feature WHERE uniquename = :variant_name", [
     //     ':variant_name' => $variant_name
     //   ]);
-    // }   
+    // }
 
 
     $records['feature'][$marker_name] = array(

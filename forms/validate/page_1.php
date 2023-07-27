@@ -19,7 +19,6 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
 
     $form_values = $form_state['values'];
     $primary_author = $form_values['primaryAuthor'];
-    $organization = $form_values['organization'];
     $publication_status = $form_values['publication']['status'];
     $second = $form_values['publication']['secondaryAuthors'];
     $second_num = $second['number'];
@@ -32,10 +31,6 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
 
     if ($primary_author == '') {
       form_set_error('primaryAuthor', t('Primary Author: field is required.'));
-    }
-
-    if ($organization == '') {
-      form_set_error('organization', t('Organization: field is required.'));
     }
 
     if (!$publication_status) {

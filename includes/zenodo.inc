@@ -25,7 +25,10 @@ function tpps_generate_doi($accession) {
   $creators = array(
     (object) array(
       'name' => tpps_doi_format_name($state['saved_values'][TPPS_PAGE_1]['primaryAuthor']),
-      'affiliation' => $state['saved_values'][TPPS_PAGE_1]['organization'],
+      // [VS] Organization field was removed so I just left 'affiliation' with
+      // empty value because I'm not sure if this field is required.
+      'affiliation' => NULL,
+      // [/VS]
     ),
   );
   for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['publication']['secondaryAuthors']['number']; $i++) {

@@ -42,7 +42,6 @@ function tpps_flatten(array $state) {
   $data['Publication DOI'] = isset($page_1['doi']) ? $page_1['doi'] : NULL;
   $data['Publication Title'] = isset($pub['title']) ? $pub['title'] : NULL;
   $data['Primary Author'] = isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : NULL;
-  $data['Organization'] = isset($page_1['organization']) ? $page_1['organization'] : NULL;
   $data['Publication Status'] = isset($pub['status']) ? $pub['status'] : NULL;
   $data['Publication Year'] = isset($pub['year']) ? $pub['year'] : NULL;
   $data['Publication Abstract'] = isset($pub['abstract']) ? $pub['abstract'] : NULL;

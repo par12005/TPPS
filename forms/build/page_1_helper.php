@@ -32,17 +32,6 @@ function tpps_user_info(array &$form, array $values) {
   //   $form['primaryAuthor']['#value'] = $values['primaryAuthor'];
   // }
 
-  $form['organization'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Organization: *'),
-    '#autocomplete_path' => 'tpps/autocomplete/organization',
-    '#attributes' => array(
-      'data-toggle' => array('tooltip'),
-      'data-placement' => array('right'),
-      'title' => array('Organization of the Primary Author'),
-    ),
-  );
-
   return $form;
 }
 

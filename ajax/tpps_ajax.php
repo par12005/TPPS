@@ -87,29 +87,6 @@ function tpps_project_accession_autocomplete($string) {
 }
 
 /**
- * Organization auto-complete matching.
- *
- * @param string $string
- *   The string the user has already entered into the text field.
- */
-function tpps_organization_autocomplete($string) {
-  $matches = array();
-
-  $results = chado_select_record('contact', array('name'), array(
-    'name' => $string,
-    'type_id' => tpps_load_cvterm('organization')->cvterm_id,
-  ), array(
-    'regex_columns' => array('name'),
-  ));
-
-  foreach ($results as $row) {
-    $matches[$row->name] = check_plain($row->name);
-  }
-
-  drupal_json_output($matches);
-}
-
-/**
  * Journal auto-complete matching.
  *
  * @param string $string
