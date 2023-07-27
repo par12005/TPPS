@@ -655,15 +655,19 @@ jQuery.fn.updateMap = function(locations, fid = "") {
   maps[fid].panTo(center);
 };
 
-Drupal.behaviors.TPPS = {
-  attach: function (context, settings) {
-    // Allows to click on DOI number to fill text field.
-    // Add 'tpps-suggestion' class to A tag.
-    // Example: <a href"#" class="tpps-suggestion">10.25338/B8864J</a>
-    $('.tpps-suggestion').on('click', function(e) {
-      $(this).parents('.form-item').find('input.form-text')
-        .val($(this).text()).blur();
-      e.preventDefault();
-    });
-  }
-};
+/* [VS] */
+(function ($) {
+  Drupal.behaviors.TPPS = {
+    attach: function (context, settings) {
+      // Allows to click on DOI number to fill text field.
+      // Add 'tpps-suggestion' class to A tag.
+      // Example: <a href"#" class="tpps-suggestion">10.25338/B8864J</a>
+      $('.tpps-suggestion').on('click', function(e) {
+        $(this).parents('.form-item').find('input.form-text')
+          .val($(this).text()).blur();
+        e.preventDefault();
+      });
+    }
+  };
+})(jQuery);
+/* [/VS] */
