@@ -654,3 +654,16 @@ jQuery.fn.updateMap = function(locations, fid = "") {
   var center = new google.maps.LatLng(maps[fid + '_total_lat']/locations.length, maps[fid + '_total_long']/locations.length);
   maps[fid].panTo(center);
 };
+
+Drupal.behaviors.TPPS = {
+  attach: function (context, settings) {
+    // Allows to click on DOI number to fill text field.
+    // Add 'tpps-suggestion' class to A tag.
+    // Example: <a href"#" class="tpps-suggestion">10.25338/B8864J</a>
+    $('.tpps-suggestion').on('click', function(e) {
+      $(this).parents('.form-item').find('input.form-text')
+        .val($(this).text()).blur();
+      e.preventDefault();
+    });
+  }
+};
