@@ -874,7 +874,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   }
 
   // [VS]
-  elseif (!empty($genotyping_type['Genotyping Assay'])) {
+  if (!empty($genotyping_type['Genotyping Assay'])) {
     $file_field_name = 'assay-design';
     if (!$genotype['files'][$file_field_name]) {
       form_set_error("$id][genotype][files][$file_field_name",
