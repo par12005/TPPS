@@ -416,6 +416,58 @@ function tpps_pre_validate_init($accession = NULL) {
 }
 
 
+
+
+/**
+ * This helper function is used in the api call /tpps/<accession>/vcf_tree_ids
+ * to get all tree-ids detected from a vcf file
+ */
+function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  
+  $form_state = tpps_load_submission($accession);
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
+  $result = [];
+  if ($vcf_location['status'] == 'exists') {
+    $result = tpps_genotype_get_vcf_tree_ids($vcf_location['location']);
+  }
+  drupal_json_output($result);
+}
+
+
+/**
+ * This helper function is used in the api call /tpps/<accession>/vcf_markers
+ * to get all tree-ids detected from a vcf file
+ */
+function tpps_vcf_markers($accession = NULL, $i = 1) {
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  
+  $form_state = tpps_load_submission($accession);
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
+  $result = [];
+  if ($vcf_location['status'] == 'exists') {
+    $result = tpps_genotype_get_vcf_markers($vcf_location['location']);
+  }
+  drupal_json_output($result);
+}
+
+function tpps_snps_assay_markers($accession = NULL, $i = 1) {
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  $form_state = tpps_load_submission($accession);
+  $snps_assay_location = tpps_snps_assay_location($form_state, $i); // returns array['status', 'location'];
+  // print_r($snps_assay_location);
+  $result = [];
+  if ($snps_assay_location['status'] == 'exists') {
+    $result = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
+  }
+  drupal_json_output($result);
+}
+
+
 /**
  * This code can be used to check missing tree ids in accession file
  * It gets all vcf tree_ids and compares it with the accession file to see
