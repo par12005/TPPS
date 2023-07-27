@@ -758,8 +758,8 @@ function tpps_ols_add_cvterm($term) {
  *   The resulting cvterm object, or "local", or FALSE on failure.
  */
 function tpps_ols_install_term($info) {
-  // print_r('tpps_ols_install_term:');
-  // print_r('overall_info:' . $info . "\n");
+  print_r('tpps_ols_install_term:');
+  print_r('overall_info:' . $info . "\n");
   $parts = explode(':', $info);
   $ontology = $parts[0];
   if ($ontology == 'local') {

@@ -128,9 +128,9 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       '#title' => $title,
       '#upload_location' => $file_upload_location,
       '#upload_validators' => array(
-        'file_validate_extensions' => array('txt csv xlsx'),
+        'file_validate_extensions' => array('txt csv'),
       ),
-      '#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv xlsx</span>',
+      '#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv</span>',
       '#suffix' => '<style>figure {}</style>',
       'empty' => array(
         '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
