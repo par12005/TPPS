@@ -590,6 +590,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#options' => array(
       'Incomplete' => t('Incomplete'),
       'Pending Approval' => t('Pending Approval'),
+      'Approved' => t('Approved'),
       'Submission Job Running' => t('Submission Job Running'),
     ),
     '#default_value' => $status,

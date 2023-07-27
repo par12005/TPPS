@@ -71,7 +71,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Phenotype Isotope/Mass Spectrometry file: *'),
       '#upload_location' => $phenotype_upload_location,
       '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv xlsx'),
+        'file_validate_extensions' => array('csv tsv'),
       ),
       '#description' => t('Please upload a file containing all of your '
         . 'isotope/mass spectrometry data. The format of this file is very '
@@ -601,20 +601,20 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       . 'standardized controlled vocabulary terms, which makes your data '
       . 'more findable, interoperable, and reusable.'),
     );
-    $form[$id]['phenotype']['metadata'] = array(
+    $form[$id]['phenotype']['metadata'] = [
       '#type' => 'managed_file',
       '#title' => t('Phenotype Metadata File: <br/ >Please upload a file '
       . 'containing columns with the name, attribute, structure, '
       . 'description, and units of each of your phenotypes: *'),
       '#upload_location' => "$phenotype_upload_location",
-      '#upload_validators' => ['file_validate_extensions' => ['csv tsv xlsx']],
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE),
-        ),
-      ),
+      '#upload_validators' => ['file_validate_extensions' => ['csv tsv']],
+      '#states' => [
+        'visible' => [
+          ':input[name="' . $id . '[phenotype][check]"]' => ['checked' => TRUE],
+        ],
+      ],
       '#tree' => TRUE,
-    );
+    ];
 
     $form[$id]['phenotype']['metadata']['empty'] = array(
       '#default_value' => isset($values["$id"]['phenotype']['metadata']['empty']) ? $values["$id"]['phenotype']['metadata']['empty'] : 'NA',

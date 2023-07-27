@@ -80,6 +80,45 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  // This will return information about a study's VCF tree ids
+  // First % = accession
+  // Second % = organism_index (1 or 2 or 3 etc) @TODO
+  $items['tpps/%/vcf-tree-ids'] = array(
+    'title' => 'TPPS VCF Tree Ids',
+    'page callback' => 'tpps_vcf_tree_ids',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );  
+
+  // This will return information about a study's VCF markers
+  // First % = accession
+  // Second % = organism_index (1 or 2 or 3 etc) @TODO
+  $items['tpps/%/vcf-markers'] = array(
+    'title' => 'TPPS VCF Markers',
+    'page callback' => 'tpps_vcf_markers',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );   
+  
+  // This will return information about a study's VCF markers
+  // First % = accession
+  // Second % = organism_index (1 or 2 or 3 etc) @TODO
+  $items['tpps/%/snps-assay-markers'] = array(
+    'title' => 'TPPS SNPs Assay Markers',
+    'page callback' => 'tpps_snps_assay_markers',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );    
+
   $items['tpps/%/edit-publication'] = array(
     'title' => 'TPPS Edit Publication Information',
     'page callback' => 'drupal_get_form',
