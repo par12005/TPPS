@@ -205,124 +205,125 @@ function tpps_load_cv($info) {
  * @return object|false
  *   The resulting cvterm object, or FALSE on failure.
  */
-function tpps_load_cvterm($term, array $options = [], $version = NULL, $refresh_cache = FALSE) {
+function tpps_load_cvterm($term, array $options = array(), $version = NULL, $refresh_cache = FALSE) {
+  // [VS]
   $check_cache = variable_get('tpps_load_cvterm_' . md5($term), NULL);
-  $condition = (
-    $check_cache != NULL
-    && !$refresh_cache
-    && !(
-      isset($_GET['refresh_cache'])
-      && $_GET['refresh_cache'] == 'true'
-    )
-  );
-  if ($condition) {
-    return unserialize($check_cache);
+  if ($refresh_cache == TRUE) {
+    $check_cache = NULL;
   }
-  // Refresh cached value.
-  $cvt_v = variable_get('tpps_cvterms_version', '1_1');
-  $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
-  $terms = $get_cvt();
-  $info = $terms[$term] ?? NULL;
-
-  if (empty($info)) {
-    $info = ":$term";
+  if (isset($_GET['refresh_cache']) && $_GET['refresh_cache'] == 'true') {
+    $check_cache = NULL;
   }
-  // dpm($info);
-  // drupal_set_message('info:'. $info);
-  preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
-  $ontology = $matches[1];
-  $name = $matches[2];
-  $alt_ontology = $matches[3] ?? NULL;
-
-  $identifiers = array(
-    'name' => $term,
-    'is_obsolete' => 0,
-  );
-
-  if (!empty($ontology)) {
-    if ($ontology == 'local') {
-      $identifiers['definition'] = $name;
+  // [/VS]
+  if ($check_cache == NULL) {
+    $cvt_v = variable_get('tpps_cvterms_version', '1_1');
+    $get_cvt = 'tpps_get_cvterms_v' . ($version ?? $cvt_v);
+    $terms = $get_cvt();
+    $info = $terms[$term] ?? NULL;
+    if (empty($info)) {
+      $info = ":$term";
     }
-    else {
-      $identifiers['name'] = $name;
-      $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
-    }
-  }
-  $result = chado_get_cvterm($identifiers, $options);
+    // dpm($info);
+    // drupal_set_message('info:'. $info);
+    preg_match('/^([^:]*):([^:]+):?([^:]+)?$/', $info, $matches);
+    $ontology = $matches[1];
+    $name = $matches[2];
+    $alt_ontology = $matches[3] ?? NULL;
 
-  // Cater for CV types like GO: Biological Process.
-  if (empty($result)) {
-    preg_match('/^([\w]*):([\s]+[\w\s]*):([\s\w]*):?([\s\w]*)?$/', $info, $matches2);
-    if(count($matches2) > 0) {
-      // dpm($matches2);
-      $ontology = $matches2[1] . ":" . $matches2[2];
-      // drupal_set_message('ONTOLOGY:' . $ontology);
-      $name = $matches2[3];
-      $alt_ontology = $matches2[4] ?? NULL;
-      if (!empty($ontology)) {
-        if ($ontology == 'local') {
-          $identifiers['definition'] = $name;
-        }
-        else {
-          $identifiers['name'] = $name;
-          $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
-        }
+    $identifiers = array(
+      'name' => $term,
+      'is_obsolete' => 0,
+    );
+
+    if (!empty($ontology)) {
+      if ($ontology == 'local') {
+        $identifiers['definition'] = $name;
       }
-      $result = chado_get_cvterm($identifiers, $options);
+      else {
+        $identifiers['name'] = $name;
+        $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
+      }
     }
-  }
-
-  if (empty($result) && $ontology == 'local') {
-    // Added by Rish (1/5/2022).
-    unset($identifiers['definition']);
-    $identifiers['name'] = $name;
-    $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
     $result = chado_get_cvterm($identifiers, $options);
-  }
-  // drupal_set_message('Identifiers: ' . var_export($identifiers,true));
-  // drupal_set_message('CVTERM_ID: ' . $result->cvterm_id);
-  // echo var_dump($result);
 
-  if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
-    $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
-    $result = chado_get_cvterm($identifiers, $options);
-  }
-
-  if (empty($result)) {
-    // Try searching our TreeGenes Internal Ontology (desperate measures: eg study_type)
-    $identifiers['cv_id'] = tpps_load_cv('TreeGenes Internal Ontology')->cv_id;
-    $result = chado_get_cvterm($identifiers, $options);
-  }
-
-  if (empty($result)) {
-    // Try searching our TreeGenes Internal Ontology (desperate measures: eg study_type)
-    $identifiers['cv_id'] = tpps_load_cv('TreeGenes Internal Ontology')->cv_id;
-    $result = chado_get_cvterm($identifiers, $options);
-  }
-
-  if (empty($result)) {
-    if (!empty($options['job'])) {
-      $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
-      throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
-    }
-    else {
-      $trace = debug_backtrace()[1];
-      $job = NULL;
-      if (!empty($trace['args']) and gettype($trace['args']) == 'array') {
-        foreach ($trace['args'] as $key => $arg) {
-          if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
-            $job = &$trace['args'][$key];
+    // Cater for CV types like GO: Biological Process.
+    if (empty($result)) {
+      preg_match('/^([\w]*):([\s]+[\w\s]*):([\s\w]*):?([\s\w]*)?$/', $info, $matches2);
+      if (count($matches2) > 0) {
+        // dpm($matches2);
+        $ontology = $matches2[1] . ":" . $matches2[2];
+        // drupal_set_message('ONTOLOGY:' . $ontology);
+        $name = $matches2[3];
+        $alt_ontology = $matches2[4] ?? NULL;
+        if (!empty($ontology)) {
+          if ($ontology == 'local') {
+            $identifiers['definition'] = $name;
+          }
+          else {
+            $identifiers['name'] = $name;
+            $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
           }
         }
-        if (!empty($job)) {
-          $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
-        }
+        $result = chado_get_cvterm($identifiers, $options);
       }
-      throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
     }
-  }
 
-  variable_set('tpps_load_cvterm_' . md5($term), serialize($result));
+    if (empty($result) && $ontology == 'local') {
+      // Added by Rish (1/5/2022)
+      unset($identifiers['definition']);
+      $identifiers['name'] = $name;
+      $identifiers['cv_id'] = tpps_load_cv($ontology)->cv_id;
+      $result = chado_get_cvterm($identifiers, $options);
+    }
+    // drupal_set_message('Identifiers: ' . var_export($identifiers,true));
+    // drupal_set_message('CVTERM_ID: ' . $result->cvterm_id);
+    // echo var_dump($result);
+
+    if (empty($result) and $ontology != 'local' and !empty($alt_ontology)) {
+      $identifiers['cv_id'] = tpps_load_cv($alt_ontology)->cv_id;
+      $result = chado_get_cvterm($identifiers, $options);
+    }
+
+    if (empty($result)) {
+      // Try searching our TreeGenes Internal Ontology (desperate measures: eg study_type)
+      $identifiers['cv_id'] = tpps_load_cv('TreeGenes Internal Ontology')->cv_id;
+      $result = chado_get_cvterm($identifiers, $options);
+    }
+
+    if (empty($result)) {
+      // Try searching our TreeGenes Internal Ontology (desperate measures: eg study_type)
+      $identifiers['cv_id'] = tpps_load_cv('TreeGenes Internal Ontology')->cv_id;
+      $result = chado_get_cvterm($identifiers, $options);
+    }
+
+    if (empty($result)) {
+      if (!empty($options['job'])) {
+        $options['job']->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+        throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
+      }
+      else {
+        $trace = debug_backtrace()[1];
+        $job = NULL;
+        if (!empty($trace['args']) and gettype($trace['args']) == 'array') {
+          foreach ($trace['args'] as $key => $arg) {
+            if (gettype($arg) == 'object' and get_class($arg) == 'TripalJob') {
+              $job = &$trace['args'][$key];
+            }
+          }
+          if (!empty($job)) {
+            $job->logMessage('[WARNING] Failed to load cvterm: @term', array('@term' => $term), TRIPAL_WARNING);
+          }
+        }
+        throw new Exception('FATAL - after extensive searching, cvterm ' . $term . ' could not be found. This will cause insertion errors later on so it needs to be fixed');
+      }
+    }
+
+
+    variable_set('tpps_load_cvterm_' . md5($term), serialize($result));
+  }
+  else {
+    $result = unserialize($check_cache);
+  }
   return $result;
 }
 
@@ -771,33 +772,46 @@ function tpps_ols_install_term($info) {
   if (!$cv) {
     $cv = tpps_ols_add_cv($ontology);
   }
-  $cvt = chado_get_cvterm(['name' => $term, 'cv_id' => $cv->cv_id]);
+
+
+  // print_r('term:' . $term . "\n");
+  // print_r('cv_id:' . $cv->cv_id . "\n");
+  $cvt = chado_get_cvterm(array(
+    'name' => $term,
+    'cv_id' => $cv->cv_id,
+  ));
+
   if (!$cvt and !empty($alt_ontology)) {
     $cv = tpps_load_cv($alt_ontology);
     if ($cv) {
-      $cvt = chado_get_cvterm(['name' => $term, 'cv_id' => $cv->cv_id]);
+      $cvt = chado_get_cvterm(array(
+        'name' => $term,
+        'cv_id' => $cv->cv_id,
+      ));
     }
   }
 
-  if (!$cvt) {
-    // Double check original term.
+  if(!$cvt) {
+    // Double check original term
     try {
       // Since tpps_load_cvterm is used else where for require data
       // we had set this to throw Exceptions if a cvterm isn't found
-      // so this is why it is placed in a try clause.
+      // so this is why it is placed in a try clause
       $cvt = tpps_load_cvterm($term);
     }
     catch (Exception $ex) {
+
     }
   }
 
-  // Try searching for the term with the lowercase of the term.
-  // Added by Rish on 02/20/2023.
-  if (!$cvt) {
+  // Try searching for the term with the lowercase of the term
+  // Added by Rish on 02/20/2023
+  if(!$cvt) {
     try {
       $cvt = tpps_load_cvterm(strtolower($term));
     }
     catch (Exception $ex) {
+
     }
   }
 
@@ -810,8 +824,7 @@ function tpps_ols_install_term($info) {
 
     }
     $response = tpps_ols_search($term, $ontology)->response;
-    // default value of 0 (index from OLS search for first value found).
-    $doc_index = 0;
+    $doc_index = 0; // default value of 0 (index from OLS search for first value found)
     if ($response->numFound == 0) {
       return FALSE;
     }

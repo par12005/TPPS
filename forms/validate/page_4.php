@@ -92,6 +92,31 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
         }
       }
     }
+
+    // Validation passed and form is going to be submitted.
+    if (!form_get_errors()) {
+      // We are removing genotype files here to allow on user to get exactly
+      // the same form as was submitted and rmeove files only when they
+      // definitly not needed.
+      for ($i = 1; $i <= $organism_number; $i++) {
+        $genotype = &$form_state['values']["organism-$i"]['genotype'];
+        $genotyping_type = $genotype['files']['genotyping-type'];
+        $file_type = $genotype['files']['file-type'];
+        if ($genotyping_type == 'Genotyping' && $file_type == 'VCF') {
+          if (tpps_file_remove($genotype['files']['snps-assay'])) {
+            $genotype['files']['snps-assay'] = 0;
+          }
+          if (tpps_file_remove($genotype['files']['assay-design'])) {
+            $genotype['files']['assay-design'] = 0;
+          }
+        }
+        else {
+          if (tpps_file_remove($genotype['files']['vcf'])) {
+            $genotype['files']['vcf'] = 0;
+          }
+        }
+      }
+    }
   }
 }
 
@@ -434,11 +459,14 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   $snps = $genotype['SNPs'];
   $ref_genome = $genotype['ref-genome'];
   $genotyping_type = $genotype['files']['genotyping-type'];
+  // Dropdown is visible when "Genotyping Type": Genotyping.
   $file_type = $genotype['files']['file-type'];
-  $vcf = isset($genotype['files']['vcf']) ? $genotype['files']['vcf'] : 0;
-  $snps_assay = isset($genotype['files']['snps-assay']) ? $genotype['files']['snps-assay'] : 0;
+  // File fields:
+  $vcf = $genotype['files']['vcf'] ?? 0;
+  $snps_assay = $genotype['files']['snps-assay'] ?? 0;
+  $assay_design = $genotype['files']['assay-design'] ?? 0;
   $assoc_file = $genotype['files']['snps-association'] ?? 0;
-  $other_file = isset($genotype['files']['other']) ? $genotype['files']['other'] : 0;
+  $other_file = $genotype['files']['other'] ?? 0;
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
 
   // [VS]
@@ -800,6 +828,13 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   }
 
   if (!empty($file_type['SNPs Genotype Assay']) and !$snps_assay) {
+    // Field 'snps_assay' is required when:
+    // Genotyping Type: Genotyping Assay
+    // or (
+    //   Genotyping Type: Genotyping
+    //   && Genotyping file type: SNP Assay file and Assay design file
+    // )
+    // So current check covers all the cases but it's hard to read :( ...
     tpps_form_error_required($form_state,
       [$id, 'genotype', 'files', 'snps-assay']
     );

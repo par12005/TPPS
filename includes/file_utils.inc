@@ -1040,7 +1040,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
 
     // Assume the item IS NOT EMPTY
     $item_is_not_empty = true;
-    if(is_array($item)) {  
+    if(is_array($item)) {
       // Check each key value
       $values_count = count($item);
       $values_empty_count = 0;
@@ -1298,4 +1298,28 @@ function tpps_flat_generator($location, array $options = array()) {
 
   fclose($handle);
   ini_set('auto_detect_line_endings', $original);
+}
+
+/**
+ * Removes managed by Drupal file.
+ *
+ * @param int $fid
+ *   Managed File Id.
+ *
+ * @return bool
+ *   Returns TRUE for success,
+ *   FALSE in the event of an error,
+ *   or an array if the file is being used by any modules.
+ */
+function tpps_file_remove($fid) {
+  if ($fid && $file = file_load($fid)) {
+    file_usage_delete($file, 'tpps', 'tpps_project');
+    if ($result = file_delete($file)) {
+      watchdog('tpps', 'Removed file: <pre>@file</pre>',
+       ['@file' => print_r($file, 1)]
+      );
+    }
+    return $result;
+  }
+  return FALSE;
 }

@@ -1821,17 +1821,18 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     ),
   );
 
-  $fields['SNPs']['targeted-capture-other'] = array(
-    '#type' => 'textfield',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[genotype][SNPs][targeted-capture]"]' => array('value' => '2'),
-        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '2'),
-      ),
-    ),
-  );
-
   // [VS]
+  $fields['SNPs']['targeted-capture-other'] = [
+    '#type' => 'textfield',
+    '#title' => t('Other Targeted Capture: *'),
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $id . '[genotype][SNPs][targeted-capture]"]' => ['value' => '2'],
+        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => ['value' => '2'],
+      ],
+    ],
+  ];
+
   $fields['SSRs/cpSSRs'] = [
     '#type' => 'select',
     '#title' => t('Define SSRs/cpSSRs Type: *'),
