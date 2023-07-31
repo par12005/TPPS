@@ -717,13 +717,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#tree' => TRUE,
     );
 
-    $form[$id]['phenotype']['metadata']['empty'] = array(
-      '#default_value' => isset($values["$id"]['phenotype']['metadata']['empty']) ? $values["$id"]['phenotype']['metadata']['empty'] : 'NA',
-    );
+    $form[$id]['phenotype']['metadata']['empty'] = [
+      '#default_value' => $values["$id"]['phenotype']['metadata']['empty'] ?? 'NA',
+    ];
 
-    $form[$id]['phenotype']['metadata']['columns'] = array(
+    $form[$id]['phenotype']['metadata']['columns'] = [
       '#description' => t('Please define which columns hold the required data: Phenotype name'),
-    );
+    ];
 
     $column_options = array(
       'N/A',
@@ -1189,17 +1189,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'callback' => 'tpps_genotype_files_callback',
         'wrapper' => "$id-genotype-files",
       ],
+      // Note: must be used inversed value.
       '#states' => [
         'visible' => [
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'SSRs'],
-          ],
-          'or',
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'Both SSRs and cpSSRs'],
-          ],
+          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+          => ['!value' => 'cpSSRs'],
         ],
       ],
     ];
@@ -1217,18 +1211,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         . 'For any ploidy, TPPS will assume that the first column of your '
         . 'file is the column that holds the Plant Identifier that matches '
         . 'your accession file.'),
-      // @todo [VS] Update validation.
+      // Note: must be used inversed value.
       'states' => [
         'visible' => [
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'SSRs']
-          ],
-          'or',
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'Both SSRs and cpSSRs']
-          ],
+          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+          => ['!value' => 'cpSSRs'],
         ],
       ],
       // Add extra text field for empty field value.
@@ -1243,7 +1230,6 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // cpSSRs.
-    // @todo [VS] Rename field machine name.
     $fields['files']['extra-ploidy'] = [
       '#type' => 'select',
       '#title' => t('cpSSRs Ploidy: *'),
@@ -1261,17 +1247,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'callback' => 'tpps_genotype_files_callback',
         'wrapper' => "$id-genotype-files",
       ],
+      // Note: must be used inversed value.
       '#states' => [
         'visible' => [
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'cpSSRs'],
-          ],
-          'or',
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-             => ['value' => 'Both SSRs and cpSSRs'],
-          ],
+          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+          => ['!value' => 'SSRs'],
         ],
       ],
     ];
@@ -1294,18 +1274,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         . 'For any ploidy, TPPS will assume that the first column of your '
         . 'file is the column that holds the Plant Identifier that matches '
         . 'your accession file.'),
-      // @todo [VS] Update validation.
+      // Note: must be used inversed value.
       'states' => [
         'visible' => [
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'cpSSRs']
-          ],
-          'or',
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'Both SSRs and cpSSRs']
-          ],
+          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+          => ['!value' => 'SSRs'],
         ],
       ],
       // Add extra text field for empty field value.
@@ -1937,10 +1910,10 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     // @todo Show only one field by default and remove default value.
     // Default value it not required but by default all related fields are
     // shown so this is workaround.
-    '#default_value' =>
-    // 'Both SSRs and cpSSRs',
-    // Default value on form creation.
-    tpps_get_ajax_value($form_state, [$id, 'genotype', 'SSRs/cpSSRs']),
+    '#default_value' => tpps_get_ajax_value(
+      $form_state,
+      [$id, 'genotype', 'SSRs/cpSSRs']
+    ),
   ];
 }
 
