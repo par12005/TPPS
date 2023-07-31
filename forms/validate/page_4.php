@@ -79,9 +79,14 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
 
         foreach ($file_types as $type) {
           foreach ($field_types as $field) {
-            if (isset($form["organism-$i"]['genotype']['files'][$type][$field]) and isset($new_form["organism-$i"]['genotype']['files'][$type][$field])) {
-              $form["organism-$i"]['genotype']['files'][$type][$field] = $new_form["organism-$i"]['genotype']['files'][$type][$field];
-              $form["organism-$i"]['genotype']['files'][$type][$field]['#id'] = "edit-organism-$i-genotype-files-{$type}-{$field}";
+            if (
+              isset($form["organism-$i"]['genotype']['files'][$type][$field])
+              and isset($new_form["organism-$i"]['genotype']['files'][$type][$field])
+            ) {
+              $form["organism-$i"]['genotype']['files'][$type][$field]
+                = $new_form["organism-$i"]['genotype']['files'][$type][$field];
+              $form["organism-$i"]['genotype']['files'][$type][$field]['#id']
+                = "edit-organism-$i-genotype-files-{$type}-{$field}";
             }
           }
         }
@@ -89,6 +94,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     }
 
     // Validation passed and form is going to be submitted.
+    // We shouldn't remove any files until validation passed.
     if (!form_get_errors()) {
       // We are removing genotype files here to allow on user to get exactly
       // the same form as was submitted and rmeove files only when they
@@ -108,6 +114,19 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
         else {
           if (tpps_file_remove($genotype['files']['vcf'])) {
             $genotype['files']['vcf'] = 0;
+          }
+        }
+        // Remove SSR/cpSSR files which was uploaded but not in use.
+        if (!empty($marker_type['SSRs/cpSSRs'])) {
+          if ($genotype['SSRs/cpSSRs'] == 'cpSSRs') {
+            if (tpps_file_remove($genotype['files']['ssrs'])) {
+              $genotype['files']['ssrs'] = 0;
+            }
+          }
+          if ($genotype['SSRs/cpSSRs'] == 'SSRs') {
+            if (tpps_file_remove($genotype['files']['ssrs_extra'])) {
+              $genotype['files']['ssrs_extra'] = 0;
+            }
           }
         }
       }
