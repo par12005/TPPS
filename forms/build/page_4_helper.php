@@ -900,7 +900,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     '#title' => t('<div class="fieldset-title">Genotype Information:</div>'),
     '#collapsible' => TRUE,
   );
-  tpps_page_4_marker_info($fields, $id);
+  tpps_page_4_marker_info($fields, $form_state, $id);
   tpps_page_4_ref($fields, $form_state, $id);
 
   $marker_parents = [$id, 'genotype', 'marker-type'];
@@ -1826,16 +1826,18 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fields['tripal_fasta'] = $fasta;
 }
 
+// [VS]
 /**
  * Creates fields describing the genotype markers used in the submission.
  *
  * @param array $fields
  *   The form element being populated.
+ * @param array $form_state
+ *   Drupal Form API array.
  * @param string $id
  *   The id of the organism fieldset being populated.
  */
-function tpps_page_4_marker_info(array &$fields, $id) {
-  // [VS]
+function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
   $fields['marker-type'] = [
     '#type' => 'select',
     '#multiple' => TRUE,
@@ -1935,13 +1937,14 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     // @todo Show only one field by default and remove default value.
     // Default value it not required but by default all related fields are
     // shown so this is workaround.
-    '#default_value' => 'Both SSRs and cpSSRs',
+    '#default_value' =>
+    // 'Both SSRs and cpSSRs',
     // Default value on form creation.
-    // tpps_get_ajax_value($form_state, [$id, 'genotype','SSRs/cpSSRs'])).
+    tpps_get_ajax_value($form_state, [$id, 'genotype', 'SSRs/cpSSRs']),
   ];
-  // [/VS]
 }
 
+// [/VS]
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // Helper functions.
 
