@@ -117,7 +117,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
           }
         }
         // Remove SSR/cpSSR files which was uploaded but not in use.
-        if (!empty($marker_type['SSRs/cpSSRs'])) {
+        if (!empty($genotype['marker-type']['SSRs/cpSSRs'])) {
           if ($genotype['SSRs/cpSSRs'] == 'cpSSRs') {
             if (tpps_file_remove($genotype['files']['ssrs'])) {
               $genotype['files']['ssrs'] = 0;
