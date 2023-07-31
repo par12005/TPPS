@@ -1718,11 +1718,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $eutils = tripal_get_importer_form(array(), $form_state, $class);
   $eutils['#type'] = 'fieldset';
   $eutils['#title'] = 'Tripal Eutils BioProject Loader';
-  $eutils['#states'] = array(
-    'visible' => array(
-      ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'bio'),
-    ),
-  );
+  $eutils['#states'] = [
+    'visible' => [
+      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'bio'],
+    ],
+  ];
   $eutils['accession']['#description'] = t('Valid examples: 12384, 394253, 66853, PRJNA185471');
   $eutils['db'] = array(
     '#type' => 'hidden',
@@ -1776,11 +1776,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fasta['#states'] = array(
     'visible' => array(
     array(
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url')),
+      [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url']],
       'or',
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')),
+      [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
       'or',
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual2')),
+      [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
     ),
     ),
   );
@@ -1807,20 +1807,21 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   $fasta['file']['file_upload'] = $upload;
   $fasta['analysis_id']['#required'] = $fasta['seqtype']['#required'] = FALSE;
-  $fasta['file']['file_upload']['#states'] = $fasta['file']['file_upload_existing']['#states'] = array(
-    'visible' => array(
-    array(
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')),
-      'or',
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual2')),
-    ),
-    ),
-  );
-  $fasta['file']['file_remote']['#states'] = array(
-    'visible' => array(
-      ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url'),
-    ),
-  );
+  $fasta['file']['file_upload']['#states']
+    = $fasta['file']['file_upload_existing']['#states'] = [
+      'visible' => [
+        [
+          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
+          'or',
+          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
+        ],
+      ],
+    ];
+  $fasta['file']['file_remote']['#states'] = [
+    'visible' => [
+      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url'],
+    ],
+  ];
 
   $fields['tripal_fasta'] = $fasta;
 }
