@@ -1185,30 +1185,30 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // [VS]
   if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
+    $fields['files']['ploidy'] = [
+      '#type' => 'select',
+      '#title' => t('SSR Ploidy: *'),
+      '#options' => [
+        'Haploid' => t('Haploid'),
+        'Diploid' => t('Diploid'),
+        'Polyploid' => t('Polyploid'),
+      ],
+      // Note:
+      // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
+      // description. See function tpps_genotype_update_description().
+      // This could be done in browser on client side using JS
+      // but for now it was left as is.
+      '#ajax' => [
+        'callback' => 'tpps_genotype_files_callback',
+        'wrapper' => "$id-genotype-files",
+        'effect' => 'slide',
+      ],
+    ];
     // SSRs.
     if ($ssrs_cpssrs_value != 'cpSSRs') {
       // 'SSRs' or 'Both SSRs and cpSSRs'.
       $file_field_name = 'ssrs';
       $title = t('SSRs Spreadsheet');
-      $fields['files']['ploidy'] = [
-        '#type' => 'select',
-        '#title' => t('SSRs Ploidy: *'),
-        '#options' => [
-          'Haploid' => t('Haploid'),
-          'Diploid' => t('Diploid'),
-          'Polyploid' => t('Polyploid'),
-        ],
-        // Note:
-        // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
-        // description. See function tpps_genotype_update_description().
-        // This could be done in browser on client side using JS
-        // but for now it was left as is.
-        '#ajax' => [
-          'callback' => 'tpps_genotype_files_callback',
-          'wrapper' => "$id-genotype-files",
-          'effect' => 'slide',
-        ],
-      ];
       tpps_build_file_field($fields, [
         'form_state' => $form_state,
         'id' => $id,
@@ -1240,25 +1240,6 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     if ($ssrs_cpssrs_value != 'SSRs') {
       $file_field_name = 'ssrs_extra';
       $title = t('cpSSRs Spreadsheet');
-      $fields['files']['extra-ploidy'] = [
-        '#type' => 'select',
-        '#title' => t('cpSSRs Ploidy: *'),
-        '#options' => [
-          'Haploid' => t('Haploid'),
-          'Diploid' => t('Diploid'),
-          'Polyploid' => t('Polyploid'),
-        ],
-        // Note:
-        // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
-        // description. See function tpps_genotype_update_description().
-        // This could be done in browser on client side using JS
-        // but for now it was left as is.
-        '#ajax' => [
-          'callback' => 'tpps_genotype_files_callback',
-          'wrapper' => "$id-genotype-files",
-          'effect' => 'slide',
-        ],
-      ];
       tpps_build_file_field($fields, [
         'form_state' => $form_state,
         'id' => $id,
@@ -1279,7 +1260,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       tpps_genotype_update_description($fields, [
         'id' => $id,
         'form_state' => $form_state,
-        'source_field_name' => 'extra-ploidy',
+        'source_field_name' => 'ploidy',
         'target_field_name' => $file_field_name,
       ]);
     }
