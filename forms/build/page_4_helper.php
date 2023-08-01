@@ -1919,13 +1919,12 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       'wrapper' => "$id-genotype-files",
       'effect' => 'slide',
     ],
-    // @todo Show only one field by default and remove default value.
-    // Default value it not required but by default all related fields are
-    // shown so this is workaround.
-    //'#default_value' => tpps_get_ajax_value(
-    //  $form_state,
-    //  [$id, 'genotype', 'SSRs/cpSSRs']
-    //),
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $id . '[genotype][marker-type]"]'
+        => ['value' => 'SSRs/cpSSRs'],
+      ],
+    ],
   ];
 }
 
