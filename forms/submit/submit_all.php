@@ -3471,6 +3471,14 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $genotype_count = &$options['genotype_count'];
   $project_id = $options['project_id'];
   $marker = $options['marker'];
+  // Marker adjustment [RISH: 8/1/2023]
+  if ($marker == 'SSRs') {
+    $marker = 'SSR';
+  }
+  else if($marker == 'cpSSRs') {
+    $marker = 'cpSSR';
+  }
+
   $type_cvterm = $options['type_cvterm'];
   $seq_var_cvterm = $options['seq_var_cvterm'];
   $multi_insert_options = $options['multi_insert'];
