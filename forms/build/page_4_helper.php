@@ -907,6 +907,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   $genotype_marker_type = array_keys(
     tpps_get_ajax_value($form_state, $marker_parents)
   );
+  // Get 'Define SSRs/cpSSRs Type' field value to show correct fields
+  // which visiblity depends on value of this field.
+  $ssrs_cpssrs_value = tpps_get_ajax_value(
+    $form_state, [$id, 'genotype', 'SSRs/cpSSRs']
+  );
 
   $fields['files'] = [
     '#type' => 'fieldset',
@@ -1170,126 +1175,130 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // [VS]
   if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
     // SSRs.
-    $fields['files']['ploidy'] = [
-      '#type' => 'select',
-      '#title' => t('SSRs Ploidy: *'),
-      '#options' => [
-        'Haploid' => t('Haploid'),
-        'Diploid' => t('Diploid'),
-        'Polyploid' => t('Polyploid'),
-      ],
-      // Note:
-      // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
-      // description. See function tpps_genotype_update_description().
-      // This could be done in browser on client side using JS
-      // but for now it was left as is.
-      '#ajax' => [
-        'callback' => 'tpps_genotype_files_callback',
-        'wrapper' => "$id-genotype-files",
-      ],
-      // Note: must be used inversed value.
-      '#states' => [
-        'visible' => [
-          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-          => ['!value' => 'cpSSRs'],
+    if ($ssrs_cpssrs_value != 'cpSSRs') {
+      // 'SSRs' or 'Both SSRs and cpSSRs'.
+      $fields['files']['ploidy'] = [
+        '#type' => 'select',
+        '#title' => t('SSRs Ploidy: *'),
+        '#options' => [
+          'Haploid' => t('Haploid'),
+          'Diploid' => t('Diploid'),
+          'Polyploid' => t('Polyploid'),
         ],
-      ],
-    ];
-    $title = t('SSRs Spreadsheet');
-    $file_field_name = 'ssrs';
-    tpps_build_file_field($fields, [
-      'form_state' => $form_state,
-      'id' => $id,
-      'file_field_name' => $file_field_name,
-      'title' => $title,
-      'upload_location' => "$genotype_upload_location",
-      'description' => t('Please upload a spreadsheet containing your '
-        . 'SSRs data. The format of this file is very important! TPPS will '
-        . 'parse your file based on the ploidy you have selected above. '
-        . 'For any ploidy, TPPS will assume that the first column of your '
-        . 'file is the column that holds the Plant Identifier that matches '
-        . 'your accession file.'),
-      // Note: must be used inversed value.
-      'states' => [
-        'visible' => [
-          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-          => ['!value' => 'cpSSRs'],
+        // Note:
+        // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
+        // description. See function tpps_genotype_update_description().
+        // This could be done in browser on client side using JS
+        // but for now it was left as is.
+        '#ajax' => [
+          'callback' => 'tpps_genotype_files_callback',
+          'wrapper' => "$id-genotype-files",
         ],
-      ],
-      // Add extra text field for empty field value.
-      'empty_field_value' => 'NA',
-    ]);
-    tpps_genotype_update_description($fields, [
-      'id' => $id,
-      'form_state' => $form_state,
-      'source_field_name' => 'ploidy',
-      'target_field_name' => $file_field_name,
-    ]);
-
+        // Note: must be used inversed value.
+        '#states' => [
+          'visible' => [
+            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+            => ['!value' => 'cpSSRs'],
+          ],
+        ],
+      ];
+      $title = t('SSRs Spreadsheet');
+      $file_field_name = 'ssrs';
+      tpps_build_file_field($fields, [
+        'form_state' => $form_state,
+        'id' => $id,
+        'file_field_name' => $file_field_name,
+        'title' => $title,
+        'upload_location' => "$genotype_upload_location",
+        'description' => t('Please upload a spreadsheet containing your '
+          . 'SSRs data. The format of this file is very important! TPPS will '
+          . 'parse your file based on the ploidy you have selected above. '
+          . 'For any ploidy, TPPS will assume that the first column of your '
+          . 'file is the column that holds the Plant Identifier that matches '
+          . 'your accession file.'),
+        // Note: must be used inversed value.
+        'states' => [
+          'visible' => [
+            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+            => ['!value' => 'cpSSRs'],
+          ],
+        ],
+        // Add extra text field for empty field value.
+        'empty_field_value' => 'NA',
+      ]);
+      tpps_genotype_update_description($fields, [
+        'id' => $id,
+        'form_state' => $form_state,
+        'source_field_name' => 'ploidy',
+        'target_field_name' => $file_field_name,
+      ]);
+    }
+    // End of 'SSRs' field.
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // cpSSRs.
-    $fields['files']['extra-ploidy'] = [
-      '#type' => 'select',
-      '#title' => t('cpSSRs Ploidy: *'),
-      '#options' => [
-        'Haploid' => t('Haploid'),
-        'Diploid' => t('Diploid'),
-        'Polyploid' => t('Polyploid'),
-      ],
-      // Note:
-      // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
-      // description. See function tpps_genotype_update_description().
-      // This could be done in browser on client side using JS
-      // but for now it was left as is.
-      '#ajax' => [
-        'callback' => 'tpps_genotype_files_callback',
-        'wrapper' => "$id-genotype-files",
-      ],
-      // Note: must be used inversed value.
-      '#states' => [
-        'visible' => [
-          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-          => ['!value' => 'SSRs'],
+    if ($ssrs_cpssrs_value != 'SSRs') {
+      // 'cpSSRs' or 'Both SSRs and cpSSRs'.
+      $fields['files']['extra-ploidy'] = [
+        '#type' => 'select',
+        '#title' => t('cpSSRs Ploidy: *'),
+        '#options' => [
+          'Haploid' => t('Haploid'),
+          'Diploid' => t('Diploid'),
+          'Polyploid' => t('Polyploid'),
         ],
-      ],
-    ];
-
-    // [VS]
-    // @todo [VS] Change field machine name.
-    $title = t('cpSSRs Spreadsheet');
-    $file_field_name = 'ssrs_extra';
-    tpps_build_file_field($fields, [
-      'form_state' => $form_state,
-      'id' => $id,
-      'file_field_name' => $file_field_name,
-      'title' => $title,
-      'upload_location' => "$genotype_upload_location",
-      // Note:
-      // Difference from form 'ssrs' field: 'cpSSRs' (2nd line).
-      'description' => t('Please upload a spreadsheet containing your '
-        . 'cpSSRs data. The format of this file is very important! TPPS will '
-        . 'parse your file based on the ploidy you have selected above. '
-        . 'For any ploidy, TPPS will assume that the first column of your '
-        . 'file is the column that holds the Plant Identifier that matches '
-        . 'your accession file.'),
-      // Note: must be used inversed value.
-      'states' => [
-        'visible' => [
-          ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-          => ['!value' => 'SSRs'],
+        // Note:
+        // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
+        // description. See function tpps_genotype_update_description().
+        // This could be done in browser on client side using JS
+        // but for now it was left as is.
+        '#ajax' => [
+          'callback' => 'tpps_genotype_files_callback',
+          'wrapper' => "$id-genotype-files",
         ],
-      ],
-      // Add extra text field for empty field value.
-      'empty_field_value' => 'NA',
-    ]);
-    tpps_genotype_update_description($fields, [
-      'id' => $id,
-      'form_state' => $form_state,
-      'source_field_name' => 'extra-ploidy',
-      'target_field_name' => $file_field_name,
-    ]);
+        // Note: must be used inversed value.
+        '#states' => [
+          'visible' => [
+            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+            => ['!value' => 'SSRs'],
+          ],
+        ],
+      ];
+      $title = t('cpSSRs Spreadsheet');
+      $file_field_name = 'ssrs_extra';
+      tpps_build_file_field($fields, [
+        'form_state' => $form_state,
+        'id' => $id,
+        'file_field_name' => $file_field_name,
+        'title' => $title,
+        'upload_location' => "$genotype_upload_location",
+        // Note:
+        // Difference from form 'ssrs' field: 'cpSSRs' (2nd line).
+        'description' => t('Please upload a spreadsheet containing your '
+          . 'cpSSRs data. The format of this file is very important! TPPS will '
+          . 'parse your file based on the ploidy you have selected above. '
+          . 'For any ploidy, TPPS will assume that the first column of your '
+          . 'file is the column that holds the Plant Identifier that matches '
+          . 'your accession file.'),
+        // Note: must be used inversed value.
+        'states' => [
+          'visible' => [
+            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
+            => ['!value' => 'SSRs'],
+          ],
+        ],
+        // Add extra text field for empty field value.
+        'empty_field_value' => 'NA',
+      ]);
+      tpps_genotype_update_description($fields, [
+        'id' => $id,
+        'form_state' => $form_state,
+        'source_field_name' => 'extra-ploidy',
+        'target_field_name' => $file_field_name,
+      ]);
+    }
+    // End of 'cpSSR' field.
   }
   else {
     $file_field_list = ['ssrs', 'ssrs_extra'];
@@ -1298,6 +1307,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     }
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (in_array('Other', $genotype_marker_type)) {
     $fields['other-marker'] = [
       '#type' => 'textfield',
@@ -1899,6 +1909,9 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     ],
   ];
 
+  // Field 'Define SSRs/cpSSRs Type'.
+  // @TODO Minor. Better to rename field to avoid '/' in name
+  // and make it more meaningful.
   $fields['SSRs/cpSSRs'] = [
     '#type' => 'select',
     '#title' => t('Define SSRs/cpSSRs Type: *'),
