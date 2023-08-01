@@ -915,7 +915,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // Get 'Define SSRs/cpSSRs Type' field value to show correct fields
   // which visiblity depends on value of this field.
   $ssrs_cpssrs_value = tpps_get_ajax_value(
-    $form_state, [$id, 'genotype', 'SSRs/cpSSRs']
+    $form_state, [$id, 'genotype', 'SSRs/cpSSRs'], 'SSRs'
   );
 
   $fields['files'] = [
@@ -1232,7 +1232,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       ]);
     }
     else {
-      tpps_build_disabled_file_field($fields, $file_field_name);
+      tpps_build_disabled_file_field($fields, 'ssrs');
     }
     // End of 'SSRs' field.
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1284,7 +1284,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       ]);
     }
     else {
-      tpps_build_disabled_file_field($fields, $file_field_name);
+      tpps_build_disabled_file_field($fields, 'ssrs_extra');
     }
     // End of 'cpSSR' field.
   }
