@@ -1264,12 +1264,11 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
   $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
   $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
+  $ploidy_field_name = 'ploidy';
   if ($field_name == 'ssrs') {
-    $ploidy_field_name = 'ploidy';
     $prefix = 'Genotype_SSR_Spreadsheet';
   }
   elseif ($field_name == 'ssrs_extra') {
-    $ploidy_field_name = 'extra-ploidy';
     $prefix = 'Genotype_SSR_Additional_Spreadsheet';
   }
 
