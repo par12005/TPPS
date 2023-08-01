@@ -1643,6 +1643,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $options['records'] = $records;
     $genotype_count = 0;
 
+    // SSRS_EXTRA seems to be for cpSSRs file
     if (!empty($genotype['files']['ssrs_extra'])) {
       $extra_fid = $genotype['files']['ssrs_extra'];
       tpps_add_project_file($form_state, $extra_fid);
@@ -3528,6 +3529,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
 
     $variant_name = $headers[$key];
     $marker_name = $variant_name . $marker;
+    $genotype_name_without_call = "$marker-$variant_name-$species_code";
     $genotype_name = "$marker-$variant_name-$species_code-$val";
 
     // echo "Variant Name: $variant_name\n";
@@ -3679,10 +3681,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //   'type_id' => $type_cvterm,
       // );
       chado_insert_record('genotype', [
-        'name' => $genotype_name,
+        'name' => $genotype_name_without_call,
         'uniquename' => $genotype_name,
         'description' => $val,
-        'type_id' => $type_cvterm,      
+        'type_id' => $type_cvterm,   
       ]);
 
       $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
@@ -5009,8 +5011,31 @@ function tpps_genotype_initial_checks($form_state, $i, $job) {
 }
 
 // TODO
-function tpps_accession_file_get_tree_ids($fid) {
+function tpps_accession_file_get_tree_ids($form_state, $i) {
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $fid = $thirdpage['tree-accession']['species-' . $i]['file'];
   $snp_assay_header = tpps_file_headers($fid);
+}
+
+function tpps_accession_file_location($form_state, $i) {
+  $results = [
+    'status' => 'empty', // empty, exists, missing
+    'location' => NULL,
+    'fid' => 0,
+  ];  
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $fid = $thirdpage['tree-accession']['species-' . $i]['file'];
+  $results['fid'] = $fid;
+  if ($fid > 0) {
+    $results['status'] = 'exists';
+    $file = file_load($fid);
+    $location = tpps_get_location($file->uri);
+    $results['location'] = $location;
+    if ($location == '' or $location == null) {
+      $results['status'] = 'missing';
+    }
+  }
+  return $results; 
 }
 
 /**

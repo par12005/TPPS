@@ -1927,8 +1927,10 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#type' => 'select',
     '#title' => t('Define SSRs/cpSSRs Type: *'),
     '#options' => [
-      'SSRs' => t('SSRs'),
-      'cpSSRs' => t('cpSSRs'),
+      // 'SSRs' => t('SSRs'), // Original from Peter
+      'SSR' => t('SSRs'), // modified by Rish 8/1/2023
+      // 'cpSSRs' => t('cpSSRs'), // Original from Peter
+      'cpSSR' => t('cpSSRs'), // modifiedy by Rish 8/1/2023
       'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
     ],
     // @todo Show only one field by default and remove default value.
