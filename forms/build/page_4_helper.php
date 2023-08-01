@@ -1678,11 +1678,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $ref_genome_arr["manual2"] = 'I can upload my own reference transcriptome file';
   $ref_genome_arr["none"] = 'I am unable to provide a reference assembly';
 
-  $fields['ref-genome'] = array(
+  $fields['ref-genome'] = [
     '#type' => 'select',
     '#title' => t('Reference Assembly used: *'),
     '#options' => $ref_genome_arr,
-  );
+  ];
 
   require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
   $class = 'EutilsImporter';

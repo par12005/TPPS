@@ -7,12 +7,11 @@ jQuery(document).ready(function ($) {
   $(organism_name + '-genotype-marker-type').bind('change', function() {
     if ($.inArray('SNPs', $(this).val()) !== -1) {
       $(organism_name + '-genotype-snps').show();
-      $(organism_name + '-genotype-ref-genome').parent().show();
     }
     else {
       $(organism_name + '-genotype-snps').hide();
-      $(organism_name + '-genotype-ref-genome').parent().hide();
     }
+
     if ($.inArray('SSRs/cpSSRs', $(this).val()) !== -1) {
       $(organism_name + '-genotype-ssrscpssrs').parent().show();
     }
