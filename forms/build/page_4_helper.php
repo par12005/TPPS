@@ -39,6 +39,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#ajax' => array(
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
+      'effect' => 'slide',
     ),
     '#default_value' => tpps_get_ajax_value($form_state, array(
       $id,
@@ -53,6 +54,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#ajax' => array(
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
+      'effect' => 'slide',
     ),
   );
 
@@ -244,6 +246,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#ajax' => array(
           'callback' => 'tpps_update_phenotype_meta',
           'wrapper' => "org_{$id}_phenotype_!num_meta",
+          'effect' => 'slide',
         ),
       ),
       'attribute' => array(
@@ -253,6 +256,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         '#ajax' => array(
           'callback' => 'tpps_update_phenotype_meta',
           'wrapper' => "org_{$id}_phenotype_!num_meta",
+          'effect' => 'slide',
         ),
       ),
       'attr-other' => array(
@@ -819,6 +823,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#ajax' => array(
         'callback' => 'tpps_update_phenotype',
         'wrapper' => "phenotype-main-$id",
+        'effect' => 'slide',
       ),
     );
 
@@ -949,6 +954,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         '#ajax' => [
           'callback' => 'tpps_genotype_files_callback',
           'wrapper' => "$id-genotype-files",
+          'effect' => 'slide',
         ],
       ];
     }
@@ -962,6 +968,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#ajax' => [
         'callback' => 'tpps_genotype_files_callback',
         'wrapper' => "$id-genotype-files",
+        'effect' => 'slide',
       ],
     ];
 
@@ -977,6 +984,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#ajax' => [
         'callback' => 'tpps_genotype_files_callback',
         'wrapper' => "$id-genotype-files",
+        'effect' => 'slide',
       ],
       '#states' => [
         'visible' => [
@@ -1180,6 +1188,8 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     // SSRs.
     if ($ssrs_cpssrs_value != 'cpSSRs') {
       // 'SSRs' or 'Both SSRs and cpSSRs'.
+      $file_field_name = 'ssrs';
+      $title = t('SSRs Spreadsheet');
       $fields['files']['ploidy'] = [
         '#type' => 'select',
         '#title' => t('SSRs Ploidy: *'),
@@ -1196,17 +1206,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         '#ajax' => [
           'callback' => 'tpps_genotype_files_callback',
           'wrapper' => "$id-genotype-files",
-        ],
-        // Note: must be used inversed value.
-        '#states' => [
-          'visible' => [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['!value' => 'cpSSRs'],
-          ],
+          'effect' => 'slide',
         ],
       ];
-      $title = t('SSRs Spreadsheet');
-      $file_field_name = 'ssrs';
       tpps_build_file_field($fields, [
         'form_state' => $form_state,
         'id' => $id,
@@ -1219,13 +1221,6 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
           . 'For any ploidy, TPPS will assume that the first column of your '
           . 'file is the column that holds the Plant Identifier that matches '
           . 'your accession file.'),
-        // Note: must be used inversed value.
-        'states' => [
-          'visible' => [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['!value' => 'cpSSRs'],
-          ],
-        ],
         // Add extra text field for empty field value.
         'empty_field_value' => 'NA',
       ]);
@@ -1236,10 +1231,15 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'target_field_name' => $file_field_name,
       ]);
     }
+    else {
+      tpps_build_disabled_file_field($fields, $file_field_name);
+    }
     // End of 'SSRs' field.
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // 'cpSSRs'.
     if ($ssrs_cpssrs_value != 'SSRs') {
-      // 'cpSSRs' or 'Both SSRs and cpSSRs'.
+      $file_field_name = 'ssrs_extra';
+      $title = t('cpSSRs Spreadsheet');
       $fields['files']['extra-ploidy'] = [
         '#type' => 'select',
         '#title' => t('cpSSRs Ploidy: *'),
@@ -1256,17 +1256,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         '#ajax' => [
           'callback' => 'tpps_genotype_files_callback',
           'wrapper' => "$id-genotype-files",
-        ],
-        // Note: must be used inversed value.
-        '#states' => [
-          'visible' => [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['!value' => 'SSRs'],
-          ],
+          'effect' => 'slide',
         ],
       ];
-      $title = t('cpSSRs Spreadsheet');
-      $file_field_name = 'ssrs_extra';
       tpps_build_file_field($fields, [
         'form_state' => $form_state,
         'id' => $id,
@@ -1281,13 +1273,6 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
           . 'For any ploidy, TPPS will assume that the first column of your '
           . 'file is the column that holds the Plant Identifier that matches '
           . 'your accession file.'),
-        // Note: must be used inversed value.
-        'states' => [
-          'visible' => [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['!value' => 'SSRs'],
-          ],
-        ],
         // Add extra text field for empty field value.
         'empty_field_value' => 'NA',
       ]);
@@ -1297,6 +1282,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'source_field_name' => 'extra-ploidy',
         'target_field_name' => $file_field_name,
       ]);
+    }
+    else {
+      tpps_build_disabled_file_field($fields, $file_field_name);
     }
     // End of 'cpSSR' field.
   }
@@ -1344,6 +1332,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#ajax' => [
         'wrapper' => "edit-$id-genotype-files-other-ajax-wrapper",
         'callback' => 'tpps_page_4_file_dynamic',
+        'effect' => 'slide',
       ],
       '#default_value' => $default_dynamic,
     ];
@@ -1719,6 +1708,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $eutils['callback']['#ajax'] = array(
     'callback' => 'tpps_ajax_bioproject_callback',
     'wrapper' => "$id-tripal-eutils",
+    'effect' => 'slide',
   );
   $eutils['#prefix'] = "<div id=\"$id-tripal-eutils\">";
   $eutils['#suffix'] = '</div>';
@@ -1833,6 +1823,7 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     '#ajax' => [
       'callback' => 'tpps_genotype_files_callback',
       'wrapper' => "$id-genotype-files",
+      'effect' => 'slide',
     ],
   ];
 
@@ -1920,13 +1911,21 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       'cpSSRs' => t('cpSSRs'),
       'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
     ],
+    // Fields 'SSRs' and 'cpSSRs' are switched good on already loaded page
+    // but when page loaded first time or changed Ploidy (which updates
+    // form using AJAX) then both fields are shown which is not correct.
+    '#ajax' => [
+      'callback' => 'tpps_genotype_files_callback',
+      'wrapper' => "$id-genotype-files",
+      'effect' => 'slide',
+    ],
     // @todo Show only one field by default and remove default value.
     // Default value it not required but by default all related fields are
     // shown so this is workaround.
-    '#default_value' => tpps_get_ajax_value(
-      $form_state,
-      [$id, 'genotype', 'SSRs/cpSSRs']
-    ),
+    //'#default_value' => tpps_get_ajax_value(
+    //  $form_state,
+    //  [$id, 'genotype', 'SSRs/cpSSRs']
+    //),
   ];
 }
 
@@ -1960,6 +1959,7 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
     '#ajax' => [
       'callback' => 'tpps_genotype_files_type_change_callback',
       'wrapper' => "$id-genotype-files",
+      'effect' => 'slide',
     ],
   ];
   return tpps_get_ajax_value($form_state, [$id, 'genotype', 'files', $name]);
