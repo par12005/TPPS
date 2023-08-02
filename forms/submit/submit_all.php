@@ -1260,23 +1260,25 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   // This can be set within the TPPS admin panel
   $record_group = variable_get('tpps_record_group', 10000);
 
-  // VCF needed variables
-  $vcf_processing_completed = false; // Remember if VCF is already processed or not
+  // VCF needed variables.
+  // Remember if VCF is already processed or not.
+  $vcf_processing_completed = FALSE;
   $vcf_import_mode = $form_state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'];
   if (!isset($vcf_import_mode)) {
     $vcf_import_mode = 'hybrid'; // if not set, set it as default hybrid
   }
 
-  // If no genotype data, don't continue running this code
+  // If no genotype data, don't continue running this code.
   if (empty($genotype)) {
     return;
   }
 
-  // Add tag genotype to this study
+  // Add tag genotype to this study.
   tpps_submission_add_tag($form_state['accession'], 'Genotype');
 
   $genotype_count = 0;
   $genotype_total = 0;
+  // 1491.
   $seq_var_cvterm = tpps_load_cvterm('sequence_variant')->cvterm_id;
   $overrides = array(
     'genotype_call' => array(
@@ -1610,11 +1612,12 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // 'SSRs' and 'cpSSR' fields.
-  for (['ssrs', 'ssrs_extra'] as $ssr_field_name) {
+  foreach (['ssrs', 'ssrs_extra'] as $ssr_field_name) {
     if (!empty($ssr_fid = $genotype['files'][$ssr_field_name])) {
       // @TODO [VS] Minor. Seems $options['type'] is not used.
       $options['type'] = 'ssrs';
       $options['marker'] = 'SSR';
+      // CV Term Id for 'ssr': 764.
       $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
       $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
       $options['empty'] = $genotype['files'][$ssr_field_name]['empty'] ?? 'NA';
@@ -3514,10 +3517,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       'name' => $marker_name,
       'organism_id' => $organism_id,
       'uniquename' => $marker_name,
-      'type_id' => $seq_var_cvterm
+      'type_id' => $seq_var_cvterm,
     ]);
 
-    // Lookup the marker_name_id
+    // Lookup the marker_name_id.
     $results = chado_query("SELECT feature_id FROM chado.feature
       WHERE uniquename = :uniquename AND organism_id = :organism_id", [
         ':uniquename' => $marker_name,
@@ -5160,30 +5163,44 @@ function tpps_get_code_parts($part) {
   }
 }
 
-// @TODO Remove $job, use global var.
+/**
+ * Processes SSR file.
+ *
+ * @param array $form_state
+ *   Drupal Form State.
+ * @param int $fid
+ *   Managed File Id.
+ * @param array $options
+ *   Some options.
+ * @param object $job
+ *   Tripal Job.
+ * @param array $multi_insert_options
+ *   Some options again.
+ */
 function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array $multi_insert_options) {
   tpps_add_project_file($form_state, $fid);
-  // DROP INDEXES FROM GENOTYPE_CALL TABLE.
   tpps_drop_genotype_call_indexes($job);
 
   tpps_job_logger_write('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
   $job->logMessage('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
   echo "trace 3\n";
+
   tpps_file_iterator($fid, 'tpps_process_genotype_spreadsheet', $options);
+
   tpps_job_logger_write('[INFO] - Done.');
   $job->logMessage('[INFO] - Done.');
-
   tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
   $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+
   tpps_chado_insert_multi($options['records'], $multi_insert_options);
 
   tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
   $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
+
   tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
 
   tpps_job_logger_write('[INFO] - Done.');
   $job->logMessage('[INFO] - Done.');
-
-  // CREATE INDEXES FROM GENOTYPE_CALL TABLE
+  // CREATE INDEXES FROM GENOTYPE_CALL TABLE.
   tpps_create_genotype_call_indexes($job);
 }
