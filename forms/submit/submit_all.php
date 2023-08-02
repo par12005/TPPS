@@ -1614,9 +1614,13 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   // 'SSRs' and 'cpSSR' fields.
   foreach (['ssrs', 'ssrs_extra'] as $ssr_field_name) {
     if (!empty($ssr_fid = $genotype['files'][$ssr_field_name])) {
-      // @TODO [VS] Minor. Seems $options['type'] is not used.
       $options['type'] = 'ssrs';
-      $options['marker'] = 'SSR';
+      if ($ssr_field_name == 'ssrs') {
+        $options['marker'] = 'SSR';
+      }
+      elseif ($ssr_field_name == 'ssrs_extra') {
+        $options['marker'] = 'cpSSR';
+      }
       // CV Term Id for 'ssr': 764.
       $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
       $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);

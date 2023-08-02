@@ -756,7 +756,7 @@ function tpps_get_taxon($org_name, $rank) {
  * @param int $fid
  *   The managed file id number.
  *
- * @TODO Here we have 2 almost the same pieces of code.
+ * @TODO [VS] Here we have 2 almost the same pieces of code.
  */
 function tpps_add_project_file(array &$state, &$fid) {
   $file = file_load($fid) ?? NULL;
