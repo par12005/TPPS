@@ -1607,45 +1607,28 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $job->logMessage('[ERROR] - Analysis ID could not be found, skipping assay design file processing.');
     }
   }
-  // 'SSRs' field.
-  if (!empty($ssr_fid = $genotype['files']['ssrs'])) {
-    // @TODO [VS] Minor. Seems $options['type'] is not used.
-    $options['type'] = 'ssrs';
-    $options['marker'] = 'SSRs';
-    $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
-    $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
-    $options['empty'] = $genotype['files']['ssrs']['empty'] ?? 'NA';
-    tpps_ssr_process(
-      $form_state,
-      $ssr_fid,
-      $options,
-      $job,
-      $multi_insert_options
-    );
-    // [VS] ? There is no $records!
-    $options['records'] = $records;
-    $genotype_count = 0;
 
-  }
-  // cpSSR.
-  if (!empty($extra_fid = $genotype['files']['ssrs_extra'])) {
-
-    // @TODO [VS] Minor. Seems $options['type'] is not used.
-    $options['type'] = 'ssrs';
-    $options['marker'] = 'cpSSRs';
-    $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
-    $options['headers'] = tpps_ssrs_headers($extra_fid, $genotype['files']['ploidy']);
-    $options['empty'] = $genotype['files']['ssrs_extra']['empty'] ?? 'NA';
-    tpps_ssr_process(
-      $form_state,
-      $extra_fid,
-      $options,
-      $job,
-      $multi_insert_options
-    );
-    // [VS] ? There is no $records!
-    $options['records'] = $records;
-    $genotype_count = 0;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // 'SSRs' and 'cpSSR' fields.
+  for (['ssrs', 'ssrs_extra'] as $ssr_field_name) {
+    if (!empty($ssr_fid = $genotype['files'][$ssr_field_name])) {
+      // @TODO [VS] Minor. Seems $options['type'] is not used.
+      $options['type'] = 'ssrs';
+      $options['marker'] = 'SSR';
+      $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
+      $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
+      $options['empty'] = $genotype['files'][$ssr_field_name]['empty'] ?? 'NA';
+      tpps_ssr_process(
+        $form_state,
+        $ssr_fid,
+        $options,
+        $job,
+        $multi_insert_options
+      );
+      // [VS] ? There is no $records!
+      $options['records'] = $records;
+      $genotype_count = 0;
+    }
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
