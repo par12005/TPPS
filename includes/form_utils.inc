@@ -328,15 +328,18 @@ function tpps_form_state_info(array &$new, array &$old) {
  *   The standardized file name prefix.
  */
 function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
-  if (!form_get_errors()) {
-    $file = file_load($fid);
+  // [VS]
+  if (!form_get_errors() && $file = file_load($fid)) {
+    // Label file as permanent when it's passed validation.
+    $file->status = FILE_STATUS_PERMANENT;
+    file_save($file);
     file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
     if (!empty($org_num) and !empty($prefix)) {
       $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
       $form_state['file_info'][TPPS_PAGE_3][$file->fid] = "{$prefix}_{$species}";
     }
   }
+  // [/VS]
 }
 
 /**
@@ -424,7 +427,7 @@ function tpps_pre_validate_init($accession = NULL) {
  */
 function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
-  
+
   $form_state = tpps_load_submission($accession);
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
@@ -443,7 +446,7 @@ function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
  */
 function tpps_vcf_markers($accession = NULL, $i = 1) {
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
-  
+
   $form_state = tpps_load_submission($accession);
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
@@ -509,7 +512,7 @@ function tpps_vcf_tree_validation($accession = NULL) {
         $columns = explode("\t", $vcf_line);
         $columns_count = count($columns);
         for ($j = 9; $j < $columns_count; $j++) {
-          $tree_ids_vcf[trim($columns[$j])] = true; 
+          $tree_ids_vcf[trim($columns[$j])] = true;
         }
         break;
       }
@@ -527,7 +530,6 @@ function tpps_vcf_tree_validation($accession = NULL) {
     $options['tree_ids'] = &$tree_ids_accession;
     $options['column_tree_id'] = $groups['Tree Id']['1'];
     $options['no_header'] = !empty($tree_accession['file-no-header']);
-    
 
     tpps_file_iterator($fid, 'tpps_get_tree_ids_from_iterator', $options);
     // print_r($tree_ids_accession);
