@@ -1009,7 +1009,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   if ($condition) {
     if (empty(tpps_add_file_selector($form_state, $fields, $id, $title, ''))) {
       // Add file upload field if file selector wasn't checked.
-      tpps_build_file_field($fields, [
+      tpps_build_genotype_file_field($fields, [
         'form_state' => $form_state,
         'id' => $id,
         'file_field_name' => $file_field_name,
@@ -1017,6 +1017,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'description' => t('Please provide a spreadsheet with columns '
           . 'for the Plant ID of genotypes used in this study'),
         'upload_location' => "$genotype_upload_location",
+        'use_fid' => TRUE,
       ]);
     }
     else {
@@ -1051,7 +1052,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   );
   if ($condition) {
     // Add file upload field.
-    tpps_build_file_field($fields, [
+    tpps_build_genotype_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1075,7 +1076,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   //if ($genotyping_type_check == "Genotyping Assay") {
     $file_field_name = 'snps-association';
     $title = t('SNP Association File');
-    tpps_build_file_field($fields, [
+    tpps_build_genotype_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1156,7 +1157,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     ];
 
     // SNPs Population Structure File.
-    tpps_build_file_field($fields, [
+    tpps_build_genotype_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => 'snps-pop-struct',
@@ -1166,7 +1167,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'upload_location' => "$genotype_upload_location",
     ]);
     // SNPs Kinship File.
-    tpps_build_file_field($fields, [
+    tpps_build_genotype_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => 'snps-kinship',
@@ -1209,7 +1210,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       // 'SSRs' or 'Both SSRs and cpSSRs'.
       $file_field_name = 'ssrs';
       $title = t('SSRs Spreadsheet');
-      tpps_build_file_field($fields, [
+      tpps_build_genotype_file_field($fields, [
         'form_state' => $form_state,
         'id' => $id,
         'file_field_name' => $file_field_name,
@@ -1223,6 +1224,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
           . 'your accession file.'),
         // Add extra text field for empty field value.
         'empty_field_value' => 'NA',
+        'use_fid' => TRUE,
       ]);
       tpps_genotype_update_description($fields, [
         'id' => $id,
@@ -1240,7 +1242,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     if ($ssrs_cpssrs_value != 'SSRs') {
       $file_field_name = 'ssrs_extra';
       $title = t('cpSSRs Spreadsheet');
-      tpps_build_file_field($fields, [
+      tpps_build_genotype_file_field($fields, [
         'form_state' => $form_state,
         'id' => $id,
         'file_field_name' => $file_field_name,
@@ -1256,6 +1258,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
           . 'your accession file.'),
         // Add extra text field for empty field value.
         'empty_field_value' => 'NA',
+        'use_fid' => TRUE,
       ]);
       tpps_genotype_update_description($fields, [
         'id' => $id,
@@ -1294,7 +1297,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       . 'If a column data type does not fit any of the options in the '
       . 'drop-down menu, you may set that drop-down menu to "N/A". '
       . 'Your file must contain one column with the Plant Identifier.');
-    tpps_build_file_field($fields, [
+    tpps_build_genotype_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1348,7 +1351,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     $genotyping_type_check == 'Genotyping'
     && $file_type_value == 'VCF'
   ) {
-    tpps_build_file_field($fields, [
+    tpps_build_genotype_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1946,14 +1949,16 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
 }
 
 /**
- * Generates file field.
+ * Builds Genotype file field.
+ *
+ * WARNING: Genotype ONLY!
  *
  * @param array $fields
  *   Drupal Form API array with fields.
  * @param array $meta
  *   File field metadata. Example:
  *
- *   tpps_build_file_field($fields, [
+ *   tpps_build_genotype_file_field($fields, [
  *     'form_state' => $form_state,
  *     'id' => $id,
  *     'file_field_name' => $file_field_name,
@@ -1966,9 +1971,24 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
  *     'empty_field_value' => 'NA',
  *     // Element 'extra_elements' allow to add any not expected form elements.
  *     'extra_elements' => [],
- *   ]); //.
+ *     'use_fid' => FALSE, // Default is FALSE. See below.
+ *   ]);
+ *
+ *   List of fields which used 'fid'-related code:
+ *     'snps-assay',
+ *     'ssrs',
+ *     'ssrs_extra'.
+ *
+ *   List of fields which not used 'fid'-related code:
+ *     'assay-design',
+ *     'snps-pop-struct',
+ *     'snps-association',
+ *     'snps-kinship',
+ *     'indels', // was removed.
+ *     'vcf',
+ *     'other'.
  */
-function tpps_build_file_field(array &$fields, array $meta) {
+function tpps_build_genotype_file_field(array &$fields, array $meta) {
   extract($meta);
   // When enabled field's machine name will be shown in field's decription.
   $debug_mode = FALSE;
@@ -2003,31 +2023,32 @@ function tpps_build_file_field(array &$fields, array $meta) {
     );
   }
 
-  // Note:
-  // Field 'snps-association' excluded because it didn't have this code.
-  // @todo Discuss if it's needed and remove this check.
-  if ($file_field_name != 'snps-association') {
-    // 'fid' is a hidden field which holds Managed File Id.
-    // Some fields used this code:
-    // - 'SNP Assay'
-    // - 'ssrs' / 'SSRs Spreadsheet'
-    // - 'ssrs_extra' / 'cpSSRs Spreadsheet'
-    //
-    //if (isset($fields['files'][$file_field_name]['#value']['fid'])) {
-    //  $fields['files'][$file_field_name]['#default_value']
-    //    = $fields['files'][$file_field_name]['#value']['fid'];
-    //}
+  // Some fields have used this piece of code before.
+  // To use: $meta['use_fid'] = TRUE; Default is FALSE.
+  if (!empty($use_fid)) {
+    if (isset($fields['files'][$file_field_name]['#value']['fid'])) {
+      $fields['files'][$file_field_name]['#default_value']
+        = $fields['files'][$file_field_name]['#value']['fid'];
+    }
+  }
+
+  // Most of fields have used this code so only 2 must be excluded.
+  if (!in_array($file_field_name, ['snps-association', 'other']) {
+    // Field 'snps-association' excluded because it didn't have this code.
     if (isset($fields['files'][$file_field_name]['#value'])) {
       $fields['files'][$file_field_name]['#default_value']
         = $fields['files'][$file_field_name]['#value'];
     }
-    $condition = (
+    if (
       !empty($fields['files'][$file_field_name]['#default_value'])
       && ($file = file_load($fields['files'][$file_field_name]['#default_value']))
-    );
-    if ($condition) {
+    ) {
       // Stop using the file so it can be deleted if the user clicks 'remove'.
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
+        // Study Id is a number in 'TGDRXXX'.
+        $study_id = substr($form_state['accession'], 4);
+        file_usage_delete($file, 'tpps', 'tpps_project', $study_id);
+      }
     }
   }
 }
