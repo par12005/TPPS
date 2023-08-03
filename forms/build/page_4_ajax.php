@@ -102,10 +102,8 @@ function tpps_phenotype_file_format_callback(array $form, array &$form_state) {
  */
 function tpps_genotype_files_callback(array $form, array &$form_state) {
   $id = $form_state['triggering_element']['#parents'][0];
-
   return $form[$id]['genotype']['files'];
 }
-
 
 /**
  * Ajax callback for genotype files fieldset.
