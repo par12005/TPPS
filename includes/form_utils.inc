@@ -419,6 +419,18 @@ function tpps_pre_validate_init($accession = NULL) {
 }
 
 
+/**
+ * This helper function is used in the api call /tpps/<accession>/accession_tree_ids
+ * to get all tree_ids detected from a tree accession file
+ * TODO
+ */
+function tpps_accession_tree_ids($accession = NULL, $i) {
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  $form_state = tpps_load_submission($accession);
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  // $file = file_load($thirdpage['tree-accession']['species-' . $i]['file']);
+  // $location = $file->uri;
+}
 
 
 /**

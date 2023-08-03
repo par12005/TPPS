@@ -1632,7 +1632,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
         $job,
         $multi_insert_options
       );
-      // [VS] ? There is no $records!
       $options['records'] = $records;
       $genotype_count = 0;
     }
@@ -3433,6 +3432,19 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $genotype_count = &$options['genotype_count'];
   $project_id = $options['project_id'];
   $marker = $options['marker'];
+  // print_r("row\n");
+  // print_r($row);
+  // print_r("tree_info\n");
+  // print_r($tree_info);
+  // print_r("\n");
+  // Marker adjustment [RISH: 8/1/2023]
+  if ($marker == 'SSRs') {
+    $marker = 'SSR';
+  }
+  else if($marker == 'cpSSRs') {
+    $marker = 'cpSSR';
+  }
+
   $type_cvterm = $options['type_cvterm'];
   $seq_var_cvterm = $options['seq_var_cvterm'];
   $multi_insert_options = $options['multi_insert'];
@@ -3451,6 +3463,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     $species_code = $species_codes[$current_id];
   }
   foreach ($row as $key => $val) {
+    echo "ROW key:$key, val:$val\n";
     if (empty($headers[$key])) {
       continue;
     }
@@ -3462,6 +3475,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       continue;
     }
     $genotype_count++;
+    echo "Stock ID: $stock_id, Current ID: $current_id, Genotype_count: $genotype_count\n";
+
 
     if ($type == 'ssrs' and !empty($options['empty']) and $val == $options['empty']) {
       continue;
@@ -3491,6 +3506,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
 
     $variant_name = $headers[$key];
     $marker_name = $variant_name . $marker;
+    $genotype_name_without_call = "$marker-$variant_name-$species_code";
     $genotype_name = "$marker-$variant_name-$species_code-$val";
 
     // echo "Variant Name: $variant_name\n";
@@ -3642,7 +3658,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //   'type_id' => $type_cvterm,
       // );
       chado_insert_record('genotype', [
-        'name' => $genotype_name,
+        'name' => $genotype_name_without_call,
         'uniquename' => $genotype_name,
         'description' => $val,
         'type_id' => $type_cvterm,
@@ -3666,6 +3682,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //     'marker' => $marker_name,
       //   ),
       // );
+      echo "Genotype_call key: $stock_id-$genotype_name\n";
+      if (isset($records2['genotype_call']["$stock_id-$genotype_name"])) {
+        echo "This genotype_call key is already set (so uniqueness is maybe broken?\n";
+      }
       $records2['genotype_call']["$stock_id-$genotype_name"] = array(
         'project_id' => $project_id,
         'stock_id' => $stock_id,
@@ -3680,7 +3700,6 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //     'genotype' => $genotype_name,
       //   ),
       // );
-
       $records['stock_genotype']["$stock_id-$genotype_name"] = array(
         'stock_id' => $stock_id,
         'genotype_id' => $genotype_id
@@ -3697,7 +3716,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       tpps_chado_insert_multi($records, $multi_insert_options);
       tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
       $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
-      tpps_chado_insert_hybrid($records, $multi_insert_options);
+      tpps_chado_insert_hybrid($records2, $multi_insert_options);
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.');
       $records = array(
@@ -3720,6 +3739,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       $genotype_count = 0;
     }
   }
+  // throw new Exception("DEBUG");
 }
 
 /**
@@ -3982,10 +4002,11 @@ function tpps_ssrs_headers($fid, $ploidy) {
           // Every other marker column name is left blank.
           if (array_key_exists($key, $results)) {
             $last = $results[$key];
-            $results[$key] .= "_A";
+            $results[$key] .= "_A"; // Removed by Rish 8/2/2023
             break;
           }
-          $results[$key] = $last . "_B";
+          $results[$key] = $last . "_B"; // Removed by Rish 8/2/2023
+          // unset($results[$key]); // [RISH] this removes the second value
           break;
         }
 
@@ -3995,10 +4016,11 @@ function tpps_ssrs_headers($fid, $ploidy) {
             // The marker column names are duplicates, need to append
             // _A and _B.
             if ($results[$key] == $results[$next_key]) {
-              $results[$key] .= "_A";
+              $results[$key] .= "_A"; // Removed by Rish 8/2/2023
               break;
             }
-            $results[$key] .= "_B";
+            $results[$key] .= "_B"; // Removed by Rish 8/2/2023
+            // unset($results[$key]); // [RISH] Hopefully this removes the second marker
           }
         }
         break;
@@ -4972,8 +4994,31 @@ function tpps_genotype_initial_checks($form_state, $i, $job) {
 }
 
 // TODO
-function tpps_accession_file_get_tree_ids($fid) {
+function tpps_accession_file_get_tree_ids($form_state, $i) {
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $fid = $thirdpage['tree-accession']['species-' . $i]['file'];
   $snp_assay_header = tpps_file_headers($fid);
+}
+
+function tpps_accession_file_location($form_state, $i) {
+  $results = [
+    'status' => 'empty', // empty, exists, missing
+    'location' => NULL,
+    'fid' => 0,
+  ];
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $fid = $thirdpage['tree-accession']['species-' . $i]['file'];
+  $results['fid'] = $fid;
+  if ($fid > 0) {
+    $results['status'] = 'exists';
+    $file = file_load($fid);
+    $location = tpps_get_location($file->uri);
+    $results['location'] = $location;
+    if ($location == '' or $location == null) {
+      $results['status'] = 'missing';
+    }
+  }
+  return $results;
 }
 
 /**

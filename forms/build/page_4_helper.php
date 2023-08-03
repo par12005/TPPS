@@ -1891,8 +1891,8 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     '#type' => 'select',
     '#title' => t('Define SSRs/cpSSRs Type: *'),
     '#options' => [
-      'SSRs' => t('SSRs'),
-      'cpSSRs' => t('cpSSRs'),
+      'SSRs' => t('SSRs'), // Original from Peter
+      'cpSSRs' => t('cpSSRs'), // Original from Peter
       'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
     ],
     // Fields 'SSRs' and 'cpSSRs' are switched good on already loaded page
