@@ -3471,6 +3471,11 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $genotype_count = &$options['genotype_count'];
   $project_id = $options['project_id'];
   $marker = $options['marker'];
+  // print_r("row\n");
+  // print_r($row);
+  // print_r("tree_info\n");
+  // print_r($tree_info);
+  // print_r("\n");
   // Marker adjustment [RISH: 8/1/2023]
   if ($marker == 'SSRs') {
     $marker = 'SSR';
@@ -3497,10 +3502,11 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     $species_code = $species_codes[$current_id];
   }
   foreach ($row as $key => $val) {
+    echo "ROW key:$key, val:$val\n";
     if (empty($headers[$key])) {
       continue;
     }
-
+    
     if (!isset($stock_id)) {
       $stock_id = $tree_info[trim($val)]['stock_id'];
       $current_id = $tree_info[trim($val)]['organism_id'];
@@ -3508,6 +3514,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       continue;
     }
     $genotype_count++;
+    echo "Stock ID: $stock_id, Current ID: $current_id, Genotype_count: $genotype_count\n";
+    
 
     if ($type == 'ssrs' and !empty($options['empty']) and $val == $options['empty']) {
       continue;
@@ -3713,6 +3721,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //     'marker' => $marker_name,
       //   ),
       // );
+      echo "Genotype_call key: $stock_id-$genotype_name\n";
+      if (isset($records2['genotype_call']["$stock_id-$genotype_name"])) {
+        echo "This genotype_call key is already set (so uniqueness is maybe broken?\n";
+      }
       $records2['genotype_call']["$stock_id-$genotype_name"] = array(
         'project_id' => $project_id,
         'stock_id' => $stock_id,
@@ -3727,7 +3739,6 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //     'genotype' => $genotype_name,
       //   ),
       // );
-
       $records['stock_genotype']["$stock_id-$genotype_name"] = array(
         'stock_id' => $stock_id,
         'genotype_id' => $genotype_id
@@ -3744,7 +3755,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       tpps_chado_insert_multi($records, $multi_insert_options);
       tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
       $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
-      tpps_chado_insert_hybrid($records, $multi_insert_options);      
+      tpps_chado_insert_hybrid($records2, $multi_insert_options);      
       tpps_job_logger_write('[INFO] - Done.');
       $job->logMessage('[INFO] - Done.');
       $records = array(
@@ -3767,6 +3778,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       $genotype_count = 0;
     }
   }
+  // throw new Exception("DEBUG");
 }
 
 /**
@@ -4029,10 +4041,11 @@ function tpps_ssrs_headers($fid, $ploidy) {
           // Every other marker column name is left blank.
           if (array_key_exists($key, $results)) {
             $last = $results[$key];
-            $results[$key] .= "_A";
+            $results[$key] .= "_A"; // Removed by Rish 8/2/2023
             break;
           }
-          $results[$key] = $last . "_B";
+          $results[$key] = $last . "_B"; // Removed by Rish 8/2/2023
+          // unset($results[$key]); // [RISH] this removes the second value
           break;
         }
 
@@ -4042,10 +4055,11 @@ function tpps_ssrs_headers($fid, $ploidy) {
             // The marker column names are duplicates, need to append
             // _A and _B.
             if ($results[$key] == $results[$next_key]) {
-              $results[$key] .= "_A";
+              $results[$key] .= "_A"; // Removed by Rish 8/2/2023
               break;
             }
-            $results[$key] .= "_B";
+            $results[$key] .= "_B"; // Removed by Rish 8/2/2023
+            // unset($results[$key]); // [RISH] Hopefully this removes the second marker
           }
         }
         break;
