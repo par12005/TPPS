@@ -125,7 +125,7 @@ function tpps_chado_insert_record($table, $records, array $options = array()) {
 
 /**
  * This function attempts to perform submits using multi_insert
- * and also copy for genotype_call data. It is an attempt to understand 
+ * and also copy for genotype_call data. It is an attempt to understand
  * the differences in speed using COPY vs INSERTS where applicable.
  */
 function tpps_chado_insert_hybrid(array $record_groups, array $options = array()) {
@@ -137,7 +137,7 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
     if ($records_count > 0) {
 
       if ($table != 'genotype_call') {
-        // This will allow updates to 
+        // This will allow updates to
         tpps_chado_insert_multi([$table => &$record_groups[$table]], $options);
       }
       else {
@@ -156,7 +156,7 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
   // This doesn't work for us since we use transactions
   // and an external process doesn't get to see the transaction inserts etc.
   $use_external_copy = false;
-  
+
   $table = 'genotype_call';
   $records = $record_groups['genotype_call'];
 
@@ -171,7 +171,7 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
 
   $file_location = $tpps_db_csv_directory . time() . '-copy-table.csv';
   $csv_file = fopen($file_location, 'w+');
-  
+
   print_r('TABLE:' . $table . "\n");
 
   // print_r("Records:\n");
@@ -179,11 +179,12 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
   // print_r("\n");
   $line_index = -1; // SET LINE INDEX
   $copy_cmd = '';
-  $csv_data_array = []; // RESET THE CSV DATA ARRAY 
+  $csv_data_array = []; // RESET THE CSV DATA ARRAY
   $found_field_names = false;
   $copy_cmd = 'copy chado.' . $table . ' (';
   // Assume this is CHADO since the name of the function also has chado in it
   foreach ($records as $unique_field_name_value  => $row) {
+    $row_contains_empty_values = false;
     // print_r("row:\n");
     // print_r($row);
     // print_r("\n");
@@ -201,7 +202,7 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
         case 'genotype':
           $unique_field_name = 'uniquename';
           break;
-        case 'genotype_call': 
+        case 'genotype_call':
           break;
         case 'genotypeprop':
           break;
@@ -226,12 +227,17 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
         $copy_cmd .= $field_name . ',';
       }
 
+      // Check if a value is empty, COPY command will likely fail due to table constraints
+      if (!isset($value) || $value == '' || $value == null) {
+        $row_contains_empty_values = true;
+      }
+
       // GENERATE THE ROW DATA LINE USING THIS VALUE
       // if (!$use_external_copy) {
       //   $row_data .= $value . ',';
       // }
     }
-    
+
     // FINISH UP GENERATING THE COPY COMMAND IF field_names found is FALSE
     if ($found_field_names == FALSE) {
       $copy_cmd = rtrim($copy_cmd, ',');
@@ -240,10 +246,16 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
       $found_field_names = TRUE;
     }
 
-    fputcsv($csv_file, $row);
+    if($row_contains_empty_values == false) {
+      fputcsv($csv_file, $row);
+    }
+    else {
+      echo "Could not add row to COPY because it was missing a value\n";
+      print_r($row);
+    }
 
     if ($use_external_copy) {
-      
+
     }
     else {
       // GENERAL ERROR 4
@@ -262,7 +274,7 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
 
     // CLEAN UP ROW_DATA ENDING COMMA
     // $row_data = rtrim($row_data, ',');
-    
+
 
     // ADD THIS ROW TO THE CSV_DATA_ARRAY
     // $csv_data_array[] = $row_data . "\n";
@@ -332,7 +344,7 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
       echo $sql . "\n";
       chado_query($sql);
     }
-    
+
 
     // CONVERT CSV DATA ARRAY TO A STRING
     // $csv_data_array[] = "\\.\n";
@@ -340,8 +352,8 @@ function tpps_chado_insert_hybrid(array $record_groups, array $options = array()
     // chado_query($copy_cmd . " FROM STDIN DELIMITER ',';" . $csv_data_array, []);
     echo "COPY completed for chado.$table with $records_count records\n";
     // echo "CSV File location: $file_location\n";
-    unlink($file_location); 
-  } 
+    unlink($file_location);
+  }
 
   // ALL RECORDS FOR THIS TABLE ITERATED, SAVE THE CSV_DATA_ARRAY
   // print_r('DEBUG2:' .  $copy_cmd . "\n");
@@ -743,6 +755,8 @@ function tpps_get_taxon($org_name, $rank) {
  *   The TPPS submission associated with the file.
  * @param int $fid
  *   The managed file id number.
+ *
+ * @TODO [VS] Here we have 2 almost the same pieces of code.
  */
 function tpps_add_project_file(array &$state, &$fid) {
   $file = file_load($fid) ?? NULL;

@@ -150,7 +150,7 @@ function tpps_create_submission(array $state, $uid) {
  * @param string $old_accession
  *   The old accession number being submitted.
  * @param string $new_accession
- *   The new accession number being submitted. 
+ *   The new accession number being submitted.
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
@@ -197,7 +197,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   db_update('tpps_submission')
     ->fields($options)
     ->condition('accession', $old_accession)
-    ->execute();  
+    ->execute();
 
 
   $job->logMessage('[INFO] Update tpps_submission table study ' . $old_accession . ' to ' . $new_accession);
@@ -207,7 +207,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
     chado_query('UPDATE tpps_submission SET accession = :new_accession WHERE accession = :old_accession', array(
       ':new_accession' => $new_accession,
       ':old_accession' => $old_accession
-    )); 
+    ));
   }
   catch (\Exception $e) {
     $transaction->rollback();
@@ -235,10 +235,10 @@ function tpps_update_submission(array $state, array $options = array()) {
   $state['updated'] = time();
   $options['submission_state'] = serialize($state);
 
-  
+
   // dpm($options);
   // dpm($state['accession']);
-  
+
 
   db_update('tpps_submission')
     ->fields($options)
@@ -683,7 +683,7 @@ function tpps_submission_rename_files($accession) {
             FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
             $record = $result->fetchObject();
           }
-          
+
           if(isset($record)) {
             $file = file_load($record->fid);
           }
@@ -692,7 +692,7 @@ function tpps_submission_rename_files($accession) {
             $file->status = FILE_STATUS_PERMANENT;
             $file = file_save($file);
           }
-          
+
           $new_path = file_create_url($file->uri);
           chado_update_record('projectprop', array(
             'project_id' => $state['ids']['project_id'],
@@ -717,16 +717,16 @@ function tpps_submission_rename_files($accession) {
 /**
  * This function will clear additional db information for a specific study
  * such as genotypeprop data as well as feature data
- * @param mixed $accession 
- * @return void 
+ * @param mixed $accession
+ * @return void
  */
 function tpps_submission_clear_db_extra($accession) {
   // FOR LATER USE MAYBE
   echo "Deleting genotypeprop data...\n";
   $start_time = time();
   chado_query("
-  delete from chado.genotypeprop where genotype_id in 
-  (select genotype_id from chado.genotype where genotype_id not in 
+  delete from chado.genotypeprop where genotype_id in
+  (select genotype_id from chado.genotype where genotype_id not in
   (select genotype_id from chado.genotype_call));",
   []);
   $end_time = time();
@@ -759,7 +759,7 @@ function tpps_submission_clear_db_extra($accession) {
       $organism_id = $row->organism_id;
     }
 
-    
+
     if ($organism_id != NULL) {
       // // DELETE features based on organism_id if it is not NULL
       $start_time = time();
@@ -783,8 +783,8 @@ function tpps_submission_clear_db_extra($accession) {
 
       echo "Deleting features data for organism_id = $organism_id ($genus $species)... \n";
       chado_query("
-      delete from chado.feature where organism_id = :organism_id and type_id = :cvterm_id 
-      and feature_id not in 
+      delete from chado.feature where organism_id = :organism_id and type_id = :cvterm_id
+      and feature_id not in
       ((select marker_id from chado.genotype_call) union (select variant_id from chado.genotype_call));
       ", [
         ':organism_id' => $organism_id,
@@ -792,7 +792,7 @@ function tpps_submission_clear_db_extra($accession) {
       ]);
 
       $end_time = time();
-      echo "Time taken to complete: " . ($end_time - $start_time) . "\n";      
+      echo "Time taken to complete: " . ($end_time - $start_time) . "\n";
     }
     // print_r($organism);
   }
@@ -806,14 +806,14 @@ function tpps_submission_full_clear_db($project_id) {
   chado_query("CREATE INDEX IF NOT EXISTS genotype_call_stock_id_idx ON chado.genotype_call USING btree (stock_id)",[]);
   chado_query("CREATE INDEX IF NOT EXISTS genotype_call_marker_id_idx ON chado.genotype_call USING btree (marker_id)",[]);
   chado_query("CREATE INDEX IF NOT EXISTS genotype_call_variant_id_idx ON chado.genotype_call USING btree (variant_id)",[]);
-  
+
   echo "Delete the temporary feature_ids_$project_id table...\n";
   chado_query("DROP TABLE IF EXISTS chado.feature_ids_" . $project_id . "", []);
 
   echo "Create table to get features for deletion...\n";
-  chado_query("create table chado.feature_ids_" . $project_id . " as 
-    ((select variant_id  as feature_id from chado.genotype_call where project_id = :project_id_1) 
-    union 
+  chado_query("create table chado.feature_ids_" . $project_id . " as
+    ((select variant_id  as feature_id from chado.genotype_call where project_id = :project_id_1)
+    union
     (select marker_id  as feature_id from chado.genotype_call where project_id = :project_id_2));", [
       ':project_id_1' => $project_id,
       ':project_id_2' => $project_id
@@ -821,22 +821,22 @@ function tpps_submission_full_clear_db($project_id) {
 
 
   echo "Delete genotype_calls...\n";
-  chado_query("delete from chado.genotype_call where variant_id in 
-    (select feature_id from chado.feature_ids_" . $project_id . ") 
+  chado_query("delete from chado.genotype_call where variant_id in
+    (select feature_id from chado.feature_ids_" . $project_id . ")
     or marker_id in (select feature_id from chado.feature_ids_" . $project_id . ");", [
   ]);
 
   echo "DELETE featurelocs...\n";
-  chado_query("delete from chado.featureloc where feature_id in 
+  chado_query("delete from chado.featureloc where feature_id in
     (select feature_id from chado.feature_ids_" . $project_id . ");", []);
 
   echo "DELETE feature_relationship records...\n";
-  chado_query("delete from chado.feature_relationship where subject_id in 
-  (select feature_id from chado.feature_ids_" . $project_id . ") or object_id in 
+  chado_query("delete from chado.feature_relationship where subject_id in
+  (select feature_id from chado.feature_ids_" . $project_id . ") or object_id in
   (select feature_id from chado.feature_ids_" . $project_id .  ");", []);
 
   echo "DELETE feature records...\n";
-  chado_query("delete from chado.feature where feature_id in 
+  chado_query("delete from chado.feature where feature_id in
   (select feature_id from chado.feature_ids_" . $project_id . ");", []);
 
   echo "Delete the temporary feature_ids_$project_id table...\n";
@@ -874,7 +874,7 @@ function tpps_submission_clear_db($accession) {
   $time_start = time();
 
   // This will perform a full delete of feature ids as well (used to delete features
-  // from TGDR665 6/29/2023)
+  // from TGDR665 and 674 6/29/2023)
   // tpps_submission_full_clear_db($project_id);
 
 
@@ -905,7 +905,7 @@ function tpps_submission_clear_db($accession) {
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
   echo "DELETE chado.phenotype values for project...\n";
   chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession ."-%';");
-  
+
   echo "FINISHED DB CLEAR DELETES\n";
   $time_end = time();
   echo "Time taken to delete records: " . ($time_end - $time_start) . "\n";

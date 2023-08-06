@@ -79,9 +79,53 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
 
         foreach ($file_types as $type) {
           foreach ($field_types as $field) {
-            if (isset($form["organism-$i"]['genotype']['files'][$type][$field]) and isset($new_form["organism-$i"]['genotype']['files'][$type][$field])) {
-              $form["organism-$i"]['genotype']['files'][$type][$field] = $new_form["organism-$i"]['genotype']['files'][$type][$field];
-              $form["organism-$i"]['genotype']['files'][$type][$field]['#id'] = "edit-organism-$i-genotype-files-{$type}-{$field}";
+            if (
+              isset($form["organism-$i"]['genotype']['files'][$type][$field])
+              and isset($new_form["organism-$i"]['genotype']['files'][$type][$field])
+            ) {
+              $form["organism-$i"]['genotype']['files'][$type][$field]
+                = $new_form["organism-$i"]['genotype']['files'][$type][$field];
+              $form["organism-$i"]['genotype']['files'][$type][$field]['#id']
+                = "edit-organism-$i-genotype-files-{$type}-{$field}";
+            }
+          }
+        }
+      }
+    }
+
+    // Validation passed and form is going to be submitted.
+    // We shouldn't remove any files until validation passed.
+    if (!form_get_errors()) {
+      // We are removing genotype files here to allow on user to get exactly
+      // the same form as was submitted and rmeove files only when they
+      // definitly not needed.
+      for ($i = 1; $i <= $organism_number; $i++) {
+        $genotype = &$form_state['values']["organism-$i"]['genotype'];
+        $genotyping_type = $genotype['files']['genotyping-type'];
+        $file_type = $genotype['files']['file-type'];
+        if ($genotyping_type == 'Genotyping' && $file_type == 'VCF') {
+          if (tpps_file_remove($genotype['files']['snps-assay'])) {
+            $genotype['files']['snps-assay'] = 0;
+          }
+          if (tpps_file_remove($genotype['files']['assay-design'])) {
+            $genotype['files']['assay-design'] = 0;
+          }
+        }
+        else {
+          if (tpps_file_remove($genotype['files']['vcf'])) {
+            $genotype['files']['vcf'] = 0;
+          }
+        }
+        // Remove SSR/cpSSR files which was uploaded but not in use.
+        if (!empty($genotype['marker-type']['SSRs/cpSSRs'])) {
+          if ($genotype['SSRs/cpSSRs'] == 'cpSSRs') {
+            if (tpps_file_remove($genotype['files']['ssrs'])) {
+              $genotype['files']['ssrs'] = 0;
+            }
+          }
+          if ($genotype['SSRs/cpSSRs'] == 'SSRs') {
+            if (tpps_file_remove($genotype['files']['ssrs_extra'])) {
+              $genotype['files']['ssrs_extra'] = 0;
             }
           }
         }
@@ -304,7 +348,10 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
       $num_unique_columns = count(array_unique($headers)) - 1;
 
       if ($num_unique_columns != $num_columns) {
-        form_set_error("$id][phenotype][iso", t("Mass spectrometry/Isotope file: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file."));
+        form_set_error("$id][phenotype][iso", t("Mass spectrometry/Isotope file: "
+          . "some columns in the file you provided are missing or "
+          . "have duplicate header values. Please either enter valid header "
+          . "values for those columns or remove those columns, then reupload your file."));
       }
     }
 
@@ -332,6 +379,7 @@ function tpps_validate_phenotype(array $phenotype, $org_num, array $form, array 
  *
  * @param array $genotype
  *   The form_state values of the genotype fieldset for organism $id.
+ *   $form_state['values']["organism-$i"]['genotype'].
  * @param string $org_num
  *   The id of the organism fieldset being validated.
  * @param array $form
@@ -344,12 +392,20 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   $snps = $genotype['SNPs'];
   $ref_genome = $genotype['ref-genome'];
   $genotyping_type = $genotype['files']['genotyping-type'];
+  // WARNING: 'maker-type' is array because multiple values could be selected.
+  $marker_type = $genotype['marker-type'];
+  // Dropdown is visible when:
+  // 'Marker Type': 'SNPs'.
+  // Possiblem values: 'VCF' and 'SNPs Genotype Assay'.
   $file_type = $genotype['files']['file-type'];
-  $vcf = isset($genotype['files']['vcf']) ? $genotype['files']['vcf'] : 0;
-  $snps_assay = isset($genotype['files']['snps-assay']) ? $genotype['files']['snps-assay'] : 0;
+  // File fields:
+  $vcf = $genotype['files']['vcf'] ?? 0;
+  $snps_assay = $genotype['files']['snps-assay'] ?? 0;
+  $assay_design = $genotype['files']['assay-design'] ?? 0;
   $assoc_file = $genotype['files']['snps-association'] ?? 0;
-  $other_file = isset($genotype['files']['other']) ? $genotype['files']['other'] : 0;
+  $other_file = $genotype['files']['other'] ?? 0;
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $path = [$id, 'genotype', 'files'];
 
   // [VS]
   $is_step2_genotype = in_array(
@@ -360,11 +416,13 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       'Genotype x Phenotype',
     ]
   );
-  // [/VS]
   $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
   $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
   $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Validate 'Reference Assembly used' field.
+  // This field must be shown on any value of 'Marker Type' field.
   if (!$ref_genome) {
     tpps_form_error_required($form_state,
       [$id, 'genotype', 'ref-genome']
@@ -396,7 +454,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       form_set_error("$id][genotype][tripal_eutils][accession", $e->getMessage());
     }
   }
-
   elseif (in_array($ref_genome, ['url', 'manual', 'manual2'])) {
     $class = 'FASTAImporter';
     tripal_load_include_importer_class($class);
@@ -440,92 +497,70 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         [$id, 'genotype', 'tripal_fasta', 'seqtype']
       );
     }
-
     if (!form_get_errors()) {
       $assembly = $file_existing ? $file_existing : ($file_upload ? $file_upload : $file_remote);
     }
   }
-
+  // End of 'Reference Assembly used' field validation.
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // [VS]
   tpps_check_required($form_state, [$id, 'genotype', 'marker-type']);
-  // Note: 'maker-type' is array (allows multiple values).
-  if (isset($genotype['marker-type']['SNPs'])) {
-
+  if (!empty($marker_type['SNPs'])) {
     if ($is_step2_genotype) {
-      $upload_snp_association = ('Yes' ==
-        $form_state['values'][$id]['genotype']['files']['upload_snp_association']
-      );
-      if ($upload_snp_association) {
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'files', 'snps-association']
-        );
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'files', 'snps-association-type']
-        );
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'files', 'snps-association-tool']
-        );
+      if ($genotype['files']['upload_snp_association'] == 'Yes') {
+        tpps_check_required_genotype_file($form_state, $org_num, 'snps-association');
+        tpps_check_required_genotype_file($form_state, $org_num, 'snps-association-type');
+        tpps_check_required_genotype_file($form_state, $org_num, 'snps-association-tool');
       }
-      tpps_check_required(
-        $form_state, [$id, 'genotype', 'files', 'genotyping-type']
-      );
-      tpps_check_required(
-        $form_state, [$id, 'genotype', 'files', 'snps-assay']
-      );
-      tpps_check_required(
-        $form_state, [$id, 'genotype', 'files', 'assay-design']
-      );
+      tpps_check_required_genotype_file($form_state, $org_num, 'genotyping-type');
+      tpps_check_required_genotype_file($form_state, $org_num, 'snps-assay');
+      tpps_check_required_genotype_file($form_state, $org_num, 'assay-design');
     }
 
-    $condition = (
-      tpps_check_required(
-        $form_state, [$id, 'genotype', 'SNPs', 'genotyping-design']
-      )
-      && $snps['genotyping-design'] == '1'
-    );
-    if ($condition) {
-      $condition = (
-        tpps_check_required($form_state, [$id, 'genotype', 'SNPs', 'GBS'])
-        // 5 = 'Genotyping Array'
-        && $snps['GBS'] == '5'
-      );
-      if ($condition) {
-        tpps_check_required($form_state, [$id, 'genotype', 'SNPs', 'GBS-other']);
-      }
-    }
-    elseif ($snps['genotyping-design'] == '2') {
-      $condition = (
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'SNPs', 'targeted-capture']
-        )
-        && $snps['targeted-capture'] == '2'
-      );
-      if ($condition) {
-        tpps_check_required(
-          $form_state, [$id, 'genotype', 'SNPs', 'targeted-capture-other']
+    if (tpps_check_required($form_state,
+      [$id, 'genotype', 'SNPs', 'genotyping-design'])
+    ) {
+      if ($snps['genotyping-design'] == '1') {
+        $condition = (
+          tpps_check_required($form_state, [$id, 'genotype', 'SNPs', 'GBS'])
+          // 5 = 'Other'
+          && $snps['GBS'] == '5'
         );
+        if ($condition) {
+          tpps_check_required($form_state,
+            [$id, 'genotype', 'SNPs', 'GBS-other']
+          );
+        }
+      }
+      elseif ($snps['genotyping-design'] == '2') {
+        $condition = (
+          tpps_check_required(
+            $form_state, [$id, 'genotype', 'SNPs', 'targeted-capture']
+          )
+          && $snps['targeted-capture'] == '2'
+        );
+        if ($condition) {
+          tpps_check_required(
+            $form_state, [$id, 'genotype', 'SNPs', 'targeted-capture-other']
+          );
+        }
       }
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if (isset($genotype['marker-type']['SSRs/cpSSRs'])) {
+  if (!empty($marker_type['SSRs/cpSSRs'])) {
     tpps_check_required($form_state, [$id, 'genotype', 'SSRs/cpSSRs']);
-    if (in_array($genotype['SSRs/cpSSRs'], ['SSRs', 'Both SSRs and cpSSRs'])) {
-      tpps_check_required($form_state, [$id, 'genotype', 'files', 'ploidy']);
-      tpps_check_required($form_state, [$id, 'genotype', 'files', 'ssrs']);
-    }
     if (in_array($genotype['SSRs/cpSSRs'], ['cpSSRs', 'Both SSRs and cpSSRs'])) {
-      tpps_check_required(
-        $form_state, [$id, 'genotype', 'files', 'extra-ploidy']
-      );
-      tpps_check_required($form_state, [$id, 'genotype', 'files', 'ssrs_extra']);
+      tpps_validate_ssr($form_state, $org_num, 'ssrs_extra');
+    }
+    if (in_array($genotype['SSRs/cpSSRs'], ['SSRs', 'Both SSRs and cpSSRs'])) {
+      tpps_validate_ssr($form_state, $org_num, 'ssrs');
     }
   }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if (isset($genotype['marker-type']['Other'])) {
+  if (!empty($marker_type['Other'])) {
     tpps_check_required($form_state, [$id, 'genotype', 'other-marker']);
-    tpps_check_required($form_state, [$id, 'genotype', 'files', 'other']);
+    tpps_check_required_genotype_file($form_state, $org_num, 'other');
   }
   // [/VS]
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -701,7 +736,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       }
 
       if (!form_get_errors()) {
-        $form_state['values'][$id]['genotype']['files']['vcf_genotype_count'] = tpps_file_len($vcf);
+        $genotype['files']['vcf_genotype_count'] = tpps_file_len($vcf);
       }
     }
 
@@ -710,6 +745,13 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   }
 
   if (!empty($file_type['SNPs Genotype Assay']) and !$snps_assay) {
+    // Field 'snps_assay' is required when:
+    // Genotyping Type: Genotyping Assay
+    // or (
+    //   Genotyping Type: Genotyping
+    //   && Genotyping file type: SNP Assay file and Assay design file
+    // )
+    // So current check covers all the cases but it's hard to read :( ...
     tpps_form_error_required($form_state,
       [$id, 'genotype', 'files', 'snps-assay']
     );
@@ -840,15 +882,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         // Preserve file if it is valid.
         tpps_preserve_valid_file($form_state, $assoc_file, $org_num, "SNPs_Association");
 
-        if (empty($genotype['files']['snps-association-type'])) {
-          form_set_error("$id][genotype][files][snps-association-type",
-            t("SNPs Association Type: field is required."));
-        }
-
-        if (empty($genotype['files']['snps-association-tool'])) {
-          form_set_error("$id][genotype][files][snps-association-tool",
-            t("SNPs Association Tool: field is required."));
-        }
+        // [VS]
+        tpps_check_required_genotype_file($form_state, $org_num, 'snps-association-type');
+        tpps_check_required_genotype_file($form_state, $org_num, 'snps-association-tool');
 
         if (!empty($genotype['files']['snps-pop-struct'])) {
           // Preserve file if it is valid.
@@ -856,7 +892,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
             $form_state,
             $genotype['files']['snps-pop-struct'],
             $org_num,
-            "SNPs_Population_Structure"
+            'SNPs_Population_Structure'
           );
         }
 
@@ -866,148 +902,38 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
             $form_state,
             $genotype['files']['snps-kinship'],
             $org_num,
-            "SNPs_Kinship"
+            'SNPs_Kinship'
           );
         }
       }
     }
   }
 
-  // [VS]
-  elseif (!empty($genotyping_type['Genotyping Assay'])) {
+  if (!empty($genotyping_type['Genotyping Assay'])) {
     $file_field_name = 'assay-design';
-    if (!$genotype['files'][$file_field_name]) {
-      form_set_error("$id][genotype][files][$file_field_name",
-        t("Assay Design file: field is required.")
-      );
-    }
-    else {
+    if (tpps_check_required_genotype_file($form_state, $org_num, $file_field_name)) {
       // Preserve file if it is valid.
-      tpps_preserve_valid_file($form_state, $genotype['files'][$file_field_name],
-        $org_num, "Genotype_Assay_Design");
+      tpps_preserve_valid_file(
+        $form_state,
+        $genotype['files'][$file_field_name],
+        $org_num,
+        'Genotype_Assay_Design'
+      );
     }
   }
-  // [/VS]
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Files / Other.
   if (
-    !empty($file_type['SSRs/cpSSRs Genotype Spreadsheet'])
-    && !$genotype['files']['ssrs']
+    !empty($file_type['Other Marker Genotype Spreadsheet'])
+    && tpps_check_required_genotype_file($form_state, $org_num, 'other')
   ) {
-    form_set_error("$id][genotype][files][ssrs]",
-      t("SSRs/cpSSRs Spreadsheet: field is required."));
-  }
-  elseif (
-    !empty($file_type['SSRs/cpSSRs Genotype Spreadsheet'])
-    && !empty($genotype['files']['ploidy'])
-  ) {
-    $headers = tpps_file_headers($genotype['files']['ssrs']);
-    $form_state['values']["organism-$org_num"]['genotype']['files']['ssrs-empty'] = $form["organism-$org_num"]['genotype']['files']['ssrs']['#value']['empty'];
-    $genotype['files']['ssrs-empty'] = $form_state['values']["organism-$org_num"]['genotype']['files']['ssrs-empty'];
-    $id_col_name = key($headers);
-    while (($k = array_search(NULL, $headers))) {
-      unset($headers[$k]);
-    }
-    $num_columns = tpps_file_width($genotype['files']['ssrs']) - 1;
-    $num_unique_columns = count(array_unique($headers)) - 1;
-
-    tpps_ssr_valid_ploidy($genotype['files']['ploidy'], $num_columns,
-      $num_unique_columns, "$id][genotype][files][ssrs");
-
-    // @todo Field 'ssr-extra-check' must be replaced with check if
-    // Define SSRs/cpSSRs Type:
-    // cpSSR or Both SSRs and cpSSRs.
-    if (!empty($genotype['files']['ssr-extra-check'])) {
-      if (empty($genotype['files']['extra-ssr-type'])) {
-        form_set_error("$id][genotype][files][extra-ssr-type",
-          t("Define Additional SSRs/cpSSRs Type: field is required.")
-        );
-      }
-
-      if (!$genotype['files']['ssrs_extra']) {
-        form_set_error("$id][genotype][files][ssrs_extra]", t("SSRs/cpSSRs Additional Spreadsheet: field is required."));
-      }
-      elseif (!empty($genotype['files']['extra-ploidy'])) {
-        $headers = tpps_file_headers($genotype['files']['ssrs_extra']);
-        $id_col_name = key($headers);
-        while (($k = array_search(NULL, $headers))) {
-          unset($headers[$k]);
-        }
-        $num_columns = tpps_file_width($genotype['files']['ssrs_extra']) - 1;
-        $num_unique_columns = count(array_unique($headers)) - 1;
-
-        tpps_ssr_valid_ploidy($genotype['files']['extra-ploidy'], $num_columns, $num_unique_columns, "$id][genotype][files][ssrs_extra");
-      }
-    }
-
-    if (!form_get_errors()) {
-      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
-      $missing_trees = tpps_compare_files($genotype['files']['ssrs'], $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
-
-      if ($missing_trees !== array()) {
-        $tree_id_str = implode(', ', $missing_trees);
-        form_set_error("$id][genotype][files][ssrs", t("SSRs/cpSSRs Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: @tree_id_str", array('@tree_id_str' => $tree_id_str)));
-      }
-    }
-
-    if (!form_get_errors()) {
-      $options = array(
-        'empty' => $genotype['files']['ssrs-empty'] ?? NULL,
-        'org_num' => $org_num,
-      );
-      tpps_file_iterator($genotype['files']['ssrs'], 'tpps_ssr_valid_values', $options);
-    }
-
-    // Preserve file if it is valid.
-    tpps_preserve_valid_file($form_state, $genotype['files']['ssrs'], $org_num, "Genotype_SSR_Spreadsheet");
-    if (!empty($genotype['files']['ssrs_extra'])) {
-      tpps_preserve_valid_file($form_state, $genotype['files']['ssrs_extra'], $org_num, "Genotype_SSR_Additional_Spreadsheet");
-    }
-  }
-
-  if (!empty($file_type['Indel Genotype Spreadsheet']) and !$genotype['files']['indels']) {
-    form_set_error("$id][genotype][files][indels]", t("Indel Genotype Spreadsheet: field is required."));
-  }
-  elseif (!empty($file_type['Indel Genotype Spreadsheet'])) {
-    $indel_fid = $genotype['files']['indels'];
-    $headers = tpps_file_headers($indel_fid);
-    $id_col_name = key($headers);
-    while (($k = array_search(NULL, $headers))) {
-      unset($headers[$k]);
-    }
-    $num_columns = tpps_file_width($indel_fid) - 1;
-    $num_unique_columns = count(array_unique($headers)) - 1;
-
-    if ($num_unique_columns != $num_columns) {
-      form_set_error("$id][genotype][files][indels", t("Indel Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter valid header values for those columns or remove those columns, then reupload your file."));
-    }
-
-    if (!form_get_errors()) {
-      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
-      $missing_trees = tpps_compare_files($indel_fid, $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
-
-      if ($missing_trees !== array()) {
-        $tree_id_str = implode(', ', $missing_trees);
-        form_set_error("$id][genotype][files][indels", t("Indel Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: @tree_id_str", array('@tree_id_str' => $tree_id_str)));
-      }
-    }
-
-    // Preserve file if it is valid.
-    tpps_preserve_valid_file($form_state, $indel_fid, $org_num, "Genotype_Indel_Assay");
-  }
-
-  if (!empty($file_type['Other Marker Genotype Spreadsheet']) and !$genotype['files']['other']) {
-    form_set_error("$id][genotype][files][other]", t("Other Marker Spreadsheet: field is required."));
-  }
-  elseif (!empty($file_type['Other Marker Genotype Spreadsheet'])) {
+    // ? [VS] Should $form_state be used instead of $form here?
     if (array_key_exists('columns', $form[$id]['genotype']['files']['other'])) {
-      $required_groups = array(
-        'Tree Id' => array(
-          'id' => array(1),
-        ),
-        'Genotype Data' => array(
-          'data' => array(0),
-        ),
-      );
-
+      $required_groups = [
+        'Tree Id' => ['id' => [1]],
+        'Genotype Data' => ['data' => [0]],
+      ];
       $file_element = $form[$id]['genotype']['files']['other'];
       $groups = tpps_file_validate_columns($form_state, $required_groups, $file_element);
       // Get Plant Id column name.
@@ -1025,17 +951,34 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     if (!form_get_errors()) {
       $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
       $other_no_header = $genotype['files']['other-no-header'] ?? FALSE;
-      $missing_trees = tpps_compare_files($other_file, $tree_accession_file, $id_col_genotype_name, $id_col_accession_name, $other_no_header, $acc_no_header);
-
-      if ($missing_trees !== array()) {
+      $missing_trees = tpps_compare_files(
+        $other_file,
+        $tree_accession_file,
+        $id_col_genotype_name,
+        $id_col_accession_name,
+        $other_no_header,
+        $acc_no_header
+      );
+      if ($missing_trees !== []) {
         $tree_id_str = implode(', ', $missing_trees);
-        form_set_error("$id][genotype][files][other", "Other Marker Genotype Spreadsheet: We detected Plant Identifiers that were not in your Plant Accession file. Please either remove these plants from your Genotype file, or add them to your Plant Accession file. The Plant Identifiers we found were: $tree_id_str");
+        form_set_error("$id][genotype][files][other",
+          "Other Marker Genotype Spreadsheet: "
+          . "We detected Plant Identifiers that were not in your "
+          . "Plant Accession file. Please either remove these plants "
+          . "from your Genotype file, or add them to your Plant Accession "
+          . "file. The Plant Identifiers we found were: $tree_id_str"
+        );
       }
     }
-
     // Preserve file if it is valid.
-    tpps_preserve_valid_file($form_state, $other_file, $org_num, "Genotype_Other_Marker_Spreadsheet");
+    tpps_preserve_valid_file(
+      $form_state,
+      $other_file,
+      $org_num,
+      'Genotype_Other_Marker_Spreadsheet'
+    );
   }
+  // [/VS]
 }
 
 /**
@@ -1130,7 +1073,11 @@ function tpps_ssr_valid_values($row, array &$options) {
   $id = array_shift($row);
   foreach ($row as $value) {
     if ($value < 0 and $value !== $options['empty']) {
-      form_set_error("{$options['org_num']}-genotype-files-ssrs-{$id}", "SSRs Spreadsheet file: Some non-empty values are negative for plant \"{$id}\".");
+      form_set_error(
+        "{$options['org_num']}-genotype-files-ssrs-{$id}",
+        "SSRs Spreadsheet file: "
+        . "Some non-empty values are negative for plant \"{$id}\"."
+      );
       break;
     }
   }
@@ -1148,29 +1095,64 @@ function tpps_ssr_valid_values($row, array &$options) {
  *   The total column count.
  * @param int $num_unique_columns
  *   The unique column count.
- * @param string $name
- *   The field name for use in form_set_error().
+ * @param int $org_num
+ *   Ordinal number of organism.
+ * @param string $field_name
+ *   Ploidy field name.
  */
-function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $name) {
+function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_num, $field_name) {
+  if ($field_name == 'ssrs') {
+    $title = 'SSRs Genotype Spreadsheet';
+  }
+  elseif ($field_name == 'ssrs_extra') {
+    $title = 'cpSSRs Genotype Spreadsheet';
+  }
   switch ($ploidy) {
     case 'Haploid':
       if ($num_unique_columns != $num_columns) {
-        form_set_error($name, t("SSRs/cpSSRs Genotype Spreadsheet: some columns in the file you provided are missing or have duplicate header values. Please either enter header values for those columns or remove those columns, then reupload your file."));
+        form_set_error("organism-$org_num][genotype][files][$field_name",
+          t("@title: some columns in the file you provided are missing or "
+          . "have duplicate header values. Please either enter header "
+          . "values for those columns or remove those columns, "
+          . "then reupload your file.",
+          ['@title' => $title]
+        ));
       }
       break;
 
     case 'Diploid':
-      if ($num_unique_columns != $num_columns and $num_columns / $num_unique_columns !== 2) {
-        form_set_error($name, t("SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
+      if (
+        $num_unique_columns != $num_columns
+        and $num_columns / $num_unique_columns !== 2
+      ) {
+        form_set_error("organism-$org_num][genotype][files][$field_name",
+          t("@title: There is either an invalid number of columns in your file, "
+          . "or some of your columns are missing values. "
+          . "Please review and reupload your file.",
+          ['@title' => $title]
+        ));
       }
-      elseif ($num_unique_columns == $num_columns and $num_columns % 2 !== 0) {
-        form_set_error($name, t("SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
+      elseif (
+        $num_unique_columns == $num_columns
+        and $num_columns % 2 !== 0
+      ) {
+        form_set_error("organism-$org_num][genotype][files][$field_name",
+          t("@title: There is either an invalid number of columns in your file, "
+          . "or some of your columns are missing values. "
+          . "Please review and reupload your file.",
+          ['@title' => $title]
+        ));
       }
       break;
 
     case 'Polyploid':
       if ($num_columns % $num_unique_columns !== 0) {
-        form_set_error($name, t("SSRs/cpSSRs Genotype Spreadsheet: There is either an invalid number of columns in your file, or some of your columns are missing values. Please review and reupload your file."));
+        form_set_error("organism-$org_num][genotype][files][$field_name",
+          t("@title: There is either an invalid number of columns in your file, "
+          . "or some of your columns are missing values. "
+          . "Please review and reupload your file.",
+          ['@title' => $title]
+        ));
       }
       break;
 
@@ -1180,7 +1162,7 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $name
 }
 
 /**
- * Check if required field is not empty.
+ * Checks if required field is not empty.
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
@@ -1189,7 +1171,7 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $name
  *   ['organism-1', 'genotype', 'files', 'marker-type'].
  *
  * @return bool
- *   Returns TRUE if required field is not empty and FALSE other was.
+ *   Returns TRUE if required field is not empty and FALSE otherwise.
  */
 function tpps_check_required(array $form_state, array $parents) {
   $value = drupal_array_get_nested_value($form_state['values'], $parents);
@@ -1201,13 +1183,33 @@ function tpps_check_required(array $form_state, array $parents) {
 }
 
 /**
+ * Checks if required genotype file field is not empty.
+ *
+ * @param array $form_state
+ *   Drupal Form API array with submitted values.
+ * @param int $org_num
+ *   Ordinal number of organism.
+ * @param string $field_name
+ *   Field name. For example: 'marker-type'.
+ *
+ * @return bool
+ *   Returns TRUE if required field is not empty and FALSE otherwise.
+ */
+function tpps_check_required_genotype_file(array $form_state, $org_num, $field_name) {
+  return tpps_check_required(
+    $form_state,
+    ['organism-' . $org_num, 'genotype', 'files', $field_name]
+  );
+}
+
+/**
  * Shows form_validation error message that field is required.
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
  * @param array $parents
  *   Path to field. For example:
- *   ['organism-1', 'genotype', 'files', 'marker-type'].
+ *   ['organism-1', 'genotype', 'files', 'file-type'].
  */
 function tpps_form_error_required(array $form_state, array $parents) {
   tpps_form_error($form_state, $parents, 'field is required.');
@@ -1220,7 +1222,7 @@ function tpps_form_error_required(array $form_state, array $parents) {
  *   Drupal Form API array with submitted values.
  * @param array $parents
  *   Path to field. For example:
- *   ['organism-1', 'genotype', 'files', 'marker-type'].
+ *   ['organism-1', 'genotype', 'files', 'file-type'].
  * @param string $message
  *   Error message text.
  */
@@ -1238,5 +1240,99 @@ function tpps_form_error(array $form_state, array $parents, $message) {
     watchdog('tpps', "Field didn't pass validation but it's missing at form."
       . '@parents', ['@parents' => implode(' > ', $parents)], WATCHDOG_ERROR
     );
+  }
+}
+
+/**
+ * Validate SSRs and cpSSRs fields.
+ *
+ * @param array $form_state
+ *   Drupal Form API array.
+ * @param int $org_num
+ *   Ordinal number of organism.
+ * @param string $field_name
+ *   Field name. For example: 'ssrs', 'ssrs_extra'.
+ *
+ * @TODO Find better name for function.
+ */
+function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
+  $id = 'organism-' . $org_num;
+  $path = [$id, 'genotype', 'files'];
+  $genotype = $form_state['values'][$id]['genotype'];
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+  $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
+  $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+
+  $ploidy_field_name = 'ploidy';
+  if ($field_name == 'ssrs') {
+    $prefix = 'Genotype_SSR_Spreadsheet';
+  }
+  elseif ($field_name == 'ssrs_extra') {
+    $prefix = 'Genotype_SSR_Additional_Spreadsheet';
+  }
+
+  $condition = (
+    tpps_check_required_genotype_file($form_state, $org_num, $ploidy_field_name)
+    && tpps_check_required_genotype_file($form_state, $org_num, $field_name)
+  );
+  if ($condition) {
+    // Required fields are not empty.
+    $headers = tpps_file_headers($genotype['files'][$field_name]);
+    $id_col_name = key($headers);
+    while (($k = array_search(NULL, $headers))) {
+      unset($headers[$k]);
+    }
+
+    tpps_ssr_valid_ploidy(
+      $genotype['files'][$ploidy_field_name],
+      // Number of columns.
+      (tpps_file_width($genotype['files'][$field_name]) - 1),
+      // Number of unique columns.
+      (count(array_unique($headers)) - 1),
+      $org_num,
+      $field_name
+    );
+    // Check missing trees.
+    if (!form_get_errors()) {
+      $missing_trees = tpps_compare_files(
+        $genotype['files'][$field_name],
+        $tree_accession_file,
+        $id_col_name,
+        $id_col_accession_name,
+        FALSE,
+        $thirdpage['tree-accession'][$species_index]['file-no-header']
+      );
+
+      if ($missing_trees !== []) {
+        $tree_id_str = implode(', ', $missing_trees);
+        form_set_error("$id][genotype][files][$field_name", t(
+          "SSRs/cpSSRs Genotype Spreadsheet: "
+          . "We detected Plant Identifiers that were not in your "
+          . "Plant Accession file. Please either remove these plants from "
+          . "your Genotype file, or add them to your Plant Accession file. "
+          . "The Plant Identifiers we found were: @tree_id_str",
+          ['@tree_id_str' => $tree_id_str]
+        ));
+      }
+    }
+    if (!form_get_errors()) {
+      $options = [
+        'empty' => $genotype['files'][$field_name . '-empty'] ?? NULL,
+        'org_num' => $org_num,
+      ];
+      tpps_file_iterator(
+        $genotype['files'][$field_name],
+        'tpps_ssr_valid_values',
+        $options
+      );
+      // Preserve file if it is valid.
+      tpps_preserve_valid_file(
+        $form_state,
+        $genotype['files'][$field_name],
+        $org_num,
+        $prefix
+      );
+    }
   }
 }

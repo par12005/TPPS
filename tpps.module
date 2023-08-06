@@ -80,6 +80,45 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  // This will return information about a study's VCF tree ids
+  // First % = accession
+  // Second % = organism_index (1 or 2 or 3 etc) @TODO
+  $items['tpps/%/vcf-tree-ids'] = array(
+    'title' => 'TPPS VCF Tree Ids',
+    'page callback' => 'tpps_vcf_tree_ids',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  // This will return information about a study's VCF markers
+  // First % = accession
+  // Second % = organism_index (1 or 2 or 3 etc) @TODO
+  $items['tpps/%/vcf-markers'] = array(
+    'title' => 'TPPS VCF Markers',
+    'page callback' => 'tpps_vcf_markers',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );
+
+  // This will return information about a study's VCF markers
+  // First % = accession
+  // Second % = organism_index (1 or 2 or 3 etc) @TODO
+  $items['tpps/%/snps-assay-markers'] = array(
+    'title' => 'TPPS SNPs Assay Markers',
+    'page callback' => 'tpps_snps_assay_markers',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );
+
   $items['tpps/%/edit-publication'] = array(
     'title' => 'TPPS Edit Publication Information',
     'page callback' => 'drupal_get_form',
@@ -830,8 +869,10 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       $form_state['stage'] = 'frontpage';
 
       tpps_front_create_form($form, $form_state);
-
-      drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+      $form['#attached']['js'][] = [
+        'type' => 'file',
+        'data' => drupal_get_path('module', 'tpps') . TPPS_JS_PATH,
+      ];
       drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
       return $form;
@@ -872,7 +913,6 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 
   tpps_status_bar($form, $form_state);
 
-
   if (
     !isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])
     && (
@@ -880,7 +920,6 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       or $form_state['tpps_type'] != 'tppsc'
     )
   ) {
-
     $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
     if ($contact_bundle) {
       $query = new EntityFieldQuery();
@@ -939,7 +978,10 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     $form['#suffix'] = $suffix;
   }
 
-  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+  $form['#attached']['js'][] = [
+    'type' => 'file',
+    'data' => drupal_get_path('module', 'tpps') . TPPS_JS_PATH,
+  ];
   drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
   return $form;
@@ -990,7 +1032,10 @@ function tpps_main_validate(&$form, &$form_state) {
       break;
   }
 
-  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+  $form['#attached']['js'][] = [
+    'type' => 'file',
+    'data' => drupal_get_path('module', 'tpps') . TPPS_JS_PATH,
+  ];
 
   if ($user->uid !== 0 and !form_get_errors()) {
     $form_state['values']['#cleared'] = TRUE;

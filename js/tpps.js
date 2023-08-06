@@ -1,34 +1,4 @@
 jQuery(document).ready(function ($) {
-  /* [VS] */
-  // We can't use Drupal States API because it doesn't work with multiple
-  // select form elements.
-  // For Genotype only one organism Id. Usually '#edit-organism-1'
-  var organism_name = '#' + $('form#tppsc-main fieldset').first().attr('id');
-  $(organism_name + '-genotype-marker-type').bind('change', function() {
-    if ($.inArray('SNPs', $(this).val()) !== -1) {
-      $(organism_name + '-genotype-snps').show();
-      $(organism_name + '-genotype-ref-genome').parent().show();
-    }
-    else {
-      $(organism_name + '-genotype-snps').hide();
-      $(organism_name + '-genotype-ref-genome').parent().hide();
-    }
-    if ($.inArray('SSRs/cpSSRs', $(this).val()) !== -1) {
-      $(organism_name + '-genotype-ssrscpssrs').parent().show();
-    }
-    else {
-      $(organism_name + '-genotype-ssrscpssrs').parent().hide();
-    }
-    if ($.inArray('Other', $(this).val()) !== -1) {
-      $(organism_name + '-genotype-other-marker').parent().show();
-    }
-    else {
-      $(organism_name + '-genotype-other-marker').parent().hide();
-    }
-  });
-  // Hide all Genotype related fields by default.
-  $(organism_name + '-genotype-marker-type').trigger('change');
-  /* [/VS] */
 
   function Supplemental_Files(){
     var files_add = jQuery('#edit-files-add');
@@ -667,6 +637,38 @@ jQuery.fn.updateMap = function(locations, fid = "") {
           .val($(this).text()).blur();
         e.preventDefault();
       });
+      // We can't use Drupal States API because it doesn't work with multiple
+      // select form elements.
+      // For Genotype only one organism Id. Usually '#edit-organism-1'
+      var organism_name = '#' + $('form#tppsc-main fieldset').first().attr('id');
+      $(organism_name + '-genotype-snps-genotyping-design').parent().hide();
+      $(organism_name + '-genotype-ssrscpssrs').parent().hide();
+
+      $(organism_name + '-genotype-marker-type', context).bind('change', function() {
+        console.log('changed' + organism_name);
+        if ($.inArray('SNPs', $(this).val()) !== -1) {
+          $(organism_name + '-genotype-snps').show();
+          $(organism_name + '-genotype-snps-genotyping-design').parent().show();
+        }
+        else {
+          console.log('SNPs off');
+          $(organism_name + '-genotype-snps').hide();
+        }
+
+        if ($.inArray('SSRs/cpSSRs', $(this).val()) !== -1) {
+          $(organism_name + '-genotype-ssrscpssrs').parent().show();
+        }
+        else {
+          $(organism_name + '-genotype-ssrscpssrs').parent().hide();
+        }
+        if ($.inArray('Other', $(this).val()) !== -1) {
+          $(organism_name + '-genotype-other-marker').parent().show();
+        }
+        else {
+          $(organism_name + '-genotype-other-marker').parent().hide();
+        }
+      });
+      // Hide all Genotype related fields by default.
     }
   };
 })(jQuery);

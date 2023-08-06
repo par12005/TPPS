@@ -454,11 +454,11 @@ function tpps_flatten(array $state) {
           }
 
           if (!empty($geno['files']['ssrs'])) {
-            $data["$org_name SSRs/cpSSRs Genotype File"] = $geno['files']['ssrs'];
+            $data["$org_name SSRs Genotype File"] = $geno['files']['ssrs'];
           }
 
           if (!empty($geno['files']['ssrs_extra'])) {
-            $data["$org_name SSRs/cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
+            $data["$org_name cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
           }
 
           //if (!empty($geno['files']['indels'])) {
@@ -469,8 +469,14 @@ function tpps_flatten(array $state) {
             $data["$org_name Other Marker Genotype File"] = $geno['files']['other'];
           }
 
-          if (!empty($geno['files']['vcf'])) {
-            $data["$org_name VCF File"] = $geno['files']['vcf'];
+          if (!empty($geno['files']['local_vcf'])) {
+            $data["$org_name VCF File (cluster)"] = $geno['files']['local_vcf'];
+          }
+
+          if ($geno['files']['vcf'] > 0) {
+            $file = file_load($geno['files']['vcf']);
+            $file_url = file_create_url($file->uri);
+            $data["$org_name VCF File (uploaded)"] = "<a href='$file_url' target='blank'>$file->filename</a>";
           }
         }
 
@@ -561,12 +567,20 @@ function tpps_table_display(array &$state, array $options = array()) {
   $content = "";
   foreach ($flat as $key => $val) {
     if ($key[0] != '#') {
-      $key_str = filter_xss(check_plain($key));
+      // [VS] Added extra space which must not be visible at site but
+      // will divide key and it's value in CLI.
+      $key_str = filter_xss(check_plain($key)) . ' ';
       $val_str = filter_xss(check_plain($val));
 
+      if (preg_match('/File/', $key) and ($file = file_load($val) === FALSE) and stripos($key_str, 'VCF File (cluster)') === FALSE) {
+        // FILE NOT FOUND
+        $val_str .= ' <span style="font-size: 32px;">🆘</span><span>(File missing)</span>';
+      }
       if (preg_match('/File/', $key) and ($file = file_load($val))) {
+
         // Create links to files.
         $file_name = $file->filename;
+
         $file_url = check_plain(file_create_url($file->uri));
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
         if (!empty($state['revised_files'][$val]) and ($revised_file = file_load($state['revised_files'][$val]))) {
