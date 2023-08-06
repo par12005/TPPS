@@ -229,9 +229,9 @@ function tpps_menu() {
   $items['tpps/doi/%'] = array(
     'title' => 'TPPS DOI',
     'page callback' => 'tpps_manage_doi',
-    'page arguments' => array(2),
+    'page arguments' => [2],
     'access callback' => 'tpps_access',
-    'access arguments' => array('access content'),
+    'access arguments' => ['access content'],
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/manage_doi.inc',
   );
@@ -1278,7 +1278,10 @@ function tpps_block_view_alter(&$data, $block) {
               drupal_add_js($js, 'inline');
             }
           }
-          elseif (preg_match('/Publication DOI/', $item)) {
+          elseif (
+            preg_match('/Publication DOI/', $item)
+            || preg_match('/Dataset DOI/', $item)
+          ) {
             $link = preg_match('/https?:\/\//', $val_str) ? $val_str : "https://doi.org/$val_str";
             $val_str = "<a href=\"$link\" target=\"blank\">$val_str</a>";
           }

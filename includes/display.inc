@@ -39,7 +39,8 @@ function tpps_flatten(array $state) {
   }
   $data['Project ID'] = $project_id ?? NULL;
   $data['#study_photo'] = $page_1['photo'] ?? NULL;
-  $data['Publication DOI'] = isset($page_1['doi']) ? $page_1['doi'] : NULL;
+  $data['Dataset DOI'] = $page_1['doi'] ?? NULL;
+  $data['Publication DOI'] = $page_1['publication_doi'] ?? NULL;
   $data['Publication Title'] = isset($pub['title']) ? $pub['title'] : NULL;
   $data['Primary Author'] = isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : NULL;
   $data['Publication Status'] = isset($pub['status']) ? $pub['status'] : NULL;
@@ -664,7 +665,7 @@ function tpps_table_display(array &$state, array $options = array()) {
       elseif ($key == 'Publication Abstract' and strlen($val_str) > 50) {
         $val_str = substr($val_str, 0, 47) . '...';
       }
-      elseif ($key == 'Publication DOI') {
+      elseif (in_array($key, ['Publication DOI', 'Dataset DOI'])) {
         $link = preg_match('/https?:\/\//', $val_str) ? $val_str : "https://doi.org/$val_str";
         $val_str = "<a href=\"$link\" target=\"blank\">$val_str</a>";
       }
