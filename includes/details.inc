@@ -43,8 +43,10 @@ function tpps_details($accession = NULL) {
     $output .= render($form);
     $output .= tpps_details_tags_sort();
     $output .= "<div id='tpps-details-table'>" . tpps_details_top() . "</div>";
-    drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+
+    $module_path = drupal_get_path('module', 'tpps');
+    drupal_add_css($module_path . TPPS_CSS_PATH);
+    drupal_add_js($module_path . TPPS_JS_PATH);
     return $output;
   }
 
@@ -73,7 +75,12 @@ function tpps_details($accession = NULL) {
       drupal_set_message(t('This submission is still under construction. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
       if (function_exists('tpps_details_byaccession_page')) {
         $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
-        drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+        // [VS].
+        $module_path = drupal_get_path('module', 'tpps');
+        // @todo Check if this is a Form API and use '#attached' if possible.
+        //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+        drupal_add_js($module_path . TPPS_JS_PATH);
+        // [/VS].
         return $output;
       }
     }
@@ -98,8 +105,14 @@ function tpps_details($accession = NULL) {
       }
       $output .= $map_api_tools;
     }
-    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-    drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+    // [VS].
+    $module_path = drupal_get_path('module', 'tpps');
+    // @todo Check if this is a Form API and use '#attached' if possible.
+    //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+    //$form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
+    drupal_add_js($module_path . TPPS_JS_PATH);
+    drupal_add_css($module_path . TPPS_CSS_PATH);
+    // [/VS].
 
     $pub_link = $state['title'];
     $pub_id = db_select('chado.project_pub', 'p')
@@ -153,7 +166,12 @@ function tpps_details($accession = NULL) {
 
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
-    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+    // [VS].
+    $module_path = drupal_get_path('module', 'tpps');
+    // @todo Check if this is a Form API and use '#attached' if possible.
+    //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+    drupal_add_js($module_path . TPPS_JS_PATH);
+    // [/VS].
   }
   return $output;
 }
@@ -186,7 +204,7 @@ function tpps_details_tabs(array &$state) {
       $mass_spectro_exist = TRUE;
     }
   }
-  
+
   $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes / Environments</a></li>' : "";
   $output .= $g_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
   $output .= $mass_spectro_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#mass_spectrometry">Mass Spectrometry</a></li>' : "";
@@ -534,7 +552,7 @@ function tpps_details_search(array $form, array $form_state) {
 
   $form['reset_button'] = array(
     '#markup' => '<button class="btn btn-primary form-button" type="reset"/>Reset</button>',
-  ); 
+  );
 
   $form['#attributes'] = array(
     'style' => 'text-align:center',
@@ -647,7 +665,7 @@ function tpps_details_species(array &$state) {
       $common_name,
     );
   }
-  
+
   $vars = array(
     'header' => array(
       'Order',
@@ -705,7 +723,7 @@ function tpps_details_study(array &$state) {
       if(stripos($file_url, 'core/labs') === FALSE) {
         $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
       }
-      
+
     }
   }
 
@@ -774,7 +792,7 @@ function tpps_details_get_study_file_ids($state) {
         }
         if(isset($saved_values[$i]['organism-' . $j]['phenotype']['metadata'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['metadata']);
-        }        
+        }
       }
       for($j=1; $j<=$organism_count; $j++) {
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay'])) {
@@ -788,10 +806,10 @@ function tpps_details_get_study_file_ids($state) {
         }
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs']);
-        } 
+        }
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra']);
-        }                        
+        }
       }
     }
   }
@@ -1041,7 +1059,7 @@ function tpps_details_genotype(array &$state) {
   //   $query->condition('ps.project_id', $state['ids']['project_id']);
   //   $query = $query->execute();
   //   $total = $query->fetchObject()->count;
-    
+
   //   $total_array = array(
   //     'expire_time' => time() + variable_get('tpps_tab_genotype_total_cache_time', 7*(24*60*60)),
   //     'total' => $total
@@ -1085,9 +1103,9 @@ function tpps_details_genotype(array &$state) {
   // $query = chado_query("SELECT * FROM chado.genotypes_" . $project_id . " OFFSET $start LIMIT $per_page");
 
   // @NEW - RISH using Emily's index_id to paginate the page columns
-  $query = chado_query("select * from chado.genotypes_" . $project_id .  
-    " where index_id > " . $start . 
-    " order by index_id asc 
+  $query = chado_query("select * from chado.genotypes_" . $project_id .
+    " where index_id > " . $start .
+    " order by index_id asc
     limit " . $per_page . ";",[]);
 
   while (($result = $query->fetchObject())) {
@@ -1166,7 +1184,7 @@ function tpps_details_mass_spectrometry(array &$state) {
   $query->condition('p.attr_id', tpps_load_cvterm('intensity')->cvterm_id);
   $query->condition('ps.project_id', $state['ids']['project_id']);
   $query = $query->execute();
-  $total = $query->fetchObject()->count;  
+  $total = $query->fetchObject()->count;
 
   $_GET['page'] = $page;
   pager_default_initialize($total, $per_page);
