@@ -669,6 +669,7 @@ jQuery.fn.updateMap = function(locations, fid = "") {
         }
       });
       // Hide all Genotype related fields by default.
+      $(organism_name + '-genotype-marker-type').trigger('change');
     }
   };
 })(jQuery);
