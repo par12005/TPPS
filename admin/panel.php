@@ -907,6 +907,9 @@ function tpps_save_admin_comments(array $form, array $form_state) {
 function tpps_admin_panel_top(array &$form) {
   global $base_url;
 
+  // [VS]
+  tpps_admin_panel_reports($form);
+  // [/VS].
   $submissions = tpps_load_submission_multiple(array(), FALSE);
 
   $pending = array();
@@ -1794,4 +1797,35 @@ function tpps_admin_panel_submit($form, &$form_state) {
     default:
       break;
   }
+}
+
+/**
+ * Adds fieldset with links to custom report pages.
+ */
+function tpps_admin_panel_get_reports() {
+  return [
+    // Format: <Report Key> => <Path related to $panel_url>.
+    'missing_doi' => 'tpps-admin-panel/reports/missing-doi',
+  ];
+}
+
+/**
+ * Adds fieldset with links to custom report pages.
+ *
+ * @param array $form
+ *   The form element of the TPPS admin panel page.
+ */
+function tpps_admin_panel_reports(array &$form) {
+  foreach (tpps_admin_panel_get_reports() as $report_key => $panel_url) {
+    if ($title = variable_get('tpps_report_' . $report_key . '_title')) {
+      $items[] = l(t($title), $panel_url);
+    }
+  }
+  $form['report_menu'] = [
+    '#type' => 'fieldset',
+    '#title' => t('TPPS Reports'),
+    '#collapsible' => TRUE,
+    '#collapsed' => FALSE,
+    'table' => ['#markup' => theme('item_list', ['items' => $items])],
+  ];
 }
