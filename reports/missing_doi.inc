@@ -9,56 +9,62 @@
  * Menu callback. Shows studies without DOI attached.
  */
 function tpps_missing_doi_report() {
-  $table = 'chado.project';
   $page_title = variable_get('tpps_report_missing_doi_title', 'Missing DOI');
 
-/*
-select d.accession, p.name, p.description
-from chado.project p
-  // Get missing DOI
-  left join chado.project_dbxref pd on pd.project_id = p.project_id
+  // Original query from Emily.
+  //  select
+  //    p.project_id,
+  //    p.name,
+  //    p.description,
+  //    d.accession
+  //  from chado.project p
+  //  join chado.project_dbxref pd on p.project_id = pd.project_id
+  //  join chado.dbxref d on pd.dbxref_id = d.dbxref_id
+  //  where p.project_id in (
+  //    select project_id
+  //    from chado.project_dbxref
+  //    where dbxref_id in (
+  //      select dbxref_id from chado.dbxref where accession ilike 'tgdr%'
+  //    )
+  //  )
+  //  and p.project_id not in (
+  //    select project_id
+  //    from chado.project_dbxref
+  //    where dbxref_id in (
+  //      select dbxref_id from chado.dbxref where accession ilike '%\/%'
+  //    )
+  //  )
+  //  order by project_id;
 
-  //* Get study number
-  left join chado.project_dbxref pd2 on p.project_id = p.project_id
-  join chado.dbxref d on pd2.dbxref_id = d.dbxref_id
+  $sub_query_1 = db_select('chado.dbxref', 't1')
+    ->fields('t1', ['dbxref_id'])
+    ->condition('accession', 'TGDR%', 'LIKE');
 
-where pd.dbxref_id IS NULL;
- */
+  $sub_query_2 = db_select('chado.project_dbxref', 't2')
+    ->fields('t2', ['project_id'])
+    ->condition('dbxref_id', $sub_query_1, 'IN');
 
-  $query = db_select($table, 'p');
-  $query->addTag('debug');
-  // Get missing DOI.
-  $query->leftJoin(
-    'chado.project_dbxref',
-    'pd',
-    'p.project_id = pd.project_id'
-  );
-  // Get study number.
-  //$query->leftJoin(
-  //  'chado.project_dbxref',
-  //  'pd2',
-  //  'p.project_id = p.project_id'
-  //);
-  $query->leftJoin(
-    'chado.dbxref',
-    'd',
-    'pd.dbxref_id = d.dbxref_id'
-  );
-  // Columns.
+  $sub_query_3 = db_select('chado.dbxref', 't3')
+    ->fields('t3', ['dbxref_id'])
+    ->condition('accession', '%\/%', 'LIKE');
+
+  $sub_query_4 = db_select('chado.project_dbxref', 't4')
+    ->fields('t4', ['project_id'])
+    ->condition('dbxref_id', $sub_query_3, 'IN');
+
+  $query = db_select('chado.project', 'p');
   $query->addField('d', 'accession');
   $query->addField('p', 'project_id');
   $query->addField('p', 'name');
   $query->addField('p', 'description');
-  // Conditions.
-  //$query->isNotNull('d.accession');
-  //$query->isNull('pd.project_dbxref_id');
-  // 95 = TreeGenes Database.
-  $query->condition('d.db_id', 95);
-
+  $query->leftJoin('chado.project_dbxref', 'pd', 'p.project_id = pd.project_id');
+  $query->leftJoin('chado.dbxref', 'd', 'pd.dbxref_id = d.dbxref_id');
+  $query->condition('p.project_id', $sub_query_2, 'IN');
+  $query->condition('p.project_id', $sub_query_4, 'NOT IN');
 
   return '<h2>' . $page_title . '</h2>' . easy_report([
     'css_path' => drupal_get_path('module', 'tpps') . TPPS_CSS_PATH,
-    //'formatter' => 'tpps_missing_doi_report_formatter',
+    'formatter' => 'tpps_missing_doi_report_formatter',
     'page_title' => $page_title,
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'items_per_page' => variable_get('tpps_report_items_per_page', 15),
@@ -95,17 +101,12 @@ function tpps_missing_doi_report_formatter(string $name, $value, array &$row) {
   if (empty($name) || empty($value)) {
     return $formatted;
   }
-    return $formatted;
   $name = check_plain($name);
   switch ($name) {
-    case 'study_name':
+    case 'accession':
       if (!empty($value)) {
         $formatted = l($formatted, 'tpps-admin-panel/' . $formatted);
       }
-      break;
-
-    case 'publictpps_phenotype_unit_warning_study_name':
-      $formatted = l(t('Remove'), $_GET['q'], ['query' => ['remove' => $formatted]]);
       break;
   }
   return $formatted;
