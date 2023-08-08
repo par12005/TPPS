@@ -33,6 +33,7 @@ require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'includes/cvterm_utils.inc';
 require_once 'api/tpps.api.inc';
+require_once 'includes/easy_report.inc';
 
 /**
  * Implements hook_menu().
@@ -319,6 +320,26 @@ function tpps_menu() {
     'type' => MENU_CALLBACK
   );
 
+  // [VS] Missing DOI reports.
+  $items['admin/reports/missing-doi'] = [
+    'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
+    'description' => 'List of Studies without DOI attached.',
+    'page callback' => 'tpps_missing_doi_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/missing_doi.inc',
+  ];
+
+  // @TODO Add a link to admin panel.
+  //
+  $items['tpps-admin-panel/reports/missing-doi'] = [
+    'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
+    'page callback' => 'tpps_missing_doi_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/missing_doi.inc',
+  ];
+  // [/VS].
   $items = array_merge($items, tpps_api_paths());
 
   return $items;

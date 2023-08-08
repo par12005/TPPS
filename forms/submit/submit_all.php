@@ -226,39 +226,34 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     'is_current' => TRUE,
   ));
 
-  // 'Dataset DOI' Field.
-  if (
-    !empty($form_state['tpps_type'])
-    and $form_state['tpps_type'] == 'tppsc'
-    and !empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])
-  ) {
-    $dryad_db = chado_get_db(['name' => 'dryad']);
-    $dryad_dbxref = chado_insert_dbxref([
-      'db_id' => $dryad_db->db_id,
-      'accession' => $form_state['saved_values'][TPPS_PAGE_1]['doi'],
-    ])->dbxref_id;
-    tpps_chado_insert_record('project_dbxref', [
-      'project_id' => $form_state['ids']['project_id'],
-      'dbxref_id' => $dryad_dbxref,
-      'is_current' => TRUE,
-    ]);
-  }
-  // 'Publication DOI' Field.
-  if (
-    !empty($form_state['tpps_type'])
-    and $form_state['tpps_type'] == 'tppsc'
-    and !empty($form_state['saved_values'][TPPS_PAGE_1]['publication_doi'])
-  ) {
-    $dryad_db = chado_get_db(['name' => 'dryad']);
-    $dryad_dbxref = chado_insert_dbxref([
-      'db_id' => $dryad_db->db_id,
-      'accession' => $form_state['saved_values'][TPPS_PAGE_1]['publication_doi'],
-    ])->dbxref_id;
-    tpps_chado_insert_record('project_dbxref', [
-      'project_id' => $form_state['ids']['project_id'],
-      'dbxref_id' => $dryad_dbxref,
-      'is_current' => TRUE,
-    ]);
+  // Save DOI fields.
+  if (($form_state['tpps_type'] ?? NULL) == 'tppsc') {
+    // 'Dataset DOI' Field.
+    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])) {
+      $dryad_db = chado_get_db(['name' => 'dryad']);
+      $dryad_dbxref = chado_insert_dbxref([
+        'db_id' => $dryad_db->db_id,
+        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['doi'],
+      ])->dbxref_id;
+      tpps_chado_insert_record('project_dbxref', [
+        'project_id' => $form_state['ids']['project_id'],
+        'dbxref_id' => $dryad_dbxref,
+        'is_current' => TRUE,
+      ]);
+    }
+    // 'Publication DOI' Field.
+    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['publication_doi']) {
+      $dryad_db = chado_get_db(['name' => 'dryad']);
+      $dryad_dbxref = chado_insert_dbxref([
+        'db_id' => $dryad_db->db_id,
+        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['publication_doi'],
+      ])->dbxref_id;
+      tpps_chado_insert_record('project_dbxref', [
+        'project_id' => $form_state['ids']['project_id'],
+        'dbxref_id' => $dryad_dbxref,
+        'is_current' => TRUE,
+      ]);
+    }
   }
 
   if (!empty($firstpage['photo'])) {
@@ -990,9 +985,6 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
 
   $form_state['data']['phenotype'] = array();
   $form_state['data']['phenotype_meta'] = array();
-
-  // Submit raw data.
-  for ($i = 1; $i <= $organism_number; $i++) {
     tpps_submit_phenotype($form_state, $i, $job);
     echo "[DEBUG] Processing genotype data for species code $species_codes and i = $i\n";
     tpps_submit_genotype($form_state, $species_codes, $i, $job);
