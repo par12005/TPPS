@@ -50,8 +50,10 @@ where pd.dbxref_id IS NULL;
   $query->addField('p', 'name');
   $query->addField('p', 'description');
   // Conditions.
-  $query->isNotNull('d.accession');
-  //$query->isNull('d.dbxref_id');
+  //$query->isNotNull('d.accession');
+  //$query->isNull('pd.project_dbxref_id');
+  // 95 = TreeGenes Database.
+  $query->condition('d.db_id', 95);
 
 
   return '<h2>' . $page_title . '</h2>' . easy_report([
@@ -63,7 +65,6 @@ where pd.dbxref_id IS NULL;
     'header' => [
       ['data' => t('Study'), 'field' => 'accession'],
       ['data' => t('Project Id'), 'field' => 'project_id'],
-      //['data' => t('Study'), 'field' => 'chado.dbxref.accession'],
       ['data' => t('Name'), 'field' => 'name'],
       ['data' => t('Description'), 'field' => 'chadoproject.description'],
     ],
