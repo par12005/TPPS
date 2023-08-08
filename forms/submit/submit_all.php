@@ -1627,6 +1627,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       // CV Term Id for 'ssr': 764.
       $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
       $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
+      $options['ploidy'] = $genotype['files']['ploidy'];
       $options['empty'] = $genotype['files'][$ssr_field_name]['empty'] ?? 'NA';
       tpps_ssr_process(
         $form_state,
@@ -3460,12 +3461,18 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     $current_id = $tree_info[trim($val)]['organism_id'];
     $species_code = $species_codes[$current_id];
   }
+
+  $keys = array_keys($row);
+  $key_index = -1;
   foreach ($row as $key => $val) {
+    $key_index++;
     echo "ROW key:$key, val:$val\n";
     if (empty($headers[$key])) {
       continue;
     }
 
+    // This $val is different from the $val later on
+    // so order is important
     if (!isset($stock_id)) {
       $stock_id = $tree_info[trim($val)]['stock_id'];
       $current_id = $tree_info[trim($val)]['organism_id'];
@@ -3474,6 +3481,97 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     }
     $genotype_count++;
     echo "Stock ID: $stock_id, Current ID: $current_id, Genotype_count: $genotype_count\n";
+
+
+    echo "Header before alterations:" . $headers[$key] . "\n";
+
+    $header_length = strlen($headers[$key]);
+    // Cater for Diploids [Rish: 8/3/2023]
+    if($options['ploidy'] == 'Diploid' && substr($headers[$key], $header_length - 2, 2) == "_A") {
+      // Remove the _A from the first diploid header
+      // and allow the below code to continue to be processed so the SSR can be imported in
+      $headers[$key] = substr($headers[$key], 0, $header_length - 3);
+      $options['diploid_header'] = $headers[$key];
+      $options['diploid_val'] = $val;
+      // Save this header for use in a later iteration when _B gets called
+      // This reason for this is we want _A and _B values recorded
+      echo "Diploid first header reset to: " . $headers[$key] . "\n";
+      // This will skip processing iteration by ONE iteration if _A (SSR diploid detected)
+      continue;
+    }
+
+    // [RISH] This is a minor adjustment for diploid done on 8/3/2023
+    if($options['ploidy'] == 'Diploid' && substr($headers[$key], $header_length - 2, 2) == "_B") {
+      $options['diploid_val'] .= ',' . $val;
+
+      // Reset to these new values for insertion into the database later on
+      $headers[$key] = $options['diploid_header'];
+      $val = $options['diploid_val'];
+      echo "Diploid val: $val\n";
+    }
+    // End of cater for diploids
+
+    // Cater for Polyploids [RISH: 8/7/2023]
+    // Get header without the trailing _X (_1,_2,_3 etc)
+    $header_parts = explode("_", $headers[$key]);
+    $header_parts_length = count($header_parts);
+    $header_without_polyploid_index = "";
+    for ($j = 0; $j < $header_parts_length - 1; $j++) {
+      if ($j > 0) { 
+        $header_without_polyploid_index .= "_";
+      }
+      $header_without_polyploid_index .= $header_parts[$j];
+    }
+
+    if($options['ploidy'] == 'Polyploid' && $options['polyploid_header'] != $header_without_polyploid_index) {
+      // Remove the _1 from the first diploid header
+      // and allow the below code to continue to be processed so the SSR can be imported in
+      $headers[$key] = $header_without_polyploid_index;
+      $options['polyploid_header'] = $headers[$key];
+      $options['polyploid_val'] = $val;
+      // Save this header for use in a later iteration when _B gets called
+      // This reason for this is we want _A and _B values recorded
+      echo "Polyploid first header reset to: " . $headers[$key] . "\n";
+      // This will skip processing iteration by ONE iteration if _1 (SSR diploid detected)
+      continue;
+    }
+
+    // [RISH] This is a minor adjustment for polyploid done on 8/7/2023
+    // Look forward to see if the next headers_key
+    $header_next = $headers[$keys[$key_index + 1]];
+    // Get next header without the trailing _X (_1,_2,_3 etc)
+    $header_next_parts = explode("_", $header_next);
+    $header_next_parts_length = count($header_next_parts);
+    $header_next_without_polyploid_index = "";
+    for ($j = 0; $j < $header_next_parts_length - 1; $j++) {
+      if ($j > 0) { 
+        $header_next_without_polyploid_index .= "_";
+      }
+      $header_next_without_polyploid_index .= $header_next_parts[$j];
+    }
+     
+    if($options['ploidy'] == 'Polyploid' && $options['polyploid_header'] == $header_without_polyploid_index) {
+      $options['polyploid_val'] .= ',' . $val; // append the new value to what was already there
+
+      // Check if the next header does not match current header (this would mean next header starts a new SSR polyploid) OR
+      // if the next header is NULL (this means end of headers of the file)
+      // so we need to allow the rest of code below to happen to insert this current SRR polyploid
+      if (($header_without_polyploid_index != $header_next_without_polyploid_index) || $header_next == NULL) { // NULL happens if end of all headers
+        // we have found that $headers[$key] is the last polyploid column for the current SSR
+        // so reset to these new values for insertion into the database later on
+        $headers[$key] = $options['polyploid_header'];
+        $val = $options['polyploid_val'];
+        echo "Polyploid val: $val for insertion using SSR marker" . $headers[$key] . "\n";        
+      }
+      else {
+        echo "Skipping insert\n";
+        continue; // this will skip insertion (below code) until all values for the current SSR polyploid is found
+      }
+    }
+    // End of catering for polyploids
+    echo "Processing the insert\n";
+
+
 
 
     if ($type == 'ssrs' and !empty($options['empty']) and $val == $options['empty']) {
