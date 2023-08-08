@@ -242,7 +242,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
       ]);
     }
     // 'Publication DOI' Field.
-    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['publication_doi']) {
+    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['publication_doi'])) {
       $dryad_db = chado_get_db(['name' => 'dryad']);
       $dryad_dbxref = chado_insert_dbxref([
         'db_id' => $dryad_db->db_id,
@@ -985,18 +985,20 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
 
   $form_state['data']['phenotype'] = array();
   $form_state['data']['phenotype_meta'] = array();
+
+  // Submit raw data.
+  for ($i = 1; $i <= $organism_number; $i++) {
     tpps_submit_phenotype($form_state, $i, $job);
     echo "[DEBUG] Processing genotype data for species code $species_codes and i = $i\n";
     tpps_submit_genotype($form_state, $species_codes, $i, $job);
     tpps_submit_environment($form_state, $i, $job);
   }
-  // Generate genotype view
-  $test = false;
+  // Generate genotype view.
+  $test = FALSE;
   $project_id = $form_state['ids']['project_id'];
-  if (isset($project_id) && $test != true) {
+  if (isset($project_id) && $test != TRUE) {
     tpps_generate_genotype_materialized_view($project_id);
   }
-
 }
 
 /**
