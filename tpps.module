@@ -33,6 +33,7 @@ require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'includes/cvterm_utils.inc';
 require_once 'api/tpps.api.inc';
+require_once 'includes/easy_report.inc';
 
 /**
  * Implements hook_menu().
@@ -229,9 +230,9 @@ function tpps_menu() {
   $items['tpps/doi/%'] = array(
     'title' => 'TPPS DOI',
     'page callback' => 'tpps_manage_doi',
-    'page arguments' => array(2),
+    'page arguments' => [2],
     'access callback' => 'tpps_access',
-    'access arguments' => array('access content'),
+    'access arguments' => ['access content'],
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/manage_doi.inc',
   );
@@ -319,6 +320,26 @@ function tpps_menu() {
     'type' => MENU_CALLBACK
   );
 
+  // [VS] Missing DOI reports.
+  $items['admin/reports/missing-doi'] = [
+    'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
+    'description' => 'List of Studies without DOI attached.',
+    'page callback' => 'tpps_missing_doi_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/missing_doi.inc',
+  ];
+
+  // @TODO Add a link to admin panel.
+  //
+  $items['tpps-admin-panel/reports/missing-doi'] = [
+    'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
+    'page callback' => 'tpps_missing_doi_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/missing_doi.inc',
+  ];
+  // [/VS].
   $items = array_merge($items, tpps_api_paths());
 
   return $items;
@@ -505,7 +526,6 @@ function tpps_mail($key, array &$message, array $params) {
       $message['body'][] = "Congratulations!<br><br>
       Your TPPS submission has been received and is pending approval from a site administrator! Here's a brief summary of the information you provided:<ul>
       <li>Primary Author: {$params['author']}</li>
-      <li>Organization: {$params['org']}</li>
       <li>Publication title: {$params['title']}</li>
       <li>Journal: {$params['journal']}</li>
       <li>Organisms: {$params['organisms']['number']}</li>";
@@ -864,18 +884,18 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   require_once 'forms/build/front.php';
   global $user;
 
+  // [VS].
+  $module_path = drupal_get_path('module', 'tpps');
+  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
+  // [/VS].
+
   if (!isset($form_state['stage'])) {
     if (!isset($accession)) {
       // First access, no accession in link.
       $form_state['stage'] = 'frontpage';
 
       tpps_front_create_form($form, $form_state);
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'data' => drupal_get_path('module', 'tpps') . TPPS_JS_PATH,
-      ];
-      drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-
       return $form;
     }
     else {
@@ -901,22 +921,31 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     tpps_form_state_info($form_state, $old_form_state);
   }
 
-  drupal_add_js(array('tpps' => array('stage' => $form_state['stage'])), 'setting');
-
-  $form['accession'] = array(
+  // [VS].
+  // @todo Minor.Check if this setting must be added always and move to the
+  // beginning of function if possible.
+  $form['#attached']['js'][] = [
+    'data' => ['tpps' => ['stage' => $form_state['stage']]],
+    'type' => 'setting',
+  ];
+  $form['accession'] = [
     '#type' => 'hidden',
     '#value' => $form_state['accession'],
-  );
-
+  ];
+  // [/VS].
   if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
     tpps_init_project($form_state);
   }
 
   tpps_status_bar($form, $form_state);
 
-
-  if ((!isset($form_state['tpps_type']) or $form_state['tpps_type'] != 'tppsc') and (!isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']) or !isset($form_state['saved_values'][TPPS_PAGE_1]['organization']))) {
-
+  if (
+    !isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])
+    && (
+      !isset($form_state['tpps_type'])
+      or $form_state['tpps_type'] != 'tppsc'
+    )
+  ) {
     $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
     if ($contact_bundle) {
       $query = new EntityFieldQuery();
@@ -925,9 +954,10 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
         ->fieldCondition('local__email', 'value', $user->mail)
         ->range(0, 1)
         ->execute();
-      $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
-      $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] ?? $entity->title;
-      $form_state['saved_values'][TPPS_PAGE_1]['organization'] = $form_state['saved_values'][TPPS_PAGE_1]['organization'] ?? $entity->tcontact__organization[LANGUAGE_NONE][0]['value'];
+      $entity = current(array_reverse(entity_load('TripalEntity',
+        array_keys($results['TripalEntity']))));
+      $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']
+        = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] ?? $entity->title;
     }
   }
 
@@ -976,12 +1006,6 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     $form['#suffix'] = $suffix;
   }
 
-  $form['#attached']['js'][] = [
-    'type' => 'file',
-    'data' => drupal_get_path('module', 'tpps') . TPPS_JS_PATH,
-  ];
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-
   return $form;
 }
 
@@ -994,8 +1018,10 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 function tpps_main_validate(&$form, &$form_state) {
   global $user;
 
-  if ($form_state['triggering_element']['#value'] == 'Back' or $form_state['triggering_element']['#value'] == 'Save') {
-
+  if (
+    $form_state['triggering_element']['#value'] == 'Back'
+    or $form_state['triggering_element']['#value'] == 'Save'
+  ) {
     tpps_save_file_columns($form, $form_state);
     return;
   }
@@ -1029,11 +1055,6 @@ function tpps_main_validate(&$form, &$form_state) {
     default:
       break;
   }
-
-  $form['#attached']['js'][] = [
-    'type' => 'file',
-    'data' => drupal_get_path('module', 'tpps') . TPPS_JS_PATH,
-  ];
 
   if ($user->uid !== 0 and !form_get_errors()) {
     $form_state['values']['#cleared'] = TRUE;
@@ -1276,7 +1297,10 @@ function tpps_block_view_alter(&$data, $block) {
               drupal_add_js($js, 'inline');
             }
           }
-          elseif (preg_match('/Publication DOI/', $item)) {
+          elseif (
+            preg_match('/Publication DOI/', $item)
+            || preg_match('/Dataset DOI/', $item)
+          ) {
             $link = preg_match('/https?:\/\//', $val_str) ? $val_str : "https://doi.org/$val_str";
             $val_str = "<a href=\"$link\" target=\"blank\">$val_str</a>";
           }
@@ -1334,19 +1358,19 @@ function tpps_snpassay_file_selector($string) {
     ->orderBy('f.timestamp', 'DESC')
     ->execute();
 
-  // save the query to matches
+  // Save the query to matches.
   foreach ($result as $row) {
     $value = $row->filename . ' (' . $row->fid . ')';
     $matches[$row->fid] = $row->filename;
   }
 
-  // Return the result to the form in json
+  // Return the result to the form in JSON format.
   drupal_json_output($matches);
 }
 
 function tpps_media_browser_plugins_alter(&$plugins) {
   //if (variable_get('disable_media_upload', 0)) {
-   unset($plugins['upload']);
-   unset($plugins['media_default--media_browser_my_files']);
+  unset($plugins['upload']);
+  unset($plugins['media_default--media_browser_my_files']);
  // }
- }
+}

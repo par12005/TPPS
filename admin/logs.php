@@ -26,8 +26,9 @@ function tpps_admin_panel_logs(array $form, array &$form_state, $job_log_file = 
   //     tpps_manage_submission_form($form, $form_state, $accession);
   //   }
 
-  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+  $module_path = drupal_get_path('module', 'tpps');
+  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
 
   $job_log_file_parts = explode('_', $job_log_file);
   $accession = $job_log_file_parts[0];
@@ -53,10 +54,9 @@ function tpps_admin_panel_logs(array $form, array &$form_state, $job_log_file = 
   $markup .= "});";
   $markup .= '</script>';
 
-  $form['markup'] = array(
+  $form['markup'] = [
     '#type' => 'markup',
-    '#markup' => $markup
-  );
-
+    '#markup' => $markup,
+  ];
   return $form;
 }
