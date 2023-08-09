@@ -1975,3 +1975,12 @@ function tpps_update_7118() {
     throw $e;
   }
 }
+
+/**
+ * Configure report 'Missing DOI'.
+ */
+function tpps_update_7119() {
+  // [VS] #8669eu6ht.
+  // Set initial values of variables.
+  variable_set('tpps_report_missing_doi_title', 'Missing DOI');
+}

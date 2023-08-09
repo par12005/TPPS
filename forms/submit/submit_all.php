@@ -226,17 +226,34 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     'is_current' => TRUE,
   ));
 
-  if (!empty($form_state['tpps_type']) and $form_state['tpps_type'] == 'tppsc' and !empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])) {
-    $dryad_db = chado_get_db(array('name' => 'dryad'));
-    $dryad_dbxref = chado_insert_dbxref(array(
-      'db_id' => $dryad_db->db_id,
-      'accession' => $form_state['saved_values'][TPPS_PAGE_1]['doi'],
-    ))->dbxref_id;
-    tpps_chado_insert_record('project_dbxref', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'dbxref_id' => $dryad_dbxref,
-      'is_current' => TRUE,
-    ));
+  // Save DOI fields.
+  if (($form_state['tpps_type'] ?? NULL) == 'tppsc') {
+    // 'Dataset DOI' Field.
+    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])) {
+      $dryad_db = chado_get_db(['name' => 'dryad']);
+      $dryad_dbxref = chado_insert_dbxref([
+        'db_id' => $dryad_db->db_id,
+        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['doi'],
+      ])->dbxref_id;
+      tpps_chado_insert_record('project_dbxref', [
+        'project_id' => $form_state['ids']['project_id'],
+        'dbxref_id' => $dryad_dbxref,
+        'is_current' => TRUE,
+      ]);
+    }
+    // 'Publication DOI' Field.
+    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['publication_doi'])) {
+      $dryad_db = chado_get_db(['name' => 'dryad']);
+      $dryad_dbxref = chado_insert_dbxref([
+        'db_id' => $dryad_db->db_id,
+        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['publication_doi'],
+      ])->dbxref_id;
+      tpps_chado_insert_record('project_dbxref', [
+        'project_id' => $form_state['ids']['project_id'],
+        'dbxref_id' => $dryad_dbxref,
+        'is_current' => TRUE,
+      ]);
+    }
   }
 
   if (!empty($firstpage['photo'])) {
@@ -314,19 +331,6 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     'project_id' => $form_state['ids']['project_id'],
     'pub_id' => $publication_id,
   ));
-
-  if (!empty($firstpage['organization'])) {
-    $organization_id = tpps_chado_insert_record('contact', array(
-      'name' => $firstpage['organization'],
-      'type_id' => tpps_load_cvterm('organization')->cvterm_id,
-    ));
-
-    tpps_chado_insert_record('contact_relationship', array(
-      'type_id' => tpps_load_cvterm('contact_part_of')->cvterm_id,
-      'subject_id' => $primary_author_id,
-      'object_id' => $organization_id,
-    ));
-  }
 
   $names = explode(" ", $firstpage['primaryAuthor']);
   $first_name = implode(" ", array_slice($names, 0, -1));
@@ -989,13 +993,12 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
     tpps_submit_genotype($form_state, $species_codes, $i, $job);
     tpps_submit_environment($form_state, $i, $job);
   }
-  // Generate genotype view
-  $test = false;
+  // Generate genotype view.
+  $test = FALSE;
   $project_id = $form_state['ids']['project_id'];
-  if (isset($project_id) && $test != true) {
+  if (isset($project_id) && $test != TRUE) {
     tpps_generate_genotype_materialized_view($project_id);
   }
-
 }
 
 /**
@@ -1782,7 +1785,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       // DROP INDEXES FROM GENOTYPE_CALL TABLE
       tpps_drop_genotype_call_indexes($job);
 
-
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
       $vcf_fid = $genotype['files']['vcf'];
       tpps_add_project_file($form_state, $vcf_fid);
@@ -2443,13 +2445,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
         tpps_chado_insert_multi($records, $multi_insert_options);
       }
-      else if ($insert_mode == 'hybrid') {
+      elseif ($insert_mode == 'hybrid') {
         tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
         $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
         tpps_chado_insert_hybrid($records, $multi_insert_options);
       }
 
-      // THIS RECREATES THE INDEXES
       tpps_create_genotype_call_indexes($job);
 
       tpps_job_logger_write('[INFO] - Done.');
@@ -2459,39 +2460,36 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       // dpm('done: ' . date('r'));.
     }
   }
-
 }
 
-
-
 /**
- * @param mixed $options array of options
- *        keys: study_accession, form_state, job
- * @return void
+ * Generates genotype sample file from VCF.
+ *
+ * @param mixed $options
+ *   Array of options. Keys: study_accession, form_state, job.
  */
-
 function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
-  // If study accession value exists, use this to look up the form_state
+  // If study accession value exists, use this to look up the form_state.
   $form_state = NULL;
   if (isset($options['study_accession'])) {
     $form_state = tpps_load_submission($options['study_accession']);
   }
-  else if (isset($options['form_state'])) {
+  elseif (isset($options['form_state'])) {
     $form_state = $options['form_state'];
   }
 
-  // If $form_state is not NULL
+  // If $form_state is not NULL.
   if (isset($form_state)) {
-    // Get page 1 form_state data
+    // Get page 1 form_state data.
     $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
-    // Get page 4 form_state data
+    // Get page 4 form_state data.
     $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-    // Organism count
+    // Organism count.
     $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-    // Project ID
+    // Project ID.
     $project_id = $form_state['ids']['project_id'];
 
-    // Go through each organism
+    // Go through each organism.
     for ($i = 1; $i <= $organism_number; $i++) {
       $organism_name = $firstpage['organism'][$i]['name'];
       echo "Organism name: $organism_name\n";
@@ -2501,10 +2499,10 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
       }
       else {
 
-        // Initialize sample.list text
+        // Initialize sample.list text.
         $sample_list_data = "VCF_header_sample\tSample_name\tSample_Accession\tGermplasm_name\tGermplasm_Accession\tGermplasm_type\tOrganism\n"; // header
 
-        // Get the VCF fid
+        // Get the VCF fid.
         $vcf_fid = $genotype['files']['vcf'];
         if (isset($vcf_fid) && $vcf_fid > 0) {
           echo "Found uploaded VCF with FID: " . $vcf_fid . "\n";

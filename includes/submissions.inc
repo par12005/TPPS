@@ -363,8 +363,9 @@ function tpps_submission_tag_manage() {
 
   $output = theme('table', $vars);
 
-  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+  $module_path = drupal_get_path('module', 'tpps');
+  drupal_add_js($module_path . TPPS_JS_PATH);
+  drupal_add_css($module_path . TPPS_CSS_PATH);
 
   return $output;
 }
