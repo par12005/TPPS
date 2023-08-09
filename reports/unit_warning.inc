@@ -11,7 +11,7 @@
 function tpps_admin_unit_warning_report() {
   $table = 'public.tpps_phenotype_unit_warning';
   $table_alias = str_replace('.', '', $table);
-  $page_title = variable_set(
+  $page_title = variable_get(
     'tpps_report_unit_warning_title',
     'Unit Warning (list of phenotypes which unit differs from Synonym)'
   );
