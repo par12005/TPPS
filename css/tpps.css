@@ -173,15 +173,12 @@ select.form-select {
 }
 /**
  * To have ability to see nested elements.
+ * Note: form#tppsc-main--2 appears when validation failed.
  **/
-form#tppsc-main fieldset {
+form[id^="tppsc-main"] {
   padding-left: 10px;
 }
-form#tppsc-main fieldset legend {
+form[id^="tppsc-main"] fieldset legend {
   margin-left: -10px;
-}
-/* For debug only */
-label {
-  font-weight: bold;
 }
 /* [/VS] */
