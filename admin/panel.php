@@ -35,18 +35,25 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
     tpps_manage_submission_form($form, $form_state, $accession);
   }
 
-  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-
+  // [VS].
+  $module_path = drupal_get_path('module', 'tpps');
+  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
+  // [/VS].
   return $form;
 }
 
+/**
+ * Generates all materialized views.
+ */
 function tpps_manage_generate_all_materialized_views(array $form, array &$form_state, $option = NULL) {
   global $user;
-  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
 
-
+  // [VS].
+  $module_path = drupal_get_path('module', 'tpps');
+  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
+  // [/VS].
   module_load_include('php', 'tpps', 'forms/submit/submit_all');
 
   $includes = array();
@@ -633,7 +640,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#value' => t("Remove this study's markers and genotypes"),
   );
 
-
   $form['CHANGE_TGDR_NUMBER'] = array(
     '#type' => 'textfield',
     '#prefix' => '<h2 style="margin-top: 30px;">Change TGDR number</h2>Warning: This will clear all data from the database and reimport as a new study.',
@@ -894,9 +900,7 @@ function tpps_save_admin_comments(array $form, array $form_state) {
 function tpps_admin_panel_top(array &$form) {
   global $base_url;
 
-  // [VS] #3v6kz7k
   tpps_admin_panel_reports($form);
-  // [/VS].
   $submissions = tpps_load_submission_multiple(array(), FALSE);
 
   $pending = array();
@@ -1327,9 +1331,6 @@ function tpps_admin_panel_validate($form, &$form_state) {
         form_set_error('change_owner', t('Invalid user account'));
       }
     }
-
-    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-    drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
   }
 }
 
@@ -1493,7 +1494,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
         drupal_set_message(t('It seems the TGDR number you wanted to change to is already in use. Operation aborted due to safety concerns.'));
         break;
       }
-      // dpm(print_r($state, 1));
       global $user;
       $includes = array();
       // $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
@@ -1833,6 +1833,7 @@ function tpps_admin_panel_get_reports() {
   $panel_url = 'tpps-admin-panel/phenotype-synonyms/';
   return [
     // Format: <Report Key> => <Path related to $panel_url>.
+    'missing_doi' => 'tpps-admin-panel/reports/missing-doi',
     'no_synonym' => $panel_url . 'no-synonyms',
     'unit_warning' => $panel_url . 'unit-warning',
     'order_family_not_exist' => $panel_url . 'order-family-not-exist',

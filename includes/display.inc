@@ -39,10 +39,10 @@ function tpps_flatten(array $state) {
   }
   $data['Project ID'] = $project_id ?? NULL;
   $data['#study_photo'] = $page_1['photo'] ?? NULL;
-  $data['Publication DOI'] = isset($page_1['doi']) ? $page_1['doi'] : NULL;
+  $data['Dataset DOI'] = $page_1['doi'] ?? NULL;
+  $data['Publication DOI'] = $page_1['publication_doi'] ?? NULL;
   $data['Publication Title'] = isset($pub['title']) ? $pub['title'] : NULL;
   $data['Primary Author'] = isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : NULL;
-  $data['Organization'] = isset($page_1['organization']) ? $page_1['organization'] : NULL;
   $data['Publication Status'] = isset($pub['status']) ? $pub['status'] : NULL;
   $data['Publication Year'] = isset($pub['year']) ? $pub['year'] : NULL;
   $data['Publication Abstract'] = isset($pub['abstract']) ? $pub['abstract'] : NULL;
@@ -464,11 +464,11 @@ function tpps_flatten(array $state) {
           }
 
           if (!empty($geno['files']['ssrs'])) {
-            $data["$org_name SSRs/cpSSRs Genotype File"] = $geno['files']['ssrs'];
+            $data["$org_name SSRs Genotype File"] = $geno['files']['ssrs'];
           }
 
           if (!empty($geno['files']['ssrs_extra'])) {
-            $data["$org_name SSRs/cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
+            $data["$org_name cpSSRs Additional Genotype File"] = $geno['files']['ssrs_extra'];
           }
 
           //if (!empty($geno['files']['indels'])) {
@@ -577,7 +577,9 @@ function tpps_table_display(array &$state, array $options = array()) {
   $content = "";
   foreach ($flat as $key => $val) {
     if ($key[0] != '#') {
-      $key_str = filter_xss(check_plain($key));
+      // [VS] Added extra space which must not be visible at site but
+      // will divide key and it's value in CLI.
+      $key_str = filter_xss(check_plain($key)) . ' ';
       $val_str = filter_xss(check_plain($val));
 
       if (preg_match('/File/', $key) and ($file = file_load($val) === FALSE) and stripos($key_str, 'VCF File (cluster)') === FALSE) {
@@ -585,7 +587,7 @@ function tpps_table_display(array &$state, array $options = array()) {
         $val_str .= ' <span style="font-size: 32px;">🆘</span><span>(File missing)</span>';
       }
       if (preg_match('/File/', $key) and ($file = file_load($val))) {
-        
+
         // Create links to files.
         $file_name = $file->filename;
 
@@ -672,7 +674,7 @@ function tpps_table_display(array &$state, array $options = array()) {
       elseif ($key == 'Publication Abstract' and strlen($val_str) > 50) {
         $val_str = substr($val_str, 0, 47) . '...';
       }
-      elseif ($key == 'Publication DOI') {
+      elseif (in_array($key, ['Publication DOI', 'Dataset DOI'])) {
         $link = preg_match('/https?:\/\//', $val_str) ? $val_str : "https://doi.org/$val_str";
         $val_str = "<a href=\"$link\" target=\"blank\">$val_str</a>";
       }
@@ -759,8 +761,9 @@ function tpps_completed_display($accession = NULL) {
 
   $display .= tpps_table_display($old_form_state);
 
-  drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+  $module_path = drupal_get_path('module', 'tpps');
+  drupal_add_js($module_path . TPPS_JS_PATH);
+  drupal_add_css($module_path . TPPS_CSS_PATH);
 
   return render($display);
 }

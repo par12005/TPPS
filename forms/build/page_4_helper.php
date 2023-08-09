@@ -49,6 +49,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#ajax' => [
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
+      'effect' => 'slide',
     ],
     '#default_value' => $normal_check,
   ];
@@ -59,6 +60,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     '#ajax' => [
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
+      'effect' => 'slide',
     ],
   ];
 
@@ -616,13 +618,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#tree' => TRUE,
     ];
 
-    $form[$id]['phenotype']['metadata']['empty'] = array(
-      '#default_value' => isset($values["$id"]['phenotype']['metadata']['empty']) ? $values["$id"]['phenotype']['metadata']['empty'] : 'NA',
-    );
+    $form[$id]['phenotype']['metadata']['empty'] = [
+      '#default_value' => $values["$id"]['phenotype']['metadata']['empty'] ?? 'NA',
+    ];
 
-    $form[$id]['phenotype']['metadata']['columns'] = array(
+    $form[$id]['phenotype']['metadata']['columns'] = [
       '#description' => t('Please define which columns hold the required data: Phenotype name'),
-    );
+    ];
 
     $column_options = array(
       'N/A',
@@ -714,6 +716,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#ajax' => array(
         'callback' => 'tpps_update_phenotype',
         'wrapper' => "phenotype-main-$id",
+        'effect' => 'slide',
       ),
     );
 
@@ -795,12 +798,17 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     '#title' => t('<div class="fieldset-title">Genotype Information:</div>'),
     '#collapsible' => TRUE,
   );
-  tpps_page_4_marker_info($fields, $id);
+  tpps_page_4_marker_info($fields, $form_state, $id);
   tpps_page_4_ref($fields, $form_state, $id);
 
   $marker_parents = [$id, 'genotype', 'marker-type'];
   $genotype_marker_type = array_keys(
     tpps_get_ajax_value($form_state, $marker_parents)
+  );
+  // Get 'Define SSRs/cpSSRs Type' field value to show correct fields
+  // which visiblity depends on value of this field.
+  $ssrs_cpssrs_value = tpps_get_ajax_value(
+    $form_state, [$id, 'genotype', 'SSRs/cpSSRs'], 'SSRs'
   );
 
   $fields['files'] = [
@@ -839,6 +847,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         '#ajax' => [
           'callback' => 'tpps_genotype_files_callback',
           'wrapper' => "$id-genotype-files",
+          'effect' => 'slide',
         ],
       ];
     }
@@ -852,6 +861,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#ajax' => [
         'callback' => 'tpps_genotype_files_callback',
         'wrapper' => "$id-genotype-files",
+        'effect' => 'slide',
       ],
     ];
 
@@ -867,6 +877,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#ajax' => [
         'callback' => 'tpps_genotype_files_callback',
         'wrapper' => "$id-genotype-files",
+        'effect' => 'slide',
       ],
       '#states' => [
         'visible' => [
@@ -891,7 +902,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   if ($condition) {
     if (empty(tpps_add_file_selector($form_state, $fields, $id, $title, ''))) {
       // Add file upload field if file selector wasn't checked.
-      tpps_build_file_field($fields['files'], [
+      tpps_genotype_build_file_field($fields, [
         'form_state' => $form_state,
         'id' => $id,
         'file_field_name' => $file_field_name,
@@ -904,6 +915,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
           . 'in your plant accession file, and all of the remaining '
           . 'columns should contain SNP data.'),
         'upload_location' => "$genotype_upload_location",
+        'use_fid' => TRUE,
       ]);
     }
     else {
@@ -938,7 +950,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   );
   if ($condition) {
     // Add file upload field.
-    tpps_build_file_field($fields['files'], [
+    tpps_genotype_build_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -962,7 +974,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   //if ($genotyping_type_check == "Genotyping Assay") {
     $file_field_name = 'snps-association';
     $title = t('SNP Association File');
-    tpps_build_file_field($fields['files'], [
+    tpps_genotype_build_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1043,7 +1055,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     ];
 
     // SNPs Population Structure File.
-    tpps_build_file_field($fields['files'], [
+    tpps_genotype_build_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => 'snps-pop-struct',
@@ -1053,7 +1065,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'upload_location' => "$genotype_upload_location",
     ]);
     // SNPs Kinship File.
-    tpps_build_file_field($fields['files'], [
+    tpps_genotype_build_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => 'snps-kinship',
@@ -1070,11 +1082,11 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // [VS]
   if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
-    // SSRs.
     $fields['files']['ploidy'] = [
       '#type' => 'select',
-      '#title' => t('SSRs Ploidy: *'),
+      '#title' => t('SSR Ploidy: *'),
       '#options' => [
         'Haploid' => t('Haploid'),
         'Diploid' => t('Diploid'),
@@ -1088,139 +1100,79 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#ajax' => [
         'callback' => 'tpps_genotype_files_callback',
         'wrapper' => "$id-genotype-files",
-      ],
-      '#states' => [
-        'visible' => [
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'SSRs'],
-          ],
-          'or',
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'Both SSRs and cpSSRs'],
-          ],
-        ],
+        'effect' => 'slide',
       ],
     ];
-    $title = t('SSRs Spreadsheet');
-    $file_field_name = 'ssrs';
-    tpps_build_file_field($fields['files'], [
-      'form_state' => $form_state,
-      'id' => $id,
-      'file_field_name' => $file_field_name,
-      'title' => $title,
-      'upload_location' => "$genotype_upload_location",
-      'description' => t('Please upload a spreadsheet containing your '
-        . 'SSRs data. The format of this file is very important! TPPS will '
-        . 'parse your file based on the ploidy you have selected above. '
-        . 'For any ploidy, TPPS will assume that the first column of your '
-        . 'file is the column that holds the Plant Identifier that matches '
-        . 'your accession file.'),
-      // @todo [VS] Update validation.
-      'states' => [
-        'visible' => [
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'SSRs'],
-          ],
-          'or',
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'Both SSRs and cpSSRs'],
-          ],
-        ],
-      ],
-      // Add extra text field for empty field value.
-      'empty_field_value' => tpps_get_empty_field_value(
-        $form_state, $id, $file_field_name
-      ),
-    ]);
-    tpps_genotype_update_description($fields, [
-      'id' => $id,
-      'form_state' => $form_state,
-      'source_field_name' => 'ploidy',
-      'target_field_name' => $file_field_name,
-    ]);
-
+    // SSRs.
+    if ($ssrs_cpssrs_value != 'cpSSRs') {
+      // 'SSRs' or 'Both SSRs and cpSSRs'.
+      $file_field_name = 'ssrs';
+      $title = t('SSRs Spreadsheet');
+      tpps_genotype_build_file_field($fields, [
+        'form_state' => $form_state,
+        'id' => $id,
+        'file_field_name' => $file_field_name,
+        'title' => $title,
+        'upload_location' => "$genotype_upload_location",
+        'description' => t('Please upload a spreadsheet containing your '
+          . 'SSRs data. The format of this file is very important! TPPS will '
+          . 'parse your file based on the ploidy you have selected above. '
+          . 'For any ploidy, TPPS will assume that the first column of your '
+          . 'file is the column that holds the Plant Identifier that matches '
+          . 'your accession file.'),
+        // Add extra text field for empty field value.
+        'empty_field_value' => tpps_get_empty_field_value(
+          $form_state, $id, $file_field_name
+        ),
+        'use_fid' => TRUE,
+      ]);
+      tpps_genotype_update_description($fields, [
+        'id' => $id,
+        'form_state' => $form_state,
+        'source_field_name' => 'ploidy',
+        'target_field_name' => $file_field_name,
+      ]);
+    }
+    else {
+      tpps_build_disabled_file_field($fields, 'ssrs');
+    }
+    // End of 'SSRs' field.
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // cpSSRs.
-    // @todo [VS] Rename field machine name.
-    $fields['files']['extra-ploidy'] = [
-      '#type' => 'select',
-      '#title' => t('cpSSRs Ploidy: *'),
-      '#options' => [
-        'Haploid' => t('Haploid'),
-        'Diploid' => t('Diploid'),
-        'Polyploid' => t('Polyploid'),
-      ],
-      // Note:
-      // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
-      // description. See function tpps_genotype_update_description().
-      // This could be done in browser on client side using JS
-      // but for now it was left as is.
-      '#ajax' => [
-        'callback' => 'tpps_genotype_files_callback',
-        'wrapper' => "$id-genotype-files",
-      ],
-      '#states' => [
-        'visible' => [
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'cpSSRs'],
-          ],
-          'or',
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-             => ['value' => 'Both SSRs and cpSSRs'],
-          ],
-        ],
-      ],
-    ];
-
-    // [VS]
-    // @todo [VS] Change field machine name.
-    $title = t('cpSSRs Spreadsheet');
-    $file_field_name = 'ssrs_extra';
-    tpps_build_file_field($fields['files'], [
-      'form_state' => $form_state,
-      'id' => $id,
-      'file_field_name' => $file_field_name,
-      'title' => $title,
-      'upload_location' => "$genotype_upload_location",
-      // Note:
-      // Difference from form 'ssrs' field: 'cpSSRs' (2nd line).
-      'description' => t('Please upload a spreadsheet containing your '
-        . 'cpSSRs data. The format of this file is very important! TPPS will '
-        . 'parse your file based on the ploidy you have selected above. '
-        . 'For any ploidy, TPPS will assume that the first column of your '
-        . 'file is the column that holds the Plant Identifier that matches '
-        . 'your accession file.'),
-      // @todo [VS] Update validation.
-      'states' => [
-        'visible' => [
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'cpSSRs']
-          ],
-          'or',
-          [
-            ':input[name="' . $id . '[genotype][SSRs/cpSSRs]"]'
-            => ['value' => 'Both SSRs and cpSSRs']
-          ],
-        ],
-      ],
-      // Add extra text field for empty field value.
-      'empty_field_value' => tpps_get_empty_field_value(
-        $form_state, $id, $file_field_name
-      ),
-    ]);
-    tpps_genotype_update_description($fields, [
-      'id' => $id,
-      'form_state' => $form_state,
-      'source_field_name' => 'extra-ploidy',
-      'target_field_name' => $file_field_name,
-    ]);
+    // 'cpSSRs'.
+    if ($ssrs_cpssrs_value != 'SSRs') {
+      $file_field_name = 'ssrs_extra';
+      $title = t('cpSSRs Spreadsheet');
+      tpps_genotype_build_file_field($fields, [
+        'form_state' => $form_state,
+        'id' => $id,
+        'file_field_name' => $file_field_name,
+        'title' => $title,
+        'upload_location' => "$genotype_upload_location",
+        // Note:
+        // Difference from form 'ssrs' field: 'cpSSRs' (2nd line).
+        'description' => t('Please upload a spreadsheet containing your '
+          . 'cpSSRs data. The format of this file is very important! TPPS will '
+          . 'parse your file based on the ploidy you have selected above. '
+          . 'For any ploidy, TPPS will assume that the first column of your '
+          . 'file is the column that holds the Plant Identifier that matches '
+          . 'your accession file.'),
+        // Add extra text field for empty field value.
+        'empty_field_value' => tpps_get_empty_field_value(
+          $form_state, $id, $file_field_name
+        ),
+        'use_fid' => TRUE,
+      ]);
+      tpps_genotype_update_description($fields, [
+        'id' => $id,
+        'form_state' => $form_state,
+        'source_field_name' => 'ploidy',
+        'target_field_name' => $file_field_name,
+      ]);
+    }
+    else {
+      tpps_build_disabled_file_field($fields, 'ssrs_extra');
+    }
+    // End of 'cpSSR' field.
   }
   else {
     $file_field_list = ['ssrs', 'ssrs_extra'];
@@ -1229,6 +1181,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     }
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (in_array('Other', $genotype_marker_type)) {
     $fields['other-marker'] = [
       '#type' => 'textfield',
@@ -1246,7 +1199,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       . 'If a column data type does not fit any of the options in the '
       . 'drop-down menu, you may set that drop-down menu to "N/A". '
       . 'Your file must contain one column with the Plant Identifier.');
-    tpps_build_file_field($fields['files'], [
+    tpps_genotype_build_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1267,6 +1220,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#ajax' => [
         'wrapper' => "edit-$id-genotype-files-other-ajax-wrapper",
         'callback' => 'tpps_page_4_file_dynamic',
+        'effect' => 'slide',
       ],
       '#default_value' => $default_dynamic,
     ];
@@ -1301,7 +1255,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
     $genotyping_type_check == 'Genotyping'
     && $file_type_value == 'VCF'
   ) {
-    tpps_build_file_field($fields['files'], [
+    tpps_genotype_build_file_field($fields, [
       'form_state' => $form_state,
       'id' => $id,
       'file_field_name' => $file_field_name,
@@ -1610,11 +1564,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $ref_genome_arr["manual2"] = 'I can upload my own reference transcriptome file';
   $ref_genome_arr["none"] = 'I am unable to provide a reference assembly';
 
-  $fields['ref-genome'] = array(
+  $fields['ref-genome'] = [
     '#type' => 'select',
     '#title' => t('Reference Assembly used: *'),
     '#options' => $ref_genome_arr,
-  );
+  ];
 
   require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
   $class = 'EutilsImporter';
@@ -1622,11 +1576,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $eutils = tripal_get_importer_form(array(), $form_state, $class);
   $eutils['#type'] = 'fieldset';
   $eutils['#title'] = 'Tripal Eutils BioProject Loader';
-  $eutils['#states'] = array(
-    'visible' => array(
-      ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'bio'),
-    ),
-  );
+  $eutils['#states'] = [
+    'visible' => [
+      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'bio'],
+    ],
+  ];
   $eutils['accession']['#description'] = t('Valid examples: 12384, 394253, 66853, PRJNA185471');
   $eutils['db'] = array(
     '#type' => 'hidden',
@@ -1640,6 +1594,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $eutils['callback']['#ajax'] = array(
     'callback' => 'tpps_ajax_bioproject_callback',
     'wrapper' => "$id-tripal-eutils",
+    'effect' => 'slide',
   );
   $eutils['#prefix'] = "<div id=\"$id-tripal-eutils\">";
   $eutils['#suffix'] = '</div>';
@@ -1680,11 +1635,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fasta['#states'] = array(
     'visible' => array(
     array(
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url')),
+      [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url']],
       'or',
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')),
+      [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
       'or',
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual2')),
+      [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
     ),
     ),
   );
@@ -1717,34 +1672,37 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   $fasta['file']['file_upload'] = $upload;
   $fasta['analysis_id']['#required'] = $fasta['seqtype']['#required'] = FALSE;
-  $fasta['file']['file_upload']['#states'] = $fasta['file']['file_upload_existing']['#states'] = array(
-    'visible' => array(
-    array(
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual')),
-      'or',
-      array(':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'manual2')),
-    ),
-    ),
-  );
-  $fasta['file']['file_remote']['#states'] = array(
-    'visible' => array(
-      ':input[name="' . $id . '[genotype][ref-genome]"]' => array('value' => 'url'),
-    ),
-  );
+  $fasta['file']['file_upload']['#states']
+    = $fasta['file']['file_upload_existing']['#states'] = [
+      'visible' => [
+        [
+          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
+          'or',
+          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
+        ],
+      ],
+    ];
+  $fasta['file']['file_remote']['#states'] = [
+    'visible' => [
+      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url'],
+    ],
+  ];
 
   $fields['tripal_fasta'] = $fasta;
 }
 
+// [VS]
 /**
  * Creates fields describing the genotype markers used in the submission.
  *
  * @param array $fields
  *   The form element being populated.
+ * @param array $form_state
+ *   Drupal Form API array.
  * @param string $id
  *   The id of the organism fieldset being populated.
  */
-function tpps_page_4_marker_info(array &$fields, $id) {
-  // [VS]
+function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
   $fields['marker-type'] = [
     '#type' => 'select',
     '#multiple' => TRUE,
@@ -1757,6 +1715,7 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     '#ajax' => [
       'callback' => 'tpps_genotype_files_callback',
       'wrapper' => "$id-genotype-files",
+      'effect' => 'slide',
     ],
   ];
 
@@ -1833,20 +1792,354 @@ function tpps_page_4_marker_info(array &$fields, $id) {
     ],
   ];
 
+  // Field 'Define SSRs/cpSSRs Type'.
+  // @TODO Minor. Better to rename field to avoid '/' in name
+  // and make it more meaningful.
   $fields['SSRs/cpSSRs'] = [
     '#type' => 'select',
     '#title' => t('Define SSRs/cpSSRs Type: *'),
     '#options' => [
-      'SSRs' => t('SSRs'),
-      'cpSSRs' => t('cpSSRs'),
+      'SSRs' => t('SSRs'), // Original from Peter
+      'cpSSRs' => t('cpSSRs'), // Original from Peter
       'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
     ],
-    // @todo Show only one field by default and remove default value.
-    // Default value it not required but by default all related fields are
-    // shown so this is workaround.
-    '#default_value' => 'Both SSRs and cpSSRs',
-    // Default value on form creation.
-    // tpps_get_ajax_value($form_state, [$id, 'genotype','SSRs/cpSSRs'])).
+    // Fields 'SSRs' and 'cpSSRs' are switched good on already loaded page
+    // but when page loaded first time or changed Ploidy (which updates
+    // form using AJAX) then both fields are shown which is not correct.
+    '#ajax' => [
+      'callback' => 'tpps_genotype_files_callback',
+      'wrapper' => "$id-genotype-files",
+      'effect' => 'slide',
+    ],
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $id . '[genotype][marker-type]"]'
+        => ['value' => 'SSRs/cpSSRs'],
+      ],
+    ],
   ];
-  // [/VS]
+}
+
+// [/VS]
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Helper functions.
+
+/**
+ * Adds checkbox to select existing file or upload new one.
+ *
+ * @param array $form_state
+ *   Submitted Form API values.
+ * @param array $fields
+ *   Form API array.
+ * @param string $id
+ *   Organism Id. Example: 'organism-1'.
+ * @param string $title
+ *   Human readable name of the related file upload field
+ *   (including trailing word 'File').
+ * @param string $key
+ *   Unique key to avoid field's duplication.
+ *
+ * @return mixed
+ *   Returns value of file field.
+ */
+function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, $key) {
+  $name = ($key ? $key . '_' : '') . 'file-selector';
+  $fields['files'][$name] = [
+    '#type' => 'checkbox',
+    '#title' => t('Reference Existing @title', ['@title' => $title]),
+    '#ajax' => [
+      'callback' => 'tpps_genotype_files_type_change_callback',
+      'wrapper' => "$id-genotype-files",
+      'effect' => 'slide',
+    ],
+  ];
+  return tpps_get_ajax_value($form_state, [$id, 'genotype', 'files', $name]);
+}
+
+/**
+ * Builds Genotype file field.
+ *
+ * WARNING: Genotype ONLY!
+ *
+ * @param array $fields
+ *   Drupal Form API array with fields.
+ * @param array $meta
+ *   File field metadata. Example:
+ *
+ *   tpps_genotype_build_file_field($fields, [
+ *     'form_state' => $form_state,
+ *     'id' => $id,
+ *     'file_field_name' => $file_field_name,
+ *     'optional' => TRUE,
+ *     'title' => $title,
+ *     'upload_location' => "$genotype_upload_location",
+ *     'description' => $description,
+ *     'extensions' => $extensions, // Default: ['csv tsv xlsx']
+ *     'states' => $states, // Default is ''.
+ *     'empty_field_value' => 'NA',
+ *     // Element 'extra_elements' allow to add any not expected form elements.
+ *     'extra_elements' => [],
+ *     'use_fid' => FALSE, // Default is FALSE. See below.
+ *   ]);
+ *
+ *   List of fields which used 'fid'-related code:
+ *     'snps-assay',
+ *     'ssrs',
+ *     'ssrs_extra'.
+ *
+ *   List of fields which not used 'fid'-related code:
+ *     'assay-design',
+ *     'snps-pop-struct',
+ *     'snps-association',
+ *     'snps-kinship',
+ *     'indels', // was removed.
+ *     'vcf',
+ *     'other'.
+ */
+function tpps_genotype_build_file_field(array &$fields, array $meta) {
+  extract($meta);
+  // When enabled field's machine name will be shown in field's decription.
+  $debug_mode = FALSE;
+  $fields['files'][$file_field_name] = [
+    '#type' => 'managed_file',
+    '#title' => $title . (!empty($optional) ? ':' : ': *'),
+    '#upload_location' => $upload_location,
+    '#upload_validators' => [
+      'file_validate_extensions' => !empty($extensions) ? $extensions : ['csv tsv'],
+    ],
+    '#description' => ($description ?? '')
+    . ($debug_mode ? '<br/>Field name: <strong>' . $file_field_name . '</strong>' : ''),
+    '#tree' => TRUE,
+    '#states' => $states ? $states : '',
+  ];
+  // Add extra text field for empty field value. Default is FALSE.
+  if ($empty_field_value) {
+    $fields['files'][$file_field_name]['empty'] = ['#default_value' => $empty_field_value];
+  }
+  if ($extra_elements) {
+    $fields['files'][$file_field_name] = array_merge(
+      $fields['files'][$file_field_name], $extra_elements
+    );
+  }
+
+  // Some fields have used this piece of code before.
+  // To use: $meta['use_fid'] = TRUE; Default is FALSE.
+  // @TODO [VS] Check if this code could be removed. It's not used on form
+  // generation and when validation failed.
+  if (!empty($use_fid)) {
+    if (isset($fields['files'][$file_field_name]['#value']['fid'])) {
+      $fields['files'][$file_field_name]['#default_value']
+        = $fields['files'][$file_field_name]['#value']['fid'];
+    }
+  }
+
+  // Most of fields have used this code so only 2 must be excluded.
+  if (!in_array($file_field_name, ['snps-association', 'other'])) {
+    // Field 'snps-association' excluded because it didn't have this code.
+    if (isset($fields['files'][$file_field_name]['#value'])) {
+      $fields['files'][$file_field_name]['#default_value']
+        = $fields['files'][$file_field_name]['#value'];
+    }
+    if (
+      !empty($fields['files'][$file_field_name]['#default_value'])
+      && ($file = file_load($fields['files'][$file_field_name]['#default_value']))
+    ) {
+      // Stop using the file so it can be deleted if the user clicks 'remove'.
+      if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
+        // Study Id is a number in 'TGDRXXX'.
+        $study_id = substr($form_state['accession'], 4);
+        file_usage_delete($file, 'tpps', 'tpps_project', $study_id);
+      }
+    }
+  }
+}
+
+/**
+ * Generates disabled managed field.
+ *
+ * When file already was uploaded.
+ *
+ * @param array $fields
+ *   Drupal Form API array with fields.
+ * @param string $file_field_name
+ *   Name of the managed file field.
+ */
+function tpps_build_disabled_file_field(array &$fields, $file_field_name) {
+  $fields['files'][$file_field_name] = [
+    '#type' => 'managed_file',
+    '#tree' => TRUE,
+    '#access' => FALSE,
+  ];
+}
+
+/**
+ * Adds checkbox to select existing file or upload new one.
+ *
+ * @return mixed
+ *   Returns value of file field.
+ */
+function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
+  extract($meta);
+  $hostname = tpps_get_hostname();
+  $fields['files'][$file_field_name . '_file-location'] = [
+    '#type' => 'select',
+    '#title' => t('VCF File Location'),
+    '#options' => [
+      'local' => t('My VCF File is stored locally'),
+      'remote' => t('My VCF File is stored at @hostname',
+        ['@hostname' => $hostname]),
+    ],
+    '#weight' => 90,
+  ];
+  $fields['files'][$file_field_name]['#states'] = [
+    'visible' => [
+      ':input[name="' . $id . '[genotype][files]['
+        . $file_field_name . '_file-location]"]' => ['value' => 'local'],
+    ],
+  ];
+  $fields['files'][$file_field_name]['#weight'] = 100;
+  $fields['files']['local_' . $file_field_name] = [
+    '#type' => 'textfield',
+    '#title' => t('Path to VCF File at @hostname: *',
+      ['@hostname' => $hostname]
+    ),
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $id . '[genotype][files]['
+          . $file_field_name . '_file-location]"]' => ['value' => 'remote'],
+      ],
+    ],
+    '#description' => t('Please provide the full path to your vcf file '
+      . 'stored on @hostname', ['@hostname' => $hostname]
+    ),
+    '#weight' => 100,
+  ];
+}
+
+/**
+ * Updates description of related file field on 'Ploidy' field value change.
+ *
+ * @param array $fields
+ *   Drupal Form API array with Genotype form.
+ * @param array $meta
+ *   Metadata for function. Associative array with keys:
+ *     'id', 'form_state', 'source_field_name', 'target_field_name'.
+ *   Example:
+ *   tpps_genotype_update_description($fields, [
+ *     'id' => $id, // Organism Number.
+ *     // Drupal Form API $form_state.
+ *     'form_state' => $form_state,
+ *     // Source field name. Usually selectbox.
+ *     'source_field_name' => 'ploidy',
+ *     // Genotype file field name which must be updated.
+ *     'file_field_name' => 'ssrs',
+ *   ]); //.
+ */
+function tpps_genotype_update_description(array &$fields, array $meta) {
+  $ploidy = tpps_get_ajax_value($meta['form_state'], [
+    $meta['id'],
+    'genotype',
+    'files',
+    $meta['source_field_name'],
+  ]);
+
+  switch ($ploidy) {
+    case 'Haploid':
+      $fields['files'][$meta['target_field_name']]['#description']
+        .= '<br/>For haploid, TPPS assumes that each remaining column in the '
+        . 'spreadsheet is a marker.';
+      break;
+
+    case 'Diploid':
+      $fields['files'][$meta['target_field_name']]['#description']
+        .= '<br />For diploid, TPPS will assume that pairs of columns together '
+        . 'are describing an individual marker, so the second and third '
+        . 'columns would be the first marker, the fourth and fifth columns '
+        . 'would be the second marker, etc.';
+      break;
+
+    case 'Polyploid':
+      $fields['files'][$meta['target_field_name']]['#description']
+        .= '<br />For polyploid, TPPS will read columns until it arrives at a '
+        . 'non-empty column with a different name from the last.';
+      break;
+
+    default:
+      break;
+  }
+}
+
+/**
+ * Builds Phenotype Name form field.
+ *
+ * @param string $id
+ *   Organism Id.
+ *
+ * @return array
+ *   Returns Form API field.
+ */
+function tpps_build_field_name($id) {
+  return [
+    '#type' => 'textfield',
+    '#title' => 'Phenotype !num Name: *',
+    '#attributes' => [
+      'data-toggle' => ['tooltip'],
+      'data-placement' => ['right'],
+      'title' => ['If your phenotype name does not exist in our database, '
+        . 'don\'t worry about it! We will create new phenotype metadata '
+        . 'in the database for you.'],
+      // Alternative title for one of fields:
+      // 'title' => ['If your phenotype name is not in the '
+      // . 'autocomplete list, don\'t worry about it! We will create new '
+      // . 'phenotype metadata in the database for you.'],
+      ],
+    '#description' => t('Phenotype "name" is the human-readable name of the '
+      . 'phenotype, where "attribute" is the thing that the phenotype is '
+      . 'describing. Phenotype "name" should match the data in the '
+      . '"Phenotype Name/Identifier" column that you select in your '
+      . '<a href="@url">Phenotype file</a> below.',
+      [
+        '@url' => url(
+          '/tpps',
+          ['fragment' => "edit-$id-phenotype-file-ajax-wrapper"]
+        ),
+      ]
+    ),
+  ];
+}
+
+/**
+ * Builds Phenotype Description form field.
+ *
+ * @return array
+ *   Returns Form API field.
+ */
+function tpps_build_field_description() {
+  return [
+    '#type' => 'textfield',
+    '#title' => 'Phenotype !num Description: *',
+    '#description' => t('Please provide a short description of Phenotype !num'),
+  ];
+}
+
+/**
+ * Gets value of the empty field.
+ *
+ * @param array $form_state
+ *   Drupal Form API state.
+ * @param int $id
+ *   Organism Id.
+ * @param string $file_field_name
+ *   Machine file upload field name.
+ *
+ * @return string
+ *   Returns value of empty fields in file. Usually it will be 'NA'.
+ */
+function tpps_get_empty_field_value(array $form_state, $id, $file_field_name) {
+  $values = $form_state['saved_values'][TPPS_PAGE_4];
+  return (isset(
+    $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
+    ) ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
+    : $empty_field_value
+  );
 }

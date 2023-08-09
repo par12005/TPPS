@@ -32,17 +32,6 @@ function tpps_user_info(array &$form, array $values) {
   //   $form['primaryAuthor']['#value'] = $values['primaryAuthor'];
   // }
 
-  $form['organization'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Organization: *'),
-    '#autocomplete_path' => 'tpps/autocomplete/organization',
-    '#attributes' => array(
-      'data-toggle' => array('tooltip'),
-      'data-placement' => array('right'),
-      'title' => array('Organization of the Primary Author'),
-    ),
-  );
-
   return $form;
 }
 
@@ -142,7 +131,12 @@ function tpps_organism(array &$form, array &$form_state) {
         'data-placement' => array('right'),
         'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
       ),
+      // [VS]
       '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['name'] ?? '',
+      // Note: This code actually doesn't work. See module TPPS.
+      '#description' => 'Example: '
+        . '<a href"#" class="tpps-suggestion">Arabidopsis thaliana</a>.',
+      // [/VS]
     ),
     // [VS] #8669py203.
     // Note: the real field is defined in TPPSc/forms/build/page_1_helper.php

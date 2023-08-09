@@ -66,6 +66,8 @@ function tpps_api_organism_pid_query(array $orgs) {
  *
  * @return array
  *   An array of associated project ids.
+ *
+ * @TODO Check if this function is in use and remove if possible.
  */
 function tpps_api_organization_pid_query(array $orgs) {
   $query = db_select('chado.contact', 'c');

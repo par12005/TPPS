@@ -51,7 +51,6 @@ function tpps_submit_email(array &$form_state) {
   $names['number'] = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
 
   $params['author'] = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'];
-  $params['org'] = $form_state['saved_values'][TPPS_PAGE_1]['organization'];
   $params['title'] = $form_state['saved_values'][TPPS_PAGE_1]['publication']['title'];
   $params['journal'] = $form_state['saved_values'][TPPS_PAGE_1]['publication']['journal'];
   $params['organisms'] = $names;

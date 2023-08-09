@@ -206,17 +206,34 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     'is_current' => TRUE,
   ));
 
-  if (!empty($form_state['tpps_type']) and $form_state['tpps_type'] == 'tppsc' and !empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])) {
-    $dryad_db = chado_get_db(array('name' => 'dryad'));
-    $dryad_dbxref = chado_insert_dbxref(array(
-      'db_id' => $dryad_db->db_id,
-      'accession' => $form_state['saved_values'][TPPS_PAGE_1]['doi'],
-    ))->dbxref_id;
-    tpps_chado_insert_record('project_dbxref', array(
-      'project_id' => $form_state['ids']['project_id'],
-      'dbxref_id' => $dryad_dbxref,
-      'is_current' => TRUE,
-    ));
+  // Save DOI fields.
+  if (($form_state['tpps_type'] ?? NULL) == 'tppsc') {
+    // 'Dataset DOI' Field.
+    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])) {
+      $dryad_db = chado_get_db(['name' => 'dryad']);
+      $dryad_dbxref = chado_insert_dbxref([
+        'db_id' => $dryad_db->db_id,
+        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['doi'],
+      ])->dbxref_id;
+      tpps_chado_insert_record('project_dbxref', [
+        'project_id' => $form_state['ids']['project_id'],
+        'dbxref_id' => $dryad_dbxref,
+        'is_current' => TRUE,
+      ]);
+    }
+    // 'Publication DOI' Field.
+    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['publication_doi'])) {
+      $dryad_db = chado_get_db(['name' => 'dryad']);
+      $dryad_dbxref = chado_insert_dbxref([
+        'db_id' => $dryad_db->db_id,
+        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['publication_doi'],
+      ])->dbxref_id;
+      tpps_chado_insert_record('project_dbxref', [
+        'project_id' => $form_state['ids']['project_id'],
+        'dbxref_id' => $dryad_dbxref,
+        'is_current' => TRUE,
+      ]);
+    }
   }
 
   if (!empty($firstpage['photo'])) {
@@ -293,19 +310,6 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     'project_id' => $form_state['ids']['project_id'],
     'pub_id' => $publication_id,
   ));
-
-  if (!empty($firstpage['organization'])) {
-    $organization_id = tpps_chado_insert_record('contact', array(
-      'name' => $firstpage['organization'],
-      'type_id' => tpps_load_cvterm('organization')->cvterm_id,
-    ));
-
-    tpps_chado_insert_record('contact_relationship', array(
-      'type_id' => tpps_load_cvterm('contact_part_of')->cvterm_id,
-      'subject_id' => $primary_author_id,
-      'object_id' => $organization_id,
-    ));
-  }
 
   $names = explode(" ", $firstpage['primaryAuthor']);
   $first_name = implode(" ", array_slice($names, 0, -1));
@@ -980,13 +984,12 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
     tpps_submit_genotype($form_state, $species_codes, $i, $job);
     tpps_submit_environment($form_state, $i, $job);
   }
-  // Generate genotype view
-  $test = false;
+  // Generate genotype view.
+  $test = FALSE;
   $project_id = $form_state['ids']['project_id'];
-  if (isset($project_id) && $test != true) {
+  if (isset($project_id) && $test != TRUE) {
     tpps_generate_genotype_materialized_view($project_id);
   }
-
 }
 
 /**
@@ -1255,23 +1258,24 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   // This can be set within the TPPS admin panel
   $record_group = variable_get('tpps_record_group', 10000);
 
-  // VCF needed variables
-  $vcf_processing_completed = false; // Remember if VCF is already processed or not
+  // VCF needed variables.
+  // Remember if VCF is already processed or not.
+  $vcf_processing_completed = FALSE;
   $vcf_import_mode = $form_state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'];
   if (!isset($vcf_import_mode)) {
     $vcf_import_mode = 'hybrid'; // if not set, set it as default hybrid
   }
-
-  // If no genotype data, don't continue running this code
+  // If no genotype data, don't continue running this code.
   if (empty($genotype)) {
     return;
   }
 
-  // Add tag genotype to this study
+  // Add tag genotype to this study.
   tpps_submission_add_tag($form_state['accession'], 'Genotype');
 
   $genotype_count = 0;
   $genotype_total = 0;
+  // 1491.
   $seq_var_cvterm = tpps_load_cvterm('sequence_variant')->cvterm_id;
   $overrides = array(
     'genotype_call' => array(
@@ -1591,66 +1595,36 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $job->logMessage('[ERROR] - Analysis ID could not be found, skipping assay design file processing.');
     }
   }
-  if (!empty($genotype['files']['ssrs'])) {
-    $ssr_fid = $genotype['files']['ssrs'];
-    tpps_add_project_file($form_state, $ssr_fid);
-
-    // DROP INDEXES FROM GENOTYPE_CALL TABLE
-    tpps_drop_genotype_call_indexes($job);
-
-    $options['type'] = 'ssrs';
-    $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
-    $options['marker'] = $genotype['SSRs/cpSSRs'];
-    $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
-    $options['empty'] = $genotype['files']['ssrs-empty'];
-
-    tpps_log('[INFO] - Processing SSR genotype_spreadsheet file data...');
-    echo "trace 2\n";
-    tpps_file_iterator($ssr_fid, 'tpps_process_genotype_spreadsheet', $options);
-    tpps_log('[INFO] - Done.');
-
-    tpps_log('[INFO] - Inserting data into database using insert_multi...');
-    tpps_chado_insert_multi($options['records'], $multi_insert_options);
-
-    tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
-    tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
-    tpps_log('[INFO] - Done');
-
-    // RECREATE INDEXES FROM GENOTYPE_CALL TABLE.
-    tpps_create_genotype_call_indexes();
-
-    $options['records'] = $records;
-    $genotype_count = 0;
-
-    if (!empty($genotype['files']['ssrs_extra'])) {
-      $extra_fid = $genotype['files']['ssrs_extra'];
-      tpps_add_project_file($form_state, $extra_fid);
-
-      // DROP INDEXES FROM GENOTYPE_CALL TABLE
-      tpps_drop_genotype_call_indexes($job);
-
-      $options['headers'] = tpps_ssrs_headers($extra_fid, $genotype['files']['extra-ploidy']);
-
-      tpps_log('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
-      echo "trace 3\n";
-      tpps_file_iterator($extra_fid, 'tpps_process_genotype_spreadsheet', $options);
-      tpps_log('[INFO] - Done.');
-
-      tpps_log('[INFO] - Inserting data into database using insert_multi...');
-      tpps_chado_insert_multi($options['records'], $multi_insert_options);
-
-      tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
-      tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
-      tpps_log('[INFO] - Done.');
-
-      // CREATE INDEXES FROM GENOTYPE_CALL TABLE.
-      tpps_create_genotype_call_indexes();
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // 'SSRs' and 'cpSSR' fields.
+  foreach (['ssrs', 'ssrs_extra'] as $ssr_field_name) {
+    if (!empty($ssr_fid = $genotype['files'][$ssr_field_name])) {
+      $options['type'] = 'ssrs';
+      if ($ssr_field_name == 'ssrs') {
+        $options['marker'] = 'SSR';
+      }
+      elseif ($ssr_field_name == 'ssrs_extra') {
+        $options['marker'] = 'cpSSR';
+      }
+      // CV Term Id for 'ssr': 764.
+      $options['type_cvterm'] = tpps_load_cvterm('ssr')->cvterm_id;
+      $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
+      $options['ploidy'] = $genotype['files']['ploidy'];
+      $options['empty'] = $genotype['files'][$ssr_field_name]['empty'] ?? 'NA';
+      tpps_ssr_process(
+        $form_state,
+        $ssr_fid,
+        $options,
+        $job,
+        $multi_insert_options
+      );
       $options['records'] = $records;
       $genotype_count = 0;
     }
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Other.
   if (!empty($genotype['files']['other'])) {
     $other_fid = $genotype['files']['other'];
     tpps_add_project_file($form_state, $other_fid);
@@ -1689,7 +1663,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   }
 
   tpps_log('[INFO] - VCF IMPORT MODE is ' . $vcf_import_mode);
-  if ($vcf_processing_completed == false) {
+  if ($vcf_processing_completed == FALSE) {
     tpps_genotype_vcf_processing($form_state, $species_codes, $i, $job, $vcf_import_mode);
   }
   else {
@@ -2452,7 +2426,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       // Recreate the indexes.
       tpps_create_genotype_call_indexes();
-
       tpps_log('[INFO] - Done.');
       unset($records);
       $genotype_count = 0;
@@ -2461,7 +2434,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 }
 
 /**
- * Generates genotype sample file from vcf.
+ * Generates genotype sample file from VCF.
  *
  * @param mixed $options
  *   Array of options. Keys are: study_accession, form_state, job.
@@ -2478,16 +2451,16 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
 
   // If $form_state is not NULL.
   if (isset($form_state)) {
-    // Get page 1 form_state data
+    // Get page 1 form_state data.
     $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
-    // Get page 4 form_state data
+    // Get page 4 form_state data.
     $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-    // Organism count
+    // Organism count.
     $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-    // Project ID
+    // Project ID.
     $project_id = $form_state['ids']['project_id'];
 
-    // Go through each organism
+    // Go through each organism.
     for ($i = 1; $i <= $organism_number; $i++) {
       $organism_name = $firstpage['organism'][$i]['name'];
       echo "Organism name: $organism_name\n";
@@ -2497,10 +2470,10 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
       }
       else {
 
-        // Initialize sample.list text
+        // Initialize sample.list text.
         $sample_list_data = "VCF_header_sample\tSample_name\tSample_Accession\tGermplasm_name\tGermplasm_Accession\tGermplasm_type\tOrganism\n"; // header
 
-        // Get the VCF fid
+        // Get the VCF fid.
         $vcf_fid = $genotype['files']['vcf'];
         if (isset($vcf_fid) && $vcf_fid > 0) {
           echo "Found uploaded VCF with FID: " . $vcf_fid . "\n";
@@ -3435,6 +3408,19 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $genotype_count = &$options['genotype_count'];
   $project_id = $options['project_id'];
   $marker = $options['marker'];
+  // print_r("row\n");
+  // print_r($row);
+  // print_r("tree_info\n");
+  // print_r($tree_info);
+  // print_r("\n");
+  // Marker adjustment [RISH: 8/1/2023]
+  if ($marker == 'SSRs') {
+    $marker = 'SSR';
+  }
+  else if($marker == 'cpSSRs') {
+    $marker = 'cpSSR';
+  }
+
   $type_cvterm = $options['type_cvterm'];
   $seq_var_cvterm = $options['seq_var_cvterm'];
   $multi_insert_options = $options['multi_insert'];
@@ -3452,11 +3438,18 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     $current_id = $tree_info[trim($val)]['organism_id'];
     $species_code = $species_codes[$current_id];
   }
+
+  $keys = array_keys($row);
+  $key_index = -1;
   foreach ($row as $key => $val) {
+    $key_index++;
+    echo "ROW key:$key, val:$val\n";
     if (empty($headers[$key])) {
       continue;
     }
 
+    // This $val is different from the $val later on
+    // so order is important
     if (!isset($stock_id)) {
       $stock_id = $tree_info[trim($val)]['stock_id'];
       $current_id = $tree_info[trim($val)]['organism_id'];
@@ -3464,6 +3457,99 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       continue;
     }
     $genotype_count++;
+    echo "Stock ID: $stock_id, Current ID: $current_id, Genotype_count: $genotype_count\n";
+
+
+    echo "Header before alterations:" . $headers[$key] . "\n";
+
+    $header_length = strlen($headers[$key]);
+    // Cater for Diploids [Rish: 8/3/2023]
+    if($options['ploidy'] == 'Diploid' && substr($headers[$key], $header_length - 2, 2) == "_A") {
+      // Remove the _A from the first diploid header
+      // and allow the below code to continue to be processed so the SSR can be imported in
+      $headers[$key] = substr($headers[$key], 0, $header_length - 3);
+      $options['diploid_header'] = $headers[$key];
+      $options['diploid_val'] = $val;
+      // Save this header for use in a later iteration when _B gets called
+      // This reason for this is we want _A and _B values recorded
+      echo "Diploid first header reset to: " . $headers[$key] . "\n";
+      // This will skip processing iteration by ONE iteration if _A (SSR diploid detected)
+      continue;
+    }
+
+    // [RISH] This is a minor adjustment for diploid done on 8/3/2023
+    if($options['ploidy'] == 'Diploid' && substr($headers[$key], $header_length - 2, 2) == "_B") {
+      $options['diploid_val'] .= ',' . $val;
+
+      // Reset to these new values for insertion into the database later on
+      $headers[$key] = $options['diploid_header'];
+      $val = $options['diploid_val'];
+      echo "Diploid val: $val\n";
+    }
+    // End of cater for diploids
+
+    // Cater for Polyploids [RISH: 8/7/2023]
+    // Get header without the trailing _X (_1,_2,_3 etc)
+    $header_parts = explode("_", $headers[$key]);
+    $header_parts_length = count($header_parts);
+    $header_without_polyploid_index = "";
+    for ($j = 0; $j < $header_parts_length - 1; $j++) {
+      if ($j > 0) {
+        $header_without_polyploid_index .= "_";
+      }
+      $header_without_polyploid_index .= $header_parts[$j];
+    }
+
+    if($options['ploidy'] == 'Polyploid' && $options['polyploid_header'] != $header_without_polyploid_index) {
+      // Remove the _1 from the first diploid header
+      // and allow the below code to continue to be processed so the SSR can be imported in
+      $headers[$key] = $header_without_polyploid_index;
+      $options['polyploid_header'] = $headers[$key];
+      $options['polyploid_val'] = $val;
+      // Save this header for use in a later iteration when _B gets called
+      // This reason for this is we want _A and _B values recorded
+      echo "Polyploid first header reset to: " . $headers[$key] . "\n";
+      // This will skip processing iteration by ONE iteration if _1 (SSR diploid detected)
+      continue;
+    }
+
+    // [RISH] This is a minor adjustment for polyploid done on 8/7/2023
+    // Look forward to see if the next headers_key
+    $header_next = $headers[$keys[$key_index + 1]];
+    // Get next header without the trailing _X (_1,_2,_3 etc)
+    $header_next_parts = explode("_", $header_next);
+    $header_next_parts_length = count($header_next_parts);
+    $header_next_without_polyploid_index = "";
+    for ($j = 0; $j < $header_next_parts_length - 1; $j++) {
+      if ($j > 0) {
+        $header_next_without_polyploid_index .= "_";
+      }
+      $header_next_without_polyploid_index .= $header_next_parts[$j];
+    }
+
+    if($options['ploidy'] == 'Polyploid' && $options['polyploid_header'] == $header_without_polyploid_index) {
+      $options['polyploid_val'] .= ',' . $val; // append the new value to what was already there
+
+      // Check if the next header does not match current header (this would mean next header starts a new SSR polyploid) OR
+      // if the next header is NULL (this means end of headers of the file)
+      // so we need to allow the rest of code below to happen to insert this current SRR polyploid
+      if (($header_without_polyploid_index != $header_next_without_polyploid_index) || $header_next == NULL) { // NULL happens if end of all headers
+        // we have found that $headers[$key] is the last polyploid column for the current SSR
+        // so reset to these new values for insertion into the database later on
+        $headers[$key] = $options['polyploid_header'];
+        $val = $options['polyploid_val'];
+        echo "Polyploid val: $val for insertion using SSR marker" . $headers[$key] . "\n";
+      }
+      else {
+        echo "Skipping insert\n";
+        continue; // this will skip insertion (below code) until all values for the current SSR polyploid is found
+      }
+    }
+    // End of catering for polyploids
+    echo "Processing the insert\n";
+
+
+
 
     if ($type == 'ssrs' and !empty($options['empty']) and $val == $options['empty']) {
       continue;
@@ -3493,6 +3579,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
 
     $variant_name = $headers[$key];
     $marker_name = $variant_name . $marker;
+    $genotype_name_without_call = "$marker-$variant_name-$species_code";
     $genotype_name = "$marker-$variant_name-$species_code-$val";
 
     // echo "Variant Name: $variant_name\n";
@@ -3523,10 +3610,9 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       'name' => $marker_name,
       'organism_id' => $organism_id,
       'uniquename' => $marker_name,
-      'type_id' => $seq_var_cvterm
+      'type_id' => $seq_var_cvterm,
     ]);
-
-    // Lookup the marker_name_id
+    // Lookup the marker_name_id.
     $results = chado_query("SELECT feature_id FROM chado.feature
       WHERE uniquename = :uniquename AND organism_id = :organism_id", [
         ':uniquename' => $marker_name,
@@ -3644,7 +3730,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //   'type_id' => $type_cvterm,
       // );
       chado_insert_record('genotype', [
-        'name' => $genotype_name,
+        'name' => $genotype_name_without_call,
         'uniquename' => $genotype_name,
         'description' => $val,
         'type_id' => $type_cvterm,
@@ -3668,6 +3754,10 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //     'marker' => $marker_name,
       //   ),
       // );
+      echo "Genotype_call key: $stock_id-$genotype_name\n";
+      if (isset($records2['genotype_call']["$stock_id-$genotype_name"])) {
+        echo "This genotype_call key is already set (so uniqueness is maybe broken?\n";
+      }
       $records2['genotype_call']["$stock_id-$genotype_name"] = array(
         'project_id' => $project_id,
         'stock_id' => $stock_id,
@@ -3682,7 +3772,6 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       //     'genotype' => $genotype_name,
       //   ),
       // );
-
       $records['stock_genotype']["$stock_id-$genotype_name"] = array(
         'stock_id' => $stock_id,
         'genotype_id' => $genotype_id
@@ -3696,7 +3785,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       tpps_log('[INFO] - Inserting data into database using insert_multi...');
       tpps_chado_insert_multi($records, $multi_insert_options);
       tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
-      tpps_chado_insert_hybrid($records, $multi_insert_options);
+      tpps_chado_insert_hybrid($records2, $multi_insert_options);
       tpps_log('[INFO] - Done.');
       $records = array(
         'feature' => array(),
@@ -3717,6 +3806,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       $genotype_count = 0;
     }
   }
+  // throw new Exception("DEBUG");
 }
 
 /**
@@ -3980,10 +4070,11 @@ function tpps_ssrs_headers($fid, $ploidy) {
           // Every other marker column name is left blank.
           if (array_key_exists($key, $results)) {
             $last = $results[$key];
-            $results[$key] .= "_A";
+            $results[$key] .= "_A"; // Removed by Rish 8/2/2023
             break;
           }
-          $results[$key] = $last . "_B";
+          $results[$key] = $last . "_B"; // Removed by Rish 8/2/2023
+          // unset($results[$key]); // [RISH] this removes the second value
           break;
         }
 
@@ -3993,10 +4084,11 @@ function tpps_ssrs_headers($fid, $ploidy) {
             // The marker column names are duplicates, need to append
             // _A and _B.
             if ($results[$key] == $results[$next_key]) {
-              $results[$key] .= "_A";
+              $results[$key] .= "_A"; // Removed by Rish 8/2/2023
               break;
             }
-            $results[$key] .= "_B";
+            $results[$key] .= "_B"; // Removed by Rish 8/2/2023
+            // unset($results[$key]); // [RISH] Hopefully this removes the second marker
           }
         }
         break;
@@ -4297,7 +4389,6 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 function tpps_create_genotype_call_indexes() {
   echo "SET CONSTRAINTS ALL IMMEDIATE\n";
   chado_query("SET CONSTRAINTS ALL IMMEDIATE;", []);
-
   // Recreate indexes.
   tpps_log('[INFO] - Recreating indexes...');
   chado_query("CREATE INDEX IF NOT EXISTS genotype_call_genotype_id_idx ON chado.genotype_call USING btree (genotype_id)");
@@ -4967,8 +5058,31 @@ function tpps_genotype_initial_checks($form_state, $i, $job) {
 }
 
 // TODO
-function tpps_accession_file_get_tree_ids($fid) {
+function tpps_accession_file_get_tree_ids($form_state, $i) {
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $fid = $thirdpage['tree-accession']['species-' . $i]['file'];
   $snp_assay_header = tpps_file_headers($fid);
+}
+
+function tpps_accession_file_location($form_state, $i) {
+  $results = [
+    'status' => 'empty', // empty, exists, missing
+    'location' => NULL,
+    'fid' => 0,
+  ];
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $fid = $thirdpage['tree-accession']['species-' . $i]['file'];
+  $results['fid'] = $fid;
+  if ($fid > 0) {
+    $results['status'] = 'exists';
+    $file = file_load($fid);
+    $location = tpps_get_location($file->uri);
+    $results['location'] = $location;
+    if ($location == '' or $location == null) {
+      $results['status'] = 'missing';
+    }
+  }
+  return $results;
 }
 
 /**
@@ -5183,4 +5297,37 @@ function tpps_log($message, $variables = array(), $severity = TRIPAL_INFO) {
   global $tpps_job;
   tpps_job_logger_write($message, $variables);
   $tpps_job->logMessage($message, $variables, $severity);
+}
+
+/**
+ * Processes SSR file.
+ *
+ * @param array $form_state
+ *   Drupal Form State.
+ * @param int $fid
+ *   Managed File Id.
+ * @param array $options
+ *   Some options.
+ * @param object $job
+ *   Tripal Job.
+ * @param array $multi_insert_options
+ *   Some options again.
+ */
+function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array $multi_insert_options) {
+  tpps_add_project_file($form_state, $fid);
+  tpps_drop_genotype_call_indexes($job);
+
+  tpps_log('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
+  echo "trace 3\n";
+  tpps_file_iterator($fid, 'tpps_process_genotype_spreadsheet', $options);
+  tpps_log('[INFO] - Done.');
+
+  tpps_log('[INFO] - Inserting data into database using insert_multi...');
+  tpps_chado_insert_multi($options['records'], $multi_insert_options);
+
+  tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
+  tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
+  tpps_log('[INFO] - Done.');
+  // CREATE INDEXES FROM GENOTYPE_CALL TABLE.
+  tpps_create_genotype_call_indexes($job);
 }

@@ -2016,10 +2016,19 @@ function tpps_update_7118() {
 }
 
 /**
- * Creates table 'public.tpps_phenotype_unit_warning'.
+ * Configure report 'Missing DOI'.
  */
 function tpps_update_7119() {
-  //  [VS] #3kged9b.
+  // [VS] #8669eu6ht.
+  // Set initial values of variables.
+  variable_set('tpps_report_missing_doi_title', 'Missing DOI');
+}
+
+/**
+ * Creates table 'tpps_phenotype_unit_warning' and sets variables for reports.
+ */
+function tpps_update_7120() {
+  // [VS] #3kged9b.
   // Set initial values of variables.
   variable_set(
     'tpps_report_no_synonym_title',

@@ -43,8 +43,10 @@ function tpps_details($accession = NULL) {
     $output .= render($form);
     $output .= tpps_details_tags_sort();
     $output .= "<div id='tpps-details-table'>" . tpps_details_top() . "</div>";
-    drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
-    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+
+    $module_path = drupal_get_path('module', 'tpps');
+    drupal_add_css($module_path . TPPS_CSS_PATH);
+    drupal_add_js($module_path . TPPS_JS_PATH);
     return $output;
   }
 
@@ -73,7 +75,12 @@ function tpps_details($accession = NULL) {
       drupal_set_message(t('This submission is still under construction. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
       if (function_exists('tpps_details_byaccession_page')) {
         $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
-        drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+        // [VS].
+        $module_path = drupal_get_path('module', 'tpps');
+        // @todo Check if this is a Form API and use '#attached' if possible.
+        //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+        drupal_add_js($module_path . TPPS_JS_PATH);
+        // [/VS].
         return $output;
       }
     }
@@ -96,8 +103,14 @@ function tpps_details($accession = NULL) {
       drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
     }
     $output .= $map_api_tools;
-    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
-    drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+    // [VS].
+    $module_path = drupal_get_path('module', 'tpps');
+    // @todo Check if this is a Form API and use '#attached' if possible.
+    //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+    //$form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
+    drupal_add_js($module_path . TPPS_JS_PATH);
+    drupal_add_css($module_path . TPPS_CSS_PATH);
+    // [/VS].
 
     $pub_link = $state['title'];
     $pub_id = db_select('chado.project_pub', 'p')
@@ -121,8 +134,6 @@ function tpps_details($accession = NULL) {
       $parts = explode(' ', $primary_author);
       $lastname = $parts[count($parts) - 1];
     }
-    $output .= "<h4>$lastname et al {$state['pyear']}";
-    if (!empty($state['journal'])) {
       $output .= " published in {$state['journal']}";
     }
     $output .= "</h4>";
@@ -146,7 +157,12 @@ function tpps_details($accession = NULL) {
 
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
-    drupal_add_js(drupal_get_path('module', 'tpps') . TPPS_JS_PATH);
+    // [VS].
+    $module_path = drupal_get_path('module', 'tpps');
+    // @todo Check if this is a Form API and use '#attached' if possible.
+    //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+    drupal_add_js($module_path . TPPS_JS_PATH);
+    // [/VS].
   }
   return $output;
 }
@@ -1074,9 +1090,9 @@ function tpps_details_genotype(array &$state) {
   // $query = chado_query("SELECT * FROM chado.genotypes_" . $project_id . " OFFSET $start LIMIT $per_page");
 
   // @NEW - RISH using Emily's index_id to paginate the page columns
-  $query = chado_query("select * from chado.genotypes_" . $project_id .  
-    " where index_id > " . $start . 
-    " order by index_id asc 
+  $query = chado_query("select * from chado.genotypes_" . $project_id .
+    " where index_id > " . $start .
+    " order by index_id asc
     limit " . $per_page . ";",[]);
 
   while (($result = $query->fetchObject())) {
