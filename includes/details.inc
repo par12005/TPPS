@@ -134,6 +134,8 @@ function tpps_details($accession = NULL) {
       $parts = explode(' ', $primary_author);
       $lastname = $parts[count($parts) - 1];
     }
+    $output .= "<h4>$lastname et al {$state['pyear']}";
+    if (!empty($state['journal'])) {
       $output .= " published in {$state['journal']}";
     }
     $output .= "</h4>";
@@ -160,7 +162,6 @@ function tpps_details($accession = NULL) {
     // [VS].
     $module_path = drupal_get_path('module', 'tpps');
     // @todo Check if this is a Form API and use '#attached' if possible.
-    //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
     drupal_add_js($module_path . TPPS_JS_PATH);
     // [/VS].
   }
