@@ -28,7 +28,9 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   // Get public path
   $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
 
-  mkdir($log_path);
+  if (!is_dir($log_path)) {
+    mkdir($log_path);
+  }
 
   // Update the global $tpps_job_logger variable
   global $tpps_job_logger;
@@ -37,8 +39,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   $tpps_job_logger['log_file_path'] =  $log_path . $accession . '_' . $tpps_job_logger['job_object']->getJobID() . '.txt';
   $tpps_job_logger['log_file_handle'] = fopen($tpps_job_logger['log_file_path'], "w+");
 
-  tpps_job_logger_write('[INFO] Setting up...');
-  $job->logMessage('[INFO] Setting up...');
+  tpps_log('[INFO] Setting up...');
   $job->setInterval(1);
   $form_state = tpps_load_submission($accession);
 
@@ -76,11 +77,9 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   $transaction = db_transaction();
 
   try {
-    tpps_job_logger_write('[INFO] Clearing Database...');
-    $job->logMessage('[INFO] Clearing Database...');
+    tpps_log('[INFO] Clearing Database...');
     tpps_submission_clear_db($accession);
-    tpps_job_logger_write('[INFO] Database Cleared');
-    $job->logMessage('[INFO] Database Cleared.');
+    tpps_log('[INFO] Database Cleared');
     $project_id = $form_state['ids']['project_id'] ?? NULL;
 
     $form_state = tpps_load_submission($accession);
@@ -90,8 +89,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $form_state['file_rank'] = 0;
     $form_state['ids'] = array();
 
-    tpps_job_logger_write('[INFO] Creating project record...');
-    $job->logMessage('[INFO] Creating project record...');
+    tpps_log('[INFO] Creating project record...');
     $form_state['title'] = $firstpage['publication']['title'];
     $form_state['abstract'] = $firstpage['publication']['abstract'];
     $project_record = array(
@@ -102,59 +100,44 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       $project_record['project_id'] = $project_id;
     }
     $form_state['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
-    tpps_job_logger_write("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
-    $job->logMessage("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
+    tpps_log("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
 
     tpps_tripal_entity_publish('Project', array(
       $firstpage['publication']['title'],
       $form_state['ids']['project_id'],
     ));
 
-    tpps_job_logger_write("[INFO] Submitting Publication/Species information...");
-    $job->logMessage("[INFO] Submitting Publication/Species information...");
+    tpps_log("[INFO] Submitting Publication/Species information...");
     tpps_submit_page_1($form_state, $job);
-    tpps_job_logger_write("[INFO] Publication/Species information submitted!\n");
-    $job->logMessage("[INFO] Publication/Species information submitted!\n");
+    tpps_log("[INFO] Publication/Species information submitted!\n");
 
-    tpps_job_logger_write("[INFO] Submitting Study Details...");
-    $job->logMessage("[INFO] Submitting Study Details...");
+    tpps_log("[INFO] Submitting Study Details...");
     tpps_submit_page_2($form_state, $job);
-    tpps_job_logger_write("[INFO] Study Details sumbitted!\n");
-    $job->logMessage("[INFO] Study Details sumbitted!\n");
+    tpps_log("[INFO] Study Details sumbitted!\n");
 
-    tpps_job_logger_write("[INFO] Submitting Accession information...");
-    $job->logMessage("[INFO] Submitting Accession information...");
+    tpps_log("[INFO] Submitting Accession information...");
     tpps_submit_page_3($form_state, $job);
-    tpps_job_logger_write("[INFO] Accession information submitted!\n");
-    $job->logMessage("[INFO] Accession information submitted!\n");
+    tpps_log("[INFO] Accession information submitted!\n");
 
-    tpps_job_logger_write("[INFO] Submitting Raw data...");
-    $job->logMessage("[INFO] Submitting Raw data...");
+    tpps_log("[INFO] Submitting Raw data...");
     tpps_submit_page_4($form_state, $job);
-    tpps_job_logger_write("[INFO] Raw data submitted!\n");
-    $job->logMessage("[INFO] Raw data submitted!\n");
+    tpps_log("[INFO] Raw data submitted!\n");
 
-    tpps_job_logger_write("[INFO] Submitting Summary information...");
-    $job->logMessage("[INFO] Submitting Summary information...");
+    tpps_log("[INFO] Submitting Summary information...");
     tpps_submit_summary($form_state);
-    tpps_job_logger_write("[INFO] Summary information submitted!\n");
-    $job->logMessage("[INFO] Summary information submitted!\n");
+    tpps_log("[INFO] Summary information submitted!\n");
 
     tpps_update_submission($form_state);
 
-    tpps_job_logger_write("[INFO] Renaming files...");
-    $job->logMessage("[INFO] Renaming files...");
+    tpps_log("[INFO] Renaming files...");
     tpps_submission_rename_files($accession);
-    tpps_job_logger_write("[INFO] Files renamed!\n");
-    $job->logMessage("[INFO] Files renamed!\n");
+    tpps_log("[INFO] Files renamed!\n");
     $form_state = tpps_load_submission($accession);
     $form_state['status'] = 'Approved';
     $form_state['loaded'] = time();
-    tpps_job_logger_write("[INFO] Finishing up...");
-    $job->logMessage("[INFO] Finishing up...");
+    tpps_log("[INFO] Finishing up...");
     tpps_update_submission($form_state, array('status' => 'Approved'));
-    tpps_job_logger_write("[INFO] Complete!");
-    $job->logMessage("[INFO] Complete!");
+    tpps_log("[INFO] Complete!");
 
     fclose($tpps_job_logger['log_file_handle']);
 
@@ -165,12 +148,9 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $form_state['status'] = 'Pending Approval';
     tpps_update_submission($form_state, array('status' => 'Pending Approval'));
 
-    tpps_job_logger_write('[ERROR] Job failed');
-    $job->logMessage('[ERROR] Job failed', array(), TRIPAL_ERROR);
-    tpps_job_logger_write('[ERROR] Error message: @msg', array('@msg' => $e->getMessage()));
-    $job->logMessage('[ERROR] Error message: @msg', array('@msg' => $e->getMessage()), TRIPAL_ERROR);
-    tpps_job_logger_write("[ERROR] Trace: \n@trace", array('@trace' => $e->getTraceAsString()));
-    $job->logMessage("[ERROR] Trace: \n@trace", array('@trace' => $e->getTraceAsString()), TRIPAL_ERROR);
+    tpps_log('[ERROR] Job failed', [], TRIPAL_ERROR);
+    tpps_log('[ERROR] Error message: @msg', ['@msg' => $e->getMessage()], TRIPAL_ERROR);
+    tpps_log("[ERROR] Trace: \n@trace", ['@trace' => $e->getTraceAsString()], TRIPAL_ERROR);
 
     fclose($tpps_job_logger['log_file_handle']);
     watchdog_exception('tpps', $e);
@@ -228,7 +208,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
 
   // Save DOI fields.
   if (($form_state['tpps_type'] ?? NULL) == 'tppsc') {
-    // 'Dataset DOI' Field.
+    // Required 'Publication DOI' Field.
     if (!empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])) {
       $dryad_db = chado_get_db(['name' => 'dryad']);
       $dryad_dbxref = chado_insert_dbxref([
@@ -241,12 +221,12 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
         'is_current' => TRUE,
       ]);
     }
-    // 'Publication DOI' Field.
-    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['publication_doi'])) {
+    // Optional 'Dataset DOI' Field.
+    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['dataset_doi'])) {
       $dryad_db = chado_get_db(['name' => 'dryad']);
       $dryad_dbxref = chado_insert_dbxref([
         'db_id' => $dryad_db->db_id,
-        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['publication_doi'],
+        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['dataset_doi'],
       ])->dbxref_id;
       tpps_chado_insert_record('project_dbxref', [
         'project_id' => $form_state['ids']['project_id'],
@@ -290,8 +270,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
         $authors[] = $seconds[$i];
       }
       else {
-        tpps_job_logger_write('[INFO] - Secondary publishers error - found an empty secondary publisher name. Ignoring this input.');
-        $job->logMessage('[INFO] - Secondary publishers error - found an empty secondary publisher name. Ignoring this input.');
+        tpps_log('[INFO] - Secondary publishers error - found an empty secondary publisher name. Ignoring this input.');
         // throw new Exception("Seconds[$i]" . $seconds[$i]);
       }
     }
@@ -667,10 +646,6 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
   $stock_count = 0;
   $loc_name = 'Location (latitude/longitude or country/state or population group)';
 
-  if (!empty($thirdpage['skip_validation'])) {
-    tpps_submission_add_tag($form_state['accession'], 'No Location Information');
-  }
-
   if (!empty($thirdpage['study_location'])) {
     $type = $thirdpage['study_location']['type'];
     $locs = $thirdpage['study_location']['locations'];
@@ -813,14 +788,34 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
     $options['no_header'] = !empty($tree_accession['file-no-header']);
     $options['empty'] = $tree_accession['file-empty'];
     $options['pop_group'] = $tree_accession['pop-group'];
-    $options['exact'] = $tree_accession['exact_coords'] ?? NULL;
-    $options['precision'] = NULL;
-    if (!$options['exact']) {
-      $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
-      if (!array_key_exists(tpps_get_tag_id('No Location Information'), tpps_submission_get_tags($form_state['accession']))) {
-        tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
-      }
+
+    // [VS] #8669py308
+    switch ($tree_accession['location_accuracy']) {
+      case 'exact':
+        $options['exact'] = TRUE;
+        $options['precision'] = NULL;
+        break;
+
+      case 'approximate':
+        $options['exact'] = NULL;
+        $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
+        $condition = (
+          !array_key_exists(tpps_get_tag_id('No Location Information'),
+          tpps_submission_get_tags($form_state['accession']))
+        );
+        if ($condition) {
+          tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
+        }
+        break;
+
+      case 'descriptive_place':
+        // @TODO Major. Store value in database.
+        $options['exact'] = NULL;
+        $options['precision'] = $tree_accession['descriptive_place'] ?? NULL;
+        break;
     }
+    // [/VS] #8669py308
+
     $county = array_search('8', $column_vals);
     $district = array_search('9', $column_vals);
     $clone = array_search('13', $column_vals);
@@ -845,17 +840,13 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
         $options['column_ids']['org'] = $groups['Genus and Species']['10'];
       }
     }
-    tpps_job_logger_write('[INFO] - Processing accession file data...');
-    $job->logMessage('[INFO] - Processing accession file data...');
+    tpps_log('[INFO] - Processing accession file data...');
     tpps_file_iterator($fid, 'tpps_process_accession', $options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
+    tpps_log('[INFO] - Done.');
 
-    tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+    tpps_log('[INFO] - Inserting data into database using insert_multi...');
     $new_ids = tpps_chado_insert_multi($options['records'], $multi_insert_options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
+    tpps_log('[INFO] - Done.');
     foreach ($new_ids as $t_id => $stock_id) {
       $form_state['tree_info'][$t_id]['stock_id'] = $stock_id;
     }
@@ -1012,8 +1003,7 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
-  tpps_job_logger_write('[INFO] - Submitting phenotype data...');
-  $job->logMessage('[INFO] - Submitting phenotype data...');
+  tpps_log('[INFO] - Submitting phenotype data...');
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $phenotype = $fourthpage["organism-$i"]['phenotype'] ?? NULL;
@@ -1027,9 +1017,12 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
   $phenotype_cvterms = array(
     'time' => tpps_load_cvterm('time')->cvterm_id,
     'desc' => tpps_load_cvterm('description')->cvterm_id,
+    // @TODO [VS] Not sure this is needed since units are in separate table
+    // in database and 'min/max not used for units.
     'unit' => tpps_load_cvterm('unit')->cvterm_id,
     'min' => tpps_load_cvterm('minimum')->cvterm_id,
     'max' => tpps_load_cvterm('maximum')->cvterm_id,
+    // [/VS]
     'environment' => tpps_load_cvterm('environment')->cvterm_id,
     'intensity' => tpps_load_cvterm('intensity')->cvterm_id,
   );
@@ -1053,46 +1046,47 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     'job' => &$job,
   );
 
+  $phenotype_number = $phenotype['phenotypes-meta']['number'];
   if (!empty($phenotype['normal-check'])) {
-    $phenotype_number = $phenotype['phenotypes-meta']['number'];
-    $phenotypes_meta = array();
+    $phenotypes_meta = [];
     $data_fid = $phenotype['file'];
     $phenos_edit = $form_state['phenotypes_edit'] ?? NULL;
-
     tpps_add_project_file($form_state, $data_fid);
-
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
     for ($j = 1; $j <= $phenotype_number; $j++) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
+      $phenotypes_meta[$name] = [];
+      $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
       if (!empty($phenos_edit[$j])) {
         // (Rish) BUGFIX related to sex -> age
         // keep track of the cvterm id
         $cvterm_id = $phenotype['phenotypes-meta'][$j]['attribute'];
         $result = $phenos_edit[$j] + $phenotype['phenotypes-meta'][$j];
         $phenotype['phenotypes-meta'][$j] = $result;
-        // restore the cvterm_id from the original (since this is from verified cvterm table which populated the select list dropdown box on tpps form)
+        // restore the cvterm_id from the original (since this is from
+        // verified cvterm table which populated the select list dropdown
+        // box on tpps form)
         $phenotype['phenotypes-meta'][$j]['attribute'] = $cvterm_id;
       }
-      $phenotypes_meta[$name] = array();
       $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
       // print_r('LINE 1022:');
       // print_r($phenotype['phenotypes-meta'][$j]);
       if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
       }
-      $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
-      $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['units'];
-      if ($phenotype['phenotypes-meta'][$j]['units'] == 'other') {
+      // [VS] #8669rmrw5
+      // Store casesensitive Phenotype name to use for synonym save.
+      $phenotypes_meta[$name]['name'] = $phenotype['phenotypes-meta'][$j]['name'];
+      $phenotypes_meta[$name]['synonym_id'] = $phenotype['phenotypes-meta'][$j]['synonym_id'];
+      $phenotypes_meta[$name]['unit'] = $phenotype['phenotypes-meta'][$j]['unit'];
+      if ($phenotype['phenotypes-meta'][$j]['unit'] == 'other') {
         $phenotypes_meta[$name]['unit-other'] = $phenotype['phenotypes-meta'][$j]['unit-other'];
       }
+      // [/VS] #8669rmrw5
       $phenotypes_meta[$name]['struct'] = $phenotype['phenotypes-meta'][$j]['structure'];
       if ($phenotype['phenotypes-meta'][$j]['structure'] == 'other') {
         $phenotypes_meta[$name]['struct-other'] = $phenotype['phenotypes-meta'][$j]['struct-other'];
-      }
-      if (!empty($phenotype['phenotypes-meta'][$j]['val-check']) or !empty($phenotype['phenotypes-meta'][$j]['bin-check'] or $phenotype['phenotypes-meta'][$j]['units'] == tpps_load_cvterm('boolean')->cvterm_id)) {
-        $phenotypes_meta[$name]['min'] = $phenotype['phenotypes-meta'][$j]['min'];
-        $phenotypes_meta[$name]['max'] = $phenotype['phenotypes-meta'][$j]['max'];
       }
       $phenotypes_meta[$name]['env'] = !empty($phenotype['phenotypes-meta'][$j]['env-check']);
       if ($phenotypes_meta[$name]['env']) {
@@ -1103,15 +1097,13 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       tpps_submission_add_tag($form_state['accession'], 'Environment');
     }
 
-    // throw new Exception('$phenotype[check]:' . $phenotype['check'] . "\n");
     if ($phenotype['check'] == '1' || $phenotype['check'] == 'upload_file') {
+      // @todo Check Phenotype Data file at validation stage. Check if it's
+      // actually integer and not zero.
       $meta_fid = intval($phenotype['metadata']);
-      print_r('META_FID:' . $meta_fid . "\n");
       // Added because TGDR009 META FID was 0 which caused failures
       if ($meta_fid > 0) {
-
         tpps_add_project_file($form_state, $meta_fid);
-
         // Get metadata column values.
         $groups = $phenotype['metadata-groups'];
         $column_vals = $phenotype['metadata-columns'];
@@ -1122,7 +1114,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
           'name' => $groups['Phenotype Id']['1'],
           'attr' => $groups['Attribute']['2'],
           'desc' => $groups['Description']['3'],
-          'unit' => $groups['Units']['4'],
+          'unit' => $groups['Unit']['4'],
           'struct' => !empty($struct) ? $struct : NULL,
           'min' => !empty($min) ? $min : NULL,
           'max' => !empty($max) ? $max : NULL,
@@ -1135,14 +1127,14 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
           'meta' => &$phenotypes_meta,
         );
 
-        tpps_job_logger_write('[INFO] - Processing phenotype_meta file data...');
-        $job->logMessage('[INFO] - Processing phenotype_meta file data...');
+        tpps_log('[INFO] - Processing phenotype_meta file data...');
         tpps_file_iterator($meta_fid, 'tpps_process_phenotype_meta', $meta_options);
-        tpps_job_logger_write('[INFO] - Done.');
-        $job->logMessage('[INFO] - Done.');
+        tpps_log('[INFO] - Done.');
       }
       else {
-        tpps_job_logger_write('[WARNING] - phenotype_meta file id looks incorrect but the UI checkbox was selected. Need to double check this!');
+        tpps_job_logger_write('[WARNING] - phenotype_meta file id looks '
+          . 'incorrect but the UI checkbox was selected. '
+          . 'Need to double check this!');
       }
     }
 
@@ -1155,7 +1147,6 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       $time_options = $phenotype['time'];
     }
     tpps_refine_phenotype_meta($phenotypes_meta, $time_options, $job);
-
     // Get metadata header values.
     $groups = $phenotype['file-groups'];
     $column_vals = $phenotype['file-columns'];
@@ -1171,10 +1162,14 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     );
 
     // Get data header values.
+    // [VS]
     if ($phenotype['format'] == 0) {
       $file_headers = tpps_file_headers($data_fid, $phenotype['file-no-header']);
-      $data_columns = array();
-      if(is_array($groups['Phenotype Data']['0']) && !empty($groups['Phenotype Data']['0'])) {
+      $data_columns = [];
+      if (
+        is_array($groups['Phenotype Data']['0'])
+        && !empty($groups['Phenotype Data']['0'])
+      ) {
         foreach ($groups['Phenotype Data']['0'] as $col) {
           $data_columns[$col] = $file_headers[$col];
         }
@@ -1195,16 +1190,13 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['organism_name'] = $organism_name;
 
     print_r('DATA_FID:' . $data_fid . "\n");
-    tpps_job_logger_write('[INFO] - Processing phenotype_data file data...');
-    $job->logMessage('[INFO] - Processing phenotype_data file data...');
+    tpps_log('[INFO] - Processing phenotype_data file data...');
     tpps_file_iterator($data_fid, 'tpps_process_phenotype_data', $options);
     $form_state['data']['phenotype_meta'] += $phenotypes_meta;
-    tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
-    // print_r($options['records']);
-    tpps_chado_insert_multi($options['records']);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
+    tpps_log('[INFO] - Inserting data into database using insert_multi...');
+
+    $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
+    tpps_log('[INFO] - Done.');
   }
 
   if (!empty($phenotype['iso-check'])) {
@@ -1218,23 +1210,28 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
     $options['organism_name'] = $organism_name;
     $options['meta'] = array(
       'desc' => "Mass Spectrometry",
-      'unit' => "intensity (arbitrary units)",
+      // Unit name replaced with Unit Id (cvterm_id for 'chemical substance').
+      // Outdated: 'unit' => "intensity (arbitrary nits)".
+      'unit' => 139527,
+      'unit_id' => 139527,
       'attr_id' => tpps_load_cvterm('intensity')->cvterm_id,
-      'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id, // manual term for MASS Spec
+      // Manual term for MASS Spec.
+      'struct_id' => tpps_load_cvterm('whole plant')->cvterm_id,
     );
 
     print_r('ISO_FID:' . $iso_fid . "\n");
-    tpps_job_logger_write('[INFO] - Processing phenotype_data file data...');
-    $job->logMessage('[INFO] - Processing phenotype_data file data...');
+    tpps_log('[INFO] - Processing phenotype_data file data...');
     tpps_file_iterator($iso_fid, 'tpps_process_phenotype_data', $options);
-    tpps_job_logger_write('[INFO] - Inserting phenotype_data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting phenotype_data into database using insert_multi...');
-    tpps_chado_insert_multi($options['records']);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
-
+    tpps_log('[INFO] - Inserting phenotype_data into database using insert_multi...');
+    // [VS]
+    $id_list = tpps_chado_insert_multi($options['records'], ['fks' => 'phenotype']);
+    tpps_log('[INFO] - Done.');
   }
-  // throw new Exception('DEBUG');
+  // Store relations between Phenotype, Synonym, Unit.
+  if ($id_list) {
+    tpps_synonym_save($phenotypes_meta, $id_list);
+  }
+  // [/VS].
 }
 
 /**
@@ -1250,10 +1247,8 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_genotype(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL) {
-  tpps_job_logger_write('[INFO] - Submitting genotype data...');
-  $job->logMessage('[INFO] - Submitting genotype data...');
-
-  // Pages data
+  tpps_log('[INFO] - Submitting genotype data...');
+  // Pages data.
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
@@ -1270,7 +1265,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
   if (!isset($vcf_import_mode)) {
     $vcf_import_mode = 'hybrid'; // if not set, set it as default hybrid
   }
-
   // If no genotype data, don't continue running this code.
   if (empty($genotype)) {
     return;
@@ -1452,12 +1446,9 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
         default:
           break;
       }
-      tpps_job_logger_write('[INFO] - Processing snp_association file data...');
-      $job->logMessage('[INFO] - Processing snp_association file data...');
-
+      tpps_log('[INFO] - Processing snp_association file data...');
       tpps_file_iterator($assoc_fid, 'tpps_process_snp_association', $options);
-      tpps_job_logger_write('[INFO] - Done.');
-      $job->logMessage('[INFO] - Done.');
+      tpps_log('[INFO] - Done.');
 
       $multi_insert_options['fk_overrides']['featureloc'] = array(
         'srcfeature' => array(
@@ -1488,47 +1479,39 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $kinship_fid = $genotype['files']['snps-kinship'];
       tpps_add_project_file($form_state, $kinship_fid);
     }
-
-    // DROP INDEXES FROM GENOTYPE_CALL TABLE
+    // DROP INDEXES FROM GENOTYPE_CALL TABLE.
     tpps_drop_genotype_call_indexes($job);
-
-    tpps_job_logger_write('[INFO] - Processing SNP genotype_spreadsheet file data...');
-    $job->logMessage('[INFO] - Processing SNP genotype_spreadsheet file data...');
+    tpps_log('[INFO] - Processing SNP genotype_spreadsheet file data...');
     echo "trace 1\n";
     echo "Species codes:\n";
     print_r($options['species_codes']);
     echo "Tree Info:\n";
     print_r($options['tree_info']);
     tpps_file_iterator($snp_fid, 'tpps_process_genotype_spreadsheet', $options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
+    tpps_log('[INFO] - Done.');
 
-
-    tpps_job_logger_write('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_multi...');
+    tpps_log('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_multi...');
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
-
-    tpps_job_logger_write('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_hybrid...');
-    $job->logMessage('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_hybrid...');
+    tpps_log('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_hybrid...');
     tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
+    tpps_log('[INFO] - Done');
 
-    tpps_job_logger_write('[INFO] - Done');
-    $job->logMessage('[INFO] - Done');
-
-    // RECREATE INDEXES FROM GENOTYPE_CALL TABLE
-    tpps_create_genotype_call_indexes($job);
-
+    // RECREATE INDEXES FROM GENOTYPE_CALL TABLE.
+    tpps_create_genotype_call_indexes();
     $options['records'] = $records;
     $genotype_total += $genotype_count;
-    tpps_job_logger_write('[INFO] - Genotype count:' . $genotype_count);
-    $job->logMessage('[INFO] - Genotype count:' . $genotype_count);
+    tpps_log('[INFO] - Genotype count:' . $genotype_count);
     $genotype_count = 0;
   }
 
-  // This if statement caters for the Genotype Assay Design file (which holds extra data like positions etc)
-  // This is usually also accompanied with the Genotype SNP Assay (which holds the snps)
-  // We want to insert location data into the database if both are found and the marker-type is snp
-  // The previous step took care of the SNPs insertion via the Genotype SNP Assay (not to be confused with genotype SNP assay design file)
+  // This if statement caters for the Genotype Assay Design file
+  // (which holds extra data like positions etc)
+  // This is usually also accompanied with the Genotype SNP Assay
+  // (which holds the snps)
+  // We want to insert location data into the database
+  // if both are found and the marker-type is snp
+  // The previous step took care of the SNPs insertion via the Genotype
+  // SNP Assay (not to be confused with genotype SNP assay design file)
   if (!empty($genotype['files']['assay-design'])) {
     $design_fid = $genotype['files']['assay-design'];
     tpps_add_project_file($form_state, $design_fid);
@@ -1612,7 +1595,6 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $job->logMessage('[ERROR] - Analysis ID could not be found, skipping assay design file processing.');
     }
   }
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // 'SSRs' and 'cpSSR' fields.
   foreach (['ssrs', 'ssrs_extra'] as $ssr_field_name) {
@@ -1660,49 +1642,53 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     $options['type'] = 'other';
     $options['marker'] = $genotype['other-marker'];
     $options['type_cvterm'] = tpps_load_cvterm('genetic_marker')->cvterm_id;
-    tpps_job_logger_write('[INFO] - Processing OTHER MARKER genotype_spreadsheet file data...');
-    $job->logMessage('[INFO] - Processing OTHER MARKER genotype_spreadsheet file data...');
+
+    tpps_log('[INFO] - Processing OTHER MARKER genotype_spreadsheet file data...');
     echo "trace 5\n";
     tpps_file_iterator($other_fid, 'tpps_process_genotype_spreadsheet', $options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
+    tpps_log('[INFO] - Done.');
 
-    tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+    tpps_log('[INFO] - Inserting data into database using insert_multi...');
     tpps_chado_insert_multi($options['records'], $multi_insert_options);
 
-    tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
-    $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
+    tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
     tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
+    tpps_log('[INFO] - Done.');
 
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
-
-    // CREATE INDEXES FROM GENOTYPE_CALL TABLE
-    tpps_create_genotype_call_indexes($job);
+    // CREATE INDEXES FROM GENOTYPE_CALL TABLE.
+    tpps_create_genotype_call_indexes();
 
     $options['records'] = $records;
     $genotype_count = 0;
   }
 
-  // VCF PROCESSING OCCURS FROM HERE
-  tpps_job_logger_write('[INFO] - VCF IMPORT MODE is ' . $vcf_import_mode);
-  $job->logMessage('[INFO] - VCF IMPORT MODE is ' . $vcf_import_mode);
-  if ($vcf_processing_completed == false) {
-    // THE VCF PROCESSING CODE HAS BEEN MOVED TO A NEW FUNCTION
+  tpps_log('[INFO] - VCF IMPORT MODE is ' . $vcf_import_mode);
+  if ($vcf_processing_completed == FALSE) {
     tpps_genotype_vcf_processing($form_state, $species_codes, $i, $job, $vcf_import_mode);
   }
   else {
-    tpps_job_logger_write('[INFO] - VCF was already processed!');
-    $job->logMessage('[INFO] - VCF was already processed!');
+    tpps_log('[INFO] - VCF was already processed!');
   }
 }
 
 /**
- * This function will process a vcf file's genotypic information and store it within the db.
- * Most importantly is the $import_mode option which can be set to 'multi' or 'hybrid'
- * Hybrid requires the the db user be granted SUPERUSER access to the Postgresql db in order
- * to utilize the COPY keyword for inserting data which is dramatically faster.
+ * Tpps genotype_vcf_processing.
+ *
+ * This function will process a vcf file's genotypic information
+ * and store it within the db. Most importantly is the $import_mode option
+ * which can be set to 'multi' or 'hybrid'.
+ * Hybrid requires the the db user be granted SUPERUSER access
+ * to the Postgresql db in order to utilize the COPY keyword for
+ * inserting data which is dramatically faster.
+ *
+ * @param array $form_state
+ * @param array $species_codes
+ * @param mixed $i
+ * @param TripalJob $job
+ * @param string $insert_mode
+ * @access public
+ *
+ * @return void
  */
 function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
   $organism_index = $i;
@@ -1782,7 +1768,6 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
   if ($genotype['files']['file-type'] == 'VCF') {
     if ($disable_vcf_import == 0) {
-      // DROP INDEXES FROM GENOTYPE_CALL TABLE
       tpps_drop_genotype_call_indexes($job);
 
       // @todo we probably want to use tpps_file_iterator to parse vcf files.
@@ -1908,11 +1893,12 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       }
       else {
-        $error_line = "A reference genome could not be found in the TPPS page 4 form.\n";
-        $error_line .= "Without this, we cannot find the analysis_id and thus the srcfeature_id.\n";
-        $error_line .=  "Featureloc data will not be recorded\n";
-        tpps_job_logger_write('[REF GENOME NOT FOUND] - ' . $error_line);
-        $job->logMessage('[REF GENOME NOT FOUND] - ' . $error_line);
+       $error_line = [
+          "A reference genome could not be found in the TPPS page 4 form.",
+          "Without this, we cannot find the analysis_id and thus the srcfeature_id.",
+          "Featureloc data will not be recorded",
+        ];
+        tpps_log('[REF GENOME NOT FOUND] - ' . implode("\n", $error_line) . "\n");
       }
 
       print_r("Analysis ID Found: $analysis_id");
@@ -1926,7 +1912,11 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         if($file_progress_line_count % 10000 == 0 && $file_progress_line_count != 0) {
           echo '[INFO] [VCF PROCESSING STATUS] ' . $file_progress_line_count . " lines done\n";
         }
-        if ($vcf_line[0] != '#' && stripos($vcf_line,'.vcf') === FALSE && trim($vcf_line) != "" && str_replace("\0", "", $vcf_line) != "") {
+        if ($vcf_line[0] != '#'
+          && stripos($vcf_line,'.vcf') === FALSE
+          && trim($vcf_line) != ""
+          && str_replace("\0", "", $vcf_line) != ""
+        ) {
           $line_process_start_time = microtime(true);
           $record_count = $record_count + 1;
           // DEBUG - TEST ONLY 100 records
@@ -1953,7 +1943,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             $variant_name = $scaffold_id . '_' . $position . 'SNP';
           }
           // $marker_name = $variant_name . $marker; // Original by Peter
-          $marker_name = $scaffold_id . '_' . $position . '-' . $species_code; // Emily updated suggestion on Tuesday August 9th 2022
+          // Emily updated suggestion on Tuesday August 9th 2022
+          $marker_name = $scaffold_id . '_' . $position . '-' . $species_code;
 
           // $description = "$ref:$alt"; // Replaced with genotype_combination within $detected_genotypes array (5/31/2023)
 
@@ -1993,9 +1984,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               // print_r('[First Genotype]:' . $marker_name . $genotype_combination . "\n");
               $first_genotypes[$marker_type . '-' . $marker_name . '-' . $genotype_combination] = TRUE;
             }
-
           }
-
 
           // PETER'S CODE
           // $records['feature'][$marker_name] = array(
@@ -2140,8 +2129,8 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
           // Rish 12/08/2022: So we have multiple genotypes created
           // So I adjusted some of this code into a for statement
-          // since the genotype_desc seems important and so I modified it to be unique
-          // and based on the genotype_name
+          // since the genotype_desc seems important and so I modified
+          // it to be unique and based on the genotype_name.
           $genotype_names = array_keys($detected_genotypes);
 
           // print_r($detected_genotypes);
@@ -2195,7 +2184,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
             }
             // throw new Exception('DEBUG');
-            // get the feature_id
+            // get the feature_id.
             $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
               ':uniquename' => $genotype_desc
             ]);
@@ -2205,7 +2194,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
             // $debug_info = "Variant_name: $variant_name, Variant_id: $variant_id\n";
             // echo("DEBUG INFO: $debug_info");
 
-             // 3/27/2023 Meeting - FORMAT: REVIEW THIS IN TERMS OF IF WE NEED IT
+            // 3/27/2023 Meeting - FORMAT: REVIEW THIS IN TERMS OF IF WE NEED IT.
             if ($format != "") {
               $records['genotypeprop']["$genotype_desc-format"] = array(
                 'type_id' => $format_cvterm,
@@ -2379,42 +2368,29 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           // time, so break them up into groups of 10,000 genotypes along with
           // their relevant genotypeprops.
           if ($genotype_count > $record_group) {
-            tpps_job_logger_write('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
-            $job->logMessage('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
-            tpps_job_logger_write('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
-            $job->logMessage('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
-            tpps_job_logger_write('[INFO] - Last insert cumulative time: ' . $insert_cumulative_time . ' seconds');
-            $job->logMessage('[INFO] - Last insert cumulative time: ' . $insert_cumulative_time . ' seconds');
+            tpps_log('[INFO] - Last bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+            tpps_log('[INFO] - Last insert cumulative time: ' . $insert_cumulative_time . ' seconds');
             $genotype_count = 0;
             $insert_start_time = microtime(true);
             if ($insert_mode == 'multi') {
-              tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-              $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+              tpps_log('[INFO] - Inserting data into database using insert_multi...');
               tpps_chado_insert_multi($records, $multi_insert_options);
             }
             else if ($insert_mode == 'hybrid') {
               // THIS WILL DO SOME MULTI INSERTS BUT ALSO USE COPY FOR GENOTYPE_CALL TABLE
-              tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
-              $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
+              tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
               tpps_chado_insert_hybrid($records, $multi_insert_options);
             }
 
-
-
-            tpps_job_logger_write('[INFO] - Done.');
-            $job->logMessage('[INFO] - Done.');
+            tpps_log('[INFO] - Done.');
             $insert_end_time = microtime(true);
             $insert_elapsed_time = $insert_end_time - $insert_start_time;
-            tpps_job_logger_write('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
-            $job->logMessage('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
-            tpps_job_logger_write('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
-            $job->logMessage('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
+            tpps_log('[INFO] - Bulk insert of ' . $record_group . ' took ' . $insert_elapsed_time . ' seconds');
             if(!isset($insert_cumulative_time)) {
               $insert_cumulative_time = 0;
             }
             $insert_cumulative_time += $insert_elapsed_time;
-            tpps_job_logger_write('[INFO] - Insert cumulative time: ' . $insert_cumulative_time . ' seconds');
-            $job->logMessage('[INFO] - Insert cumulative time: ' . $insert_cumulative_time . ' seconds');
+            tpps_log('[INFO] - Insert cumulative time: ' . $insert_cumulative_time . ' seconds');
             // throw new Exception('DEBUG');
             $records = array(
               'feature' => array(),
@@ -2439,25 +2415,20 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         }
       }
       // Insert the last set of values.
-
       if ($insert_mode == 'multi') {
-        tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-        $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+        tpps_log('[INFO] - Inserting data into database using insert_multi...');
         tpps_chado_insert_multi($records, $multi_insert_options);
       }
       elseif ($insert_mode == 'hybrid') {
-        tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
-        $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
+        tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
         tpps_chado_insert_hybrid($records, $multi_insert_options);
       }
 
-      tpps_create_genotype_call_indexes($job);
-
-      tpps_job_logger_write('[INFO] - Done.');
-      $job->logMessage('[INFO] - Done.');
+      // Recreate the indexes.
+      tpps_create_genotype_call_indexes();
+      tpps_log('[INFO] - Done.');
       unset($records);
       $genotype_count = 0;
-      // dpm('done: ' . date('r'));.
     }
   }
 }
@@ -2466,7 +2437,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
  * Generates genotype sample file from VCF.
  *
  * @param mixed $options
- *   Array of options. Keys: study_accession, form_state, job.
+ *   Array of options. Keys are: study_accession, form_state, job.
  */
 function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
   // If study accession value exists, use this to look up the form_state.
@@ -2573,6 +2544,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
  */
 
  // drush php-eval 'include("/var/www/Drupal/sites/all/modules/TGDR/forms/submit/submit_all.php"); tpps_generate_popstruct("TGDR675", "/var/www/Drupal/sites/default/files/popstruct_temp/Panel4SNPv3.vcf");'
+// @TODO Could tpps_log() be used in this function instead of tpps_job_logger_write()?
 function tpps_generate_popstruct($study_accession, $vcf_location) {
   // Perform basic checks
   if ($study_accession == "") {
@@ -2877,8 +2849,7 @@ function tpps_submit_vcf_render_genotype_combination($raw_value, $ref, $alt) {
  *   The TripalJob object for the submission job.
  */
 function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL) {
-  tpps_job_logger_write('[INFO] - Submitting environment data...');
-  $job->logMessage('[INFO] - Submitting environment data...');
+  tpps_log('[INFO] - Submitting environment data...');
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $environment = $fourthpage["organism-$i"]['environment'] ?? NULL;
   if (empty($environment)) {
@@ -2953,17 +2924,13 @@ function tpps_submit_environment(array &$form_state, $i, TripalJob &$job = NULL)
       'suffix' => 0,
       'job' => &$job,
     );
-    tpps_job_logger_write('[INFO] - Processing environment_layers file data...');
-    $job->logMessage('[INFO] - Processing environmental_layers file data...');
+    tpps_log('[INFO] - Processing environment_layers file data...');
     tpps_file_iterator($tree_acc_fid, 'tpps_process_environment_layers', $options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
+    tpps_log('[INFO] - Done.');
 
-    tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+    tpps_log('[INFO] - Inserting data into database using insert_multi...');
     tpps_chado_insert_multi($options['records']);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
+    tpps_log('[INFO] - Done.');
     unset($options['records']);
     $env_count = 0;
   }
@@ -3012,15 +2979,13 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
   $meta[$name]['desc'] = $row[$columns['desc']];
   $meta[$name]['unit'] = 'other';
   $meta[$name]['unit-other'] = $row[$columns['unit']];
-  if (!empty($columns['struct']) and isset($row[$columns['struct']]) and $row[$columns['struct']] != '') {
+  if (
+    !empty($columns['struct'])
+    and isset($row[$columns['struct']])
+    and $row[$columns['struct']] != ''
+  ) {
     $meta[$name]['struct'] = 'other';
     $meta[$name]['struct-other'] = $row[$columns['struct']];
-  }
-  if (!empty($columns['min']) and isset($row[$columns['min']]) and $row[$columns['min']] != '') {
-    $meta[$name]['min'] = $row[$columns['min']];
-  }
-  if (!empty($columns['max']) and isset($row[$columns['max']]) and $row[$columns['max']] != '') {
-    $meta[$name]['max'] = $row[$columns['max']];
   }
 }
 
@@ -3037,8 +3002,8 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
  *   The TripalJob object for the submission job.
  */
 function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(), TripalJob &$job = NULL) {
-  $cvt_cache = array();
-  $local_cv = chado_get_cv(array('name' => 'local'));
+  $cvt_cache = [];
+  $local_cv = chado_get_cv(['name' => 'local']);
   $local_db = variable_get('tpps_local_db');
   $term_types = array(
     'attr' => array(
@@ -3054,7 +3019,6 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       'ontology' => 'po',
     ),
   );
-  // print_r($meta);
   foreach ($meta as $name => $data) {
     // echo "Name: $name\n";
     // echo "Data:\n";
@@ -3065,37 +3029,53 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
 
       if ($data["{$type}"] == 'other') {
         $meta[$name]["{$type}_id"] = $cvt_cache[$data["{$type}-other"]] ?? NULL;
+
         if (empty($meta[$name]["{$type}_id"])) {
-          $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
-          if ($result !== FALSE) {
-            $meta[$name]["{$type}_id"] = $result->cvterm_id;
-            $job->logMessage("[INFO] New OLS Term {$info['ontology']}:{$data["{$type}-other"]} installed");
+          if (!empty($data["{$type}-other"])) {
+            $result = tpps_ols_install_term("{$info['ontology']}:{$data["{$type}-other"]}");
+            if ($result !== FALSE) {
+              $meta[$name]["{$type}_id"] = $result->cvterm_id;
+              $job->logMessage(
+                "[INFO] New OLS Term '{$info['ontology']}:{$data["{$type}-other"]}' installed"
+              );
+            }
           }
 
-          if (empty($meta[$name]["{$type}_id"])) {
-            $term = chado_select_record('cvterm', array('cvterm_id'), array(
-              'name' => array(
-                'data' => $data["{$type}-other"],
-                'op' => 'LIKE',
-              ),
-            ), array(
-              'limit' => 1,
-            ));
+          if (empty($meta[$name]["{$type}_id"]) && !empty($data["{$type}-other"])) {
+            $term = chado_select_record('cvterm', ['cvterm_id'],
+              ['name' => ['data' => $data["{$type}-other"], 'op' => 'LIKE']],
+              ['limit' => 1]
+            );
             $meta[$name]["{$type}_id"] = current($term)->cvterm_id ?? NULL;
           }
 
+          // [VS] Create new CVTerm for new (custom) unit from Metafile.
           if (empty($meta[$name]["{$type}_id"])) {
-            $meta[$name]["{$type}_id"] = chado_insert_cvterm(array(
+            if (empty($data["{$type}-other"])) {
+              // Usually it will be 'other-other'.
+              // @todo Check empty units in metafile on validation stage.
+              $cvterm_name = 'no unit';
+            }
+            else {
+              $cvterm_name = $data["{$type}-other"];
+            }
+            $meta[$name]["{$type}_id"] = chado_insert_cvterm([
               'id' => "{$local_db->name}:{$data["{$type}-other"]}",
-              // 'name' => $data["{$type}-other"],
-              'name' => $data["{$type}"] . '-other',
+              'name' => $cvterm_name,
               'definition' => '',
               'cv_name' => $local_cv->name,
-            ))->cvterm_id;
+            ])->cvterm_id;
             if (!empty($meta[$name]["{$type}_id"])) {
-              $job->logMessage("[INFO] New Local {$info['label']} Term {$data["{$type}-other"]} installed");
+              if ($cvterm_name == 'no unit') {
+                // 'other-other'.
+                $job->logMessage("[INFO] Used Local '{$info['label']}' Term '{$cvterm_name}'.");
+              }
+              else {
+                $job->logMessage("[INFO] New Local '{$info['label']}' Term '{$cvterm_name}' installed");
+              }
             }
           }
+          // [/VS]
           $cvt_cache[$data["{$type}-other"]] = $meta[$name]["{$type}_id"];
         }
       }
@@ -3106,6 +3086,19 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       if (empty($meta[$name]['time'])) {
         $meta[$name]['time'] = TRUE;
       }
+    }
+
+    // When Metadata File was used we have no Synonym Id in $meta
+    // so we need to get Synonym Id by Unit Id.
+    // WARNING: Must be called when $meta[$name]['unit_id'] already set.
+    //
+    // @todo Minor. Implement ability to admin to set synonym on Phenotype
+    // edit form when Metadata File is used. List of synonyms must be
+    // limited by Unit from Metadata File.
+    if (empty($meta[$name]['synonym_id'])) {
+      // Note: Unit Id could belong to many Synonyms and we are
+      // using 1st Synonym Id from the list.
+      $meta[$name]['synonym_id'] = tpps_unit_get_synonym($meta[$name]['unit_id']);
     }
   }
   print_r($meta);
@@ -3124,7 +3117,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_process_phenotype_data($row, array &$options = array()) {
+function tpps_process_phenotype_data($row, array &$options = []) {
   global $tpps_job;
   $job = $tpps_job;
   $iso = $options['iso'] ?? FALSE;
@@ -3140,78 +3133,78 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
   $phenotype_count = &$options['phenotype_count'];
   $organism_name = &$options['organism_name'];
   $record_group = variable_get('tpps_record_group', 10000);
-  // $record_group = 1;
 
-  // Get genus and species from the organism name
+  // Get genus and species from the organism name.
   $organism_name_parts = explode(' ', $organism_name, 2);
   $genus = $organism_name_parts[0];
   $species = $organism_name_parts[1];
 
-  // Ensure that we got the genus and species or error out
+  // Ensure that we got the genus and species or error out.
   if ($genus == "" || $species == "") {
-    throw new Exception('Organism genus and species could not be processed. Please ensure you added an organism that exists within the chado.organism table!');
+    throw new Exception('Organism genus and species could not be processed. '
+      . 'Please ensure you added an organism that exists within the chado.organism table!');
   }
 
-  // Query the organism table to get the organism id
-  $organism_id_results = chado_query('SELECT * FROM chado.organism WHERE genus = :genus and species = :species ORDER BY organism_id ASC LIMIT 1', array(
-    ':genus' => $genus,
-    ':species' => $species
-  ));
+  // Query the organism table to get the organism id.
+  $organism_id_results = chado_query(
+    'SELECT * FROM chado.organism
+    WHERE genus = :genus
+      AND species = :species
+    ORDER BY organism_id ASC
+    LIMIT 1',
+    [':genus' => $genus, ':species' => $species]
+  );
 
-  // Dummy value for organism_id until we get it from the sql results row
+  // Dummy value for organism_id until we get it from the sql results row.
   $organism_id = -1;
-  foreach($organism_id_results as $organism_id_row) {
+  foreach ($organism_id_results as $organism_id_row) {
     $organism_id = $organism_id_row->organism_id;
   }
 
-  // Check that the organism id is valid
-  if($organism_id == -1 || $organism_id == "") {
-    throw new Exception('Could not find organism id for ' . $organism_name. '. This organism does not seem to exist in the chado.organism table!');
+  // Check that the organism id is valid.
+  if ($organism_id == -1 || $organism_id == "") {
+    throw new Exception('Could not find organism id for ' . $organism_name
+      . '. This organism does not seem to exist in the chado.organism table!');
   }
 
   $cvterm_id_4lettercode = -1;
-  // Get the cvterm_id (which is the type_id) for the organism 4 letter code
-  $cvterm_results = chado_query('SELECT * FROM chado.cvterm WHERE name = :name LIMIT 1', array(
-    ':name' => 'organism 4 letter code'
-  ));
-  foreach($cvterm_results as $cvterm_row) {
+  // Get the cvterm_id (which is the type_id) for the organism 4 letter code.
+  $cvterm_results = chado_query(
+    'SELECT * FROM chado.cvterm WHERE name = :name LIMIT 1',
+    [':name' => 'organism 4 letter code']
+  );
+  foreach ($cvterm_results as $cvterm_row) {
     $cvterm_id_4lettercode = $cvterm_row->cvterm_id;
   }
-  if($cvterm_id_4lettercode == -1 || $cvterm_id_4lettercode == "") {
-    throw new Exception('Could not find the cvterm id for organism 4 letter code within the chado.cvterm table. This is needed to generate the phenotype name.');
+  if ($cvterm_id_4lettercode == -1 || $cvterm_id_4lettercode == "") {
+    throw new Exception('Could not find the cvterm id for organism '
+      . '4 letter code within the chado.cvterm table. '
+      . 'This is needed to generate the phenotype name.');
   }
 
-  // We need to use the cvterm_id 4 letter code to find the actual code within the organismprop table (using the organism_id)
+  // We need to use the cvterm_id 4 letter code to find the actual code
+  // within the organismprop table (using the organism_id).
   $value_4lettercode = "";
-  $organismprop_results = chado_query('SELECT * FROM chado.organismprop WHERE type_id = :type_id AND organism_id = :organism_id LIMIT 1', array(
-    ':type_id' => $cvterm_id_4lettercode,
-    ':organism_id' => $organism_id
-  ));
+  $organismprop_results = chado_query('
+    SELECT *
+    FROM chado.organismprop
+    WHERE type_id = :type_id
+      AND organism_id = :organism_id
+    LIMIT 1',
+    [':type_id' => $cvterm_id_4lettercode, ':organism_id' => $organism_id]
+  );
   foreach ($organismprop_results as $organismprop_row) {
     $value_4lettercode = $organismprop_row->value;
   }
 
-  if($value_4lettercode == "" || $value_4lettercode == null) {
-    throw new Exception('4 letter code could not be found for ' . $organism_name . ' in the chado.organismprop table. This is needed to create the phenotype_name.');
+  if ($value_4lettercode == "" || $value_4lettercode == NULL) {
+    throw new Exception('4 letter code could not be found for '
+      . $organism_name . ' in the chado.organismprop table. '
+      . 'This is needed to create the phenotype_name.');
   }
 
-  if (!$iso) {
-    if (isset($meta_headers['name']) and (isset($meta_headers['value']))) {
-      $id = $row[$meta_headers['value']];
-      $values = array($id => $row[$meta_headers['name']]);
-    }
-
-    if (!empty($options['data_columns'])) {
-      $values = $options['data_columns'];
-    }
-
-    $tree_id = $row[$options['tree_id']];
-    $clone_col = $meta_headers['clone'] ?? NULL;
-    if (isset($clone_col) and !empty($row[$clone_col]) and $row[$clone_col] !== $empty) {
-      $tree_id .= "-" . $row[$clone_col];
-    }
-  }
   if ($iso) {
+    // 'Iso/Mass Spectrometry'.
     foreach ($row as $id => $value) {
       if (empty($tree_id)) {
         $tree_id = $value;
@@ -3220,27 +3213,51 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       $values[$id] = $file_headers[$id];
     }
   }
-
-  if($tree_id == null || $tree_id == "") {
-    throw new Exception('tree_id was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
+  else {
+    // 'Normal Check'.
+    if (isset($meta_headers['name']) and (isset($meta_headers['value']))) {
+      $id = $row[$meta_headers['value']];
+      $values = [$id => $row[$meta_headers['name']]];
+    }
+    if (!empty($options['data_columns'])) {
+      $values = $options['data_columns'];
+    }
+    $tree_id = $row[$options['tree_id']];
+    $clone_col = $meta_headers['clone'] ?? NULL;
+    if (isset($clone_col)
+      and !empty($row[$clone_col])
+      and $row[$clone_col] !== $empty
+    ) {
+      $tree_id .= "-" . $row[$clone_col];
+    }
   }
 
-
-  // print_r($values);
-  // throw new Exception('DEBUG');
+  if ($tree_id == NULL || $tree_id == "") {
+    throw new Exception('tree_id was NULL or empty - there might be '
+      . 'a problem with the format of the phenotype data file or '
+      . 'selected column options for the file via the user information, '
+      . 'cannot continue until resolved.'
+    );
+  }
   $phenotype_name_previous = "<none set>";
   foreach ($values as $id => $name) {
-    if($name == null || $name == "") {
-      throw new Exception('Phenotype name was null or empty - there might be a problem with the format of the phenotype data file or selected column options for the file via the user information, cannot continue until resolved.');
+    // $name is a phenotype name. For example: 'flower color'.
+    // $id is column name. For example: 'D'.
+    if ($name == NULL || $name == "") {
+      throw new Exception('Phenotype name was NULL or empty - there might be '
+        . 'a problem with the format of the phenotype data file or '
+        . 'selected column options for the file via the user information, '
+        . 'cannot continue until resolved.'
+      );
     }
     $attr_id = $iso ? $meta['attr_id'] : $meta[strtolower($name)]['attr_id'];
-    // throw new Exception('debug');
-    if($attr_id == null || $attr_id == "") {
+    if ($attr_id == NULL || $attr_id == "") {
       print_r('$meta[attr_id]:' . $meta['attr_id'] . "\n");
       print_r('$name:' . $name . "\n");
       print_r('$meta[$name]:' . $meta[strtolower($name)]['attr_id'] . "\n");
       print_r('$attr_id:' . $attr_id . "\n");
-      throw new Exception('Attribute id is null which causes phenotype data to not be added to database correctly.');
+      throw new Exception('Attribute id is NULL which causes phenotype '
+        . 'data to not be added to database correctly.');
     }
     $value = $row[$id];
     $phenotype_name = "$accession-$tree_id-$name-$suffix";
@@ -3257,40 +3274,31 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
     if (isset($meta[strtolower($name)]['struct_id'])) {
       $struct_id = $meta[strtolower($name)]['struct_id'];
     }
-    else if ($iso) { //override the value - likely for intensity / mass spectrometry
+    elseif ($iso) {
+      // Override the value - likely for intensity / mass spectrometry.
       $struct_id = $meta['struct_id'];
     }
-
 
     $records['phenotype'][$phenotype_name] = array(
       'uniquename' => $phenotype_name,
       'name' => $name,
       'attr_id' => $attr_id,
-      // removed this old obserable_id to cater for mass spectrometry
+      // Removed this old obserable_id to cater for mass spectrometry.
       // 'observable_id' => $meta[strtolower($name)]['struct_id'] ?? NULL,
-      // this is the new way of adding observable_id to cater for mass spectrometry as well
+      // this is the new way of adding observable_id to cater for mass spectrometry as well.
       'observable_id' => $struct_id,
       'value' => $value,
     );
-    // print_r($records['phenotype'][$phenotype_name]);
-
     $records['stock_phenotype'][$phenotype_name] = array(
       'stock_id' => $tree_info[$tree_id]['stock_id'],
-      '#fk' => array(
-        'phenotype' => $phenotype_name,
-      ),
+      '#fk' => ['phenotype' => $phenotype_name],
     );
-    // print_r($records['stock_phenotype'][$phenotype_name]);
-
     if (isset($meta[strtolower($name)]['time'])) {
       $records['phenotypeprop']["$phenotype_name-time"] = array(
         'type_id' => $cvterms['time'],
         'value' => $meta[strtolower($name)]['time'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
+        '#fk' => ['phenotype' => $phenotype_name],
       );
-      // print_r($records['phenotypeprop']["$phenotype_name-time"]);
       $options['data'][$phenotype_name]['time'] = $meta[strtolower($name)]['time'];
     }
     elseif (isset($meta_headers['time'])) {
@@ -3301,105 +3309,74 @@ function tpps_process_phenotype_data($row, array &$options = array()) {
       $records['phenotypeprop']["$phenotype_name-time"] = array(
         'type_id' => $cvterms['time'],
         'value' => $val,
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
+        '#fk' => ['phenotype' => $phenotype_name],
       );
-      // print_r($records['phenotypeprop']["$phenotype_name-time"]);
       $options['data'][$phenotype_name]['time'] = $val;
     }
-
-    // print_r($meta);
     $records['phenotypeprop']["$phenotype_name-desc"] = array(
       'type_id' => $cvterms['desc'],
       'value' => $iso ? $meta['desc'] : $meta[strtolower($name)]['desc'],
-      '#fk' => array(
-        'phenotype' => $phenotype_name,
-      ),
+      '#fk' => ['phenotype' => $phenotype_name],
     );
-    // print_r($phenotype_name-desc . "\n");
-    // print_r($records['phenotypeprop']["$phenotype_name-desc"]);
-
+    // $iso means "intensity / mass spectrometry".
     if ($iso) {
-      $records['phenotypeprop']["$phenotype_name-unit"] = array(
-        'type_id' => $cvterms['unit'],
+      // "Iso Check"
+      $records['phenotypeprop']["$phenotype_name-unit"] = [
+        'type_id' => 139527,
+        // value: the chemical name/identifier.
         'value' => $meta['unit'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-      // print_r($records['phenotypeprop']["$phenotype_name-unit"]);
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
-
-    if (!$iso) {
-      $records['phenotype_cvterm']["$phenotype_name-unit"] = array(
+    else {
+      // "Normal Check"
+      $records['phenotype_cvterm']["$phenotype_name-unit"] = [
         'cvterm_id' => $meta[strtolower($name)]['unit_id'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-      // print_r($records['phenotype_cvterm']["$phenotype_name-unit"]);
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
-
+    // @todo Remove 'min' and 'max' processing.
+    // Min and max not used anymore.
     if (isset($meta[strtolower($name)]['min'])) {
-      $records['phenotypeprop']["$phenotype_name-min"] = array(
+      $records['phenotypeprop']["$phenotype_name-min"] = [
         'type_id' => $cvterms['min'],
         'value' => $meta[strtolower($name)]['min'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-      // print_r($records['phenotypeprop']["$phenotype_name-min"]);
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
-
     if (isset($meta[strtolower($name)]['max'])) {
-      $records['phenotypeprop']["$phenotype_name-max"] = array(
+      $records['phenotypeprop']["$phenotype_name-max"] = [
         'type_id' => $cvterms['max'],
         'value' => $meta[strtolower($name)]['max'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-      // print_r($records['phenotypeprop']["$phenotype_name-max"]);
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
-
     if (!empty($meta[strtolower($name)]['env'])) {
-      $records['phenotype_cvterm']["$phenotype_name-env"] = array(
+      $records['phenotype_cvterm']["$phenotype_name-env"] = [
         'cvterm_id' => $cvterms['environment'],
-        '#fk' => array(
-          'phenotype' => $phenotype_name,
-        ),
-      );
-      // print_r($records['phenotype_cvterm']["$phenotype_name-env"]);
+        '#fk' => ['phenotype' => $phenotype_name],
+      ];
     }
-
-
-
     if ($phenotype_count >= $record_group) {
-      // print_r($records);
-      // print_r('------------' . "\n");
-      tpps_job_logger_write('[INFO] -- Inserting data into database using insert_multi...');
-      $job->logMessage('[INFO] -- Inserting data into database using insert_multi...');
-      // print_r($records);
+      tpps_log('[INFO] -- Inserting data into database using insert_multi...');
       tpps_chado_insert_multi($records);
-      tpps_job_logger_write('[INFO] - Done.');
-      $job->logMessage('[INFO] - Done.');
+      tpps_log('[INFO] - Done.');
 
-      // $temp_results = chado_query('SELECT * FROM chado.phenotype WHERE uniquename ILIKE :phenotype_name', array(
+      // $temp_results = chado_query(
+      //   'SELECT * FROM chado.phenotype
+      //   WHERE uniquename ILIKE :phenotype_name', array(
       //   ':phenotype_name' => $phenotype_name
       // ));
       // foreach($temp_results as $temp_row) {
       //   echo "Found phenotype saved: " . $temp_row->uniquename . "\n";
       // }
-
-      $records = array(
-        'phenotype' => array(),
-        'phenotypeprop' => array(),
-        'stock_phenotype' => array(),
-      );
+      $records = [
+        'phenotype' => [],
+        'phenotypeprop' => [],
+        'stock_phenotype' => [],
+      ];
       $phenotype_count = 0;
     }
-
     $phenotype_count++;
   }
   $suffix++;
@@ -3517,7 +3494,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     $header_parts_length = count($header_parts);
     $header_without_polyploid_index = "";
     for ($j = 0; $j < $header_parts_length - 1; $j++) {
-      if ($j > 0) { 
+      if ($j > 0) {
         $header_without_polyploid_index .= "_";
       }
       $header_without_polyploid_index .= $header_parts[$j];
@@ -3544,12 +3521,12 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     $header_next_parts_length = count($header_next_parts);
     $header_next_without_polyploid_index = "";
     for ($j = 0; $j < $header_next_parts_length - 1; $j++) {
-      if ($j > 0) { 
+      if ($j > 0) {
         $header_next_without_polyploid_index .= "_";
       }
       $header_next_without_polyploid_index .= $header_next_parts[$j];
     }
-     
+
     if($options['ploidy'] == 'Polyploid' && $options['polyploid_header'] == $header_without_polyploid_index) {
       $options['polyploid_val'] .= ',' . $val; // append the new value to what was already there
 
@@ -3561,7 +3538,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         // so reset to these new values for insertion into the database later on
         $headers[$key] = $options['polyploid_header'];
         $val = $options['polyploid_val'];
-        echo "Polyploid val: $val for insertion using SSR marker" . $headers[$key] . "\n";        
+        echo "Polyploid val: $val for insertion using SSR marker" . $headers[$key] . "\n";
       }
       else {
         echo "Skipping insert\n";
@@ -3635,7 +3612,6 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       'uniquename' => $marker_name,
       'type_id' => $seq_var_cvterm,
     ]);
-
     // Lookup the marker_name_id.
     $results = chado_query("SELECT feature_id FROM chado.feature
       WHERE uniquename = :uniquename AND organism_id = :organism_id", [
@@ -3803,25 +3779,21 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     }
 
     if ($genotype_count >= $record_group) {
-      if ($vcf_processing_completed == true && $type == 'snp') {
-        tpps_job_logger_write('[INFO] - Skipped genotype and genotype_call SNPs since VCF already loaded...');
-        $job->logMessage('[[INFO] - Skipped genotype and genotype_call SNPs since VCF already loaded...');
+      if ($vcf_processing_completed == TRUE && $type == 'snp') {
+        tpps_log('[INFO] - Skipped genotype and genotype_call SNPs since VCF already loaded...');
       }
-      tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-      $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+      tpps_log('[INFO] - Inserting data into database using insert_multi...');
       tpps_chado_insert_multi($records, $multi_insert_options);
-      tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
-      $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
+      tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
       tpps_chado_insert_hybrid($records2, $multi_insert_options);
-      tpps_job_logger_write('[INFO] - Done.');
-      $job->logMessage('[INFO] - Done.');
+      tpps_log('[INFO] - Done.');
       $records = array(
         'feature' => array(),
         'genotype' => array(),
         'genotype_call' => array(),
         'stock_genotype' => array(),
       );
-      // Do this for the hybrid (COPY) command
+      // Do this for the hybrid (COPY) command.
       $records2 = array(
         'genotype_call' => array(),
       );
@@ -3830,8 +3802,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         $records['featureprop'] = array();
       }
       $options['genotype_total'] += $genotype_count;
-      tpps_job_logger_write('[INFO] - Genotypes inserted:' + $options['genotype_total']);
-      $job->logMessage('[INFO] - Genotypes inserted:' + $options['genotype_total']);
+      tpps_log('[INFO] - Genotypes inserted:' . $options['genotype_total']);
       $genotype_count = 0;
     }
   }
@@ -3839,8 +3810,9 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
 }
 
 /**
- * This function will process each line the genotype SNP design assay file
- * Initially done to get position data from the assay design file
+ * Processes genotype SNP design assay file.
+ *
+ * Initially done to get position data from the assay design file.
  */
 function tpps_process_genotype_snp_assay_design($row, array &$options = array()) {
   $line_rows = $row;
@@ -4179,27 +4151,35 @@ function tpps_other_marker_headers($fid, array $cols) {
 }
 
 /**
- * This will generate all genotype materialized views
+ * This will generate all genotype materialized views.
  */
 function tpps_generate_all_genotype_materialized_views() {
-  // Get count of all studies
-  $results = chado_query('SELECT COUNT(DISTINCT(accession)) as c1 FROM "public"."tpps_submission";',[]);
+  // Get count of all studies.
+  $results = chado_query(
+    'SELECT COUNT(DISTINCT(accession)) as c1
+    FROM "public"."tpps_submission";',
+    []
+  );
   $total = 0;
   foreach ($results as $row) {
     $total = $row->c1;
   }
   $current_count = 0;
-
-  // Get all the study accessions from database
-  $results = chado_query('SELECT DISTINCT(accession) as accession FROM "public"."tpps_submission" ORDER BY accession;',[]);
+  // Get all the study accessions from database.
+  $results = chado_query(
+    'SELECT DISTINCT(accession) as accession
+    FROM "public"."tpps_submission"
+    ORDER BY accession;',
+    []
+  );
   foreach ($results as $row) {
-    $current_count = $current_count+1;
+    $current_count = $current_count + 1;
     echo "Processing genotype materialized view: $current_count of $total\n";
-    // Get the submission state
+    // Get the submission state.
     $state = tpps_load_submission($row->accession);
-    // Check if there's a project_id in the submission state
+    // Check if there's a project_id in the submission state.
     $project_id = $state['ids']['project_id'] ?? NULL;
-    // Once the project_id is not null, we're good
+    // Once the project_id is not NULL, we're good.
     if (isset($project_id)) {
       tpps_generate_genotype_materialized_view($project_id);
     }
@@ -4207,18 +4187,16 @@ function tpps_generate_all_genotype_materialized_views() {
 }
 
 /**
- * This function will generate a genotype materialized view for
- * the specific project_id (which you must get from the state object).
- * This is used for the tpps/details genotypes tab
+ * Generate a genotype materialized view for the specific project_id.
  *
+ * Project Id you must get from the state object.
+ * This is used for the tpps/details genotypes tab.
  *
  * @param mixed $project_id
  *   The project ID of the study. NOT THE STUDY ACCESSION!
- *
- *
  */
 function tpps_generate_genotype_materialized_view($project_id) {
-  // Ensure the project_id is an integer
+  // Ensure the project_id is an integer.
   $project_id = intval($project_id);
   if ($project_id <= 0) {
     return;
@@ -4287,7 +4265,6 @@ function tpps_generate_genotype_materialized_view($project_id) {
   ,[]);
 
 
-
   // Generate the data / regenerate if necessary
   echo "Refreshing materialized view: " . $view_name . "\n";
   chado_query('REFRESH MATERIALIZED VIEW ' . $view_name, []);
@@ -4298,7 +4275,6 @@ function tpps_generate_genotype_materialized_view($project_id) {
   chado_query("CREATE UNIQUE INDEX " . str_replace('chado.', 'chado_' , $view_name) .
     "_id on " . $view_name . "(index_id);", []);
   echo "Index completed\n";
-
 }
 
 /**
@@ -4392,11 +4368,9 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 
       $env_count++;
       if ($env_count >= $record_group) {
-        tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-        $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+        tpps_log('[INFO] - Inserting data into database using insert_multi...');
         tpps_chado_insert_multi($records);
-        tpps_job_logger_write('[INFO] - Done.');
-        $job->logMessage('[INFO] - Done.');
+        tpps_log('[INFO] - Done.');
         $records = array(
           'phenotype' => array(),
           'phenotype_cvterm' => array(),
@@ -4410,29 +4384,24 @@ function tpps_process_environment_layers($row, array &$options = array()) {
 }
 
 /**
- * This function will add back genotype_call indexes
+ * Adds back genotype_call indexes.
  */
-function tpps_create_genotype_call_indexes($job) {
+function tpps_create_genotype_call_indexes() {
   echo "SET CONSTRAINTS ALL IMMEDIATE\n";
-  chado_query("SET CONSTRAINTS ALL IMMEDIATE;",[]);
-
-  // RECREATE INDEXES
-  tpps_job_logger_write('[INFO] - Recreating indexes...');
-  $job->logMessage('[INFO] - Recreating indexes...');
+  chado_query("SET CONSTRAINTS ALL IMMEDIATE;", []);
+  // Recreate indexes.
+  tpps_log('[INFO] - Recreating indexes...');
   chado_query("CREATE INDEX IF NOT EXISTS genotype_call_genotype_id_idx ON chado.genotype_call USING btree (genotype_id)");
   chado_query("CREATE INDEX IF NOT EXISTS genotype_call_project_id_idx ON chado.genotype_call USING btree (project_id)");
   chado_query("CREATE INDEX IF NOT EXISTS genotype_call_stock_id_idx ON chado.genotype_call USING btree (stock_id)");
   chado_query("CREATE INDEX IF NOT EXISTS genotype_call_marker_id_idx ON chado.genotype_call USING btree (marker_id)");
   chado_query("CREATE INDEX IF NOT EXISTS genotype_call_variant_id_idx ON chado.genotype_call USING btree (variant_id)");
-  tpps_job_logger_write('[INFO] - Recreating INDEXES - Done.');
-  $job->logMessage('[INFO] - Recreating INDEXES - Done.');
-  chado_query("SET CONSTRAINTS ALL DEFERRED;",[]);
-
-
+  tpps_log('[INFO] - Recreating INDEXES - Done.');
+  chado_query("SET CONSTRAINTS ALL DEFERRED;", []);
 }
 
 /**
- * This function will drop genotype_call indexes from the database
+ * This function will drop genotype_call indexes from the database.
  */
 function tpps_drop_genotype_call_indexes($job) {
   tpps_job_logger_write('[INFO] - Dropping indexes...');
@@ -4816,11 +4785,9 @@ function tpps_process_accession($row, array &$options, $job = NULL) {
 
   $stock_count++;
   if ($stock_count >= $record_group) {
-    tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-    $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
+    tpps_log('[INFO] - Inserting data into database using insert_multi...');
     $new_ids = tpps_chado_insert_multi($records, $multi_insert_options);
-    tpps_job_logger_write('[INFO] - Done.');
-    $job->logMessage('[INFO] - Done.');
+    tpps_log('[INFO] - Done.');
     foreach ($new_ids as $t_id => $stock_id) {
       $tree_info[$t_id]['stock_id'] = $stock_id;
     }
@@ -4851,8 +4818,9 @@ function tpps_clean_state(array &$form_state) {
 }
 
 /**
- * Lookup analysis_id from ref_genome string
- * The ref_genome string usually comes from TPPS form select
+ * Lookup analysis_id from ref_genome string.
+ *
+ * The ref_genome string usually comes from TPPS form select.
  */
 function tpps_get_analysis_id_from_ref_genome($ref_genome) {
     // We need to find the analysis id from the ref genome
@@ -5309,6 +5277,29 @@ function tpps_get_code_parts($part) {
 }
 
 /**
+ * Adds message to 2 logs [VS].
+ *
+ * @param string $message
+ *   The message to store in the logs.
+ * @param array $variables
+ *   Array of variables to replace in the message on display.
+ *   or NULL if message is already translated or not possible to translate.
+ * @param string $severity
+ *   The severity of the message; one of the following values:
+ *      TRIPAL_CRITICAL: Critical conditions.
+ *      TRIPAL_ERROR: Error conditions.
+ *      TRIPAL_WARNING: Warning conditions.
+ *      TRIPAL_NOTICE: Normal but significant conditions.
+ *      TRIPAL_INFO: (default) Informational messages.
+ *      TRIPAL_DEBUG: Debug-level messages.
+ */
+function tpps_log($message, $variables = array(), $severity = TRIPAL_INFO) {
+  global $tpps_job;
+  tpps_job_logger_write($message, $variables);
+  $tpps_job->logMessage($message, $variables, $severity);
+}
+
+/**
  * Processes SSR file.
  *
  * @param array $form_state
@@ -5326,26 +5317,17 @@ function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array
   tpps_add_project_file($form_state, $fid);
   tpps_drop_genotype_call_indexes($job);
 
-  tpps_job_logger_write('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
-  $job->logMessage('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
+  tpps_log('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
   echo "trace 3\n";
-
   tpps_file_iterator($fid, 'tpps_process_genotype_spreadsheet', $options);
+  tpps_log('[INFO] - Done.');
 
-  tpps_job_logger_write('[INFO] - Done.');
-  $job->logMessage('[INFO] - Done.');
-  tpps_job_logger_write('[INFO] - Inserting data into database using insert_multi...');
-  $job->logMessage('[INFO] - Inserting data into database using insert_multi...');
-
+  tpps_log('[INFO] - Inserting data into database using insert_multi...');
   tpps_chado_insert_multi($options['records'], $multi_insert_options);
 
-  tpps_job_logger_write('[INFO] - Inserting data into database using insert_hybrid...');
-  $job->logMessage('[INFO] - Inserting data into database using insert_hybrid...');
-
+  tpps_log('[INFO] - Inserting data into database using insert_hybrid...');
   tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
-
-  tpps_job_logger_write('[INFO] - Done.');
-  $job->logMessage('[INFO] - Done.');
+  tpps_log('[INFO] - Done.');
   // CREATE INDEXES FROM GENOTYPE_CALL TABLE.
   tpps_create_genotype_call_indexes($job);
 }

@@ -276,6 +276,22 @@ function tpps_install() {
   tpps_create_entities();
 
   tpps_add_dryad();
+
+  // [VS]
+  // Set initial values of variables.
+  variable_set(
+    'tpps_report_no_synonym_title',
+    'List of phenotypes without Synonyms'
+  );
+  variable_set(
+    'tpps_report_unit_warning_title',
+    'Unit Warning (list of phenotypes which unit differs from Synonym)'
+  );
+  variable_set(
+    'tpps_report_order_family_not_exist_title',
+    'Order/Family not exist'
+  );
+  // [/VS]
 }
 
 /**
@@ -285,6 +301,12 @@ function tpps_install() {
  * usage from public.file_usage.
  */
 function tpps_uninstall() {
+
+  // [VS]
+  variable_del('tpps_report_no_synonym_title');
+  variable_del('tpps_report_unit_warning_title');
+  variable_del('tpps_report_order_family_not_exist_title');
+  // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.
   db_delete('public.variable')
@@ -646,6 +668,23 @@ function tpps_schema() {
       'tpps_submission_tag_id',
     ),
   );
+
+  // [VS]
+  // #3kged9b Phenotypes synonyms table integrated on TPPS.
+  $schema['tpps_phenotype_unit_warning'] = [
+    'description' => 'List of studies with Custom Units.',
+    'fields' => [
+      'study_name' => [
+        'description' => 'Study Name.',
+        'type' => 'varchar',
+        'size' => 'normal',
+      ],
+    ],
+    'unique keys' => [
+      'study_name' => ['study_name'],
+    ],
+  ];
+  // [/VS]
 
   return $schema;
 }
@@ -1983,4 +2022,39 @@ function tpps_update_7119() {
   // [VS] #8669eu6ht.
   // Set initial values of variables.
   variable_set('tpps_report_missing_doi_title', 'Missing DOI');
+}
+
+/**
+ * Creates table 'tpps_phenotype_unit_warning' and sets variables for reports.
+ */
+function tpps_update_7120() {
+  // [VS] #3kged9b.
+  // Set initial values of variables.
+  variable_set(
+    'tpps_report_no_synonym_title',
+    'List of phenotypes without Synonyms'
+  );
+  variable_set(
+    'tpps_report_unit_warning_title',
+    'Unit Warning (list of phenotypes which unit differs from Synonym)'
+  );
+  variable_set(
+    'tpps_report_order_family_not_exist_title',
+    'Order/Family not exist'
+  );
+  // Create new db table.
+  $table_name = 'tpps_phenotype_unit_warning';
+  if (!db_table_exists($table_name)) {
+    if ($table_schema = tpps_schema()[$table_name]) {
+      $transaction = db_transaction();
+      try {
+        db_create_table($table_name, $table_schema);
+      }
+      catch (\Exception $e) {
+        $transaction->rollback();
+        throw $e;
+      }
+    }
+  }
+  cache_clear_all();
 }

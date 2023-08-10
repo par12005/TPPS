@@ -99,21 +99,21 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
 
   // Check for log file
-  // Step 1 - Look for the last tripal job that has the accession
+  // Step 1 - Look for the last tripal job that has the accession.
   $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 'TPPS Record Submission - $accession' ORDER BY submit_date DESC LIMIT 1;");
   $job_id = -1;
-  while($row_array = $results->fetchObject()) {
+  while ($row_array = $results->fetchObject()) {
     // dpm($row_array);
     // $display .= print_r($row_array, true);
     $job_id = $row_array->job_id;
   }
-  if($job_id == -1) {
+  if ($job_id == -1) {
     $display .= "<div style='padding: 10px;'>No log file exists for this study (resubmit this study to generate a log file if necessary)</div>";
   }
   else {
     $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
     // dpm($log_path . $accession . "_" . $job_id . ".txt");
-    if(file_exists($log_path . $accession . "_" . $job_id . ".txt")) {
+    if (file_exists($log_path . $accession . "_" . $job_id . ".txt")) {
       $display .= "<div style='padding: 10px;background: #e9f9ef;border: 1px solid #90bea9;font-size: 18px;'><a target='_blank' href='../tpps-admin-panel-logs/" . $accession . "_" . $job_id . "'>Latest job log file ($accession - $job_id)</a></div>";
     }
     else {
@@ -169,12 +169,12 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
         if ($phenotype['phenotypes-meta'][$j]['attribute'] === 'other') {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['attr-other'];
         }
-        if ($phenotype['phenotypes-meta'][$j]['units'] === 'other') {
-          $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['unit-other'];
-        }
+        // [VS]
+        // Custom Unit must be created by admin by hand.
+        // [/VS]
       }
     }
-    // @todo get new/custom cvterms from metadata file.
+    // @todo get new/custom units from metadata file.
     if (count($new_cvterms) > 0) {
       $message = 'This submission will create the following new local cvterms: ' . implode(', ', $new_cvterms);
       $display .= "<div class=\"alert alert-block alert-dismissible alert-warning messages warning\">
@@ -199,9 +199,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   $submission_tags = tpps_submission_get_tags($submission_state['accession']);
   // dpm($submission_tags);
-
   $tags_markup .= "<div style='margin-bottom: 10px; font-weight: bold; text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
-
   // Show current tags.
   $tags_markup .= "<label class=\"control-label\">Current Tags:</label><br>";
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
@@ -642,14 +640,12 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#value' => t("Remove this study's markers and genotypes"),
   );
 
-
   $form['CHANGE_TGDR_NUMBER'] = array(
     '#type' => 'textfield',
     '#prefix' => '<h2 style="margin-top: 30px;">Change TGDR number</h2>Warning: This will clear all data from the database and reimport as a new study.',
     '#title' => t('Specify the new TGDR number only (do not include TGDR)'),
     '#default_value' => '',
   );
-
 
   $form['CHANGE_TGDR_NUMBER_SUBMIT'] = array(
     '#type' => 'submit',
@@ -668,22 +664,34 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
  *   The submission being managed.
  */
 function tpps_phenotype_editor(array &$form, array &$form_state, array &$submission) {
+  // [VS] #8669rmrw5
   $form['phenotypes_edit'] = array(
     '#type' => 'fieldset',
     '#title' => t('Admin Phenotype Editor'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
-    '#description' => t('Note: The phenotype editor does not have any validation measures in place. This means that fields in this section that are left blank will be accepted by TPPS, and they will override any user selections. Please be careful when editing information in this section.'),
+    '#description' => t('Note: The phenotype editor does not have any '
+      . 'validation measures in place. This means that fields in this '
+      . 'section that are left blank will be accepted by TPPS, and they '
+      . 'will override any user selections. Please be careful when editing '
+      . 'information in this section.'),
   );
 
-  $phenotypes = array();
+  $phenotypes = [];
+  $unit_list = tpps_unit_get_list('all', ['debug' => FALSE], TRUE);
+
   for ($i = 1; $i <= $submission['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
     $phenotype = $submission['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
     for ($j = 1; $j <= $phenotype['phenotypes-meta']['number']; $j++) {
       $phenotypes[$j] = $phenotype['phenotypes-meta'][$j];
+      // Add units from submission.
+      $unit_list[$phenotypes[$j]['unit']]
+        = tpps_unit_get_name($phenotypes[$j]['unit'])
+        ?? $phenotypes[$j]['unit'];
     }
   }
+  // [/VS].
 
   // @todo get phenotypes from metadata file.
   $attr_options = array();
@@ -732,39 +740,6 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
   }
   $attr_options['other'] = 'My attribute term is not in this list';
 
-  $unit_options = array();
-  $terms = array(
-    'boolean' => 'Boolean (Binary)',
-    'centimeter' => 'Centimeter',
-    'cubic_centimeter' => 'Cubic Centimeter',
-    'day' => 'Day',
-    'degrees_celsius' => 'Degrees Celsius',
-    'degrees_fahrenheit' => 'Dgrees Fahrenheit',
-    'grams_per_square_meter' => 'Grams per Square Meter',
-    'gram' => 'Gram',
-    'luminous_intensity_unit' => 'Luminous Intensity Unit',
-    'kilogram' => 'Kilogram',
-    'kilogram_per_cubic_meter' => 'Kilogram per Cubic Meter',
-    'liter' => 'Liter',
-    'cubic_meter' => 'Cubic Meter',
-    'pascal' => 'Pascal',
-    'meter' => 'Meter',
-    'milligram' => 'Milligram',
-    'milliliter' => 'Milliliter',
-    'millimeter' => 'Millimeter',
-    'micrometer' => 'Micrometer',
-    'percent' => 'Percent',
-    'qualitative' => 'Qualitative',
-    'square_micrometer' => 'Square Micrometer',
-    'square_millimeter' => 'Square Millimeter',
-    'watt_per_square_meter' => 'Watt per Square Meter',
-    'year' => 'Year',
-  );
-  foreach ($terms as $term => $label) {
-    $unit_id = tpps_load_cvterm($term)->cvterm_id;
-    $unit_options[$unit_id] = $label;
-  }
-  $unit_options['other'] = 'My unit is not in this list';
 
   $struct_options = array();
   $terms = array(
@@ -819,16 +794,19 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#value' => $info['name'],
         '#disabled' => TRUE,
       ),
+      // [VS] #8669rmrw5.
       'description' => array(
         '#type' => 'textfield',
         '#title' => t('Description'),
-        '#default_value' => $info['description'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['description']
+          ?? $info['description'],
       ),
       'attribute' => array(
         '#type' => 'select',
         '#title' => t('Attribute'),
         '#options' => $attr_options,
-        '#default_value' => $info['attribute'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['attribute']
+          ?? $info['attribute'],
       ),
       'attr-other' => array(
         '#type' => 'textfield',
@@ -836,16 +814,19 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#autocomplete_path' => 'tpps/autocomplete/attribute',
         '#states' => array(
           'visible' => array(
-            ':input[name="phenotypes_edit[' . $num . '][attribute]"]' => array('value' => 'other'),
+            ':input[name="phenotypes_edit[' . $num . '][attribute]"]'
+            => array('value' => 'other'),
           ),
         ),
-        '#default_value' => $info['attr-other'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['attr-other']
+          ?? $info['attr-other'],
       ),
       'structure' => array(
         '#type' => 'select',
         '#title' => t('Structure'),
         '#options' => $struct_options,
-        '#default_value' => $info['structure'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['structure']
+          ?? $info['structure'],
       ),
       'struct-other' => array(
         '#type' => 'textfield',
@@ -853,30 +834,42 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#autocomplete_path' => 'tpps/autocomplete/structure',
         '#states' => array(
           'visible' => array(
-            ':input[name="phenotypes_edit[' . $num . '][structure]"]' => array('value' => 'other'),
+            ':input[name="phenotypes_edit[' . $num . '][structure]"]'
+            => array('value' => 'other'),
           ),
         ),
-        '#default_value' => $info['struct-other'],
+        '#default_value' => $submission['phenotypes_edit'][$num]['struct-other']
+          ?? $info['struct-other'],
       ),
-      'units' => array(
+
+      'unit' => [
         '#type' => 'select',
         '#title' => t('Unit'),
-        '#options' => $unit_options,
-        '#default_value' => $info['units'],
-      ),
-      'unit-other' => array(
+        '#options' => $unit_list,
+        '#default_value' => $submission['phenotypes_edit'][$num]['unit']
+          ?? $info['unit'],
+      ],
+      'unit-other' => [
         '#type' => 'textfield',
-        '#title' => t('Other Unit'),
+        '#title' => t('Custom Unit'),
         '#autocomplete_path' => 'tpps/autocomplete/unit',
-        '#states' => array(
-          'visible' => array(
-            ':input[name="phenotypes_edit[' . $num . '][units]"]' => array('value' => 'other'),
-          ),
-        ),
-        '#default_value' => $info['unit-other'],
-      ),
+        '#states' => [
+          'visible' => [
+            ':input[name="phenotypes_edit[' . $num . '][unit]"]'
+              => ['value' => 'other'],
+          ],
+        ],
+        '#default_value' => $submission['phenotypes_edit'][$num]['unit-other']
+          ?? $info['unit-other'],
+      ],
     );
   }
+
+  $form['phenotypes_edit']['phenotype_update'] = [
+    '#type' => 'submit',
+    '#value' => t('Save phenotype changes'),
+  ];
+  // [/VS] #8669rmrw5.
 }
 
 /**
@@ -907,9 +900,7 @@ function tpps_save_admin_comments(array $form, array $form_state) {
 function tpps_admin_panel_top(array &$form) {
   global $base_url;
 
-  // [VS]
   tpps_admin_panel_reports($form);
-  // [/VS].
   $submissions = tpps_load_submission_multiple(array(), FALSE);
 
   $pending = array();
@@ -976,8 +967,13 @@ function tpps_admin_panel_top(array &$form) {
                   ->fieldCondition('local__email', 'value', $owner_mail)
                   ->range(0, 1)
                   ->execute();
-                $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
-                $owner = "<a href=\"$base_url/TripalContactProfile/{$entity->id}\">$submitting_user</a>";
+                // [VS]
+                $owner = '';
+                if (!empty($results['TripalEntity'])) {
+                  $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
+                  $owner = "<a href=\"$base_url/TripalContactProfile/{$entity->id}\">$submitting_user</a>";
+                }
+                // [/VS]
               }
               else {
                 $owner_mail = user_load($submission->uid)->mail;
@@ -1262,6 +1258,31 @@ function tpps_admin_panel_validate($form, &$form_state) {
       form_set_error('reject-reason', t('Please explain why the submission was rejected.'));
     }
 
+    // [VS]
+    // Custom Units are not allowed and must be manually reviewed/added
+    // by admin before study could be processed.
+    $condition = (in_array(
+      $form_state['triggering_element']['#value'],
+      // Allow to edit and approve (without saving changes).
+      ['Save phenotype changes', 'Approve']
+    ));
+    if ($condition) {
+      foreach ($form_state['values']['phenotypes_edit'] as $key => $phenotype_meta) {
+        if (!is_array($phenotype_meta)) {
+          // There is a button [phenotype_update] => Save phenotype changes
+          // and later could be added other form elements.
+          continue;
+        }
+        if ($phenotype_meta['unit'] == 'other') {
+          form_set_error("phenotypes_edit][$key][unit-other",
+            "Phenotype $key is using Custom Unit. "
+            . "Please review, add new or use existing unit."
+          );
+        }
+      }
+    }
+    // [/VS]
+
     if ($form_state['triggering_element']['#value'] == 'Approve') {
       $accession = $form_state['values']['accession'];
       $state = tpps_load_submission($accession);
@@ -1321,7 +1342,6 @@ function tpps_admin_panel_validate($form, &$form_state) {
  * for file parsing.
  */
 function tpps_admin_panel_submit($form, &$form_state) {
-
   global $base_url;
   $type = $form_state['tpps_type'] ?? 'tpps';
   $type_label = ($type == 'tpps') ? 'TPPS' : 'TPPSC';
@@ -1351,12 +1371,11 @@ function tpps_admin_panel_submit($form, &$form_state) {
     }
   }
 
-  // dpm($form_state['triggering_element']['#value']);
   switch ($form_state['triggering_element']['#value']) {
     case 'Add tag to this study':
       $tpps_tag_id = $form_state['values']['TAG_ADD_OPTION'];
       $tpps_submission_id = $submission->tpps_submission_id;
-      // Insert tag for this tpps_submission_id
+      // Insert tag for this tpps_submission_id.
       chado_query('INSERT INTO tpps_submission_tag
         (tpps_submission_id, tpps_tag_id)
         VALUES (:tpps_submission_id, :tpps_tag_id)',
@@ -1365,7 +1384,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
           ':tpps_tag_id' => $tpps_tag_id
         ]
       );
-      // Get the tag name for the message alert
+      // Get the tag name for the message alert.
       $tag_name = "";
       $tag_name_results = chado_query('SELECT * FROM tpps_tag
         WHERE tpps_tag_id = :tpps_tag_id', [
@@ -1377,10 +1396,11 @@ function tpps_admin_panel_submit($form, &$form_state) {
       }
       drupal_set_message($tag_name . " has been added to the study");
       break;
+
     case 'Remove tag from this study':
       $tpps_tag_id = $form_state['values']['TAG_REMOVE_OPTION'];
       $tpps_submission_id = $submission->tpps_submission_id;
-      // Get the tag name for the message alert
+      // Get the tag name for the message alert.
       $tag_name = "";
       $tag_name_results = chado_query('SELECT * FROM tpps_tag
         WHERE tpps_tag_id = :tpps_tag_id', [
@@ -1404,9 +1424,10 @@ function tpps_admin_panel_submit($form, &$form_state) {
         drupal_set_message($tag_name . " cannot be removed from study.","error");
       }
       break;
+
     case 'Save VCF Import Setting':
       // dpm($form_state['values']);
-      if($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
+      if ($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
         $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
       }
       else {
@@ -1415,12 +1436,13 @@ function tpps_admin_panel_submit($form, &$form_state) {
       tpps_update_submission($state);
       drupal_set_message(t('VCF disable import setting saved'), 'status');
       break;
+
     case 'Save VCF Import Mode':
       $vcf_import_mode = $form_state['values']['VCF_IMPORT_MODE'];
-      if($form_state['values']['VCF_IMPORT_MODE'] == 'hybrid') {
+      if ($form_state['values']['VCF_IMPORT_MODE'] == 'hybrid') {
         $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = 'hybrid';
       }
-      else if($form_state['values']['VCF_IMPORT_MODE'] == 'inserts') {
+      elseif ($form_state['values']['VCF_IMPORT_MODE'] == 'inserts') {
         $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = 'inserts';
       }
       else {
@@ -1443,7 +1465,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case "Remove this study's markers and genotypes":
       global $user;
       $includes = array();
-      # $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      // $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/markers_genotypes_utils');
       $args = array($accession);
       $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession", 'tpps', 'tpps_remove_all_markers_genotypes', $args, $user->uid, 10, $includes, TRUE);
@@ -1454,7 +1476,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       // dpm($form_state['values']);
 
       // Check if a valid tgdr number was supplied
-      if(!is_numeric($form_state['values']['CHANGE_TGDR_NUMBER'])) {
+      if (!is_numeric($form_state['values']['CHANGE_TGDR_NUMBER'])) {
         drupal_set_message(t('You did not enter a valid number. Operation aborted.'));
         break;
       }
@@ -1468,28 +1490,25 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $result_object = $results->fetchObject();
       // dpm($result_object);
       $result_count = $result_object->c1;
-      if($result_count > 0) {
+      if ($result_count > 0) {
         drupal_set_message(t('It seems the TGDR number you wanted to change to is already in use. Operation aborted due to safety concerns.'));
         break;
       }
-
-      // dpm($state); // this doesn't even load on the browser (too big!)
-
       global $user;
       $includes = array();
-      # $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      // $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/markers_genotypes_utils');
       $includes[] = module_load_include('inc', 'tpps', 'includes/submissions');
       $args = [$accession];
-      // Job to remove genotype information and features
+      // Job to remove genotype information and features.
       $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession", 'tpps', 'tpps_remove_all_markers_genotypes', $args, $user->uid, 10, $includes, TRUE);
 
-      // Job to change the TGDR number to the new TGDR number
+      // Job to change the TGDR number to the new TGDR number.
       $args = [$accession, $new_accession];
       $jid = tripal_add_job("TPPS rename $accession to $new_accession", 'tpps', 'tpps_change_tgdr_number', $args, $user->uid, 10, $includes, TRUE);
 
 
-      // Now run the new import for the new accession TGDR number
+      // Now run the new import for the new accession TGDR number.
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = array($new_accession);
@@ -1504,11 +1523,11 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
 
       // dpm($state['saved_values'][4]['organism-1']['genotype']['files']['vcf']);
-      if(!empty($state['saved_values'][4]['organism-1']['genotype']['files']['vcf'])) {
+      if (!empty($state['saved_values'][4]['organism-1']['genotype']['files']['vcf'])) {
         $vcf_fid = $state['saved_values'][4]['organism-1']['genotype']['files']['vcf'];
         $vcf_file = file_load($vcf_fid);
         $location = tpps_get_location($vcf_file->uri);
-        $args = array($accession,$location);
+        $args = array($accession, $location);
         // dpm($args);
         $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession", 'tpps', 'tpps_generate_popstruct', $args, $user->uid, 10, $includes, TRUE);
       }
@@ -1598,17 +1617,24 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_goto('<front>');
       break;
 
+    case 'Save phenotype changes':
     case 'Approve':
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
       $uid = $user->uid;
-      $state['submitting_uid'] = $uid;
+      $state['submitting_uid'] = $user->uid;
 
-      $params['subject'] = "$type_label Submission Approved: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-      $params['accession'] = $state['accession'];
-      drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
-      drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
+      if ($form_state['triggering_element']['#value'] == 'Approve') {
+        $params['subject'] = "$type_label Submission Approved: "
+          . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+        $params['accession'] = $state['accession'];
+        drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
+        drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
 
+      }
+      else {
+        drupal_set_message(t('Submission saved.'), 'status');
+      }
       $state['revised_files'] = $state['revised_files'] ?? array();
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
@@ -1617,15 +1643,17 @@ function tpps_admin_panel_submit($form, &$form_state) {
           }
         }
       }
-
       if (!empty($form_state['values']['phenotypes_edit'])) {
+        // Remove helper button.
+        unset($form_state['values']['phenotype_update']);
         $state['phenotypes_edit'] = $form_state['values']['phenotypes_edit'];
       }
-
       if (!empty($form_state['values']['study_location'])) {
-        $state['saved_values'][TPPS_PAGE_3]['study_location']['type'] = $form_state['values']['study_location']['type'];
+        $state['saved_values'][TPPS_PAGE_3]['study_location']['type']
+          = $form_state['values']['study_location']['type'];
         for ($i = 1; $i <= $form_state['values']['study_location']['locations']['number']; $i++) {
-          $state['saved_values'][TPPS_PAGE_3]['study_location']['locations'][$i] = $form_state['values']['study_location']['locations'][$i];
+          $state['saved_values'][TPPS_PAGE_3]['study_location']['locations'][$i]
+            = $form_state['values']['study_location']['locations'][$i];
         }
       }
 
@@ -1662,7 +1690,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'Change Status':
       $state['status'] = $form_state['values']['state-status'];
       tpps_update_submission($state);
-      dpm($state['status']);
       break;
 
     case 'Change Study View Role':
@@ -1803,9 +1830,13 @@ function tpps_admin_panel_submit($form, &$form_state) {
  * Adds fieldset with links to custom report pages.
  */
 function tpps_admin_panel_get_reports() {
+  $panel_url = 'tpps-admin-panel/reports';
+  // Format: <Report Key> => <Path related to $panel_url>.
   return [
-    // Format: <Report Key> => <Path related to $panel_url>.
-    'missing_doi' => 'tpps-admin-panel/reports/missing-doi',
+    'missing_doi' => $panel_url . '/missing-doi',
+    'no_synonym' => $panel_url . '/no-synonyms',
+    'unit_warning' => $panel_url . '/unit-warning',
+    'order_family_not_exist' => $panel_url . '/order-family-not-exist',
   ];
 }
 

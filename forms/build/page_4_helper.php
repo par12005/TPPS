@@ -21,50 +21,52 @@
  *   The populated form.
  */
 function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
-  $phenotype_upload_location = 'public://' . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
+  $phenotype_upload_location = 'public://' . variable_get(
+    'tpps_phenotype_files_dir',
+    'tpps_phenotype'
+  );
 
-  $form[$id]['phenotype'] = array(
+  $form[$id]['phenotype'] = [
     '#type' => 'fieldset',
     '#title' => t('<div class="fieldset-title">Phenotype Information:</div>'),
     '#tree' => TRUE,
     '#prefix' => "<div id=\"phenotype-main-$id\">",
     '#suffix' => '</div>',
-    '#description' => t('Upload a file and/or fill in form fields below to provide us with metadata about your phenotypes.'),
+    '#description' => t('Upload a file and/or fill in form fields below '
+      . 'to provide us with metadata about your phenotypes.'),
     '#collapsible' => TRUE,
+  ];
+  // 'Normal Check' must be enabled by default to have buttons
+  // to add phenotypes shown.
+  $normal_check = tpps_get_ajax_value(
+    $form_state, [$id, 'phenotype', 'normal-check'], TRUE
   );
 
-  $form[$id]['phenotype']['normal-check'] = array(
+  $form[$id]['phenotype']['normal-check'] = [
     '#type' => 'checkbox',
-    '#title' => t('My phenotypes include traits and/or environmental information other than mass spectrometry or isotope analysis'),
-    '#ajax' => array(
+    '#title' => t('My phenotypes include traits and/or environmental '
+      . 'information other than mass spectrometry or isotope analysis'),
+    '#ajax' => [
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
       'effect' => 'slide',
-    ),
-    '#default_value' => tpps_get_ajax_value($form_state, array(
-      $id,
-      'phenotype',
-      'normal-check',
-    ), TRUE),
-  );
+    ],
+    '#default_value' => $normal_check,
+  ];
 
-  $form[$id]['phenotype']['iso-check'] = array(
+  $form[$id]['phenotype']['iso-check'] = [
     '#type' => 'checkbox',
     '#title' => t('My phenotypes include results from a mass spectrometry or isotope analysis'),
-    '#ajax' => array(
+    '#ajax' => [
       'callback' => 'tpps_update_phenotype',
       'wrapper' => "phenotype-main-$id",
       'effect' => 'slide',
-    ),
-  );
+    ],
+  ];
 
-  $normal_check = tpps_get_ajax_value(
-    $form_state, [$id, 'phenotype', 'normal-check'], NULL
-  );
   $iso_check = tpps_get_ajax_value(
     $form_state, [$id, 'phenotype', 'iso-check'], NULL
   );
-
   if (!empty($iso_check)) {
     $form[$id]['phenotype']['iso'] = array(
       '#type' => 'managed_file',
@@ -73,7 +75,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#upload_validators' => array(
         'file_validate_extensions' => array('csv tsv'),
       ),
-      '#description' => t('Please upload a file containing all of your isotope/mass spectrometry data. The format of this file is very important! The first column of your file should contain plant identifiers which match the plant identifiers you provided in your plant accession file, and all of the remaining columns should contain isotope or mass spectrometry data.'),
+      '#description' => t('Please upload a file containing all of your '
+        . 'isotope/mass spectrometry data. The format of this file is very '
+        . 'important! The first column of your file should contain plant '
+        . 'identifiers which match the plant identifiers you provided in '
+        . 'your plant accession file, and all of the remaining columns '
+        . 'should contain isotope or mass spectrometry data.'),
     );
   }
 
@@ -134,58 +141,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
     $attr_options['other'] = 'My attribute term is not in this list';
 
-    $unit_options = array();
-    $terms = array(
-      'absorbance unit' => t('Absorbance Unit'),
-      'boolean' => t('Boolean (Binary)'),
-      'centimeter' => t('Centimeter'),
-      'centimeters per day' => t('Centimeters per Day'),
-      'cubic_centimeter' => t('Cubic Centimeter'),
-      'cubic_meter' => t('Cubic Meter'),
-      'day' => t('Day'),
-      'degrees_celsius' => t('Degrees Celsius'),
-      'degrees celsius per millimeter' => t('Degrees Celsius per Millimeter'),
-      'degrees_fahrenheit' => t('Degrees Fahrenheit'),
-      'grams_per_square_meter' => t('Grams per Square Meter'),
-      'gram' => t('Gram'),
-      'kilogram' => t('Kilogram'),
-      'kilogram_per_cubic_meter' => t('Kilogram per Cubic Meter'),
-      'kilograms per meter cubed' => t('Kilograms per Meter Cubed'),
-      'liter' => t('Liter'),
-      'log(centimeters per day)' => t('Log (Centimeters per day)'),
-      'log(centimeters cubed per day)' => t('Log (Centimeters cubed per day)'),
-      'luminous_intensity_unit' => t('Luminous Intensity Unit'),
-      'meter' => t('Meter'),
-      'milligram' => t('Milligram'),
-      'milligrams per millimeter' => t('Milligrams per Millimeter'),
-      'milligrams per millimeter squared' => t('Milligrams per Millimeter Squared'),
-      'milligrams per milligram' => t('Milligrams per Milligram'),
-      'milliliter' => t('Milliliter'),
-      'millimeter' => t('Millimeter'),
-      'micrometer' => t('Micrometer'),
-      'micromoles carbon dioxide per meter squared per second' => t('Micromoles Carbon Dioxide per Meter Squared per Second'),
-      'micromoles carbon dioxide per gram per second' => t('Micromoles Carbon Dioxide per Gram per Second'),
-      'micromoles carbon dioxide per gram Nitrogen per second' => t('Micromoles Carbon Dioxide per Gram Nitrogen per Second'),
-      'micromoles carbon dioxide per millimole water' => t('Micromoles Carbon Dioxide per Millimole Water'),
-      'moles water per meter squared per second' => t('Moles Water per Meter Squared per Second'),
-      'no unit' => t('No Unit'),
-      'number' => t('Number'),
-      'pascal' => t('Pascal'),
-      'percent' => t('Percent'),
-      'qualitative' => t('Qualitative'),
-      'square_micrometer' => t('Square Micrometer'),
-      'square_millimeter' => t('Square Millimeter'),
-      'watt_per_square_meter' => t('Watt per Square Meter'),
-      'year' => t('Year'),
-    );
-    foreach ($terms as $term => $label) {
-      $unit_id = tpps_load_cvterm($term)->cvterm_id;
-      $unit_options[$unit_id] = $label;
-    }
-    $unit_options['other'] = 'My unit is not in this list';
-
-    $struct_options = array();
-    $terms = array(
+    $struct_options = [];
+    $terms = [
       'whole plant' => t('Whole Plant'),
       'bark' => t('Bark'),
       'branch' => t('Branch'),
@@ -215,212 +172,211 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'strobilus' => t('Strobilus'),
       'terminal_bud' => t('Terminal Bud'),
       'vascular_leaf' => t('Vascular Leaf (Needle)'),
-    );
+    ];
     foreach ($terms as $term => $label) {
       $struct_id = tpps_load_cvterm($term)->cvterm_id;
       $struct_options[$struct_id] = $label;
     }
     $struct_options['other'] = 'My structure term is not in this list';
 
-    $field = array(
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-      '#prefix' => "<div id=\"org_{$id}_phenotype_!num_meta\">",
-      '#suffix' => "</div>",
-      'name' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Name: *',
-        // '#autocomplete_path' => 'tpps/autocomplete/phenotype',
-        '#prefix' => "<label><b>Phenotype !num:</b></label>",
-        '#attributes' => array(
-          'data-toggle' => array('tooltip'),
-          'data-placement' => array('right'),
-          // 'title' => array('If your phenotype name is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-          'title' => array('If your phenotype name does not exist in our database, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-        ),
-        '#description' => t('Phenotype "name" is the human-readable name of the phenotype, where "attribute" is the thing that the phenotype is describing. Phenotype "name" should match the data in the "Phenotype Name/Identifier" column that you select in your <a href="@url">Phenotype file</a> below.', array('@url' => url('/tpps', array('fragment' => "edit-$id-phenotype-file-ajax-wrapper")))),
-      ),
-      'env-check' => array(
-        '#type' => 'checkbox',
-        '#title' => 'Phenotype !num is an environmental phenotype',
-        '#ajax' => array(
-          'callback' => 'tpps_update_phenotype_meta',
-          'wrapper' => "org_{$id}_phenotype_!num_meta",
-          'effect' => 'slide',
-        ),
-      ),
-      'attribute' => array(
-        '#type' => 'select',
-        '#title' => 'Phenotype !num Attribute: *',
-        '#options' => $attr_options,
-        '#ajax' => array(
-          'callback' => 'tpps_update_phenotype_meta',
-          'wrapper' => "org_{$id}_phenotype_!num_meta",
-          'effect' => 'slide',
-        ),
-      ),
-      'attr-other' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Custom Attribute: *',
-        '#autocomplete_path' => 'tpps/autocomplete/attribute',
-        '#attributes' => array(
-          'data-toggle' => array('tooltip'),
-          'data-placement' => array('right'),
-          'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-        ),
-        '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]' => array('value' => 'other'),
-          ),
-        ),
-      ),
-      'description' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Description: *',
-        '#description' => t('Please provide a short description of Phenotype !num'),
-      ),
-      'units' => array(
-        '#type' => 'select',
-        '#title' => 'Phenotype !num Units: *',
-        '#options' => $unit_options,
-      ),
-      'unit-other' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Custom Units: *',
-        '#autocomplete_path' => 'tpps/autocomplete/units',
-        '#attributes' => array(
-          'data-toggle' => array('tooltip'),
-          'data-placement' => array('right'),
-          'title' => array('If your unit is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-        ),
-        '#description' => t('Some examples of units include: "m", "meters", "in", "inches", "Degrees Celsius", "°C", etc.'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => 'other'),
-          ),
-        ),
-      ),
-      'val-check' => array(
-        '#type' => 'checkbox',
-        '#title' => 'Phenotype !num has a value range',
-        '#states' => array(
-          'invisible' => array(
-            array(
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => TRUE),
-              ),
-            ),
-          ),
-        ),
-      ),
-      'bin-check' => array(
-        '#type' => 'checkbox',
-        '#title' => 'Phenotype !num is a binary phenotype',
-        '#states' => array(
-          'invisible' => array(
-            array(
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => TRUE),
-              ),
-            ),
-          ),
-        ),
-      ),
-      'structure' => array(
-        '#type' => 'select',
-        '#title' => 'Phenotype !num Structure: *',
-        '#options' => $struct_options,
-        '#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
-      ),
-      'struct-other' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Custom Structure: *',
-        '#autocomplete_path' => 'tpps/autocomplete/structure',
-        '#attributes' => array(
-          'data-toggle' => array('tooltip'),
-          'data-placement' => array('right'),
-          'title' => array('If your structure is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
-        ),
-        '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]' => array('value' => 'other'),
-          ),
-        ),
-      ),
-      'min' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Minimum Value (type 1 for binary): *',
-        '#states' => array(
-          'visible' => array(
-            array(
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => TRUE),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => TRUE),
-              ),
-            ),
-          ),
-        ),
-      ),
-      'max' => array(
-        '#type' => 'textfield',
-        '#title' => 'Phenotype !num Maximum Value (type 2 for binary): *',
-        '#states' => array(
-          'visible' => array(
-            array(
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]' => array('value' => tpps_load_cvterm('boolean')->cvterm_id),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]' => array('checked' => TRUE),
-              ),
-              'or',
-              array(
-                ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]' => array('checked' => TRUE),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    // List of Phenotype synonyms. This list will be the same for all
+    // phenotypes. but unit list is unique per phenotype and
+    // will be obtained later because depends on selected synonym.
+    $synonym_list = tpps_synonym_get_list();
+    $phenotype_cid = 'tpps_phenotype_field';
+    $cache = cache_get($phenotype_cid);
 
+    if (!empty($cache)) {
+      $field = $cache->data;
+    }
+    else {
+      $field = array(
+        '#type' => 'fieldset',
+        '#tree' => TRUE,
+        '#prefix' => "<div id=\"org_{$id}_phenotype_!num_meta\">",
+        '#suffix' => "</div>",
+        // [VS] Synonym form.
+        'synonym_name' => tpps_build_field_name($id) + [
+          '#prefix' => "<label><b>Phenotype !num:</b></label>",
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['!value' => 0]],
+          ],
+        ],
+        'synonym_description' => tpps_build_field_description() + [
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['!value' => 0]],
+          ],
+        ],
+
+        'synonym_id' => [
+          '#type' => 'select',
+          // The label should just be "phenotype", no synonym anywhere. We use
+          // synonym to describe our phenotype setup behind the scenes but it's
+          // not relevant and would be confusing for the scientists using TPPS.
+          '#title' => 'Phenotype: *',
+          '#options' => $synonym_list,
+          '#default_value' => array_key_first($synonym_list) ?? NULL,
+          // Unit dropdown must be updated in each synonym field change.
+          '#ajax' => [
+            'callback' => 'tpps_unit_update_list',
+            'wrapper' => 'unit-list-!num-wrapper',
+            'method' => 'replace',
+            'event' => 'change',
+          ],
+        ],
+        // [/VS]
+
+        // Main form.
+        'name' => tpps_build_field_name($id) + [
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+          ],
+        ],
+        'env-check' => array(
+          '#type' => 'checkbox',
+          '#title' => 'Phenotype !num is an environmental phenotype',
+          '#ajax' => array(
+            'callback' => 'tpps_update_phenotype_meta',
+            'wrapper' => "org_{$id}_phenotype_!num_meta",
+          ),
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+          ],
+        ),
+        'attribute' => array(
+          '#type' => 'select',
+          '#title' => 'Phenotype !num Attribute: *',
+          '#options' => $attr_options,
+          '#ajax' => array(
+            'callback' => 'tpps_update_phenotype_meta',
+            'wrapper' => "org_{$id}_phenotype_!num_meta",
+          ),
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+          ],
+        ),
+        'attr-other' => array(
+          '#type' => 'textfield',
+          '#title' => 'Phenotype !num Custom Attribute: *',
+          '#autocomplete_path' => 'tpps/autocomplete/attribute',
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('right'),
+            'title' => array('If your attribute is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
+          ),
+          '#description' => t('Some examples of attributes include: "amount", "width", "mass density", "area", "height", "age", "broken", "time", "color", "composition", etc.'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][attribute]"]'
+              => ['value' => 'other'],
+              tpps_synonym_selector($id) => ['value' => 0],
+            ),
+          ),
+        ),
+        'description' => tpps_build_field_description() + [
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]]
+          ],
+        ],
+        'unit' => [
+          '#type' => 'select',
+          '#title' => 'Phenotype !num Unit: *',
+          // List of units depends on selected synonym. Will be populated later.
+          // The same for default value.
+          '#options' => tpps_unit_get_list(
+            array_key_first($synonym_list) ?? NULL
+          ),
+          '#prefix' => '<div id="unit-list-!num-wrapper">',
+          '#suffix' => '</div>',
+          '#validated' => TRUE,
+        ],
+        // [VS] #8669rmrw5.
+        'unit-other' => [
+          '#type' => 'textfield',
+          '#title' => 'Phenotype !num Custom Unit: *',
+          '#autocomplete_path' => 'tpps/autocomplete/unit',
+          '#attributes' => [
+            'data-toggle' => ['tooltip'],
+            'data-placement' => ['right'],
+            'title' => ['If your unit is not in the autocomplete list, '
+              . 'don\'t worry about it! We will create new phenotype '
+              . 'metadata in the database for you.'
+            ],
+          ],
+          '#description' => t('Some examples of units include: "m", "meters", '
+            . '"in", "inches", "Degrees Celsius", "°C", etc.'),
+          '#states' => [
+            'visible' => [
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]'
+              => ['value' => 'other'],
+            ],
+          ],
+        ],
+        // [/VS]
+        'structure' => array(
+          '#type' => 'select',
+          '#title' => 'Phenotype !num Structure: *',
+          '#options' => $struct_options,
+          '#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
+          '#states' => array(
+            'visible' => [
+              tpps_synonym_selector($id) => ['value' => 0],
+            ],
+          ),
+        ),
+        'struct-other' => array(
+          '#type' => 'textfield',
+          '#title' => 'Phenotype !num Custom Structure: *',
+          '#autocomplete_path' => 'tpps/autocomplete/structure',
+          '#attributes' => array(
+            'data-toggle' => array('tooltip'),
+            'data-placement' => array('right'),
+            'title' => array('If your structure is not in the autocomplete list, don\'t worry about it! We will create new phenotype metadata in the database for you.'),
+          ),
+          '#description' => t('Some examples of structure descriptors include: "stem", "bud", "leaf", "xylem", "whole plant", "meristematic apical cell", etc.'),
+          '#states' => array(
+            'visible' => array(
+              ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]' => array('value' => 'other'),
+            ),
+          ),
+        ),
+      );
+      cache_set($phenotype_cid, $field);
+    }
+
+    // Loop phenotypes to get unique form fields for each phenotype.
     tpps_dynamic_list($form, $form_state, 'phenotypes-meta', $field, array(
       'label' => 'Phenotype',
       'title' => "",
       'callback' => 'tpps_update_phenotype',
-      'parents' => array($id, 'phenotype'),
+      'parents' => [$id, 'phenotype'],
       'wrapper' => "phenotype-main-$id",
+      'states' => [
+        'visible' => [
+          ':input[name="' . $id . '[phenotype][check]"]' => ['checked' => FALSE],
+        ],
+      ],
       'name_suffix' => $id,
-      'alternative_buttons' => array(
-        "Add 5 Phenotypes" => 5,
-        "Add 10 Phenotypes" => 10,
+      // [VS] #8669py3z7
+      'alternative_buttons' => [
         "Clear All Phenotypes" => 'tpps_phenotype_number_clear',
-      ),
-      'button_weights' => array(
+      ],
+      'button_weights' => [
         "Add Phenotype" => -5,
-        "Add 5 Phenotypes" => -4,
-        "Add 10 Phenotypes" => -3,
         "Remove Phenotype" => -2,
         "Clear All Phenotypes" => -1,
-      ),
+      ],
+      // Replaces '!num'.
       'substitute_fields' => array(
+        // Synonym form.
+        ['synonym_name', '#title'],
+        ['synonym_name', '#prefix'],
+        ['synonym_description', '#title'],
+        ['synonym_description', '#description'],
+        ['synonym_id', '#ajax', 'wrapper'],
+      // [/VS]
+
+        // Main form.
         array('#prefix'),
         array('name', '#title'),
         array('name', '#prefix'),
@@ -431,16 +387,27 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         array('attr-other', '#title'),
         array('description', '#title'),
         array('description', '#description'),
-        array('units', '#title'),
-        array('unit-other', '#title'),
-        array('val-check', '#title'),
-        array('bin-check', '#title'),
+        // [VS] #8669rmrw5
+        ['unit', '#title'],
+        ['unit', '#prefix'],
+        ['unit-other', '#title'],
         array('structure', '#title'),
         array('struct-other', '#title'),
-        array('min', '#title'),
-        array('max', '#title'),
+        // [/VS]
       ),
+      // [VS] Replace '!num' in attributes.
       'substitute_keys' => array(
+        // Synonym form.
+        ['synonym_name', '#states', 'visible', tpps_synonym_selector($id)],
+        ['synonym_description', '#states', 'visible', tpps_synonym_selector($id)],
+        // State of the Main form related to Synonym form.
+        array('name', '#states', 'visible', tpps_synonym_selector($id)),
+        array('env-check', '#states', 'visible', tpps_synonym_selector($id)),
+        array('attribute', '#states', 'visible', tpps_synonym_selector($id)),
+        array('attr-other', '#states', 'visible', tpps_synonym_selector($id)),
+        array('description', '#states', 'visible', tpps_synonym_selector($id)),
+        array('structure', '#states', 'visible', tpps_synonym_selector($id)),
+        // Main form.
         array(
           'attr-other',
           '#states',
@@ -451,39 +418,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'unit-other',
           '#states',
           'visible',
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
-        ),
-        array(
-          'val-check',
-          '#states',
-          'invisible',
-          0,
-          0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
-        ),
-        array(
-          'val-check',
-          '#states',
-          'invisible',
-          0,
-          2,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
-        ),
-        array(
-          'bin-check',
-          '#states',
-          'invisible',
-          0,
-          0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
-        ),
-        array(
-          'bin-check',
-          '#states',
-          'invisible',
-          0,
-          2,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]',
+          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][unit]"]',
         ),
         array(
           'struct-other',
@@ -491,56 +426,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           'visible',
           ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][structure]"]',
         ),
-        array(
-          'min',
-          '#states',
-          'visible',
-          0,
-          0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
-        ),
-        array(
-          'min',
-          '#states',
-          'visible',
-          0,
-          2,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]',
-        ),
-        array(
-          'min',
-          '#states',
-          'visible',
-          0,
-          4,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
-        ),
-        array(
-          'max',
-          '#states',
-          'visible',
-          0,
-          0,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][units]"]',
-        ),
-        array(
-          'max',
-          '#states',
-          'visible',
-          0,
-          2,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][val-check]"]',
-        ),
-        array(
-          'max',
-          '#states',
-          'visible',
-          0,
-          4,
-          ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][bin-check]"]',
-        ),
       ),
-    ));
+    )); // End of tpps_dynamic_list().
 
     $phenotypes = tpps_get_ajax_value($form_state, array(
       $id,
@@ -557,6 +444,29 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       if (empty($phenotypes[$i])) {
         continue;
       }
+      // [VS]
+      // Set default value for 'Synonym Id' and 'Unit' for each phenotype
+      // using previously submitted value.
+      // Get from $phenotypes array and set in $form_state
+
+      // Synonym Id.
+      $synonym_id = (
+        $phenotypes[$i]['synonym_id']
+        ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['synonym_id']['#options'])
+        ?? NULL
+      );
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['synonym_id']['#default_value'] = $synonym_id;
+
+      // Unit.
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options']
+        = tpps_unit_get_list($synonym_id ?? NULL);
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#default_value'] = (
+        $phenotypes[$i]['unit']
+        ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options'])
+        ?? NULL
+      );
+      // [/VS]
+
       switch ($phenotypes[$i]['attribute']) {
         case tpps_load_cvterm('alive')->cvterm_id:
         case tpps_load_cvterm('bent')->cvterm_id:
@@ -633,16 +543,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           break;
       }
 
-      $new_options = array();
-      foreach ($terms as $term) {
-        $new_options[tpps_load_cvterm($term)->cvterm_id] = $unit_options[tpps_load_cvterm($term)->cvterm_id];
-      }
-
-      if (!empty($new_options)) {
-        $new_options['other'] = 'My unit is not in this list';
-        $form[$id]['phenotype']['phenotypes-meta'][$i]['units']['#options'] = $new_options;
-      }
-
       if ($phenotypes[$i]['env-check']) {
         $terms = array(
           'whole plant' => 'Whole Plant',
@@ -689,7 +589,6 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     //   '#options' => $studies_options
     // );
 
-
     $form[$id]['phenotype']['check'] = array(
       '#type' => 'checkbox',
       '#title' => t('I would like to upload a phenotype metadata file'),
@@ -698,28 +597,26 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         'data-placement' => array('right'),
         'title' => array('Upload a file'),
       ),
-      '#description' => t('We encourage that you only upload a phenotype metadata file if you have > 20 phenotypes. Using the fields above instead of uploading a metadata file allows you to select from standardized controlled vocabulary terms, which makes your data more findable, interoperable, and reusable.'),
-      // '#states' => array(
-      //   'invisible' => array(
-      //     ':input[name="' . $id . '[phenotype][reuse_check]"]' => array('checked' => TRUE),
-      //   ),
-      // ),
+      '#description' => t('We encourage that you only upload a phenotype '
+      . 'metadata file if you have > 20 phenotypes. Using the fields above '
+      . 'instead of uploading a metadata file allows you to select from '
+      . 'standardized controlled vocabulary terms, which makes your data '
+      . 'more findable, interoperable, and reusable.'),
     );
-
-    $form[$id]['phenotype']['metadata'] = array(
+    $form[$id]['phenotype']['metadata'] = [
       '#type' => 'managed_file',
-      '#title' => t('Phenotype Metadata File: Please upload a file containing columns with the name, attribute, structure, description, and units of each of your phenotypes: *'),
+      '#title' => t('Phenotype Metadata File: <br/ >Please upload a file '
+      . 'containing columns with the name, attribute, structure, '
+      . 'description, and units of each of your phenotypes: *'),
       '#upload_location' => "$phenotype_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv'),
-      ),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="' . $id . '[phenotype][check]"]' => array('checked' => TRUE),
-        ),
-      ),
+      '#upload_validators' => ['file_validate_extensions' => ['csv tsv']],
+      '#states' => [
+        'visible' => [
+          ':input[name="' . $id . '[phenotype][check]"]' => ['checked' => TRUE],
+        ],
+      ],
       '#tree' => TRUE,
-    );
+    ];
 
     $form[$id]['phenotype']['metadata']['empty'] = [
       '#default_value' => $values["$id"]['phenotype']['metadata']['empty'] ?? 'NA',
@@ -734,7 +631,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'Phenotype Name/Identifier',
       'Attribute',
       'Description',
-      'Units',
+      'Unit',
       'Structure',
       'Minimum Value',
       'Maximum Value',
@@ -773,11 +670,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'metadata',
       'columns',
     ), array(), 'metadata');
-    $meta_fid = tpps_get_ajax_value($form_state, array(
-      $id,
-      'phenotype',
-      'metadata',
-    ));
+    $meta_fid = tpps_get_ajax_value($form_state, [$id, 'phenotype', 'metadata']);
     $name_col = NULL;
     foreach ($columns as $key => $info) {
       if (preg_match('/^[A-Z]+$/', $key)) {
@@ -839,7 +732,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         $time_options[strtolower($name)] = $name;
       }
       $form[$id]['phenotype']['time']['time_phenotypes'] = array(
-        '#type' => 'checkboxes',
+        '#type' => 'select',
         '#title' => t('Time-based Phenotypes: *'),
         '#options' => $time_options,
         '#description' => t('Please select the phenotypes which are time-based'),
@@ -1015,7 +908,12 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'file_field_name' => $file_field_name,
         'title' => $title,
         'description' => t('Please provide a spreadsheet with columns '
-          . 'for the Plant ID of genotypes used in this study'),
+          . 'for the Plant ID of genotypes used in this study'
+          . '<br />The format of this file is very important! '
+          . '<br />The first column of your file should contain plant '
+          . 'identifiers which match the plant identifiers you provided '
+          . 'in your plant accession file, and all of the remaining '
+          . 'columns should contain SNP data.'),
         'upload_location' => "$genotype_upload_location",
         'use_fid' => TRUE,
       ]);
@@ -1223,7 +1121,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
           . 'file is the column that holds the Plant Identifier that matches '
           . 'your accession file.'),
         // Add extra text field for empty field value.
-        'empty_field_value' => 'NA',
+        'empty_field_value' => tpps_get_empty_field_value(
+          $form_state, $id, $file_field_name
+        ),
         'use_fid' => TRUE,
       ]);
       tpps_genotype_update_description($fields, [
@@ -1257,7 +1157,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
           . 'file is the column that holds the Plant Identifier that matches '
           . 'your accession file.'),
         // Add extra text field for empty field value.
-        'empty_field_value' => 'NA',
+        'empty_field_value' => tpps_get_empty_field_value(
+          $form_state, $id, $file_field_name
+        ),
         'use_fid' => TRUE,
       ]);
       tpps_genotype_update_description($fields, [
@@ -1304,7 +1206,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'title' => $title,
       'upload_location' => "$genotype_upload_location",
       'description' => $description,
-      'empty_field_value' => 'NA',
+      'empty_field_value' => tpps_get_empty_field_value(
+        $form_state, $id, $file_field_name
+      ),
     ]);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1628,11 +1532,9 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
         }
       }
     }
-
-
   }
 
-  // Perform a database lookup as well using new query from Emily Grau (6/6/2023)
+  // Perform a database lookup as well using new query from Emily Grau (6/6/2023).
   $time_now = time();
   $time_expire_period = 3 * 24 * 60 * 60;
   $time_genome_query_results_time = variable_get('tpps_genome_query_results_time', 0);
@@ -1644,7 +1546,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
       join chado.feature f on af.feature_id = f.feature_id
       join chado.organism o on f.organism_id = o.organism_id
       where f.type_id in (379,595,597,825,1245) AND a.name LIKE '% v%'
-    )",[]);
+    )", []);
     variable_set('tpps_genome_query_results_time', $time_now);
   }
   $genome_query_results = chado_query("select * FROM chado.tpps_ref_genomes;", []);
@@ -1752,15 +1654,21 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fasta['db']['#collapsible'] = TRUE;
   unset($fasta['button']);
 
-  $upload = array(
+  $upload = [
     '#type' => 'managed_file',
     '#title' => '',
-    '#description' => t('Remember to click the "Upload" button below to send your file to the server.  This interface is capable of uploading very large files.  If you are disconnected you can return, reload the file and it will resume where it left off.  Once the file is uploaded the "Upload Progress" will indicate "Complete".  If the file is already present on the server then the status will quickly update to "Complete".'),
-    '#upload_validators' => array(
-      'file_validate_extensions' => array(implode(' ', $class::$file_types)),
-    ),
+    '#description' => t('Remember to click the "Upload" button below to send '
+      . 'your file to the server. <br />This interface is capable of uploading '
+      . 'very large files. <br />If you are disconnected you can return, '
+      . 'reload the file and it will resume where it left off. <br />Once the '
+      . 'file is uploaded the "Upload Progress" will indicate "Complete". '
+      . '<br />If the file is already present on the server then the status '
+      . 'will quickly update to "Complete".'),
+    '#upload_validators' => [
+      'file_validate_extensions' => [implode(' ', $class::$file_types)],
+    ],
     '#upload_location' => $tripal_upload_location,
-  );
+  ];
 
   $fasta['file']['file_upload'] = $upload;
   $fasta['analysis_id']['#required'] = $fasta['seqtype']['#required'] = FALSE;
@@ -1818,18 +1726,18 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     '#title' => t('<div class="fieldset-title">SNPs Information:</div>'),
     '#collapsible' => TRUE,
   ];
-  $fields['SNPs']['genotyping-design'] = array(
+  $fields['SNPs']['genotyping-design'] = [
     '#type' => 'select',
     '#title' => t('Define Experimental Design: *'),
-    '#options' => array(
+    '#options' => [
       0 => t('- Select -'),
       1 => t('GBS'),
       2 => t('Targeted Capture'),
       3 => t('Whole Genome Resequencing'),
       4 => t('RNA-Seq'),
       5 => t('Genotyping Array'),
-    ),
-  );
+    ],
+  ];
   $fields['SNPs']['GBS'] = array(
     '#type' => 'select',
     '#title' => t('GBS Type: *'),
@@ -2002,22 +1910,13 @@ function tpps_genotype_build_file_field(array &$fields, array $meta) {
     '#description' => ($description ?? '')
     . ($debug_mode ? '<br/>Field name: <strong>' . $file_field_name . '</strong>' : ''),
     '#tree' => TRUE,
-    '#states' => !empty($states) ? $states : '',
+    '#states' => $states ? $states : '',
   ];
   // Add extra text field for empty field value. Default is FALSE.
-  if (!empty($empty_field_value)) {
-    $values = $form_state['saved_values'][TPPS_PAGE_4];
-    // Note:
-    // Element 'empty' is a custom solution to add textfield.
-    $fields['files'][$file_field_name]['empty'] = [
-      '#default_value' =>
-      isset($values["organism-$id"]['genotype']['files'][$file_field_name]['other'])
-      ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
-      : $empty_field_value,
-    ];
+  if ($empty_field_value) {
+    $fields['files'][$file_field_name]['empty'] = ['#default_value' => $empty_field_value];
   }
-
-  if (!empty($extra_elements)) {
+  if ($extra_elements) {
     $fields['files'][$file_field_name] = array_merge(
       $fields['files'][$file_field_name], $extra_elements
     );
@@ -2071,17 +1970,6 @@ function tpps_build_disabled_file_field(array &$fields, $file_field_name) {
     '#tree' => TRUE,
     '#access' => FALSE,
   ];
-}
-
-/**
- * Gets domain name.
- *
- * @return string
- *   Returns domain name.
- */
-function tpps_get_hostname() {
-  global $base_url;
-  return explode('://', $base_url)[1];
 }
 
 /**
@@ -2179,4 +2067,79 @@ function tpps_genotype_update_description(array &$fields, array $meta) {
     default:
       break;
   }
+}
+
+/**
+ * Builds Phenotype Name form field.
+ *
+ * @param string $id
+ *   Organism Id.
+ *
+ * @return array
+ *   Returns Form API field.
+ */
+function tpps_build_field_name($id) {
+  return [
+    '#type' => 'textfield',
+    '#title' => 'Phenotype !num Name: *',
+    '#attributes' => [
+      'data-toggle' => ['tooltip'],
+      'data-placement' => ['right'],
+      'title' => ['If your phenotype name does not exist in our database, '
+        . 'don\'t worry about it! We will create new phenotype metadata '
+        . 'in the database for you.'],
+      // Alternative title for one of fields:
+      // 'title' => ['If your phenotype name is not in the '
+      // . 'autocomplete list, don\'t worry about it! We will create new '
+      // . 'phenotype metadata in the database for you.'],
+      ],
+    '#description' => t('Phenotype "name" is the human-readable name of the '
+      . 'phenotype, where "attribute" is the thing that the phenotype is '
+      . 'describing. Phenotype "name" should match the data in the '
+      . '"Phenotype Name/Identifier" column that you select in your '
+      . '<a href="@url">Phenotype file</a> below.',
+      [
+        '@url' => url(
+          '/tpps',
+          ['fragment' => "edit-$id-phenotype-file-ajax-wrapper"]
+        ),
+      ]
+    ),
+  ];
+}
+
+/**
+ * Builds Phenotype Description form field.
+ *
+ * @return array
+ *   Returns Form API field.
+ */
+function tpps_build_field_description() {
+  return [
+    '#type' => 'textfield',
+    '#title' => 'Phenotype !num Description: *',
+    '#description' => t('Please provide a short description of Phenotype !num'),
+  ];
+}
+
+/**
+ * Gets value of the empty field.
+ *
+ * @param array $form_state
+ *   Drupal Form API state.
+ * @param int $id
+ *   Organism Id.
+ * @param string $file_field_name
+ *   Machine file upload field name.
+ *
+ * @return string
+ *   Returns value of empty fields in file. Usually it will be 'NA'.
+ */
+function tpps_get_empty_field_value(array $form_state, $id, $file_field_name) {
+  $values = $form_state['saved_values'][TPPS_PAGE_4];
+  return (isset(
+    $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
+    ) ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
+    : $empty_field_value
+  );
 }

@@ -85,26 +85,24 @@ function tpps_details($accession = NULL) {
       }
     }
 
-    if (empty($state['saved_values'][TPPS_PAGE_3]['skip_validation'])) {
-      $map_api_key = variable_get('tpps_maps_api_key', NULL);
-      $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-        async defer></script>"
-        . "<div id=\"_map_wrapper\"></div>";
-      $tree_info = array();
-      if (!empty($state['tree_info'])) {
-        foreach ($state['tree_info'] as $name => $info) {
-          if (!empty($info['lat']) and !empty($info['lng'])) {
-            $tree_info[] = array(
-              $name,
-              $info['lat'],
-              $info['lng'],
-            );
-          }
+    $map_api_key = variable_get('tpps_maps_api_key', NULL);
+    $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
+      async defer></script>"
+      . "<div id=\"_map_wrapper\"></div>";
+    $tree_info = array();
+    if (!empty($state['tree_info'])) {
+      foreach ($state['tree_info'] as $name => $info) {
+        if (!empty($info['lat']) and !empty($info['lng'])) {
+          $tree_info[] = array(
+            $name,
+            $info['lat'],
+            $info['lng'],
+          );
         }
-        drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
       }
-      $output .= $map_api_tools;
+      drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
     }
+    $output .= $map_api_tools;
     // [VS].
     $module_path = drupal_get_path('module', 'tpps');
     // @todo Check if this is a Form API and use '#attached' if possible.
@@ -123,11 +121,6 @@ function tpps_details($accession = NULL) {
       $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
       $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
       $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
-    }
-
-    if (!empty($state['saved_values'][TPPS_PAGE_3]['skip_validation'])) {
-      $image_path = drupal_get_path('module', 'tpps') . '/images/';
-      $pub_link .= "<img title=\"This submission contains no location information\" src=\"/{$image_path}no_location.png\">";
     }
 
     $output .= "<h2>$pub_link</h2>";
@@ -150,7 +143,7 @@ function tpps_details($accession = NULL) {
       . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
           jQuery('#abstract')[0].innerHTML = `{$state['abstract']}`;
         }));</script>";
-    if (empty($state['saved_values'][TPPS_PAGE_3]['skip_validation']) and module_exists('cartogratree')) {
+    if (module_exists('cartogratree')) {
       $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograPlant</a><br>";
     }
     $output .= "<a href=\"$base_url/tpps/api/files/$accession\">Download compressed raw files</a><br>";
@@ -169,7 +162,6 @@ function tpps_details($accession = NULL) {
     // [VS].
     $module_path = drupal_get_path('module', 'tpps');
     // @todo Check if this is a Form API and use '#attached' if possible.
-    //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
     drupal_add_js($module_path . TPPS_JS_PATH);
     // [/VS].
   }
@@ -851,8 +843,6 @@ function tpps_details_trees(array &$state) {
     return $output;
   }
 
-  $skip = !empty($state['saved_values'][TPPS_PAGE_3]['skip_validation']);
-
   $_GET['page'] = $page;
   pager_default_initialize(count($state['tree_info']), $per_page);
   $chunks = array_chunk($state['tree_info'], $per_page, TRUE);
@@ -869,10 +859,8 @@ function tpps_details_trees(array &$state) {
       tpps_entity_link($info['stock_id'], $name, 'Stock'),
       tpps_entity_link($id, $species_name, 'Organism'),
     );
-    if (!$skip) {
-      $row[] = $info['lat'];
-      $row[] = $info['lng'];
-    }
+    $row[] = $info['lat'];
+    $row[] = $info['lng'];
     $rows[] = $row;
   }
 
@@ -881,10 +869,10 @@ function tpps_details_trees(array &$state) {
     'Identifier',
     'Species',
   );
-  if (!$skip) {
+  //if (!$skip) {
     $header[] = 'Latitude';
     $header[] = 'Longitude';
-  }
+  //}
 
   $vars = array(
     'header' => $header,

@@ -4,7 +4,8 @@ vendor/
 .env
 docs/build/
 modules/
-.vimrc
 tags
+*.sw*
+.vimrc*
 cscope.files
 cscope.out

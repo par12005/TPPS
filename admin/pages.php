@@ -6,7 +6,7 @@
  */
 function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $study_accession = NULL) {
   $markup = "";
-  
+
   $results = chado_query('SELECT * FROM tpps_submission WHERE accession = :accession', [
     ':accession' => $study_accession
   ]);
@@ -16,7 +16,7 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
     $serialized_data = unserialize($row->submission_state);
   }
   // print_r($serialized_data['saved_values']);
-  dpm($serialized_data['saved_values']);
+  //dpm($serialized_data['saved_values']);
 
   // print_r($serialized_data['ids']);
   $project_id = $serialized_data['ids']['project_id'];
@@ -58,7 +58,7 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
         }
         if(isset($saved_values[$i]['organism-' . $j]['phenotype']['metadata'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['metadata']);
-        }        
+        }
       }
       for($j=1; $j<=$organism_count; $j++) {
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay'])) {
@@ -69,19 +69,19 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
         }
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['vcf'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['vcf']);
-        }  
+        }
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs']);
-        } 
+        }
         if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra'])) {
           array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra']);
-        }                             
+        }
       }
     }
   }
   // print_r($file_ids);
   sort($file_ids);
-  
+
   $markup .= '<div style="font-size: 12px;">';
   $markup .= '<div style="display: inline-block; width: 30%; vertical-align: top;">';
   $markup .= '<h4>Project ID Managed</h4>';
@@ -107,8 +107,8 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
     }
     $markup .= '</div>';
   }
-  $markup .= '</div>'; 
-  
+  $markup .= '</div>';
+
   $markup .= '<div style="display: inline-block; width: 30%; vertical-align: top;">';
   $markup .= '<h4>History/State files</h4>';
   $overall_file_ids = $serialized_data['files'];
@@ -121,10 +121,10 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
       $markup .= "<a href='$file_url' target='blank'>$file->filename</a>";
     }
     $markup .= '</div>';
-    
+
   }
-  $markup .= '</div>'; 
-  $markup .= '</div>'; 
+  $markup .= '</div>';
+  $markup .= '</div>';
 
   $form['markup'] = array(
     '#type' => 'markup',

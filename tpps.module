@@ -32,6 +32,11 @@ require_once 'includes/ncbi_utils.inc';
 require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'includes/cvterm_utils.inc';
+// [VS]
+require_once 'includes/phenotype_synonym.inc';
+require_once 'includes/phenotype_unit.inc';
+require_once 'includes/easy_report.inc';
+// [/VS]
 require_once 'api/tpps.api.inc';
 require_once 'includes/easy_report.inc';
 
@@ -39,9 +44,6 @@ require_once 'includes/easy_report.inc';
  * Implements hook_menu().
  */
 function tpps_menu() {
-
-  $items = array();
-
   $items['tpps'] = array(
     'title' => 'Tripal Plant PopGen Submit',
     'page callback' => 'drupal_get_form',
@@ -60,8 +62,6 @@ function tpps_menu() {
     'access arguments' => array('access tpps form', 1),
     'type' => MENU_NORMAL_ITEM,
   );
-
-
 
   $items['tpps/%/pre-validate'] = array(
     'title' => 'TPPS File Pre-Validation',
@@ -207,6 +207,7 @@ function tpps_menu() {
     'file' => 'admin/panel.php',
   );
 
+
   $items['tpps-admin-panel-logs/%'] = array(
     'title' => 'TPPS Admin Panel',
     'page callback' => 'drupal_get_form',
@@ -320,7 +321,64 @@ function tpps_menu() {
     'type' => MENU_CALLBACK
   );
 
-  // [VS] Missing DOI reports.
+  // [VS] Synonym and Unit reports.
+  $items['admin/reports/unit-warning'] = [
+    'title' => variable_get('tpps_report_unit_warning_title',
+      'Unit Warning (list of phenotypes which unit differs from Synonym)'),
+    'description' => "List of Phenotypes which differs from Synonym's Unit.",
+    'page callback' => 'tpps_admin_unit_warning_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/unit_warning.inc',
+  ];
+  $items['tpps-admin-panel/reports/unit-warning'] = [
+    'title' => variable_get('tpps_report_unit_warning_title',
+      'Unit Warning (list of phenotypes which unit differs from Synonym)'),
+    'page callback' => 'tpps_admin_unit_warning_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'reports/unit_warning.inc',
+  ];
+  // No synonym.
+  $items['admin/reports/no-synonym'] = [
+    'title' => variable_get('tpps_report_no_synonym_title',
+      'List of phenotypes without Synonyms'),
+    'description' => "List of phenotypes without synonym.",
+    'page callback' => 'tpps_admin_no_synonym_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/no_synonym.inc',
+  ];
+  $items['tpps-admin-panel/reports/no-synonyms'] = [
+    'title' => variable_get('tpps_report_no_synonym_title',
+      'List of phenotypes without Synonyms'),
+    'page callback' => 'tpps_admin_no_synonym_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'reports/no_synonym.inc',
+  ];
+  // Order/Family Exist Report.
+  $items['admin/reports/order-family-not-exist'] = [
+    'title' => variable_get('tpps_report_order_family_not_exist_title',
+      'Order/Family not exist'),
+    'description' => "Lists non-existing order/family.",
+    'page callback' => 'tpps_admin_order_family_not_exist_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'file' => 'reports/order_family_not_exist.inc',
+  ];
+  $items['tpps-admin-panel/reports/order-family-not-exist'] = [
+    'title' => variable_get('tpps_report_order_family_not_exist_title',
+      'Order/Family not exist'),
+    'page callback' => 'tpps_admin_order_family_not_exist_report',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['administer tpps module'],
+    'type' => MENU_NORMAL_ITEM,
+    'file' => 'reports/order_family_not_exist.inc',
+  ];
+  // Missing DOI reports.
   $items['admin/reports/missing-doi'] = [
     'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
     'description' => 'List of Studies without DOI attached.',
@@ -329,9 +387,6 @@ function tpps_menu() {
     'access arguments' => ['administer tpps module'],
     'file' => 'reports/missing_doi.inc',
   ];
-
-  // @TODO Add a link to admin panel.
-  //
   $items['tpps-admin-panel/reports/missing-doi'] = [
     'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
     'page callback' => 'tpps_missing_doi_report',
@@ -1114,6 +1169,11 @@ function tpps_main_submit($form, &$form_state) {
 
     case TPPS_PAGE_2:
       if ($form_state['triggering_element']['#value'] == 'Back') {
+        // [VS]
+        // This is not required but to have always up-to-date form fields
+        // values which could be modified on validation step.
+        $form_state['rebuild'] = TRUE;
+        // [/VS]
         $form_state['stage'] = TPPS_PAGE_1;
       }
       else {
@@ -1123,6 +1183,11 @@ function tpps_main_submit($form, &$form_state) {
 
     case TPPS_PAGE_3:
       if ($form_state['triggering_element']['#value'] == 'Back') {
+        // [VS]
+        // This is not required but to have always up-to-date form fields
+        // values which could be modified on validation step.
+        $form_state['rebuild'] = TRUE;
+        // [/VS]
         $form_state['stage'] = TPPS_PAGE_2;
       }
       else {
@@ -1132,6 +1197,11 @@ function tpps_main_submit($form, &$form_state) {
 
     case TPPS_PAGE_4:
       if ($form_state['triggering_element']['#value'] == 'Back') {
+        // [VS]
+        // This is not required but to have always up-to-date form fields
+        // values which could be modified on validation step.
+        $form_state['rebuild'] = TRUE;
+        // [/VS]
         $form_state['stage'] = TPPS_PAGE_3;
       }
       else {
@@ -1141,6 +1211,11 @@ function tpps_main_submit($form, &$form_state) {
 
     case 'summarypage':
       if ($form_state['triggering_element']['#value'] == 'Back') {
+        // [VS]
+        // On validation metadata field or file could be update so
+        // we need to update form.
+        $form_state['rebuild'] = TRUE;
+        // [/VS]
         $form_state['stage'] = TPPS_PAGE_4;
       }
       else {
@@ -1170,21 +1245,6 @@ function tpps_main_submit($form, &$form_state) {
     // dpm('PERSIST END');
     tpps_update_submission($form_state);
   }
-}
-
-/**
- * Implements hook_block_info().
- *
- * Adds the tpps_status block.
- */
-function tpps_block_info() {
-  // dpm("BLOCK INFO");.
-  $blocks['tpps_status'] = array(
-  // info: The name of the block.
-    'info' => t('TPPS Status'),
-  );
-
-  return $blocks;
 }
 
 /**
@@ -1368,9 +1428,41 @@ function tpps_snpassay_file_selector($string) {
   drupal_json_output($matches);
 }
 
+/**
+ * Implements hook_media_browser_plugins_alter().
+ */
 function tpps_media_browser_plugins_alter(&$plugins) {
   //if (variable_get('disable_media_upload', 0)) {
   unset($plugins['upload']);
   unset($plugins['media_default--media_browser_my_files']);
- // }
+  //}
+}
+
+// WARNING: Required because dev-server has PHP 7.0.2.
+//
+// There are several ways to provide this functionality for versions
+// prior to PHP 7.3.0. It is possible to use array_keys(),
+// but that may be rather inefficient.
+// It is also possible to use reset() and key(),
+// but that may change the internal array pointer.
+// An efficient solution, which does not change the internal
+// array pointer, written as polyfill.
+if (!function_exists('array_key_first')) {
+
+  /**
+   * Polifill for array_key_first() implemented in PHP 7.3.0 and higher.
+   *
+   * @param array $arr
+   *   Array to be processed.
+   *
+   * @return string
+   *   Returns key of the first element of the given array.
+   */
+  function array_key_first(array $arr) {
+    foreach ($arr as $key => $unused) {
+      return $key;
+    }
+    return NULL;
+  }
+
 }
