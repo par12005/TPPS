@@ -14,13 +14,15 @@ function tpps_admin_no_synonym_report() {
   $page_title = variable_get('tpps_report_no_synonym_title');
 
   // Query to get Study name.
-  $sub_query = db_select('chado.phenotype', 'cte')->fields('cte', []);
+  $sub_query = db_select('chado.phenotype', 'cte')
+    ->fields('cte', []);
   $sub_query->addExpression(
     "substring(cte.uniquename, 0, strpos(cte.uniquename, '-'))",
     'study_name'
   );
   // Get data.
-  $base_query = db_select($table, $table_alias)->fields($table_alias, ['name']);
+  $base_query = db_select($table, $table_alias)
+    ->fields($table_alias, ['name']);
   // 'chado.phenotype_to_synonym'.
   $base_query->leftJoin(
     'chado.phenotype_to_synonym',
@@ -61,6 +63,12 @@ function tpps_admin_no_synonym_report() {
         'data' => t('Phenotype Name'),
         'field' => $table_alias . '.name',
       ],
+      // @todo [VS] Find a way to avoid this field from result.
+      // Probably other level of subqueries is required.
+      [
+        'data' => t('Synonym Id'),
+        'field' => 'phenotype_synonyms_id',
+      ],
       [
         'data' => t('Study'),
         'field' => 'publiccte.study_name',
@@ -88,9 +96,16 @@ function tpps_admin_no_synonym_report() {
  *   Returns formatted value.
  *   Empty value will not be formatted and returned as is.
  */
-function tpps_admin_no_synonym_report_formatter(string $name, $value, array $row) {
+function tpps_admin_no_synonym_report_formatter(string $name, $value, array &$row) {
   $formatted = check_plain($value);
-  if (empty($name) || empty($value)) {
+  // $name values are:
+  // name
+  // phenotype_synonyms_id
+  // publicctestudy_name
+  if (empty($row['publicctestudy_name'])) {
+    $row['publicctestudy_name'] = '';
+  }
+  if (empty($value)) {
     return $formatted;
   }
   $name = check_plain($name);

@@ -331,7 +331,7 @@ function tpps_menu() {
     'access arguments' => ['administer tpps module'],
     'file' => 'reports/unit_warning.inc',
   ];
-  $items['tpps-admin-panel/phenotype-synonyms/unit-warning'] = [
+  $items['tpps-admin-panel/reports/unit-warning'] = [
     'title' => variable_get('tpps_report_unit_warning_title',
       'Unit Warning (list of phenotypes which unit differs from Synonym)'),
     'page callback' => 'tpps_admin_unit_warning_report',
@@ -350,7 +350,7 @@ function tpps_menu() {
     'access arguments' => ['administer tpps module'],
     'file' => 'reports/no_synonym.inc',
   ];
-  $items['tpps-admin-panel/phenotype-synonyms/no-synonyms'] = [
+  $items['tpps-admin-panel/reports/no-synonyms'] = [
     'title' => variable_get('tpps_report_no_synonym_title',
       'List of phenotypes without Synonyms'),
     'page callback' => 'tpps_admin_no_synonym_report',
@@ -369,7 +369,7 @@ function tpps_menu() {
     'access arguments' => ['administer tpps module'],
     'file' => 'reports/order_family_not_exist.inc',
   ];
-  $items['tpps-admin-panel/phenotype-synonyms/order-family-not-exist'] = [
+  $items['tpps-admin-panel/reports/order-family-not-exist'] = [
     'title' => variable_get('tpps_report_order_family_not_exist_title',
       'Order/Family not exist'),
     'page callback' => 'tpps_admin_order_family_not_exist_report',

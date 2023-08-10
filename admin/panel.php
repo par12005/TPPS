@@ -1830,13 +1830,13 @@ function tpps_admin_panel_submit($form, &$form_state) {
  * Adds fieldset with links to custom report pages.
  */
 function tpps_admin_panel_get_reports() {
-  $panel_url = 'tpps-admin-panel/phenotype-synonyms/';
+  $panel_url = 'tpps-admin-panel/reports';
+  // Format: <Report Key> => <Path related to $panel_url>.
   return [
-    // Format: <Report Key> => <Path related to $panel_url>.
-    'missing_doi' => 'tpps-admin-panel/reports/missing-doi',
-    'no_synonym' => $panel_url . 'no-synonyms',
-    'unit_warning' => $panel_url . 'unit-warning',
-    'order_family_not_exist' => $panel_url . 'order-family-not-exist',
+    'missing_doi' => $panel_url . '/missing-doi',
+    'no_synonym' => $panel_url . '/no-synonyms',
+    'unit_warning' => $panel_url . '/unit-warning',
+    'order_family_not_exist' => $panel_url . '/order-family-not-exist',
   ];
 }
 
