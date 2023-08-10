@@ -208,7 +208,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
 
   // Save DOI fields.
   if (($form_state['tpps_type'] ?? NULL) == 'tppsc') {
-    // 'Dataset DOI' Field.
+    // Required 'Publication DOI' Field.
     if (!empty($form_state['saved_values'][TPPS_PAGE_1]['doi'])) {
       $dryad_db = chado_get_db(['name' => 'dryad']);
       $dryad_dbxref = chado_insert_dbxref([
@@ -221,12 +221,12 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
         'is_current' => TRUE,
       ]);
     }
-    // 'Publication DOI' Field.
-    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['publication_doi'])) {
+    // Optional 'Dataset DOI' Field.
+    if (!empty($form_state['saved_values'][TPPS_PAGE_1]['dataset_doi'])) {
       $dryad_db = chado_get_db(['name' => 'dryad']);
       $dryad_dbxref = chado_insert_dbxref([
         'db_id' => $dryad_db->db_id,
-        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['publication_doi'],
+        'accession' => $form_state['saved_values'][TPPS_PAGE_1]['dataset_doi'],
       ])->dbxref_id;
       tpps_chado_insert_record('project_dbxref', [
         'project_id' => $form_state['ids']['project_id'],

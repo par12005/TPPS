@@ -39,8 +39,10 @@ function tpps_flatten(array $state) {
   }
   $data['Project ID'] = $project_id ?? NULL;
   $data['#study_photo'] = $page_1['photo'] ?? NULL;
-  $data['Dataset DOI'] = $page_1['doi'] ?? NULL;
-  $data['Publication DOI'] = $page_1['publication_doi'] ?? NULL;
+  // @todo [VS] Change machine names of DOI fields.
+  $data['Publication DOI'] = $page_1['doi'] ?? NULL;
+  $data['Dataset DOI'] = $page_1['dataset_doi'] ?? NULL;
+
   $data['Publication Title'] = isset($pub['title']) ? $pub['title'] : NULL;
   $data['Primary Author'] = isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : NULL;
   $data['Publication Status'] = isset($pub['status']) ? $pub['status'] : NULL;
