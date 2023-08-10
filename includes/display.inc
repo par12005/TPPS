@@ -39,8 +39,10 @@ function tpps_flatten(array $state) {
   }
   $data['Project ID'] = $project_id ?? NULL;
   $data['#study_photo'] = $page_1['photo'] ?? NULL;
-  $data['Dataset DOI'] = $page_1['doi'] ?? NULL;
-  $data['Publication DOI'] = $page_1['publication_doi'] ?? NULL;
+  // @todo [VS] Change machine names of DOI fields.
+  $data['Publication DOI'] = $page_1['doi'] ?? NULL;
+  $data['Dataset DOI'] = $page_1['dataset_doi'] ?? NULL;
+
   $data['Publication Title'] = isset($pub['title']) ? $pub['title'] : NULL;
   $data['Primary Author'] = isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : NULL;
   $data['Publication Status'] = isset($pub['status']) ? $pub['status'] : NULL;
@@ -240,7 +242,7 @@ function tpps_flatten(array $state) {
     $data['#page_3_cleared'] = FALSE;
   }
 
-  $data['#skip_loc'] = !empty($page_3['skip_validation']);
+  $data['#skip_loc'] = FALSE;
   $loc = &$page_3['study_location'];
   $data['#location_type'] = (isset($loc['type']) and $loc['type']) ? $loc['type'] : NULL;
 
@@ -317,19 +319,28 @@ function tpps_flatten(array $state) {
                   'name' => 'Name',
                   'attribute' => 'Attribute',
                   'description' => 'Description',
-                  'units' => 'Units',
+                  'unit' => 'Unit',
                 );
                 if (isset($pheno_meta["$j"]['struct-check']) and $pheno_meta["$j"]['struct-check']) {
                   $fields['structure'] = 'Structure';
                 }
-                if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
-                  $fields['min'] = 'Minimum Value';
-                  $fields['max'] = 'Maximum Value';
-                }
+                // [VS] #8669rmrw5
+                //if (isset($pheno_meta["$j"]['val-check']) and $pheno_meta["$j"]['val-check']) {
+                //  $fields['min'] = 'Minimum Value';
+                //  $fields['max'] = 'Maximum Value';
+                //}
+                // [/VS] #8669rmrw5
 
                 foreach ($fields as $field => $field_string) {
                   if (isset($pheno_meta["$j"][$field]) and $pheno_meta["$j"][$field] != '') {
-                    $data["$org_name Phenotype $j $field_string"] = $pheno_meta[$j][$field];
+                    if ($field == 'unit') {
+                      $value = $pheno_meta[$j][$field];
+                      $value = tpps_unit_get_name($value);
+                    }
+                    else {
+                      $value = $pheno_meta[$j][$field];
+                    }
+                    $data["$org_name Phenotype $j $field_string"] = $value;
                   }
                 }
               }

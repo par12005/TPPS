@@ -96,7 +96,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         $form["organism-$i"]['phenotype']['format'][0]['#suffix'] = "</figcaption></figure>";
         $form["organism-$i"]['phenotype']['format'][1]['#prefix'] = "<figure><img src=\"/{$image_path}phenotype_format_2.png\"><figcaption>";
         $form["organism-$i"]['phenotype']['format'][1]['#suffix'] = "</figcaption></figure>";
-      
+
         $form["organism-$i"]['phenotype']['file'] = array(
           '#type' => 'managed_file',
           '#title' => t('Phenotype file: Please upload a file containing columns for Plant Identifier, Phenotype Data: *'),
@@ -120,8 +120,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         $form["organism-$i"]['phenotype']['file']['columns'] = array(
           '#description' => t('Please define which columns hold the required data: Plant Identifier, Phenotype name, and Value(s)'),
         );
-        
-        
+
+
         $format = tpps_get_ajax_value($form_state, array(
           "organism-$i",
           'phenotype',

@@ -289,27 +289,21 @@ function tpps_attribute_autocomplete($string) {
 }
 
 /**
- * Phenotype units auto-complete matching.
+ * Phenotype unit auto-complete matching.
+ *
+ * Used for 'Custom Unit' field to avoid duplicates.
  *
  * @param string $string
  *   The string the user has already entered into the text field.
  */
-function tpps_units_autocomplete($string) {
-  $matches = array();
-
-  $results = chado_select_record('phenotypeprop', array('value'), array(
-    'value' => array(
-      'data' => $string,
-      'op' => '~*',
-    ),
-    'type_id' => tpps_load_cvterm('unit')->cvterm_id,
-  ));
-
-  foreach ($results as $row) {
-    $matches[$row->value] = check_plain($row->value);
-  }
-
-  drupal_json_output($matches);
+function tpps_unit_autocomplete($string) {
+  $matches = array_map('check_plain',
+    db_select('chado.phenotype_units', 'cpu')
+      ->fields('cpu', ['unit_name'])
+      ->condition('unit_name', '%' . db_like($string) . '%', 'LIKE')
+      ->execute()->fetchCol()
+  );
+  drupal_json_output(array_combine($matches, $matches));
 }
 
 /**

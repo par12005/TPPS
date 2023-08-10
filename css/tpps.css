@@ -156,12 +156,10 @@ div.media-widget.form-media a.browse {
 }
 
 /* [VS] */
-
 /* Highlight active button when using TAB key to switch. */
 .btn:focus:focus-visible {
   outline: black solid 2px;
 }
-
 /**
  * Make visible all options of dropdown when multiple options enabled.
  * @TODO This must be done for all site pages.
