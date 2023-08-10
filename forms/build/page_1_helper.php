@@ -143,7 +143,7 @@ function tpps_organism(array &$form, array &$form_state) {
     // changes below will have no effect.
     'is_tree' => [
       '#type' => 'select',
-      '#title' => t('This species is a tree.'),
+      '#title' => t('This species is a tree:'),
       '#options' => [
         '1' => t('Yes'),
         '0' => t('No'),
