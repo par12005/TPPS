@@ -301,6 +301,61 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '
     ];
     $accession = $form_state['accession'];
+
+    $js_onclick_code = "
+      <script>
+      function check_accession_file_tree_ids() {
+        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Checking Accession File Tree IDs...');
+        jQuery.ajax({
+          url: '/tpps/" . $accession . "/accession-file-tree-ids',
+          error: function (err) {
+            console.log(err);
+            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that this accession file is just too big to process it in time. Please contact Administration.');
+          },        
+          success: function (data) {
+            console.log(data);
+            if (!Array.isArray(data)) {
+              // Data was returned, this is good
+              var html = '';
+              html += '<div>';
+              html += '🎄 Unique trees found: ' + data['unique_count'];
+              html += ' | ';
+              html += '🎄 Total trees found: ' + data['count'];
+              html += '</div>';
+              if (data['unique_count'] != data['count']) {
+                html += '<div>⚡ There are duplicate tree IDs in this Accession file since unique count does not match count</div>';
+                html += '<hr /><div>Duplicate Tree IDs (' + data['duplicate_values'].length + ')</div>';
+                for (var i=0; i<data['duplicate_values'].length; i++) {
+                  html += '<div class=\"cd-inline-round-red\">' + data['duplicate_values'][i] + '</div>';
+                }
+              }
+              else {
+                html += '<div>🆗 No duplicate Tree IDs found in the VCF file</div>';
+              }
+              html += '<hr /><div>Unique Tree IDs (' + data['values'].length + ')</div>';
+              for (var i=0; i<data['values'].length; i++) {
+                html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
+              }
+              jQuery('#diagnostic-curation-results').html(html);
+            }
+            else {
+              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>No results returned, make sure you saved valid data on this page and retry. Double check Accession File existence as well.');
+            }
+          }
+        });
+      }
+      </script>
+    ";
+    $form['button-check-accession-file-tree-ids'] = array(
+      '#type' => 'button',
+      '#prefix' => $js_onclick_code . '',
+      '#value' => 'Check Accession File Tree IDs',
+      '#attributes' => array(
+        "onclick" => "javascript:check_accession_file_tree_ids(); return false;"
+      ),
+    );
+
+
     $js_onclick_code = "
       <script>
       function check_vcf_tree_ids() {
@@ -354,6 +409,12 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       ),
     );
 
+
+    $form['curation-diagnostics-break-between-treeids-and-markers'] = array(
+      '#type' => 'markup',
+      '#markup' => '<br />'
+    );    
+
     $js_onclick_code = "
       <script>
       function check_vcf_markers() {
@@ -406,6 +467,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         "onclick" => "javascript:check_vcf_markers(); return false;"
       ),
     );  
+
+
 
 
     $js_onclick_code = "
