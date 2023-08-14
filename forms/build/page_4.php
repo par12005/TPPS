@@ -330,7 +330,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
                 }
               }
               else {
-                html += '<div>🆗 No duplicate Tree IDs found in the VCF file</div>';
+                html += '<div>🆗 No duplicate Tree IDs found in the Accession file</div>';
               }
               html += '<hr /><div>Unique Tree IDs (' + data['values'].length + ')</div>';
               for (var i=0; i<data['values'].length; i++) {
