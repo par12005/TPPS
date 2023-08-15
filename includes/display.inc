@@ -26,7 +26,6 @@ function tpps_flatten(array $state) {
   unset($data['frontpage']);
   unset($data['form_build_id']);
 
-  $project_id = $state['ids']['project_id'];
   $page_1 = &$data[TPPS_PAGE_1];
   $pub = &$page_1['publication'];
   $org = &$page_1['organism'];
@@ -37,7 +36,7 @@ function tpps_flatten(array $state) {
   else {
     $data['#page_1_cleared'] = FALSE;
   }
-  $data['Project ID'] = $project_id ?? NULL;
+  $data['Project ID'] = $state['ids']['project_id'] ?? NULL;
   $data['#study_photo'] = $page_1['photo'] ?? NULL;
   // @todo [VS] Change machine names of DOI fields.
   $data['Publication DOI'] = $page_1['doi'] ?? NULL;
