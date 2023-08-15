@@ -69,9 +69,8 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
           $species = $doi_info['species'] ?? [];
 
           $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
-          $form_state['build_info']['form_id'] = 'tpps_main';
           $tpps_form = [];
-          $tpps_form = tpps_page_1_create_form($tpps_form, $form_state);
+          $tpps_form = tpps_simple_page_1_create_form($form, $form_state);
           $form['primaryAuthor'] = $tpps_form['primaryAuthor'];
           $form['publication'] = $tpps_form['publication'];
 
@@ -89,8 +88,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
         else {
           // dpm('DOI Info is empty');
           $tpps_form = [];
-          $form_state['build_info']['form_id'] = 'tpps_main';
-          $tpps_form = tpps_page_1_create_form($tpps_form, $form_state);
+          $tpps_form = tpps_simple_page_1_create_form($form, $form_state);
           $form['primaryAuthor'] = $tpps_form['primaryAuthor'];
           $form['publication'] = $tpps_form['publication'];
         }
@@ -107,9 +105,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
         }
       }
 
-      // @todo Replace with TPPS module.
-      module_load_include('php', 'tppsc', 'forms/build/page_1_helper');
-      tppsc_organism($form, $form_state);
+      tpps_organism($form, $form_state);
 
       $form['#prefix'] = '<div id="doi-wrapper">' . $form['#prefix'];
       $form['#suffix'] = (!empty($form['#suffix'])) ? $form['#suffix'] . '</div>' : '</div>';
@@ -223,49 +219,60 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
 
   }
   else {
-    // TPPS Version.
-    if (isset($form_state['saved_values'][TPPS_PAGE_1])) {
-      $values = $form_state['saved_values'][TPPS_PAGE_1];
-    }
-    else {
-      $values = array();
-    }
-
-    tpps_user_info($form, $values);
-
-    tpps_publication($form, $values, $form_state);
-
-    $file_upload_location = 'public://' . variable_get('tpps_study_photo_files_dir', 'tpps_study_photos');
-    $form['study_photo'] = array(
-      '#type' => 'fieldset',
-      '#title' => '<div class="fieldset-title">Study Cover Photo: (Optional)</div>',
-      '#tree' => FALSE,
-      '#collapsible' => TRUE,
-    );
-
-    $form['study_photo']['photo'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('Please upload a cover photo for your study. This photo will be displayed at the top of the landing page of the study.'),
-      '#upload_location' => "$file_upload_location",
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('img jpg jpeg png'),
-      ),
-      '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['photo'] ?? NULL,
-    );
-
-    tpps_organism($form, $form_state);
-
-    $form['Save'] = array(
-      '#type' => 'submit',
-      '#value' => t('Save'),
-      '#prefix' => '<div class="input-description">* : Required Field</div>',
-    );
-
-    $form['Next'] = array(
-      '#type' => 'submit',
-      '#value' => t('Next'),
-    );
+    // TPPS Form.
+    $form = array_merge($form, tpps_simple_page_1_create_form($form, $form_state));
   }
 
+  return $form;
+}
+
+/**
+ * Builds simple TPPS Page 1 form.
+ *
+ * @todo Change code to remove this function.
+ */
+function tpps_simple_page_1_create_form(array $form, array &$form_state) {
+  // TPPS Version.
+  if (isset($form_state['saved_values'][TPPS_PAGE_1])) {
+    $values = $form_state['saved_values'][TPPS_PAGE_1];
+  }
+  else {
+    $values = array();
+  }
+
+  tpps_user_info($form, $values);
+
+  tpps_publication($form, $values, $form_state);
+
+  $file_upload_location = 'public://' . variable_get('tpps_study_photo_files_dir', 'tpps_study_photos');
+  $form['study_photo'] = array(
+    '#type' => 'fieldset',
+    '#title' => '<div class="fieldset-title">Study Cover Photo: (Optional)</div>',
+    '#tree' => FALSE,
+    '#collapsible' => TRUE,
+  );
+
+  $form['study_photo']['photo'] = array(
+    '#type' => 'managed_file',
+    '#title' => t('Please upload a cover photo for your study. This photo will be displayed at the top of the landing page of the study.'),
+    '#upload_location' => "$file_upload_location",
+    '#upload_validators' => array(
+      'file_validate_extensions' => array('img jpg jpeg png'),
+    ),
+    '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['photo'] ?? NULL,
+  );
+
+  tpps_organism($form, $form_state);
+
+  $form['Save'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+    '#prefix' => '<div class="input-description">* : Required Field</div>',
+  );
+
+  $form['Next'] = array(
+    '#type' => 'submit',
+    '#value' => t('Next'),
+  );
   return $form;
 }
