@@ -120,9 +120,11 @@ function tpps_publication(array &$form, array $values, array $form_state) {
 function tpps_organism(array &$form, array &$form_state) {
   // TPPSc was created to provide more features for Curation Team.
   // See 'TPPSc' module.
+  // [VS].
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc && 0) {
     // TPPSc Form.
+    // @todo Not used. Will be removed later.
     tppsc_organism($form, $form_state);
   }
   else {
@@ -130,47 +132,40 @@ function tpps_organism(array &$form, array &$form_state) {
     // Used for TPPSc Form also.
     $field = array(
       '#type' => 'fieldset',
-      '#title' => "Species !num",
-      'name' => array(
+      'name' => [
         '#type' => 'textfield',
+        '#title' => "Species !num: *",
         '#autocomplete_path' => 'tpps/autocomplete/species',
-        '#attributes' => array(
-          'data-toggle' => array('tooltip'),
-          'data-placement' => array('right'),
-          'title' => array('If your species is not in the autocomplete list, don\'t worry about it! We will create a new organism entry in the database for you.'),
-        ),
-        // [VS]
-        '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['name'] ?? '',
-        // Note: This code actually doesn't work. See module TPPS.
+        '#attributes' => [
+          'data-toggle' => ['tooltip'],
+          'data-placement' => ['right'],
+          'title' => ['If your species is not in the autocomplete list, '
+          . 'don\'t worry about it! We will create a new organism entry '
+          . 'in the database for you.'],
+        ],
         '#description' => 'Example: '
           . '<a href"#" class="tpps-suggestion">Arabidopsis thaliana</a>.',
-        // [/VS]
-      ),
-      // [VS] #8669py203.
-      // Note: the real field is defined in TPPSc/forms/build/page_1_helper.php
-      // changes below will have no effect.
+      ],
       'is_tree' => [
         '#type' => 'select',
         '#title' => t('This species is a tree:'),
         '#options' => [
           '1' => t('Yes'),
           '0' => t('No'),
-          '-1' => t("I don't know"),
         ],
-        '#default_value' => $form_state['saved_values'][TPPS_PAGE_1]['is_tree'] ?? '1',
       ],
-      // [/VS]
     );
 
-    tpps_dynamic_list($form, $form_state, 'organism', $field, array(
+    tpps_dynamic_list($form, $form_state, 'organism', $field, [
       'label' => 'Organism',
       'default' => 1,
-      'substitute_fields' => array(
-        '#title',
-      ),
-    ));
+      'substitute_fields' => [
+        ['name', '#title'],
+      ],
+    ]);
   }
   return $form;
+  // [/VS]
 }
 
 /**
