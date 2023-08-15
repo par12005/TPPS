@@ -421,11 +421,40 @@ function tpps_pre_validate_init($accession = NULL) {
   drupal_json_output($jobs);
 }
 
+/**
+ * This function will show the diff between accession file tree ids
+ * and vcf tree ids
+ */
+function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i = 1) {
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  $form_state = tpps_load_submission($accession); // get the form state
+  $results_accession_file_tree_ids = tpps_accession_get_accession_file_tree_ids($form_state, $i);
+
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
+  $results_vcf_file_tree_ids = [];
+  if ($vcf_location['status'] == 'exists') {
+    $results_vcf_file_tree_ids = tpps_genotype_get_vcf_tree_ids($vcf_location['location']);
+  }
+  // echo json_encode($results_accession_file_tree_ids);
+  // echo json_encode($results_vcf_file_tree_ids);
+  
+  $results_not_overlapping_in_vcf_file = array_diff($results_accession_file_tree_ids['values'], $results_vcf_file_tree_ids['values']);
+  $results_not_overlapping_in_accession_file = array_diff($results_vcf_file_tree_ids['values'], $results_accession_file_tree_ids['values']);
+  $overall_results = [
+    'tree_ids_not_in_vcf' => $results_not_overlapping_in_vcf_file,
+    'tree_ids_not_in_vcf_count' => count($results_not_overlapping_in_vcf_file),
+    'tree_ids_not_in_accession' => $results_not_overlapping_in_accession_file,
+    'tree_ids_not_in_accession_count' => count($results_not_overlapping_in_accession_file),
+  ];
+  echo json_encode($overall_results);
+  
+}
 
 /**
  * This helper function is used in the api call /tpps/<accession>/accession-file-tree-ids
  * to get all tree_ids detected from a tree accession file
- * TODO
  */
 function tpps_accession_file_tree_ids($accession = NULL, $i = 1) {
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
