@@ -23,9 +23,10 @@ require_once 'page_1_ajax.php';
  *   The completed Publication/Species Information form.
  */
 function tpps_page_1_create_form(array &$form, array &$form_state) {
+  //dpm($form_state['build_info']['form_id']);
   // TPPSc was created to provide more features for Curation Team.
   // See 'TPPSc' module.
-  $is_tppsc = (($form_state['build_info']['form_id'] ?? NULL) == 'tppsc_main');
+  $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
     // TPPSc Version (Curation version).
     $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];

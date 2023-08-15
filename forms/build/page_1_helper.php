@@ -120,7 +120,7 @@ function tpps_publication(array &$form, array $values, array $form_state) {
 function tpps_organism(array &$form, array &$form_state) {
   // TPPSc was created to provide more features for Curation Team.
   // See 'TPPSc' module.
-  $is_tppsc = (($form_state['build_info']['form_id'] ?? NULL) == 'tppsc_main');
+  $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
     // TPPSc Form.
     $org_number = tpps_get_ajax_value($form_state, array('organism', 'number'), 1);
@@ -143,7 +143,7 @@ function tpps_organism(array &$form, array &$form_state) {
       '#name' => t('Add Organism'),
       '#ajax' => array(
         'wrapper' => 'organism-wrapper',
-        'callback' => 'tppsc_organism_callback',
+        'callback' => 'tpps_organism_callback',
       ),
     );
 
@@ -155,7 +155,7 @@ function tpps_organism(array &$form, array &$form_state) {
       '#name' => t('Remove Organism'),
       '#ajax' => array(
         'wrapper' => 'organism-wrapper',
-        'callback' => 'tppsc_organism_callback',
+        'callback' => 'tpps_organism_callback',
       ),
     );
 
