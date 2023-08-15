@@ -58,3 +58,37 @@ function tpps_organism_callback(array $form, array &$form_state) {
 function tpps_authors_callback(array $form, array &$form_state) {
   return $form['publication']['secondaryAuthors'];
 }
+
+/**
+ * DOI Field AJAX-callback.
+ */
+function tpps_ajax_doi_callback(array &$form, array $form_state) {
+  $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
+  if ($is_tppsc) {
+    if (!empty($value = $form['doi']['#value'])) {
+      // Check the tpps_submissionos.
+      $tpps_submissions = chado_query("SELECT * FROM public.tpps_submission;");
+      $found_doi = FALSE;
+      $found_doi_accession = "";
+      foreach ($tpps_submissions as $submission_row) {
+        $submission_state = unserialize($submission_row->submission_state);
+        if (strtolower($value) == strtolower($submission_state['saved_values']['1']['doi'])) {
+          $found_doi = TRUE;
+          $found_doi_accession = $submission_row->accession;
+          break;
+        }
+        // dpm($submission_state['saved_values']['1']['doi']);
+      }
+      if ($found_doi) {
+        form_set_error('doi', "WARNING: DOI is already used by " . $found_doi_accession);
+        $form['doi']['#prefix'] = "<div style='text-align: right; color: "
+          . "red;'>WARNING: DOI is already used by " . $found_doi_accession
+          . "</div>";
+      }
+    }
+    $form['doi']['#suffix'] = "<div></div>";
+    return $form;
+  }
+}
+
+
