@@ -1009,10 +1009,12 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
         ->fieldCondition('local__email', 'value', $user->mail)
         ->range(0, 1)
         ->execute();
-      $entity = current(array_reverse(entity_load('TripalEntity',
-        array_keys($results['TripalEntity']))));
-      $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']
-        = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] ?? $entity->title;
+      if (!empty($results['TripalEntity'])) {
+        $entity = current(array_reverse(entity_load('TripalEntity',
+          array_keys($results['TripalEntity']))));
+        $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']
+          = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] ?? $entity->title;
+      }
     }
   }
 
