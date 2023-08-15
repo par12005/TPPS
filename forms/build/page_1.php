@@ -38,7 +38,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
         '#type' => 'textfield',
         '#title' => t('Publication DOI: *'),
         '#ajax' => [
-          'callback' => 'tppsc_ajax_doi_callback',
+          'callback' => 'tpps_ajax_doi_callback',
           'wrapper' => "doi-wrapper",
         ],
         '#description' => 'Example: '
