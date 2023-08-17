@@ -21,6 +21,7 @@ require_once 'page_4_helper.php';
  *   The state of the form to be populated.
  */
 function tpps_page_4_create_form(array &$form, array &$form_state) {
+  global $user;
   if (isset($form_state['saved_values'][TPPS_PAGE_4])) {
     $values = $form_state['saved_values'][TPPS_PAGE_4];
   }
@@ -223,6 +224,51 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       }
     }
   }
+  // [VS].
   tpps_add_buttons($form, 'page_4', $meta);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Diagnostic utilities for curation.
+  if (in_array('Curation', $user->roles) || in_array('administrator', $user->roles)) {
+    $form['#attached']['js'][] = [
+      'type' => 'setting',
+      'data' => [
+        'tpps' => [
+          'accession' => $form_state['accession'],
+          'diagnostic-element' => 'diagnostic-curation-results',
+        ],
+      ],
+    ];
+    $module_path = drupal_get_path('module', 'tpps');
+    $form['#attached']['js'][] = $module_path . '/js/tpps_page_4.js';
+    $form['#attached']['css'][] = $module_path . '/css/tpps_page_4.css';
+    $form['diagnostics-curation'] = [
+      '#type' => 'fieldset',
+      '#title' => '🌟 Curation Diagnostics',
+      '#description' => 'These diagnostics <b>require you to save this package</b> '
+        . 'with data before functions will work',
+      // Below navigation buttons Back/Next which has weight 100.
+      '#weight' => 200,
+    ];
+    $form['diagnostics-curation']['button-check-vcf-tree-ids'] = [
+      '#type' => 'button',
+      '#value' => 'Check VCF Tree IDs',
+      '#attributes' => ['class' => ['button-check-vcf-tree-ids']],
+    ];
+    $form['diagnostics-curation']['button-check-vcf-markers'] = [
+      '#type' => 'button',
+      '#value' => 'Check VCF Markers',
+      '#attributes' => ['class' => ['button-check-vcf-markers']],
+    ];
+    $form['diagnostics-curation']['button-check-snps-assay-markers'] = [
+      '#type' => 'button',
+      '#value' => 'Check SNPs Assay Markers',
+      '#attributes' => ['class' => ['button-check-snps-assay-markers']],
+    ];
+    $form['diagnostics-curation']['diagnostic-curation-results'] = [
+      '#type' => 'container',
+      '#attributes' => ['id' => 'diagnostic-curation-results'],
+    ];
+  }
+  // [/VS].
   return $form;
 }
