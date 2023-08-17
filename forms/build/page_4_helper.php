@@ -820,6 +820,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   $genotyping_type_parents = [$id, 'genotype', 'files', 'genotyping-type'];
   $file_type_parents = [$id, 'genotype', 'files', 'file-type'];
+  // Value is a string because mutiple values not allowed.
+  $genotyping_type_check = tpps_get_ajax_value($form_state, $genotyping_type_parents);
+  $file_type_value = tpps_get_ajax_value($form_state, $file_type_parents);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Note: Marker Type allows multiple values to be selected.
@@ -886,203 +889,198 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         ],
       ],
     ];
-    // Value is a string because mutiple values not allowed.
-    $genotyping_type_check = tpps_get_ajax_value($form_state, $genotyping_type_parents);
-    $file_type_value = tpps_get_ajax_value($form_state, $file_type_parents);
-  }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // SNP Assay File.
-  $title = t('SNP Assay File');
-  $file_field_name = 'snps-assay';
-  $condition = (
-    $genotyping_type_check == 'Genotyping Assay'
-    || $file_type_value == 'SNP Assay file and Assay design file'
-  );
-  if ($condition) {
-    if (empty(tpps_add_file_selector($form_state, $fields, $id, $title, ''))) {
-      // Add file upload field if file selector wasn't checked.
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // SNP Assay File.
+    $title = t('SNP Assay File');
+    $file_field_name = 'snps-assay';
+    $condition = (
+      $genotyping_type_check == 'Genotyping Assay'
+      || $file_type_value == 'SNP Assay file and Assay design file'
+    );
+    if ($condition) {
+      if (empty(tpps_add_file_selector($form_state, $fields, $id, $title, ''))) {
+        // Add file upload field if file selector wasn't checked.
+        tpps_genotype_build_file_field($fields, [
+          'form_state' => $form_state,
+          'id' => $id,
+          'file_field_name' => $file_field_name,
+          'title' => $title,
+          'description' => t('Please provide a spreadsheet with columns '
+            . 'for the Plant ID of genotypes used in this study'
+            . '<br />The format of this file is very important! '
+            . '<br />The first column of your file should contain plant '
+            . 'identifiers which match the plant identifiers you provided '
+            . 'in your plant accession file, and all of the remaining '
+            . 'columns should contain SNP data.'),
+          'upload_location' => "$genotype_upload_location",
+          'use_fid' => TRUE,
+        ]);
+      }
+      else {
+        // Add autocomplete field.
+        $fields['files'][$file_field_name] = [
+          '#type' => 'textfield',
+          '#title' => t($title . ': please select an already existing '
+            . 'spreadsheet with columns for the Plant ID of genotypes '
+            . 'used in this study: *'),
+          '#upload_location' => "$genotype_upload_location",
+          '#autocomplete_path' => 'snp-assay-file/upload',
+          '#description' => t("Please select an already existing spreadsheet "
+            . "file containing SNP Genotype Assay data. The format of this "
+            . "file is very important! The first column of your file should "
+            . "contain plant identifiers which match the plant identifiers "
+            . "you provided in your plant accession file, and all of the "
+            . "remaining columns should contain SNP data."),
+        ];
+      }
+    }
+    else {
+      tpps_build_disabled_file_field($fields, $file_field_name);
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Assay Design File.
+    $title = t('Assay Design File');
+    $file_field_name = 'assay-design';
+    $condition = (
+      $genotyping_type_check == "Genotyping Assay"
+      || $file_type_value == 'SNP Assay file and Assay design file'
+    );
+    if ($condition) {
+      // Add file upload field.
       tpps_genotype_build_file_field($fields, [
         'form_state' => $form_state,
         'id' => $id,
         'file_field_name' => $file_field_name,
         'title' => $title,
-        'description' => t('Please provide a spreadsheet with columns '
-          . 'for the Plant ID of genotypes used in this study'
-          . '<br />The format of this file is very important! '
-          . '<br />The first column of your file should contain plant '
-          . 'identifiers which match the plant identifiers you provided '
-          . 'in your plant accession file, and all of the remaining '
-          . 'columns should contain SNP data.'),
         'upload_location' => "$genotype_upload_location",
-        'use_fid' => TRUE,
+      ]);
+      $fields['files']['assay-citation'] = [
+        '#type' => 'textfield',
+        '#title' => t('Assay Design Citation (Optional):'),
+        '#description' => t('If your assay design file is from a different '
+          . 'paper, please include the citation for that paper here.'),
+      ];
+    }
+    else {
+      tpps_build_disabled_file_field($fields, $file_field_name);
+    }
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // SNP Association File.
+    if ($upload_snp_association == 'Yes') {
+    //if ($genotyping_type_check == "Genotyping Assay") {
+      $file_field_name = 'snps-association';
+      $title = t('SNP Association File');
+      tpps_genotype_build_file_field($fields, [
+        'form_state' => $form_state,
+        'id' => $id,
+        'file_field_name' => $file_field_name,
+        'title' => $title,
+        'upload_location' => "$genotype_upload_location",
+        'description' => t('Please upload a spreadsheet file containing '
+          . 'SNPs Association data. When your file is uploaded, you will '
+          . 'be shown a table with your column header names, several '
+          . 'drop-downs, and the first few rows of your file. You will be '
+          . 'asked to define the data type for each column, using the '
+          . 'drop-downs provided to you. If a column data type does not '
+          . 'fit any of the options in the drop-down menu, you may set that '
+          . 'drop-down menu to "N/A". Your file must contain columns with '
+          . 'the SNP ID, Scaffold, Position (formatted like "start:stop"), '
+          . 'Allele (formatted like "major:minor"), Associated Trait Name '
+          . '(must match a phenotype from the above section), and '
+          . 'Confidence Value. Optionally, you can also specify a Gene ID '
+          . '(which should match the gene reference) and '
+          . 'a SNP Annotation (non synonymous, coding, etc).'),
+        '#tree' => TRUE,
+      ]);
+      $fields['files'][$file_field_name] = array_merge(
+        $fields['files'][$file_field_name],
+        [
+          'empty' => [
+            '#default_value' => $values[$id]['genotype']['files'][$file_field_name]['empty'] ?? 'NA',
+          ],
+          'columns' => [
+            '#description' => t('Please define which columns hold the '
+              . 'required data: SNP ID, Scaffold, Position, Allele, '
+              . 'Associated Trait, Confidence Value.'),
+          ],
+          'columns-options' => [
+            '#type' => 'hidden',
+            '#value' => [
+              'N/A',
+              'SNP ID',
+              'Scaffold',
+              'Position',
+              'Allele',
+              'Associated Trait',
+              'Confidence Value',
+              'Gene ID',
+              'Annotation',
+            ],
+            'no-header' => [],
+          ],
+        ]
+      );
+
+      $fields['files']['snps-association-type'] = [
+        '#type' => 'select',
+        '#title' => t('Confidence Value Type: *'),
+        '#options' => [
+          0 => t('- Select -'),
+          'P value' => t('P value'),
+          'Genomic Inflation Factor (GIF)' => t('Genomic Inflation Factor (GIF)'),
+          'P-adjusted (FDR) / Q value' => t('P-adjusted (FDR) / Q value'),
+          'P-adjusted (FWE)' => t('P-adjusted (FWE)'),
+          'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
+        ],
+      ];
+
+      $fields['files']['snps-association-tool'] = [
+        '#type' => 'select',
+        '#title' => t('Association Analysis Tool: *'),
+        '#options' => [
+          0 => t('- Select -'),
+          'GEMMA' => t('GEMMA'),
+          'EMMAX' => t('EMMAX'),
+          'Plink' => t('Plink'),
+          'Tassel' => t('Tassel'),
+          'Sambada' => t('Sambada'),
+          'Bayenv' => t('Bayenv'),
+          'BayeScan' => t('BayeScan'),
+          'LFMM' => t('LFMM'),
+        ],
+      ];
+
+      // SNPs Population Structure File.
+      tpps_genotype_build_file_field($fields, [
+        'form_state' => $form_state,
+        'id' => $id,
+        'file_field_name' => 'snps-pop-struct',
+        // @todo [VS] Replace with 'required' with default value 'TRUE'.
+        'optional' => TRUE,
+        'title' => t('SNPs Population Structure File'),
+        'upload_location' => "$genotype_upload_location",
+      ]);
+      // SNPs Kinship File.
+      tpps_genotype_build_file_field($fields, [
+        'form_state' => $form_state,
+        'id' => $id,
+        'file_field_name' => 'snps-kinship',
+        'optional' => TRUE,
+        'title' => t('SNPs Kinship File'),
+        'upload_location' => "$genotype_upload_location",
       ]);
     }
     else {
-      // Add autocomplete field.
-      $fields['files'][$file_field_name] = [
-        '#type' => 'textfield',
-        '#title' => t($title . ': please select an already existing '
-          . 'spreadsheet with columns for the Plant ID of genotypes '
-          . 'used in this study: *'),
-        '#upload_location' => "$genotype_upload_location",
-        '#autocomplete_path' => 'snp-assay-file/upload',
-        '#description' => t("Please select an already existing spreadsheet "
-          . "file containing SNP Genotype Assay data. The format of this "
-          . "file is very important! The first column of your file should "
-          . "contain plant identifiers which match the plant identifiers "
-          . "you provided in your plant accession file, and all of the "
-          . "remaining columns should contain SNP data."),
-      ];
+      $file_field_list = ['snps-association', 'snps-pop-struct', 'snps-kinship'];
+      foreach ($file_field_list as $file_field_name) {
+        tpps_build_disabled_file_field($fields, $file_field_name);
+      }
     }
   }
-  else {
-    tpps_build_disabled_file_field($fields, $file_field_name);
-  }
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Assay Design File.
-  $title = t('Assay Design File');
-  $file_field_name = 'assay-design';
-  $condition = (
-    $genotyping_type_check == "Genotyping Assay"
-    || $file_type_value == 'SNP Assay file and Assay design file'
-  );
-  if ($condition) {
-    // Add file upload field.
-    tpps_genotype_build_file_field($fields, [
-      'form_state' => $form_state,
-      'id' => $id,
-      'file_field_name' => $file_field_name,
-      'title' => $title,
-      'upload_location' => "$genotype_upload_location",
-    ]);
-    $fields['files']['assay-citation'] = [
-      '#type' => 'textfield',
-      '#title' => t('Assay Design Citation (Optional):'),
-      '#description' => t('If your assay design file is from a different '
-        . 'paper, please include the citation for that paper here.'),
-    ];
-  }
-  else {
-    tpps_build_disabled_file_field($fields, $file_field_name);
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // SNP Association File.
-  if ($upload_snp_association == 'Yes') {
-  //if ($genotyping_type_check == "Genotyping Assay") {
-    $file_field_name = 'snps-association';
-    $title = t('SNP Association File');
-    tpps_genotype_build_file_field($fields, [
-      'form_state' => $form_state,
-      'id' => $id,
-      'file_field_name' => $file_field_name,
-      'title' => $title,
-      'upload_location' => "$genotype_upload_location",
-      'description' => t('Please upload a spreadsheet file containing '
-        . 'SNPs Association data. When your file is uploaded, you will '
-        . 'be shown a table with your column header names, several '
-        . 'drop-downs, and the first few rows of your file. You will be '
-        . 'asked to define the data type for each column, using the '
-        . 'drop-downs provided to you. If a column data type does not '
-        . 'fit any of the options in the drop-down menu, you may set that '
-        . 'drop-down menu to "N/A". Your file must contain columns with '
-        . 'the SNP ID, Scaffold, Position (formatted like "start:stop"), '
-        . 'Allele (formatted like "major:minor"), Associated Trait Name '
-        . '(must match a phenotype from the above section), and '
-        . 'Confidence Value. Optionally, you can also specify a Gene ID '
-        . '(which should match the gene reference) and '
-        . 'a SNP Annotation (non synonymous, coding, etc).'),
-      '#tree' => TRUE,
-    ]);
-    $fields['files'][$file_field_name] = array_merge(
-      $fields['files'][$file_field_name],
-      [
-        'empty' => [
-          '#default_value' => $values[$id]['genotype']['files'][$file_field_name]['empty'] ?? 'NA',
-        ],
-        'columns' => [
-          '#description' => t('Please define which columns hold the '
-            . 'required data: SNP ID, Scaffold, Position, Allele, '
-            . 'Associated Trait, Confidence Value.'),
-        ],
-        'columns-options' => [
-          '#type' => 'hidden',
-          '#value' => [
-            'N/A',
-            'SNP ID',
-            'Scaffold',
-            'Position',
-            'Allele',
-            'Associated Trait',
-            'Confidence Value',
-            'Gene ID',
-            'Annotation',
-          ],
-          'no-header' => [],
-        ],
-      ]
-    );
-
-    $fields['files']['snps-association-type'] = [
-      '#type' => 'select',
-      '#title' => t('Confidence Value Type: *'),
-      '#options' => [
-        0 => t('- Select -'),
-        'P value' => t('P value'),
-        'Genomic Inflation Factor (GIF)' => t('Genomic Inflation Factor (GIF)'),
-        'P-adjusted (FDR) / Q value' => t('P-adjusted (FDR) / Q value'),
-        'P-adjusted (FWE)' => t('P-adjusted (FWE)'),
-        'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
-      ],
-    ];
-
-    $fields['files']['snps-association-tool'] = [
-      '#type' => 'select',
-      '#title' => t('Association Analysis Tool: *'),
-      '#options' => [
-        0 => t('- Select -'),
-        'GEMMA' => t('GEMMA'),
-        'EMMAX' => t('EMMAX'),
-        'Plink' => t('Plink'),
-        'Tassel' => t('Tassel'),
-        'Sambada' => t('Sambada'),
-        'Bayenv' => t('Bayenv'),
-        'BayeScan' => t('BayeScan'),
-        'LFMM' => t('LFMM'),
-      ],
-    ];
-
-    // SNPs Population Structure File.
-    tpps_genotype_build_file_field($fields, [
-      'form_state' => $form_state,
-      'id' => $id,
-      'file_field_name' => 'snps-pop-struct',
-      // @todo [VS] Replace with 'required' with default value 'TRUE'.
-      'optional' => TRUE,
-      'title' => t('SNPs Population Structure File'),
-      'upload_location' => "$genotype_upload_location",
-    ]);
-    // SNPs Kinship File.
-    tpps_genotype_build_file_field($fields, [
-      'form_state' => $form_state,
-      'id' => $id,
-      'file_field_name' => 'snps-kinship',
-      'optional' => TRUE,
-      'title' => t('SNPs Kinship File'),
-      'upload_location' => "$genotype_upload_location",
-    ]);
-  }
-  else {
-    $file_field_list = ['snps-association', 'snps-pop-struct', 'snps-kinship'];
-    foreach ($file_field_list as $file_field_name) {
-      tpps_build_disabled_file_field($fields, $file_field_name);
-    }
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // [VS]
   if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
     $fields['files']['ploidy'] = [
       '#type' => 'select',
