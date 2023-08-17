@@ -1913,7 +1913,7 @@ function tpps_genotype_build_file_field(array &$fields, array $meta) {
     '#states' => $states ? $states : '',
   ];
   // Add extra text field for empty field value. Default is FALSE.
-  if ($empty_field_value) {
+  if (!empty($empty_field_value)) {
     $fields['files'][$file_field_name]['empty'] = ['#default_value' => $empty_field_value];
   }
   if ($extra_elements) {
