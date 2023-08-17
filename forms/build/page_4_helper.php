@@ -1905,18 +1905,18 @@ function tpps_genotype_build_file_field(array &$fields, array $meta) {
     '#title' => $title . (!empty($optional) ? ':' : ': *'),
     '#upload_location' => $upload_location,
     '#upload_validators' => [
-      'file_validate_extensions' => !empty($extensions) ? $extensions : ['csv tsv'],
+      'file_validate_extensions' => $extensions ?? ['csv tsv'],
     ],
     '#description' => ($description ?? '')
     . ($debug_mode ? '<br/>Field name: <strong>' . $file_field_name . '</strong>' : ''),
     '#tree' => TRUE,
-    '#states' => $states ? $states : '',
+    '#states' => $states ?? '',
   ];
   // Add extra text field for empty field value. Default is FALSE.
   if (!empty($empty_field_value)) {
     $fields['files'][$file_field_name]['empty'] = ['#default_value' => $empty_field_value];
   }
-  if ($extra_elements) {
+  if (!empty($extra_elements)) {
     $fields['files'][$file_field_name] = array_merge(
       $fields['files'][$file_field_name], $extra_elements
     );
