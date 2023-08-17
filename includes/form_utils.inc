@@ -748,7 +748,7 @@ function tpps_add_buttons(array &$form, $page, $meta = []) {
         ];
 
         // Pre-validate VCF.
-        if (preg_match('/G/', $meta['data_type'])) {
+        if (!empty($meta['data_type']) && preg_match('/G/', $meta['data_type'])) {
           $pre_valid_states = array();
           for ($i = 1; $i <= $meta['organism_number']; $i++) {
             $pre_valid_states["input[name=\"organism-{$i}[genotype][files][file-type][VCF]\"]"]
