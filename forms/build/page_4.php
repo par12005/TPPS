@@ -235,7 +235,13 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
 
   // Check if the user has the 'curation' role.
   if (in_array('Curation', $user->roles)) {
-
+    // [VS]
+    // Temporary set weight of the Curation Diagnostics Tool to be below
+    // navigation buttons. Will be removed when fix which moves JS and CSS
+    // into separate files will be released.
+    // Value must be greater then 100.
+    $weight = 200;
+    // [/VS].
     // DIAGNOSTIC UTILITIES FOR CURATION
     $form['diagnostics-curation'] = [
       '#type' => 'markup',
@@ -243,7 +249,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         <h2 style="margin-top:10px;">🌟 Curation Diagnostics</h2>
         <div>These diagnostics <b>require you to save this page</b> with data
         before functions will work</div>
-      '
+      ',
+      '#weight' => $weight,
     ];
 
     $form['diagnostics-curation-style'] = [
@@ -328,6 +335,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#attributes' => array(
         "onclick" => "javascript:check_vcf_tree_ids(); return false;"
       ),
+      '#weight' => $weight,
     );
 
     $js_onclick_code = "
@@ -381,6 +389,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#attributes' => array(
         "onclick" => "javascript:check_vcf_markers(); return false;"
       ),
+      '#weight' => $weight,
     );
 
 
@@ -435,11 +444,13 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#attributes' => array(
         "onclick" => "javascript:check_snps_assay_markers(); return false;"
       ),
+      '#weight' => $weight,
     );
 
     $form['diagnostic-curation-results'] = [
       '#type' => 'markup',
-      '#markup' => '<div id="diagnostic-curation-results" style="max-height: 500px; overflow-y: auto;"></div>'
+      '#markup' => '<div id="diagnostic-curation-results" style="max-height: 500px; overflow-y: auto;"></div>',
+      '#weight' => $weight,
     ];
   }
 }
