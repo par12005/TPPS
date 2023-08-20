@@ -4971,7 +4971,6 @@ function tpps_vcf_exists($form_state, $i) {
 
 
 
-
 function tpps_snps_assay_location($form_state, $i) {
   $results = [
     'status' => 'empty', // empty, exists, missing
