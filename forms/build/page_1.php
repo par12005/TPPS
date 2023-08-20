@@ -31,6 +31,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
     // TPPSc Version (Curation version).
     $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
+    // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
     if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
       // [VS]
       // @TODO Minor. Rename field to 'dataset_doi'.
@@ -129,17 +130,19 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
     $tpps_form = array();
     $tpps_form = tpps_page_1_create_form($tpps_form, $form_state);
 
-    $form_state['ids']['project_id'] = chado_select_record('project_dbxref', array('project_id'), array(
-      'dbxref_id' => $form_state['dbxref_id'],
-    ))[0]->project_id;
+    $form_state['ids']['project_id'] = chado_select_record(
+      'project_dbxref',
+      ['project_id'],
+      ['dbxref_id' => $form_state['dbxref_id']]
+    )[0]->project_id;
 
-    $pub_id = chado_select_record('project_pub', array('pub_id'), array(
-      'project_id' => $form_state['ids']['project_id'],
-    ))[0]->pub_id;
+    $pub_id = chado_select_record(
+      'project_pub',
+      ['pub_id'],
+      ['project_id' => $form_state['ids']['project_id']]
+    )[0]->pub_id;
 
-    $pub = chado_select_record('pub', array('*'), array(
-      'pub_id' => $pub_id,
-    ))[0];
+    $pub = chado_select_record('pub', ['*'], ['pub_id' => $pub_id])[0];
     $title_default = $saved_values['publication']['title'] ?? $pub->title;
     $year_default = $saved_values['publication']['year'] ?? $pub->pyear;
 
