@@ -1494,3 +1494,24 @@ if (!function_exists('array_key_first')) {
   }
 
 }
+
+/**
+ * Implements hook_init().
+ *
+ * Removed (but not fixed!) spam message:
+ *   Notice: Undefined variable: show_nafgs_menu in include() (line 147 of
+ *   /var/www/Drupal/sites/all/themes/sites/all/themes/dawn/tpl/page.tpl.php).
+ */
+function tpps_init() {
+  if (!empty($_SESSION['messages']['error'])) {
+    $spam = 'Undefined variable: show_nafgs_menu in';
+    foreach ($_SESSION['messages']['error'] as $index => $item) {
+      if (strpos($item, $spam)) {
+        unset($_SESSION['messages']['error'][$index]);
+      }
+    }
+    if (empty($_SESSION['messages']['error'])) {
+      unset($_SESSION['messages']['error']);
+    }
+  }
+}
