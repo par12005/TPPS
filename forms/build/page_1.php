@@ -267,16 +267,6 @@ function tpps_simple_page_1_create_form(array $form, array &$form_state) {
   );
 
   tpps_organism($form, $form_state);
-
-  $form['Save'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-    '#prefix' => '<div class="input-description">* : Required Field</div>',
-  );
-
-  $form['Next'] = array(
-    '#type' => 'submit',
-    '#value' => t('Next'),
-  );
+  tpps_add_buttons($form, 'page_1');
   return $form;
 }

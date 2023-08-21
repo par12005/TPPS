@@ -346,20 +346,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       }
     </style>';
   }
-
-  $form['Back'] = array(
-    '#type' => 'submit',
-    '#value' => t('Back'),
-    '#prefix' => '<div class="input-description">* : Required Field</div>',
-  );
-
-  $form['Save'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-  );
-
-  $form['Next'] = array(
-    '#type' => 'submit',
-    '#value' => t('Next'),
-  );
+  tpps_add_buttons($form, 'page_3');
+  return $form;
 }

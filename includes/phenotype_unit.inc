@@ -24,6 +24,8 @@
  *   Returns empty array if synonym not found.
  */
 function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = FALSE) {
+  // '0' value means 'I can't find synonym' and we need to show all the units.
+  $synonym_id = ($synonym_id == 0 ? 'all' : $synonym_id);
   $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
   $options = array_merge($defaults, $options);
 
