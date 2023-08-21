@@ -336,6 +336,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#attributes' => array(
         "onclick" => "javascript:check_accession_file_tree_ids(); return false;"
       ),
+      '#weight' => $weight,
     );
 
 
@@ -453,8 +454,9 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#attributes' => array(
         "onclick" => "javascript:compare_accession_tree_ids_vs_vcf_tree_ids(); return false;"
       ),
-    );    
-
+      '#weight' => $weight,
+    ); 
+   
 
     $form['curation-diagnostics-break-between-treeids-and-markers'] = array(
       '#type' => 'markup',
@@ -571,6 +573,70 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       ),
       '#weight' => $weight,
     );
+
+
+
+    $js_onclick_code = "
+      <script>
+      function compare_vcf_markers_vs_snps_assay_markers() {
+        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Comparing VCF and SNPs Assay Markers...');
+        jQuery.ajax({
+          url: '/tpps/" . $accession . "/compare-vcf-markers-vs-snps-assay-markers',
+          error: function (err) {
+            console.log(err);
+            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that these files are just too big to process it in time. Please contact Administration.');
+          },        
+          success: function (data) {
+            console.log(data);
+            data = JSON.parse(data);
+            if (!Array.isArray(data)) {
+              // Data was returned, this is good
+              var html = '';
+              html += '<div>';
+              html += '🧬 None overlapping VCF markers found: ' + data['markers_not_in_snps_assay_count'];
+              html += ' | ';
+              html += '🧬 None overlapping SNPs Assay markers found: ' + data['markers_not_in_vcf_count'];
+              html += '</div>';
+              if (data['markers_not_in_snps_assay'].length > 0) {
+                html += '<div>⚡ There are VCF markers that do not overlap with the SNPs Assay file</div>';
+                // html += '<hr /><div>Duplicate Markers (' + data['duplicate_values'].length + ')</div>';
+                for (var i=0; i<data['markers_not_in_snps_assay'].length; i++) {
+                  html += '<div class=\"cd-inline-round-red\">' + data['markers_not_in_snps_assay'][i] + '</div>';
+                }
+              }
+              if (data['markers_not_in_vcf'].length > 0) {
+                html += '<div>⚡ There are SNPs Assay markers that do not overlap with the VCF file</div>';
+                // html += '<hr /><div>Duplicate Markers (' + data['duplicate_values'].length + ')</div>';
+                for (var i=0; i<data['markers_not_in_vcf'].length; i++) {
+                  html += '<div class=\"cd-inline-round-red\">' + data['markers_not_in_vcf'][i] + '</div>';
+                }
+              }              
+              // else {
+              //   html += '<div>🆗 No duplicate Tree IDs found in the VCF file</div>';
+              // }
+              // html += '<hr /><div>Unique Tree IDs (' + data['values'].length + ')</div>';
+              // for (var i=0; i<data['values'].length; i++) {
+              //   html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
+              // }
+              jQuery('#diagnostic-curation-results').html(html);
+            }
+            else {
+              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>No results returned, make sure you saved valid data on this page and retry. Double check Accession and VCF existence as well.');
+            }
+          }
+        });
+      }
+      </script>
+    ";
+    $form['button-compare-vcf-makers-vs-snps-assay-markers'] = array(
+      '#type' => 'button',
+      '#prefix' => $js_onclick_code . '',
+      '#value' => 'Compare VCF and SNPs Assay markers',
+      '#attributes' => array(
+        "onclick" => "javascript:compare_vcf_markers_vs_snps_assay_markers(); return false;"
+      ),
+      '#weight' => $weight,
+    ); 
 
     $form['diagnostic-curation-results'] = [
       '#type' => 'markup',

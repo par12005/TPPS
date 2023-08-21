@@ -535,7 +535,7 @@ function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
 
 /**
  * This helper function is used in the api call /tpps/<accession>/vcf_markers
- * to get all tree-ids detected from a vcf file
+ * to get all markers detected from a vcf file
  */
 function tpps_vcf_markers($accession = NULL, $i = 1) {
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
@@ -561,6 +561,48 @@ function tpps_snps_assay_markers($accession = NULL, $i = 1) {
     $result = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
   }
   drupal_json_output($result);
+}
+
+/**
+ * This function will show the diff between vcf markers
+ * and snps assay markers
+ */
+function tpps_compare_vcf_markers_vs_snps_assay_markers($accession = NULL, $i = 1) {
+
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+
+  // VCF markers
+  $form_state = tpps_load_submission($accession);
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
+  $results_vcf_markers = [
+    'values' => []
+  ];
+  if ($vcf_location['status'] == 'exists') {
+    $results_vcf_markers = tpps_genotype_get_vcf_markers($vcf_location['location']);
+  }
+
+  // SNPS Assay Markers
+  $form_state = tpps_load_submission($accession);
+  $snps_assay_location = tpps_snps_assay_location($form_state, $i); // returns array['status', 'location'];
+  // print_r($snps_assay_location);
+  $results_snps_assay_markers = [
+    'values' => []
+  ];
+  if ($snps_assay_location['status'] == 'exists') {
+    $results_snps_assay_markers = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
+  }  
+  
+  $results_not_overlapping_in_vcf = array_diff($results_snps_assay_markers['values'], $results_vcf_markers['values']);
+  $results_not_overlapping_in_snps_assay = array_diff($results_vcf_markers['values'], $results_snps_assay_markers['values']);
+  $overall_results = [
+    'markers_not_in_vcf' => $results_not_overlapping_in_vcf,
+    'markers_not_in_vcf_count' => count($results_not_overlapping_in_vcf),
+    'markers_not_in_snps_assay' => $results_not_overlapping_in_snps_assay,
+    'markers_not_in_snps_assay_count' => count($results_not_overlapping_in_snps_assay),
+  ];
+  echo json_encode($overall_results);
 }
 
 
