@@ -75,7 +75,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           $values['location_accuracy'] == 'descriptive_place'
           && empty($values['desriptive_place'])
         );
-        if ($codition) {
+        if ($condition) {
           form_set_error("tree-accession][species-$i][descriptive_place",
             t("Descriptive Place: field is required."));
         }
@@ -84,7 +84,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           $values['location_accuracy'] == 'approximate'
           && empty($values['coord_precision'])
         );
-        if ($codition) {
+        if ($condition) {
           form_set_error("tree-accession][species-$i][coord_precision",
             t("Coordinates accuracy: field is required."));
         }

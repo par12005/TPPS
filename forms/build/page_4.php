@@ -221,53 +221,36 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     }
   }
 
-  $form['Back'] = array(
-    '#type' => 'submit',
-    '#value' => t('Back'),
-    '#prefix' => '<div class="input-description">* : Required Field</div>',
-  );
-
-  $form['Save'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Review Information and Submit'),
-  );
-
-  if (preg_match('/G/', $data_type)) {
-    $pre_valid_states = array();
-    for ($i = 1; $i <= $organism_number; $i++) {
-      $pre_valid_states["input[name=\"organism-{$i}[genotype][files][file-type][VCF]\"]"] = array('checked' => FALSE);
-    }
-    $form['pre_validate'] = array(
-      '#type' => 'button',
-      '#value' => t('Pre-validate my VCF files'),
-      '#states' => array(
-        'invisible' => $pre_valid_states,
-      ),
-      '#suffix' => '<div>Sometimes large VCF files can cause problems during the validation step. If your VCF file is very large, you can click the "Pre-validate my VCF files" button to validate your VCF file in the background, before clicking "Review Information and Submit".</div>',
-    );
-
-    $form['Back']['#prefix'] .= "<div id=\"pre-validate-message\"></div>";
-  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submission metadata.
+  $meta = [
+    'organism_number' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'],
+    'data_type' => $form_state['saved_values'][TPPS_PAGE_2]['data_type'],
+  ];
+  tpps_add_buttons($form, 'page_4', $meta);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   // CHECK IF USER HAS CURATION ROLE
   global $user;
 
   // Check if the user has the 'curation' role.
   if (in_array('Curation', $user->roles)) {
-
+    // [VS]
+    // Temporary set weight of the Curation Diagnostics Tool to be below
+    // navigation buttons. Will be removed when fix which moves JS and CSS
+    // into separate files will be released.
+    // Value must be greater then 100.
+    $weight = 200;
+    // [/VS].
     // DIAGNOSTIC UTILITIES FOR CURATION
     $form['diagnostics-curation'] = [
       '#type' => 'markup',
       '#markup' => '
         <h2 style="margin-top:10px;">🌟 Curation Diagnostics</h2>
-        <div>These diagnostics <b>require you to save this page</b> with data 
+        <div>These diagnostics <b>require you to save this page</b> with data
         before functions will work</div>
-      '
+      ',
+      '#weight' => $weight,
     ];
 
     $form['diagnostics-curation-style'] = [
@@ -284,8 +267,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
             padding: 3px;
             margin-top: 3px;
             margin-right: 3px;
-            border-radius: 5px; 
-            width: 150px;         
+            border-radius: 5px;
+            width: 150px;
           }
           .cd-inline-round-red {
             display: inline-block;
@@ -294,8 +277,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
             padding: 3px;
             margin-top: 3px;
             margin-right: 3px;
-            border-radius: 5px; 
-            width: 150px;         
+            border-radius: 5px;
+            width: 150px;
           }
         </style>
       '
@@ -310,7 +293,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           error: function (err) {
             console.log(err);
             jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that this VCF is just too big to process it in time. Please contact Administration.');
-          },        
+          },
           success: function (data) {
             console.log(data);
             if (!Array.isArray(data)) {
@@ -352,6 +335,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#attributes' => array(
         "onclick" => "javascript:check_vcf_tree_ids(); return false;"
       ),
+      '#weight' => $weight,
     );
 
     $js_onclick_code = "
@@ -405,7 +389,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#attributes' => array(
         "onclick" => "javascript:check_vcf_markers(); return false;"
       ),
-    );  
+      '#weight' => $weight,
+    );
 
 
     $js_onclick_code = "
@@ -459,11 +444,13 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#attributes' => array(
         "onclick" => "javascript:check_snps_assay_markers(); return false;"
       ),
-    );   
+      '#weight' => $weight,
+    );
 
     $form['diagnostic-curation-results'] = [
       '#type' => 'markup',
-      '#markup' => '<div id="diagnostic-curation-results" style="max-height: 500px; overflow-y: auto;"></div>'
+      '#markup' => '<div id="diagnostic-curation-results" style="max-height: 500px; overflow-y: auto;"></div>',
+      '#weight' => $weight,
     ];
   }
 }

@@ -109,22 +109,6 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
       $form['study_info']['#prefix'] = '<div id="study_info" style="display:none;">';
       break;
   }
-
-  $form['Back'] = array(
-    '#type' => 'submit',
-    '#value' => t('Back'),
-    '#prefix' => '<div class="input-description">* : Required Field</div>',
-  );
-
-  $form['Save'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-  );
-
-  $form['Next'] = array(
-    '#type' => 'submit',
-    '#value' => t('Next'),
-  );
-
+  tpps_add_buttons($form, 'page_4');
   return $form;
 }

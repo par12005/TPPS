@@ -696,3 +696,77 @@ function tpps_get_hostname() {
   global $base_url;
   return explode('://', $base_url)[1];
 }
+
+/**
+ * Adds buttons Back/Save/Next to the forms.
+ *
+ * The same buttons will be added above and below main form.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ * @param string $page
+ *   Page number with 'page_' prefix to improve readability.
+ * @param array
+ *   Submission metadata.
+ *   'organism_number' - int Organism Number;
+ *   'data_type' - Contains 'G' for genotype, 'P' for phenotype, 'E' for environment;
+ */
+function tpps_add_buttons(array &$form, $page, $meta = []) {
+  $scope_list = [
+    'header' => -100,
+    'footer' => 100,
+  ];
+
+  foreach ($scope_list as $scope => $weight) {
+    $form[$scope] = [
+      '#type' => 'fieldset',
+      '#tree' => FALSE,
+      '#weight' => $weight,
+    ];
+    // @todo [VS] Use Drupal Form API 'required' attribute.
+    $form[$scope]['input_description'] = [
+      '#markup' => '<div class="input-description">* : Required Field</div>',
+      '#weight' => -($weight),
+    ];
+    switch ($page) {
+      case 'page_2':
+      case 'page_3':
+        $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
+
+      default:
+      case 'page_1':
+        $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
+        $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Next')];
+        break;
+
+      case 'page_4':
+        $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
+        $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
+        $form[$scope]['submit'] = [
+          '#type' => 'submit',
+          '#value' => t('Review Information and Submit'),
+        ];
+
+        // Pre-validate VCF.
+        if (!empty($meta['data_type']) && preg_match('/G/', $meta['data_type'])) {
+          $pre_valid_states = array();
+          for ($i = 1; $i <= $meta['organism_number']; $i++) {
+            $pre_valid_states["input[name=\"organism-{$i}[genotype][files][file-type][VCF]\"]"]
+              = ['checked' => FALSE];
+          }
+          $form[$scope]['pre_validate'] = [
+            '#type' => 'button',
+            '#value' => t('Pre-validate my VCF files'),
+            '#states' => ['invisible' => $pre_valid_states],
+            '#suffix' => '<div>Sometimes large VCF files can cause problems '
+              . 'during the validation step. If your VCF file is very large, '
+              . 'you can click the "Pre-validate my VCF files" button to '
+              . 'validate your VCF file in the background, before clicking '
+              . '"Review Information and Submit".</div>',
+          ];
+          $form[$scope]['Back']['#prefix'] = "<div id=\"pre-validate-message\"></div>";
+        }
+        break;
+    }
+  }
+}
