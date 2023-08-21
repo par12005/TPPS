@@ -82,7 +82,7 @@ function tpps_menu() {
   );
 
 
-  // This will return information about a study's Accession tree ids
+  // This will return information about a study's Accession tree ids vs VCF tree ids
   // First % = accession
   // Second % = organism_index (1 or 2 or 3 etc) @TODO
   $items['tpps/%/compare-accession-file-vs-vcf-file-tree-ids'] = array(
@@ -147,6 +147,20 @@ function tpps_menu() {
     // 'access arguments' => array('access tpps form', 1),
     'type' => MENU_CALLBACK,
   );
+
+
+  // This will return information about a study's VCF markers vs 
+  // First % = accession
+  // Second % = organism_index (1 or 2 or 3 etc) @TODO
+  $items['tpps/%/compare-vcf-markers-vs-snps-assay-markers'] = array(
+    'title' => 'TPPS Accession VCF Tree Ids',
+    'page callback' => 'tpps_compare_vcf_markers_vs_snps_assay_markers',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );  
 
   $items['tpps/%/edit-publication'] = array(
     'title' => 'TPPS Edit Publication Information',
