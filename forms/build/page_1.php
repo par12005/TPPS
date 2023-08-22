@@ -49,15 +49,9 @@ function tpps_simple_page_1_create_form(array $form, array &$form_state) {
   // TPPS Version.
   $values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
-  $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
-  if ($is_tppsc) {
-    tpps_new_publication($form, $form_state);
-  }
-  else {
-    // @TODO [VS] Get rid of '$values'.
-    tpps_user_info($form, $values);
-    tpps_publication($form, $values, $form_state);
-  }
+  // @TODO [VS] Get rid of '$values'.
+  tpps_user_info($form, $values);
+  tpps_publication($form, $values, $form_state);
 
   $file_upload_location = 'public://' . variable_get('tpps_study_photo_files_dir', 'tpps_study_photos');
   $form['study_photo'] = array(
@@ -101,14 +95,12 @@ function tpps_simple_page_1_create_form(array $form, array &$form_state) {
  * @return array
  *   Returns 'Publication Information' fieldset with form elements.
  */
-function tpps_new_publication(array &$form, array $form_state) {
+function tpps_curation_publication(array &$form, array $form_state) {
 
   $values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-  dpm($values);
   $form['publication'] = [
     '#type' => 'fieldset',
-    // @TODO Remove  CSS class or update CSS-file.
-    '#title' => t('<div class="fieldset-title">Publication Information:</div>'),
+    '#title' => t('Publication Information:'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
   ];
@@ -136,6 +128,43 @@ function tpps_new_publication(array &$form, array $form_state) {
       'title' => ['First Author of the publication'],
     ],
   ];
+
+  return $form;
+
+
+  if (!empty($doi_info) && 0) {
+    $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
+    $tpps_form = [];
+
+    //tpps_curation_publication($form, $form_state);
+    //$tpps_form = tpps_simple_page_1_create_form($form, $form_state);
+    $form['publication']['primaryAuthor'] = $tpps_form['primaryAuthor'];
+    $form['publication'] = $tpps_form['publication'];
+
+    $form['publication']['journal']['#title'] = t('Journal:');
+    $form['publication']['status']['#title'] = t('Publication Status:');
+    $form['publication']['status']['#disabled'] = TRUE;
+
+    $form['doi']['#suffix'] = "The publication has been successfully loaded from Dryad<br>";
+    $form['primaryAuthor']['#default_value'] = $doi_info['primary'] ?? "";
+    $form['publication']['title']['#default_value'] = $doi_info['title'] ?? "";
+    $form['publication']['abstract']['#default_value'] = $doi_info['abstract'] ?? "";
+    $form['publication']['journal']['#default_value'] = $doi_info['journal'] ?? "";
+    $form['publication']['year']['#default_value'] = $doi_info['year'] ?? "";
+  }
+  else {
+    // DOI Info is empty.
+    $form['publication']['primaryAuthor'] = [
+      '#type' => 'hidden',
+      '#disabled' => TRUE,
+    ];
+    $form['publication'] = ['#type' => 'hidden'];
+    $form['organism'] = ['#type' => 'fieldset'];
+  }
+
+
+
+
   // @TODO Check if $values respects '#tree'.
   // if(isset($values['primaryAuthor']) && $values['primaryAuthor'] != "") {
   //   $form['publication']['primaryAuthor']['#value'] = $values['primaryAuthor'];
@@ -188,192 +217,200 @@ function tpps_page_1_curation_form(array &$form, array &$form_state) {
   // TPPSc Version (Curation version).
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
+  //$publication_status = tpps_get_ajax_value(
+  //  $form_state, ['publication', 'status'], NULL
+  //);
+  //dpm($publication_status);
+
+  $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']);
+  if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
+    $doi_info = tpps_doi_info($doi);
+  }
+  $species = $doi_info['species'] ?? [];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Publication.
+  tpps_curation_publication($form, $form_state);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // DOI Fields.
+  //
+  // Note:
   // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
+  // Accession will be stored in 'old_tgdr' field.
+  $form['doi_wrapper'] = [
+    '#type' => 'container',
+    '#attributes' => ['id' => 'doi-wrapper'],
+    '#tree' => FALSE,
+    // @TODO Before 'doi-wrapper' included whole form so when doi field
+    // was filled whole form was rebuilt.
+  ];
+  // @TODO Minor. Rename field to 'publication_doi'.
+  $form['doi_wrapper']['doi'] = [
+    '#type' => 'textfield',
+    '#title' => t('Publication DOI: *'),
+    '#ajax' => [
+      'callback' => 'tpps_ajax_doi_callback',
+      'wrapper' => "doi-wrapper",
+    ],
+    '#description' => 'Example: '
+      // @TODO Use l().
+      . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
+      . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
+  ];
+  $form['doi_wrapper']['dataset_doi'] = [
+    '#type' => 'textfield',
+    '#title' => t('Dryad DOI:'),
+    '#description' => 'Examples: '
+      // @TODO Use l().
+      . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
+      . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
+  ];
+
   if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
-    // [VS]
-    // @TODO Minor. Rename field to 'dataset_doi'.
-    $form['doi'] = [
-      '#type' => 'textfield',
-      '#title' => t('Publication DOI: *'),
-      '#ajax' => [
-        'callback' => 'tpps_ajax_doi_callback',
-        'wrapper' => "doi-wrapper",
-      ],
-      '#description' => 'Example: '
-        . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
-        . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
-      '#prefix' => '<div style="text-align: right;"></div>',
-    ];
-    $form['dataset_doi'] = [
-      '#type' => 'textfield',
-      '#title' => t('Dataset DOI:'),
-      '#description' => 'Examples: '
-        . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
-        . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
-      '#prefix' => '<div style="text-align: right;"></div>',
-    ];
 
-    $doi = tpps_get_ajax_value($form_state, ['doi']);
 
-    $species = [];
-    $form['primaryAuthor'] = ['#type' => 'hidden', '#disabled' => TRUE];
-    $form['publication'] = ['#type' => 'hidden'];
-    $form['organism'] = ['#type' => 'fieldset'];
-    if (!empty($doi)) {
-      // @todo Replace with TPPS module.
-      module_load_include('inc', 'tppsc', 'includes/doi');
-      $doi_info = tppsc_doi_info($doi);
-      if (!empty($doi_info)) {
-        // dpm('DOI info contains pub info');
-        $species = $doi_info['species'] ?? [];
-
-        $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
-        $tpps_form = [];
-        $tpps_form = tpps_simple_page_1_create_form($form, $form_state);
-        $form['primaryAuthor'] = $tpps_form['primaryAuthor'];
-        $form['publication'] = $tpps_form['publication'];
-
-        $form['publication']['journal']['#title'] = t('Journal:');
-        $form['publication']['status']['#title'] = t('Publication Status:');
-        $form['publication']['status']['#disabled'] = TRUE;
-
-        $form['doi']['#suffix'] = "The publication has been successfully loaded from Dryad<br>";
-        $form['primaryAuthor']['#default_value'] = $doi_info['primary'] ?? "";
-        $form['publication']['title']['#default_value'] = $doi_info['title'] ?? "";
-        $form['publication']['abstract']['#default_value'] = $doi_info['abstract'] ?? "";
-        $form['publication']['journal']['#default_value'] = $doi_info['journal'] ?? "";
-        $form['publication']['year']['#default_value'] = $doi_info['year'] ?? "";
-      }
-      else {
-        // dpm('DOI Info is empty');
-        $tpps_form = [];
-        $tpps_form = tpps_simple_page_1_create_form($form, $form_state);
-        $form['primaryAuthor'] = $tpps_form['primaryAuthor'];
-        $form['publication'] = $tpps_form['publication'];
-      }
-    }
-    // [/VS]
-    $org_number = tpps_get_ajax_value($form_state, array('organism', 'number'));
-    if (!isset($org_number) and !empty($species)) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Organism.
+    if (empty($org_number) and !empty($species)) {
       $org_number = $form_state['values']['organism']['number'] = count($species);
     }
     for ($i = 1; $i <= $org_number; $i++) {
-      $org = tpps_get_ajax_value($form_state, array('organism', $i));
+      $org = tpps_get_ajax_value($form_state, ['organism', $i]);
       if (empty($org) and !empty($species[$i - 1])) {
         $form_state['values']['organism'][$i] = $species[$i - 1];
       }
     }
+    tpps_organism($form, $form_state);
+  }
+  else {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Not empty DOI.
+    $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
+
+    $form_state['ids']['project_id'] = $project_id = chado_select_record(
+      'project_dbxref', ['project_id'], ['dbxref_id' => $form_state['dbxref_id']]
+    )[0]->project_id;
+
+    $publication = tpps_get_publication_data($project_id, $form_state);
+    $form['publication']['primaryAuthor']['#default_value'] = $publication['primary_default'];
+    $form['publication']['title']['#default_value'] = $publication['title_default'];
+    $form['publication']['year']['#default_value'] = $publication['year_default'];
+    $form['publication']['abstract']['#default_value'] = $publication['abs_default'];
+
+
+
+    $form['publication']['journal']['#title'] = t('Journal:');
+    $form['publication']['status']['#title'] = t('Publication Status:');
+    $form['publication']['status']['#disabled'] = TRUE;
+
+    $i = 1;
+    foreach ($publication['secondary_authors'] as $author) {
+      $form['publication']['secondaryAuthors'][$i]['#default_value']
+        = $saved_values['publication']['secondaryAuthors'][$i]
+        ?? "$author->givennames $author->surname";
+      $i++;
+    }
 
     tpps_organism($form, $form_state);
-
-    $form['#prefix'] = '<div id="doi-wrapper">' . $form['#prefix'];
-    $form['#suffix'] = (!empty($form['#suffix'])) ? $form['#suffix'] . '</div>' : '</div>';
-
-    $form['Save'] = array(
-      '#type' => 'submit',
-      '#value' => t('Save'),
-      '#prefix' => '<div class="input-description">* : Required Field</div>',
+    $organisms = chado_query('SELECT genus, species '
+      . 'FROM chado.organism WHERE organism_id IN ('
+        . 'SELECT DISTINCT organism_id '
+        . 'FROM chado.stock '
+        . 'WHERE stock_id IN ('
+          . 'SELECT stock_id '
+          . 'FROM chado.project_stock '
+          . 'WHERE project_id = :project_id));',
+          [':project_id' => $project_id]
     );
-
-    $form['Next'] = array(
-      '#type' => 'submit',
-      '#value' => t('Next'),
-    );
-    return;
+    $i = 1;
+    foreach ($organisms as $org) {
+      $form['organism'][$i]['#default_value'] = $saved_values['organism'][$i]
+        ?? "$org->genus $org->species";
+      $i++;
+    }
+    $form['organism']['number'] = [
+      '#type' => 'hidden',
+      '#value' => tpps_get_ajax_value($form_state, ['organism', 'number'], $i - 1),
+    ];
+  }
+  if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
+    // Show DOI fieldset only for 'Published' status.
+    $form['doi_wrapper']['#states'] = [
+      'visible' => [
+        ':input[name="publication[status]"]' => ['value' => 'Published'],
+      ],
+    ];
   }
 
-  $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
-  $tpps_form = array();
-  $tpps_form = tpps_page_1_create_form($tpps_form, $form_state);
+  tpps_add_buttons($form, 'page_1');
+  return $form;
+}
 
-  $form_state['ids']['project_id'] = chado_select_record(
-    'project_dbxref',
-    ['project_id'],
-    ['dbxref_id' => $form_state['dbxref_id']]
-  )[0]->project_id;
-
+/**
+ * Gets publication data from database or from previously submitted data.
+ *
+ * @param int $project_id
+ *   Project Id.
+ * @param array $form_state
+ *   Drupal Form API state array.
+ *
+ * @return array
+ *   Returns publication's data to be used to set default values.
+ *
+ * @TODO [VS] Pass $form by reference and update default values of fields.
+ */
+function tpps_get_publication_data($project_id, array $form_state) {
+  $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
+  // Get publication Id.
   $pub_id = chado_select_record(
-    'project_pub',
-    ['pub_id'],
-    ['project_id' => $form_state['ids']['project_id']]
+    'project_pub', ['pub_id'], ['project_id' => $project_id]
   )[0]->pub_id;
 
+  // Publication Title and Year.
   $pub = chado_select_record('pub', ['*'], ['pub_id' => $pub_id])[0];
-  $title_default = $saved_values['publication']['title'] ?? $pub->title;
-  $year_default = $saved_values['publication']['year'] ?? $pub->pyear;
-
-  $abstract = chado_select_record('pubprop', array('value'), array(
-    'pub_id' => $pub_id,
-    'type_id' => array(
-      'name' => 'Abstract',
-      'cv_id' => array(
-        'name' => 'tripal_pub',
-      ),
-    ),
-  ))[0]->value;
-  $abs_default = $saved_values['publication']['abstract'] ?? $abstract;
-
-  $primary_author = chado_select_record('pubauthor', array('givennames', 'surname'), array(
-    'pub_id' => $pub_id,
-    'rank' => 0,
-  ))[0];
-  $primary_default = $saved_values['primaryAuthor'] ?? "$primary_author->givennames $primary_author->surname";
-
-  $secondary_authors = chado_select_record('pubauthor', array('givennames', 'surname'), array(
-    'pub_id' => $pub_id,
-    'rank' => array(
-      'op' => '!=',
-      'data' => 0,
-    ),
-  ));
-
-  $organisms = chado_query('SELECT genus, species '
-    . 'FROM chado.organism WHERE organism_id IN ('
-      . 'SELECT DISTINCT organism_id '
-      . 'FROM chado.stock '
-      . 'WHERE stock_id IN ('
-        . 'SELECT stock_id '
-        . 'FROM chado.project_stock '
-        . 'WHERE project_id = :project_id));', array(':project_id' => $form_state['ids']['project_id']));
-
-  $form['primaryAuthor'] = $tpps_form['primaryAuthor'];
-  $form['primaryAuthor']['#default_value'] = $primary_default;
-
-  $form['publication'] = $tpps_form['publication'];
-  $form['publication']['title']['#default_value'] = $title_default;
-  $form['publication']['year']['#default_value'] = $year_default;
-  $form['publication']['abstract']['#default_value'] = $abs_default;
-
-  $form['organism'] = $tpps_form['organism'];
-
-  $form['publication']['journal']['#title'] = t('Journal:');
-  $form['publication']['status']['#title'] = t('Publication Status:');
-  $form['publication']['status']['#disabled'] = TRUE;
-
-  $i = 1;
-  foreach ($secondary_authors as $author) {
-    $form['publication']['secondaryAuthors'][$i]['#default_value'] = $saved_values['publication']['secondaryAuthors'][$i] ?? "$author->givennames $author->surname";
-    $i++;
+  $data['title_default'] = $saved_values['publication']['title'] ?? $pub->title;
+  $data['year_default'] = $saved_values['publication']['year'] ?? $pub->pyear;
+  // Abstract.
+  if (!empty($saved_values['publication']['abstract'])) {
+    $data['abs_default'] = $saved_values['publication']['abstract'];
   }
-
-  $i = 1;
-  foreach ($organisms as $org) {
-    $form['organism'][$i]['#default_value'] = $saved_values['organism'][$i] ?? "$org->genus $org->species";
-    $i++;
+  else {
+    $data['abs_default'] = chado_select_record(
+      'pubprop',
+      ['value'],
+      [
+        'pub_id' => $data['pub_id'],
+        'type_id' => [
+          'name' => 'Abstract',
+          'cv_id' => ['name' => 'tripal_pub'],
+        ],
+      ]
+    )[0]->value;
   }
-  $form['organism']['number'] = array(
-    '#type' => 'hidden',
-    '#value' => tpps_get_ajax_value($form_state, array('organism', 'number'), $i - 1),
+  // Primary Author.
+  if (!empty($saved_values['publication']['primaryAuthor'])) {
+    $data['primary_default'] = $saved_values['publication']['primaryAuthor'];
+  }
+  else {
+    $primary_author = chado_select_record(
+      'pubauthor',
+      ['givennames', 'surname'],
+      [
+        'pub_id' => $pub_id,
+        'rank' => 0,
+      ]
+    )[0];
+    $data['primary_default'] = "$primary_author->givennames $primary_author->surname";
+  }
+  // List of secondary authors.
+  $data['secondary_authors'] = chado_select_record(
+    'pubauthor',
+    ['givennames', 'surname'],
+    [
+      'pub_id' => $pub_id,
+      'rank' => ['op' => '!=', 'data' => 0],
+    ]
   );
-
-  $form['Save'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-    '#prefix' => '<div class="input-description">* : Required Field</div>',
-  );
-
-  $form['Next'] = array(
-    '#type' => 'submit',
-    '#value' => t('Next'),
-  );
+  return $data;
 }
