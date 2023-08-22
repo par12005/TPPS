@@ -164,6 +164,7 @@ div.media-widget.form-media a.browse {
  * Make visible all options of dropdown when multiple options enabled.
  * @TODO This must be done for all site pages.
  **/
+select#edit-accession,
 select.form-select {
   max-width: 100%;
   height: auto;
@@ -177,6 +178,9 @@ form[id^="tppsc-main"] {
   padding-left: 10px;
 }
 form[id^="tppsc-main"] fieldset legend {
-  margin-left: -10px;
+  margin-left: -5px;
+}
+form[id^="tppsc-main"] fieldset legend span a {
+  display: inline-block;
 }
 /* [/VS] */
