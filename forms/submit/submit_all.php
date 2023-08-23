@@ -3820,6 +3820,8 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
   $headers = &$options['headers'];
   $records = &$options['records'];
   $columns = $options['file_columns'];
+  $organism_index = $options['organism_index'];
+  $seq_var_cvterm = $options['seq_var_cvterm'];
   // print_r("File columns: ");
   // print_r($columns);
   // print_r("\n");
@@ -3840,6 +3842,26 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
   $marker_name_raw = $line_rows[$columns['marker_name']];
   $position = intval($line_rows[$columns['position']]);
   $marker_type = $options['marker_type']; // we could force 'SNP' here
+
+
+  // RISH NOTES: This addition uses the organism_id based on the organism order
+  // of the fourth page (we likely have to pass the i from previous function here)
+  // THIS TECHNICALLY OVERRIDES PETER'S LOGIC ABOVE. TO BE DETERMINED IF RISH'S WAY IS CORRECT
+  // OR NOT [6/22/2023]
+  // THIS WAS AN ISSUE BROUGHT UP BY EMILY REGARDING SNPS NOT BEING ASSOCIATED WITH POP TRICH (665 STUDY)
+  $species_codes = $options['species_codes'];
+  $species_code = null;
+  $organism_id = null;
+  $count_tmp = 0;
+  foreach ($species_codes as $organism_id_tmp => $species_code_tmp) {
+    $count_tmp = $count_tmp + 1; // increment
+    // Check if count_tmp matches $organism_index
+    if ($count_tmp == $organism_index) {
+      $species_code = $species_code_tmp;
+      $organism_id = $organism_id_tmp;
+      break;
+    }
+  }
 
   $srcfeature_id = NULL;
   // Get the srcfeature_id
@@ -3868,6 +3890,25 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
     $feature_id = NULL;
     foreach ($results as $feature) {
       $feature_id = $feature->feature_id;
+    }
+
+    if ($feature_id == NULL) {
+      // We should add the marker (marker_name)
+      // $marker_name
+      chado_insert_record('feature', [
+        'name' => $marker_name,
+        'organism_id' => $organism_id,
+        'uniquename' => $marker_name,
+        'type_id' => $seq_var_cvterm,
+      ]);
+
+      // Recheck for the feature_id
+      $results = chado_query("SELECT * FROM chado.feature WHERE uniquename = :uniquename", [
+        ':uniquename' => $marker_name
+      ]);
+      foreach ($results as $feature) {
+        $feature_id = $feature->feature_id;
+      }
     }
 
     if ($feature_id != NULL) {
