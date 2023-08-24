@@ -36,7 +36,6 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
     // TPPS Form.
     $form = array_merge($form, tpps_simple_page_1_create_form($form, $form_state));
   }
-
   return $form;
 }
 
@@ -200,6 +199,7 @@ function tpps_curation_publication(array &$form, array $form_state) {
     // }
   }
 
+  tpps_add_buttons($form, 'page_1');
   return $form;
 }
 

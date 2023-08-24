@@ -68,16 +68,22 @@ function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
  *   Returns FALSE if synonym wasn't found.
  */
 function tpps_synonym_get($synonym_id) {
-  $results = chado_select_record(
-    'phenotype_synonyms',
-    array('*'),
-    array('phenotype_synonyms_id' => $synonym_id)
-  );
-  if (!empty($results)) {
-    // We need only one row.
-    return reset($results);
+  // Table 'phenotype_synonyms' was created manually and wasn't added
+  // to Chado so Chado API can't be used for now.
+  $use_chado = FALSE;
+  if ($use_chado) {
+    $results = chado_select_record(
+      'phenotype_synonyms', ['*'], ['phenotype_synonyms_id' => $synonym_id]
+    );
   }
-  return FALSE;
+  else {
+    $result = db_select( 'chado.phenotype_synonyms', 'cps')
+      ->fields('cps', [])
+      ->condition('cps.phenotype_synonyms_id', $synonym_id)
+      ->execute()
+      ->fetchAll();
+  }
+  return reset($result);
 }
 
 /**
