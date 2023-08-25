@@ -183,3 +183,19 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
 function tpps_synonym_selector($id) {
   return ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][synonym_id]"]';
 }
+
+/**
+ * Creates new phenotype synonym in database.
+ *
+ * @param array $data
+ *   Synonym's data to be inserted into database.
+ *
+ * @return int
+ *   Returns Id of recently added Phenotype Synonym.
+ */
+function tpps_synonym_add(array $data) {
+  $id = $query = db_insert('chado.phenotype_synonyms')->fields($data)->execute();
+  // Update cached list of units.
+  tpps_unit_get_list('all', [], TRUE);
+  return $id;
+}
