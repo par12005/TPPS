@@ -93,7 +93,7 @@ function tpps_menu() {
     // 'access callback' => 'tpps_access',
     // 'access arguments' => array('access tpps form', 1),
     'type' => MENU_CALLBACK,
-  );  
+  );
 
   // This will return information about a study's Accession tree ids
   // First % = accession
@@ -149,7 +149,7 @@ function tpps_menu() {
   );
 
 
-  // This will return information about a study's VCF markers vs 
+  // This will return information about a study's VCF markers vs
   // First % = accession
   // Second % = organism_index (1 or 2 or 3 etc) @TODO
   $items['tpps/%/compare-vcf-markers-vs-snps-assay-markers'] = array(
@@ -160,7 +160,7 @@ function tpps_menu() {
     // 'access callback' => 'tpps_access',
     // 'access arguments' => array('access tpps form', 1),
     'type' => MENU_CALLBACK,
-  );  
+  );
 
   $items['tpps/%/edit-publication'] = array(
     'title' => 'TPPS Edit Publication Information',
@@ -279,18 +279,38 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'includes/manage_doi.inc',
   );
-
-  $items['admin/config/content/tpps'] = array(
-    'title' => 'TPPS Settings',
-    'description' => 'Configuration for TPPS module',
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Settings.
+  $items['admin/config/tpps'] = [
+    'title' => 'TPPS',
+    'description' => 'TPPS Settings',
+    'position' => 'right',
+    'weight' => -10,
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => ['access administration pages'],
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
+  ];
+  $items['admin/config/tpps/main'] = array(
+    'title' => 'Main Settings',
+    'description' => 'Main TPPS Settings',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_admin_settings'),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
-    'type' => MENU_NORMAL_ITEM,
+    'page arguments' => ['tpps_admin_settings'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => drupal_get_path('module', 'tpps'),
     'file' => 'admin/config.php',
   );
-
+  $items['admin/config/tpps/add-synonym'] = array(
+    'title' => 'Add Synonym',
+    'description' => 'Create new Phenotype Synonym',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_add_synonym_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => drupal_get_path('module', 'tpps'),
+    'file' => 'admin/add_synonym.inc',
+    'weight' => 10,
+  );
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items['tpps/autocomplete/%'] = array(
     'title' => 'TPPS Autocomplete',
     'description' => 'Autocomplete functions for TPPS module',
@@ -301,7 +321,6 @@ function tpps_menu() {
     'type' => MENU_NORMAL_ITEM,
     'file' => 'ajax/tpps_ajax.php',
   );
-
   /*
    * Ajax Callback for accession coordinates.
    */
@@ -363,8 +382,23 @@ function tpps_menu() {
     'type' => MENU_CALLBACK
   );
 
+  // [VS].
+  // Reports.
+  $items['admin/reports/tpps'] = [
+    'title' => 'Reports',
+    'description' => 'User specific reports',
+    'type' => MENU_LOCAL_TASK,
+    'page callback' => 'menu_secondary_local_tasks',
+    'access arguments' => ['administer tpps module'],
+  ];
+  $items['admin/reports/tpps/default'] = [
+    'title' => 'TPPS Reports',
+    'description' => 'TPPS Reports',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'access arguments' => ['administer tpps module'],
+  ];
   // [VS] Synonym and Unit reports.
-  $items['admin/reports/unit-warning'] = [
+  $items['admin/reports/tpps/unit-warning'] = [
     'title' => variable_get('tpps_report_unit_warning_title',
       'Unit Warning (list of phenotypes which unit differs from Synonym)'),
     'description' => "List of Phenotypes which differs from Synonym's Unit.",
@@ -383,7 +417,7 @@ function tpps_menu() {
     'file' => 'reports/unit_warning.inc',
   ];
   // No synonym.
-  $items['admin/reports/no-synonym'] = [
+  $items['admin/reports/tpps/no-synonym'] = [
     'title' => variable_get('tpps_report_no_synonym_title',
       'List of phenotypes without Synonyms'),
     'description' => "List of phenotypes without synonym.",
@@ -402,7 +436,7 @@ function tpps_menu() {
     'file' => 'reports/no_synonym.inc',
   ];
   // Order/Family Exist Report.
-  $items['admin/reports/order-family-not-exist'] = [
+  $items['admin/reports/tpps/order-family-not-exist'] = [
     'title' => variable_get('tpps_report_order_family_not_exist_title',
       'Order/Family not exist'),
     'description' => "Lists non-existing order/family.",
@@ -421,7 +455,7 @@ function tpps_menu() {
     'file' => 'reports/order_family_not_exist.inc',
   ];
   // Missing DOI reports.
-  $items['admin/reports/missing-doi'] = [
+  $items['admin/reports/tpps/missing-doi'] = [
     'title' => variable_get('tpps_report_missing_doi_title', 'Missing DOI'),
     'description' => 'List of Studies without DOI attached.',
     'page callback' => 'tpps_missing_doi_report',
@@ -438,7 +472,6 @@ function tpps_menu() {
   ];
   // [/VS].
   $items = array_merge($items, tpps_api_paths());
-
   return $items;
 }
 
