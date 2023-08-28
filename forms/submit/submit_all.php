@@ -65,18 +65,20 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
 
-  // RISH 7/18/2023 - Run some checks before going through most of the genotype
-  // processing (this will error out if an issue is found to avoid long failing loads)
-  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-  $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  for ($i = 1; $i <= $organism_number; $i++) {
-    tpps_genotype_initial_checks($form_state, $i, $job);
-  }
-
 
   $transaction = db_transaction();
 
   try {
+
+    // RISH 7/18/2023 - Run some checks before going through most of the genotype
+    // processing (this will error out if an issue is found to avoid long failing loads)
+    $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+    $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+    for ($i = 1; $i <= $organism_number; $i++) {
+      tpps_genotype_initial_checks($form_state, $i, $job);
+    }
+
+
     tpps_log('[INFO] Clearing Database...');
     tpps_submission_clear_db($accession);
     tpps_log('[INFO] Database Cleared');
