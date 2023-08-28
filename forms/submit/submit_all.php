@@ -5089,14 +5089,27 @@ function tpps_genotype_initial_checks($form_state, $i, $job) {
 
   // If both a VCF file and a SNPS assay file exists
   if($vcf_location['status'] == 'exists' and $snps_assay_location['status'] == 'exists') {
-    // [RISH] 7/18/2023 - TODO - check if they match or not, functions already built
-    // (check previous lines) where the arrays already exist - just need to run the
-    // array_diff function
+    // [RISH] 8/28/2023 - TODO - check if they (markers) match or not
+    // because we changed logic of how this is done, we may not need this check
+    // since we are interested in a design file and snps assay file check instead
 
-
-
+    // require_once(__DIR__ . '/../includes/form_utils.php');
+    // $accession = $form_state['accession'];
+    // $results = tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession, $i);
+    // if ($results['markers_not_in_vcf_count'] > 0) {
+    //   throw new Exception("SNPs assay contains markers that are not in the VCF file");
+    // }
+    // else {
+    //   echo "[CHECK PASSED] SNPs assay does not contain additional markers compared to VCF file\n";
+    // }
+    // if ($results['markers_not_in_snps_assay'] > 0) {
+    //   throw new Exception("VCF contains markers that are not present in SNPs assay");
+    // }
+    // else {
+    //   echo "[CHECK PASSED] VCF does not contain additional markers compared to SNPs assay file\n";
+    // }
   }
-  // throw new Exception('DEBUG');
+
 }
 
 // TODO

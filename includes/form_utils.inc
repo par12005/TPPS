@@ -565,10 +565,18 @@ function tpps_snps_assay_markers($accession = NULL, $i = 1) {
 
 /**
  * This function will show the diff between vcf markers
- * and snps assay markers
+ * and snps assay markers - outputs JSON output and used for API call
  */
 function tpps_compare_vcf_markers_vs_snps_assay_markers($accession = NULL, $i = 1) {
+  $overall_results = tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession = NULL, $i = 1);
+  echo json_encode($overall_results);
+}
 
+/**
+ * This function will do the actual comparing between vcf_markers and snps_assay markers
+ * and returns an array
+ */
+function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession = NULL, $i = 1) {
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
 
   // VCF markers
@@ -602,8 +610,10 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers($accession = NULL, $i = 
     'markers_not_in_snps_assay' => $results_not_overlapping_in_snps_assay,
     'markers_not_in_snps_assay_count' => count($results_not_overlapping_in_snps_assay),
   ];
-  echo json_encode($overall_results);
+  return $overall_results;
 }
+
+
 
 
 /**
