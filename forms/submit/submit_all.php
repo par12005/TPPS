@@ -65,18 +65,20 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   $form_state['status'] = 'Submission Job Running';
   tpps_update_submission($form_state, array('status' => 'Submission Job Running'));
 
-  // RISH 7/18/2023 - Run some checks before going through most of the genotype
-  // processing (this will error out if an issue is found to avoid long failing loads)
-  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-  $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  for ($i = 1; $i <= $organism_number; $i++) {
-    tpps_genotype_initial_checks($form_state, $i, $job);
-  }
-
 
   $transaction = db_transaction();
 
   try {
+
+    // RISH 7/18/2023 - Run some checks before going through most of the genotype
+    // processing (this will error out if an issue is found to avoid long failing loads)
+    $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+    $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+    for ($i = 1; $i <= $organism_number; $i++) {
+      tpps_genotype_initial_checks($form_state, $i, $job);
+    }
+
+
     tpps_log('[INFO] Clearing Database...');
     tpps_submission_clear_db($accession);
     tpps_log('[INFO] Database Cleared');
@@ -3820,6 +3822,8 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
   $headers = &$options['headers'];
   $records = &$options['records'];
   $columns = $options['file_columns'];
+  $organism_index = $options['organism_index'];
+  $seq_var_cvterm = $options['seq_var_cvterm'];
   // print_r("File columns: ");
   // print_r($columns);
   // print_r("\n");
@@ -3840,6 +3844,26 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
   $marker_name_raw = $line_rows[$columns['marker_name']];
   $position = intval($line_rows[$columns['position']]);
   $marker_type = $options['marker_type']; // we could force 'SNP' here
+
+
+  // RISH NOTES: This addition uses the organism_id based on the organism order
+  // of the fourth page (we likely have to pass the i from previous function here)
+  // THIS TECHNICALLY OVERRIDES PETER'S LOGIC ABOVE. TO BE DETERMINED IF RISH'S WAY IS CORRECT
+  // OR NOT [6/22/2023]
+  // THIS WAS AN ISSUE BROUGHT UP BY EMILY REGARDING SNPS NOT BEING ASSOCIATED WITH POP TRICH (665 STUDY)
+  $species_codes = $options['species_codes'];
+  $species_code = null;
+  $organism_id = null;
+  $count_tmp = 0;
+  foreach ($species_codes as $organism_id_tmp => $species_code_tmp) {
+    $count_tmp = $count_tmp + 1; // increment
+    // Check if count_tmp matches $organism_index
+    if ($count_tmp == $organism_index) {
+      $species_code = $species_code_tmp;
+      $organism_id = $organism_id_tmp;
+      break;
+    }
+  }
 
   $srcfeature_id = NULL;
   // Get the srcfeature_id
@@ -3868,6 +3892,25 @@ function tpps_process_genotype_snp_assay_design($row, array &$options = array())
     $feature_id = NULL;
     foreach ($results as $feature) {
       $feature_id = $feature->feature_id;
+    }
+
+    if ($feature_id == NULL) {
+      // We should add the marker (marker_name)
+      // $marker_name
+      chado_insert_record('feature', [
+        'name' => $marker_name,
+        'organism_id' => $organism_id,
+        'uniquename' => $marker_name,
+        'type_id' => $seq_var_cvterm,
+      ]);
+
+      // Recheck for the feature_id
+      $results = chado_query("SELECT * FROM chado.feature WHERE uniquename = :uniquename", [
+        ':uniquename' => $marker_name
+      ]);
+      foreach ($results as $feature) {
+        $feature_id = $feature->feature_id;
+      }
     }
 
     if ($feature_id != NULL) {
@@ -4993,6 +5036,29 @@ function tpps_snps_assay_location($form_state, $i) {
   return $results;
 }
 
+
+function tpps_assay_design_location($form_state, $i) {
+  $results = [
+    'status' => 'empty', // empty, exists, missing
+    'location' => NULL,
+    'fid' => 0,
+  ];
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $snp_fid = $genotype['files']['assay-design'];
+  $results['fid'] = $snp_fid;
+  if ($snp_fid > 0) {
+    $results['status'] = 'exists';
+    $snp_file = file_load($snp_fid);
+    $location = tpps_get_location($snp_file->uri);
+    $results['location'] = $location;
+    if ($location == '' or $location == null) {
+      $results['status'] = 'missing';
+    }
+  }
+  return $results;
+}
+
 /**
  * This helper function will do some checks on the data to determine
  * if everything looks good before allow the genotype processing
@@ -5046,14 +5112,27 @@ function tpps_genotype_initial_checks($form_state, $i, $job) {
 
   // If both a VCF file and a SNPS assay file exists
   if($vcf_location['status'] == 'exists' and $snps_assay_location['status'] == 'exists') {
-    // [RISH] 7/18/2023 - TODO - check if they match or not, functions already built
-    // (check previous lines) where the arrays already exist - just need to run the
-    // array_diff function
+    // [RISH] 8/28/2023 - TODO - check if they (markers) match or not
+    // because we changed logic of how this is done, we may not need this check
+    // since we are interested in a design file and snps assay file check instead
 
-
-
+    // require_once(__DIR__ . '/../includes/form_utils.php');
+    // $accession = $form_state['accession'];
+    // $results = tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession, $i);
+    // if ($results['markers_not_in_vcf_count'] > 0) {
+    //   throw new Exception("SNPs assay contains markers that are not in the VCF file");
+    // }
+    // else {
+    //   echo "[CHECK PASSED] SNPs assay does not contain additional markers compared to VCF file\n";
+    // }
+    // if ($results['markers_not_in_snps_assay'] > 0) {
+    //   throw new Exception("VCF contains markers that are not present in SNPs assay");
+    // }
+    // else {
+    //   echo "[CHECK PASSED] VCF does not contain additional markers compared to SNPs assay file\n";
+    // }
   }
-  // throw new Exception('DEBUG');
+
 }
 
 // TODO

@@ -574,7 +574,59 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       '#weight' => $weight,
     );
 
-
+    $js_onclick_code = "
+      <script>
+      function check_snps_design_markers() {
+        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Checking SNPs Design Markers...');
+        jQuery.ajax({
+          url: '/tpps/" . $accession . "/assay-design-markers',
+          error: function (err) {
+            console.log(err);
+            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that this SNPs Design File is just too big to process it in time. Please contact Administration.');
+          },
+          success: function (data) {
+            console.log(data);
+            if (!Array.isArray(data)) {
+              // Data was returned, this is good
+              var html = '';
+              html += '<div>';
+              html += '🧬 Unique markers found: ' + data['unique_count'];
+              html += ' | ';
+              html += '🧬 Total markers found: ' + data['count'];
+              html += '</div>';
+              if (data['unique_count'] != data['count']) {
+                html += '<div>⚡ There are duplicate markers in this SNPs design file since unique count does not match count</div>';
+                html += '<hr /><div>Duplicate Markers (' + data['duplicate_values'].length + ')</div>';
+                for (var i=0; i<data['duplicate_values'].length; i++) {
+                  html += '<div class=\"cd-inline-round-red\">' + data['duplicate_values'][i] + '</div>';
+                }
+              }
+              else {
+                html += '<div>🆗 No duplicate markers found in the SNPs Design file</div>';
+              }
+              html += '<hr /><div>Unique Markers (' + data['values'].length + ')</div>';
+              for (var i=0; i<data['values'].length; i++) {
+                html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
+              }
+              jQuery('#diagnostic-curation-results').html(html);
+            }
+            else {
+              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1> No results returned, make sure you saved valid data on this page and retry. Double check SNPs Assay file existence as well.');
+            }
+          }
+        });
+      }
+      </script>
+    ";
+    $form['button-check-snps-design-markers'] = array(
+      '#type' => 'button',
+      '#prefix' => $js_onclick_code . '',
+      '#value' => 'Check SNPs Design Markers',
+      '#attributes' => array(
+        "onclick" => "javascript:check_snps_design_markers(); return false;"
+      ),
+      '#weight' => $weight,
+    );
 
     $js_onclick_code = "
       <script>

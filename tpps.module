@@ -148,6 +148,15 @@ function tpps_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['tpps/%/assay-design-markers'] = array(
+    'title' => 'TPPS SNPs Design Markers',
+    'page callback' => 'tpps_assay_design_markers',
+    'page arguments' => array(1),
+    'access arguments' => array('access content'),
+    // 'access callback' => 'tpps_access',
+    // 'access arguments' => array('access tpps form', 1),
+    'type' => MENU_CALLBACK,
+  );  
 
   // This will return information about a study's VCF markers vs
   // First % = accession
