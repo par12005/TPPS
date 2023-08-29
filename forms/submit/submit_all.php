@@ -5036,6 +5036,29 @@ function tpps_snps_assay_location($form_state, $i) {
   return $results;
 }
 
+
+function tpps_assay_design_location($form_state, $i) {
+  $results = [
+    'status' => 'empty', // empty, exists, missing
+    'location' => NULL,
+    'fid' => 0,
+  ];
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $snp_fid = $genotype['files']['assay-design'];
+  $results['fid'] = $snp_fid;
+  if ($snp_fid > 0) {
+    $results['status'] = 'exists';
+    $snp_file = file_load($snp_fid);
+    $location = tpps_get_location($snp_file->uri);
+    $results['location'] = $location;
+    if ($location == '' or $location == null) {
+      $results['status'] = 'missing';
+    }
+  }
+  return $results;
+}
+
 /**
  * This helper function will do some checks on the data to determine
  * if everything looks good before allow the genotype processing

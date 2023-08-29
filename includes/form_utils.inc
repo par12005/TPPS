@@ -563,6 +563,88 @@ function tpps_snps_assay_markers($accession = NULL, $i = 1) {
   drupal_json_output($result);
 }
 
+// function tpps_assay_design_markers($accession = NULL, $i = 1) {
+//   require_once(__DIR__ . '/../forms/submit/submit_all.php');
+//   $form_state = tpps_load_submission($accession);
+//   $assay_design_location = tpps_assay_design_location($form_state, $i); // returns array['status', 'location'];
+//   // print_r($snps_assay_location);
+//   $result = [];
+//   if ($assay_design_location['status'] == 'exists') {
+//     $result = tpps_genotype_get_snps_assay_markers($assay_design_location['fid']);
+//   }
+//   drupal_json_output($result);
+// }
+
+function tpps_assay_design_markers($accession = NULL, $i = 1) {
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  $form_state = tpps_load_submission($accession); // get the form state
+  drupal_json_output(tpps_get_assay_design_file_markers($form_state, $i));
+
+  
+}
+
+/** This function will generate the markers and place it in a standardized
+ *  array format similar to other functions like vcf markers etc. The actually 
+ *  array design is a specific key format to make things easy to understand
+ */
+function tpps_get_assay_design_file_markers($form_state, $i) {
+  require_once(__DIR__ . '/../includes/file_utils.inc');
+  
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $fid = $genotype['files']['assay-design'];
+  $file_headers = tpps_file_headers($fid, FALSE);
+  $marker_name_column = NULL; // empty until found, this will contain A or B or C etc
+  foreach ($file_headers as $column => $column_name) {
+    $column_name_normalized = strtolower($column_name);
+    $column_name_normalized = str_replace(' ', '_', $column_name_normalized);
+    if ($column_name_normalized == 'marker_name') {
+      $marker_name_column = $column;
+      break;
+    }
+  }
+  // print_r($file_headers);
+  // print_r($marker_name_column);
+  // exit;
+  $options = [
+    'marker_name_column' => $marker_name_column 
+  ];
+  $options['no_header'] = FALSE; // detect if there is a header or not
+  tpps_file_iterator($fid, 'tpps_get_assay_design_file_markers_iterate_line', $options);
+
+  $output = [
+    'values' => array_keys($options['values']),
+    'duplicate_values' => array_keys($options['duplicate_values']),
+    'count' => $options['count'],
+    'unique_count' => $options['unique_count']
+  ];
+  return $output;
+}
+
+/**
+ * This function iterates through each row of the accession
+ * file and return the markers based on the column 'marker_name' in TPPS
+ */
+function tpps_get_assay_design_file_markers_iterate_line($row, &$options, $job = NULL) {
+  $marker_name_column = $options['marker_name_column']; // eg A
+  if (!isset($options['values'])) {
+    $options['values'] = [];
+    $options['duplicate_values'] = [];
+    $options['unique_count'] = 0;
+    $options['count'] = 0;
+  }
+  $marker_name = $row[$marker_name_column];
+  
+  $options['count'] = $options['count'] + 1; // increase count by 1
+  if (isset($options['values'][$marker_name])) {
+    $options['duplicate_values'][$marker_name] = 1; // set as duplicate_value
+  }
+  else {
+    $options['unique_count'] = $options['unique_count'] + 1; // it's unique so increment
+  }
+  $options['values'][$marker_name] = 1; // record that the marker name exists
+}
+
 /**
  * This function will show the diff between vcf markers
  * and snps assay markers - outputs JSON output and used for API call
