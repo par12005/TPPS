@@ -25,16 +25,14 @@ require_once 'page_1_ajax.php';
  *   The completed Publication/Species Information form.
  */
 function tpps_page_1_create_form(array &$form, array &$form_state) {
-  //dpm($form_state['build_info']['form_id']);
-  // TPPSc was created to provide more features for Curation Team.
-  // See 'TPPSc' module.
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
-    tpps_page_1_curation_form($form, $form_state);
+    // TPPSc form provides more features for Curation Team.
+    tpps_page_1_create_curation_form($form, $form_state);
   }
   else {
     // TPPS Form.
-    $form = array_merge($form, tpps_simple_page_1_create_form($form, $form_state));
+    $form = array_merge($form, tpps_page_1_create_regular_form($form, $form_state));
   }
   return $form;
 }
@@ -44,7 +42,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
  *
  * @todo Change code to remove this function.
  */
-function tpps_simple_page_1_create_form(array $form, array &$form_state) {
+function tpps_page_1_create_regular_form(array $form, array &$form_state) {
   // TPPS Version.
   $values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
@@ -136,7 +134,7 @@ function tpps_curation_publication(array &$form, array $form_state) {
     $tpps_form = [];
 
     //tpps_curation_publication($form, $form_state);
-    //$tpps_form = tpps_simple_page_1_create_form($form, $form_state);
+    //$tpps_form = tpps_page_1_create_regular_form($form, $form_state);
     $form['publication']['primaryAuthor'] = $tpps_form['primaryAuthor'];
     $form['publication'] = $tpps_form['publication'];
 
@@ -204,18 +202,17 @@ function tpps_curation_publication(array &$form, array $form_state) {
 }
 
 /**
- * Creates new TPPSc form for page 1.
+ * Creates  TPPS Page 1 form for curation team.
  *
- * WARNING: Form must be updated but not returned.
+ * WARNING: Update $form passed by reference.
  *
  * @param array $form
  *   The form being created.
  * @param array $form_state
  *   The state of the form being created.
  */
-function tpps_page_1_curation_form(array &$form, array &$form_state) {
-  // TPPSc Version (Curation version).
-  $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
+function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
+  $values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
   //$publication_status = tpps_get_ajax_value(
   //  $form_state, ['publication', 'status'], NULL
