@@ -68,16 +68,22 @@ function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
  *   Returns FALSE if synonym wasn't found.
  */
 function tpps_synonym_get($synonym_id) {
-  $results = chado_select_record(
-    'phenotype_synonyms',
-    array('*'),
-    array('phenotype_synonyms_id' => $synonym_id)
-  );
-  if (!empty($results)) {
-    // We need only one row.
-    return reset($results);
+  // Table 'phenotype_synonyms' was created manually and wasn't added
+  // to Chado so Chado API can't be used for now.
+  $use_chado = FALSE;
+  if ($use_chado) {
+    $results = chado_select_record(
+      'phenotype_synonyms', ['*'], ['phenotype_synonyms_id' => $synonym_id]
+    );
   }
-  return FALSE;
+  else {
+    $result = db_select( 'chado.phenotype_synonyms', 'cps')
+      ->fields('cps', [])
+      ->condition('cps.phenotype_synonyms_id', $synonym_id)
+      ->execute()
+      ->fetchAll();
+  }
+  return reset($result);
 }
 
 /**
@@ -176,4 +182,20 @@ function tpps_synonym_save(array $phenotypes_meta, array $id_list) {
  */
 function tpps_synonym_selector($id) {
   return ':input[name="' . $id . '[phenotype][phenotypes-meta][!num][synonym_id]"]';
+}
+
+/**
+ * Creates new phenotype synonym in database.
+ *
+ * @param array $data
+ *   Synonym's data to be inserted into database.
+ *
+ * @return int
+ *   Returns Id of recently added Phenotype Synonym.
+ */
+function tpps_synonym_add(array $data) {
+  $id = $query = db_insert('chado.phenotype_synonyms')->fields($data)->execute();
+  // Update cached list of units.
+  tpps_unit_get_list('all', [], TRUE);
+  return $id;
 }

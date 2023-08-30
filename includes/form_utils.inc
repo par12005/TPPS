@@ -421,18 +421,96 @@ function tpps_pre_validate_init($accession = NULL) {
   drupal_json_output($jobs);
 }
 
+/**
+ * This function will show the diff between accession file tree ids
+ * and vcf tree ids
+ */
+function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i = 1) {
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  $form_state = tpps_load_submission($accession); // get the form state
+  $results_accession_file_tree_ids = tpps_accession_get_accession_file_tree_ids($form_state, $i);
+
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
+  $results_vcf_file_tree_ids = [];
+  if ($vcf_location['status'] == 'exists') {
+    $results_vcf_file_tree_ids = tpps_genotype_get_vcf_tree_ids($vcf_location['location']);
+  }
+  // echo json_encode($results_accession_file_tree_ids);
+  // echo json_encode($results_vcf_file_tree_ids);
+  
+  $results_not_overlapping_in_vcf_file = array_diff($results_accession_file_tree_ids['values'], $results_vcf_file_tree_ids['values']);
+  $results_not_overlapping_in_accession_file = array_diff($results_vcf_file_tree_ids['values'], $results_accession_file_tree_ids['values']);
+  $overall_results = [
+    'tree_ids_not_in_vcf' => $results_not_overlapping_in_vcf_file,
+    'tree_ids_not_in_vcf_count' => count($results_not_overlapping_in_vcf_file),
+    'tree_ids_not_in_accession' => $results_not_overlapping_in_accession_file,
+    'tree_ids_not_in_accession_count' => count($results_not_overlapping_in_accession_file),
+  ];
+  echo json_encode($overall_results);
+  
+}
 
 /**
- * This helper function is used in the api call /tpps/<accession>/accession_tree_ids
+ * This helper function is used in the api call /tpps/<accession>/accession-file-tree-ids
  * to get all tree_ids detected from a tree accession file
- * TODO
  */
-function tpps_accession_tree_ids($accession = NULL, $i) {
+function tpps_accession_file_tree_ids($accession = NULL, $i = 1) {
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission($accession); // get the form state
+  drupal_json_output(tpps_accession_get_accession_file_tree_ids($form_state, $i));
+
+  
+}
+
+/** This function will generate the tree_ids and place it in a standardized
+ *  array format similar to other functions like vcf markers etc. The actually 
+ *  array design is a specific key format to make things easy to understand
+ */
+function tpps_accession_get_accession_file_tree_ids($form_state, $i) {
+  require_once(__DIR__ . '/../includes/file_utils.inc');
+  
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
-  // $file = file_load($thirdpage['tree-accession']['species-' . $i]['file']);
-  // $location = $file->uri;
+  // $location = tpps_accession_file_location($form_state, $i);
+  $fid = $thirdpage['tree-accession']['species-' . $i]['file'];
+  $options = [
+    'tree_id_column' => $thirdpage['tree-accession']['species-' . $i]['file-groups']['Tree Id'][1] 
+  ];
+  $options['no_header'] = !empty($tree_accession['file-no-header']); // detect if there is a header or not
+  tpps_file_iterator($fid, 'tpps_accession_file_tree_ids_iterate_line', $options);
+
+  $output = [
+    'values' => array_keys($options['values']),
+    'duplicate_values' => array_keys($options['duplicate_values']),
+    'count' => $options['count'],
+    'unique_count' => $options['unique_count']
+  ];
+  return $output;
+}
+
+/**
+ * This function iterates through each row of the accession file and returns
+ * the tree_ids based on the column specified in TPPS
+ */
+function tpps_accession_file_tree_ids_iterate_line($row, &$options, $job = NULL) {
+  $tree_id_column = $options['tree_id_column']; // eg A
+  if (!isset($options['values'])) {
+    $options['values'] = [];
+    $options['duplicate_values'] = [];
+    $options['unique_count'] = 0;
+    $options['count'] = 0;
+  }
+  $tree_id = $row[$tree_id_column];
+  
+  $options['count'] = $options['count'] + 1; // increase count by 1
+  if (isset($options['values'][$tree_id])) {
+    $options['duplicate_values'][$tree_id] = 1; // set as duplicate_value
+  }
+  else {
+    $options['unique_count'] = $options['unique_count'] + 1; // it's unique so increment
+  }
+  $options['values'][$tree_id] = 1; // record that the tree exists
 }
 
 
@@ -457,7 +535,7 @@ function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
 
 /**
  * This helper function is used in the api call /tpps/<accession>/vcf_markers
- * to get all tree-ids detected from a vcf file
+ * to get all markers detected from a vcf file
  */
 function tpps_vcf_markers($accession = NULL, $i = 1) {
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
@@ -484,6 +562,140 @@ function tpps_snps_assay_markers($accession = NULL, $i = 1) {
   }
   drupal_json_output($result);
 }
+
+// function tpps_assay_design_markers($accession = NULL, $i = 1) {
+//   require_once(__DIR__ . '/../forms/submit/submit_all.php');
+//   $form_state = tpps_load_submission($accession);
+//   $assay_design_location = tpps_assay_design_location($form_state, $i); // returns array['status', 'location'];
+//   // print_r($snps_assay_location);
+//   $result = [];
+//   if ($assay_design_location['status'] == 'exists') {
+//     $result = tpps_genotype_get_snps_assay_markers($assay_design_location['fid']);
+//   }
+//   drupal_json_output($result);
+// }
+
+function tpps_assay_design_markers($accession = NULL, $i = 1) {
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  $form_state = tpps_load_submission($accession); // get the form state
+  drupal_json_output(tpps_get_assay_design_file_markers($form_state, $i));
+
+  
+}
+
+/** This function will generate the markers and place it in a standardized
+ *  array format similar to other functions like vcf markers etc. The actually 
+ *  array design is a specific key format to make things easy to understand
+ */
+function tpps_get_assay_design_file_markers($form_state, $i) {
+  require_once(__DIR__ . '/../includes/file_utils.inc');
+  
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $fid = $genotype['files']['assay-design'];
+  $file_headers = tpps_file_headers($fid, FALSE);
+  $marker_name_column = NULL; // empty until found, this will contain A or B or C etc
+  foreach ($file_headers as $column => $column_name) {
+    $column_name_normalized = strtolower($column_name);
+    $column_name_normalized = str_replace(' ', '_', $column_name_normalized);
+    if ($column_name_normalized == 'marker_name') {
+      $marker_name_column = $column;
+      break;
+    }
+  }
+  // print_r($file_headers);
+  // print_r($marker_name_column);
+  // exit;
+  $options = [
+    'marker_name_column' => $marker_name_column 
+  ];
+  $options['no_header'] = FALSE; // detect if there is a header or not
+  tpps_file_iterator($fid, 'tpps_get_assay_design_file_markers_iterate_line', $options);
+
+  $output = [
+    'values' => array_keys($options['values']),
+    'duplicate_values' => array_keys($options['duplicate_values']),
+    'count' => $options['count'],
+    'unique_count' => $options['unique_count']
+  ];
+  return $output;
+}
+
+/**
+ * This function iterates through each row of the accession
+ * file and return the markers based on the column 'marker_name' in TPPS
+ */
+function tpps_get_assay_design_file_markers_iterate_line($row, &$options, $job = NULL) {
+  $marker_name_column = $options['marker_name_column']; // eg A
+  if (!isset($options['values'])) {
+    $options['values'] = [];
+    $options['duplicate_values'] = [];
+    $options['unique_count'] = 0;
+    $options['count'] = 0;
+  }
+  $marker_name = $row[$marker_name_column];
+  
+  $options['count'] = $options['count'] + 1; // increase count by 1
+  if (isset($options['values'][$marker_name])) {
+    $options['duplicate_values'][$marker_name] = 1; // set as duplicate_value
+  }
+  else {
+    $options['unique_count'] = $options['unique_count'] + 1; // it's unique so increment
+  }
+  $options['values'][$marker_name] = 1; // record that the marker name exists
+}
+
+/**
+ * This function will show the diff between vcf markers
+ * and snps assay markers - outputs JSON output and used for API call
+ */
+function tpps_compare_vcf_markers_vs_snps_assay_markers($accession = NULL, $i = 1) {
+  $overall_results = tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession = NULL, $i = 1);
+  echo json_encode($overall_results);
+}
+
+/**
+ * This function will do the actual comparing between vcf_markers and snps_assay markers
+ * and returns an array
+ */
+function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession = NULL, $i = 1) {
+  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+
+  // VCF markers
+  $form_state = tpps_load_submission($accession);
+  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
+  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
+  $results_vcf_markers = [
+    'values' => []
+  ];
+  if ($vcf_location['status'] == 'exists') {
+    $results_vcf_markers = tpps_genotype_get_vcf_markers($vcf_location['location']);
+  }
+
+  // SNPS Assay Markers
+  $form_state = tpps_load_submission($accession);
+  $snps_assay_location = tpps_snps_assay_location($form_state, $i); // returns array['status', 'location'];
+  // print_r($snps_assay_location);
+  $results_snps_assay_markers = [
+    'values' => []
+  ];
+  if ($snps_assay_location['status'] == 'exists') {
+    $results_snps_assay_markers = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
+  }  
+  
+  $results_not_overlapping_in_vcf = array_diff($results_snps_assay_markers['values'], $results_vcf_markers['values']);
+  $results_not_overlapping_in_snps_assay = array_diff($results_vcf_markers['values'], $results_snps_assay_markers['values']);
+  $overall_results = [
+    'markers_not_in_vcf' => $results_not_overlapping_in_vcf,
+    'markers_not_in_vcf_count' => count($results_not_overlapping_in_vcf),
+    'markers_not_in_snps_assay' => $results_not_overlapping_in_snps_assay,
+    'markers_not_in_snps_assay_count' => count($results_not_overlapping_in_snps_assay),
+  ];
+  return $overall_results;
+}
+
+
 
 
 /**
