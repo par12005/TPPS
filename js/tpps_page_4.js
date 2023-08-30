@@ -2,8 +2,7 @@
   Drupal.behaviors.tpps_page_4 = {
     attach: function (context, settings) {
       // TPPS Form Page 4 Buttons.
-      // @TODO Avoid duplicate code if possible.
-      // @TODO [VS] Convert icons to unicode symbols.
+      // @TODO [VS] Minor. Convert icons to unicode symbols.
 
       // Start of 'Check VCF Tree Ids'.
       $('.button-check-vcf-tree-ids', context).on('click', function(e) {
