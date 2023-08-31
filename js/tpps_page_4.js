@@ -6,11 +6,8 @@
       // @TODO [VS] Minor. Convert icons to unicode symbols.
       // Attach event handlers only once.
       $('form[id^=tppsc-main').once('tpps_page_4', function() {
-        console.log('once');
-
         // Start of 'Check VCF Tree Ids'.
         $('.button-check-vcf-tree-ids', context).on('click', function(e) {
-          console.log('sdfsdf');
           e.preventDefault();
           $(settings.tpps.curationDiagnosticResultsElementId)
             .html('<h1 class=\"cd-inline\">⏰</h1>Checking VCF Tree IDs...');

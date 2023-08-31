@@ -30,7 +30,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
   global $user;
 
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
-  $prefix_text = "<div><figure style=\"text-align:center;\"><img style=\"max-height:100%;max-width:100%;\" src=\"{$image_path}TPPS-1.png\"></figure>";
+  $prefix_text = "<div><figure style=\"text-align:center;\"><img style=\"max-height:100%;max-width:100%;\" src=\"{$image_path}TPPS-1_1118px.jpg\"></figure>";
   $prefix_text .= "<div id=\"landing-buttons\">";
   $prefix_text .= "<a href=\"https://tpps.readthedocs.io/en/latest/\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">TPPS Documentation</button></a>";
   $prefix_text .= "<a href=\"$base_url/tpps/details\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">TPPS Studies</button></a>";
