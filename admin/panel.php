@@ -199,7 +199,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   $submission_tags = tpps_submission_get_tags($submission_state['accession']);
   // dpm($submission_tags);
-  $tags_markup .= "<div style='margin-bottom: 10px; font-weight: bold; text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
+  $tags_markup = "<div style='margin-bottom: 10px; font-weight: bold; text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
   // Show current tags.
   $tags_markup .= "<label class=\"control-label\">Current Tags:</label><br>";
   $image_path = drupal_get_path('module', 'tpps') . '/images/';
