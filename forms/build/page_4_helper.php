@@ -2135,9 +2135,8 @@ function tpps_build_field_description() {
  */
 function tpps_get_empty_field_value(array $form_state, $id, $file_field_name) {
   $values = $form_state['saved_values'][TPPS_PAGE_4];
-  return (isset(
-    $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
-    ) ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
-    : $empty_field_value
+  return (
+    isset($values["organism-$id"]['genotype']['files'][$file_field_name]['other'])
+    ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other'] : 'NA'
   );
 }

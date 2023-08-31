@@ -156,7 +156,7 @@ function tpps_menu() {
     // 'access callback' => 'tpps_access',
     // 'access arguments' => array('access tpps form', 1),
     'type' => MENU_CALLBACK,
-  );  
+  );
 
   // This will return information about a study's VCF markers vs
   // First % = accession
@@ -1025,7 +1025,11 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 
   // [VS].
   $module_path = drupal_get_path('module', 'tpps');
-  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+  $form['#attached']['js'][] = [
+    'type' => 'file',
+    'scope' => 'footer',
+    'data' => $module_path . TPPS_JS_PATH,
+  ];
   $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
   // [/VS].
 

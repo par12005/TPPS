@@ -238,6 +238,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         'tpps' => [
           'accession' => $form_state['accession'],
           'curationDiagnosticResultsElementId' => '#diagnostic-curation-results',
+          'organismNumber' => $meta['organism_number'],
         ],
       ],
     ];

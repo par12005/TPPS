@@ -627,7 +627,7 @@ jQuery.fn.updateMap = function(locations, fid = "") {
 
 /* [VS] */
 (function ($) {
-  Drupal.behaviors.TPPS = {
+  Drupal.behaviors.tpps = {
     attach: function (context, settings) {
       // Allows to click on DOI number to fill text field.
       // Add 'tpps-suggestion' class to A tag.
@@ -642,38 +642,40 @@ jQuery.fn.updateMap = function(locations, fid = "") {
       // and must be fixed at PHP/Drupal side but here is a termporary
       // workaround solution to have it working.
       var $form = $('form[id^="tppsc-main"]', context);
-      if (typeof($form) != 'undefined') {
+      if (typeof($form) != 'undefined' && $form.length != 0) {
         // We can't use Drupal States API because it doesn't work with multiple
         // select form elements.
-        // For Genotype only one organism Id. Usually '#edit-organism-1'
-        var organism_name = '#' + $form.find('fieldset').first().attr('id');
-        $(organism_name + '-genotype-snps-genotyping-design', context).parent().hide();
-        $(organism_name + '-genotype-ssrscpssrs', context).parent().hide();
 
-        $(organism_name + '-genotype-marker-type', context).bind('change', function() {
-          if ($.inArray('SNPs', $(this).val()) !== -1) {
-            $(organism_name + '-genotype-snps').show();
-            $(organism_name + '-genotype-snps-genotyping-design').parent().show();
-          }
-          else {
-            $(organism_name + '-genotype-snps').hide();
-          }
+        for (let i = 1; i <= settings.tpps.organismNumber; i++) {
+          var organism_name = '#edit-organism-' + i;
+          $(organism_name + '-genotype-snps-genotyping-design').parent().hide();
+          $(organism_name + '-genotype-ssrscpssrs').parent().hide();
 
-          if ($.inArray('SSRs/cpSSRs', $(this).val()) !== -1) {
-            $(organism_name + '-genotype-ssrscpssrs').parent().show();
-          }
-          else {
-            $(organism_name + '-genotype-ssrscpssrs').parent().hide();
-          }
-          if ($.inArray('Other', $(this).val()) !== -1) {
-            $(organism_name + '-genotype-other-marker').parent().show();
-          }
-          else {
-            $(organism_name + '-genotype-other-marker').parent().hide();
-          }
-        });
-        // Hide all Genotype related fields by default.
-        $(organism_name + '-genotype-marker-type').trigger('change');
+          $(organism_name + '-genotype-marker-type', context).bind('change', function() {
+            if ($.inArray('SNPs', $(this).val()) !== -1) {
+              $(organism_name + '-genotype-snps').show();
+              $(organism_name + '-genotype-snps-genotyping-design').parent().show();
+            }
+            else {
+              $(organism_name + '-genotype-snps').hide();
+            }
+
+            if ($.inArray('SSRs/cpSSRs', $(this).val()) !== -1) {
+              $(organism_name + '-genotype-ssrscpssrs').parent().show();
+            }
+            else {
+              $(organism_name + '-genotype-ssrscpssrs').parent().hide();
+            }
+            if ($.inArray('Other', $(this).val()) !== -1) {
+              $(organism_name + '-genotype-other-marker').parent().show();
+            }
+            else {
+              $(organism_name + '-genotype-other-marker').parent().hide();
+            }
+          });
+          // Hide all Genotype related fields by default.
+          $(organism_name + '-genotype-marker-type').trigger('change');
+        }
       }
     }
   };
