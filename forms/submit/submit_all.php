@@ -1052,6 +1052,8 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
   if (!empty($phenotype['normal-check'])) {
     $phenotypes_meta = [];
     $data_fid = $phenotype['file'];
+    // Get all phenotype data provided by admin to override submitted data.
+    $phenos_edit = $form_state['phenotypes_edit'] ?? NULL;
     tpps_add_project_file($form_state, $data_fid);
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
@@ -1059,6 +1061,10 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
       $phenotypes_meta[$name] = [];
       $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
+      // Override phenotype metadata submitted by user with admin's data.
+      if (!empty($phenos_edit[$j])) {
+        $phenotype['phenotypes-meta'][$j] = $phenos_edit[$j] + $phenotype['phenotypes-meta'][$j];
+      }
       $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
       if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
@@ -1126,9 +1132,11 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       }
     }
 
-    // print_r("Phenotypes Meta:\n");
-    // print_r($phenotypes_meta);
-    // print_r("\n");
+    if ($debug_mode || 0) {
+      print_r("Phenotypes Meta:\n");
+      print_r($phenotypes_meta);
+      print_r("\n");
+    }
 
     $time_options = array();
     if ($phenotype['time']['time-check']) {
