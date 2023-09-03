@@ -44,11 +44,11 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
  */
 function tpps_page_1_create_regular_form(array $form, array &$form_state) {
   // TPPS Version.
-  $values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
+  $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
-  // @TODO [VS] Get rid of '$values'.
-  tpps_user_info($form, $values);
-  tpps_publication($form, $values, $form_state);
+  // @TODO [VS] Get rid of '$saved_values'.
+  tpps_user_info($form, $saved_values);
+  tpps_publication($form, $saved_values, $form_state);
 
   $file_upload_location = 'public://' . variable_get('tpps_study_photo_files_dir', 'tpps_study_photos');
   $form['study_photo'] = array(
@@ -74,27 +74,29 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
 }
 
 /**
- * Creates fields related to publication for TPPSc form.
+ * Creates  TPPS Page 1 form for curation team.
  *
- * New field and their relations described:
- * https://www.figma.com/file/RghCxBg7HLFWAC04i1QleS/TPPSc.
- *
- * Note:
- * For now TPPS and TPPSc (version for curation team) are using different form
- * element's layout and logic so there is no need to reuse the same code
- * because it increases difficulty of management of the code.
+ * WARNING: Update $form passed by reference.
  *
  * @param array $form
- *   The form to be populated.
+ *   The form being created.
  * @param array $form_state
- *   The state of the form to be populated.
- *
- * @return array
- *   Returns 'Publication Information' fieldset with form elements.
+ *   The state of the form being created.
  */
-function tpps_curation_publication(array &$form, array $form_state) {
+function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
+  $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
-  $values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
+  //$publication_status = tpps_get_ajax_value($form_state, ['publication', 'status'], NULL);
+  //dpm($publication_status);
+
+  $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']);
+  if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
+    $doi_info = tpps_doi_info($doi);
+  }
+  $species = $doi_info['species'] ?? [];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Publication.
   $form['publication'] = [
     '#type' => 'fieldset',
     '#title' => t('Publication Information:'),
@@ -162,29 +164,29 @@ function tpps_curation_publication(array &$form, array $form_state) {
 
 
 
-  // @TODO Check if $values respects '#tree'.
-  // if(isset($values['primaryAuthor']) && $values['primaryAuthor'] != "") {
-  //   $form['publication']['primaryAuthor']['#value'] = $values['primaryAuthor'];
+  // @TODO Check if $saved_values respects '#tree'.
+  // if(isset($saved_values['primaryAuthor']) && $saved_values['primaryAuthor'] != "") {
+  //   $form['publication']['primaryAuthor']['#value'] = $saved_values['primaryAuthor'];
   // }
 
   if (0) {
-    tpps_secondary_authors($form, $values, $form_state);
-    tpps_year($form, $values, $form_state);
+    tpps_secondary_authors($form, $saved_values, $form_state);
+    tpps_year($form, $saved_values, $form_state);
 
     $form['publication']['title'] = array(
       '#type' => 'textfield',
       '#title' => t('Title of Publication/Study: *'),
     );
-    // if(isset($values['publication']['title']) && $values['publication']['title'] != "") {
-    //   $form['publication']['title']['#value'] = $values['publication']['title'];
+    // if(isset($saved_values['publication']['title']) && $saved_values['publication']['title'] != "") {
+    //   $form['publication']['title']['#value'] = $saved_values['publication']['title'];
     // }
 
     $form['publication']['abstract'] = array(
       '#type' => 'textarea',
       '#title' => t('Abstract/Description: *'),
     );
-    // if(isset($values['publication']['abstract']) && $values['publication']['abstract'] != "") {
-    //   $form['publication']['abstract']['#value'] = $values['publication']['abstract'];
+    // if(isset($saved_values['publication']['abstract']) && $saved_values['publication']['abstract'] != "") {
+    //   $form['publication']['abstract']['#value'] = $saved_values['publication']['abstract'];
     // }
 
     $form['publication']['journal'] = array(
@@ -192,42 +194,13 @@ function tpps_curation_publication(array &$form, array $form_state) {
       '#title' => t('Journal: *'),
       '#autocomplete_path' => 'tpps/autocomplete/journal',
     );
-    // if(isset($values['publication']['journal']) && $values['publication']['journal'] != "") {
-    //   $form['publication']['journal']['#value'] = $values['publication']['journal'];
+    // if(isset($saved_values['publication']['journal']) && $saved_values['publication']['journal'] != "") {
+    //   $form['publication']['journal']['#value'] = $saved_values['publication']['journal'];
     // }
   }
 
   tpps_add_buttons($form, 'page_1');
   return $form;
-}
-
-/**
- * Creates  TPPS Page 1 form for curation team.
- *
- * WARNING: Update $form passed by reference.
- *
- * @param array $form
- *   The form being created.
- * @param array $form_state
- *   The state of the form being created.
- */
-function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
-  $values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-
-  //$publication_status = tpps_get_ajax_value(
-  //  $form_state, ['publication', 'status'], NULL
-  //);
-  //dpm($publication_status);
-
-  $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']);
-  if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
-    $doi_info = tpps_doi_info($doi);
-  }
-  $species = $doi_info['species'] ?? [];
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Publication.
-  tpps_curation_publication($form, $form_state);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.
