@@ -633,9 +633,11 @@ jQuery.fn.updateMap = function(locations, fid = "") {
       // Add 'tpps-suggestion' class to A tag.
       // Example: <a href"#" class="tpps-suggestion">10.25338/B8864J</a>
       $('.tpps-suggestion').on('click', function(e) {
-        $(this).parents('.form-item').find('input.form-text')
-          .val($(this).text()).blur();
         e.preventDefault();
+        var selectedText= $(this).text();
+        $(this).parents('.form-item').find('input.form-text')
+          .val(selectedText).blur();
+        navigator.clipboard.writeText(selectedText);
       });
 
       // When validation failed Form Id is changed. This shouldn't happen
