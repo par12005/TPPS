@@ -88,18 +88,19 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   //$publication_status = tpps_get_ajax_value($form_state, ['publication', 'status'], NULL);
   //dpm($publication_status);
-
-  $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']);
   if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
     $doi_info = tpps_doi_info($doi);
   }
   $species = $doi_info['species'] ?? [];
 
+  // $org_number = tpps_get_ajax_value($form_state, ['organism', 'number'])
+    //?? $form_state['values']['organism']['number'] ?? count($species) ?? 1;
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Publication.
   $form['publication'] = [
     '#type' => 'fieldset',
-    '#title' => t('Publication Information:'),
+    '#title' => t('Publication Information'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
   ];
@@ -126,14 +127,16 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'data-placement' => ['right'],
       'title' => ['First Author of the publication'],
     ],
+    '#description' => t('Note: please format in ‘Last, First’ format.'),
   ];
+  // @TODO Mockup has no fieldset - just buttons.
+  tpps_secondary_authors($form, $saved_values, $form_state);
 
-  return $form;
-
-
-  if (!empty($doi_info) && 0) {
+dpm(print_r($form, 1));
+  // @TODO Review.
+  if (!empty($doi_info) || 0) {
     $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
-    $tpps_form = [];
+   // $tpps_form = [];
 
     //tpps_curation_publication($form, $form_state);
     //$tpps_form = tpps_page_1_create_regular_form($form, $form_state);
@@ -153,13 +156,101 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   }
   else {
     // DOI Info is empty.
-    $form['publication']['primaryAuthor'] = [
-      '#type' => 'hidden',
-      '#disabled' => TRUE,
-    ];
-    $form['publication'] = ['#type' => 'hidden'];
-    $form['organism'] = ['#type' => 'fieldset'];
+    //$form['publication']['primaryAuthor'] = [
+    //  '#type' => 'hidden',
+    //  '#disabled' => TRUE,
+    //];
+    //$form['publication'] = ['#type' => 'hidden'];
+    //$form['organism'] = ['#type' => 'fieldset'];
   }
+  if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
+    // Show DOI fieldset only for 'Published' status.
+    //$form['doi_wrapper']['#states'] = [
+    //  'visible' => [
+    //    ':input[name="publication[status]"]' => ['value' => 'Published'],
+    //  ],
+    //];
+  }
+
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Organisms.
+  // Fill form with values from:
+  // 1. Used previously stored study. From $form_state['saved_values']?
+  // 2. PUblished. From DOI. Read only?
+  // 3. From $form_state (when returned from step 2).
+  //
+  if (0) {
+    // This code gets data from DOI
+    for ($i = 1; $i <= $org_number; $i++) {
+      $org = tpps_get_ajax_value($form_state, ['organism', $i]);
+      if (empty($org) and !empty($species[$i - 1])) {
+        $form_state['values']['organism'][$i] = $species[$i - 1];
+      }
+    }
+  }
+  tppsc_organism($form, $form_state);
+
+
+
+
+
+  if (!empty($saved_values['frontpage']['use_old_tgdr'])) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Not empty DOI.
+    $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
+
+    $form_state['ids']['project_id'] = $project_id = chado_select_record(
+      'project_dbxref', ['project_id'], ['dbxref_id' => $form_state['dbxref_id']]
+    )[0]->project_id;
+
+    $publication = tpps_get_publication_data($project_id, $form_state);
+    $form['publication']['primaryAuthor']['#default_value'] = $publication['primary_default'];
+    $form['publication']['title']['#default_value'] = $publication['title_default'];
+    $form['publication']['year']['#default_value'] = $publication['year_default'];
+    $form['publication']['abstract']['#default_value'] = $publication['abs_default'];
+
+
+
+    $form['publication']['journal']['#title'] = t('Journal:');
+    $form['publication']['status']['#title'] = t('Publication Status:');
+    $form['publication']['status']['#disabled'] = TRUE;
+
+    $i = 1;
+    foreach ($publication['secondary_authors'] as $author) {
+      $form['publication']['secondaryAuthors'][$i]['#default_value']
+        = $saved_values['publication']['secondaryAuthors'][$i]
+        ?? "$author->givennames $author->surname";
+      $i++;
+    }
+
+    tppsc_organism($form, $form_state);
+    $organisms = chado_query('SELECT genus, species '
+      . 'FROM chado.organism WHERE organism_id IN ('
+        . 'SELECT DISTINCT organism_id '
+        . 'FROM chado.stock '
+        . 'WHERE stock_id IN ('
+          . 'SELECT stock_id '
+          . 'FROM chado.project_stock '
+          . 'WHERE project_id = :project_id));',
+          [':project_id' => $project_id]
+    );
+    $i = 1;
+    foreach ($organisms as $org) {
+      $form['organism'][$i]['#default_value'] = $saved_values['organism'][$i]
+        ?? "$org->genus $org->species";
+      $i++;
+    }
+    $form['organism']['number'] = [
+      '#type' => 'hidden',
+      '#value' => tpps_get_ajax_value($form_state, ['organism', 'number'], $i - 1),
+    ];
+  }
+
+  tpps_add_buttons($form, 'page_1');
+  return $form;
+
+
 
 
 
@@ -170,7 +261,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // }
 
   if (0) {
-    tpps_secondary_authors($form, $saved_values, $form_state);
     tpps_year($form, $saved_values, $form_state);
 
     $form['publication']['title'] = array(
@@ -199,7 +289,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     // }
   }
 
-  tpps_add_buttons($form, 'page_1');
   return $form;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -237,84 +326,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
   ];
 
-  if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
 
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Organism.
-    if (empty($org_number) and !empty($species)) {
-      $org_number = $form_state['values']['organism']['number'] = count($species);
-    }
-    for ($i = 1; $i <= $org_number; $i++) {
-      $org = tpps_get_ajax_value($form_state, ['organism', $i]);
-      if (empty($org) and !empty($species[$i - 1])) {
-        $form_state['values']['organism'][$i] = $species[$i - 1];
-      }
-    }
-    tpps_organism($form, $form_state);
-  }
-  else {
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Not empty DOI.
-    $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
-
-    $form_state['ids']['project_id'] = $project_id = chado_select_record(
-      'project_dbxref', ['project_id'], ['dbxref_id' => $form_state['dbxref_id']]
-    )[0]->project_id;
-
-    $publication = tpps_get_publication_data($project_id, $form_state);
-    $form['publication']['primaryAuthor']['#default_value'] = $publication['primary_default'];
-    $form['publication']['title']['#default_value'] = $publication['title_default'];
-    $form['publication']['year']['#default_value'] = $publication['year_default'];
-    $form['publication']['abstract']['#default_value'] = $publication['abs_default'];
-
-
-
-    $form['publication']['journal']['#title'] = t('Journal:');
-    $form['publication']['status']['#title'] = t('Publication Status:');
-    $form['publication']['status']['#disabled'] = TRUE;
-
-    $i = 1;
-    foreach ($publication['secondary_authors'] as $author) {
-      $form['publication']['secondaryAuthors'][$i]['#default_value']
-        = $saved_values['publication']['secondaryAuthors'][$i]
-        ?? "$author->givennames $author->surname";
-      $i++;
-    }
-
-    tpps_organism($form, $form_state);
-    $organisms = chado_query('SELECT genus, species '
-      . 'FROM chado.organism WHERE organism_id IN ('
-        . 'SELECT DISTINCT organism_id '
-        . 'FROM chado.stock '
-        . 'WHERE stock_id IN ('
-          . 'SELECT stock_id '
-          . 'FROM chado.project_stock '
-          . 'WHERE project_id = :project_id));',
-          [':project_id' => $project_id]
-    );
-    $i = 1;
-    foreach ($organisms as $org) {
-      $form['organism'][$i]['#default_value'] = $saved_values['organism'][$i]
-        ?? "$org->genus $org->species";
-      $i++;
-    }
-    $form['organism']['number'] = [
-      '#type' => 'hidden',
-      '#value' => tpps_get_ajax_value($form_state, ['organism', 'number'], $i - 1),
-    ];
-  }
-  if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
-    // Show DOI fieldset only for 'Published' status.
-    $form['doi_wrapper']['#states'] = [
-      'visible' => [
-        ':input[name="publication[status]"]' => ['value' => 'Published'],
-      ],
-    ];
-  }
-
-  tpps_add_buttons($form, 'page_1');
-  return $form;
 }
 
 /**
