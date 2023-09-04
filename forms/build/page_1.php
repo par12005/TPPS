@@ -86,7 +86,7 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
 function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
-  //$publication_status = tpps_get_ajax_value($form_state, ['publication', 'status'], NULL);
+  $publication_status = tpps_get_ajax_value($form_state, ['publication', 'status'], NULL);
   if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
     $doi_info = tpps_doi_info($doi);
   }
@@ -112,10 +112,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ],
-    '#ajax' => [
-      'callback' => 'tpps_pub_status',
-      'wrapper' => 'pubyear',
-    ],
+    '#default value' => $publication_status,
   ];
   $form['publication']['primaryAuthor'] = [
     '#type' => 'textfield',
@@ -128,12 +125,55 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     ],
     '#description' => t('Note: please format in ‘Last, First’ format.'),
   ];
+  $form['publication']['extra'] = [
+    '#type' => 'container',
+    '#states' => [
+      'visible' => [
+        ':input[name="publication[status]"]' => ['value' => 'Published'],
+      ],
+    ],
+  ];
+  // Show extra fields.
+  // @TODO Check if $saved_values respects '#tree'.
+  // if(isset($saved_values['primaryAuthor']) && $saved_values['primaryAuthor'] != "") {
+  //   $form['publication']['primaryAuthor']['#value'] = $saved_values['primaryAuthor'];
+  // }
+
+// @TODO Add ['extra'] container.
+  tpps_year($form, $saved_values, $form_state);
+
+  $form['publication']['extra']['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Title of Publication/Study: *'),
+  );
+  // if(isset($saved_values['publication']['title']) && $saved_values['publication']['title'] != "") {
+  //   $form['publication']['title']['#value'] = $saved_values['publication']['title'];
+  // }
+
+  $form['publication']['extra']['abstract'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Abstract/Description: *'),
+  );
+  // if(isset($saved_values['publication']['abstract']) && $saved_values['publication']['abstract'] != "") {
+  //   $form['publication']['abstract']['#value'] = $saved_values['publication']['abstract'];
+  // }
+
+  $form['publication']['extra']['journal'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Journal: *'),
+    '#autocomplete_path' => 'tpps/autocomplete/journal',
+  );
+  // if(isset($saved_values['publication']['journal']) && $saved_values['publication']['journal'] != "") {
+  //   $form['publication']['journal']['#value'] = $saved_values['publication']['journal'];
+  // }
+
+
+
   // @TODO Mockup has no fieldset - just buttons.
   tpps_secondary_authors($form, $saved_values, $form_state);
 
   // @TODO Review.
   if (!empty($doi_info) || 0) {
-    $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
    // $tpps_form = [];
 
     //tpps_curation_publication($form, $form_state);
@@ -173,6 +213,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Organisms.
+  //
+  // @TODO Review this code!
+  //
   // Fill form with values from:
   // 1. Used previously stored study. From $form_state['saved_values']?
   // 2. PUblished. From DOI. Read only?
@@ -187,6 +230,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       }
     }
   }
+
+
   tpps_organism($form, $form_state);
 
 
@@ -253,39 +298,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
 
 
-  // @TODO Check if $saved_values respects '#tree'.
-  // if(isset($saved_values['primaryAuthor']) && $saved_values['primaryAuthor'] != "") {
-  //   $form['publication']['primaryAuthor']['#value'] = $saved_values['primaryAuthor'];
-  // }
-
-  if (0) {
-    tpps_year($form, $saved_values, $form_state);
-
-    $form['publication']['title'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Title of Publication/Study: *'),
-    );
-    // if(isset($saved_values['publication']['title']) && $saved_values['publication']['title'] != "") {
-    //   $form['publication']['title']['#value'] = $saved_values['publication']['title'];
-    // }
-
-    $form['publication']['abstract'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Abstract/Description: *'),
-    );
-    // if(isset($saved_values['publication']['abstract']) && $saved_values['publication']['abstract'] != "") {
-    //   $form['publication']['abstract']['#value'] = $saved_values['publication']['abstract'];
-    // }
-
-    $form['publication']['journal'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Journal: *'),
-      '#autocomplete_path' => 'tpps/autocomplete/journal',
-    );
-    // if(isset($saved_values['publication']['journal']) && $saved_values['publication']['journal'] != "") {
-    //   $form['publication']['journal']['#value'] = $saved_values['publication']['journal'];
-    // }
-  }
 
   return $form;
 
