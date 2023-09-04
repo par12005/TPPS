@@ -9,6 +9,10 @@
   overflow-y: auto;
 }
 
+.button-compare-accession-tree-ids-vs-vcf-tree-ids {
+  clear: right;
+}
+
 .cd-inline {
   display: inline-block;
 }

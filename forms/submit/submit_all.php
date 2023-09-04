@@ -1052,6 +1052,7 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
   if (!empty($phenotype['normal-check'])) {
     $phenotypes_meta = [];
     $data_fid = $phenotype['file'];
+    // Get all phenotype data provided by admin to override submitted data.
     $phenos_edit = $form_state['phenotypes_edit'] ?? NULL;
     tpps_add_project_file($form_state, $data_fid);
     $env_phenotypes = FALSE;
@@ -1060,20 +1061,11 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
       $phenotypes_meta[$name] = [];
       $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
+      // Override phenotype metadata submitted by user with admin's data.
       if (!empty($phenos_edit[$j])) {
-        // (Rish) BUGFIX related to sex -> age
-        // keep track of the cvterm id
-        $cvterm_id = $phenotype['phenotypes-meta'][$j]['attribute'];
-        $result = $phenos_edit[$j] + $phenotype['phenotypes-meta'][$j];
-        $phenotype['phenotypes-meta'][$j] = $result;
-        // restore the cvterm_id from the original (since this is from
-        // verified cvterm table which populated the select list dropdown
-        // box on tpps form)
-        $phenotype['phenotypes-meta'][$j]['attribute'] = $cvterm_id;
+        $phenotype['phenotypes-meta'][$j] = $phenos_edit[$j] + $phenotype['phenotypes-meta'][$j];
       }
       $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
-      // print_r('LINE 1022:');
-      // print_r($phenotype['phenotypes-meta'][$j]);
       if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];
       }
@@ -1140,9 +1132,11 @@ function tpps_submit_phenotype(array &$form_state, $i, TripalJob &$job = NULL) {
       }
     }
 
-    // print_r("Phenotypes Meta:\n");
-    // print_r($phenotypes_meta);
-    // print_r("\n");
+    if ($debug_mode || 0) {
+      print_r("Phenotypes Meta:\n");
+      print_r($phenotypes_meta);
+      print_r("\n");
+    }
 
     $time_options = array();
     if ($phenotype['time']['time-check']) {
