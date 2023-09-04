@@ -87,7 +87,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
   //$publication_status = tpps_get_ajax_value($form_state, ['publication', 'status'], NULL);
-  //dpm($publication_status);
   if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
     $doi_info = tpps_doi_info($doi);
   }
@@ -132,7 +131,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // @TODO Mockup has no fieldset - just buttons.
   tpps_secondary_authors($form, $saved_values, $form_state);
 
-dpm(print_r($form, 1));
   // @TODO Review.
   if (!empty($doi_info) || 0) {
     $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
@@ -189,7 +187,7 @@ dpm(print_r($form, 1));
       }
     }
   }
-  tppsc_organism($form, $form_state);
+  tpps_organism($form, $form_state);
 
 
 

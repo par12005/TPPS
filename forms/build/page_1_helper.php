@@ -109,64 +109,49 @@ function tpps_publication(array &$form, array $values, array $form_state) {
 /**
  * Creates fields describing the species in the publication.
  *
+ * The same form used for TPPS and TPPSc forms.
+ *
  * @param array $form
  *   The form to be populated.
  * @param array $form_state
  *   The form_state of the form to be populated.
- *
- * @return array
- *   The populated form.
  */
 function tpps_organism(array &$form, array &$form_state) {
-  // TPPSc was created to provide more features for Curation Team.
-  // See 'TPPSc' module.
-  // [VS].
-  $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
-  if ($is_tppsc && 0) {
-    // TPPSc Form.
-    // @todo Not used. Will be removed later.
-    tppsc_organism($form, $form_state);
-  }
-  else {
-    // TPPS Form.
-    // Used for TPPSc Form also.
-    $field = array(
-      '#type' => 'fieldset',
-      'name' => [
-        '#type' => 'textfield',
-        '#title' => "Species !num: *",
-        '#autocomplete_path' => 'tpps/autocomplete/species',
-        '#attributes' => [
-          'data-toggle' => ['tooltip'],
-          'data-placement' => ['right'],
-          'title' => ['If your species is not in the autocomplete list, '
-          . 'don\'t worry about it! We will create a new organism entry '
-          . 'in the database for you.'],
-        ],
-        '#description' => 'Example: '
-          . '<a href"#" class="tpps-suggestion">Arabidopsis thaliana</a>.',
+  $field = [
+    '#type' => 'fieldset',
+    'name' => [
+      '#type' => 'textfield',
+      '#title' => "Species !num: *",
+      '#autocomplete_path' => 'tpps/autocomplete/species',
+      '#attributes' => [
+        'data-toggle' => ['tooltip'],
+        'data-placement' => ['right'],
+        'title' => ['If your species is not in the autocomplete list, '
+        . 'don\'t worry about it! We will create a new organism entry '
+        . 'in the database for you.'],
       ],
-      'is_tree' => [
-        '#type' => 'select',
-        '#title' => t('This species is a tree:'),
-        '#options' => [
-          '1' => t('Yes'),
-          '0' => t('No'),
-        ],
+      '#description' => 'Example: '
+        . '<a href"#" class="tpps-suggestion">Arabidopsis thaliana</a>.',
+    ],
+    'is_tree' => [
+      '#type' => 'select',
+      '#title' => t('This species is a tree:'),
+      '#options' => [
+        '1' => t('Yes'),
+        '0' => t('No'),
       ],
-    );
+    ],
+  ];
 
-    tpps_dynamic_list($form, $form_state, 'organism', $field, [
-      'label' => 'Organism',
-      'default' => 1,
-      'substitute_fields' => [
-        ['name', '#title'],
-      ],
-    ]);
-  }
-  return $form;
-  // [/VS]
+  tpps_dynamic_list($form, $form_state, 'organism', $field, [
+    'label' => 'Organism',
+    'default' => 1,
+    'substitute_fields' => [
+      ['name', '#title'],
+    ],
+  ]);
 }
+// [/VS]
 
 /**
  * This function creates the year field for the publication.
@@ -318,11 +303,11 @@ function tppsc_organism(array &$form, array &$form_state) {
     ),
   );
 
-  $doi = tpps_get_ajax_value($form_state, ['doi']);
-  $form['organism']['number'] = array(
-    '#type' => 'hidden',
-    '#value' => !empty($doi) ? $org_number : NULL,
-  );
+  //$doi = tpps_get_ajax_value($form_state, ['doi']);
+  //$form['organism']['number'] = array(
+  //  '#type' => 'hidden',
+  //  '#value' => !empty($doi) ? $org_number : NULL,
+  //);
 
   for ($i = 1; $i <= $org_number; $i++) {
 
