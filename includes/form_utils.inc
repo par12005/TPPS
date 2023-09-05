@@ -439,7 +439,7 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
   }
   // echo json_encode($results_accession_file_tree_ids);
   // echo json_encode($results_vcf_file_tree_ids);
-  
+
   $results_not_overlapping_in_vcf_file = array_diff($results_accession_file_tree_ids['values'], $results_vcf_file_tree_ids['values']);
   $results_not_overlapping_in_accession_file = array_diff($results_vcf_file_tree_ids['values'], $results_accession_file_tree_ids['values']);
   $overall_results = [
@@ -449,7 +449,7 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
     'tree_ids_not_in_accession_count' => count($results_not_overlapping_in_accession_file),
   ];
   echo json_encode($overall_results);
-  
+
 }
 
 /**
@@ -461,21 +461,21 @@ function tpps_accession_file_tree_ids($accession = NULL, $i = 1) {
   $form_state = tpps_load_submission($accession); // get the form state
   drupal_json_output(tpps_accession_get_accession_file_tree_ids($form_state, $i));
 
-  
+
 }
 
 /** This function will generate the tree_ids and place it in a standardized
- *  array format similar to other functions like vcf markers etc. The actually 
+ *  array format similar to other functions like vcf markers etc. The actually
  *  array design is a specific key format to make things easy to understand
  */
 function tpps_accession_get_accession_file_tree_ids($form_state, $i) {
   require_once(__DIR__ . '/../includes/file_utils.inc');
-  
+
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   // $location = tpps_accession_file_location($form_state, $i);
   $fid = $thirdpage['tree-accession']['species-' . $i]['file'];
   $options = [
-    'tree_id_column' => $thirdpage['tree-accession']['species-' . $i]['file-groups']['Tree Id'][1] 
+    'tree_id_column' => $thirdpage['tree-accession']['species-' . $i]['file-groups']['Tree Id'][1]
   ];
   $options['no_header'] = !empty($tree_accession['file-no-header']); // detect if there is a header or not
   tpps_file_iterator($fid, 'tpps_accession_file_tree_ids_iterate_line', $options);
@@ -502,7 +502,7 @@ function tpps_accession_file_tree_ids_iterate_line($row, &$options, $job = NULL)
     $options['count'] = 0;
   }
   $tree_id = $row[$tree_id_column];
-  
+
   $options['count'] = $options['count'] + 1; // increase count by 1
   if (isset($options['values'][$tree_id])) {
     $options['duplicate_values'][$tree_id] = 1; // set as duplicate_value
@@ -580,16 +580,16 @@ function tpps_assay_design_markers($accession = NULL, $i = 1) {
   $form_state = tpps_load_submission($accession); // get the form state
   drupal_json_output(tpps_get_assay_design_file_markers($form_state, $i));
 
-  
+
 }
 
 /** This function will generate the markers and place it in a standardized
- *  array format similar to other functions like vcf markers etc. The actually 
+ *  array format similar to other functions like vcf markers etc. The actually
  *  array design is a specific key format to make things easy to understand
  */
 function tpps_get_assay_design_file_markers($form_state, $i) {
   require_once(__DIR__ . '/../includes/file_utils.inc');
-  
+
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   $fid = $genotype['files']['assay-design'];
@@ -607,7 +607,7 @@ function tpps_get_assay_design_file_markers($form_state, $i) {
   // print_r($marker_name_column);
   // exit;
   $options = [
-    'marker_name_column' => $marker_name_column 
+    'marker_name_column' => $marker_name_column
   ];
   $options['no_header'] = FALSE; // detect if there is a header or not
   tpps_file_iterator($fid, 'tpps_get_assay_design_file_markers_iterate_line', $options);
@@ -634,7 +634,7 @@ function tpps_get_assay_design_file_markers_iterate_line($row, &$options, $job =
     $options['count'] = 0;
   }
   $marker_name = $row[$marker_name_column];
-  
+
   $options['count'] = $options['count'] + 1; // increase count by 1
   if (isset($options['values'][$marker_name])) {
     $options['duplicate_values'][$marker_name] = 1; // set as duplicate_value
@@ -682,8 +682,8 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
   ];
   if ($snps_assay_location['status'] == 'exists') {
     $results_snps_assay_markers = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
-  }  
-  
+  }
+
   $results_not_overlapping_in_vcf = array_diff($results_snps_assay_markers['values'], $results_vcf_markers['values']);
   $results_not_overlapping_in_snps_assay = array_diff($results_vcf_markers['values'], $results_snps_assay_markers['values']);
   $overall_results = [
@@ -694,9 +694,6 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
   ];
   return $overall_results;
 }
-
-
-
 
 /**
  * This code can be used to check missing tree ids in accession file
@@ -980,5 +977,76 @@ function tpps_add_buttons(array &$form, $page, $meta = []) {
         }
         break;
     }
+  }
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Validation.
+
+/**
+ * Checks if required field is not empty.
+ *
+ * @param array $form_state
+ *   Drupal Form API array with submitted values.
+ * @param array $parents
+ *   Path to field. For example:
+ *   ['organism-1', 'genotype', 'files', 'marker-type'].
+ *
+ * @return bool
+ *   Returns TRUE if required field is not empty and FALSE otherwise.
+ */
+function tpps_check_required(array $form_state, array $parents) {
+  $value = drupal_array_get_nested_value($form_state['values'], $parents);
+  if (empty($value)) {
+    tpps_form_error_required($form_state, $parents);
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Shows form_validation error message that field is required.
+ *
+ * Field title will be detected automatically.
+ * If field uses '#parents' then full path (not '#parents' must be specified).
+ *
+ * @param array $form_state
+ *   Drupal Form API array with submitted values.
+ * @param array $parents
+ *   Path to field. For example:
+ *   ['organism-1', 'genotype', 'files', 'file-type'].
+ */
+function tpps_form_error_required(array $form_state, array $parents) {
+  tpps_form_error($form_state, $parents, 'field is required.');
+}
+
+/**
+ * Shows form validation error message.
+ *
+ * Field title will be detected automatically.
+ * If field uses '#parents' then full path (not '#parents' must be specified).
+ *
+ * @param array $form_state
+ *   Drupal Form API array with submitted values.
+ * @param array $parents
+ *   Path to field. For example:
+ *   ['organism-1', 'genotype', 'files', 'file-type'].
+ * @param string $message
+ *   Error message text.
+ */
+function tpps_form_error(array $form_state, array $parents, $message) {
+  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
+  if (!empty($field['#title'])) {
+    $title = strtok($field['#title'], ':');
+    form_set_error(
+      implode('][', ((!empty($field['#parents'])) ? $field['#parents'] : $parents)),
+      // @todo Should field name and message be separated?
+      t('@title: @message', ['@title' => $title, '@message' => $message])
+    );
+  }
+  else {
+    watchdog('tpps', "Field didn't pass validation but it's missing at form."
+      . '@parents', ['@parents' => implode(' > ', $parents)], WATCHDOG_ERROR
+    );
   }
 }

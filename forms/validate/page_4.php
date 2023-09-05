@@ -1269,88 +1269,6 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_
 }
 
 /**
- * Checks if required field is not empty.
- *
- * @param array $form_state
- *   Drupal Form API array with submitted values.
- * @param array $parents
- *   Path to field. For example:
- *   ['organism-1', 'genotype', 'files', 'marker-type'].
- *
- * @return bool
- *   Returns TRUE if required field is not empty and FALSE otherwise.
- */
-function tpps_check_required(array $form_state, array $parents) {
-  $value = drupal_array_get_nested_value($form_state['values'], $parents);
-  if (empty($value)) {
-    tpps_form_error_required($form_state, $parents);
-    return FALSE;
-  }
-  return TRUE;
-}
-
-/**
- * Checks if required genotype file field is not empty.
- *
- * @param array $form_state
- *   Drupal Form API array with submitted values.
- * @param int $org_num
- *   Ordinal number of organism.
- * @param string $field_name
- *   Field name. For example: 'marker-type'.
- *
- * @return bool
- *   Returns TRUE if required field is not empty and FALSE otherwise.
- */
-function tpps_check_required_genotype_file(array $form_state, $org_num, $field_name) {
-  return tpps_check_required(
-    $form_state,
-    ['organism-' . $org_num, 'genotype', 'files', $field_name]
-  );
-}
-
-/**
- * Shows form_validation error message that field is required.
- *
- * @param array $form_state
- *   Drupal Form API array with submitted values.
- * @param array $parents
- *   Path to field. For example:
- *   ['organism-1', 'genotype', 'files', 'file-type'].
- */
-function tpps_form_error_required(array $form_state, array $parents) {
-  tpps_form_error($form_state, $parents, 'field is required.');
-}
-
-/**
- * Shows form validation error message.
- *
- * @param array $form_state
- *   Drupal Form API array with submitted values.
- * @param array $parents
- *   Path to field. For example:
- *   ['organism-1', 'genotype', 'files', 'file-type'].
- * @param string $message
- *   Error message text.
- */
-function tpps_form_error(array $form_state, array $parents, $message) {
-  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
-  if (!empty($field['#title'])) {
-    $title = strtok($field['#title'], ':');
-    form_set_error(
-      implode('][', $parents),
-      // @todo Should field name and message be separated?
-      t('@title: @message', ['@title' => $title, '@message' => $message])
-    );
-  }
-  else {
-    watchdog('tpps', "Field didn't pass validation but it's missing at form."
-      . '@parents', ['@parents' => implode(' > ', $parents)], WATCHDOG_ERROR
-    );
-  }
-}
-
-/**
  * Check if 'unit' column has empty values.
  *
  * @param mixed $row
@@ -1460,4 +1378,24 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
       );
     }
   }
+}
+
+/**
+ * Checks if required genotype file field is not empty.
+ *
+ * @param array $form_state
+ *   Drupal Form API array with submitted values.
+ * @param int $org_num
+ *   Ordinal number of organism.
+ * @param string $field_name
+ *   Field name. For example: 'marker-type'.
+ *
+ * @return bool
+ *   Returns TRUE if required field is not empty and FALSE otherwise.
+ */
+function tpps_check_required_genotype_file(array $form_state, $org_num, $field_name) {
+  return tpps_check_required(
+    $form_state,
+    ['organism-' . $org_num, 'genotype', 'files', $field_name]
+  );
 }

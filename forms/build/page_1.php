@@ -132,10 +132,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
         ':input[name="publication[status]"]' => ['value' => 'Published'],
       ],
     ],
-    '#tree' => FALSE,
   ];
   // Show extra fields.
-  // @TODO Check if $saved_values respects '#tree'.
   // if(isset($saved_values['primaryAuthor']) && $saved_values['primaryAuthor'] != "") {
   //   $form['publication']['primaryAuthor']['#value'] = $saved_values['primaryAuthor'];
   // }
@@ -151,6 +149,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#options' => $year_options,
     '#description' => t('If your publication has not been published yet, '
       . 'please choose the expected year of publication.'),
+    // Exclude 'extra' just to have clear data structure.
+    '#parents' => ['publication', 'year'],
   ];
   // if(isset($values['publication']['year'])) {
   //   $form['publication']['year']['#value'] = $values['publication']['year'];
@@ -159,6 +159,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $form['publication']['extra']['title'] = [
     '#type' => 'textfield',
     '#title' => t('Title of Publication/Study: *'),
+    // Exclude 'extra' just to have clear data structure.
+    '#parents' => ['publication', 'title'],
   ];
   // if(isset($saved_values['publication']['title']) && $saved_values['publication']['title'] != "") {
   //   $form['publication']['title']['#value'] = $saved_values['publication']['title'];
@@ -167,6 +169,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $form['publication']['extra']['abstract'] = [
     '#type' => 'textarea',
     '#title' => t('Abstract/Description: *'),
+    // Exclude 'extra' just to have clear data structure.
+    '#parents' => ['publication', 'abstract'],
   ];
   // if(isset($saved_values['publication']['abstract']) && $saved_values['publication']['abstract'] != "") {
   //   $form['publication']['abstract']['#value'] = $saved_values['publication']['abstract'];
@@ -176,6 +180,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Journal: *'),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
+    // Exclude 'extra' just to have clear data structure.
+    '#parents' => ['publication', 'journal'],
   ];
   // if(isset($saved_values['publication']['journal']) && $saved_values['publication']['journal'] != "") {
   //   $form['publication']['journal']['#value'] = $saved_values['publication']['journal'];
