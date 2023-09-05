@@ -139,30 +139,43 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   //   $form['publication']['primaryAuthor']['#value'] = $saved_values['primaryAuthor'];
   // }
 
-// @TODO Add ['extra'] container.
-  tpps_year($form, $saved_values, $form_state);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Publication Year.
+  $year_options = range(2017, date('Y'), 1);
+  $year_options = [0 => '- Select -']
+    + array_combine($year_options, $year_options);
+  $form['publication']['extra']['year'] = [
+    '#type' => 'select',
+    '#title' => t('Year of Publication: *'),
+    '#options' => $year_options,
+    '#description' => t('If your publication has not been published yet, '
+      . 'please choose the expected year of publication.'),
+  ];
+  // if(isset($values['publication']['year'])) {
+  //   $form['publication']['year']['#value'] = $values['publication']['year'];
+  // }
 
-  $form['publication']['extra']['title'] = array(
+  $form['publication']['extra']['title'] = [
     '#type' => 'textfield',
     '#title' => t('Title of Publication/Study: *'),
-  );
+  ];
   // if(isset($saved_values['publication']['title']) && $saved_values['publication']['title'] != "") {
   //   $form['publication']['title']['#value'] = $saved_values['publication']['title'];
   // }
 
-  $form['publication']['extra']['abstract'] = array(
+  $form['publication']['extra']['abstract'] = [
     '#type' => 'textarea',
     '#title' => t('Abstract/Description: *'),
-  );
+  ];
   // if(isset($saved_values['publication']['abstract']) && $saved_values['publication']['abstract'] != "") {
   //   $form['publication']['abstract']['#value'] = $saved_values['publication']['abstract'];
   // }
 
-  $form['publication']['extra']['journal'] = array(
+  $form['publication']['extra']['journal'] = [
     '#type' => 'textfield',
     '#title' => t('Journal: *'),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
-  );
+  ];
   // if(isset($saved_values['publication']['journal']) && $saved_values['publication']['journal'] != "") {
   //   $form['publication']['journal']['#value'] = $saved_values['publication']['journal'];
   // }
