@@ -132,6 +132,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
         ':input[name="publication[status]"]' => ['value' => 'Published'],
       ],
     ],
+    '#tree' => FALSE,
   ];
   // Show extra fields.
   // @TODO Check if $saved_values respects '#tree'.
