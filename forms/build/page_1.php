@@ -87,15 +87,16 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
   $values = $form_state['values'];
 
-  $publication_status = tpps_get_ajax_value($form_state, ['publication', 'status'], NULL);
+  $publication_status = tpps_get_ajax_value(
+    $form_state, ['publication', 'status'], NULL
+  );
   if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
      module_load_include('inc', 'tpps', 'includes/manage_doi');
     $doi_info = tpps_doi_info($doi);
   }
   $species = $doi_info['species'] ?? [];
-
-  // $org_number = tpps_get_ajax_value($form_state, ['organism', 'number'])
-    //?? $form_state['values']['organism']['number'] ?? count($species) ?? 1;
+  $org_number = tpps_get_ajax_value($form_state, ['organism', 'number'])
+    ?? $form_state['values']['organism']['number'] ?? count($species) ?? 1;
 
   //dpm(print_r($doi, 1));
   //dpm(print_r($doi_info, 1));
@@ -249,34 +250,21 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   // @TODO Review. This could be useful for existing studies.
   if (!empty($doi_info)) {
-   // $tpps_form = [];
-
-    //tpps_curation_publication($form, $form_state);
-    //$tpps_form = tpps_page_1_create_regular_form($form, $form_state);
-    //$form['publication']['primaryAuthor'] = $tpps_form['primaryAuthor'];
-    //$form['publication'] = $tpps_form['publication'];
-
-    //$form['publication']['journal']['#title'] = t('Journal:');
-    //$form['publication']['status']['#title'] = t('Publication Status:');
     $form['publication']['status']['#value'] = 'Published';
     $form['publication']['status']['#disabled'] = TRUE;
 
-    $form['doi_container']['message2']['#markup'] =
-      "The publication has been successfully loaded from Dryad<br>";
+    $form['doi_container']['doi_message']['#markup'] =
+      "The publication has been successfully loaded from Dryad";
+
     $form['primaryAuthor']['#default_value'] = $doi_info['primary'] ?? "";
-    $form['publication']['title']['#default_value'] = $doi_info['title'] ?? "";
-    $form['publication']['abstract']['#default_value'] = $doi_info['abstract'] ?? "";
-    $form['publication']['journal']['#default_value'] = $doi_info['journal'] ?? "";
-    $form['publication']['year']['#default_value'] = $doi_info['year'] ?? "";
+    $form['publication']['extra']['year']['#default_value'] = $doi_info['year'] ?? "";
+    $form['publication']['extra']['title']['#default_value'] = $doi_info['title'] ?? "";
+    $form['publication']['extra']['abstract']['#default_value'] = $doi_info['abstract'] ?? "";
+    $form['publication']['extra']['journal']['#default_value'] = $doi_info['journal'] ?? "";
   }
   else {
     // DOI Info is empty.
-    //$form['publication']['primaryAuthor'] = [
-    //  '#type' => 'hidden',
-    //  '#disabled' => TRUE,
-    //];
-    //$form['publication'] = ['#type' => 'hidden'];
-    //$form['organism'] = ['#type' => 'fieldset'];
+
   }
   if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
     // Show DOI fieldset only for 'Published' status.
@@ -290,21 +278,17 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Organisms.
   //
-  // @TODO Review this code! This code gets data from DOI.
-  //
+  // Get data from DOI.
   // Fill form with values from:
   // 1. Used previously stored study. From $form_state['saved_values']?
   // 2. PUblished. From DOI. Read only?
   // 3. From $form_state (when returned from step 2).
-  if (0) {
-    for ($i = 1; $i <= $org_number; $i++) {
-      $org = tpps_get_ajax_value($form_state, ['organism', $i]);
-      if (empty($org) and !empty($species[$i - 1])) {
-        $form_state['values']['organism'][$i] = $species[$i - 1];
-      }
+  for ($i = 1; $i <= $org_number; $i++) {
+    $org = tpps_get_ajax_value($form_state, ['organism', $i]);
+    if (empty($org) and !empty($species[$i - 1])) {
+      $form_state['values']['organism'][$i] = $species[$i - 1];
     }
   }
-
   tpps_organism($form, $form_state);
 
 
