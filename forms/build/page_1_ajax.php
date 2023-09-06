@@ -62,15 +62,24 @@ function tpps_authors_callback(array $form, array &$form_state) {
 
 /**
  * DOI Field AJAX-callback.
+ *
+ * Note: Only curation form has DOI fields.
  */
 function tpps_ajax_doi_callback(array &$form, array $form_state) {
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
-    if (!empty($value = $form['doi']['#value'])) {
+
+
+    if (!empty($value = $form['publication']['doi_continer']['doi']['#value'])) {
       // Check the tpps_submissionos.
+      // @TODO Search for doi value instead of getting all the data.
+      // It's a huge amount of data.
       $tpps_submissions = chado_query("SELECT * FROM public.tpps_submission;");
       $found_doi = FALSE;
       $found_doi_accession = "";
+
+
+      // @TODO Fill fields.
       foreach ($tpps_submissions as $submission_row) {
         $submission_state = unserialize($submission_row->submission_state);
         if (strtolower($value) == strtolower($submission_state['saved_values']['1']['doi'])) {
@@ -82,14 +91,13 @@ function tpps_ajax_doi_callback(array &$form, array $form_state) {
       }
       if ($found_doi) {
         form_set_error('doi', "WARNING: DOI is already used by " . $found_doi_accession);
-        $form['doi']['#prefix'] = "<div style='text-align: right; color: "
+        $form['publication']['extra']['message']['#markup'] =
+          // @TODO Use CSS rules.
+          "<div style='text-align: right; color: "
           . "red;'>WARNING: DOI is already used by " . $found_doi_accession
           . "</div>";
       }
     }
-    $form['doi']['#suffix'] = "<div></div>";
-    return $form;
+    return $form['publication']['extra'];
   }
 }
-
-

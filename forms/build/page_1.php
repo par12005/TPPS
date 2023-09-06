@@ -87,13 +87,18 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
 
   $publication_status = tpps_get_ajax_value($form_state, ['publication', 'status'], NULL);
-  if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
+  if (!empty($doi = tpps_get_ajax_value($form_state,
+    ['publication', 'doi_container', 'doi']))
+  ) {
+     module_load_include('inc', 'tpps', 'includes/manage_doi');
     $doi_info = tpps_doi_info($doi);
   }
   $species = $doi_info['species'] ?? [];
 
   // $org_number = tpps_get_ajax_value($form_state, ['organism', 'number'])
     //?? $form_state['values']['organism']['number'] ?? count($species) ?? 1;
+
+  dpm(print_r($form_state, 1));
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Publication.
@@ -114,6 +119,48 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     ],
     '#default value' => $publication_status,
   ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // DOI Fields.
+  //
+  // Note:
+  // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
+  // Accession will be stored in 'old_tgdr' field.
+  $form['publication']['doi_container'] = [
+    '#type' => 'container',
+    //'#tree' => FALSE,
+    // @TODO Before 'doi-wrapper' included whole form so when doi field
+    // was filled whole form was rebuilt.
+    '#states' => [
+      'visible' => [
+        ':input[name="publication[status]"]' => ['value' => 'Published'],
+      ],
+    ],
+  ];
+  // @TODO Minor. Rename field to 'publication_doi'.
+  $form['publication']['doi_container']['doi'] = [
+    '#type' => 'textfield',
+    '#title' => t('Publication DOI: *'),
+    '#ajax' => [
+      'callback' => 'tpps_ajax_doi_callback',
+      'wrapper' => 'publication-extra-container',
+    ],
+    '#description' => 'Example: '
+      // @TODO Use l().
+      . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
+      . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
+    // AJAX-callback 'tpps_ajax_doi_callback()' will search database for
+      // doi field in the root of form we change parents here.
+      // This allows to reuse existing code and existing studies.
+    '#parents' => ['doi'],
+  ];
+  $form['publication']['doi_container']['dataset_doi'] = [
+    '#type' => 'textfield',
+    '#title' => t('Dryad DOI:'),
+    '#description' => 'Examples: '
+      // @TODO Use l().
+      . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
+      . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
+  ];
   $form['publication']['primaryAuthor'] = [
     '#type' => 'textfield',
     '#title' => t('Primary Author: *'),
@@ -125,22 +172,25 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     ],
     '#description' => t('Note: please format in ‘Last, First’ format.'),
   ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Show extra fields.
   $form['publication']['extra'] = [
     '#type' => 'container',
+    '#attributes' => ['id' => 'publication-extra-container'],
     '#states' => [
       'visible' => [
         ':input[name="publication[status]"]' => ['value' => 'Published'],
       ],
     ],
   ];
-  // Show extra fields.
   // if(isset($saved_values['primaryAuthor']) && $saved_values['primaryAuthor'] != "") {
   //   $form['publication']['primaryAuthor']['#value'] = $saved_values['primaryAuthor'];
   // }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Publication Year.
-  $year_options = range(2017, date('Y'), 1);
+  $year_options = range(1900, date('Y'), 1);
   $year_options = [0 => '- Select -']
     + array_combine($year_options, $year_options);
   $form['publication']['extra']['year'] = [
@@ -192,7 +242,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // @TODO Mockup has no fieldset - just buttons.
   tpps_secondary_authors($form, $saved_values, $form_state);
 
-  // @TODO Review.
+  // @TODO Review. This could be useful for existing studies.
   if (!empty($doi_info) || 0) {
    // $tpps_form = [];
 
@@ -230,19 +280,16 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     //];
   }
 
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Organisms.
   //
-  // @TODO Review this code!
+  // @TODO Review this code! This code gets data from DOI.
   //
   // Fill form with values from:
   // 1. Used previously stored study. From $form_state['saved_values']?
   // 2. PUblished. From DOI. Read only?
   // 3. From $form_state (when returned from step 2).
-  //
   if (0) {
-    // This code gets data from DOI
     for ($i = 1; $i <= $org_number; $i++) {
       $org = tpps_get_ajax_value($form_state, ['organism', $i]);
       if (empty($org) and !empty($species[$i - 1])) {
@@ -250,7 +297,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       }
     }
   }
-
 
   tpps_organism($form, $form_state);
 
@@ -319,42 +365,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
 
 
-  return $form;
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // DOI Fields.
-  //
-  // Note:
-  // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
-  // Accession will be stored in 'old_tgdr' field.
-  $form['doi_wrapper'] = [
-    '#type' => 'container',
-    '#attributes' => ['id' => 'doi-wrapper'],
-    '#tree' => FALSE,
-    // @TODO Before 'doi-wrapper' included whole form so when doi field
-    // was filled whole form was rebuilt.
-  ];
-  // @TODO Minor. Rename field to 'publication_doi'.
-  $form['doi_wrapper']['doi'] = [
-    '#type' => 'textfield',
-    '#title' => t('Publication DOI: *'),
-    '#ajax' => [
-      'callback' => 'tpps_ajax_doi_callback',
-      'wrapper' => "doi-wrapper",
-    ],
-    '#description' => 'Example: '
-      // @TODO Use l().
-      . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
-      . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
-  ];
-  $form['doi_wrapper']['dataset_doi'] = [
-    '#type' => 'textfield',
-    '#title' => t('Dryad DOI:'),
-    '#description' => 'Examples: '
-      // @TODO Use l().
-      . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
-      . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
-  ];
 
 
 }
