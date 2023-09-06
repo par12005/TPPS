@@ -984,7 +984,7 @@ function tpps_add_buttons(array &$form, $page, $meta = []) {
 // Validation.
 
 /**
- * Checks if required field is not empty.
+ * Checks if required field is empty and shows error message.
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
@@ -993,15 +993,15 @@ function tpps_add_buttons(array &$form, $page, $meta = []) {
  *   ['organism-1', 'genotype', 'files', 'marker-type'].
  *
  * @return bool
- *   Returns TRUE if required field is not empty and FALSE otherwise.
+ *   Returns TRUE if required field is empty and FALSE otherwise.
  */
-function tpps_check_required(array $form_state, array $parents) {
+function tpps_is_required_field_empty(array $form_state, array $parents) {
   $value = drupal_array_get_nested_value($form_state['values'], $parents);
   if (empty($value)) {
     tpps_form_error_required($form_state, $parents);
-    return FALSE;
+    return TRUE;
   }
-  return TRUE;
+  return FALSE;
 }
 
 /**
