@@ -119,7 +119,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ],
-    '#default value' => $publication_status,
+    '#default_value' => $publication_status,
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.
@@ -135,7 +135,12 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       ],
     ],
   ];
+
+  //dpm(print_r($saved_values, 1));
+
+
   // @TODO Minor. Rename field to 'publication_doi'.
+  $parents = ['doi'];
   $form['publication']['doi_container']['doi'] = [
     '#type' => 'textfield',
     '#title' => t('Publication DOI: *'),
@@ -143,23 +148,26 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'callback' => 'tpps_ajax_doi_callback',
       'wrapper' => 'publication-extra-container',
     ],
+    '#parents' => $parents,
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#description' => 'Example: '
       // @TODO Use l().
       . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
       . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
     // AJAX-callback 'tpps_ajax_doi_callback()' will search database for
-      // doi field in the root of form we change parents here.
-      // This allows to reuse existing code and existing studies.
-    '#parents' => ['doi'],
+    // doi field in the root of form we change parents here.
+    // This allows to reuse existing code and existing studies.
   ];
+  $parents = ['dataset_doi'];
   $form['publication']['doi_container']['dataset_doi'] = [
     '#type' => 'textfield',
     '#title' => t('Dryad DOI:'),
+    '#parents' => $parents,
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#description' => 'Examples: '
       // @TODO Use l().
       . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
       . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
-    '#parents' => ['dataset_doi'],
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -190,15 +198,13 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       ],
     ],
   ];
-  // if(isset($saved_values['primaryAuthor']) && $saved_values['primaryAuthor'] != "") {
-  //   $form['publication']['primaryAuthor']['#value'] = $saved_values['primaryAuthor'];
-  // }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Publication Year.
   $year_options = range(1900, date('Y'), 1);
   $year_options = [0 => '- Select -']
     + array_combine($year_options, $year_options);
+  $parents = ['publication', 'year'];
   $form['publication']['extra']['year'] = [
     '#type' => 'select',
     '#title' => t('Year of Publication: *'),
@@ -206,46 +212,39 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#description' => t('If your publication has not been published yet, '
       . 'please choose the expected year of publication.'),
     // Exclude 'extra' just to have clear data structure.
-    '#parents' => ['publication', 'year'],
+    '#parents' => $parents,
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
-  // if(isset($values['publication']['year'])) {
-  //   $form['publication']['year']['#value'] = $values['publication']['year'];
-  // }
 
+  $parents = ['publication', 'title'];
   $form['publication']['extra']['title'] = [
     '#type' => 'textfield',
     '#title' => t('Title of Publication/Study: *'),
     // Exclude 'extra' just to have clear data structure.
-    '#parents' => ['publication', 'title'],
+    '#parents' => $parents,
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
-  // if(isset($saved_values['publication']['title']) && $saved_values['publication']['title'] != "") {
-  //   $form['publication']['title']['#value'] = $saved_values['publication']['title'];
-  // }
 
+  $parents = ['publication', 'abstract'];
   $form['publication']['extra']['abstract'] = [
     '#type' => 'textarea',
     '#title' => t('Abstract/Description: *'),
     // Exclude 'extra' just to have clear data structure.
-    '#parents' => ['publication', 'abstract'],
+    '#parents' => $parents,
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
-  // if(isset($saved_values['publication']['abstract']) && $saved_values['publication']['abstract'] != "") {
-  //   $form['publication']['abstract']['#value'] = $saved_values['publication']['abstract'];
-  // }
 
+  $parents = ['publication', 'journal'];
   $form['publication']['extra']['journal'] = [
     '#type' => 'textfield',
     '#title' => t('Journal: *'),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
     // Exclude 'extra' just to have clear data structure.
-    '#parents' => ['publication', 'journal'],
+    '#parents' => $parents,
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
-  // if(isset($saved_values['publication']['journal']) && $saved_values['publication']['journal'] != "") {
-  //   $form['publication']['journal']['#value'] = $saved_values['publication']['journal'];
-  // }
 
-
-
-  // @TODO Mockup has no fieldset - just buttons.
+  // @TODO Check. Mockup has no fieldset - just buttons.
   tpps_secondary_authors($form, $saved_values, $form_state);
 
   // @TODO Review. This could be useful for existing studies.
@@ -290,9 +289,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     }
   }
   tpps_organism($form, $form_state);
-
-
-
 
 
   if (!empty($saved_values['frontpage']['use_old_tgdr'])) {

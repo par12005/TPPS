@@ -996,6 +996,8 @@ function tpps_add_buttons(array &$form, $page, $meta = []) {
  *   Returns TRUE if required field is empty and FALSE otherwise.
  */
 function tpps_is_required_field_empty(array $form_state, array $parents) {
+  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
+  $parents = ($field['#parents'] ?? $parents);
   $value = drupal_array_get_nested_value($form_state['values'], $parents);
   if (empty($value)) {
     tpps_form_error_required($form_state, $parents);

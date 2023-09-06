@@ -28,14 +28,15 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       // Publication.
       $primary_author = $form_values['primaryAuthor'] ?? NULL;
       $publication_status = $form_values['publication']['status'] ?? NULL;
+
       $second = $form_values['publication']['secondaryAuthors'] ?? NULL;
       $second_num = $second['number'] ?? NULL;
       // Organism's data.
       $organism = $form_values['organism'] ?? NULL;
       $organism_number = $form_values['organism']['number'] ?? NULL;
       // Publication.
-      tpps_form_error_required($form_state, ['publication', 'status']);
-      tpps_form_error_required($form_state, ['publication', 'primaryAuthor']);
+      tpps_is_required_field_empty($form_state, ['publication', 'status']);
+      tpps_is_required_field_empty($form_state, ['publication', 'primaryAuthor']);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       module_load_include('inc', 'tpps', 'includes/manage_doi');
       if ($publication_status == 'Published') {
@@ -56,7 +57,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
         }
         // Required Publication Extra Fields.
         foreach (['year', 'title', 'abstract', 'journal'] as $name) {
-          tpps_form_error_required($form_state, ['publication', 'extra', $name]);
+          tpps_is_required_field_empty($form_state, ['publication', 'extra', $name]);
         }
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
