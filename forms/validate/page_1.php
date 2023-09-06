@@ -37,6 +37,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       tpps_form_error_required($form_state, ['publication', 'status']);
       tpps_form_error_required($form_state, ['publication', 'primaryAuthor']);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      module_load_include('inc', 'tpps', 'includes/manage_doi');
       if ($publication_status == 'Published') {
         // 'Publication DOI' field is required (even for existing studies).
         if (

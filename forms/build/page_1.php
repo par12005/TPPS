@@ -85,11 +85,10 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
  */
 function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
+  $values = $form_state['values'];
 
   $publication_status = tpps_get_ajax_value($form_state, ['publication', 'status'], NULL);
-  if (!empty($doi = tpps_get_ajax_value($form_state,
-    ['publication', 'doi_container', 'doi']))
-  ) {
+  if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
      module_load_include('inc', 'tpps', 'includes/manage_doi');
     $doi_info = tpps_doi_info($doi);
   }
@@ -98,7 +97,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // $org_number = tpps_get_ajax_value($form_state, ['organism', 'number'])
     //?? $form_state['values']['organism']['number'] ?? count($species) ?? 1;
 
-  dpm(print_r($form_state, 1));
+  //dpm(print_r($doi, 1));
+  //dpm(print_r($doi_info, 1));
+  //dpm(print_r($form_state, 1));
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Publication.
@@ -127,9 +128,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Accession will be stored in 'old_tgdr' field.
   $form['publication']['doi_container'] = [
     '#type' => 'container',
-    //'#tree' => FALSE,
-    // @TODO Before 'doi-wrapper' included whole form so when doi field
-    // was filled whole form was rebuilt.
     '#states' => [
       'visible' => [
         ':input[name="publication[status]"]' => ['value' => 'Published'],
@@ -160,7 +158,11 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       // @TODO Use l().
       . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
       . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
+    '#parents' => ['dataset_doi'],
   ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Primary Author.
   $form['publication']['primaryAuthor'] = [
     '#type' => 'textfield',
     '#title' => t('Primary Author: *'),
@@ -176,8 +178,11 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show extra fields.
   $form['publication']['extra'] = [
+    // Using '#attributes' blocks '#states' so '#prefix' and '#suffix' are used.
+    '#prefix' => '<div id="publication-extra-container">',
+    '#suffix' => '</div>',
+    // '#attributes' => ['id' => ['publication-extra-container']],
     '#type' => 'container',
-    '#attributes' => ['id' => 'publication-extra-container'],
     '#states' => [
       'visible' => [
         ':input[name="publication[status]"]' => ['value' => 'Published'],
@@ -243,19 +248,21 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   tpps_secondary_authors($form, $saved_values, $form_state);
 
   // @TODO Review. This could be useful for existing studies.
-  if (!empty($doi_info) || 0) {
+  if (!empty($doi_info)) {
    // $tpps_form = [];
 
     //tpps_curation_publication($form, $form_state);
     //$tpps_form = tpps_page_1_create_regular_form($form, $form_state);
-    $form['publication']['primaryAuthor'] = $tpps_form['primaryAuthor'];
-    $form['publication'] = $tpps_form['publication'];
+    //$form['publication']['primaryAuthor'] = $tpps_form['primaryAuthor'];
+    //$form['publication'] = $tpps_form['publication'];
 
-    $form['publication']['journal']['#title'] = t('Journal:');
-    $form['publication']['status']['#title'] = t('Publication Status:');
+    //$form['publication']['journal']['#title'] = t('Journal:');
+    //$form['publication']['status']['#title'] = t('Publication Status:');
+    $form['publication']['status']['#value'] = 'Published';
     $form['publication']['status']['#disabled'] = TRUE;
 
-    $form['doi']['#suffix'] = "The publication has been successfully loaded from Dryad<br>";
+    $form['doi_container']['message2']['#markup'] =
+      "The publication has been successfully loaded from Dryad<br>";
     $form['primaryAuthor']['#default_value'] = $doi_info['primary'] ?? "";
     $form['publication']['title']['#default_value'] = $doi_info['title'] ?? "";
     $form['publication']['abstract']['#default_value'] = $doi_info['abstract'] ?? "";
