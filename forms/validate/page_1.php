@@ -34,25 +34,26 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       $organism = $form_values['organism'] ?? NULL;
       $organism_number = $form_values['organism']['number'] ?? NULL;
       // Publication.
-      if (!$form_values['publication']['primaryAuthor']) {
-        form_set_error('publication][primaryAuthor', 'Primary Author: field is required.');
-      }
-      // DOI.
-      // @todo review.
-      //if (empty($old_tgdr)) {
-      //  if (!$doi) {
-      //    form_set_error('doi', "DOI: field is required.");
-      //  }
-      //  elseif (!preg_match(tpps_doi_regex(), $doi)) {
-      //    form_set_error('doi', 'Publication DOI: invalid format. Example DOI: "10.1111/dryad.111".');
-      //  }
-      //  if ($dataset_doi && !preg_match(tpps_doi_regex(), $dataset_doi)) {
-      //    form_set_error('dataset_doi', 'Dataset DOI: invalid format. Example DOI: "10.1111/dryad.111".');
-      //  }
-      //}
+      tpps_form_error_required($form_state, ['publication', 'status']);
+      tpps_form_error_required($form_state, ['publication', 'primaryAuthor']);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Required Publication Extra Fields.
       if ($publication_status == 'Published') {
+        // DOI Fields.
+        //if (tpps_is_required_empty($form_state, ['publication', 'doi'])) {
+
+        //}
+        if (empty($old_tgdr)) {
+          if (!$doi) {
+            form_set_error('doi', "DOI: field is required.");
+          }
+          elseif (!preg_match(tpps_doi_regex(), $doi)) {
+            form_set_error('doi', 'Publication DOI: invalid format. Example DOI: "10.1111/dryad.111".');
+          }
+          if ($dataset_doi && !preg_match(tpps_doi_regex(), $dataset_doi)) {
+            form_set_error('dataset_doi', 'Dataset DOI: invalid format. Example DOI: "10.1111/dryad.111".');
+          }
+        }
+        // Required Publication Extra Fields.
         foreach (['year', 'title', 'abstract', 'journal'] as $name) {
           tpps_form_error_required($form_state, ['publication', 'extra', $name]);
         }
