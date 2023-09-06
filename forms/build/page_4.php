@@ -21,6 +21,7 @@ require_once 'page_4_helper.php';
  *   The state of the form to be populated.
  */
 function tpps_page_4_create_form(array &$form, array &$form_state) {
+  global $user;
   if (isset($form_state['saved_values'][TPPS_PAGE_4])) {
     $values = $form_state['saved_values'][TPPS_PAGE_4];
   }
@@ -31,21 +32,21 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
   // dpm($values);
 
   $form['#tree'] = TRUE;
+  // Submission metadata.
+  $meta = [
+    'organism_number' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'],
+    'data_type' => $form_state['saved_values'][TPPS_PAGE_2]['data_type'],
+  ];
 
-  $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-  $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'];
-  for ($i = 1; $i <= $organism_number; $i++) {
-
+  for ($i = 1; $i <= $meta['organism_number']; $i++) {
     $name = $form_state['saved_values'][TPPS_PAGE_1]['organism']["$i"]['name'];
-
     $form["organism-$i"] = array(
       '#type' => 'fieldset',
       '#title' => "<div class=\"fieldset-title\">$name:</div>",
       '#tree' => TRUE,
       '#collapsible' => TRUE,
     );
-
-    if (preg_match('/P/', $data_type)) {
+    if (preg_match('/P/', $meta['data_type'])) {
       if ($i > 1) {
         $form["organism-$i"]['phenotype-repeat-check'] = array(
           '#type' => 'checkbox',
@@ -179,7 +180,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       }
     }
 
-    if (preg_match('/G/', $data_type)) {
+    if (preg_match('/G/', $meta['data_type'])) {
       if ($i > 1) {
         $form["organism-$i"]['genotype-repeat-check'] = array(
           '#type' => 'checkbox',
@@ -197,15 +198,17 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           ),
         );
       }
-
     }
 
-    if (preg_match('/E/', $data_type)) {
+    if (preg_match('/E/', $meta['data_type'])) {
       if ($i > 1) {
         $form["organism-$i"]['environment-repeat-check'] = array(
           '#type' => 'checkbox',
-          '#title' => "Environmental information for $name is the same as environmental information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
-          '#default_value' => isset($values["organism-$i"]['environment-repeat-check']) ? $values["organism-$i"]['environment-repeat-check'] : 1,
+          '#title' => "Environmental information for $name is the same as "
+            . "environmental information for "
+            . "{$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
+          '#default_value' => isset($values["organism-$i"]['environment-repeat-check'])
+            ? $values["organism-$i"]['environment-repeat-check'] : 1,
         );
       }
 
@@ -221,479 +224,102 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     }
   }
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Submission metadata.
-  $meta = [
-    'organism_number' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'],
-    'data_type' => $form_state['saved_values'][TPPS_PAGE_2]['data_type'],
-  ];
+  // [VS].
   tpps_add_buttons($form, 'page_4', $meta);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-  // CHECK IF USER HAS CURATION ROLE
-  global $user;
-
-  // Check if the user has the 'curation' role.
-  if (in_array('Curation', $user->roles)) {
-    // [VS]
-    // Temporary set weight of the Curation Diagnostics Tool to be below
-    // navigation buttons. Will be removed when fix which moves JS and CSS
-    // into separate files will be released.
-    // Value must be greater then 100.
-    $weight = 200;
-    // [/VS].
-    // DIAGNOSTIC UTILITIES FOR CURATION
-    $form['diagnostics-curation'] = [
-      '#type' => 'markup',
-      '#markup' => '
-        <h2 style="margin-top:10px;">🌟 Curation Diagnostics</h2>
-        <div>These diagnostics <b>require you to save this page</b> with data
-        before functions will work</div>
-      ',
-      '#weight' => $weight,
+  // Diagnostic utilities for curation.
+  if (
+    in_array('administrator', $user->roles)
+    || in_array('Curation', $user->roles)
+  ) {
+    $form['#attached']['js'][] = [
+      'type' => 'setting',
+      'data' => [
+        'tpps' => [
+          'accession' => $form_state['accession'],
+          'curationDiagnosticResultsElementId' => '#diagnostic-curation-results',
+          'organismNumber' => $meta['organism_number'],
+        ],
+      ],
     ];
-
-    $form['diagnostics-curation-style'] = [
-      '#type' => 'markup',
-      '#markup' => '
-        <style>
-          .cd-inline {
-            display: inline-block;
-          }
-          .cd-inline-round-blue {
-            display: inline-block;
-            background-color: #00a5ff;
-            color: white;
-            padding: 3px;
-            margin-top: 3px;
-            margin-right: 3px;
-            border-radius: 5px;
-            width: 150px;
-          }
-          .cd-inline-round-red {
-            display: inline-block;
-            background-color: red;
-            color: white;
-            padding: 3px;
-            margin-top: 3px;
-            margin-right: 3px;
-            border-radius: 5px;
-            width: 150px;
-          }
-        </style>
-      '
-    ];
-    $accession = $form_state['accession'];
-
-    $js_onclick_code = "
-      <script>
-      function check_accession_file_tree_ids() {
-        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Checking Accession File Tree IDs...');
-        jQuery.ajax({
-          url: '/tpps/" . $accession . "/accession-file-tree-ids',
-          error: function (err) {
-            console.log(err);
-            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that this accession file is just too big to process it in time. Please contact Administration.');
-          },        
-          success: function (data) {
-            console.log(data);
-            if (!Array.isArray(data)) {
-              // Data was returned, this is good
-              var html = '';
-              html += '<div>';
-              html += '🎄 Unique trees found: ' + data['unique_count'];
-              html += ' | ';
-              html += '🎄 Total trees found: ' + data['count'];
-              html += '</div>';
-              if (data['unique_count'] != data['count']) {
-                html += '<div>⚡ There are duplicate tree IDs in this Accession file since unique count does not match count</div>';
-                html += '<hr /><div>Duplicate Tree IDs (' + data['duplicate_values'].length + ')</div>';
-                for (var i=0; i<data['duplicate_values'].length; i++) {
-                  html += '<div class=\"cd-inline-round-red\">' + data['duplicate_values'][i] + '</div>';
-                }
-              }
-              else {
-                html += '<div>🆗 No duplicate Tree IDs found in the Accession file</div>';
-              }
-              html += '<hr /><div>Unique Tree IDs (' + data['values'].length + ')</div>';
-              for (var i=0; i<data['values'].length; i++) {
-                html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
-              }
-              jQuery('#diagnostic-curation-results').html(html);
-            }
-            else {
-              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>No results returned, make sure you saved valid data on this page and retry. Double check Accession File existence as well.');
-            }
-          }
-        });
-      }
-      </script>
-    ";
-    $form['button-check-accession-file-tree-ids'] = array(
-      '#type' => 'button',
-      '#prefix' => $js_onclick_code . '',
-      '#value' => 'Check Accession File Tree IDs',
-      '#attributes' => array(
-        "onclick" => "javascript:check_accession_file_tree_ids(); return false;"
-      ),
-      '#weight' => $weight,
-    );
-
-
-    $js_onclick_code = "
-      <script>
-      function check_vcf_tree_ids() {
-        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Checking VCF Tree IDs...');
-        jQuery.ajax({
-          url: '/tpps/" . $accession . "/vcf-tree-ids',
-          error: function (err) {
-            console.log(err);
-            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that this VCF is just too big to process it in time. Please contact Administration.');
-          },
-          success: function (data) {
-            console.log(data);
-            if (!Array.isArray(data)) {
-              // Data was returned, this is good
-              var html = '';
-              html += '<div>';
-              html += '🎄 Unique trees found: ' + data['unique_count'];
-              html += ' | ';
-              html += '🎄 Total trees found: ' + data['count'];
-              html += '</div>';
-              if (data['unique_count'] != data['count']) {
-                html += '<div>⚡ There are duplicate tree IDs in this VCF since unique count does not match count</div>';
-                html += '<hr /><div>Duplicate Tree IDs (' + data['duplicate_values'].length + ')</div>';
-                for (var i=0; i<data['duplicate_values'].length; i++) {
-                  html += '<div class=\"cd-inline-round-red\">' + data['duplicate_values'][i] + '</div>';
-                }
-              }
-              else {
-                html += '<div>🆗 No duplicate Tree IDs found in the VCF file</div>';
-              }
-              html += '<hr /><div>Unique Tree IDs (' + data['values'].length + ')</div>';
-              for (var i=0; i<data['values'].length; i++) {
-                html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
-              }
-              jQuery('#diagnostic-curation-results').html(html);
-            }
-            else {
-              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>No results returned, make sure you saved valid data on this page and retry. Double check VCF existence as well.');
-            }
-          }
-        });
-      }
-      </script>
-    ";
-    $form['button-check-vcf-tree-ids'] = array(
-      '#type' => 'button',
-      '#prefix' => $js_onclick_code . '',
-      '#value' => 'Check VCF Tree IDs',
-      '#attributes' => array(
-        "onclick" => "javascript:check_vcf_tree_ids(); return false;"
-      ),
-      '#weight' => $weight,
-    );
-
-
-    $js_onclick_code = "
-      <script>
-      function compare_accession_tree_ids_vs_vcf_tree_ids() {
-        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Comparing Accession Tree IDs and VCF Tree IDs...');
-        jQuery.ajax({
-          url: '/tpps/" . $accession . "/compare-accession-file-vs-vcf-file-tree-ids',
-          error: function (err) {
-            console.log(err);
-            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that these files are just too big to process it in time. Please contact Administration.');
-          },        
-          success: function (data) {
-            console.log(data);
-            data = JSON.parse(data);
-            if (!Array.isArray(data)) {
-              // Data was returned, this is good
-              var html = '';
-              html += '<div>';
-              html += '🎄 None overlapping Accession trees found: ' + data['tree_ids_not_in_accession_count'];
-              html += ' | ';
-              html += '🎄 None overlapping VCF trees found: ' + data['tree_ids_not_in_vcf_count'];
-              html += '</div>';
-              if (data['tree_ids_not_in_accession'].length > 0) {
-                html += '<div>⚡ There are VCF trees that do not overlap with the Accession file</div>';
-                // html += '<hr /><div>Duplicate Tree IDs (' + data['duplicate_values'].length + ')</div>';
-                for (var i=0; i<data['tree_ids_not_in_accession'].length; i++) {
-                  html += '<div class=\"cd-inline-round-red\">' + data['tree_ids_not_in_accession'][i] + '</div>';
-                }
-              }
-              if (data['tree_ids_not_in_vcf'].length > 0) {
-                html += '<div>⚡ There are Accession trees that do not overlap with the VCF file</div>';
-                // html += '<hr /><div>Duplicate Tree IDs (' + data['duplicate_values'].length + ')</div>';
-                for (var i=0; i<data['tree_ids_not_in_vcf'].length; i++) {
-                  html += '<div class=\"cd-inline-round-red\">' + data['tree_ids_not_in_vcf'][i] + '</div>';
-                }
-              }              
-              // else {
-              //   html += '<div>🆗 No duplicate Tree IDs found in the VCF file</div>';
-              // }
-              // html += '<hr /><div>Unique Tree IDs (' + data['values'].length + ')</div>';
-              // for (var i=0; i<data['values'].length; i++) {
-              //   html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
-              // }
-              jQuery('#diagnostic-curation-results').html(html);
-            }
-            else {
-              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>No results returned, make sure you saved valid data on this page and retry. Double check Accession and VCF existence as well.');
-            }
-          }
-        });
-      }
-      </script>
-    ";
-    $form['button-compare-accession-tree-ids-vs-vcf-tree-ids'] = array(
-      '#type' => 'button',
-      '#prefix' => $js_onclick_code . '',
-      '#value' => 'Compare Accession and VCF Tree IDs',
-      '#attributes' => array(
-        "onclick" => "javascript:compare_accession_tree_ids_vs_vcf_tree_ids(); return false;"
-      ),
-      '#weight' => $weight,
-    ); 
-   
-
-    $form['curation-diagnostics-break-between-treeids-and-markers'] = array(
-      '#type' => 'markup',
-      '#markup' => '<br />'
-    );    
-
-    $js_onclick_code = "
-      <script>
-      function check_vcf_markers() {
-        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Checking VCF Markers...');
-        jQuery.ajax({
-          url: '/tpps/" . $accession . "/vcf-markers',
-          error: function (err) {
-            console.log(err);
-            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that this VCF is just too big to process it in time. Please contact Administration.');
-          },
-          success: function (data) {
-            console.log(data);
-            if (!Array.isArray(data)) {
-              // Data was returned, this is good
-              var html = '';
-              html += '<div>';
-              html += '🧬 Unique markers found: ' + data['unique_count'];
-              html += ' | ';
-              html += '🧬 Total markers found: ' + data['count'];
-              html += '</div>';
-              if (data['unique_count'] != data['count']) {
-                html += '<div>⚡ There are duplicate markers in this VCF since unique count does not match count</div>';
-                html += '<hr /><div>Duplicate Markers (' + data['duplicate_values'].length + ')</div>';
-                for (var i=0; i<data['duplicate_values'].length; i++) {
-                  html += '<div class=\"cd-inline-round-red\">' + data['duplicate_values'][i] + '</div>';
-                }
-              }
-              else {
-                html += '<div>🆗 No duplicate markers found in the VCF file</div>';
-              }
-              html += '<hr /><div>Unique Markers (' + data['values'].length + ')</div>';
-              for (var i=0; i<data['values'].length; i++) {
-                html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
-              }
-              jQuery('#diagnostic-curation-results').html(html);
-            }
-            else {
-              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>No results returned, make sure you saved valid data on this page and retry. Double check VCF existence as well.');
-            }
-          }
-        });
-      }
-      </script>
-    ";
-    $form['button-check-vcf-markers'] = array(
-      '#type' => 'button',
-      '#prefix' => $js_onclick_code . '',
-      '#value' => 'Check VCF Markers',
-      '#attributes' => array(
-        "onclick" => "javascript:check_vcf_markers(); return false;"
-      ),
-      '#weight' => $weight,
-    );
-
-
-
-
-    $js_onclick_code = "
-      <script>
-      function check_snps_assay_markers() {
-        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Checking SNPs Assay Markers...');
-        jQuery.ajax({
-          url: '/tpps/" . $accession . "/snps-assay-markers',
-          error: function (err) {
-            console.log(err);
-            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that this SNPs Assay is just too big to process it in time. Please contact Administration.');
-          },
-          success: function (data) {
-            console.log(data);
-            if (!Array.isArray(data)) {
-              // Data was returned, this is good
-              var html = '';
-              html += '<div>';
-              html += '🧬 Unique markers found: ' + data['unique_count'];
-              html += ' | ';
-              html += '🧬 Total markers found: ' + data['count'];
-              html += '</div>';
-              if (data['unique_count'] != data['count']) {
-                html += '<div>⚡ There are duplicate markers in this SNPs assay file since unique count does not match count</div>';
-                html += '<hr /><div>Duplicate Markers (' + data['duplicate_values'].length + ')</div>';
-                for (var i=0; i<data['duplicate_values'].length; i++) {
-                  html += '<div class=\"cd-inline-round-red\">' + data['duplicate_values'][i] + '</div>';
-                }
-              }
-              else {
-                html += '<div>🆗 No duplicate markers found in the SNPs Assay file</div>';
-              }
-              html += '<hr /><div>Unique Markers (' + data['values'].length + ')</div>';
-              for (var i=0; i<data['values'].length; i++) {
-                html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
-              }
-              jQuery('#diagnostic-curation-results').html(html);
-            }
-            else {
-              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1> No results returned, make sure you saved valid data on this page and retry. Double check SNPs Assay file existence as well.');
-            }
-          }
-        });
-      }
-      </script>
-    ";
-    $form['button-check-snps-assay-markers'] = array(
-      '#type' => 'button',
-      '#prefix' => $js_onclick_code . '',
-      '#value' => 'Check SNPs Assay Markers',
-      '#attributes' => array(
-        "onclick" => "javascript:check_snps_assay_markers(); return false;"
-      ),
-      '#weight' => $weight,
-    );
-
-    $js_onclick_code = "
-      <script>
-      function check_snps_design_markers() {
-        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Checking SNPs Design Markers...');
-        jQuery.ajax({
-          url: '/tpps/" . $accession . "/assay-design-markers',
-          error: function (err) {
-            console.log(err);
-            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that this SNPs Design File is just too big to process it in time. Please contact Administration.');
-          },
-          success: function (data) {
-            console.log(data);
-            if (!Array.isArray(data)) {
-              // Data was returned, this is good
-              var html = '';
-              html += '<div>';
-              html += '🧬 Unique markers found: ' + data['unique_count'];
-              html += ' | ';
-              html += '🧬 Total markers found: ' + data['count'];
-              html += '</div>';
-              if (data['unique_count'] != data['count']) {
-                html += '<div>⚡ There are duplicate markers in this SNPs design file since unique count does not match count</div>';
-                html += '<hr /><div>Duplicate Markers (' + data['duplicate_values'].length + ')</div>';
-                for (var i=0; i<data['duplicate_values'].length; i++) {
-                  html += '<div class=\"cd-inline-round-red\">' + data['duplicate_values'][i] + '</div>';
-                }
-              }
-              else {
-                html += '<div>🆗 No duplicate markers found in the SNPs Design file</div>';
-              }
-              html += '<hr /><div>Unique Markers (' + data['values'].length + ')</div>';
-              for (var i=0; i<data['values'].length; i++) {
-                html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
-              }
-              jQuery('#diagnostic-curation-results').html(html);
-            }
-            else {
-              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1> No results returned, make sure you saved valid data on this page and retry. Double check SNPs Assay file existence as well.');
-            }
-          }
-        });
-      }
-      </script>
-    ";
-    $form['button-check-snps-design-markers'] = array(
-      '#type' => 'button',
-      '#prefix' => $js_onclick_code . '',
-      '#value' => 'Check SNPs Design Markers',
-      '#attributes' => array(
-        "onclick" => "javascript:check_snps_design_markers(); return false;"
-      ),
-      '#weight' => $weight,
-    );
-
-    $js_onclick_code = "
-      <script>
-      function compare_vcf_markers_vs_snps_assay_markers() {
-        jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">⏰</h1>Comparing VCF and SNPs Assay Markers...');
-        jQuery.ajax({
-          url: '/tpps/" . $accession . "/compare-vcf-markers-vs-snps-assay-markers',
-          error: function (err) {
-            console.log(err);
-            jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>It might be that these files are just too big to process it in time. Please contact Administration.');
-          },        
-          success: function (data) {
-            console.log(data);
-            data = JSON.parse(data);
-            if (!Array.isArray(data)) {
-              // Data was returned, this is good
-              var html = '';
-              html += '<div>';
-              html += '🧬 None overlapping VCF markers found: ' + data['markers_not_in_snps_assay_count'];
-              html += ' | ';
-              html += '🧬 None overlapping SNPs Assay markers found: ' + data['markers_not_in_vcf_count'];
-              html += '</div>';
-              if (data['markers_not_in_snps_assay'].length > 0) {
-                html += '<div>⚡ There are VCF markers that do not overlap with the SNPs Assay file</div>';
-                // html += '<hr /><div>Duplicate Markers (' + data['duplicate_values'].length + ')</div>';
-                for (var i=0; i<data['markers_not_in_snps_assay'].length; i++) {
-                  html += '<div class=\"cd-inline-round-red\">' + data['markers_not_in_snps_assay'][i] + '</div>';
-                }
-              }
-              if (data['markers_not_in_vcf'].length > 0) {
-                html += '<div>⚡ There are SNPs Assay markers that do not overlap with the VCF file</div>';
-                // html += '<hr /><div>Duplicate Markers (' + data['duplicate_values'].length + ')</div>';
-                for (var i=0; i<data['markers_not_in_vcf'].length; i++) {
-                  html += '<div class=\"cd-inline-round-red\">' + data['markers_not_in_vcf'][i] + '</div>';
-                }
-              }              
-              // else {
-              //   html += '<div>🆗 No duplicate Tree IDs found in the VCF file</div>';
-              // }
-              // html += '<hr /><div>Unique Tree IDs (' + data['values'].length + ')</div>';
-              // for (var i=0; i<data['values'].length; i++) {
-              //   html += '<div class=\"cd-inline-round-blue\">' + data['values'][i] + '</div>';
-              // }
-              jQuery('#diagnostic-curation-results').html(html);
-            }
-            else {
-              jQuery('#diagnostic-curation-results').html('<h1 class=\"cd-inline\">🆘</h1>No results returned, make sure you saved valid data on this page and retry. Double check Accession and VCF existence as well.');
-            }
-          }
-        });
-      }
-      </script>
-    ";
-    $form['button-compare-vcf-makers-vs-snps-assay-markers'] = array(
-      '#type' => 'button',
-      '#prefix' => $js_onclick_code . '',
-      '#value' => 'Compare VCF and SNPs Assay markers',
-      '#attributes' => array(
-        "onclick" => "javascript:compare_vcf_markers_vs_snps_assay_markers(); return false;"
-      ),
-      '#weight' => $weight,
-    ); 
-
-    $form['diagnostic-curation-results'] = [
-      '#type' => 'markup',
-      '#markup' => '<div id="diagnostic-curation-results" style="max-height: 500px; overflow-y: auto;"></div>',
-      '#weight' => $weight,
-    ];
+    $module_path = drupal_get_path('module', 'tpps');
+    $form['#attached']['js'][] = $module_path . '/js/tpps_page_4.js';
+    $form['#attached']['css'][] = $module_path . '/css/tpps_page_4.css';
+    tpps_add_curation_tool($form);
   }
+  return $form;
 }
+
+/**
+ * Generates a Curation Diagnostic Tool form.
+ *
+ * Form has 7 buttons.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ */
+function tpps_add_curation_tool(array &$form) {
+  $form['diagnostics-curation'] = [
+    '#type' => 'fieldset',
+    '#title' => '🌟 Curation Diagnostics',
+    '#description' => 'These diagnostics <b>require you to save this package</b> '
+      . 'with data before functions will work',
+    // Must be below navigation buttons Back/Next which has weight 100.
+    '#weight' => 200,
+  ];
+
+  // 1st row of buttons.
+  tpps_add_curation_tool_button(
+    $form,
+    'button-check-accession-file-tree-ids',
+    'Check Accession File Tree Ids'
+  );
+  tpps_add_curation_tool_button(
+    $form, 'button-check-vcf-tree-ids', 'Check VCF Tree IDs'
+  );
+  tpps_add_curation_tool_button(
+    $form,
+    'button-compare-accession-tree-ids-vs-vcf-tree-ids',
+    'Compare Accession and VCF Tree IDs'
+  );
+  // 2nd row of buttons.
+  tpps_add_curation_tool_button(
+    $form, 'button-check-vcf-markers', 'Check VCF Markers'
+  );
+  tpps_add_curation_tool_button(
+    $form, 'button-check-snps-assay-markers', 'Check SNPs Assay Markers'
+  );
+  tpps_add_curation_tool_button(
+    $form, 'button-check-snps-design-markers', 'Check SNPs Design Markers'
+  );
+  // 3rd row of buttons.
+  tpps_add_curation_tool_button(
+    $form,
+    'button-compare-vcf-makers-vs-snps-assay-markers',
+    'Compare VCF and SNPs Assay markers'
+  );
+
+  $form['diagnostics-curation']['diagnostic-curation-results'] = [
+    '#type' => 'container',
+    '#attributes' => ['id' => 'diagnostic-curation-results'],
+  ];
+}
+
+/**
+ * Generates an action button for Curation Diagnostic Tool.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ * @param string $key
+ *   Unique button key.
+ * @param string $name
+ *   Human readable name of button.
+ */
+function tpps_add_curation_tool_button(array &$form, $key, $name) {
+  $form['diagnostics-curation'][$key] = [
+    '#type' => 'button',
+    '#value' => t($name),
+    '#attributes' => ['class' => [$key]],
+  ];
+}
+// [/VS].

@@ -283,9 +283,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           '#title' => 'Phenotype !num Unit: *',
           // List of units depends on selected synonym. Will be populated later.
           // The same for default value.
-          '#options' => tpps_unit_get_list(
-            array_key_first($synonym_list) ?? NULL
-          ),
+          '#options' => tpps_unit_get_list(array_key_first($synonym_list) ?? 'all'),
           '#prefix' => '<div id="unit-list-!num-wrapper">',
           '#suffix' => '</div>',
           '#validated' => TRUE,
@@ -459,7 +457,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
       // Unit.
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options']
-        = tpps_unit_get_list($synonym_id ?? NULL);
+        = tpps_unit_get_list($synonym_id ?? 'all');
       $form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#default_value'] = (
         $phenotypes[$i]['unit']
         ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options'])
@@ -2135,9 +2133,8 @@ function tpps_build_field_description() {
  */
 function tpps_get_empty_field_value(array $form_state, $id, $file_field_name) {
   $values = $form_state['saved_values'][TPPS_PAGE_4];
-  return (isset(
-    $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
-    ) ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other']
-    : $empty_field_value
+  return (
+    isset($values["organism-$id"]['genotype']['files'][$file_field_name]['other'])
+    ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other'] : 'NA'
   );
 }
