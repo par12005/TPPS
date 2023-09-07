@@ -183,4 +183,9 @@ form[id^="tppsc-main"] fieldset legend {
 form[id^="tppsc-main"] fieldset legend span a {
   display: inline-block;
 }
+/* Used for error messages at Page 1. */
+.red {
+  color: red;
+  text-align: right;
+}
 /* [/VS] */

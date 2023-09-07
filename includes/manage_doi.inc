@@ -116,3 +116,41 @@ function tpps_doi_info($doi) {
 function tpps_doi_regex() {
   return '/^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/';
 }
+
+/**
+ * Searches for DOI in already submitted studies.
+ *
+ * @param string $doi
+ *   DOI value.
+ *
+ * @return string
+ *   Returns accession in format 'TGDRxxx'.
+ *   Returns FALSE if DOI wasn't found.
+ */
+function tpps_search_used_doi($doi) {
+$time_start = microtime(1);
+  // Check the tpps_submissionos.
+  // @TODO Search for doi value instead of getting all the data.
+  // It's a huge amount of data.
+  $tpps_submissions = chado_query("SELECT * FROM public.tpps_submission;");
+  $accession = "";
+
+
+  // @TODO Fill fields.
+  foreach ($tpps_submissions as $submission_row) {
+    $submission_state = unserialize($submission_row->submission_state);
+    if (strtolower($doi) == strtolower($submission_state['saved_values']['1']['doi'])) {
+      $accession = $submission_row->accession;
+      break;
+    }
+  }
+  // Old:
+  // 10.1111/dryad.111
+  // Total execution time: 0.60140991210938 sec
+  // 10.25338/B8864J
+  // Total execution time: 0.36915397644043 sec
+
+$accession .= '<br/> Total execution time: ' . (microtime(1) - $time_start) . ' sec';
+
+  return ($accession ?? FALSE);
+}
