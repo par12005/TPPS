@@ -109,6 +109,6 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
       $form['study_info']['#prefix'] = '<div id="study_info" style="display:none;">';
       break;
   }
-  tpps_add_buttons($form, 'page_4');
+  tpps_add_buttons($form, 'page_2');
   return $form;
 }
