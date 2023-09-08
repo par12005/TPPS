@@ -123,26 +123,41 @@ function tpps_doi_regex() {
 /**
  * Searches for DOI in already submitted studies.
  *
+ * Note: Since caching enabled if multiple studies uses the same DOI (which
+ * usually possible only for test studies) then latest study accession will
+ * be used. Before first match was used.
+ *
+ * Total execution time:
+ * Getting data from cache: 0.00034999847412109 sec
+ * Empty cache or reset:    0.96340107917786 sec
+ *
  * @param string $doi
  *   DOI value.
+ * @param bool $reset
+ *   Flag is cache must be resetted. Default if FALSE.
  *
  * @return string
  *   Returns accession in format 'TGDRxxx'.
  *   Returns FALSE if DOI wasn't found.
+ *
+ * @TODO Minor. Search for exact doi value instead of getting all the data.
+ * See tpps_search_used_doi_NEW_VERSION().
  */
-function tpps_search_used_doi($doi) {
-  // Check the tpps_submissionos.
-  // @TODO Search for doi value instead of getting all the data.
-  // It's a huge amount of data.
-  $tpps_submissions = chado_query("SELECT * FROM public.tpps_submission;");
-  foreach ($tpps_submissions as $submission_row) {
-    $submission_state = unserialize($submission_row->submission_state);
-    if (strtolower($doi) == strtolower($submission_state['saved_values']['1']['doi'])) {
-      $accession = $submission_row->accession;
-      break;
+function tpps_search_used_doi($doi, $reset = FALSE) {
+  $cid = __FUNCTION__;
+  $cache = cache_get($cid);
+  if ($reset || empty($cache)) {
+    $all_submissions = chado_query("SELECT * FROM public.tpps_submission;");
+    foreach ($all_submissions as $item) {
+      $form_state = unserialize($item->submission_state);
+      $submission_doi = strtolower($form_state['saved_values']['1']['doi'] ?? NULL);
+      if ($submission_doi) {
+        $cache->data[$submission_doi] = $item->accession ?? NULL;
+      }
     }
+    cache_set($cid, $cache->data);
   }
-  return ($accession ?? FALSE);
+  return $cache->data[strtolower($doi)] ?? NULL;
 }
 
 /**
