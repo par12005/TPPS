@@ -3,6 +3,9 @@
 /**
  * @file
  * Contains DOI-related functions for TPPS.
+ *
+ * To use:
+ * module_load_include('inc', 'tpps', 'includes/manage_doi');
  */
 
 /**
@@ -128,15 +131,10 @@ function tpps_doi_regex() {
  *   Returns FALSE if DOI wasn't found.
  */
 function tpps_search_used_doi($doi) {
-$time_start = microtime(1);
   // Check the tpps_submissionos.
   // @TODO Search for doi value instead of getting all the data.
   // It's a huge amount of data.
   $tpps_submissions = chado_query("SELECT * FROM public.tpps_submission;");
-  $accession = "";
-
-
-  // @TODO Fill fields.
   foreach ($tpps_submissions as $submission_row) {
     $submission_state = unserialize($submission_row->submission_state);
     if (strtolower($doi) == strtolower($submission_state['saved_values']['1']['doi'])) {
@@ -144,13 +142,118 @@ $time_start = microtime(1);
       break;
     }
   }
+  return ($accession ?? FALSE);
+}
+
+/**
+ * Searches for DOI in already submitted studies.
+ *
+ * WARNING: This code doesn't work!
+ *
+ * @param string $doi
+ *   DOI value.
+ *
+ * @return string
+ *   Returns accession in format 'TGDRxxx'.
+ *   Returns FALSE if DOI wasn't found.
+ */
+function tpps_search_used_doi_NEW_VERSION($doi) {
+
+  // WARNING: This code doesn't work!
+  return;
+
+  // The goal was to use LIKE operator to search of substring but
+  // submission's state is stored serialized in 'bytea' column.
+  //
+  // Problems:
+  // ==ILIKE on 'bytea' gives an error ==
+  //
+  //   SELECT ts.submission_state FROM tpps_submission ts WHERE submission_state ILIKE '%0965%'
+  //
+  // Result:
+  //   ERROR:  operator does not exist: bytea ~~* unknown
+  //   LINE 5:         AND submission_state ILIKE '%0965%') AS sub
+  //                                        ^
+  //   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
+  //
+  // == But LIKE works! ==
+  //
+  //   SELECT ts.submission_state FROM tpps_submission ts WHERE submission_state LIKE '%0965%'
+  //
+  // Result: no errors and I'm getting 4 pages of results.
+  //
+  // == use of lower() function ==
+  //
+  //   SELECT ts.submission_state FROM tpps_submission ts WHERE LOWER(submission_state) LIKE '%0965%'
+  //
+  // Result:
+  //
+  //   ERROR:  function lower(bytea) does not exist
+  //   LINE 1: ...ts.submission_state FROM tpps_submission ts WHERE LOWER(subm...
+  //                                                                ^
+  //   HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+  // Seems lower() and ILIKE do not work with 'bytea' datatype....
+
+  // $time_start = microtime(1);
+
+  // We don't use serialize(['doi' => $doi]) because it also wraps needed
+  // string with "a:1{}" and do not escape qoutes. So it's easier to build
+  // string manually.
+  foreach (['doi', check_plain(trim($doi))] as $value) {
+    @$needle .= 's:' . strlen($value) . ':&quot;' . $value . '&quot;';
+    //@$needle .= 's:' . strlen($value) . ':"' . $value . '";';
+  }
+
+  $needle = '0965';
+
+  // Data type 'bytea' require some escaping for zeros.
+  // https://www.postgresql.org/docs/current/datatype-binary.html
+  //$needle = str_replace('0', '\000', db_like($needle));
+
+  dpm(db_like($needle));
+
+  // ILIKE is not supported by MySQL and do not work with 'bytea' data type in Postgres.
+  // https://github.com/interchange/TableEditor/issues/64
+  if (1) {
+    // Check the tpps_submissionos.
+    // @TODO Search for doi value instead of getting all the data.
+    // It's a huge amount of data.
+    $sql = "SELECT ts.submission_state
+      FROM {tpps_submission} ts
+      WHERE
+        submission_state IS NOT NULL
+        AND lower(submission_state) LIKE '%" . $needle . "%'
+  ";
+    dpm($sql);
+    // LIMIT 1 OFFSET 0
+    $result = db_query($sql);
+  }
+  else {
+    $result = db_select('tpps_submission', 'ts')
+      ->addTag('debug')
+      ->fields('ts', ['submission_state'])
+      ->condition('submission_state', '%' . $needle . '%', 'LIKE')
+      ->execute();
+  }
+  $submission = $result->fetchField();
+
+  dpm(print_r($submission, 1));
+  return;
+
+  //if (!empty($submission)) {
+  //  $submission = unserialize($submission);
+  //  if (strtolower($doi) == ddstrtolower($submission_state['saved_values']['1']['doi'])) {
+  //    $accession = $submission->accession;
+  //    break;
+  //  }
+  //}
+
   // Old:
   // 10.1111/dryad.111
   // Total execution time: 0.60140991210938 sec
   // 10.25338/B8864J
   // Total execution time: 0.36915397644043 sec
-
-$accession .= '<br/> Total execution time: ' . (microtime(1) - $time_start) . ' sec';
+  // $accession .= '<br/> Total execution time: ' . (microtime(1) - $time_start) . ' sec';
 
   return ($accession ?? FALSE);
 }

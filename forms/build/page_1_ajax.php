@@ -69,6 +69,7 @@ function tpps_ajax_doi_callback(array &$form, array $form_state) {
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
     if (!empty($doi = $form_state['values']['doi'])) {
+      module_load_include('inc', 'tpps', 'includes/manage_doi');
       if ($accession = tpps_search_used_doi($doi)) {
         form_set_error('doi', "WARNING: DOI is already used by " . $accession);
         // @TODO [VS] Remove this message if curation team agrees.
