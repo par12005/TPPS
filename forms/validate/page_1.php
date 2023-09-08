@@ -60,6 +60,22 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
           tpps_is_required_field_empty($form_state, ['publication', 'extra', $name]);
         }
       }
+      else {
+        // We need to clear all not visible fields to avoid any problems on
+        // study processing. This is possible when first set 'Published'
+        // status and filled DOI/Extra Publication fields and then publication
+        // status field changed to something different from 'Published'.
+        // Note: Authors and Organisms fields do not need those extra step.
+        // Clear Publication Extra Fields.
+        foreach (['year', 'title', 'abstract', 'journal'] as $name) {
+          $form_state['values']['publication'][$name] = NULL;
+          // @TODO [VS] Minor. Check if this is required.
+          $form_state['saved_values']['publication'][$name] = NULL;
+        }
+        // Clear DOI fields.
+        $form_state['values']['doi'] = NULL;
+        $form_state['saved_values']['dataset_doi'] = NULL;
+      }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Organisms.
       for ($i = 1; $i <= $organism_number; $i++) {
