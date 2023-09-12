@@ -335,156 +335,150 @@ function tpps_uninstall() {
  * keep track of submissions.
  */
 function tpps_schema() {
-  $schema = array();
+  $schema['tpps_submission'] = array(
+    'description' => 'Contains TPPS Submissions',
+    'fields' => array(
+      'tpps_submission_id' => array(
+        'description' => 'The id of the TPPS submission.',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => 'user id of the user who created the submission.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'description' => 'Status of the submission - Incomplete, Pending Approval, Submission Job Running or Approved.',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'accession' => array(
+        'description' => 'The TGDR### accession number of the submission',
+        'type' => 'varchar',
+        'size' => 'normal',
+        'not null' => TRUE,
+      ),
+      'dbxref_id' => array(
+        'description' => 'The dbxref_id from chado.dbxref.',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'submission_state' => array(
+        'description' => 'The form_state of the submission.',
+        'type' => 'blob',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+    ),
+    'foreign keys' => array(
+      'uid' => array(
+        'table' => 'users',
+        'columns' => array(
+          'uid' => 'uid',
+        ),
+      ),
+      'dbxref_id' => array(
+        'table' => 'chado.dbxref',
+        'columns' => array(
+          'dbxref_id' => 'dbxref_id',
+        ),
+      ),
+    ),
+    'primary key' => array(
+      'tpps_submission_id',
+    ),
+  );
 
-  if (!db_table_exists('tpps_submission')) {
-    $schema['tpps_submission'] = array(
-      'description' => 'Contains TPPS Submissions',
-      'fields' => array(
-        'tpps_submission_id' => array(
-          'description' => 'The id of the TPPS submission.',
-          'type' => 'serial',
-          'size' => 'normal',
-          'unsigned' => TRUE,
-          'not null' => TRUE,
-        ),
-        'uid' => array(
-          'description' => 'user id of the user who created the submission.',
-          'type' => 'int',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'status' => array(
-          'description' => 'Status of the submission - Incomplete, Pending Approval, Submission Job Running or Approved.',
-          'type' => 'varchar',
-          'size' => 'normal',
-          'not null' => TRUE,
-        ),
-        'accession' => array(
-          'description' => 'The TGDR### accession number of the submission',
-          'type' => 'varchar',
-          'size' => 'normal',
-          'not null' => TRUE,
-        ),
-        'dbxref_id' => array(
-          'description' => 'The dbxref_id from chado.dbxref.',
-          'type' => 'int',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'submission_state' => array(
-          'description' => 'The form_state of the submission.',
-          'type' => 'blob',
-          'size' => 'big',
-          'not null' => TRUE,
+  $schema['chado.genotype_call'] = array(
+    'description' => '',
+    'fields' => array(
+      'genotype_call_id' => array(
+        'description' => '',
+        'type' => 'serial',
+        'size' => 'normal',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'variant_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'marker_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'genotype_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'project_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'stock_id' => array(
+        'description' => '',
+        'type' => 'int',
+        'size' => 'big',
+        'not null' => TRUE,
+      ),
+      'meta_data' => array(
+        'description' => '',
+        // Drupal does not support the json data type by default, we will use
+        // a placeholder for meta_data for now, and upon install we will
+        // change the type to json.
+        'type' => 'text',
+      ),
+    ),
+    'foreign keys' => array(
+      'genotype_id' => array(
+        'table' => 'chado.genotype',
+        'columns' => array(
+          'genotype_id' => 'genotype_id',
         ),
       ),
-      'foreign keys' => array(
-        'uid' => array(
-          'table' => 'users',
-          'columns' => array(
-            'uid' => 'uid',
-          ),
-        ),
-        'dbxref_id' => array(
-          'table' => 'chado.dbxref',
-          'columns' => array(
-            'dbxref_id' => 'dbxref_id',
-          ),
+      'variant_id' => array(
+        'table' => 'chado.feature',
+        'columns' => array(
+          'variant_id' => 'feature_id',
         ),
       ),
-      'primary key' => array(
-        'tpps_submission_id',
-      ),
-    );
-  }
-
-  if (!db_table_exists('chado.genotype_call')) {
-    $schema['chado.genotype_call'] = array(
-      'description' => '',
-      'fields' => array(
-        'genotype_call_id' => array(
-          'description' => '',
-          'type' => 'serial',
-          'size' => 'normal',
-          'unsigned' => TRUE,
-          'not null' => TRUE,
-        ),
-        'variant_id' => array(
-          'description' => '',
-          'type' => 'int',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'marker_id' => array(
-          'description' => '',
-          'type' => 'int',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'genotype_id' => array(
-          'description' => '',
-          'type' => 'int',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'project_id' => array(
-          'description' => '',
-          'type' => 'int',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'stock_id' => array(
-          'description' => '',
-          'type' => 'int',
-          'size' => 'big',
-          'not null' => TRUE,
-        ),
-        'meta_data' => array(
-          'description' => '',
-          // Drupal does not support the json data type by default, we will use
-          // a placeholder for meta_data for now, and upon install we will
-          // change the type to json.
-          'type' => 'text',
+      'marker_id' => array(
+        'table' => 'chado.feature',
+        'columns' => array(
+          'marker_id' => 'feature_id',
         ),
       ),
-      'foreign keys' => array(
-        'genotype_id' => array(
-          'table' => 'chado.genotype',
-          'columns' => array(
-            'genotype_id' => 'genotype_id',
-          ),
-        ),
-        'variant_id' => array(
-          'table' => 'chado.feature',
-          'columns' => array(
-            'variant_id' => 'feature_id',
-          ),
-        ),
-        'marker_id' => array(
-          'table' => 'chado.feature',
-          'columns' => array(
-            'marker_id' => 'feature_id',
-          ),
-        ),
-        'project_id' => array(
-          'table' => 'chado.project',
-          'columns' => array(
-            'project_id' => 'project_id',
-          ),
-        ),
-        'stock_id' => array(
-          'table' => 'chado.stock',
-          'columns' => array(
-            'stock_id' => 'stock_id',
-          ),
+      'project_id' => array(
+        'table' => 'chado.project',
+        'columns' => array(
+          'project_id' => 'project_id',
         ),
       ),
-      'primary key' => array(
-        'genotype_call_id',
+      'stock_id' => array(
+        'table' => 'chado.stock',
+        'columns' => array(
+          'stock_id' => 'stock_id',
+        ),
       ),
-    );
-  }
+    ),
+    'primary key' => array(
+      'genotype_call_id',
+    ),
+  );
 
   $schema['tpps_submission_dbxref'] = array(
     'description' => '',
@@ -684,6 +678,8 @@ function tpps_schema() {
       'study_name' => ['study_name'],
     ],
   ];
+  // #861n70hh6 Add custom cache table to have ability to clear only module's data.
+  $schema[TPPS_CACHE_BIN] = drupal_get_schema_unprocessed('system', 'cache');
   // [/VS]
 
   return $schema;
@@ -2057,4 +2053,15 @@ function tpps_update_7120() {
     }
   }
   cache_clear_all();
+}
+
+/**
+ * #861n70hh6 Create table 'cache_tpps'.
+ */
+function tpps_update_7121() {
+  $schema = tpps_schema();
+  $table = TPPS_CACHE_BIN;
+  if (!db_table_exists($table)) {
+    db_create_table($table, $schema[$table]);
+  }
 }
