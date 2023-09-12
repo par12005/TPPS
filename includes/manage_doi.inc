@@ -59,9 +59,6 @@ function tpps_manage_doi($accession) {
  *   The retrieved information, or FALSE on failure.
  */
 function tpps_doi_info($doi) {
-  if (empty($doi)) {
-    return FALSE;
-  }
 
   if (!preg_match(tpps_doi_regex(), $doi)) {
     drupal_set_message(t('Invalid DOI format. Example DOI: 10.1111/dryad.111'), 'warning');
@@ -77,7 +74,7 @@ function tpps_doi_info($doi) {
   }
 
   $result = array();
-  $url = "http://datadryad.org/api/v2/datasets/doi%3A" . urlencode($doi);
+  $url = 'http://datadryad.org/api/v2/datasets/' . urlencode('doi:' . $doi);
   $response_json_data = json_decode(file_get_contents($url));
 
   if (!empty($response_json_data)) {
@@ -145,7 +142,8 @@ function tpps_doi_regex() {
  */
 function tpps_search_used_doi($doi, $reset = FALSE) {
   $cid = __FUNCTION__;
-  $cache = cache_get($cid);
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
   if ($reset || empty($cache)) {
     $all_submissions = chado_query("SELECT * FROM public.tpps_submission;");
     foreach ($all_submissions as $item) {
@@ -155,7 +153,7 @@ function tpps_search_used_doi($doi, $reset = FALSE) {
         $cache->data[$submission_doi] = $item->accession ?? NULL;
       }
     }
-    cache_set($cid, $cache->data);
+    cache_set($cid, $cache->data, $cache_bin);
   }
   return $cache->data[strtolower($doi)] ?? NULL;
 }
