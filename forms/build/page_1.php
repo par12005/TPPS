@@ -87,6 +87,14 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
   $values = $form_state['values'];
 
+
+
+  //dpm(print_r($form_state['saved_values'], 1));
+  //dpm(print_r($values, 1));
+
+
+
+
   $publication_status = tpps_get_ajax_value(
     $form_state, ['publication', 'status'], NULL
   );
@@ -265,14 +273,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     // DOI Info is empty.
 
   }
-  if (empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
-    // Show DOI fieldset only for 'Published' status.
-    //$form['doi_wrapper']['#states'] = [
-    //  'visible' => [
-    //    ':input[name="publication[status]"]' => ['value' => 'Published'],
-    //  ],
-    //];
-  }
+
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Organisms.
@@ -291,26 +292,28 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   tpps_organism($form, $form_state);
 
 
-  if (!empty($saved_values['frontpage']['use_old_tgdr'])) {
+  // Load existing study data.
+  if (!empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
+    // Usage of existing accession:
+    // $values['accession'] = TGDR864;
+    // $values['use_old_tgdr'] => 1;
+    // $values['old_tgdr'] = 10514311;
+    // Refers to public.tpps_submission.dbxref_id;
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Not empty DOI.
-    $form_state['saved_values'][TPPS_PAGE_1]['publication']['status'] = 'Published';
 
-    $form_state['ids']['project_id'] = $project_id = chado_select_record(
-      'project_dbxref', ['project_id'], ['dbxref_id' => $form_state['dbxref_id']]
-    )[0]->project_id;
+    $project_id = tpps_get_project_id($form_state['dbxref_id']);
+    $form_state['ids']['project_id'] = $project_id;
 
-    $publication = tpps_get_publication_data($project_id, $form_state);
+    // Get publication's data.
+    $publication = tpps_get_publication_data($form, $form_state);
+    dpm(print_r($publication, 1));
+
     $form['publication']['primaryAuthor']['#default_value'] = $publication['primary_default'];
-    $form['publication']['title']['#default_value'] = $publication['title_default'];
     $form['publication']['year']['#default_value'] = $publication['year_default'];
     $form['publication']['abstract']['#default_value'] = $publication['abs_default'];
 
-
-
-    $form['publication']['journal']['#title'] = t('Journal:');
-    $form['publication']['status']['#title'] = t('Publication Status:');
-    $form['publication']['status']['#disabled'] = TRUE;
+    $form['publication']['status'] = 'Published';
+    //$form['publication']['status']['#disabled'] = TRUE;
 
     $i = 1;
     foreach ($publication['secondary_authors'] as $author) {
@@ -320,7 +323,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       $i++;
     }
 
-    tppsc_organism($form, $form_state);
+    //tppsc_organism($form, $form_state);
     $organisms = chado_query('SELECT genus, species '
       . 'FROM chado.organism WHERE organism_id IN ('
         . 'SELECT DISTINCT organism_id '
@@ -369,16 +372,22 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
  *
  * @TODO [VS] Pass $form by reference and update default values of fields.
  */
-function tpps_get_publication_data($project_id, array $form_state) {
-  $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
+function tpps_get_publication_data(array &$form, array &$form_state) {
+  $project_id = $form_state['ids']['project_id'];
+  $values = $form_state['values'][TPPS_PAGE_1] ?? [];
   // Get publication Id.
   $pub_id = chado_select_record(
     'project_pub', ['pub_id'], ['project_id' => $project_id]
   )[0]->pub_id;
+  $pub = chado_select_record('pub', ['*'], ['pub_id' => $pub_id])[0];
 
   // Publication Title and Year.
-  $pub = chado_select_record('pub', ['*'], ['pub_id' => $pub_id])[0];
-  $data['title_default'] = $saved_values['publication']['title'] ?? $pub->title;
+  $parents = ['publication', 'title'];
+  $form['publication']['title']['#default_value'] =
+    tpps_get_ajax_value($form_state, $parents, NULL) ?? $pub->title;
+
+  return [];
+
   $data['year_default'] = $saved_values['publication']['year'] ?? $pub->pyear;
   // Abstract.
   if (!empty($saved_values['publication']['abstract'])) {
@@ -389,7 +398,7 @@ function tpps_get_publication_data($project_id, array $form_state) {
       'pubprop',
       ['value'],
       [
-        'pub_id' => $data['pub_id'],
+        'pub_id' => $pub_id,
         'type_id' => [
           'name' => 'Abstract',
           'cv_id' => ['name' => 'tripal_pub'],
@@ -422,4 +431,25 @@ function tpps_get_publication_data($project_id, array $form_state) {
     ]
   );
   return $data;
+}
+
+
+/**
+ * Gets Project Id
+ *
+ * Those Project Id is used in submit_all.php script reports.
+ * Project Id could be shared between multiple submissions. So when submitted
+ * the same data Project Id will be the same.
+ *
+ * @param int $dbxref_id
+ *   This number could be obtained from table chado.dbxref
+ *   by accession (TGDRxxx) and db_id = 92 (TreeGenes database).
+ *
+ * @return int
+ *   Returns Project Id.
+ */
+function tpps_get_project_id($dbxref_id) {
+  return chado_select_record(
+    'project_dbxref', ['project_id'], ['dbxref_id' => $dbxref_id]
+  )[0]->project_id;
 }
