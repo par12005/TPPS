@@ -29,6 +29,8 @@ function tpps_front_create_form(array &$form, array $form_state) {
   global $base_url;
   global $user;
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
+
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($is_tppsc) {
     if (user_is_logged_in()) {
@@ -49,56 +51,36 @@ function tpps_front_create_form(array &$form, array $form_state) {
 
       if (count($options_arr) > 1) {
         // Has submissions.
-        $form['accession'] = array(
+        $form['accession'] = [
           '#type' => 'select',
           '#title' => t('Would you like to load an old TPPSC submission, or create a new one?'),
           '#options' => $options_arr,
-          '#default_value' => isset($form_state['saved_values']['frontpage']['accession']) ? $form_state['saved_values']['frontpage']['accession'] : 'new',
-        );
+          '#default_value' => $form_state['saved_values']['frontpage']['accession'] ?? 'new',
+        ];
       }
 
-      $form['use_old_tgdr'] = array(
+      $form['use_old_tgdr'] = [
         '#type' => 'checkbox',
         '#title' => t('I would like to use an existing TGDR number'),
-      );
+      ];
 
-      $tgdr_options = array('- Select -');
 
-      // $tgdr_query = chado_query('SELECT dbxref_id, accession '
-      //   . 'FROM chado.dbxref '
-      //   . 'WHERE accession LIKE \'TGDR%\' '
-      //     . 'AND accession NOT IN (SELECT accession FROM tpps_submission) '
-      //   . 'ORDER BY accession;');
-
-      $tgdr_query = chado_query('SELECT dbxref_id, accession '
-        . 'FROM chado.dbxref '
-        . 'WHERE accession LIKE \'TGDR%\' '
-        . 'ORDER BY accession DESC;');
-
-      foreach ($tgdr_query as $item) {
-        $tgdr_options[$item->dbxref_id] = $item->accession;
-      }
-
-      $form['old_tgdr'] = array(
+      $form['old_tgdr'] = [
         '#type' => 'select',
         '#title' => t('Existing TGDR number'),
-        '#options' => $tgdr_options,
-        '#states' => array(
-          'visible' => array(
-            ':input[name="use_old_tgdr"]' => array('checked' => TRUE),
-          ),
-        ),
-      );
+        '#options' => tpps_submission_get_tgdr_number_list(TRUE),
+        '#states' => [
+          'visible' => [
+            ':input[name="use_old_tgdr"]' => ['checked' => TRUE],
+          ],
+        ],
+      ];
     }
-
-    $form['Next'] = array(
-      '#type' => 'submit',
-      '#value' => t('Continue to TPPSC'),
-    );
+    $form['Next'] = ['#type' => 'submit', '#value' => t('Continue to TPPSC')];
 
     $prefix_text = "<div>Welcome to TPPSC!<br><br>"
-      . "If you would like to submit your data, you can click the button 'Continue to TPPSC' below!<br><br>"
-      . "</div>";
+      . "If you would like to submit your data, you can click the button "
+      . "'Continue to TPPSC' below!<br><br></div>";
 
     if (isset($form['accession'])) {
       $form['accession']['#prefix'] = $prefix_text;
@@ -107,22 +89,23 @@ function tpps_front_create_form(array &$form, array $form_state) {
       $form['Next']['#prefix'] = $prefix_text;
     }
 
-    $module_path = drupal_get_path('module', 'tpps');
-    $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
-    $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
-
   }
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // TPPS Form.
   else {
     $image_path = drupal_get_path('module', 'tpps') . '/images/';
+
+    // @TODO [VS] Move HTML code to template or theme function.
     $prefix_text = "<div><figure style=\"text-align:center;\"><img style=\"max-height:100%;max-width:100%;\" src=\"{$image_path}TPPS-1_1118px.jpg\"></figure>";
     $prefix_text .= "<div id=\"landing-buttons\">";
     $prefix_text .= "<a href=\"https://tpps.readthedocs.io/en/latest/\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">TPPS Documentation</button></a>";
     $prefix_text .= "<a href=\"$base_url/tpps/details\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">TPPS Studies</button></a>";
+
     if (module_exists('cartogratree')) {
       $prefix_text .= "<a href=\"$base_url/ct\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">CartograPlant</button></a>";
     }
+
     $prefix_text .= "</div></div>";
 
     if (user_is_anonymous()) {
@@ -130,56 +113,54 @@ function tpps_front_create_form(array &$form, array $form_state) {
       $prefix_text .= "<div style='text-align: center'>If you do not have an account <a style='color: #e2b448;' href='/user/register'>register one here</a> or <a style='color: #e2b448' href='/user/login'>click here to login</a></div>";
     }
 
-    $form['description'] = array(
-      '#markup' => $prefix_text,
-    );
-
-    // [VS] Probably it was attempt to check if use logged in. See user_is_logged_in().
+    $form['description'] = ['#markup' => $prefix_text];
+    // @TODO Check what anonymous users will see.
     if (user_is_logged_in()) {
-      // Logged in.
       $options_arr = ['new' => 'Create new TPPSC Submission']
         + tpps_submission_get_accession_list([
           ['status', 'Incomplete', '='],
           ['uid', $user->uid, '='],
         ]);
-
       if (count($options_arr) > 1) {
-        // Has submissions.
-        $form['accession'] = array(
+        $form['accession'] = [
           '#type' => 'select',
-          '#title' => t('Would you like to load an old TPPS submission, or create a new one?'),
+          '#title' => t('Would you like to load an old TPPS submission, '
+            . 'or create a new one?'),
           '#options' => $options_arr,
-          '#default_value' => $form_state['saved_values']['frontpage']['accession'] ?? 'new',
-        );
+          '#default_value' =>
+          $form_state['saved_values']['frontpage']['accession'] ?? 'new',
+        ];
       }
-    }
-
-    if (tpps_access('administer tpps module')) {
-      $form['custom_accession_check'] = array(
-        '#type' => 'checkbox',
-        '#title' => t('I would like to use a custom accession number'),
-        '#description' => t('Specify a custom accession number. This feature is available only to users with administrative access, and is generally not required or recommended.'),
-      );
-
-      $form['custom_accession'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Custom Accession number'),
-        '#states' => array(
-          'visible' => array(
-            ':input[name="custom_accession_check"]' => array('checked' => TRUE),
+      if (tpps_access('administer tpps module')) {
+        $form['custom_accession_check'] = [
+          '#type' => 'checkbox',
+          '#title' => t('I would like to use a custom accession number'),
+          '#description' => t('Specify a custom accession number. '
+            . 'This feature is available only to users with administrative '
+            . 'access, and is generally not required or recommended.'
           ),
-        ),
-        '#description' => t('Use this field to specify a custom accession number. Must be of the format TGDR###'),
-      );
-    }
-
-    if(user_is_logged_in()) {
-      $form['Next'] = array(
+        ];
+        $form['custom_accession'] = [
+          '#type' => 'textfield',
+          '#title' => t('Custom Accession number'),
+          '#states' => [
+            'visible' => [
+              ':input[name="custom_accession_check"]' => ['checked' => TRUE],
+            ],
+          ],
+          '#description' => t('Use this field to specify a custom accession '
+            . 'number. Must be of the format TGDR###'
+          ),
+        ];
+      }
+      $form['Next'] = [
         '#type' => 'submit',
         '#value' => t('Submit Data'),
-      );
+      ];
     }
-
   }
+  $module_path = drupal_get_path('module', 'tpps');
+  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
   return $form;
 }
