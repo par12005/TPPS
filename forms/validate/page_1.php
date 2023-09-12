@@ -21,7 +21,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
   if ($is_tppsc) {
     if ($form_state['submitted'] == '1') {
       $form_values = $form_state['values'];
-      $old_tgdr = $form_state['saved_values']['frontpage']['old_tgdr'] ?? NULL;
+      //$old_tgdr = $form_state['saved_values']['frontpage']['old_tgdr'] ?? NULL;
       // DOI.
       $doi = $form_values['doi'] ?? NULL;
       $dataset_doi = $form_values['dataset_doi'] ?? NULL;

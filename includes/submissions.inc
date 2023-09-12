@@ -3,6 +3,9 @@
 /**
  * @file
  * Defines functions for manipulation of TPPS Submissions.
+ *
+ * To use:
+ * module_load_include('inc', 'tpps', 'includes/submissions');
  */
 
 /**
@@ -1126,4 +1129,72 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
     $state['job_id'] = $jid;
     tpps_update_submission($state);
   }
+}
+
+/**
+ * Builds a list of accessions for form.
+ *
+ * @param array $conditions
+ *   List of condtions for Drupal DB API contions.
+ *   For example: ['uid', $user->uid, '=']
+ *   Possible fields: 'uid', 'accession', 'status' and etc. See table's schema.
+ * @param bool $allow_remove
+ *   Flag which defines if orphan studies must be removed or not.
+ *   Default is TRUE (remove orphan studies which has empty publication title).
+ * @param bool $reset
+ *   Flag which defined if cached data must be updated or not.
+ *   Default is FALSE (do not update cached data).
+ *   Total execution time (95 items):
+ *   Previous:  703.94587516785 msec
+ *   No caching 412.0819568634 msec
+ *   Caching:     1.80983543396 msec
+ *   Note: previous version loaded each study twice.
+ *
+ * @return array
+ *   Returns list of accession to be used in form.
+ *   Key is an accession and value is a human readable title.
+ */
+function tpps_submission_get_accession_list(array $conditions = [], $allow_remove = TRUE, $reset = FALSE) {
+  // We use built-in Drupal Cache System because there is a problem with using
+  // 'LIKE' operator for 'tpps_submission' table and processing serialized
+  // data it time consuming.
+  // Caching increases function execution time in 1000 times.
+  $cid = __FUNCTION__;
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  $key = serialize($conditions);
+  if ($reset || empty($cache) || empty($cache->data[$key])) {
+    $query = db_select('tpps_submission', 's')->fields('s');
+    $query->addTag('debug');
+    foreach ($conditions as $item) {
+      $query->condition($item[0], $item[1], ($item[2] ?? '='));
+    }
+    $results = $query->orderBy('accession', 'desc')->execute();
+    foreach ($results as $item) {
+      if ($state = unserialize($item->submission_state)) {
+        // @TODO Be sure to store 'tpps_type' in $form_state.
+        if (($state['tpps_type'] ?? NULL) == 'tppsc') {
+          if ($title = ($state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? NULL)) {
+            $list[$state['accession']] = $state['accession'] . ' - ' . (
+              (strlen($title) > 97)
+              ? substr($title, 0, 97) . '...'
+              : (!empty($title) ? $title : t('No Title'))
+            );
+          }
+          elseif (
+            $allow_remove
+            && !isset($state['saved_values'][TPPS_PAGE_1])
+          ) {
+            // Remove if submission has no Publication Title
+            // and this form is shown not after user returned from Page 1.
+            // @TODO Move removement to better place.
+            tpps_delete_submission($item->accession, FALSE);
+          }
+        }
+      }
+    }
+    $cache->data[$key] = $list;
+    cache_set($cid, $cache->data, $cache_bin);
+  }
+  return $cache->data[$key] ?? NULL;
 }
