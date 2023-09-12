@@ -35,40 +35,41 @@ function tpps_front_create_form(array &$form, array $form_state) {
   if ($is_tppsc) {
     if (user_is_logged_in()) {
       // Logged in.
-      $options_arr = [
-        'new' => 'Create new TPPSC Submission',
-        'placeholder1' => '------------------------- YOUR STUDIES -------------------------',
-      ];
-      $options_arr = $options_arr + tpps_submission_get_accession_list([
-        ['status', 'Incomplete', '='],
-        ['uid', $user->uid, '='],
-      ]);
-      $options_arr['placeholder2'] = '-------------------- OTHER USER STUDIES --------------------';
-      $options_arr = $options_arr + tpps_submission_get_accession_list([
-        ['status', 'Incomplete'],
-        ['uid', $user->uid, '<>'],
-      ]);
+      $options = [
+          'new' => 'Create new TPPSC Submission',
+          'placeholder1' => '------------------------- YOUR STUDIES -------------------------',
+        ]
+        + tpps_submission_get_accession_list([
+          ['status', 'Incomplete', '='],
+          ['uid', $user->uid, '='],
+        ])
+        + [
+          'placeholder2' => '-------------------- OTHER USER STUDIES --------------------'
+        ]
+        + tpps_submission_get_accession_list([
+          ['status', 'Incomplete'],
+          ['uid', $user->uid, '<>'],
+        ]);
 
-      if (count($options_arr) > 1) {
-        // Has submissions.
+      if (count($options) > 1) {
         $form['accession'] = [
           '#type' => 'select',
           '#title' => t('Would you like to load an old TPPSC submission, or create a new one?'),
-          '#options' => $options_arr,
+          '#options' => $options,
           '#default_value' => $form_state['saved_values']['frontpage']['accession'] ?? 'new',
         ];
       }
-
       $form['use_old_tgdr'] = [
         '#type' => 'checkbox',
         '#title' => t('I would like to use an existing TGDR number'),
+        '#default_value' => FALSE,
       ];
-
-
       $form['old_tgdr'] = [
         '#type' => 'select',
         '#title' => t('Existing TGDR number'),
         '#options' => tpps_submission_get_tgdr_number_list(TRUE),
+        '#description' => t('<div class="red">WARNING: Using this TGDR '
+          . 'number will clear all data associated with this study!</div>'),
         '#states' => [
           'visible' => [
             ':input[name="use_old_tgdr"]' => ['checked' => TRUE],
@@ -140,6 +141,8 @@ function tpps_front_create_form(array &$form, array $form_state) {
             . 'access, and is generally not required or recommended.'
           ),
         ];
+        // This field allows to specify any accession number except existing
+        // numbers. This is hard to guess and there is no autocompletion.
         $form['custom_accession'] = [
           '#type' => 'textfield',
           '#title' => t('Custom Accession number'),

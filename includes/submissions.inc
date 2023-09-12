@@ -1165,7 +1165,6 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
   $key = serialize($conditions);
   if ($reset || empty($cache) || empty($cache->data[$key])) {
     $query = db_select('tpps_submission', 's')->fields('s');
-    $query->addTag('debug');
     foreach ($conditions as $item) {
       $query->condition($item[0], $item[1], ($item[2] ?? '='));
     }
