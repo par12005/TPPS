@@ -262,7 +262,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     // DOI Info is empty.
   }
 
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Organisms.
   //
@@ -271,7 +270,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // 1. Used previously stored study. From $form_state['saved_values']?
   // 2. PUblished. From DOI. Read only?
   // 3. From $form_state (when returned from step 2).
-  //dpm($species);
   for ($i = 1; $i <= $org_number; $i++) {
     $org = tpps_get_ajax_value($form_state, ['organism', $i]);
     if (empty($org) and !empty($species[$i - 1])) {
@@ -281,7 +279,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   }
 
   tpps_organism($form, $form_state);
-
+  // $form_state['ids']['project_id'] is widly used.
+  $form_state['ids']['project_id'] = tpps_get_project_id($form_state['dbxref_id']);
 
   // Load existing study data.
   if (!empty($form_state['saved_values']['frontpage']['use_old_tgdr'])) {
@@ -291,95 +290,15 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     // $values['old_tgdr'] = 10514311;
     // Refers to public.tpps_submission.dbxref_id;
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    $form_state['ids']['project_id'] = tpps_get_project_id($form_state['dbxref_id']);
     // Publication status.
     $form['publication']['status'] = 'Published';
     $form['publication']['status']['#disabled'] = TRUE;
-    tpps_page_1_fill_publication($form, $form_state);
-    tpps_page_1_fill_organism($form, $form_state);
+    // Note: Code which restores submission data from different db tables
+    // and fills form fields was removed in branch VS/page1_improvements.
   }
 
   tpps_add_buttons($form, 'page_1');
   return $form;
-}
-
-
-
-/**
- * Fills publication fields with data from existing study.
- */
-function tpps_page_1_fill_publication(array &$form, array &$form_state) {
-
-  $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-  // Get publication Id.
-  $pub_id = chado_select_record(
-    'project_pub',
-    ['pub_id'],
-    ['project_id' => $form_state['ids']['project_id']]
-  )[0]->pub_id;
-  $pub = chado_select_record('pub', ['*'], ['pub_id' => $pub_id])[0];
-
-  dpm($pub_id);
-
-  // Get 'abstruct' field value.
-  if (empty($saved_values['publication']['abstruct'])) {
-    $pub->abstruct = chado_select_record(
-      'pubprop',
-      ['value'],
-      [
-        'pub_id' => $pub_id,
-        'type_id' => [
-          'name' => 'Abstract',
-          'cv_id' => ['name' => 'tripal_pub'],
-        ],
-      ]
-    )[0]->value;
-  }
-  // Primary Author.
-  if (empty($saved_values['primaryAuthor'])) {
-    $author = chado_select_record(
-      'pubauthor',
-      ['givennames', 'surname'],
-      [
-        'pub_id' => $pub_id,
-        'rank' => 0,
-      ]
-    )[0];
-    $pub->primaryAuthor = "$author->givennames $author->surname";
-  }
-
-
-  $fields = [
-    'title' => ['publication', 'title'],
-    'pyear' => ['publication', 'year'],
-    'abstruct' => ['publication', 'abstract'],
-    'primaryAuthor' => ['primaryAuthor'],
-  ];
-  foreach ($fields as $name => $parents) {
-    $parents = $parents + ['#default_value'];
-    drupal_array_set_nested_value(
-      $form,
-      $parents,
-      tpps_get_ajax_value($form_state, $parents, NULL) ?? $pub->{$name} ?? ''
-    );
-  }
-
-  // Get list of secondary authors.
-  $secondary_authors = chado_select_record(
-    'pubauthor',
-    ['givennames', 'surname'],
-    [
-      'pub_id' => $pub_id,
-      'rank' => ['op' => '!=', 'data' => 0],
-    ]
-  );
-  $i = 1;
-  foreach ($secondary_authors as $author) {
-    $form['publication']['secondaryAuthors'][$i]['#default_value']
-      = tpps_get_ajax_value($form_state, ['publication', 'secondaryAuthors', $i])
-      ?? "$author->givennames $author->surname";
-    $i++;
-  }
 }
 
 /**
@@ -400,32 +319,4 @@ function tpps_get_project_id($dbxref_id) {
   return chado_select_record(
     'project_dbxref', ['project_id'], ['dbxref_id' => $dbxref_id]
   )[0]->project_id;
-}
-
-/**
- * Fills organism related fields with data from existing study.
- */
-function tpps_page_1_fill_organism(array &$form, array &$form_state) {
-  $organisms = chado_query('SELECT genus, species '
-    . 'FROM chado.organism WHERE organism_id IN ('
-      . 'SELECT DISTINCT organism_id '
-      . 'FROM chado.stock '
-      . 'WHERE stock_id IN ('
-        . 'SELECT stock_id '
-        . 'FROM chado.project_stock '
-        . 'WHERE project_id = :project_id));',
-        [':project_id' => $form_state['ids']['project_id']]
-  );
-
-  $i = 1;
-  foreach ($organisms as $org) {
-    $form['organism'][$i]['#default_value']
-      = tpps_get_ajax_value($form_state, ['organism', $i])
-      ?? "$org->genus $org->species";
-    $i++;
-  }
-  $form['organism']['number'] = [
-    '#type' => 'hidden',
-    '#value' => tpps_get_ajax_value($form_state, ['organism', 'number'], $i - 1),
-  ];
 }
