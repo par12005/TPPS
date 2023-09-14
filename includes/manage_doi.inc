@@ -60,6 +60,9 @@ function tpps_manage_doi($accession) {
  */
 function tpps_doi_info($doi) {
 
+
+  // @TODO [VS] Move to JS.
+
   if (!preg_match(tpps_doi_regex(), $doi)) {
     drupal_set_message(t('Invalid DOI format. Example DOI: 10.1111/dryad.111'), 'warning');
     return FALSE;

@@ -95,13 +95,17 @@ function tpps_front_create_form(array &$form, array $form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // TPPS Form.
   else {
-    $image_path = drupal_get_path('module', 'tpps') . '/images/';
-
     // @TODO [VS] Move HTML code to template or theme function.
-    $prefix_text = "<div><figure style=\"text-align:center;\"><img style=\"max-height:100%;max-width:100%;\" src=\"{$image_path}TPPS-1_1118px.jpg\"></figure>";
-    $prefix_text .= "<div id=\"landing-buttons\">";
-    $prefix_text .= "<a href=\"https://tpps.readthedocs.io/en/latest/\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">TPPS Documentation</button></a>";
-    $prefix_text .= "<a href=\"$base_url/tpps/details\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">TPPS Studies</button></a>";
+    $prefix_text = '<div><figure style="text-align:center;"><img '
+        . 'style="max-height:100%;max-width:100%;" src="/' . TPPS_IMAGES_PATH
+        . 'TPPS-1_1118px.jpg"></figure>'
+      . '<div id="landing-buttons">'
+      . '<a href="https://tpps.readthedocs.io/en/latest/" target="blank" '
+        . 'class="landing-button"><button type="button" class="btn '
+        . 'btn-primary">TPPS Documentation</button></a>'
+        . '<a href="' . $base_url . '/tpps/details" target="blank" '
+          . 'class="landing-button"><button type="button" '
+          . 'class="btn btn-primary">TPPS Studies</button></a>';
 
     if (module_exists('cartogratree')) {
       $prefix_text .= "<a href=\"$base_url/ct\" target=\"blank\" class=\"landing-button\"><button type=\"button\" class=\"btn btn-primary\">CartograPlant</button></a>";
@@ -162,8 +166,6 @@ function tpps_front_create_form(array &$form, array $form_state) {
       ];
     }
   }
-  $module_path = drupal_get_path('module', 'tpps');
-  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
-  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
+  tpps_add_css_js($form);
   return $form;
 }

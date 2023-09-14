@@ -365,11 +365,7 @@ function tpps_submission_tag_manage() {
   );
 
   $output = theme('table', $vars);
-
-  $module_path = drupal_get_path('module', 'tpps');
-  drupal_add_js($module_path . TPPS_JS_PATH);
-  drupal_add_css($module_path . TPPS_CSS_PATH);
-
+  tpps_add_css_js();
   return $output;
 }
 
@@ -387,8 +383,13 @@ function tpps_submission_tag_manage() {
 function tpps_submission_tag_create(array $form, array &$form_state) {
   // This will add the color picker to the TPPS submission tags edit-color
   // field id.
-  drupal_add_js('https://cdnjs.cloudflare.com/ajax/libs/tinyColorPicker/1.1.1/jqColorPicker.min.js', 'external');
-  drupal_add_js(drupal_get_path('module', 'tpps') . '/js/tag_colorpicker.js');
+  drupal_add_js(
+    'https://cdnjs.cloudflare.com/ajax/libs/tinyColorPicker/1.1.1/jqColorPicker.min.js',
+    'external'
+  );
+  // @TODO [VS] This file must be stored under /sites/all/libraries to allow
+  // other modules to reuse it and get updates independently from this module.
+  drupal_add_js(TPPS_MODULE_PATH. '/js/tag_colorpicker.js');
 
   $form['name'] = array(
     '#type' => 'textfield',

@@ -43,10 +43,7 @@ function tpps_details($accession = NULL) {
     $output .= render($form);
     $output .= tpps_details_tags_sort();
     $output .= "<div id='tpps-details-table'>" . tpps_details_top() . "</div>";
-
-    $module_path = drupal_get_path('module', 'tpps');
-    drupal_add_css($module_path . TPPS_CSS_PATH);
-    drupal_add_js($module_path . TPPS_JS_PATH);
+    tpps_add_css_js();
     return $output;
   }
 
@@ -76,10 +73,7 @@ function tpps_details($accession = NULL) {
       if (function_exists('tpps_details_byaccession_page')) {
         $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
         // [VS].
-        $module_path = drupal_get_path('module', 'tpps');
-        // @todo Check if this is a Form API and use '#attached' if possible.
-        //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
-        drupal_add_js($module_path . TPPS_JS_PATH);
+        tpps_add_css_js();
         // [/VS].
         return $output;
       }
@@ -104,12 +98,7 @@ function tpps_details($accession = NULL) {
     }
     $output .= $map_api_tools;
     // [VS].
-    $module_path = drupal_get_path('module', 'tpps');
-    // @todo Check if this is a Form API and use '#attached' if possible.
-    //$form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
-    //$form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
-    drupal_add_js($module_path . TPPS_JS_PATH);
-    drupal_add_css($module_path . TPPS_CSS_PATH);
+    tpps_add_css_js();
     // [/VS].
 
     $pub_link = $state['title'];
@@ -160,9 +149,7 @@ function tpps_details($accession = NULL) {
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
     // [VS].
-    $module_path = drupal_get_path('module', 'tpps');
-    // @todo Check if this is a Form API and use '#attached' if possible.
-    drupal_add_js($module_path . TPPS_JS_PATH);
+    tpps_add_css_js();
     // [/VS].
   }
   return $output;

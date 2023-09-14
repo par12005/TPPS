@@ -20,6 +20,9 @@ define("TPPS_OLS_BASE", "http://www.ebi.ac.uk/ols/api/");
 // instead of whole cache clearing which could cause longer server
 // response while cache is warming up.
 define('TPPS_CACHE_BIN', 'cache_tpps');
+// To avoid duplication we just get this path at the very beginning.
+define('TPPS_MODULE_PATH', drupal_get_path('module', 'tpps'));
+define('TPPS_IMAGES_PATH', TPPS_MODULE_PATH . '/images/');
 
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
@@ -311,7 +314,7 @@ function tpps_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_admin_settings'],
     'access arguments' => ['administer tpps module'],
-    'file path' => drupal_get_path('module', 'tpps'),
+    'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/config.php',
   );
   $items['admin/config/tpps/add-synonym'] = array(
@@ -320,7 +323,7 @@ function tpps_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_add_synonym_form'],
     'access arguments' => ['administer tpps module'],
-    'file path' => drupal_get_path('module', 'tpps'),
+    'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/add_synonym.inc',
     'weight' => 10,
   );
@@ -1024,19 +1027,10 @@ function tpps_page_build(&$page) {
  *   The created form.
  */
 function tpps_main(array $form, array &$form_state, $accession = NULL) {
-
-  require_once 'forms/build/front.php';
   global $user;
-
-  // [VS].
-  $module_path = drupal_get_path('module', 'tpps');
-  $form['#attached']['js'][] = [
-    'type' => 'file',
-    'scope' => 'footer',
-    'data' => $module_path . TPPS_JS_PATH,
-  ];
-  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
-  // [/VS].
+  require_once 'forms/build/front.php';
+  $form = $form ?? [];
+  tpps_add_css_js($form);
 
   if (!isset($form_state['stage'])) {
     if (!isset($accession)) {
@@ -1605,4 +1599,60 @@ function _tpps_cache_clear() {
  */
 function tpps_flush_caches() {
   return [TPPS_CACHE_BIN];
+}
+
+/**
+ * Adds CSS and JS files to page.
+ *
+ * We add both CSS and JS even if only one is required because it's better
+ * for caching system to have less unique pages and more pages with the
+ * same set of attached files.
+ *
+ * How to use?
+ *
+ * To add TPPS Page main CSS/JS files:
+ *   tpps_add_css_js($form);
+ *
+ * To add TPPS Page specific CSS/JS files in addition to main files:
+ *   tpps_add_css_js($form, $page_number);
+ *
+ * To add CSS and JS using drupal_add_css/js():
+ *   tpps_add_css_js();
+ *
+ * To force using Form API instead of use drupal_add_css/js():
+ *   $form = $form ?? [];
+ *   tpps_add_css_js($form);
+ *   This could be useful if $form not yet defined at the beginning of the
+ *   form generation callback.
+ *
+ * @param array $form
+ *   Drupal Form API form array.
+ * @param int $page_id
+ *   TPPS Form Page number. Constants like TPPS_PAGE_1 and etc could be
+ *   used to improve code readablility.
+ */
+function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
+  if (empty($form)) {
+    drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
+    drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
+  }
+  else {
+    // Add main files.
+    $form['#attached']['js'][] = [
+      'type' => 'file',
+      'scope' => 'footer',
+      'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
+    ];
+    $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
+    // Add page specific files.
+    if ($page_id && is_numeric($page_id) && $page_id > 0) {
+      // @TODO [VS] Check if file exists.
+      $form['#attached']['js'][] = [
+        'type' => 'file',
+        'scope' => 'footer',
+        'data' => TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js',
+      ];
+      $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_page_' . $page_id . '.css';
+    }
+  }
 }

@@ -323,6 +323,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 function tpps_get_project_id($dbxref_id) {
   $result = chado_select_record(
     'project_dbxref', ['project_id'], ['dbxref_id' => $dbxref_id]
-  )[0]->project_id;
+  );
   return ($result) ? $result[0]->project_id : FALSE;
 }
