@@ -78,6 +78,6 @@ function tpps_ajax_doi_callback(array &$form, array $form_state) {
         //  . $accession  . '</div>';
       }
     }
-    return $form['publication']['extra'];
+    return $form['publication'];
   }
 }

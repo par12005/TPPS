@@ -34,6 +34,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
     // TPPS Form.
     $form = array_merge($form, tpps_page_1_create_regular_form($form, $form_state));
   }
+  tpps_add_css_js($form, TPPS_PAGE_1);
   return $form;
 }
 
@@ -110,6 +111,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#title' => t('Publication Information'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
+    '#theme_wrappers' => ['publication-container'],
   ];
   $form['publication']['status'] = [
     '#type' => 'select',
@@ -120,7 +122,14 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ],
-    '#default_value' => (!empty($doi_info) ? 'Published' : $publication_status),
+
+
+// @TODO Remove debug code!
+
+    '#default_value' => 'Published',
+    //'#default_value' => (!empty($doi_info) ? 'Published' : $publication_status),
+
+
     '#disabled' => !empty($doi_info),
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -145,7 +154,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#title' => t('Publication DOI: *'),
     '#ajax' => [
       'callback' => 'tpps_ajax_doi_callback',
-      'wrapper' => 'publication-extra-container',
+      'wrapper' => 'publication-container',
     ],
     '#parents' => $parents,
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
@@ -190,10 +199,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show extra fields.
   $form['publication']['extra'] = [
-    // Using '#attributes' blocks '#states' so '#prefix' and '#suffix' are used.
-    '#prefix' => '<div id="publication-extra-container">',
-    '#suffix' => '</div>',
-    // '#attributes' => ['id' => ['publication-extra-container']],
     '#type' => 'container',
     '#states' => [
       'visible' => [
@@ -316,7 +321,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
  *   Returns Project Id.
  */
 function tpps_get_project_id($dbxref_id) {
-  return chado_select_record(
+  $result = chado_select_record(
     'project_dbxref', ['project_id'], ['dbxref_id' => $dbxref_id]
   )[0]->project_id;
+  return ($result) ? $result[0]->project_id : FALSE;
 }
