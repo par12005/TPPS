@@ -23,6 +23,7 @@ define('TPPS_CACHE_BIN', 'cache_tpps');
 // To avoid duplication we just get this path at the very beginning.
 define('TPPS_MODULE_PATH', drupal_get_path('module', 'tpps'));
 define('TPPS_IMAGES_PATH', TPPS_MODULE_PATH . '/images/');
+define('TPPS_AJAX_URL', 'ajax/tpps');
 
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
@@ -308,7 +309,7 @@ function tpps_menu() {
     'file' => 'system.admin.inc',
     'file path' => drupal_get_path('module', 'system'),
   ];
-  $items['admin/config/tpps/main'] = array(
+  $items['admin/config/tpps/main'] = [
     'title' => 'Main Settings',
     'description' => 'Main TPPS Settings',
     'page callback' => 'drupal_get_form',
@@ -316,8 +317,8 @@ function tpps_menu() {
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/config.php',
-  );
-  $items['admin/config/tpps/add-synonym'] = array(
+  ];
+  $items['admin/config/tpps/add-synonym'] = [
     'title' => 'Add Synonym',
     'description' => 'Create new Phenotype Synonym',
     'page callback' => 'drupal_get_form',
@@ -326,7 +327,17 @@ function tpps_menu() {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/add_synonym.inc',
     'weight' => 10,
-  );
+  ];
+  $items['admin/config/tpps/page-1'] = [
+    'title' => 'Page 1 Settings',
+    'description' => 'TPPS Page 1 Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_page_1_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/page_1.inc',
+    'weight' => 20,
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items['tpps/autocomplete/%'] = array(
     'title' => 'TPPS Autocomplete',
@@ -486,6 +497,16 @@ function tpps_menu() {
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
     'file' => 'reports/missing_doi.inc',
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $items[TPPS_AJAX_URL . '/%'] = [
+    // Use POST to send data and GET to just get data.
+    'page callback' => 'tpps_ajax_callback',
+    'page arguments' => [2],
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+    //'delivery callback' => 'ajax_deliver',
+    'file' => 'tpps.ajax.inc',
   ];
   // [/VS].
   $items = array_merge($items, tpps_api_paths());
@@ -1610,10 +1631,14 @@ function tpps_flush_caches() {
  *
  * How to use?
  *
- * To add TPPS Page main CSS/JS files:
+ * To add only TPPS Page main CSS/JS files:
  *   tpps_add_css_js($form);
  *
- * To add TPPS Page specific CSS/JS files in addition to main files:
+ * To add only TPPS Page specific CSS/JS files:
+ *   tpps_add_css_js($form, $page_number);
+ *
+ * To add both (main and page specific) CSS/JS files:
+ *   tpps_add_css_js($form);
  *   tpps_add_css_js($form, $page_number);
  *
  * To add CSS and JS using drupal_add_css/js():
@@ -1637,22 +1662,26 @@ function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
     drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
   }
   else {
-    // Add main files.
-    $form['#attached']['js'][] = [
-      'type' => 'file',
-      'scope' => 'footer',
-      'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
-    ];
-    $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
-    // Add page specific files.
     if ($page_id && is_numeric($page_id) && $page_id > 0) {
+      // Add page specific files.
       // @TODO [VS] Check if file exists.
       $form['#attached']['js'][] = [
         'type' => 'file',
         'scope' => 'footer',
+        'group' => JS_THEME,
         'data' => TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js',
       ];
       $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_page_' . $page_id . '.css';
+    }
+    else {
+      // Add main files.
+      $form['#attached']['js'][] = [
+        'type' => 'file',
+        'scope' => 'footer',
+        'group' => JS_THEME,
+        'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
+      ];
+      $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
     }
   }
 }
