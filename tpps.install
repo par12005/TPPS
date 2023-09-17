@@ -291,6 +291,8 @@ function tpps_install() {
     'tpps_report_order_family_not_exist_title',
     'Order/Family not exist'
   );
+  // Page 1 Settings.
+  variable_set('tpps_page_1_doi_check_source', 'public.tpps_submissions');
   // [/VS]
 }
 
@@ -306,6 +308,7 @@ function tpps_uninstall() {
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
   variable_del('tpps_report_order_family_not_exist_title');
+  variable_det('tpps_page_1_doi_check_source');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.
@@ -2056,7 +2059,7 @@ function tpps_update_7120() {
 }
 
 /**
- * #861n70hh6 Create table 'cache_tpps'.
+ * #861n70hh6 Create 'tpps' cache bin, set variables.
  */
 function tpps_update_7121() {
   $schema = tpps_schema();
@@ -2064,4 +2067,5 @@ function tpps_update_7121() {
   if (!db_table_exists($table)) {
     db_create_table($table, $schema[$table]);
   }
+  variable_set('tpps_page_1_doi_check_source', 'public.tpps_submissions');
 }
