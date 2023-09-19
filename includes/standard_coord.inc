@@ -25,7 +25,42 @@ function tpps_standard_coord($raw_coordinate) {
   
 
   $matches = array();
-  if (preg_match('/(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([N|S])),? ?(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([E|W]))/', $raw_coordinate, $matches)) {
+  if (preg_match('/-?([0-9|\.]+),\s?-?([0-9|\.]+)/', $raw_coordinate, $matches)) {
+    // echo "GPS needs interpretation: $raw_coordinate\n";
+    $lat_with_periods = $matches[1];
+    $long_with_periods = $matches[2];
+    $lat_parts = explode('.', $lat_with_periods);
+    $long_parts = explode('.', $long_with_periods);
+    $lat_parts_count = count($lat_parts);
+    $long_parts_count = count($long_parts);
+    // Check latitude value
+    if ($lat_parts_count == 3) {
+      echo "Found a 3 part latitude value from raw coordinates $raw_coordinate\n";
+      $lat = intval($lat_parts[0]) + (intval($lat_parts[1]) / 60) + (intval($lat_parts[2]) / 3600);
+    }
+    else if ($lat_parts_count <= 2 and $lat_parts_count > 0) {
+      $lat = $lat_with_periods;
+    }
+    else {
+      echo "There's a latitude error happening for $raw_coordinate";
+      return FALSE;
+    }
+    // Check longitude value
+    if ($long_parts_count == 3) {
+      echo "Found a 3 part longitude value from raw coordinates $raw_coordinate\n";
+      $long = intval($long_parts[0]) + (intval($long_parts[1]) / 60) + (intval($long_parts[2]) / 3600);
+    }
+    else if ($long_parts_count <= 2 and $long_parts_count > 0) {
+      $long = $long_with_periods;
+    }
+    else {
+      echo "There's a longitude error happening for $raw_coordinate";
+      return FALSE;
+    }
+    // echo "GPS Interpreted $raw_coordinate to $lat,$long\n";
+    // throw new Exception('DEBUG');
+  }
+  elseif (preg_match('/(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([N|S])),? ?(([0-9]+)° ?([0-9]+)\' ?([0-9|\.]+)" ?([E|W]))/', $raw_coordinate, $matches)) {
     $lat = $matches[2] + ($matches[3] / 60) + ($matches[4] / 3600);
     $long = $matches[7] + ($matches[8] / 60) + ($matches[9] / 3600);
   }
