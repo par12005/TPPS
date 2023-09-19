@@ -952,6 +952,9 @@ function tpps_submission_update_stats(array &$form_state) {
   switch ($form_state['stage']) {
     case TPPS_PAGE_1:
       $form_state['stats']['author_count'] = $form_state['values']['publication']['secondaryAuthors']['number'] + 1;
+      // @TODO [VS] Review this code it seems outdated.
+      // 'check' will be set to FALSE when publication data received from
+      // DOI server but 'file' seems not used in code.
       if (!empty($form_state['values']['publication']['secondaryAuthors']['check'])) {
         $form_state['stats']['author_count'] = tpps_file_len($form_state['values']['publication']['secondaryAuthors']['file']);
       }
