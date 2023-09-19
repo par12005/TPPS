@@ -93,8 +93,13 @@
           var messageBox = '#doi-message';
 
           $(selector).blur(function(e) {
+            // @TODO Check if DOI value really was changed.
             var doi = $(this).val();
             e.preventDefault();
+            // This is the same DOI value so nothing to do.
+            if (Drupal.tpps.doiLastValue != doi) {
+              return;
+            }
             if (!validateStrings(doi)) {
               $(messageBox).empty();
               var data = {
@@ -105,8 +110,12 @@
               tppsShowMessages(messageBox, data);
               return;
             }
+            // Store current DOI value to be able to compare with new one later.
+            Drupal.tpps.doiLastValue = doi;
+
             // Check if we have cached result first.
             if (Drupal.settings.tpps.cache && typeof (Drupal.tpps.doi[doi]) != 'undefined') {
+              $(messageBox).empty();
               var data = Drupal.tpps.doi[doi];
               tppsShowMessages(messageBox, data);
             }
@@ -148,7 +157,10 @@
                         $('#edit-publication-abstract').val(data.doi_info.abstract);
                       }
                       // Default value for year is '0' ('- Select -').
-                      if ($('#edit-publication-year').val() == 0) {
+                      if (
+                        $('#edit-publication-year').val() == 0
+                        || !$('#edit-publication-year').val()
+                      ) {
                         $('#edit-publication-year').val(data.doi_info.year);
                       }
                       if (!$('#edit-publication-title').val()) {

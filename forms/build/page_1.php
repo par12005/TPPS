@@ -197,7 +197,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
   // Update field's value.
-  $form_state['input']['publication']['primaryAuthor'] = REQUEST_TIME;
+  // @TODO Remove debug code.
+  //$form_state['input']['publication']['primaryAuthor'] = REQUEST_TIME;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show extra fields.
