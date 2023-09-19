@@ -77,12 +77,20 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
 /**
  * Creates  TPPS Page 1 form for curation team.
  *
- * WARNING: Update $form passed by reference.
+ * WARNING:
+ * $form will be updated (not returned).
+ *
+ * How it works?
+ * DOI information could be loaded in browser using AJAX.
+ * Form must be build as usual and values must be found in $form_state.
  *
  * @param array $form
  *   The form being created.
  * @param array $form_state
  *   The state of the form being created.
+ *
+ * @todo Test if existing study is shown correctly.
+ * @todo Restore original parents for fields and avoid 'extra' container if possible.
  */
 function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
@@ -102,25 +110,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $publication_status = tpps_get_ajax_value(
     $form_state, ['publication', 'status'], NULL
   );
-  if (!empty($doi = tpps_get_ajax_value($form_state, ['doi']))) {
-    module_load_include('inc', 'tpps', 'includes/manage_doi');
-    $doi_info = tpps_get_doi_info($doi);
-
-
-
-    // @TODO Set default values
-    //
-    //
-
-    //dpm($doi_info, 'doi');
-  }
-  $species = $doi_info['species'] ?? [];
-  $org_number = tpps_get_ajax_value($form_state, ['organism', 'number'])
-    ?? $form_state['values']['organism']['number'] ?? count($species) ?? 1;
-
-  //dpm(print_r($doi, 1));
-  //dpm(print_r($doi_info, 1));
-  //dpm(print_r($form_state, 1));
+  $doi = tpps_get_ajax_value($form_state, ['doi'], NULL);
+  $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']) ?? 1;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Publication.
@@ -141,18 +132,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ],
-
-
-// @TODO Remove debug code!
-
-    '#default_value' => 'Published',
-    //'#default_value' => (!empty($doi_info) ? 'Published' : $publication_status),
+    '#default_value' => $publication_status,
   ];
-  if (!empty($doi_info)) {
-    $form['publication']['status']['#disabled'] = TRUE;
-    // For new form it works without 2nd line but for AJAX - need to test.
-    //$form['publication']['status']['#attributes']['disabled'] = 'disabled';
-  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.
   //
@@ -173,21 +154,20 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $form['publication']['doi_container']['doi'] = [
     '#type' => 'textfield',
     '#title' => t('Publication DOI: *'),
-    //'#ajax' => [
-    //  'callback' => 'tpps_ajax_doi_callback',
-    //  'wrapper' => 'publication-container',
-    //],
     '#parents' => $parents,
-    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
+    '#default_value' => $doi,
     '#description' => 'Example: '
-      // @TODO Use l().
+       // @TODO Use l().
       . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
       . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
-    // AJAX-callback 'tpps_ajax_doi_callback()' will search database for
-    // doi field in the root of form we change parents here.
-      // This allows to reuse existing code and existing studies.
     '#prefix' => '<div id="doi-message"></div>',
   ];
+
+  if (!empty($doi)) {
+    $form['publication']['status']['#disabled'] = TRUE;
+    // For new form it works without 2nd line but for AJAX - need to test.
+    // $form['publication']['status']['#attributes']['disabled'] = 'disabled';
+  }
   $parents = ['dataset_doi'];
   $form['publication']['doi_container']['dataset_doi'] = [
     '#type' => 'textfield',
@@ -214,16 +194,14 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     ],
     '#description' => t('Note: please format in ‘Last, First’ format.'),
     '#parents' => $parents,
-    '#default_value' =>
-      $doi_info['primary']
-      ?? tpps_get_ajax_value($form_state, $parents, NULL),
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
   // Update field's value.
   $form_state['input']['publication']['primaryAuthor'] = REQUEST_TIME;
 
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show extra fields.
+  // @TODO Remove container and use '#states'.
   $form['publication']['extra'] = [
     '#type' => 'container',
     '#states' => [
@@ -247,8 +225,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       . 'please choose the expected year of publication.'),
     // Exclude 'extra' just to have clear data structure.
     '#parents' => $parents,
-    '#default_value' => $doi_info['year']
-    ?? tpps_get_ajax_value($form_state, $parents, NULL),
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
 
   $parents = ['publication', 'title'];
@@ -257,8 +234,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#title' => t('Title of Publication/Study: *'),
     // Exclude 'extra' just to have clear data structure.
     '#parents' => $parents,
-    '#default_value' => $doi_info['title']
-    ?? tpps_get_ajax_value($form_state, $parents, NULL),
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
 
   $parents = ['publication', 'abstract'];
@@ -267,8 +243,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#title' => t('Abstract/Description: *'),
     // Exclude 'extra' just to have clear data structure.
     '#parents' => $parents,
-    '#default_value' => $doi_info['abstract']
-    ?? tpps_get_ajax_value($form_state, $parents, NULL),
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
 
   $parents = ['publication', 'journal'];
@@ -278,39 +253,17 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#autocomplete_path' => 'tpps/autocomplete/journal',
     // Exclude 'extra' just to have clear data structure.
     '#parents' => $parents,
-    '#default_value' => $doi_info['journal']
-    ?? tpps_get_ajax_value($form_state, $parents, NULL),
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
   ];
 
   // @TODO Check. Mockup has no fieldset - just buttons.
   tpps_secondary_authors($form, $saved_values, $form_state);
 
-  if (!empty($doi_info)) {
-    $form['doi_container']['doi_message']['#markup'] =
-      "The publication has been successfully loaded from Dryad";
-  }
-  else {
-    // DOI Info is empty.
-  }
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Organisms.
-  //
-  // Get data from DOI.
-  // Fill form with values from:
-  // 1. Used previously stored study. From $form_state['saved_values']?
-  // 2. PUblished. From DOI. Read only?
-  // 3. From $form_state (when returned from step 2).
-  for ($i = 1; $i <= $org_number; $i++) {
-    $org = tpps_get_ajax_value($form_state, ['organism', $i]);
-    if (empty($org) and !empty($species[$i - 1])) {
-      $form_state['values']['organism'][$i] = $species[$i - 1];
-      //dpm($species[$i - 1]);
-    }
-  }
-
   tpps_organism($form, $form_state);
-  // $form_state['ids']['project_id'] is widly used.
+
+  // Note: $form_state['ids']['project_id'] is widly used.
   $form_state['ids']['project_id'] = tpps_get_project_id($form_state['dbxref_id']);
 
   // Load existing study data.
