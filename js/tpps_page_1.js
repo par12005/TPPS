@@ -160,6 +160,9 @@
                       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
                       // Secondary Authors.
                       if (data.doi_info.secondaryNumber >= 1) {
+                        // @TODO Probably outdated. Check it.
+                        $('input[name="publication[secondaryAuthors][check]"]')
+                          .val(data.doi_info.secondaryCheck)
                         // @TODO Reuse empty fields.
                         var secondaryStart = parseInt(
                           $('input[name="publication[secondaryAuthors][number]"]').val()

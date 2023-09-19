@@ -185,7 +185,8 @@ function tpps_get_doi_info($doi, $reset = FALSE) {
         'primary' => $authors[0],
         'secondary' => $secondary_authors,
         'secondaryNumber' => count($secondary_authors),
-        // ['second']['check'] = FALSE;
+        // @TODO [VS] Probably not used. Check!
+        'secondaryCheck' => FALSE,
         'year' => explode('-', $data->publicationDate)[0],
         'abstract' => $data->abstract,
         'species' => $species,
