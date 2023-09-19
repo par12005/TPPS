@@ -49,66 +49,6 @@ function tpps_manage_doi($accession) {
   return render($output);
 }
 
-/**
- * Loads info about a Dryad DOI.
- *
- * @param string $doi
- *   The doi being loaded.
- *
- * @return mixed
- *   The retrieved information, or FALSE on failure.
- */
-function tpps_doi_info($doi) {
-
-
-  // @TODO [VS] Move to JS.
-
-  if (!preg_match(tpps_doi_regex(), $doi)) {
-    drupal_set_message(t('Invalid DOI format. Example DOI: 10.1111/dryad.111'), 'warning');
-    return FALSE;
-  }
-
-  $query = db_select('chado.dbxref', 'd')
-    ->condition('accession', $doi)
-    ->execute();
-  if (count($query->fetchAll()) > 0) {
-    drupal_set_message(t('This DOI is already in use for another submission.'), 'warning');
-    return FALSE;
-  }
-
-  $result = array();
-  $url = 'http://datadryad.org/api/v2/datasets/' . urlencode('doi:' . $doi);
-  $response_json_data = json_decode(file_get_contents($url));
-
-  if (!empty($response_json_data)) {
-    $result['title'] = $response_json_data->title;
-    if (substr($result['title'], 0, 11) == 'Data from: ') {
-      $result['title'] = substr($result['title'], 11);
-    }
-
-    $authors = $response_json_data->authors;
-    $result['primary'] = trim(implode(" ", array($authors[0]->firstName, $authors[0]->lastName)));
-    $result['second'] = array();
-    $authors = array_slice($authors, 1);
-    foreach ($authors as $author) {
-      $result['second'][] = trim(implode(" ", array($author->firstName, $author->lastName)));
-    }
-    $result['second']['number'] = count($authors);
-    $result['second']['check'] = FALSE;
-
-    $result['year'] = explode('-', $response_json_data->publicationDate)[0];
-
-    $result['abstract'] = $response_json_data->abstract;
-
-    $result['species'] = array();
-    foreach ($response_json_data->keywords as $keyword) {
-      if (preg_match('/^([A-Z][a-z]* [a-z]+)$/', $keyword, $matches)) {
-        $result['species'][] = $matches[1];
-      }
-    }
-  }
-  return $result;
-}
 
 /**
  * Returns expression for matching DOIs.
@@ -139,15 +79,13 @@ function tpps_doi_regex() {
  * @return string
  *   Returns accession in format 'TGDRxxx'.
  *   Returns FALSE if DOI wasn't found.
- *
- * @TODO Minor. Search for exact doi value instead of getting all the data.
- * See tpps_search_used_doi_NEW_VERSION().
  */
-function tpps_search_used_doi($doi, $reset = FALSE) {
+function tpps_doi_get_accession($doi, $reset = FALSE) {
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
-  if ($reset || empty($cache)) {
+  $use_cache = variable_set('tpps_page_1_cache_ajax_responses', TRUE);
+  if ($reset || !$use_cache || empty($cache)) {
     $all_submissions = chado_query("SELECT * FROM public.tpps_submission;");
     foreach ($all_submissions as $item) {
       $form_state = unserialize($item->submission_state);
@@ -162,114 +100,104 @@ function tpps_search_used_doi($doi, $reset = FALSE) {
 }
 
 /**
- * Searches for DOI in already submitted studies.
- *
- * WARNING: This code doesn't work!
+ * Counts DOI in 'chado.dbxref' table.
  *
  * @param string $doi
  *   DOI value.
+ * @param bool $reset
+ *   Flag is cache must be resetted. Default if FALSE.
  *
- * @return string
- *   Returns accession in format 'TGDRxxx'.
- *   Returns FALSE if DOI wasn't found.
+ * @return int
+ *   Returns number of records for given DOI in 'chado.dbxref' table.
  */
-function tpps_search_used_doi_NEW_VERSION($doi) {
-
-  // WARNING: This code doesn't work!
-  return;
-
-  // The goal was to use LIKE operator to search of substring but
-  // submission's state is stored serialized in 'bytea' column.
-  //
-  // Problems:
-  // ==ILIKE on 'bytea' gives an error ==
-  //
-  //   SELECT ts.submission_state FROM tpps_submission ts WHERE submission_state ILIKE '%0965%'
-  //
-  // Result:
-  //   ERROR:  operator does not exist: bytea ~~* unknown
-  //   LINE 5:         AND submission_state ILIKE '%0965%') AS sub
-  //                                        ^
-  //   HINT:  No operator matches the given name and argument types. You might need to add explicit type casts.
-  //
-  // == But LIKE works! ==
-  //
-  //   SELECT ts.submission_state FROM tpps_submission ts WHERE submission_state LIKE '%0965%'
-  //
-  // Result: no errors and I'm getting 4 pages of results.
-  //
-  // == use of lower() function ==
-  //
-  //   SELECT ts.submission_state FROM tpps_submission ts WHERE LOWER(submission_state) LIKE '%0965%'
-  //
-  // Result:
-  //
-  //   ERROR:  function lower(bytea) does not exist
-  //   LINE 1: ...ts.submission_state FROM tpps_submission ts WHERE LOWER(subm...
-  //                                                                ^
-  //   HINT:  No function matches the given name and argument types. You might need to add explicit type casts.
-  // Seems lower() and ILIKE do not work with 'bytea' datatype....
-
-  // $time_start = microtime(1);
-
-  // We don't use serialize(['doi' => $doi]) because it also wraps needed
-  // string with "a:1{}" and do not escape qoutes. So it's easier to build
-  // string manually.
-  foreach (['doi', check_plain(trim($doi))] as $value) {
-    @$needle .= 's:' . strlen($value) . ':&quot;' . $value . '&quot;';
-    //@$needle .= 's:' . strlen($value) . ':"' . $value . '";';
+function tpps_doi_count_dbxref($doi, $reset = FALSE) {
+  $cid = __FUNCTION__;
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  $use_cache = variable_set('tpps_page_1_cache_ajax_responses', TRUE);
+  if ($reset || !$use_cache ||  empty($cache) || empty($cache->data[strtolower($doi)])) {
+    $result = db_select('chado.dbxref', 'd')
+      ->condition('accession', $doi)
+      ->execute()
+      ->fetchAll();
+    $cache->data[strtolower($doi)] = count($result);
+    cache_set($cid, $cache->data, $cache_bin);
   }
+  return $cache->data[strtolower($doi)] ?? NULL;
+}
 
-  $needle = '0965';
+/**
+ * Gets DOI Publication information from remote server dryad.
+ *
+ * Based on code from function tpps_doi_info($doi).
+ *
+ * @param string $doi
+ *   Valid DOI.
+ *
+ * @return array
+ *   Returns response which will be returned back as JSON. Keys:
+ *   'error' bool TRUE means validation failed and FALSE that
+ *
+ * @TODO Think about caching and/or sending to browser unchanged $data
+ */
+function tpps_get_doi_info($doi, $reset = FALSE) {
+  $key = strtolower($doi);
 
-  // Data type 'bytea' require some escaping for zeros.
-  // https://www.postgresql.org/docs/current/datatype-binary.html
-  //$needle = str_replace('0', '\000', db_like($needle));
+  $cid = __FUNCTION__;
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  $use_cache = variable_set('tpps_page_1_cache_ajax_responses', TRUE);
+  if ($reset || !$use_cache || empty($cache) || !isset($cache->data[$key])) {
+    $api_endpoint = variable_get('tpps_page_1_dryad_api_url',
+      'http://datadryad.org/api/v2/datasets/');
+    $url = $api_endpoint . urlencode('doi:' . $doi);
+    // Note: json_decode() could throw an exception on invalid data.
+    try {
+      $content = file_get_contents($url);
+      $data = json_decode($content);
+    }
+    catch (Exception $e) {
+      return t('Caught exception: @message. Try again later.',
+        ['@message' => $e->getMessage()]);
+    }
 
-  dpm(db_like($needle));
-
-  // ILIKE is not supported by MySQL and do not work with 'bytea' data type in Postgres.
-  // https://github.com/interchange/TableEditor/issues/64
-  if (1) {
-    // Check the tpps_submissionos.
-    // @TODO Search for doi value instead of getting all the data.
-    // It's a huge amount of data.
-    $sql = "SELECT ts.submission_state
-      FROM {tpps_submission} ts
-      WHERE
-        submission_state IS NOT NULL
-        AND lower(submission_state) LIKE '%" . $needle . "%'
-  ";
-    dpm($sql);
-    // LIMIT 1 OFFSET 0
-    $result = db_query($sql);
+    if (empty($data)) {
+      // Fake DOI or not found. {"error":"not-found"}.
+      $cache->data[$key] = NULL;
+    }
+    else {
+      // Authors.
+      foreach ($data->authors as $author) {
+        $authors[] = trim($author->firstName . ' ' . $author->lastName);
+      }
+      $primary_author = $authors[0];
+      $secondary_authors = array_slice($authors, 1);
+      // Species.
+      $species = [];
+      foreach ($data->keywords as $keyword) {
+        if (preg_match('/^([A-Z][a-z]* [a-z]+)$/', $keyword, $matches)) {
+          $species[] = $matches[1];
+        }
+      }
+      $info = [
+        'title' => ((substr($data->title, 0, 11) == 'Data from: ')
+          ? substr($data->title, 11) : $data->title),
+        'primary' => $authors[0],
+        'secondary' => $secondary_authors,
+        'secondaryNumber' => count($secondary_authors),
+        // ['second']['check'] = FALSE;
+        'year' => explode('-', $data->publicationDate)[0],
+        'abstract' => $data->abstract,
+        'species' => $species,
+        'speciesNumber' => count($species),
+      ];
+      $cache->data[$key] = $info;
+    }
+    if (variable_get('tpps_page_1_ajax_debug')) {
+      $cache->data[$key]['data'] = $data;
+      $cache->data[$key]['url'] = $url;
+    }
+    cache_set($cid, $cache->data, $cache_bin);
   }
-  else {
-    $result = db_select('tpps_submission', 'ts')
-      ->addTag('debug')
-      ->fields('ts', ['submission_state'])
-      ->condition('submission_state', '%' . $needle . '%', 'LIKE')
-      ->execute();
-  }
-  $submission = $result->fetchField();
-
-  dpm(print_r($submission, 1));
-  return;
-
-  //if (!empty($submission)) {
-  //  $submission = unserialize($submission);
-  //  if (strtolower($doi) == ddstrtolower($submission_state['saved_values']['1']['doi'])) {
-  //    $accession = $submission->accession;
-  //    break;
-  //  }
-  //}
-
-  // Old:
-  // 10.1111/dryad.111
-  // Total execution time: 0.60140991210938 sec
-  // 10.25338/B8864J
-  // Total execution time: 0.36915397644043 sec
-  // $accession .= '<br/> Total execution time: ' . (microtime(1) - $time_start) . ' sec';
-
-  return ($accession ?? FALSE);
+  return $cache->data[$key] ?? [];
 }

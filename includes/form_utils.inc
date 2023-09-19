@@ -175,7 +175,9 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
     }
   }
   else {
-    array_unshift($value_parents, 'values');
+    // [VS] There was 'values' as a parent for $value_parents but it doesn't
+    // have recent changes from browser on AJAX-requests but 'input' has!
+    array_unshift($value_parents, 'input');
   }
   $val = drupal_array_get_nested_value($state, $value_parents);
   if (isset($val) and array_key_exists($button_name, $options)) {
@@ -204,6 +206,9 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
   }
 
   // Check saved values.
+  // [VS] 'saved_values' has only previous step changes and current
+  // step changes sent using AJAX are not present. Element 'input' is the only
+  // place with actual data for AJAX-requests.
   $saved_value_parents = $parents;
   array_unshift($saved_value_parents, 'saved_values', $page);
   $saved_val = drupal_array_get_nested_value($state, $saved_value_parents);
@@ -214,6 +219,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
   // Found nothing, return default.
   return $default;
 }
+
 
 /**
  * Retrieves the value of a field that may have been altered through ajax.
