@@ -132,7 +132,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ],
-    '#default_value' => $publication_status,
+    '#default_value' => 'Published' ?? $publication_status,
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.

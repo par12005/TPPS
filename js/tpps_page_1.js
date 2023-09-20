@@ -81,11 +81,30 @@
     }
   }
 
+  function tppsWasDoiChanged(doi) {
+    return (
+      typeof (Drupal.tpps.doiLastValue) != 'undefined'
+      && Drupal.tpps.doiLastValue != doi
+    );
+  }
+
+
   Drupal.behaviors.tpps_page_1 = {
     attach: function (context, settings) {
 
       // Attach event handlers only once.
-      $('form[id^=tppsc-main').once('tpps_page_1', function() {
+      $('form[id^=tppsc-main]').once('tpps_page_1', function() {
+        // Allows to click on DOI number to fill text field.
+        // Add 'tpps-suggestion' class to A tag.
+        // Example: <a href"#" class="tpps-suggestion">10.25338/B8864J</a>
+        $('.tpps-suggestion').on('click', function(e) {
+          e.preventDefault();
+          var selectedText= $(this).text();
+          $(this).parents('.form-item').find('input.form-text')
+            .val(selectedText).blur();
+          navigator.clipboard.writeText(selectedText);
+        });
+
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // 'Publication DOI' field change.
         if (typeof(settings.tpps.ajaxUrl) !== 'undefined') {
@@ -93,13 +112,24 @@
           var messageBox = '#doi-message';
 
           $(selector).blur(function(e) {
+            $(selector).prop('disabled', true);
+
             // @TODO Check if DOI value really was changed.
             var doi = $(this).val();
             e.preventDefault();
             // This is the same DOI value so nothing to do.
-            if (Drupal.tpps.doiLastValue != doi) {
+            if (
+              typeof (Drupal.tpps.doiLastValue) != 'undefined'
+              && Drupal.tpps.doiLastValue == doi
+            ) {
+              $(selector).prop('disabled', false);
               return;
             }
+            else {
+              // Store current DOI value to be able to compare with new one later.
+              Drupal.tpps.doiLastValue = doi;
+            }
+
             if (!validateStrings(doi)) {
               $(messageBox).empty();
               var data = {
@@ -110,8 +140,6 @@
               tppsShowMessages(messageBox, data);
               return;
             }
-            // Store current DOI value to be able to compare with new one later.
-            Drupal.tpps.doiLastValue = doi;
 
             // Check if we have cached result first.
             if (Drupal.settings.tpps.cache && typeof (Drupal.tpps.doi[doi]) != 'undefined') {
@@ -128,6 +156,8 @@
                 data: {'doi': doi},
                 url: url,
                 error: function (jqXHR, textStatus, errorThrown) {
+                  // User changed DOI during AJAX-request.
+                  if (tppsWasDoiChanged(doi)) { return; }
                   // Server/Network errors.
                   tppsShowMessages(messageBox, [{
                     "errors": [
@@ -137,13 +167,18 @@
                   var errorMessage = jqXHR.status + " " + jqXHR.statusText
                     + "\n\n" + jqXHR.responseText;
                   console.log(errorMessage);
+                  $(selector).prop('disabled', false);
                 },
                 success: function (data) {
+
                   // Store DOI check result to avoid multiple requests.
                   // @TODO Check if data not empty.
                   if (typeof (data) !== 'undefined') {
                     Drupal.tpps.doi[doi] = data;
+                    // User changed DOI during AJAX-request.
+                    if (tppsWasDoiChanged(doi)) { return; }
                     tppsShowMessages(messageBox, data);
+                    $(selector).prop('disabled', false);
                     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
                     // Store DOI check result to avoid multiple requests.
                     // @TODO Check if data not empty.
