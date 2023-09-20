@@ -87,6 +87,12 @@
       && Drupal.tpps.doiLastValue != doi
     );
   }
+  function tppsFieldEnable(selector) {
+    $(selector).prop('disabled', false);
+  }
+  function tppsFieldDisable(selector) {
+    $(selector).prop('disabled', true);
+  }
 
 
   Drupal.behaviors.tpps_page_1 = {
@@ -112,7 +118,7 @@
           var messageBox = '#doi-message';
 
           $(selector).blur(function(e) {
-            $(selector).prop('disabled', true);
+            tppsFieldDisable(selector);
 
             // @TODO Check if DOI value really was changed.
             var doi = $(this).val();
@@ -122,7 +128,8 @@
               typeof (Drupal.tpps.doiLastValue) != 'undefined'
               && Drupal.tpps.doiLastValue == doi
             ) {
-              $(selector).prop('disabled', false);
+              tppsFieldEnable(selector);
+              console.log('DOI value is the same');
               return;
             }
             else {
@@ -138,6 +145,7 @@
                 ]
               };
               tppsShowMessages(messageBox, data);
+              tppsFieldEnable(selector);
               return;
             }
 
@@ -146,6 +154,7 @@
               $(messageBox).empty();
               var data = Drupal.tpps.doi[doi];
               tppsShowMessages(messageBox, data);
+              tppsFieldEnable(selector);
             }
             else {
               var url = settings.basePath + settings.tpps.ajaxUrl + '/get_doi';
@@ -167,7 +176,7 @@
                   var errorMessage = jqXHR.status + " " + jqXHR.statusText
                     + "\n\n" + jqXHR.responseText;
                   console.log(errorMessage);
-                  $(selector).prop('disabled', false);
+                  tppsFieldEnable(selector);
                 },
                 success: function (data) {
 
@@ -178,7 +187,7 @@
                     // User changed DOI during AJAX-request.
                     if (tppsWasDoiChanged(doi)) { return; }
                     tppsShowMessages(messageBox, data);
-                    $(selector).prop('disabled', false);
+                    tppsFieldEnable(selector);
                     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::
                     // Store DOI check result to avoid multiple requests.
                     // @TODO Check if data not empty.

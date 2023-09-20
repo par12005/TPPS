@@ -101,7 +101,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     'data' => [
       'tpps' => [
         'ajaxUrl' => TPPS_AJAX_URL,
-        'cache' => variable_set('tpps_page_1_cache_ajax_responses', TRUE),
+        'cache' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
       ]
     ],
     'scope' => 'footer',
@@ -151,15 +151,30 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   // @TODO Minor. Rename field to 'publication_doi'.
   $parents = ['doi'];
+
+  $doi_suggestion_list = [
+    // Fake.
+    '10.1111/dryad.111',
+    // Real but used. No species.
+    '10.5061/dryad.91mk9',
+    // Not used, no species.
+    '10.21267/IN.2016.6.2294',
+    // Raal, not used, with species.
+    '10.5061/dryad.vk43j',
+  ];
+  foreach ($doi_suggestion_list as $doi_suggestion) {
+    // @todo Use l().
+    $list[] = '<a href"#" class="tpps-suggestion">'
+      . $doi_suggestion . '</a>';
+  }
+  $doi_description = 'Example: <br />' . implode(', ', $list);
+
   $form['publication']['doi_container']['doi'] = [
     '#type' => 'textfield',
     '#title' => t('Publication DOI: *'),
     '#parents' => $parents,
     '#default_value' => $doi,
-    '#description' => 'Example: '
-       // @TODO Use l().
-      . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
-      . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
+    '#description' => $doi_description,
     '#prefix' => '<div id="doi-message"></div>',
   ];
 
@@ -174,10 +189,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#title' => t('Dryad DOI:'),
     '#parents' => $parents,
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
-    '#description' => 'Examples: '
-      // @TODO Use l().
-      . '<a href"#" class="tpps-suggestion">10.1111/dryad.111</a>, '
-      . '<a href"#" class="tpps-suggestion">10.25338/B8864J</a>',
+    '#description' => $doi_description,
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
