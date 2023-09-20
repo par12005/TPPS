@@ -6,19 +6,19 @@
 (function($, Drupal) {
   var doiSelector = '#edit-doi';
   var doiMessageBox = '#doi-message';
+  // Create namespaces.
+  Drupal.tpps = Drupal.tpps || {};
+  Drupal.tpps.doi = Drupal.tpps.doi || {};
 
-  // Prepare place to temporary store request's data.
-  // Usage: console.log(Drupal.tpps.doi);
-  if (typeof Drupal.tpps == 'undefined') {
-    Drupal['tpps'] = {};
-  }
-  if (typeof Drupal.tpps.doi == 'undefined') {
-    Drupal['tpps']['doi'] = {};
-  }
-
-  // Waits for element on page.
-  // Source: https://stackoverflow.com/questions/5525071
-  function waitForElm(selector) {
+  /**
+   * Waits until element will appear at page.
+   *
+   * Source: https://stackoverflow.com/questions/5525071
+   *
+   * @param string selector
+   *   JQuery selector.
+   */
+  Drupal.waitForElm = function(selector) {
     return new Promise(resolve => {
       if (document.querySelector(selector)) {
         return resolve(document.querySelector(selector));
@@ -44,7 +44,7 @@
    * @return bool
    *   Returns TRUE if validation passed and FALSE otherwise.
    */
-  function tppsDoiValidate(string) {
+  Drupal.tpps.DoiValidate  = function (string) {
     // @TODO [VS] Minor. Get this validation regex from Drupal.settings.tpps.
     var pattern = /^10\.\d{4,9}[\-._;()\/:A-Za-z0-9]+$/;
     return $.trim(string).match(pattern) ? true : false;
@@ -67,7 +67,7 @@
    *   WARNING:
    *   Values are arrays (not strings).
    */
-  function tppsShowMessages(selector, data) {
+  Drupal.tpps.ShowMessages = function(selector, data) {
     var $doiMessageBox = $(selector);
     if (data.errors !== undefined) {
       $doiMessageBox.append('<div class="error">'
@@ -83,28 +83,75 @@
     }
   }
 
-  function tppsWasDoiChanged(doi) {
+  /**
+   * Checks if value of DOI field changed.
+   *
+   * @param string doi
+   *   New DOI value.
+   *
+   * @return bool
+   *   Returns TRUE if new and stored values are different and FALSE otherwise.
+   */
+  Drupal.tpps.wasDoiChanged = function(doi) {
     return (
       typeof (Drupal.tpps.doiLastValue) != 'undefined'
       && Drupal.tpps.doiLastValue != doi
     );
   }
-  function tppsFieldEnable(selector) {
+
+  /**
+   * Enable HTML field.
+   *
+   * @param string $selector
+   *   JQuery selector for input element.
+   */
+  Drupal.tpps.fieldEnable = function(selector) {
     $(selector).prop('disabled', false);
-  }
-  function tppsFieldDisable(selector) {
-    $(selector).prop('disabled', true);
   }
 
   /**
-   * tppsDoiFill
+   * Disable HTML field.
    *
-   * @param data $data
-   * @access public
-   * @return void
+   * @param string $selector
+   *   JQuery selector for input element.
    */
-  function tppsDoiFill(data) {
+  Drupal.tpps.fieldDisable = function(selector) {
+    $(selector).prop('disabled', true);
+  }
+
+
+  Drupal.tpps.resetForm = function() {
+    $('#edit-publication-primaryauthor').val('');
+    $('#edit-publication-abstract').val('');
+    // Default value for year is '0' ('- Select -').
+    $('#edit-publication-year').val(0);
+    $('#edit-publication-title').val('');
+    $('#edit-publication-journal').val('');
+    // Secondary Authors.
+    if ($('input[name="publication[secondaryAuthors][number]"]').val() != 0) {
+      $('input[name="publication[secondaryAuthors][number]"]').val(0);
+      $('input[id^="edit-publication-secondaryauthors-remove"]').mousedown();
+    }
+    // Organism.
+    $('input[name="organism[1][name]"]').val('');
+    if ($('input[name="organism[number]"]').val() != 1) {
+      $('input[name="organism[number]"]').val(1);
+      $('input[id^="edit-organism-remove"]').mousedown();
+    }
+  }
+
+  /**
+   * Fills form using DOI information.
+   *
+   * @param object $data
+   *   Data received from remote DOI database.
+   */
+  Drupal.tpps.doiFill = function(data) {
     if (typeof (data) != 'undefined') {
+      if (!data.success) {
+        Drupal.tpps.resetForm();
+        return;
+      }
       // Fill text fields.
       $('#edit-publication-primaryauthor').val(data.doi_info.primary ?? '');
       $('#edit-publication-abstract').val(data.doi_info.abstract ?? '');
@@ -113,16 +160,6 @@
       $('#edit-publication-title').val(data.doi_info.title ?? '');
       // @TODO Get Journal field value.
       // $('#edit-publication-journal').val(data.doi_info.journal);
-
-      if (!data.success) {
-        // Clear all fields.
-        $('input[name="publication[secondaryAuthors][number]"]').val(0);
-        $('input[id^="edit-publication-secondaryauthors-remove"]').mousedown();
-        $('input[name="organism[1][name]"]').val('');
-        $('input[name="organism[number]"]').val(1);
-        $('input[id^="edit-organism-remove"]').mousedown();
-        return;
-      }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Secondary Authors.
       if (data.doi_info.secondaryNumber > 0) {
@@ -134,7 +171,7 @@
         );
         $('input[id^="edit-publication-secondaryauthors-add"]').mousedown();
         $.each(data.doi_info.secondary, function( key, value ) {
-          waitForElm('input[name="publication[secondaryAuthors]['
+          Drupal.waitForElm('input[name="publication[secondaryAuthors]['
             + ( key + 1 ) + ']"]')
             .then((elm) => { $(elm).val(value); }
           );
@@ -160,7 +197,7 @@
         $('input[id^="edit-organism-add"]').mousedown();
         // Populate new fields.
         $.each(data.doi_info.species, function( key, value ) {
-          waitForElm('input[name="organism[' + ( key + 1 ) + '][name]"]')
+          Drupal.waitForElm('input[name="organism[' + ( key + 1 ) + '][name]"]')
             .then((elm) => { $(elm).val(value); }
           );
         });
@@ -184,12 +221,18 @@
           navigator.clipboard.writeText(selectedText);
         });
 
+        // Reset form if status != 'Published'.
+        $('#edit-publication-status').on('change', function(e) {
+          if ($(this).val() != 'Published') {
+            Drupal.tpps.resetForm();
+          }
+        });
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // 'Publication DOI' field change.
         if (typeof(settings.tpps.ajaxUrl) !== 'undefined') {
 
           $(doiSelector).blur(function(e) {
-            tppsFieldDisable(doiSelector);
+            Drupal.tpps.fieldDisable(doiSelector);
 
             // @TODO Check if DOI value really was changed.
             var doi = $(this).val();
@@ -199,7 +242,7 @@
               typeof (Drupal.tpps.doiLastValue) != 'undefined'
               && Drupal.tpps.doiLastValue == doi
             ) {
-              tppsFieldEnable(doiSelector);
+              Drupal.tpps.fieldEnable(doiSelector);
               return;
             }
             else {
@@ -207,15 +250,15 @@
               Drupal.tpps.doiLastValue = doi;
             }
 
-            if (!tppsDoiValidate(doi)) {
+            if (!Drupal.tpps.DoiValidate(doi)) {
               $(doiMessageBox).empty();
               var data = {
                 "errors": [
                   Drupal.t('Invalid DOI format. Example DOI: 10.1111/dryad.111')
                 ]
               };
-              tppsShowMessages(doiMessageBox, data);
-              tppsFieldEnable(doiSelector);
+              Drupal.tpps.ShowMessages(doiMessageBox, data);
+              Drupal.tpps.fieldEnable(doiSelector);
               return;
             }
 
@@ -223,9 +266,9 @@
             if (Drupal.settings.tpps.cache && typeof (Drupal.tpps.doi[doi]) != 'undefined') {
               $(doiMessageBox).empty();
               var data = Drupal.tpps.doi[doi];
-              tppsShowMessages(doiMessageBox, data);
-              tppsFieldEnable(doiSelector);
-              tppsDoiFill(data);
+              Drupal.tpps.ShowMessages(doiMessageBox, data);
+              Drupal.tpps.fieldEnable(doiSelector);
+              Drupal.tpps.doiFill(data);
             }
             else {
               var url = settings.basePath + settings.tpps.ajaxUrl + '/get_doi';
@@ -237,9 +280,9 @@
                 url: url,
                 error: function (jqXHR, textStatus, errorThrown) {
                   // User changed DOI during AJAX-request.
-                  if (tppsWasDoiChanged(doi)) { return; }
+                  if (Drupal.tpps.wasDoiChanged(doi)) { return; }
                   // Server/Network errors.
-                  tppsShowMessages(doiMessageBox, [{
+                  Drupal.tpps.ShowMessages(doiMessageBox, [{
                     "errors": [
                       Drupal.t("DOI value wasn't completed")
                     ]
@@ -247,21 +290,21 @@
                   var errorMessage = jqXHR.status + " " + jqXHR.statusText
                     + "\n\n" + jqXHR.responseText;
                   console.log(errorMessage);
-                  tppsFieldEnable(doiSelector);
+                  Drupal.tpps.fieldEnable(doiSelector);
                 },
                 success: function(data) {
                   // Store DOI check result to avoid multiple requests.
                   Drupal.tpps.doi[doi] = data;
                   // User changed DOI during AJAX-request.
-                  if (tppsWasDoiChanged(doi)) { return; }
+                  if (Drupal.tpps.wasDoiChanged(doi)) { return; }
                   if (typeof (data) == 'undefined') {
                     var data = [{
                       "errors": [Drupal.t('Received empty response.')]
                     }];
                   }
-                  tppsShowMessages(doiMessageBox, data);
-                  tppsFieldEnable(doiSelector);
-                  tppsDoiFill(data);
+                  Drupal.tpps.ShowMessages(doiMessageBox, data);
+                  Drupal.tpps.fieldEnable(doiSelector);
+                  Drupal.tpps.doiFill(data);
                 }
               });
             }
