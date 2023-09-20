@@ -188,4 +188,14 @@ form[id^="tppsc-main"] fieldset legend span a {
   color: red;
   text-align: right;
 }
+
+select, input {
+  border-radius: 5px;
+  padding: 5px;
+}
+
+select.error,
+input.error {
+  border: 2px solid red;
+}
 /* [/VS] */
