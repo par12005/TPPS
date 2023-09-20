@@ -220,18 +220,13 @@
                         $('input[name="publication[secondaryAuthors][check]"]')
                           .val(data.doi_info.secondaryCheck)
                         // @TODO Reuse empty fields.
-                        var secondaryStart = parseInt(
-                          $('input[name="publication[secondaryAuthors][number]"]').val()
-                        );
                         $('input[name="publication[secondaryAuthors][number]"]').val(
-                          // We are adding an extra fields (not update existing)
-                          // to leave user's input.
-                          secondaryStart + parseInt(data.doi_info.secondaryNumber) - 1
+                          parseInt(data.doi_info.secondaryNumber) - 1
                         );
                         $('input[id^="edit-publication-secondaryauthors-add"]').mousedown();
                         $.each(data.doi_info.secondary, function( key, value ) {
                           waitForElm('input[name="publication[secondaryAuthors]['
-                            + ( secondaryStart + key + 1 ) + ']"]')
+                            + ( key + 1 ) + ']"]')
                             .then((elm) => { $(elm).val(value); }
                           );
                         });
