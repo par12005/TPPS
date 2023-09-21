@@ -1052,6 +1052,10 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   require_once 'forms/build/front.php';
   $form = $form ?? [];
   tpps_add_css_js($form);
+  // Add class to apply CSS rules differntly for TPPS and TPPSc Forms
+  // CSS form id is changing because of AJAX requests so we use form's class
+  // in CSS rules instead of form's id with regex.
+  $form['#attributes']['class'][] = 'tpps-form';
 
   if (!isset($form_state['stage'])) {
     if (!isset($accession)) {
@@ -1156,21 +1160,6 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       drupal_set_message(t('Invalid form stage.'), 'error');
       break;
   }
-
-  $suffix = '
-    <script>
-    jQuery(document).ready(function(){
-      jQuery(\'[data-toggle="tooltip"]\').tooltip();
-    });
-    </script>';
-
-  if (isset($form['#suffix'])) {
-    $form['#suffix'] .= $suffix;
-  }
-  else {
-    $form['#suffix'] = $suffix;
-  }
-
   return $form;
 }
 

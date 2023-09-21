@@ -1,4 +1,6 @@
 jQuery(document).ready(function ($) {
+  // Bootstrap tooltip functionality.
+  jQuery('[data-toggle="tooltip"]').tooltip();
 
   function Supplemental_Files(){
     var files_add = jQuery('#edit-files-add');
