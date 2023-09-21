@@ -6,10 +6,63 @@
  */
 
 /**
+ * Adds the Status Bar to the top of the TPPSc form.
+ *
+ * The status bar allows users to see where they are in the TPPS Submission form
+ * steps.
+ * TPPSc Status Bar differs from status bar for TPPS:
+ *  - no icons
+ *  - active links
+ *  - itme's labels.
+ *
+ * @param array $form
+ *   The form being populated.
+ * @param array $form_state
+ *   The state of the form being populated.
+ *
+ * @global string $base_url
+ *   The base URL of the site.
+ */
+function tppsc_status_bar(array &$form, array $form_state) {
+
+  $current_page = $form_state['stage'] ?? 1;
+
+
+  // @TODO Each stage has '#cleared' option which indicates that form step
+  // passed validation when it's set and value is TRUE. Remove for TPPSc.
+
+  $form['#prefix'] = '<div class="tgdr_form_status">';
+  $page_list = [
+    '1' => t('Publication Information'),
+    '2' => t('Experimental Design'),
+    '3' => t('Data'),
+    '4' => t('Review and Submit'),
+  ];
+  foreach ($page_list as $number => $label) {
+    $options = [];
+    if ($current_page == $number) {
+      $options = ['attributes' => ['class' => ['current_page']]];
+    }
+    $form['#prefix'] .= '<div>'
+      . l(
+        $label,
+        'tpps/page-' . $number,
+        $options)
+    . '</div>';
+  }
+
+  $form['#prefix'] .= '</div>';
+}
+
+
+/**
  * Adds the TPPS Status Bar to the top of the form.
  *
  * The status bar allows users to see where they are in the TPPS Submission form
  * steps.
+ *
+ * WARNING:
+ * Only this function uses icons.
  *
  * @param array $form
  *   The form being populated.
@@ -23,34 +76,6 @@ function tpps_status_bar(array &$form, array $form_state) {
 
   global $base_url;
 
-  $form['#prefix'] = '<style>
-    .tgdr_form_status div {
-      display: inline-block;
-      padding: 3px;
-      margin-right: 10px;
-    }
-    .tgdr_form_status div img {
-      vertical-align: middle;
-      margin-bottom: 4px;
-      margin-right: 2px;
-    }
-
-    .tgdr_form_status {
-      padding: 5px;
-      background-color: #ffffff;
-      border: 1px solid #cccccc;
-      border-radius: 4px;
-      margin-bottom: 10px;
-    }
-
-    .btn-primary[name=op]{
-      margin: 10px 10px 10px 0px;
-    }
-
-    a.fieldset-title {
-      display: contents;
-    }
-  </style>';
   $form['#prefix'] .= '<div class="tgdr_form_status">';
 
   /**** Page 1 ****/
