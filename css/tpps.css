@@ -188,9 +188,6 @@ select.form-select {
   border-radius: 10px;
   border: 1px solid #bebebe;
 }
-.tppsc-form fieldset legend span a {
-  display: inline-block;
-}
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Fields */
@@ -217,23 +214,6 @@ select.form-select {
 form.tppsc-form .fieldset-wrapper>.form-item {
   border-bottom: none;
 }
-
-
-
-/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
-/* Fieldsets */
-.tppsc-form fieldset.form-wrapper {
-  /* Dark grey */
-  border-left: 3px solid #6b706b;
-  margin: 20px 0 0 20px;
-  padding: 20px;
-  padding
-}
-
-.tppsc-form fieldset.form-wrapper legend {
-  border: none !important;
-}
-
 /* Hide bar at the bottom of textarea */
 .tppsc-form .resizable-textarea div.grippie {
   display: none;
@@ -244,6 +224,22 @@ form.tppsc-form .fieldset-wrapper>.form-item {
   border: 2px solid red;
 }
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+/* Fieldsets */
+.tppsc-form fieldset.form-wrapper {
+  /* Dark grey */
+  border-left: 3px solid #6b706b;
+  margin: 20px 0 0 20px;
+  padding: 20px;
+  padding
+}
+.tppsc-form fieldset.form-wrapper legend {
+  border: none !important;
+}
+.tppsc-form fieldset.form-wrapper legend span {
+  padding-left: 20px;
+}
+
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Navigation buttons */
 
 /* Fieldset with top bottons */
@@ -253,10 +249,6 @@ form.tppsc-form .fieldset-wrapper>.form-item {
   margin: 0;
   padding: 20px;
 }
-
-/*.tppsc-form div.input-description {*/
-/*  margin-left: 25px;*/
-/*}*/
 .tppsc-form input.btn.form-submit {
   height: 60px;
   background: #5a7736;
@@ -326,7 +318,4 @@ a.fieldset-title {
 }
 /* End of TPPS Status Bar */
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
-
-
-
 /* [/VS] */

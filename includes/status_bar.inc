@@ -22,6 +22,9 @@
  *
  * @global string $base_url
  *   The base URL of the site.
+ *
+ * @TODO [VS] Minor. Rename to 'navigation bar' because it doesn't show
+ * status now but allows to open form steps.
  */
 function tppsc_status_bar(array &$form, array $form_state) {
 
