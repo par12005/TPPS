@@ -178,51 +178,93 @@ select.form-select {
  * To have ability to see nested elements.
  * Note: form#tppsc-main--2 appears when validation failed.
  **/
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+/* Form */
 .tppsc-form {
-  padding-left: 10px;
-  font-size: 16px;
-}
-.tppsc-form fieldset legend {
-  margin-left: -5px;
+  padding: 20px;
+  /*font-size: 16px;*/
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
+  border: 1px solid #bebebe;
 }
 .tppsc-form fieldset legend span a {
   display: inline-block;
 }
+
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+/* Fields */
 .tppsc-form select {
   border-radius: 10px;
   padding: 12px 20px;
   border: 2px solid #bebebe;
   background: white;
+  max-width: 100%;
 }
 .tppsc-form input,
 .tppsc-form textarea {
   padding: 12px;
   border-radius: none;
+  /* Light grey */
   border: 2px solid #bebebe;
+  max-width: 100%;
 }
 .tppsc-form div.form-item {
-  margin: 30px 10px;
+  margin: 30px 0;
 }
-/* Hide bar at the bottom */
+
+/* @todo Remove when CSS Injector rule #18 will be removed. */
+form.tppsc-form .fieldset-wrapper>.form-item {
+  border-bottom: none;
+}
+
+
+
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+/* Fieldsets */
+.tppsc-form fieldset.form-wrapper {
+  /* Dark grey */
+  border-left: 3px solid #6b706b;
+  margin: 20px 0 0 20px;
+  padding: 20px;
+  padding
+}
+
+.tppsc-form fieldset.form-wrapper legend {
+  border: none !important;
+}
+
+/* Hide bar at the bottom of textarea */
 .tppsc-form .resizable-textarea div.grippie {
   display: none;
 }
-
 .tppsc-form textarea.error,
 .tppsc-form select.error,
 .tppsc-form input.error {
   border: 2px solid red;
 }
-
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Navigation buttons */
+
+/* Fieldset with top bottons */
+.tppsc-form fieldset#edit-header,
+.tppsc-form fieldset#edit-footer {
+  border: none;
+  margin: 0;
+  padding: 20px;
+}
+
+/*.tppsc-form div.input-description {*/
+/*  margin-left: 25px;*/
+/*}*/
 .tppsc-form input.btn.form-submit {
-  height: 73px;
+  height: 60px;
   background: #5a7736;
   color: white;
-  min-width: 240px;
-  padding: 25px;
-  margin: 10px 20px 10px 20px;
-  font-size: 23px;
+  min-width: 210px;
+  padding: 18px;
+  margin: 10px 25px 10px 0;;
+  font-size: 20px;
   font-weight: bold;
   text-transform: uppercase;
   text-align: center;
@@ -242,14 +284,12 @@ select.form-select {
   text-transform: uppercase;
   text-align: center;
 }
-
 .tppsc-form input.btn.form-submit:hover,
 .tppsc-form input.btn.form-button:hover,
 .tppsc-form input.btn.form-submit:focus,
 .tppsc-form input.btn.form-button:focus {
   background-color: #3b413b;
 }
-
 .tppsc-form #doi-message div {
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
