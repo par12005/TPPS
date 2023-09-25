@@ -58,5 +58,16 @@ function tpps_page_1_settings_form(array $form, array &$form_state) {
       . 'When checked debug data will be added to AJAX response.'
     ),
   ];
+  // @TODO Build list of themes dynamically.
+  // @TODO Move to TPPS main form.
+  $form['tppsc_theme'] = [
+    '#type' => 'select',
+    '#title' => t('TPPSc Theme'),
+    '#default_value' => variable_get('tppsc_theme', 'default'),
+    '#options' => [
+      'default' => t('Default'),
+      'rachel' => t('Rachel Theme'),
+    ],
+  ];
   return system_settings_form($form);
 }

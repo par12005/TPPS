@@ -1646,10 +1646,13 @@ function tpps_flush_caches() {
  *   used to improve code readablility.
  */
 function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
+  // CSS Theme.
+  $theme_path = TPPS_MODULE_PATH . '/css/theme/'
+    . variable_get('tppsc_theme', 'default') . '.css';
   if ($form === NULL) {
-    dpm('null');
     drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
     drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
+    drupal_add_css($theme_path);
   }
   else {
     if ($page_id && is_numeric($page_id) && $page_id > 0) {
@@ -1672,6 +1675,7 @@ function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
         'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
       ];
       $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
+      $form['#attached']['css'][] = $theme_path;
     }
   }
 }
