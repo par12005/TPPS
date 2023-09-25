@@ -186,7 +186,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $parents = ['dataset_doi'];
   $form['publication']['doi_container']['dataset_doi'] = [
     '#type' => 'textfield',
-    '#title' => t('Dryad DOI:'),
+    '#title' => t('Dataset DOI:'),
     '#parents' => $parents,
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#description' => $doi_description,
