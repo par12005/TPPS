@@ -39,7 +39,7 @@ function tppsc_status_bar(array &$form, array $form_state) {
     '4' => t('Review and Submit'),
   ];
   foreach ($page_list as $number => $label) {
-    $options['attributes']['query'] = ['page' => $number];
+    $options['query'] = ['page' => $number];
     if ($current_page == $number) {
       $options['attributes']['class'] = ['current_page'];
     }

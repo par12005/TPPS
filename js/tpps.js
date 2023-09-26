@@ -635,6 +635,11 @@ jQuery.fn.updateMap = function(locations, fid = "") {
       $('form[id^=tppsc-main]').once('tpps_page', function() {
         // Add code here.
       });
+
+      // Temporary block status bar links.
+      $('.tgdr_form_status a').on('click', function(e) {
+        e.preventDefault();
+      });
     }
   };
 })(jQuery);

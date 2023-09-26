@@ -65,7 +65,7 @@ function tpps_page_1_settings_form(array $form, array &$form_state) {
     '#title' => t('TPPSc Theme'),
     '#default_value' => variable_get('tppsc_theme', 'default'),
     '#options' => [
-      'default' => t('Default'),
+      'default' => t('Default Theme'),
       'rachel' => t('Rachel Theme'),
     ],
   ];
