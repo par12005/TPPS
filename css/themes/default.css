@@ -3,3 +3,30 @@
  *
  * Default Theme for TPPS Form.
  */
+
+/* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
+/* Start of TPPS Status Bar */
+.tgdr_form_status div {
+  display: inline-block;
+  padding: 3px;
+  margin-right: 10px;
+}
+.tgdr_form_status div img {
+  vertical-align: middle;
+  margin-bottom: 4px;
+  margin-right: 2px;
+}
+.tgdr_form_status {
+  padding: 5px;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.btn-primary[name=op]{
+  margin: 10px 10px 10px 0px;
+}
+a.fieldset-title {
+  display: contents;
+}
+/* End of TPPS Status Bar */

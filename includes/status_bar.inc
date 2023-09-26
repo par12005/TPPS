@@ -39,12 +39,11 @@ function tppsc_status_bar(array &$form, array $form_state) {
     '4' => t('Review and Submit'),
   ];
   foreach ($page_list as $number => $label) {
-    $options = [];
+    $options['attributes']['query'] = ['page' => $number];
     if ($current_page == $number) {
-      $options = ['attributes' => ['class' => ['current_page']]];
+      $options['attributes']['class'] = ['current_page'];
     }
-    $form['#prefix'] .=
-      '<div>' . l($label, 'tppsc#page-' . $number, $options) . '</div>';
+    $form['#prefix'] .= '<div>' . l($label, 'tppsc', $options) . '</div>';
   }
   $form['#prefix'] .= '</div>';
 }
@@ -70,7 +69,7 @@ function tpps_status_bar(array &$form, array $form_state) {
 
   global $base_url;
 
-  $form['#prefix'] .= '<div class="tgdr_form_status">';
+  $form['#prefix'] = '<div class="tgdr_form_status">';
 
   /**** Page 1 ****/
   if (isset($form_state['saved_values'][TPPS_PAGE_1]) and $form_state['stage'] != TPPS_PAGE_1) {

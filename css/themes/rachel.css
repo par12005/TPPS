@@ -129,6 +129,7 @@ form.tppsc-form .fieldset-wrapper>.form-item {
 
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
 /* Start of TPPS Status Bar */
+/* @TODO This styles from old version of status bar */
 .tgdr_form_status div {
   display: inline-block;
   padding: 3px;

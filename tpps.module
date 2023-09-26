@@ -1647,7 +1647,7 @@ function tpps_flush_caches() {
  */
 function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
   // CSS Theme.
-  $theme_path = TPPS_MODULE_PATH . '/css/theme/'
+  $theme_path = TPPS_MODULE_PATH . '/css/themes/'
     . variable_get('tppsc_theme', 'default') . '.css';
   if ($form === NULL) {
     drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
@@ -1657,7 +1657,6 @@ function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
   else {
     if ($page_id && is_numeric($page_id) && $page_id > 0) {
       // Add page specific files.
-      // @TODO [VS] Check if file exists.
       $form['#attached']['js'][] = [
         'type' => 'file',
         'scope' => 'footer',
