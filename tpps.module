@@ -1109,8 +1109,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   if (
     !isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])
     && (
-      !isset($form_state['tpps_type'])
-      or $form_state['tpps_type'] != 'tppsc'
+      ($form_state['tpps_type'] ?? NULL) != 'tppsc'
     )
   ) {
     $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));

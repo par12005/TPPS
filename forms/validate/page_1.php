@@ -36,6 +36,9 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       $organism_number = $form_values['organism']['number'] ?? NULL;
       // Publication.
       tpps_is_required_field_empty($form_state, ['publication', 'status']);
+      // Note:
+      // $form_state['saved_values][PAGE_1]['primaryAuthor']
+      // but $form['publication']['primaryAuthor'];
       tpps_is_required_field_empty($form_state, ['publication', 'primaryAuthor']);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       module_load_include('inc', 'tpps', 'includes/manage_doi');
