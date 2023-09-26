@@ -60,10 +60,10 @@ function tpps_page_1_settings_form(array $form, array &$form_state) {
   ];
   // @TODO Build list of themes dynamically.
   // @TODO Move to TPPS main form.
-  $form['tppsc_theme'] = [
+  $form['tpps_theme'] = [
     '#type' => 'select',
-    '#title' => t('TPPSc Theme'),
-    '#default_value' => variable_get('tppsc_theme', 'default'),
+    '#title' => t('TPPS Theme'),
+    '#default_value' => variable_get('tpps_theme', 'default'),
     '#options' => [
       'default' => t('Default Theme'),
       'rachel' => t('Rachel Theme'),
@@ -78,8 +78,8 @@ function tpps_page_1_settings_form(array $form, array &$form_state) {
  */
 function tpps_page_1_settings_form_submit(array $form, array &$form_state) {
   // Clear cache if theme was changed.
-  $prev = variable_get('tppsc_theme', 'default');
-  $new = $form_state['values']['tppsc_theme'] ?? NULL;
+  $prev = variable_get('tpps_theme', 'default');
+  $new = $form_state['values']['tpps_theme'] ?? NULL;
   if ($new != $prev) {
     cache_clear_all();
   }

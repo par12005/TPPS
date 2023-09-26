@@ -31,7 +31,7 @@ function tpps_install() {
   variable_set('tpps_page_1_cache_ajax_responses', TRUE);
   variable_set('tpps_page_1_dryad_api_url', 'http://datadryad.org/api/v2/datasets/');
   variable_set('tpps_page_1_ajax_debug', FALSE);
-  variable_set('tppsc_theme', 'default');
+  variable_set('tpps_theme', 'default');
   // [/VS]
   tpps_alter_tpps_submissions();
   tpps_alter_tpps_submission_dbxref();
@@ -314,7 +314,7 @@ function tpps_uninstall() {
   variable_del('tpps_page_1_cache_ajax_responses');
   variable_del('tpps_page_1_dryad_api_url');
   variable_del('tpps_page_1_ajax_debug');
-  variable_del('tppsc_theme');
+  variable_del('tpps_theme');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.
@@ -2078,7 +2078,7 @@ function tpps_update_7121() {
   variable_set('tpps_page_1_cache_ajax_responses', TRUE);
   variable_set('tpps_page_1_dryad_api_url', 'http://datadryad.org/api/v2/datasets/');
   variable_set('tpps_page_1_ajax_debug', FALSE);
-  variable_set('tppsc_theme', 'default');
+  variable_set('tpps_theme', 'default');
   // Added new items to 'TPPS' menu.
   menu_rebuild();
 }

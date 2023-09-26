@@ -1647,7 +1647,7 @@ function tpps_flush_caches() {
 function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
   // CSS Theme.
   $theme_path = TPPS_MODULE_PATH . '/css/themes/'
-    . variable_get('tppsc_theme', 'default') . '.css';
+    . variable_get('tpps_theme', 'default') . '.css';
   if ($form === NULL) {
     drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
     drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
