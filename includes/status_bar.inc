@@ -27,13 +27,10 @@
  * status now but allows to open form steps.
  */
 function tppsc_status_bar(array &$form, array $form_state) {
-
   $current_page = $form_state['stage'] ?? 1;
-
 
   // @TODO Each stage has '#cleared' option which indicates that form step
   // passed validation when it's set and value is TRUE. Remove for TPPSc.
-
   $form['#prefix'] = '<div class="tgdr_form_status">';
   $page_list = [
     '1' => t('Publication Information'),
@@ -46,17 +43,11 @@ function tppsc_status_bar(array &$form, array $form_state) {
     if ($current_page == $number) {
       $options = ['attributes' => ['class' => ['current_page']]];
     }
-    $form['#prefix'] .= '<div>'
-      . l(
-        $label,
-        'tpps/page-' . $number,
-        $options)
-    . '</div>';
+    $form['#prefix'] .=
+      '<div>' . l($label, 'tppsc#page-' . $number, $options) . '</div>';
   }
-
   $form['#prefix'] .= '</div>';
 }
-
 
 /**
  * Adds the TPPS Status Bar to the top of the form.

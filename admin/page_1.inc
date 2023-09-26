@@ -69,5 +69,18 @@ function tpps_page_1_settings_form(array $form, array &$form_state) {
       'rachel' => t('Rachel Theme'),
     ],
   ];
+  $form['#submit'][] = 'tpps_page_1_settings_form_submit';
   return system_settings_form($form);
+}
+
+/**
+ * Custom form submitter for 'tpps_page_1_settings_form' form.
+ */
+function tpps_page_1_settings_form_submit(array $form, array &$form_state) {
+  // Clear cache if theme was changed.
+  $prev = variable_get('tppsc_theme', 'default');
+  $new = $form_state['values']['tppsc_theme'] ?? NULL;
+  if ($new != $prev) {
+    cache_clear_all();
+  }
 }
