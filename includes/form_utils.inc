@@ -959,7 +959,7 @@ function tpps_add_buttons(array &$form, $page, $meta = []) {
         $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
         $form[$scope]['submit'] = [
           '#type' => 'submit',
-          '#value' => t('Review Information and Submit'),
+          '#value' => t('Review and Submit'),
         ];
 
         // Pre-validate VCF.
