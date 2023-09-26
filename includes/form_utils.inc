@@ -1003,10 +1003,15 @@ function tpps_add_buttons(array &$form, $page, $meta = []) {
  */
 function tpps_is_required_field_empty(array $form_state, array $parents) {
   $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
-  $parents = ($field['#parents'] ?? $parents);
+  if ($field['#tree'] ?? TRUE) {
+    $new_parents = $field['#parents'] ?? $parents;
+  }
+  else {
+    $new_parents = $parents;
+  }
   $value = drupal_array_get_nested_value($form_state['values'], $parents);
   if (empty($value)) {
-    tpps_form_error_required($form_state, $parents);
+    tpps_form_error_required($form_state, $new_parents);
     return TRUE;
   }
   return FALSE;
@@ -1053,6 +1058,7 @@ function tpps_form_error(array $form_state, array $parents, $message) {
     );
   }
   else {
+    //dpm('empty title');
     watchdog('tpps', "Field didn't pass validation but it's missing at form."
       . '@parents', ['@parents' => implode(' > ', $parents)], WATCHDOG_ERROR
     );

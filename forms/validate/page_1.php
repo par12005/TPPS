@@ -61,6 +61,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
         // Required Publication Extra Fields.
         foreach (['year', 'title', 'abstract', 'journal'] as $name) {
           tpps_is_required_field_empty($form_state, ['publication', 'extra', $name]);
+          tpps_is_required_field_empty($form_state, ['publication', $name]);
         }
       }
       else {

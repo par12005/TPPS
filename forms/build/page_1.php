@@ -132,7 +132,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ],
-    '#default_value' => 'Published' ?? $publication_status,
+    '#default_value' => $publication_status,
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.
@@ -178,11 +178,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#prefix' => '<div id="doi-message"></div>',
   ];
 
-  if (!empty($doi)) {
-    $form['publication']['status']['#disabled'] = TRUE;
-    // For new form it works without 2nd line but for AJAX - need to test.
-    // $form['publication']['status']['#attributes']['disabled'] = 'disabled';
-  }
   $parents = ['dataset_doi'];
   $form['publication']['doi_container']['dataset_doi'] = [
     '#type' => 'textfield',
@@ -287,9 +282,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     // $values['old_tgdr'] = 10514311;
     // Refers to public.tpps_submission.dbxref_id;
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Publication status.
-    $form['publication']['status'] = 'Published';
-    $form['publication']['status']['#disabled'] = TRUE;
     // Note: Code which restores submission data from different db tables
     // and fills form fields was removed in branch VS/page1_improvements.
   }
