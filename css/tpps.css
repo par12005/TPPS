@@ -177,5 +177,8 @@ select.form-select {
   height: auto;
   min-height: 28px;
 }
+a.fieldset-title {
+  display: contents;
+}
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* [/VS] */
