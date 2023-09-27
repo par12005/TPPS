@@ -162,6 +162,10 @@ div.media-widget.form-media a.browse {
 .btn:focus:focus-visible {
   outline: black solid 2px;
 }
+/* Highlight disabled form fields */
+form input:disabled {
+  background: #a9a9a9;
+}
 /**
  * Make visible all options of dropdown when multiple options enabled.
  * @TODO This must be done for all site pages.

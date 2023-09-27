@@ -140,8 +140,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
   // Accession will be stored in 'old_tgdr' field.
 
-  // @TODO Minor. Rename field to 'publication_doi'.
-  $parents = ['doi'];
 
   $doi_suggestion_list = [
     // Fake.
@@ -160,9 +158,12 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   }
   $doi_description = 'Example: <br />' . implode(', ', $list);
 
+  // @TODO Minor. Rename field to 'publication_doi'.
+  $parents = ['doi'];
   $form['publication']['doi'] = [
     '#type' => 'textfield',
     '#title' => t('Publication DOI: *'),
+    '#tree' => FALSE,
     '#parents' => $parents,
     '#default_value' => $doi,
     '#description' => $doi_description,
@@ -179,6 +180,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#type' => 'textfield',
     '#title' => t('Dataset DOI:'),
     '#parents' => $parents,
+    '#tree' => FALSE,
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#description' => $doi_description,
     '#states' => [

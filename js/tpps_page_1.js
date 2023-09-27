@@ -71,16 +71,27 @@
     var $doiMessageBox = $(selector);
     if (data.errors !== undefined) {
       $doiMessageBox.append('<div class="error">'
-        + data.errors.join('</div><div class="error">') + '</div>');
+        + data.errors.join('</div><div class="error">') + '</div>')
+        .fadeIn(500);
     }
     if (data.warnings !== undefined) {
       $doiMessageBox.append('<div class="warning">'
-        + data.warnings.join('</div><div class="warning">') + '</div>');
+        + data.warnings.join('</div><div class="warning">') + '</div>')
+        .fadeIn(500);
     }
     if (data.statuses !== undefined) {
       $doiMessageBox.append('<div class="status">'
-        + data.statuses.join('</div><div class="status">') + '</div>');
+        + data.statuses.join('</div><div class="status">') + '</div>')
+        .fadeIn(500);
     }
+  }
+
+  /**
+   * Clears given message box.
+   */
+  Drupal.tpps.ClearMessages = function(selector) {
+    var $doiMessageBox = $(selector);
+    $doiMessageBox.fadeOut(500).empty();
   }
 
   /**
@@ -121,7 +132,7 @@
 
 
   Drupal.tpps.resetForm = function() {
-    $('#edit-publication-primaryauthor').val('');
+    $('#edit-primaryauthor').val('');
     $('#edit-publication-abstract').val('');
     // Default value for year is '0' ('- Select -').
     $('#edit-publication-year').val(0);
@@ -153,11 +164,19 @@
         return;
       }
       // Fill text fields.
-      $('#edit-publication-primaryauthor').val(data.doi_info.primary ?? '');
-      $('#edit-publication-abstract').val(data.doi_info.abstract ?? '');
+      $('#edit-primaryauthor')
+        .val(data.doi_info.primary ?? '')
+        .removeClass('error');
+      $('#edit-publication-abstract')
+        .val(data.doi_info.abstract ?? '')
+        .removeClass('error');
       // Default value for year is '0' ('- Select -').
-      $('#edit-publication-year').val(data.doi_info.year ?? 0);
-      $('#edit-publication-title').val(data.doi_info.title ?? '');
+      $('#edit-publication-year')
+        .val(data.doi_info.year ?? 0)
+        .removeClass('error');
+      $('#edit-publication-title')
+        .val(data.doi_info.title ?? '')
+        .removeClass('error');
       // @TODO Get Journal field value.
       // $('#edit-publication-journal').val(data.doi_info.journal);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -166,6 +185,7 @@
         // @TODO Probably outdated. Check it.
         $('input[name="publication[secondaryAuthors][check]"]')
           .val(data.doi_info.secondaryCheck)
+          .removeClass('error');
         $('input[name="publication[secondaryAuthors][number]"]').val(
           parseInt(data.doi_info.secondaryNumber) - 1
         );
@@ -187,9 +207,9 @@
           $('input[name="organism[1][name]"]').val('');
         }
         else {
-          $('input[name="organism[1][name]"]').val(
-            data.doi_info.species[0]
-          );
+          $('input[name="organism[1][name]"]')
+            .val(data.doi_info.species[0])
+            .removeClass('error');
         }
         // Add necessary number of fields.
         $('input[name="organism[number]"]')
@@ -225,7 +245,9 @@
         $('#edit-publication-status').on('change', function(e) {
           if ($(this).val() != 'Published') {
             Drupal.tpps.resetForm();
+
           }
+          $(this).removeClass('error');
         });
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // 'Publication DOI' field change.
@@ -264,7 +286,7 @@
 
             // Check if we have cached result first.
             if (Drupal.settings.tpps.cache && typeof (Drupal.tpps.doi[doi]) != 'undefined') {
-              $(doiMessageBox).empty();
+              Drupal.tpps.ClearMessages(doiMessageBox);
               var data = Drupal.tpps.doi[doi];
               Drupal.tpps.ShowMessages(doiMessageBox, data);
               Drupal.tpps.fieldEnable(doiSelector);
@@ -273,7 +295,7 @@
             else {
               var url = settings.basePath + settings.tpps.ajaxUrl + '/get_doi';
               // Remove existing messages.
-              $(doiMessageBox).empty();
+              Drupal.tpps.ClearMessages(doiMessageBox);
               $.ajax({
                 method: 'post',
                 data: {'doi': doi},

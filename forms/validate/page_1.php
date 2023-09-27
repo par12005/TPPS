@@ -44,13 +44,12 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       module_load_include('inc', 'tpps', 'includes/manage_doi');
       if ($publication_status == 'Published') {
         // 'Publication DOI' field is required (even for existing studies).
-        if (
-          !tpps_is_required_field_empty($form_state, ['publication', 'doi'])
-          && !preg_match(tpps_doi_regex(), $doi)
-        ) {
-          form_set_error('doi', 'Publication DOI: invalid format. '
-            . 'Example DOI: "10.1111/dryad.111".'
-          );
+        if (!tpps_is_required_field_empty($form_state, ['publication', 'doi'])) {
+          if (!preg_match(tpps_doi_regex(), $doi)) {
+            form_set_error('doi', 'Publication DOI: invalid format. '
+              . 'Example DOI: "10.1111/dryad.111".'
+            );
+          }
         }
         // 'Dataset DOI' is optional.
         if ($dataset_doi && !preg_match(tpps_doi_regex(), $dataset_doi)) {
