@@ -71,7 +71,7 @@ function tpps_publication(array &$form, array $values, array $form_state) {
       'Published' => t('Published'),
     ),
     '#ajax' => array(
-      'callback' => 'tpps_ajax_publication_status_change',
+      'callback' => 'tpps_pub_status',
       'wrapper' => 'pubyear',
     ),
   );

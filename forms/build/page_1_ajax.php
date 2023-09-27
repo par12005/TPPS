@@ -19,9 +19,8 @@
  * @return array
  *   The element in the form to be updated.
  */
-function tpps_ajax_publication_status_change(array $form, array $form_state) {
-  // Show extra fields when 'Published' status was selected.
-  return $form['publication']['extra'];
+function tpps_pub_status(array $form, array $form_state) {
+-  return $form['publication']['year'];
 }
 
 /**
