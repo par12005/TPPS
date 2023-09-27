@@ -627,18 +627,22 @@ jQuery.fn.updateMap = function(locations, fid = "") {
   maps[fid].panTo(center);
 };
 
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* [VS] */
 (function ($, Drupal) {
+  // Create namespaces.
+  Drupal.tpps = Drupal.tpps || {};
+  Drupal.tpps.doi = Drupal.tpps.doi || {};
 
   /**
    * Strip HTML Tags from given string.
    *
    * See https://stackoverflow.com/a/822486/1041470
    */
-  function stripHtml(html) {
-     let tmp = document.createElement("DIV");
+  Drupal.tpps.stripHtml = function(html) {
+     let tmp = document.createElement('DIV');
      tmp.innerHTML = html;
-     return tmp.textContent || tmp.innerText || "";
+     return tmp.textContent || tmp.innerText || '';
   }
 
   Drupal.behaviors.tpps = {

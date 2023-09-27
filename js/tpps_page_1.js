@@ -236,8 +236,11 @@
         $('.tpps-suggestion').on('click', function(e) {
           e.preventDefault();
           var selectedText= $(this).text();
-          $(this).parents('.form-item').find('input.form-text')
-            .val(selectedText).blur();
+          $(this)
+            .parents('.form-item')
+            .find('input.form-text')
+            .val(selectedText)
+            .blur();
           navigator.clipboard.writeText(selectedText);
         });
 
@@ -249,17 +252,26 @@
           }
           $(this).removeClass('error');
         });
+
+        // @TODO Minor. Create more common solution to reuse this code
+        // for other fields.
+        // Strip HTML tags from 'Dataset DOI' field value.
+        $('#edit-dataset-doi').blur(function(e) {
+          $(this).val(Drupal.tpps.stripHtml($(this).val()));
+        });
+
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // 'Publication DOI' field change.
-        if (typeof(settings.tpps.ajaxUrl) !== 'undefined') {
+        $(doiSelector).blur(function(e) {
+          e.preventDefault();
+          Drupal.tpps.fieldDisable(doiSelector);
 
-          $(doiSelector).blur(function(e) {
-            Drupal.tpps.fieldDisable(doiSelector);
-
-            // @TODO Check if DOI value really was changed.
+          // Strip HTML tags.
+          $(this).val(Drupal.tpps.stripHtml($(this).val()));
+          if (typeof(settings.tpps.ajaxUrl) !== 'undefined') {
             var doi = $(this).val();
-            e.preventDefault();
-            // This is the same DOI value so nothing to do.
+
+            // Check if DOI value really was changed.
             if (
               typeof (Drupal.tpps.doiLastValue) != 'undefined'
               && Drupal.tpps.doiLastValue == doi
@@ -271,7 +283,15 @@
               // Store current DOI value to be able to compare with new one later.
               Drupal.tpps.doiLastValue = doi;
             }
-
+            // Check if DOI value is empty.
+            if (typeof (doi) == 'undefined' || doi == '') {
+              $(doiMessageBox).empty();
+              var data = {"errors": [Drupal.t('Empty DOI.')]};
+              Drupal.tpps.ShowMessages(doiMessageBox, data);
+              Drupal.tpps.fieldEnable(doiSelector);
+              return;
+            }
+            // Check DOI format.
             if (!Drupal.tpps.DoiValidate(doi)) {
               $(doiMessageBox).empty();
               var data = {
@@ -330,8 +350,8 @@
                 }
               });
             }
-          });
-        }
+          }
+        });
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       });
     }
