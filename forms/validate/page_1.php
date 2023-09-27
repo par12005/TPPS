@@ -45,10 +45,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       if ($publication_status == 'Published') {
         // 'Publication DOI' field is required (even for existing studies).
         if (
-          !tpps_is_required_field_empty(
-            $form_state,
-            ['publication', 'doi_container', 'doi']
-          )
+          !tpps_is_required_field_empty($form_state, ['publication', 'doi'])
           && !preg_match(tpps_doi_regex(), $doi)
         ) {
           form_set_error('doi', 'Publication DOI: invalid format. '
@@ -64,7 +61,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
         // Required Publication Extra Fields.
         foreach (['year', 'title', 'abstract', 'journal'] as $name) {
           tpps_is_required_field_empty($form_state,
-            ['publication', 'extra', $name]
+            ['publication', $name]
           );
         }
       }

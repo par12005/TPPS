@@ -90,7 +90,6 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
  *   The state of the form being created.
  *
  * @todo Test if existing study is shown correctly.
- * @todo Restore original parents for fields and avoid 'extra' container if possible.
  */
 function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
@@ -140,14 +139,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Note:
   // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
   // Accession will be stored in 'old_tgdr' field.
-  $form['publication']['doi_container'] = [
-    '#type' => 'container',
-    '#states' => [
-      'visible' => [
-        ':input[name="publication[status]"]' => ['value' => 'Published'],
-      ],
-    ],
-  ];
 
   // @TODO Minor. Rename field to 'publication_doi'.
   $parents = ['doi'];
@@ -169,22 +160,32 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   }
   $doi_description = 'Example: <br />' . implode(', ', $list);
 
-  $form['publication']['doi_container']['doi'] = [
+  $form['publication']['doi'] = [
     '#type' => 'textfield',
     '#title' => t('Publication DOI: *'),
     '#parents' => $parents,
     '#default_value' => $doi,
     '#description' => $doi_description,
     '#prefix' => '<div id="doi-message"></div>',
+    '#states' => [
+      'visible' => [
+        ':input[name="publication[status]"]' => ['value' => 'Published'],
+      ],
+    ],
   ];
 
   $parents = ['dataset_doi'];
-  $form['publication']['doi_container']['dataset_doi'] = [
+  $form['publication']['dataset_doi'] = [
     '#type' => 'textfield',
     '#title' => t('Dataset DOI:'),
     '#parents' => $parents,
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#description' => $doi_description,
+    '#states' => [
+      'visible' => [
+        ':input[name="publication[status]"]' => ['value' => 'Published'],
+      ],
+    ],
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -208,10 +209,18 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Update field's value.
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Show extra fields.
-  // @TODO Remove container and use '#states'.
-  $form['publication']['extra'] = [
-    '#type' => 'container',
+  // Show publication extra fields.
+  // Publication Year.
+  $year_options = range(1900, date('Y'), 1);
+  $year_options = [0 => '- Select -']
+    + array_combine($year_options, $year_options);
+  $form['publication']['year'] = [
+    '#type' => 'select',
+    '#title' => t('Year of Publication: *'),
+    '#options' => $year_options,
+    '#description' => t('If your publication has not been published yet, '
+      . 'please choose the expected year of publication.'),
+    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#states' => [
       'visible' => [
         ':input[name="publication[status]"]' => ['value' => 'Published'],
@@ -219,49 +228,38 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     ],
   ];
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Publication Year.
-  $year_options = range(1900, date('Y'), 1);
-  $year_options = [0 => '- Select -']
-    + array_combine($year_options, $year_options);
-  $parents = ['publication', 'year'];
-  $form['publication']['extra']['year'] = [
-    '#type' => 'select',
-    '#title' => t('Year of Publication: *'),
-    '#options' => $year_options,
-    '#description' => t('If your publication has not been published yet, '
-      . 'please choose the expected year of publication.'),
-    // Exclude 'extra' just to have clear data structure.
-    '#parents' => $parents,
-    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
-  ];
-
-  $parents = ['publication', 'title'];
-  $form['publication']['extra']['title'] = [
+  $form['publication']['title'] = [
     '#type' => 'textfield',
     '#title' => t('Title of Publication/Study: *'),
-    // Exclude 'extra' just to have clear data structure.
-    '#parents' => $parents,
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
+    '#states' => [
+      'visible' => [
+        ':input[name="publication[status]"]' => ['value' => 'Published'],
+      ],
+    ],
   ];
 
-  $parents = ['publication', 'abstract'];
-  $form['publication']['extra']['abstract'] = [
+  $form['publication']['abstract'] = [
     '#type' => 'textarea',
     '#title' => t('Abstract/Description: *'),
-    // Exclude 'extra' just to have clear data structure.
-    '#parents' => $parents,
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
+    '#states' => [
+      'visible' => [
+        ':input[name="publication[status]"]' => ['value' => 'Published'],
+      ],
+    ],
   ];
 
-  $parents = ['publication', 'journal'];
-  $form['publication']['extra']['journal'] = [
+  $form['publication']['journal'] = [
     '#type' => 'textfield',
     '#title' => t('Journal: *'),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
-    // Exclude 'extra' just to have clear data structure.
-    '#parents' => $parents,
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
+    '#states' => [
+      'visible' => [
+        ':input[name="publication[status]"]' => ['value' => 'Published'],
+      ],
+    ],
   ];
 
   // @TODO Check. Mockup has no fieldset - just buttons.
