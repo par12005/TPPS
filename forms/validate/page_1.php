@@ -85,7 +85,10 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       for ($i = 1; $i <= $organism_number; $i++) {
         $name = $organism[$i]['name'];
         if ($name == '') {
-          form_set_error("organism[$i][name", "Plant Species $i: field is required.");
+          // @TODO Check why 'Name' field not highlighted when validation failed.
+          // form_set_error("organism[$i][name", "Plant Species $i: field is required.");
+          // This is workaround. Just highlight all fields in 'Organism' fieldset.
+          form_set_error("organism", "Plant Species $i: field is required.");
         }
         else {
           $name = explode(" ", $name);
