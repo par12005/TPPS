@@ -901,6 +901,8 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   }
 }
 
+// [VS].
+
 /**
  * Gets domain name.
  *
@@ -921,12 +923,15 @@ function tpps_get_hostname() {
  *   Drupal Form API array.
  * @param string $page
  *   Page number with 'page_' prefix to improve readability.
- * @param array
+ * @param array $meta
  *   Submission metadata.
  *   'organism_number' - int Organism Number;
- *   'data_type' - Contains 'G' for genotype, 'P' for phenotype, 'E' for environment;
+ *   'data_type' - Contains:
+ *      'G' for genotype,
+ *      'P' for phenotype,
+ *      'E' for environment.
  */
-function tpps_add_buttons(array &$form, $page, $meta = []) {
+function tpps_add_buttons(array &$form, $page, array $meta = []) {
   $scope_list = [
     'header' => -100,
     'footer' => 100,
@@ -994,24 +999,21 @@ function tpps_add_buttons(array &$form, $page, $meta = []) {
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
- * @param array $parents
- *   Path to field. For example:
+ * @param array $path
+ *   Path to field form $form_state['complete form'] or $form.
+ *   For example:
  *   ['organism-1', 'genotype', 'files', 'marker-type'].
  *
  * @return bool
  *   Returns TRUE if required field is empty and FALSE otherwise.
  */
-function tpps_is_required_field_empty(array $form_state, array $parents) {
-  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
-  if ($field['#tree'] ?? TRUE) {
-    $new_parents = $field['#parents'] ?? $parents;
-  }
-  else {
-    $new_parents = $parents;
-  }
-  $value = drupal_array_get_nested_value($form_state['values'], $parents);
+function tpps_is_required_field_empty(array $form_state, array $path) {
+  $field = drupal_array_get_nested_value($form_state['complete form'], $path);
+  $value = drupal_array_get_nested_value(
+    $form_state['values'], tpps_get_field_path($field)
+  );
   if (empty($value)) {
-    tpps_form_error_required($form_state, $new_parents);
+    tpps_form_error_required($form_state, $path);
     return TRUE;
   }
   return FALSE;
@@ -1034,33 +1036,60 @@ function tpps_form_error_required(array $form_state, array $parents) {
 }
 
 /**
- * Shows form validation error message.
+ * Shows validation error message for given form element.
  *
+ * Field's value will not be checked. Use:
+ *   tpps_is_required_field_empty() to check value.
  * Field title will be detected automatically.
- * If field uses '#parents' then full path (not '#parents' must be specified).
  *
  * @param array $form_state
  *   Drupal Form API array with submitted values.
- * @param array $parents
- *   Path to field. For example:
- *   ['organism-1', 'genotype', 'files', 'file-type'].
+ * @param array $path
+ *   Path to field from $form_state['complete form'].
+ *   (The same will be from $form). Using fields configuration data we could
+ *   get all necessary data.
+ *   WARNING: Not path from $form_state['values'] or $form_state['input']
+ *   which could be different because of using '#parents' and '#tree' options.
+ *   For example:
+ *   - ['organism-1', 'genotype', 'files', 'file-type'];
+ *   - ['publication', 'doi_container', 'doi'];
+ *   See https://www.drupal.org/docs/7/api/form-api/tree-and-parents
  * @param string $message
  *   Error message text.
  */
-function tpps_form_error(array $form_state, array $parents, $message) {
-  $field = drupal_array_get_nested_value($form_state['complete form'], $parents);
-  if (!empty($field['#title'])) {
-    $title = strtok($field['#title'], ':');
-    form_set_error(
-      implode('][', ((!empty($field['#parents'])) ? $field['#parents'] : $parents)),
-      // @todo Should field name and message be separated?
-      t('@title: @message', ['@title' => $title, '@message' => $message])
+function tpps_form_error(array $form_state, array $path, $message) {
+  $field = drupal_array_get_nested_value($form_state['complete form'], $path);
+  if (empty($field['#title'])) {
+    $message = t("Field didn't found at form. Path: @path",
+      ['@path' => implode(' / ', $path)]
     );
+    watchdog('tpps', $message, NULL, WATCHDOG_ERROR);
+    drupal_set_message($message, 'error');
+    return;
   }
-  else {
-    //dpm('empty title');
-    watchdog('tpps', "Field didn't pass validation but it's missing at form."
-      . '@parents', ['@parents' => implode(' > ', $parents)], WATCHDOG_ERROR
-    );
-  }
+  // Remove colon ':' and required field label.
+  $title = strtok($field['#title'], ':');
+  $form_path = implode('][', tpps_get_field_path($field));
+  form_set_error($form_path,
+    t('@title: @message', ['@title' => $title, '@message' => $message])
+  );
 }
+
+/**
+ * Gets field's path from $form.
+ *
+ * This path could be used to highlight form element when validation failed,
+ * to get submitted value ($form_state['values'] or $form_state['input'])
+ * but can't be used to get field's configuration from $form['completed form']
+ * which has unmodified by '#tree' or '#parents' path.
+ *
+ * @param array $field
+ *   Drupal Form API Field's data.
+ *
+ * @return array
+ *   Returns array with path to field.
+ */
+function tpps_get_field_path(array $field) {
+  return $field['#parents'] ?? ($field['#tree'] ? $path : $field['#name']) ?? [];
+}
+// [/VS]
