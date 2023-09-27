@@ -20,7 +20,7 @@
  *   The element in the form to be updated.
  */
 function tpps_pub_status(array $form, array $form_state) {
--  return $form['publication']['year'];
+  return $form['publication']['year'];
 }
 
 /**
