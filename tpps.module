@@ -1586,18 +1586,24 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/config.php',
   ];
-  $items['admin/config/tpps/form-main'] = [
-    'title' => 'Form Main',
-    'description' => 'Form Main Settings',
+  $items['admin/config/tpps/form'] = [
+    'title' => 'Form',
+    'description' => 'Form Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_form_main_settings_form'],
     'access arguments' => ['administer tpps module'],
+    'file' => 'admin/form_main.inc',
+    'weight' => 10,
+  ];
+  $items['admin/config/tpps/form/main'] = [
+    'title' => 'Main',
+    'description' => 'Form Main Settings',
     'weight' => 10,
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/form_main.inc',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
   ];
-  $items['admin/config/tpps/form-page-1'] = [
-    'title' => 'Form Page 1',
+  $items['admin/config/tpps/form/page-1'] = [
+    'title' => 'Page 1',
     'description' => 'Form Page 1 Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_form_page_1_settings_form'],
@@ -1605,16 +1611,35 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/form_page_1.inc',
     'weight' => 20,
+    'type' => MENU_LOCAL_TASK,
   ];
-  $items['admin/config/tpps/add-synonym'] = [
-    'title' => 'Add Synonym',
-    'description' => 'Create new Phenotype Synonym',
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Synonym.
+  $items['admin/config/tpps/synonym'] = [
+    'title' => 'Synonym',
+    'description' => 'Synonym/Unit Settings',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_add_synonym_form'],
+    'page arguments' => ['tpps_synonym_add_form'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/add_synonym.inc',
+    'file' => 'admin/synonym.inc',
     'weight' => 100,
+  ];
+  $items['admin/config/tpps/synonym/add'] = [
+    'title' => 'Add Synonym',
+    'description' => 'Create new Phenotype Synonym',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  ];
+  $items['admin/config/tpps/synonym/rebuild'] = [
+    'title' => 'Rebuild',
+    'description' => 'Reset cached Synonym and Unit lists',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_synonym_list_rebuild_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/synonym.inc',
+    'type' => MENU_LOCAL_TASK,
   ];
 }
 

@@ -35,6 +35,8 @@ function tpps_form_page_1_settings_form(array $form, array &$form_state) {
       'Default is checked.<br />'
       . "When checked request's data and related response will be cached using "
       . " custom 'TPPS' cache bin which could be cleared separately."
+      . '<br />NOTE: Cached AJAX requests/respondes will be removed '
+      . 'each time this setting become checked.'
     ),
   ];
   $form['tpps_page_1_dryad_api_url'] = [
@@ -58,5 +60,16 @@ function tpps_form_page_1_settings_form(array $form, array &$form_state) {
       . 'When checked debug data will be added to AJAX response.'
     ),
   ];
+  $form['#submit'][] = 'tpps_form_page_1_settings_form_submit';
   return system_settings_form($form);
+}
+
+/**
+ * Form submitter for 'tpps_form_page_1_settings_form' form.
+ */
+function tpps_form_page_1_settings_form_submit(array $form, array &$form_state) {
+  if (!empty($form_state['values']['tpps_page_1_cache_ajax_responses'])) {
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    cache_clear_all('*', $cache_bin, TRUE);
+  }
 }

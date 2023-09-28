@@ -3,8 +3,6 @@
 /**
  * @file
  * Add new Phenotype Synonym form.
- *
- * @TODO Add clearing 'tpps' cache bin on new synonym insert.
  */
 
 /**
@@ -12,7 +10,7 @@
  *
  * @todo Minor. Add autocomplete for form fields.
  */
-function tpps_add_synonym_form(array $form, array &$form_state) {
+function tpps_synonym_add_form(array $form, array &$form_state) {
   $values = $form_state['values']['synonym'] ?? [];
   $form['synonym'] = [
     '#type' => 'container',
@@ -70,23 +68,32 @@ function tpps_add_synonym_form(array $form, array &$form_state) {
     '#default_value' => $values['unit_group'] ?? '',
     '#required' => TRUE,
   ];
+
+  $form['synonym']['measurement_type'] = [
+    '#type' => 'select',
+    '#options' => [
+      'environment' => t('Environment'),
+      'phenotype' => t('Phenotype'),
+      'Genotype' => t('Genotype'),
+    ],
+    '#title' => 'Measurement Type',
+    '#default_value' => $values['measurement_type'] ?? '',
+    '#required' => TRUE,
+  ];
+
   // Actions.
-  $form['actions']['add_synonym'] = [
+  $form['actions']['add'] = [
     '#type' => 'submit',
     '#value' => t('Add Synonym'),
   ];
-  $form['actions']['rebuld_lists'] = [
-    '#type' => 'submit',
-    '#value' => t('Rebuld Synonym/Unit lists'),
-  ];
+  $form['#submit'][] = 'tpps_synonym_add_form_submit';
   return $form;
 }
 
 /**
  * Implements hook_form_submit().
  */
-function tpps_add_synonym_form_submit($form, &$form_state) {
-  $button = $form_state['triggering_element']['#value'];
+function tpps_synonym_add_form_submit($form, &$form_state) {
   // Convert strings to integers.
   foreach ($form_state['complete form']['synonym'] as $name => $item) {
     $condition = (
@@ -99,18 +106,38 @@ function tpps_add_synonym_form_submit($form, &$form_state) {
         ? ((int) $form_state['values']['synonym'][$name]) : NULL;
     }
   }
-  switch ($button) {
-    case t('Add'):
-      $id = tpps_synonym_add($form_state['values']['synonym']);
-      $message = t('New synonym was created. Id: @id.', ['@id' => $id]);
-      drupal_set_message($message);
-      watchdog('tpps', $message);
-      break;
+  $id = tpps_synonym_add($form_state['values']['synonym']);
+  $message = t('New synonym was created. Id: @id.Data: <pre>@data</pre>',
+    [
+      '@id' => $id,
+      '@data' => print_r($form_state['values']['synonym'], 1),
+    ]
+  );
+  drupal_set_message($message);
+  watchdog('tpps', $message);
+  cache_clear_all('*', TPPS_CACHE_BIN ?? 'cache', TRUE);
+}
 
-    case t('Rebuld Synonym/Unit lists'):
-      tpps_unit_get_list('all', [], TRUE);
-      $message = t('Synonym/Unit lists was rebuilt.');
-      drupal_set_message($message);
-      break;
-  }
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+/**
+ * Creates form to rebuild synonym/unit lists.
+ */
+function tpps_synonym_list_rebuild_form(array $form, array &$form_state) {
+  // Actions.
+  $form['actions']['rebuld'] = [
+    '#type' => 'submit',
+    '#value' => t('Rebuld Synonym/Unit lists'),
+  ];
+  $form['#submit'][] = 'tpps_synonym_list_rebuild_form_submit';
+  return $form;
+}
+
+/**
+ * Implements hook_form_submit().
+ */
+function tpps_synonym_list_rebuild_form_submit($form, &$form_state) {
+  tpps_unit_get_list('all', [], TRUE);
+  $message = t('Synonym/Unit lists was rebuilt.');
+  drupal_set_message($message);
 }

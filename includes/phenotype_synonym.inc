@@ -195,7 +195,7 @@ function tpps_synonym_selector($id) {
  *   Returns Id of recently added Phenotype Synonym.
  */
 function tpps_synonym_add(array $data) {
-  $id = $query = db_insert('chado.phenotype_synonyms')->fields($data)->execute();
+  $id = db_insert('chado.phenotype_synonyms')->fields($data)->execute();
   // Update cached list of units.
   tpps_unit_get_list('all', [], TRUE);
   return $id;
