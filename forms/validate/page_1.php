@@ -177,14 +177,26 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
           form_set_error("organism[$i][name", "Plant Species $i: field is required.");
         }
         else {
-          $name = explode(" ", $name);
+          $name = explode(" ", trim($name));
           $genus = $name[0];
           $species = implode(" ", array_slice($name, 1));
           $name = implode(" ", $name);
           $empty_pattern = '/^ *$/';
           $correct_pattern = '/^[A-Z|a-z|.| ]+$/';
-          if (!isset($genus) or !isset($species) or preg_match($empty_pattern, $genus) or preg_match($empty_pattern, $species) or !preg_match($correct_pattern, $genus) or !preg_match($correct_pattern, $species)) {
-            form_set_error("organism[$i][name", check_plain("Plant Species $i: please provide both genus and species in the form \"<genus> <species>\"."));
+          if (
+            !isset($genus)
+            or !isset($species)
+            or preg_match($empty_pattern, $genus)
+            or preg_match($empty_pattern, $species)
+            or !preg_match($correct_pattern, $genus)
+            or !preg_match($correct_pattern, $species)
+          ) {
+            form_set_error("organism[$i][name",
+              t('Plant Species @number: please provide both genus and species '
+                . 'in the form "[genus] [species]" separated with space.',
+                ['@number' => $i]
+              )
+            );
           }
         }
       }

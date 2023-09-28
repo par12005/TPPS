@@ -929,6 +929,7 @@ function tpps_page_build(&$page) {
 function tpps_main(array $form, array &$form_state, $accession = NULL) {
   global $user;
   require_once 'forms/build/front.php';
+  module_load_include('inc', 'tpps', 'includes/form');
   $form = $form ?? [];
   tpps_add_css_js($form);
   // Add class to apply CSS rules differntly for TPPS and TPPSc Forms
