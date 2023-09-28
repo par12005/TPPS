@@ -13,7 +13,7 @@
  * @todo Minor. Add autocomplete for form fields.
  */
 function tpps_add_synonym_form(array $form, array &$form_state) {
-  $values = $form_state['values']['synonym'];
+  $values = $form_state['values']['synonym'] ?? [];
   $form['synonym'] = [
     '#type' => 'container',
     '#tree' => TRUE,
