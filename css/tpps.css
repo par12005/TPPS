@@ -154,10 +154,36 @@ div.media-widget.form-media a.browse {
     color: white;
     padding: 10px 15px;
 }
+/* [VS] */
 
+/* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
+/* Start of TPPS Status Bar */
+.tgdr_form_status div {
+  display: inline-block;
+  padding: 3px;
+  margin-right: 10px;
+}
+.tgdr_form_status div img {
+  vertical-align: middle;
+  margin-bottom: 4px;
+  margin-right: 2px;
+}
+.tgdr_form_status {
+  padding: 5px;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.btn-primary[name=op]{
+  margin: 10px 10px 10px 0px;
+}
+a.fieldset-title {
+  display: contents;
+}
+/* End of TPPS Status Bar */
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
-/* [VS] */
 /* Highlight active button when using TAB key to switch. */
 .btn:focus:focus-visible {
   outline: black solid 2px;
@@ -181,4 +207,19 @@ a.fieldset-title {
   display: contents;
 }
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+/* Navigation bar */
+.tppsc-form .navigation-bar {
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  min-height: 20px;
+  display: inline-block;
+  float: both;
+}
+.tppsc-form .navigation-bar a {
+  margin: 5px 25px;
+  white-space: nowrap;
+  float: left;
+  display: inline-block;
+}
 /* [/VS] */

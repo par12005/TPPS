@@ -128,50 +128,15 @@ form.tppsc-form .fieldset-wrapper>.form-item {
 }
 
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
-/* Start of TPPS Status Bar */
-/* @TODO This styles from old version of status bar */
-
-
-.tppsc-form .navigation-bar {
-  width: 100%; /* set the width of the container */
-  margin: 0 auto; /* set the left and right margin to auto */
-  text-align: center; /* center-align the contents of the container */
-  min-height: 20px;
-  display: inline-block;
-  float: both;
-}
-
+/* Start of TPPS Navigation Bar */
 .tppsc-form .navigation-bar a {
   /* Light Gray */
   color: #c9c9c9;
   font-size: 18px;
-  margin: 5px 25px;
-  white-space: nowrap;
-  float: left;
-  display: inline-block;
 }
 .tppsc-form .navigation-bar a:active {
   /* Dark Gray */
   color: #3b413b;
 }
-
-/*.tgdr_form_status div {*/
-/*  display: inline-block;*/
-/*  padding: 3px;*/
-/*  margin-right: 10px;*/
-/*}*/
-/*.tgdr_form_status {*/
-/*  padding: 5px;*/
-/*  background-color: #ffffff;*/
-/*  border: 1px solid #cccccc;*/
-/*  border-radius: 4px;*/
-/*  margin-bottom: 10px;*/
-/*}*/
-/*.btn-primary[name=op]{*/
-/*  margin: 10px 10px 10px 0px;*/
-/*}*/
-/*a.fieldset-title {*/
-/*  display: contents;*/
-/*}*/
 /* End of TPPS Status Bar */
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
