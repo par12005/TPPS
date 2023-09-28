@@ -31,7 +31,8 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
 
   $synonym_cid = 'tpps_synonym_list';
   $unit_cid = 'tpps_unit_list';
-  $cache = cache_get($unit_cid);
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($unit_cid, $cache_bin);
 
   if (empty($cache) || $reset) {
     $cache = [];
@@ -52,7 +53,7 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
     ksort($synonym_list);
     ksort($synonym_unit_group_list);
     // Update cached list of synonyms.
-    cache_set($synonym_cid, $synonym_list);
+    cache_set($synonym_cid, $synonym_list, $cache_bin);
 
     // Get list of all units.
     $unit_table = db_select('chado.phenotype_units', 'cpu')
@@ -73,7 +74,7 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
     foreach ($synonym_unit_group_list as $id => $unit_group) {
       $cache[$id] = ($groups[$unit_group] ?? NULL);
     }
-    cache_set($unit_cid, $cache);
+    cache_set($unit_cid, $cache, $cache_bin);
     $list = $cache[$synonym_id];
   }
   else {

@@ -136,6 +136,8 @@ function tpps_load_cv($info) {
   }
   $id = strtolower($id);
 
+  // @TODO Use custom cache bin 'tpps'.
+  // $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get('tpps_cv')->data ?? array();
   // print_r($cache);
 
