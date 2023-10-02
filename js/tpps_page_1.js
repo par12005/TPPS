@@ -230,6 +230,10 @@
 
       // Attach event handlers only once.
       $('form[id^=tppsc-main]').once('tpps_page_1', function() {
+        if ($('#edit-publication-status').val() == 'In Preparation or Submitted') {
+          var $label = $('input#edit-doi').parent().find('label');
+          $label.html($label.html().replace(' *', ''));
+        }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Allows to click on DOI number to fill text field.
         // Add 'tpps-suggestion' class to A tag.

@@ -140,7 +140,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
   // Accession will be stored in 'old_tgdr' field.
 
-
   $doi_suggestion_list = [
     // Fake.
     '10.1111/dryad.111',
@@ -162,7 +161,10 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $parents = ['doi'];
   $form['publication']['doi'] = [
     '#type' => 'textfield',
-    '#title' => t('Publication DOI: *'),
+    '#title' => (
+      ($publication_status == 'In Preparation or Submitted')
+      ? t('Publication DOI:') : t('Publication DOI: *')
+    ),
     '#tree' => FALSE,
     '#parents' => $parents,
     '#default_value' => $doi,

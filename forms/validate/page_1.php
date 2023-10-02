@@ -15,6 +15,7 @@
  */
 function tpps_page_1_validate_form(array &$form, array &$form_state) {
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
+  module_load_include('inc', 'tpps', 'includes/form');
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Curation form.
