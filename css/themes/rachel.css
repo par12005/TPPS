@@ -118,15 +118,15 @@ form.tppsc-form .fieldset-wrapper>.form-item {
 .tppsc-form input.btn.form-button:focus {
   background-color: #3b413b;
 }
-.tppsc-form #doi-message div {
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
-  border: 1px solid #bebebe;
-  margin: 2px 0;
-  padding: 2px 10px;
-}
 
+/*.tppsc-form #doi-message div {*/
+/*  -webkit-border-radius: 4px;*/
+/*  -moz-border-radius: 4px;*/
+/*  border-radius: 4px;*/
+/*  border: 1px solid #bebebe;*/
+/*  margin: 2px 0;*/
+/*  padding: 2px 10px;*/
+/*}*/
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
 /* Start of TPPS Navigation Bar */
 .tppsc-form .navigation-bar a {

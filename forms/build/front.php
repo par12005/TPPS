@@ -68,7 +68,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
         '#type' => 'select',
         '#title' => t('Existing TGDR number'),
         '#options' => tpps_submission_get_tgdr_number_list(TRUE),
-        '#description' => t('<div class="red">WARNING: Using this TGDR '
+        '#description' => t('<div class="error">WARNING: Using this TGDR '
           . 'number will clear all data associated with this study!</div>'),
         '#states' => [
           'visible' => [
