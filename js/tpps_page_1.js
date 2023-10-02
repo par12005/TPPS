@@ -291,6 +291,22 @@
 
 
           }
+          if ($(this).val() == 'Published') {
+            var $label = $('input#edit-doi').parent().find('label');
+            $label.html($label.html()  + ' *');
+
+            var $label = $('#edit-publication-year').parent().find('label');
+            $label.html($label.html()  + ' *');
+
+            var $label = $('#edit-publication-title').parent().find('label');
+            $label.html($label.html()  + ' *');
+
+            var $label = $('#edit-publication-abstract').parent().parent().find('label');
+            $label.html($label.html()  + ' *');
+
+            var $label = $('#edit-publication-journal').parent().find('label');
+            $label.html($label.html()  + ' *');
+          }
           $(this).removeClass('error');
         });
 
