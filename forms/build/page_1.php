@@ -170,7 +170,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#prefix' => '<div id="doi-message"></div>',
     '#states' => [
       'visible' => [
-        ':input[name="publication[status]"]' => ['value' => 'Published'],
+        [':input[name="publication[status]"]' => ['value' => 'Published']],
+        'or',
+        [':input[name="publication[status]"]' => ['value' => 'In Preparation or Submitted']],
       ],
     ],
   ];
@@ -185,7 +187,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#description' => $doi_description,
     '#states' => [
       'visible' => [
-        ':input[name="publication[status]"]' => ['value' => 'Published'],
+        [':input[name="publication[status]"]' => ['value' => 'Published']],
+        'or',
+        [':input[name="publication[status]"]' => ['value' => 'In Preparation or Submitted']],
       ],
     ],
   ];

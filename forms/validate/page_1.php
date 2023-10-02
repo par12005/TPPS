@@ -42,6 +42,7 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       tpps_is_required_field_empty($form_state, ['publication', 'primaryAuthor']);
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       module_load_include('inc', 'tpps', 'includes/manage_doi');
+
       if ($publication_status == 'Published') {
         // 'Publication DOI' field is required (even for existing studies).
         if (!tpps_is_required_field_empty($form_state, ['publication', 'doi'])) {
@@ -61,6 +62,19 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
         foreach (['year', 'title', 'abstract', 'journal'] as $name) {
           tpps_is_required_field_empty($form_state,
             ['publication', $name]
+          );
+        }
+      }
+      elseif ($publication_status == 'In Preparation or Submitted') {
+        // Both DOI fields are optional so we check only format.
+        if ($doi && !preg_match(tpps_doi_regex(), $doi)) {
+          form_set_error('doi', 'Publication DOI: invalid format. '
+            . 'Example DOI: "10.1111/dryad.111".'
+          );
+        }
+        if ($dataset_doi && !preg_match(tpps_doi_regex(), $dataset_doi)) {
+          form_set_error('dataset_doi', 'Dataset DOI: invalid format. '
+            . 'Example DOI: "10.1111/dryad.111".'
           );
         }
       }

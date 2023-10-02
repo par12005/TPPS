@@ -230,6 +230,7 @@
 
       // Attach event handlers only once.
       $('form[id^=tppsc-main]').once('tpps_page_1', function() {
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Allows to click on DOI number to fill text field.
         // Add 'tpps-suggestion' class to A tag.
         // Example: <a href"#" class="tpps-suggestion">10.25338/B8864J</a>
@@ -244,15 +245,25 @@
           navigator.clipboard.writeText(selectedText);
         });
 
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Reset form if status != 'Published'.
         $('#edit-publication-status').on('change', function(e) {
-          if ($(this).val() != 'Published') {
+          if (
+            $(this).val() != 'In Preparation or Submitted'
+            && $(this).val() != 'Published'
+          ) {
             Drupal.tpps.resetForm();
-
+          }
+          // Remove '*' from 'Publication DOI' field because it's optional
+          // in this case.
+          if ($(this).val() == 'In Preparation or Submitted') {
+            var $label = $('input#edit-doi').parent().find('label');
+            $label.html($label.html().replace(' *', ''));
           }
           $(this).removeClass('error');
         });
 
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // @TODO Minor. Create more common solution to reuse this code
         // for other fields.
         // Strip HTML tags from 'Dataset DOI' field value.
