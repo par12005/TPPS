@@ -231,7 +231,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#states' => [
       'visible' => [
-        ':input[name="publication[status]"]' => ['value' => 'Published'],
+        [':input[name="publication[status]"]' => ['value' => 'Published']],
+        'or',
+        [':input[name="publication[status]"]' => ['value' => 'In Preparation or Submitted']],
       ],
     ],
   ];
@@ -242,7 +244,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#states' => [
       'visible' => [
-        ':input[name="publication[status]"]' => ['value' => 'Published'],
+        [':input[name="publication[status]"]' => ['value' => 'Published']],
+        'or',
+        [':input[name="publication[status]"]' => ['value' => 'In Preparation or Submitted']],
       ],
     ],
   ];
@@ -253,7 +257,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#states' => [
       'visible' => [
-        ':input[name="publication[status]"]' => ['value' => 'Published'],
+        [':input[name="publication[status]"]' => ['value' => 'Published']],
+        'or',
+        [':input[name="publication[status]"]' => ['value' => 'In Preparation or Submitted']],
       ],
     ],
   ];
@@ -265,7 +271,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#states' => [
       'visible' => [
-        ':input[name="publication[status]"]' => ['value' => 'Published'],
+        [':input[name="publication[status]"]' => ['value' => 'Published']],
+        'or',
+        [':input[name="publication[status]"]' => ['value' => 'In Preparation or Submitted']],
       ],
     ],
   ];

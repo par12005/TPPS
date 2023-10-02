@@ -233,6 +233,18 @@
         if ($('#edit-publication-status').val() == 'In Preparation or Submitted') {
           var $label = $('input#edit-doi').parent().find('label');
           $label.html($label.html().replace(' *', ''));
+
+          var $label = $('#edit-publication-year').parent().find('label');
+          $label.html($label.html().replace(' *', ''));
+
+          var $label = $('#edit-publication-title').parent().find('label');
+          $label.html($label.html().replace(' *', ''));
+
+          var $label = $('#edit-publication-abstract').parent().parent().find('label');
+          $label.html($label.html().replace(' *', ''));
+
+          var $label = $('#edit-publication-journal').parent().find('label');
+          $label.html($label.html().replace(' *', ''));
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Allows to click on DOI number to fill text field.
@@ -261,8 +273,23 @@
           // Remove '*' from 'Publication DOI' field because it's optional
           // in this case.
           if ($(this).val() == 'In Preparation or Submitted') {
-            var $label = $('input#edit-doi').parent().find('label');
+            // @TODO Use loop.
+            var $label = $('#edit-doi').parent().find('label');
             $label.html($label.html().replace(' *', ''));
+
+            var $label = $('#edit-publication-year').parent().find('label');
+            $label.html($label.html().replace(' *', ''));
+
+            var $label = $('#edit-publication-title').parent().find('label');
+            $label.html($label.html().replace(' *', ''));
+
+            var $label = $('#edit-publication-abstract').parent().parent().find('label');
+            $label.html($label.html().replace(' *', ''));
+
+            var $label = $('#edit-publication-journal').parent().find('label');
+            $label.html($label.html().replace(' *', ''));
+
+
           }
           $(this).removeClass('error');
         });
