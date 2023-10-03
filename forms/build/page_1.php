@@ -209,7 +209,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     ],
     '#description' => t('Note: please format in ‘Last, First’ format.'),
     //'#parents' => $parents,
-    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
+    '#default_value' => tpps_get_ajax_value($form_state, ['primaryAuthor'], NULL),
   ];
   // Update field's value.
 
