@@ -239,8 +239,19 @@ form div.warning {
   -moz-border-radius: 4px;
   border-radius: 4px;
   border: 1px solid #bebebe;
+  padding: 4px;
+  background: white;
+}
+#autocomplete li {
+  -webkit-border-radius: 2px;
+  -moz-border-radius: 2px;
+  border-radius: 2px;
+  padding: 2px;
 }
 #autocomplete li:hover {
+  background: silver;
+}
+select option:selected {
   background: silver;
 }
 /* [/VS] */
