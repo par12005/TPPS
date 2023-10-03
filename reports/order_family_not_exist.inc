@@ -26,7 +26,7 @@ function tpps_admin_order_family_not_exist_report() {
     ->condition($table_alias . '.organism_id', $list, 'NOT IN');
 
   return '<h2>' . $page_title . '</h2>' . easy_report([
-    'css_path' => drupal_get_path('module', 'tpps') . TPPS_CSS_PATH,
+    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'page_title' => $page_title,
     'table_attributes' => ['class' => ['view' , 'tpps_table']],
     'header' => [

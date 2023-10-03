@@ -175,7 +175,9 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
     }
   }
   else {
-    array_unshift($value_parents, 'values');
+    // [VS] There was 'values' as a parent for $value_parents but it doesn't
+    // have recent changes from browser on AJAX-requests but 'input' has!
+    array_unshift($value_parents, 'input');
   }
   $val = drupal_array_get_nested_value($state, $value_parents);
   if (isset($val) and array_key_exists($button_name, $options)) {
@@ -204,6 +206,9 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
   }
 
   // Check saved values.
+  // [VS] 'saved_values' has only previous step changes and current
+  // step changes sent using AJAX are not present. Element 'input' is the only
+  // place with actual data for AJAX-requests.
   $saved_value_parents = $parents;
   array_unshift($saved_value_parents, 'saved_values', $page);
   $saved_val = drupal_array_get_nested_value($state, $saved_value_parents);
@@ -214,6 +219,7 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
   // Found nothing, return default.
   return $default;
 }
+
 
 /**
  * Retrieves the value of a field that may have been altered through ajax.
@@ -439,7 +445,7 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
   }
   // echo json_encode($results_accession_file_tree_ids);
   // echo json_encode($results_vcf_file_tree_ids);
-  
+
   $results_not_overlapping_in_vcf_file = array_diff($results_accession_file_tree_ids['values'], $results_vcf_file_tree_ids['values']);
   $results_not_overlapping_in_accession_file = array_diff($results_vcf_file_tree_ids['values'], $results_accession_file_tree_ids['values']);
   $overall_results = [
@@ -449,7 +455,7 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
     'tree_ids_not_in_accession_count' => count($results_not_overlapping_in_accession_file),
   ];
   echo json_encode($overall_results);
-  
+
 }
 
 /**
@@ -461,21 +467,21 @@ function tpps_accession_file_tree_ids($accession = NULL, $i = 1) {
   $form_state = tpps_load_submission($accession); // get the form state
   drupal_json_output(tpps_accession_get_accession_file_tree_ids($form_state, $i));
 
-  
+
 }
 
 /** This function will generate the tree_ids and place it in a standardized
- *  array format similar to other functions like vcf markers etc. The actually 
+ *  array format similar to other functions like vcf markers etc. The actually
  *  array design is a specific key format to make things easy to understand
  */
 function tpps_accession_get_accession_file_tree_ids($form_state, $i) {
   require_once(__DIR__ . '/../includes/file_utils.inc');
-  
+
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   // $location = tpps_accession_file_location($form_state, $i);
   $fid = $thirdpage['tree-accession']['species-' . $i]['file'];
   $options = [
-    'tree_id_column' => $thirdpage['tree-accession']['species-' . $i]['file-groups']['Tree Id'][1] 
+    'tree_id_column' => $thirdpage['tree-accession']['species-' . $i]['file-groups']['Tree Id'][1]
   ];
   $options['no_header'] = !empty($tree_accession['file-no-header']); // detect if there is a header or not
   tpps_file_iterator($fid, 'tpps_accession_file_tree_ids_iterate_line', $options);
@@ -502,7 +508,7 @@ function tpps_accession_file_tree_ids_iterate_line($row, &$options, $job = NULL)
     $options['count'] = 0;
   }
   $tree_id = $row[$tree_id_column];
-  
+
   $options['count'] = $options['count'] + 1; // increase count by 1
   if (isset($options['values'][$tree_id])) {
     $options['duplicate_values'][$tree_id] = 1; // set as duplicate_value
@@ -580,16 +586,16 @@ function tpps_assay_design_markers($accession = NULL, $i = 1) {
   $form_state = tpps_load_submission($accession); // get the form state
   drupal_json_output(tpps_get_assay_design_file_markers($form_state, $i));
 
-  
+
 }
 
 /** This function will generate the markers and place it in a standardized
- *  array format similar to other functions like vcf markers etc. The actually 
+ *  array format similar to other functions like vcf markers etc. The actually
  *  array design is a specific key format to make things easy to understand
  */
 function tpps_get_assay_design_file_markers($form_state, $i) {
   require_once(__DIR__ . '/../includes/file_utils.inc');
-  
+
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   $fid = $genotype['files']['assay-design'];
@@ -607,7 +613,7 @@ function tpps_get_assay_design_file_markers($form_state, $i) {
   // print_r($marker_name_column);
   // exit;
   $options = [
-    'marker_name_column' => $marker_name_column 
+    'marker_name_column' => $marker_name_column
   ];
   $options['no_header'] = FALSE; // detect if there is a header or not
   tpps_file_iterator($fid, 'tpps_get_assay_design_file_markers_iterate_line', $options);
@@ -634,7 +640,7 @@ function tpps_get_assay_design_file_markers_iterate_line($row, &$options, $job =
     $options['count'] = 0;
   }
   $marker_name = $row[$marker_name_column];
-  
+
   $options['count'] = $options['count'] + 1; // increase count by 1
   if (isset($options['values'][$marker_name])) {
     $options['duplicate_values'][$marker_name] = 1; // set as duplicate_value
@@ -682,8 +688,8 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
   ];
   if ($snps_assay_location['status'] == 'exists') {
     $results_snps_assay_markers = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
-  }  
-  
+  }
+
   $results_not_overlapping_in_vcf = array_diff($results_snps_assay_markers['values'], $results_vcf_markers['values']);
   $results_not_overlapping_in_snps_assay = array_diff($results_vcf_markers['values'], $results_snps_assay_markers['values']);
   $overall_results = [
@@ -694,9 +700,6 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
   ];
   return $overall_results;
 }
-
-
-
 
 /**
  * This code can be used to check missing tree ids in accession file
@@ -895,90 +898,5 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   else {
     $state['vcf_val_errors'] = $state_errors;
     tpps_update_submission($state);
-  }
-}
-
-/**
- * Gets domain name.
- *
- * @return string
- *   Returns domain name.
- */
-function tpps_get_hostname() {
-  global $base_url;
-  return explode('://', $base_url)[1];
-}
-
-/**
- * Adds buttons Back/Save/Next to the forms.
- *
- * The same buttons will be added above and below main form.
- *
- * @param array $form
- *   Drupal Form API array.
- * @param string $page
- *   Page number with 'page_' prefix to improve readability.
- * @param array
- *   Submission metadata.
- *   'organism_number' - int Organism Number;
- *   'data_type' - Contains 'G' for genotype, 'P' for phenotype, 'E' for environment;
- */
-function tpps_add_buttons(array &$form, $page, $meta = []) {
-  $scope_list = [
-    'header' => -100,
-    'footer' => 100,
-  ];
-
-  foreach ($scope_list as $scope => $weight) {
-    $form[$scope] = [
-      '#type' => 'fieldset',
-      '#tree' => FALSE,
-      '#weight' => $weight,
-    ];
-    // @todo [VS] Use Drupal Form API 'required' attribute.
-    $form[$scope]['input_description'] = [
-      '#markup' => '<div class="input-description">* : Required Field</div>',
-      '#weight' => -($weight),
-    ];
-    switch ($page) {
-      case 'page_2':
-      case 'page_3':
-        $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
-
-      default:
-      case 'page_1':
-        $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
-        $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Next')];
-        break;
-
-      case 'page_4':
-        $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
-        $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
-        $form[$scope]['submit'] = [
-          '#type' => 'submit',
-          '#value' => t('Review Information and Submit'),
-        ];
-
-        // Pre-validate VCF.
-        if (!empty($meta['data_type']) && preg_match('/G/', $meta['data_type'])) {
-          $pre_valid_states = array();
-          for ($i = 1; $i <= $meta['organism_number']; $i++) {
-            $pre_valid_states["input[name=\"organism-{$i}[genotype][files][file-type][VCF]\"]"]
-              = ['checked' => FALSE];
-          }
-          $form[$scope]['pre_validate'] = [
-            '#type' => 'button',
-            '#value' => t('Pre-validate my VCF files'),
-            '#states' => ['invisible' => $pre_valid_states],
-            '#suffix' => '<div>Sometimes large VCF files can cause problems '
-              . 'during the validation step. If your VCF file is very large, '
-              . 'you can click the "Pre-validate my VCF files" button to '
-              . 'validate your VCF file in the background, before clicking '
-              . '"Review Information and Submit".</div>',
-          ];
-          $form[$scope]['Back']['#prefix'] = "<div id=\"pre-validate-message\"></div>";
-        }
-        break;
-    }
   }
 }
