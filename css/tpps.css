@@ -233,4 +233,14 @@ form div.warning {
   margin: 2px 0;
   padding: 2px 10px;
 }
+/* Autocomplete dropdown list */
+#autocomplete {
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+  border: 1px solid #bebebe;
+}
+#autocomplete li:hover {
+  background: silver;
+}
 /* [/VS] */

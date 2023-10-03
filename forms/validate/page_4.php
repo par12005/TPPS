@@ -5,6 +5,8 @@
  * Defines the data integrity checks for the fourth page of the form.
  */
 
+module_load_include('inc', 'tpps', 'includes/form');
+
 /**
  * Defines the data integrity checks for the fourth page of the form.
  *
