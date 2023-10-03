@@ -1,4 +1,6 @@
 jQuery(document).ready(function ($) {
+  // Bootstrap tooltip functionality.
+  jQuery('[data-toggle="tooltip"]').tooltip();
 
   function Supplemental_Files(){
     var files_add = jQuery('#edit-files-add');
@@ -625,65 +627,36 @@ jQuery.fn.updateMap = function(locations, fid = "") {
   maps[fid].panTo(center);
 };
 
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* [VS] */
-(function ($) {
+(function ($, Drupal) {
+  // Create namespaces.
+  Drupal.tpps = Drupal.tpps || {};
+  Drupal.tpps.doi = Drupal.tpps.doi || {};
+
+  /**
+   * Strip HTML Tags from given string.
+   *
+   * See https://stackoverflow.com/a/822486/1041470
+   */
+  Drupal.tpps.stripHtml = function(html) {
+     let tmp = document.createElement('DIV');
+     tmp.innerHTML = html;
+     return tmp.textContent || tmp.innerText || '';
+  }
+
   Drupal.behaviors.tpps = {
     attach: function (context, settings) {
-      // Allows to click on DOI number to fill text field.
-      // Add 'tpps-suggestion' class to A tag.
-      // Example: <a href"#" class="tpps-suggestion">10.25338/B8864J</a>
-      $('.tpps-suggestion').on('click', function(e) {
-        e.preventDefault();
-        var selectedText= $(this).text();
-        $(this).parents('.form-item').find('input.form-text')
-          .val(selectedText).blur();
-        navigator.clipboard.writeText(selectedText);
+      // Attach event handlers only once.
+      $('form[id^=tppsc-main]').once('tpps_page', function() {
+        // Add code here.
       });
 
-      // When validation failed Form Id is changed. This shouldn't happen
-      // and must be fixed at PHP/Drupal side but here is a termporary
-      // workaround solution to have it working.
-      var $form = $('form[id^="tppsc-main"]', context);
-      if (
-        typeof(settings.tpps) != 'undefined'
-        && typeof(settings.tpps.organismNumber) != 'undefined'
-      ) {
-        // For page 4 only.
-        if (typeof($form) != 'undefined' && $form.length != 0) {
-        // We can't use Drupal States API because it doesn't work with multiple
-        // select form elements.
-          for (let i = 1; i <= settings.tpps.organismNumber; i++) {
-            var organism_name = '#edit-organism-' + i;
-            $(organism_name + '-genotype-snps-genotyping-design').parent().hide();
-            $(organism_name + '-genotype-ssrscpssrs').parent().hide();
-            $(organism_name + '-genotype-marker-type', context).bind('change', function() {
-              if ($.inArray('SNPs', $(this).val()) !== -1) {
-                $(organism_name + '-genotype-snps').show();
-                $(organism_name + '-genotype-snps-genotyping-design').parent().show();
-              }
-              else {
-                $(organism_name + '-genotype-snps').hide();
-              }
-
-              if ($.inArray('SSRs/cpSSRs', $(this).val()) !== -1) {
-                $(organism_name + '-genotype-ssrscpssrs').parent().show();
-              }
-              else {
-                $(organism_name + '-genotype-ssrscpssrs').parent().hide();
-              }
-              if ($.inArray('Other', $(this).val()) !== -1) {
-                $(organism_name + '-genotype-other-marker').parent().show();
-              }
-              else {
-                $(organism_name + '-genotype-other-marker').parent().hide();
-              }
-            });
-            // Hide all Genotype related fields by default.
-            $(organism_name + '-genotype-marker-type').trigger('change');
-          }
-        }
-      }
+      // Temporary block status bar links.
+      $('.tgdr_form_status a').on('click', function(e) {
+        e.preventDefault();
+      });
     }
   };
-})(jQuery);
+})(jQuery, Drupal);
 /* [/VS] */

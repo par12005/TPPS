@@ -26,7 +26,6 @@ function tpps_flatten(array $state) {
   unset($data['frontpage']);
   unset($data['form_build_id']);
 
-  $project_id = $state['ids']['project_id'];
   $page_1 = &$data[TPPS_PAGE_1];
   $pub = &$page_1['publication'];
   $org = &$page_1['organism'];
@@ -37,7 +36,7 @@ function tpps_flatten(array $state) {
   else {
     $data['#page_1_cleared'] = FALSE;
   }
-  $data['Project ID'] = $project_id ?? NULL;
+  $data['Project ID'] = $state['ids']['project_id'] ?? NULL;
   $data['#study_photo'] = $page_1['photo'] ?? NULL;
   // @todo [VS] Change machine names of DOI fields.
   $data['Publication DOI'] = $page_1['doi'] ?? NULL;
@@ -746,6 +745,7 @@ function tpps_completed_display($accession = NULL) {
   $old_form_state = tpps_load_submission($accession);
   $values = $old_form_state['saved_values'];
 
+  // @TODO Move CSS to /css/tpps.css. Check if scope must be 'header'.
   $css = "
   .tgdr_complete_submission {
     background: #ffffff;
@@ -762,11 +762,7 @@ function tpps_completed_display($accession = NULL) {
   }
 
   $display .= tpps_table_display($old_form_state);
-
-  $module_path = drupal_get_path('module', 'tpps');
-  drupal_add_js($module_path . TPPS_JS_PATH);
-  drupal_add_css($module_path . TPPS_CSS_PATH);
-
+  tpps_add_css_js();
   return render($display);
 }
 
@@ -910,7 +906,7 @@ function tpps_tab_create($uid) {
     $final .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/tpps>here.</a></p>";
   }
 
-  drupal_add_css(drupal_get_path('module', 'tpps') . TPPS_CSS_PATH);
+  tpps_add_css_js();
   return $final;
 }
 

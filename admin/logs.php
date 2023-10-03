@@ -26,9 +26,8 @@ function tpps_admin_panel_logs(array $form, array &$form_state, $job_log_file = 
   //     tpps_manage_submission_form($form, $form_state, $accession);
   //   }
 
-  $module_path = drupal_get_path('module', 'tpps');
-  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
-  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
+  $form = $form ?? [];
+  tpps_add_css_js($form);
 
   $job_log_file_parts = explode('_', $job_log_file);
   $accession = $job_log_file_parts[0];

@@ -34,12 +34,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   else {
     tpps_manage_submission_form($form, $form_state, $accession);
   }
-
-  // [VS].
-  $module_path = drupal_get_path('module', 'tpps');
-  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
-  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
-  // [/VS].
+  tpps_add_css_js($form);
   return $form;
 }
 
@@ -49,11 +44,8 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
 function tpps_manage_generate_all_materialized_views(array $form, array &$form_state, $option = NULL) {
   global $user;
 
-  // [VS].
-  $module_path = drupal_get_path('module', 'tpps');
-  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
-  $form['#attached']['css'][] = $module_path . TPPS_CSS_PATH;
-  // [/VS].
+  $form = $form ?? [];
+  tpps_add_css_js($form);
   module_load_include('php', 'tpps', 'forms/submit/submit_all');
 
   $includes = array();
@@ -202,7 +194,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $tags_markup = "<div style='margin-bottom: 10px; font-weight: bold; text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
   // Show current tags.
   $tags_markup .= "<label class=\"control-label\">Current Tags:</label><br>";
-  $image_path = drupal_get_path('module', 'tpps') . '/images/';
+  $image_path = TPPS_IMAGES_PATH;
   $query = db_select('tpps_tag', 't')
     ->fields('t')
     ->execute();

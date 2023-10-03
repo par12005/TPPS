@@ -37,7 +37,7 @@ function tpps_admin_unit_warning_report() {
     ]);
 
   return '<h2>' . $page_title . '</h2>' . easy_report([
-    'css_path' => drupal_get_path('module', 'tpps') . TPPS_CSS_PATH,
+    'css_path' => TPPS_MODULE_PATH . TPPS_CSS_PATH,
     'formatter' => 'tpps_admin_unit_warning_report_formatter',
     'page_title' => $page_title,
     'table_attributes' => ['class' => ['view' , 'tpps_table']],

@@ -6,10 +6,15 @@
  */
 
 /**
- * Adds the TPPS Status Bar to the top of the form.
+ * Adds the TPPS only Status Bar to the top of the form.
  *
  * The status bar allows users to see where they are in the TPPS Submission form
  * steps.
+ *
+ * WARNING:
+ * Only this function uses icons tpps_form_navigation_bar() doesn't have icons
+ * so if this function will be removed be sure to remove icon files.
+ *
  *
  * @param array $form
  *   The form being populated.
@@ -23,35 +28,7 @@ function tpps_status_bar(array &$form, array $form_state) {
 
   global $base_url;
 
-  $form['#prefix'] = '<style>
-    .tgdr_form_status div {
-      display: inline-block;
-      padding: 3px;
-      margin-right: 10px;
-    }
-    .tgdr_form_status div img {
-      vertical-align: middle;
-      margin-bottom: 4px;
-      margin-right: 2px;
-    }
-
-    .tgdr_form_status {
-      padding: 5px;
-      background-color: #ffffff;
-      border: 1px solid #cccccc;
-      border-radius: 4px;
-      margin-bottom: 10px;
-    }
-
-    .btn-primary[name=op]{
-      margin: 10px 10px 10px 0px;
-    }
-
-    a.fieldset-title {
-      display: contents;
-    }
-  </style>';
-  $form['#prefix'] .= '<div class="tgdr_form_status">';
+  $form['#prefix'] = '<div class="tgdr_form_status">';
 
   /**** Page 1 ****/
   if (isset($form_state['saved_values'][TPPS_PAGE_1]) and $form_state['stage'] != TPPS_PAGE_1) {

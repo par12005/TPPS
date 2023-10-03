@@ -72,9 +72,9 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
   if ($species_number > 1) {
     $file_description .= " If you are uploading a single file with multiple species, your file must also specify the genus and species of each plant.";
   }
-
-  $image_path = drupal_get_path('module', 'tpps') . '/images/';
-  $file_description .= "Please find an example of an accession file below.<figure><img src=\"/{$image_path}accession_example.png\"><figcaption>Example Accession File</figcaption></figure>";
+  $file_description .= 'Please find an example of an accession file below.'
+    . '<figure><img src="/' . TPPS_IMAGES_PATH . 'accession_example.png">'
+    . '<figcaption>Example Accession File</figcaption></figure>';
 
   $check = tpps_get_ajax_value($form_state, array('tree-accession', 'check'), NULL);
 

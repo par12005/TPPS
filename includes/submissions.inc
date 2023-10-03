@@ -3,6 +3,9 @@
 /**
  * @file
  * Defines functions for manipulation of TPPS Submissions.
+ *
+ * To use:
+ * module_load_include('inc', 'tpps', 'includes/submissions');
  */
 
 /**
@@ -362,11 +365,7 @@ function tpps_submission_tag_manage() {
   );
 
   $output = theme('table', $vars);
-
-  $module_path = drupal_get_path('module', 'tpps');
-  drupal_add_js($module_path . TPPS_JS_PATH);
-  drupal_add_css($module_path . TPPS_CSS_PATH);
-
+  tpps_add_css_js();
   return $output;
 }
 
@@ -384,8 +383,13 @@ function tpps_submission_tag_manage() {
 function tpps_submission_tag_create(array $form, array &$form_state) {
   // This will add the color picker to the TPPS submission tags edit-color
   // field id.
-  drupal_add_js('https://cdnjs.cloudflare.com/ajax/libs/tinyColorPicker/1.1.1/jqColorPicker.min.js', 'external');
-  drupal_add_js(drupal_get_path('module', 'tpps') . '/js/tag_colorpicker.js');
+  drupal_add_js(
+    'https://cdnjs.cloudflare.com/ajax/libs/tinyColorPicker/1.1.1/jqColorPicker.min.js',
+    'external'
+  );
+  // @TODO [VS] This file must be stored under /sites/all/libraries to allow
+  // other modules to reuse it and get updates independently from this module.
+  drupal_add_js(TPPS_MODULE_PATH. '/js/tag_colorpicker.js');
 
   $form['name'] = array(
     '#type' => 'textfield',
@@ -948,6 +952,9 @@ function tpps_submission_update_stats(array &$form_state) {
   switch ($form_state['stage']) {
     case TPPS_PAGE_1:
       $form_state['stats']['author_count'] = $form_state['values']['publication']['secondaryAuthors']['number'] + 1;
+      // @TODO [VS] Review this code it seems outdated.
+      // 'check' will be set to FALSE when publication data received from
+      // DOI server but 'file' seems not used in code.
       if (!empty($form_state['values']['publication']['secondaryAuthors']['check'])) {
         $form_state['stats']['author_count'] = tpps_file_len($form_state['values']['publication']['secondaryAuthors']['file']);
       }
@@ -1126,4 +1133,95 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
     $state['job_id'] = $jid;
     tpps_update_submission($state);
   }
+}
+
+/**
+ * Builds a list of accessions for form.
+ *
+ * @param array $conditions
+ *   List of condtions for Drupal DB API contions.
+ *   For example: ['uid', $user->uid, '=']
+ *   Possible fields: 'uid', 'accession', 'status' and etc. See table's schema.
+ * @param bool $allow_remove
+ *   Flag which defines if orphan studies must be removed or not.
+ *   Default is TRUE (remove orphan studies which has empty publication title).
+ * @param bool $reset
+ *   Flag which defined if cached data must be updated or not.
+ *   Default is FALSE (do not update cached data).
+ *   Total execution time (95 items):
+ *   Previous:  703.94587516785 msec
+ *   No caching 412.0819568634 msec
+ *   Caching:     1.80983543396 msec
+ *   Note: previous version loaded each study twice.
+ *
+ * @return array
+ *   Returns list of accession to be used in form.
+ *   Key is an accession and value is a human readable title.
+ */
+function tpps_submission_get_accession_list(array $conditions = [], $allow_remove = TRUE, $reset = FALSE) {
+  // We use built-in Drupal Cache System because there is a problem with using
+  // 'LIKE' operator for 'tpps_submission' table and processing serialized
+  // data it time consuming.
+  // Caching increases function execution time in 1000 times.
+  $cid = __FUNCTION__;
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get($cid, $cache_bin);
+  $key = serialize($conditions);
+  if ($reset || empty($cache) || empty($cache->data[$key])) {
+    $query = db_select('tpps_submission', 's')->fields('s');
+    foreach ($conditions as $item) {
+      $query->condition($item[0], $item[1], ($item[2] ?? '='));
+    }
+    $results = $query->orderBy('accession', 'desc')->execute();
+    foreach ($results as $item) {
+      if ($state = unserialize($item->submission_state)) {
+        // @TODO Be sure to store 'tpps_type' in $form_state.
+        if (($state['tpps_type'] ?? NULL) == 'tppsc') {
+          if ($title = ($state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? NULL)) {
+            $list[$state['accession']] = $state['accession'] . ' - ' . (
+              (strlen($title) > 97)
+              ? substr($title, 0, 97) . '...'
+              : (!empty($title) ? $title : t('No Title'))
+            );
+          }
+          elseif (
+            $allow_remove
+            && !isset($state['saved_values'][TPPS_PAGE_1])
+          ) {
+            // Remove if submission has no Publication Title
+            // and this form is shown not after user returned from Page 1.
+            // @TODO Move removement to better place.
+            tpps_delete_submission($item->accession, FALSE);
+          }
+        }
+      }
+    }
+    $cache->data[$key] = $list;
+    cache_set($cid, $cache->data, $cache_bin);
+  }
+  return $cache->data[$key] ?? NULL;
+}
+
+/**
+  * Builds list of accessions (values) and their dbxref_id's as a keys.
+ *
+ * @param bool $is_optional
+ *   Should this list have an extra item '- Select -' which makes this
+ *   dropdown list optional.
+ * @access public
+ *
+ * @return array
+ *   Returns array where keys are studie's dbxref_id and value is an
+ *   accession (like TGDRxxxx).
+ */
+function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
+  $result = db_query('SELECT dbxref_id, accession '
+    . 'FROM chado.dbxref '
+    . 'WHERE accession LIKE \'TGDR%\' '
+    . 'ORDER BY accession DESC;');
+  $list = $result->fetchAllKeyed();
+  if ($is_optional) {
+    $list = [0 => '- Select -'] + $list;
+  }
+  return $list;
 }

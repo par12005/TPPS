@@ -184,7 +184,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     // will be obtained later because depends on selected synonym.
     $synonym_list = tpps_synonym_get_list();
     $phenotype_cid = 'tpps_phenotype_field';
-    $cache = cache_get($phenotype_cid);
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($phenotype_cid, $cache_bin);
 
     if (!empty($cache)) {
       $field = $cache->data;
@@ -339,7 +340,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           ),
         ),
       );
-      cache_set($phenotype_cid, $field);
+      cache_set($phenotype_cid, $field, $cache_bin);
     }
 
     // Loop phenotypes to get unique form fields for each phenotype.
