@@ -111,8 +111,14 @@ function tpps_add_buttons(array &$form, $page, array $meta = []) {
  */
 function tpps_is_required_field_empty(array $form_state, array $path) {
   $field = drupal_array_get_nested_value($form_state['complete form'], $path);
+  if (empty($field)) {
+    watchdog('tpps', "Field wasn't found in 'complete form'. Path: @path",
+      ['@path' => implode('/', $path)], WATCHDOG_ERROR
+    );
+    return FALSE;
+  }
   $value = drupal_array_get_nested_value(
-    $form_state['values'], tpps_get_field_path($field)
+    $form_state['values'], tpps_get_field_path($field, $path)
   );
   if (empty($value)) {
     tpps_form_error_required($form_state, $path);
@@ -171,7 +177,7 @@ function tpps_form_error(array $form_state, array $path, $message) {
   }
   // Remove colon ':' and required field label.
   $title = strtok($field['#title'], ':');
-  $form_path = implode('][', tpps_get_field_path($field));
+  $form_path = implode('][', tpps_get_field_path($field, $path));
   form_set_error($form_path,
     t('@title: @message', ['@title' => $title, '@message' => $message])
   );
@@ -187,11 +193,15 @@ function tpps_form_error(array $form_state, array $path, $message) {
  *
  * @param array $field
  *   Drupal Form API Field's data.
+ * @param array $path
+ *   Path to field form $form_state['complete form'] or $form.
+ *   For example:
+ *   ['organism-1', 'genotype', 'files', 'marker-type'].
  *
  * @return array
  *   Returns array with path to field.
  */
-function tpps_get_field_path(array $field) {
+function tpps_get_field_path(array $field, array $path) {
   return $field['#parents'] ?? ($field['#tree'] ? $path : $field['#name']) ?? [];
 }
 
