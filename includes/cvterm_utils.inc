@@ -136,7 +136,8 @@ function tpps_load_cv($info) {
   }
   $id = strtolower($id);
 
-  $cache = cache_get('tpps_cv')->data ?? array();
+  $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+  $cache = cache_get('tpps_cv', $cache_bin)->data ?? array();
   // print_r($cache);
 
   // Try to load cv_id from cache.
@@ -172,9 +173,11 @@ function tpps_load_cv($info) {
   }
 
   if (is_array($cv)) {
-    // This is a critical temporary patch until confirmation from Emily (slack: 10/19/2021 with Rish)
-    if($query['name']['data'] == 'OBI') {
-      $query['name']['data'] = strtolower($query['name']['data']); // for the use of lowercase OBI
+    // This is a critical temporary patch until confirmation from Emily.
+    // Slack: 10/19/2021 with Rish.
+    if ($query['name']['data'] == 'OBI') {
+      // for the use of lowercase OBI.
+      $query['name']['data'] = strtolower($query['name']['data']);
     }
     $query['name']['op'] = 'LIKE';
     $cv = chado_generate_var('cv', $query);
@@ -185,7 +188,7 @@ function tpps_load_cv($info) {
   }
 
   $cache[$id] = $cv->cv_id;
-  cache_set('tpps_cv', $cache);
+  cache_set('tpps_cv', $cache, $cache_bin);
   return $cv;
 }
 

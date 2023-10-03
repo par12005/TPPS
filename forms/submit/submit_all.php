@@ -200,7 +200,11 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
   $dbxref_id = $form_state['dbxref_id'];
   $firstpage = $form_state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+
+  $primaryAuthor = check_plain($firstpage['primaryAuthor']);
   $seconds = $firstpage['publication']['secondaryAuthors'];
+
+  //tpps_log(print_r($form_state, 1));
 
   tpps_chado_insert_record('project_dbxref', array(
     'project_id' => $form_state['ids']['project_id'],
@@ -243,7 +247,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
   }
 
   $primary_author_id = tpps_chado_insert_record('contact', array(
-    'name' => $firstpage['primaryAuthor'],
+    'name' => $primaryAuthor,
     'type_id' => tpps_load_cvterm('person')->cvterm_id,
   ));
 
@@ -252,7 +256,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     'contact_id' => $primary_author_id,
   ));
 
-  $authors = array($firstpage['primaryAuthor']);
+  $authors = [$primaryAuthor];
   if ($seconds['number'] != 0) {
     for ($i = 1; $i <= $seconds['number']; $i++) {
       if(!empty($seconds[$i]) || $seconds[$i] != "") {
@@ -313,7 +317,7 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     'pub_id' => $publication_id,
   ));
 
-  $names = explode(" ", $firstpage['primaryAuthor']);
+  $names = explode(" ", $primaryAuthor);
   $first_name = implode(" ", array_slice($names, 0, -1));
   $last_name = end($names);
 

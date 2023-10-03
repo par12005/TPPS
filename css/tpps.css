@@ -154,29 +154,93 @@ div.media-widget.form-media a.browse {
     color: white;
     padding: 10px 15px;
 }
-
 /* [VS] */
+
+/* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
+/* Start of TPPS Status Bar */
+.tgdr_form_status div {
+  display: inline-block;
+  padding: 3px;
+  margin-right: 10px;
+}
+.tgdr_form_status div img {
+  vertical-align: middle;
+  margin-bottom: 4px;
+  margin-right: 2px;
+}
+.tgdr_form_status {
+  padding: 5px;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+.btn-primary[name=op]{
+  margin: 10px 10px 10px 0px;
+}
+a.fieldset-title {
+  display: contents;
+}
+/* End of TPPS Status Bar */
+
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Highlight active button when using TAB key to switch. */
 .btn:focus:focus-visible {
   outline: black solid 2px;
+}
+/* Highlight disabled form fields */
+form input:disabled {
+  background: #a9a9a9;
 }
 /**
  * Make visible all options of dropdown when multiple options enabled.
  * @TODO This must be done for all site pages.
  **/
+select#edit-accession,
 select.form-select {
   max-width: 100%;
+  width: auto;
   height: auto;
   min-height: 28px;
 }
-/**
- * To have ability to see nested elements.
- * Note: form#tppsc-main--2 appears when validation failed.
- **/
-form[id^="tppsc-main"] {
-  padding-left: 10px;
+a.fieldset-title {
+  display: contents;
 }
-form[id^="tppsc-main"] fieldset legend {
-  margin-left: -10px;
+/* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
+/* Navigation bar */
+.tppsc-form .navigation-bar {
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  min-height: 20px;
+  display: inline-block;
+  float: both;
+}
+.tppsc-form .navigation-bar a {
+  margin: 5px 25px;
+  white-space: nowrap;
+  float: left;
+  display: inline-block;
+}
+/* Round error/status/warning messages */
+form div.error,
+form div.status,
+form div.warning {
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+  border: 1px solid #bebebe;
+  margin: 2px 0;
+  padding: 2px 10px;
+}
+/* Autocomplete dropdown list */
+#autocomplete {
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+  border: 1px solid #bebebe;
+}
+#autocomplete li:hover {
+  background: silver;
 }
 /* [/VS] */

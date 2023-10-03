@@ -71,7 +71,6 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         'normal-check',
       ), TRUE);
       if (!empty($normal_check)) {
-        $image_path = drupal_get_path('module', 'tpps') . '/images/';
         $form["organism-$i"]['phenotype']['format'] = array(
           '#type' => 'radios',
           '#title' => t('Phenotype file format: *'),
@@ -93,10 +92,12 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           ),
         );
 
-        $form["organism-$i"]['phenotype']['format'][0]['#prefix'] = "<figure><img src=\"/{$image_path}phenotype_format_1.png\"><figcaption>";
-        $form["organism-$i"]['phenotype']['format'][0]['#suffix'] = "</figcaption></figure>";
-        $form["organism-$i"]['phenotype']['format'][1]['#prefix'] = "<figure><img src=\"/{$image_path}phenotype_format_2.png\"><figcaption>";
-        $form["organism-$i"]['phenotype']['format'][1]['#suffix'] = "</figcaption></figure>";
+        $form["organism-$i"]['phenotype']['format'][0]['#prefix'] =
+          '<figure><img src="/' . TPPS_IMAGES_PATH . 'phenotype_format_1.png">'
+          . '<figcaption></figcaption></figure>';
+        $form["organism-$i"]['phenotype']['format'][1]['#prefix'] =
+          '<figure><img src="/' . TPPS_IMAGES_PATH . 'phenotype_format_2.png">'
+          . '<figcaption></figcaption></figure>';
 
         $form["organism-$i"]['phenotype']['file'] = array(
           '#type' => 'managed_file',
@@ -242,9 +243,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         ],
       ],
     ];
-    $module_path = drupal_get_path('module', 'tpps');
-    $form['#attached']['js'][] = $module_path . '/js/tpps_page_4.js';
-    $form['#attached']['css'][] = $module_path . '/css/tpps_page_4.css';
+    tpps_add_css_js($form, TPPS_PAGE_4);
     tpps_add_curation_tool($form);
   }
   return $form;
