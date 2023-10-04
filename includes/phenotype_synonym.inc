@@ -235,6 +235,6 @@ function tpps_synonym_get_term_list($field_name = 'attribute_id') {
   //$query->groupBy('ccvt.name');
   //$query->groupBy('cps.' . $field_name);
   $query->orderBy('cps.' . $field_name);
-  $query->addTag('debug');
+  //$query->addTag('debug');
   return $query->execute()->fetchAllKeyed() ?? [];
 }
