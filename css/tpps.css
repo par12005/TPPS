@@ -190,7 +190,7 @@ a.fieldset-title {
 }
 /* Highlight disabled form fields */
 form input:disabled {
-  background: #a9a9a9;
+  background: silver;
 }
 /**
  * Make visible all options of dropdown when multiple options enabled.
