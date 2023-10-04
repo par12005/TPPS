@@ -6,6 +6,13 @@
  * Description: Light with more space between elements, bigger form fields,
  * green buttons, fieldsets have lines on left side.
  * Navigation bar moved inside form.
+ *
+ *
+ * Colors:
+ *
+ * Normal button: #5a7736 // Green
+ * Active button: #3b413b // Dark Gray.
+ * Field's border: #bebebe  // Light grey
  */
 
 /**
@@ -22,6 +29,9 @@
   border-radius: 10px;
   border: 1px solid #bebebe;
   color: black;
+}
+.tppsc-form .form-item {
+  text-align: left;
 }
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
@@ -89,9 +99,9 @@ form.tppsc-form .fieldset-wrapper>.form-item {
   height: 60px;
   background: #5a7736;
   color: white;
-  min-width: 210px;
+  min-width: 200px;
   padding: 18px;
-  margin: 10px 25px 10px 0;;
+  margin: 10px 20px 10px 0;;
   font-size: 20px;
   font-weight: bold;
   text-transform: uppercase;
@@ -139,4 +149,8 @@ form.tppsc-form .fieldset-wrapper>.form-item {
   color: #3b413b;
 }
 /* End of TPPS Status Bar */
+
+#autocomplete li:hover {
+  background: #5a7736; /* Green as buttons */
+}
 /* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /

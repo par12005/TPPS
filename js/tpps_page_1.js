@@ -163,6 +163,7 @@
         Drupal.tpps.resetForm();
         return;
       }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Fill text fields.
       $('#edit-primaryauthor')
         .val(data.doi_info.primary ?? '')
@@ -170,15 +171,17 @@
       $('#edit-publication-abstract')
         .val(data.doi_info.abstract ?? '')
         .removeClass('error');
-      // Default value for year is '0' ('- Select -').
-      $('#edit-publication-year')
-        .val(data.doi_info.year ?? 0)
-        .removeClass('error');
       $('#edit-publication-title')
         .val(data.doi_info.title ?? '')
         .removeClass('error');
       // @TODO Get Journal field value.
       // $('#edit-publication-journal').val(data.doi_info.journal);
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Fill select boxes.
+      // Default value for year is '0' ('- Select -').
+      $('#edit-publication-year')
+        .val(data.doi_info.year ?? 0)
+        .removeClass('error');
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Secondary Authors.
       if (data.doi_info.secondaryNumber > 0) {
@@ -192,8 +195,8 @@
         $('input[id^="edit-publication-secondaryauthors-add"]').mousedown();
         $.each(data.doi_info.secondary, function( key, value ) {
           Drupal.waitForElm('input[name="publication[secondaryAuthors]['
-            + ( key + 1 ) + ']"]')
-            .then((elm) => { $(elm).val(value); }
+            + ( key + 1 ) + ']"]').then(
+              (elm) => { $(elm).val(value); }
           );
         });
       }
@@ -224,27 +227,64 @@
       }
     }
   }
+
+  /**
+   * Label fields as optional (not required).
+   *
+   * Asterisk will be removed to the field label.
+   */
+  Drupal.tpps.makePublicationFieldsOptional = function() {
+    let publicationFieldList = ['year', 'title', 'abstract', 'journal'];
+    for (let i in publicationFieldList) {
+      let $label = $('#edit-publication-' + publicationFieldList[i])
+        .parents('.form-item').find('label');
+      if ($label.length) {
+        $label.html($label.html().replace(' *', ''));
+      }
+    }
+  }
+
+  /**
+   * Label fields as required.
+   *
+   * Asterisk will be added to the field label.
+   */
+  Drupal.tpps.makePublicationFieldsRequired = function() {
+    let publicationFieldList = ['year', 'title', 'abstract', 'journal'];
+    for (let i in publicationFieldList) {
+      let $label = $('#edit-publication-' + publicationFieldList[i])
+        .parents('.form-item').find('label');
+      if ($label.length) {
+        $label.html($label.html()  + ' *');
+      }
+    }
+  }
+
+
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Behavior.
   Drupal.behaviors.tpps_page_1 = {
     attach: function (context, settings) {
+      // Clear value of last 'Secondary Author' field on 'Remove' button click.
+      // Must be reattached to every new form part loaded via AJAX.
+      // @TODO Probably tpps_dynamic_list() must be updated.
+      $('input[id^="edit-publication-secondaryauthors-add"]').on('click', function(e) {
+          let number = $('input[name="publication[secondaryAuthors][number]"]').val();
+          let selector = 'input[id="edit-publication-secondaryauthors-' + (parseInt(number) + 1) + '"]';
+          if (number >= 0) {
+            Drupal.waitForElm(selector).then((elm) => { $(elm).val(''); });
+          }
+        }
+      );
 
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Attach event handlers only once.
       $('form[id^=tppsc-main]').once('tpps_page_1', function() {
         if ($('#edit-publication-status').val() == 'In Preparation or Submitted') {
           var $label = $('input#edit-doi').parent().find('label');
           $label.html($label.html().replace(' *', ''));
-
-          var $label = $('#edit-publication-year').parent().find('label');
-          $label.html($label.html().replace(' *', ''));
-
-          var $label = $('#edit-publication-title').parent().find('label');
-          $label.html($label.html().replace(' *', ''));
-
-          var $label = $('#edit-publication-abstract').parent().parent().find('label');
-          $label.html($label.html().replace(' *', ''));
-
-          var $label = $('#edit-publication-journal').parent().find('label');
-          $label.html($label.html().replace(' *', ''));
+          Drupal.tpps.makePublicationFieldsOptional();
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Allows to click on DOI number to fill text field.
@@ -261,51 +301,24 @@
           navigator.clipboard.writeText(selectedText);
         });
 
+
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Reset form if status != 'Published'.
         $('#edit-publication-status').on('change', function(e) {
-          if (
-            $(this).val() != 'In Preparation or Submitted'
-            && $(this).val() != 'Published'
-          ) {
-            Drupal.tpps.resetForm();
-          }
-          // Remove '*' from 'Publication DOI' field because it's optional
-          // in this case.
           if ($(this).val() == 'In Preparation or Submitted') {
-            // @TODO Use loop.
-            var $label = $('#edit-doi').parent().find('label');
+            // Remove '*' from 'Publication DOI' field because it's optional.
+            var $label = $('#edit-doi').parents('.form-item').find('label');
             $label.html($label.html().replace(' *', ''));
-
-            var $label = $('#edit-publication-year').parent().find('label');
-            $label.html($label.html().replace(' *', ''));
-
-            var $label = $('#edit-publication-title').parent().find('label');
-            $label.html($label.html().replace(' *', ''));
-
-            var $label = $('#edit-publication-abstract').parent().parent().find('label');
-            $label.html($label.html().replace(' *', ''));
-
-            var $label = $('#edit-publication-journal').parent().find('label');
-            $label.html($label.html().replace(' *', ''));
-
-
+            Drupal.tpps.makePublicationFieldsOptional();
           }
-          if ($(this).val() == 'Published') {
-            var $label = $('input#edit-doi').parent().find('label');
+          else if ($(this).val() == 'Published') {
+            // 'Publication DOI' field became required.
+            var $label = $('input#edit-doi').parents('.form-item').find('label');
             $label.html($label.html()  + ' *');
-
-            var $label = $('#edit-publication-year').parent().find('label');
-            $label.html($label.html()  + ' *');
-
-            var $label = $('#edit-publication-title').parent().find('label');
-            $label.html($label.html()  + ' *');
-
-            var $label = $('#edit-publication-abstract').parent().parent().find('label');
-            $label.html($label.html()  + ' *');
-
-            var $label = $('#edit-publication-journal').parent().find('label');
-            $label.html($label.html()  + ' *');
+            Drupal.tpps.makePublicationFieldsRequired();
+          }
+          else {
+            Drupal.tpps.resetForm();
           }
           $(this).removeClass('error');
         });
