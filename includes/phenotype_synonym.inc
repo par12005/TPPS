@@ -200,3 +200,41 @@ function tpps_synonym_add(array $data) {
   tpps_unit_get_list('all', [], TRUE);
   return $id;
 }
+
+/**
+ * Gets list of phenotype's attributes.
+ *
+ * @param string $field_name
+ *   Default is 'attribute_id'.
+ *   Name of the column in 'chado.phenotype_synonyms' table linked with
+ *   'chado.cvterm' (foreign key).
+ *   Possible values are: 'attribute_id', 'structure_id'.
+ *
+ * @return array
+ *   Returns list of Phenotype attrubutes. Key is an attrubute Id and value is
+ *   an attribute name.
+ *   Returns empty array of nothing was found.
+ *
+ * @TODO Cache results.
+ */
+function tpps_synonym_get_term_list($field_name = 'attribute_id') {
+  if (!in_array($field_name, ['attribute_id', 'structure_id'])) {
+    watchdog('tpps', 'Not supported term @term in @function',
+      ['@term' => $field_name, '@function' => __FUNCTION__],
+      WATCHDOG_ERROR
+    );
+    return [];
+  }
+  // Table 'phenotype_synonyms' was created manually and wasn't added
+  // to Chado so Chado API can't be used for now.
+  // Note: Table 'phenotype_synonyms' doesn't have attribute names but only IDs.
+  $field_name = 'attribute_id';
+  $query = db_select('chado.phenotype_synonyms', 'cps')->fields('cps', [$field_name]);
+  $query->leftJoin('chado.cvterm', 'ccvt', 'cps.' . $field_name . ' = ccvt.cvterm_id');
+  $query->addField('ccvt', 'name');
+  //$query->groupBy('ccvt.name');
+  //$query->groupBy('cps.' . $field_name);
+  $query->orderBy('cps.' . $field_name);
+  //$query->addTag('debug');
+  return $query->execute()->fetchAllKeyed() ?? [];
+}
