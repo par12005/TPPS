@@ -195,8 +195,8 @@
         $('input[id^="edit-publication-secondaryauthors-add"]').mousedown();
         $.each(data.doi_info.secondary, function( key, value ) {
           Drupal.waitForElm('input[name="publication[secondaryAuthors]['
-            + ( key + 1 ) + ']"]')
-            .then((elm) => { $(elm).val(value); }
+            + ( key + 1 ) + ']"]').then(
+              (elm) => { $(elm).val(value); }
           );
         });
       }
@@ -266,7 +266,19 @@
   // Behavior.
   Drupal.behaviors.tpps_page_1 = {
     attach: function (context, settings) {
+      // Clear value of last 'Secondary Author' field on 'Remove' button click.
+      // Must be reattached to every new form part loaded via AJAX.
+      // @TODO Probably tpps_dynamic_list() must be updated.
+      $('input[id^="edit-publication-secondaryauthors-add"]').on('click', function(e) {
+          let number = $('input[name="publication[secondaryAuthors][number]"]').val();
+          let selector = 'input[id="edit-publication-secondaryauthors-' + (parseInt(number) + 1) + '"]';
+          if (number >= 0) {
+            Drupal.waitForElm(selector).then((elm) => { $(elm).val(''); });
+          }
+        }
+      );
 
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Attach event handlers only once.
       $('form[id^=tppsc-main]').once('tpps_page_1', function() {
         if ($('#edit-publication-status').val() == 'In Preparation or Submitted') {
@@ -288,6 +300,7 @@
             .blur();
           navigator.clipboard.writeText(selectedText);
         });
+
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Reset form if status != 'Published'.
