@@ -161,7 +161,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $parents = ['doi'];
   $form['publication']['doi'] = [
     '#type' => 'textfield',
-    '#title' => t('Publication DOI:'),
+    '#title' => t('Publication DOI:')
+      . ($publication_status == 'Published' ? ' *' : ''),
     '#tree' => FALSE,
     '#parents' => $parents,
     '#default_value' => $doi,
@@ -221,7 +222,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     + array_combine($year_options, $year_options);
   $form['publication']['year'] = [
     '#type' => 'select',
-    '#title' => t('Year of Publication:'),
+    '#title' => t('Year of Publication:')
+      . ($publication_status == 'Published' ? ' *' : ''),
     '#options' => $year_options,
     '#description' => t('If your publication has not been published yet, '
       . 'please choose the expected year of publication.'),
@@ -237,7 +239,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   $form['publication']['title'] = [
     '#type' => 'textfield',
-    '#title' => t('Title of Publication/Study:'),
+    '#title' => t('Title of Publication/Study:')
+      . ($publication_status == 'Published' ? ' *' : ''),
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#states' => [
       'visible' => [
@@ -250,7 +253,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   $form['publication']['abstract'] = [
     '#type' => 'textarea',
-    '#title' => t('Abstract/Description:'),
+    '#title' => t('Abstract/Description:')
+      . ($publication_status == 'Published' ? ' *' : ''),
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#states' => [
       'visible' => [
@@ -263,7 +267,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   $form['publication']['journal'] = [
     '#type' => 'textfield',
-    '#title' => t('Journal:'),
+    '#title' => t('Journal:')
+      . ($publication_status == 'Published' ? ' *' : ''),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
     '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
     '#states' => [
