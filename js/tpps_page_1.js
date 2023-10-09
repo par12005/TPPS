@@ -286,21 +286,6 @@
           $label.html($label.html().replace(' *', ''));
           Drupal.tpps.makePublicationFieldsOptional();
         }
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Allows to click on DOI number to fill text field.
-        // Add 'tpps-suggestion' class to A tag.
-        // Example: <a href"#" class="tpps-suggestion">10.25338/B8864J</a>
-        $('.tpps-suggestion').on('click', function(e) {
-          e.preventDefault();
-          var selectedText= $(this).text();
-          $(this)
-            .parents('.form-item')
-            .find('input.form-text')
-            .val(selectedText)
-            .blur();
-          navigator.clipboard.writeText(selectedText);
-        });
-
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Reset form if status != 'Published'.
