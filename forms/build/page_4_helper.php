@@ -802,7 +802,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   $marker_parents = [$id, 'genotype', 'marker-type'];
   $genotype_marker_type = array_keys(
-    tpps_get_ajax_value($form_state, $marker_parents)
+    tpps_get_ajax_value($form_state, $marker_parents, [])
   );
   // Get 'Define SSRs/cpSSRs Type' field value to show correct fields
   // which visiblity depends on value of this field.
