@@ -344,3 +344,53 @@ function tppsc_organism(array &$form, array &$form_state) {
   }
 }
 
+/**
+ * Creates a list of DOI examples.
+ *
+ * This list will be used in field's description.
+ * Each DOI could be inserted into field by mouse click.
+ *
+ * @return string
+ *   Returns HTML string with list of DOI examples.
+ */
+function tpps_page_1_get_doi_examples() {
+  $doi_suggestion_list = [
+    // Fake.
+    '10.1111/dryad.111',
+    // Real but used. No species.
+    '10.5061/dryad.91mk9',
+    // Not used, no species.
+    '10.21267/IN.2016.6.2294',
+    // Raal, not used, with species.
+    '10.5061/dryad.vk43j',
+  ];
+  foreach ($doi_suggestion_list as $doi_suggestion) {
+    // @todo Use l().
+    $list[] = '<a href"#" class="tpps-suggestion">'
+      . $doi_suggestion . '</a>';
+  }
+  return 'Examples: <br />' . implode(', ', $list);
+}
+
+/**
+ * Returns (or not) asterisk based on value of 'Publication Status' field.
+ *
+ * Result is statically cached.
+ *
+ * @param array $form_state
+ *   Drupal Form API Status array.
+ *
+ * @return string
+ *   Returns asterisk if certain value of 'Publication Status' was set.
+ *   Returns empty string otherwise.
+ */
+function tpps_page_1_required_by_status(array $form_state) {
+  $result = &drupal_static(__FUNCTION__);
+  if (!isset($result)) {
+    $publication_status = tpps_get_ajax_value(
+      $form_state, ['publication', 'status'], NULL
+    );
+    $result = ($publication_status == 'Published' ? ' *' : '');
+  }
+  return $result;
+}
