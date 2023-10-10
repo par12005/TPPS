@@ -304,7 +304,11 @@
           else if ($(this).val() == 'Published') {
             // 'Publication DOI' field became required.
             var $label = $('input#edit-doi').parents('.form-item').find('label');
-            $label.html($label.html()  + ' *');
+            // To avoid duplication of asterisk for field which was hidden
+            // but Drupal Form API States we force removement of existing
+            // asterisks (if any). It's better then duplicate Drupal Form
+            // API States and track field's visability.
+            $label.html($label.html().replace(' *', '') + ' *');
             Drupal.tpps.makePublicationFieldsRequired();
           }
           else {
