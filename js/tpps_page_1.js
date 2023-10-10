@@ -255,12 +255,17 @@
       let $label = $('#edit-publication-' + publicationFieldList[i])
         .parents('.form-item').find('label');
       if ($label.length) {
-        $label.html($label.html()  + ' *');
+        $label.html(
+          // To avoid duplication of asterisk for field which was hidden
+          // but Drupal Form API States we force removement of existing
+          // asterisks (if any). It's better then duplicate Drupal Form
+          // API States and track field's visability.
+          $label.html().replace(' *', '')
+          + ' *'
+        );
       }
     }
   }
-
-
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Behavior.
