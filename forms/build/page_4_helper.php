@@ -873,7 +873,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Genotyping file type: *'),
       '#options' => [
         'SNP Assay file and Assay design file'
-        => t('SNP Assay file and Assay design file'),
+          => t('SNP Assay file and Assay design file'),
         'VCF' => t('VCF'),
       ],
       '#ajax' => [

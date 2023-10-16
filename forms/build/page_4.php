@@ -51,7 +51,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         $form["organism-$i"]['phenotype-repeat-check'] = array(
           '#type' => 'checkbox',
           '#title' => "Phenotype information for $name is the same as phenotype information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
-          '#default_value' => isset($values["organism-$i"]['phenotype-repeat-check']) ? $values["organism-$i"]['phenotype-repeat-check'] : 1,
+          '#default_value' => ($values["organism-$i"]['phenotype-repeat-check'] ?? 1),
         );
       }
 
@@ -186,7 +186,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         $form["organism-$i"]['genotype-repeat-check'] = array(
           '#type' => 'checkbox',
           '#title' => "Genotype information for $name is the same as genotype information for {$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
-          '#default_value' => isset($values["organism-$i"]['genotype-repeat-check']) ? $values["organism-$i"]['genotype-repeat-check'] : 1,
+          '#default_value' => ($values["organism-$i"]['genotype-repeat-check'] ?? 1),
         );
       }
 
@@ -208,8 +208,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           '#title' => "Environmental information for $name is the same as "
             . "environmental information for "
             . "{$form_state['saved_values'][TPPS_PAGE_1]['organism'][$i - 1]['name']}.",
-          '#default_value' => isset($values["organism-$i"]['environment-repeat-check'])
-            ? $values["organism-$i"]['environment-repeat-check'] : 1,
+          '#default_value' => ($values["organism-$i"]['environment-repeat-check'] ?? 1),
         );
       }
 
