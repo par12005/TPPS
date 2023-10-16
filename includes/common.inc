@@ -22,6 +22,9 @@
  * @return mixed
  *   Returns number of entities (studies/species) in database.
  *   Returns FALSE if wrong column to count was used.
+ *
+ * @TODO Check /ajax/tpps_ajax.php which seems  use the same table for
+ * autocomplete search.
  */
 function tpps_count_entities($column, $reset = FALSE) {
   $cid = __FUNCTION__;
