@@ -2133,9 +2133,5 @@ function tpps_build_field_description() {
  *   Returns value of empty fields in file. Usually it will be 'NA'.
  */
 function tpps_get_empty_field_value(array $form_state, $id, $file_field_name) {
-  $values = $form_state['saved_values'][TPPS_PAGE_4];
-  return (
-    isset($values["organism-$id"]['genotype']['files'][$file_field_name]['other'])
-    ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other'] : 'NA'
-  );
+  return $form_state['saved_values'][TPPS_PAGE_4]["organism-$id"]['genotype']['files'][$file_field_name]['other'] ?? 'NA';
 }
