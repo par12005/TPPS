@@ -389,6 +389,7 @@ function tpps_submission_tag_create(array $form, array &$form_state) {
   );
   // @TODO [VS] This file must be stored under /sites/all/libraries to allow
   // other modules to reuse it and get updates independently from this module.
+  // @TODO [VS] this js will not work if form validation failed.
   drupal_add_js(TPPS_MODULE_PATH. '/js/tag_colorpicker.js');
 
   $form['name'] = array(

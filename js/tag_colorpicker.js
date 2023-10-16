@@ -16,8 +16,14 @@ jQuery(document).ready(function ($) {
     }
   });
 
-  jQuery('#edit-color').css('background-color', jQuery('#edit-color')[0].value);
+  $('#edit-color').css(
+    'background-color',
+    $('#edit-color')[0].value
+  );
   $('#edit-color').on('input', function() {
-    jQuery('#edit-color').css('background-color', jQuery('#edit-color')[0].value);
+    $('#edit-color').css(
+      'background-color',
+      $('#edit-color')[0].value
+    );
   });
-});
+})(jQuery);

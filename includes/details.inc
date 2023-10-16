@@ -6,152 +6,182 @@
  */
 
 /**
+ * Menu callback. Shows list of studies with filter at the top.
+ *
  * Starting point for most TPPS Details pages.
  *
  * Either returns the top details page, which allows users to select from
  * completed studies, or returns the per-submission details page, which allows
  * users to browse the details of a study.
- *
- * @param string $accession
- *   The accession to get details from. If NULL, show all submissions.
- *
- * @return string
- *   The appropriate output.
  */
-function tpps_details($accession = NULL) {
+function tpps_details() {
   global $base_url;
   global $user;
-  $output = "";
 
+  $output = t('This page reflects community submissions associated with '
+    . 'published studies. Each submission is associated with a longterm '
+    . 'identifier that connects the genotype, phenotype, and/or '
+    . 'environmental metrics assessed. These studies represent diversity '
+    . 'assessements, association mapping, and landscape genomics. '
+    . 'We accept studies with a variety of marker types. We encourage '
+    . 'you to <strong>!tpps_link</strong> to TreeGenes and utilize the '
+    . 'provided accession in your publication. We currently have '
+    . '<strong>@num_studies</strong> studies representing '
+    . '<strong>@num_species</strong> species.',
+    [
+      // @TODO [VS] Build hyperlinks using l().
+      '!tpps_link' => '<a target="blank" href="/tpps">submit your study</a>',
+      '@num_species' => tpps_count_entities('species'),
+      '@num_studies' => tpps_count_entities('accession'),
+    ]
+  );
+  if (module_exists('cartogratree')) {
+    $output .= ' Studies that have georeferenced accessions associated '
+      . 'with them can be queried on '
+      . '<strong><a href="cartogratree">CartograPlant.</a></strong>';
+  }
+
+  $form = drupal_get_form('tpps_details_search_form');
+  // There is a CSS for details page in css/tpps.css so we need to attach
+  // all common JS/CSS.
+  // @TODO [VS] Separate CSS and move to css/tpps_details.css.
+  tpps_add_css_js($form);
+  tpps_add_css_js($form, 'details');
+  return $output . render($form) . tpps_details_tags_sort()
+    . '<div id="tpps-details-table">' . tpps_details_top() . '</div>';
+}
+
+/**
+ * Menu callback. Shows particual study data.
+ *
+ * @param string $accession
+ *   The accession to get details from.
+ *
+ * @todo Use template file and move all HTML there.
+ */
+function tpps_details_show_study($accession = NULL) {
+  global $base_url;
+  global $user;
   if (empty($accession)) {
-    $query = db_select('chado.plusgeno_view', 'pg');
-    $query->addExpression('count(distinct(accession))', 'count');
-    $query = $query->execute();
-    $num_studies = $query->fetchObject()->count;
+    drupal_goto('tpps/details');
+  }
+  tpps_add_css_js();
+  $output = l(t('Return to TPPS Details'), 'tpps/details');
 
-    $query = db_select('chado.plusgeno_view', 'pg');
-    $query->addExpression('count(distinct(species))', 'count');
-    $query = $query->execute();
-    $num_species = $query->fetchObject()->count;
+  if (empty($state = tpps_load_submission($accession))) {
+    drupal_set_message(
+      t('This submission is pending resubmission through the new TPPS pipeline. '
+      . 'Some of the information may be available here, '
+      . 'but please keep in mind that it may be incomplete '
+      . 'or subject to change in the near future.'),
+      'warning'
+    );
+    if (function_exists('tpps_details_byaccession_page')) {
+      $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
 
-    $tpps_link = "<b><a target=\"blank\" href=\"/tpps\">submit your study</a></b>";
-    $output .= "This page reflects community submissions associated with published studies. Each submission is associated with a longterm identifier that connects the genotype, phenotype, and/or environmental metrics assessed. These studies represent diversity assessements, association mapping, and landscape genomics. We accept studies with a variety of marker types. We encourage you to $tpps_link to TreeGenes and utilize the provided accession in your publication. We currently have <b>$num_studies</b> studies representing <b>$num_species</b> species.";
-    if (module_exists('cartogratree')) {
-      $output .= " Studies that have georeferenced accessions associated with them can be queried on <b><a href=\"cartogratree\">CartograPlant.</a></b>";
     }
-    $form = drupal_get_form('tpps_details_search');
-    $output .= render($form);
-    $output .= tpps_details_tags_sort();
-    $output .= "<div id='tpps-details-table'>" . tpps_details_top() . "</div>";
-    tpps_add_css_js();
     return $output;
   }
 
-  $output = "<a href=\"$base_url/tpps/details\">Return to TPPS Details</a>$output";
-  $state = tpps_load_submission($accession);
-  // dpm($state);
-  if (!empty($state)) {
-
-    if (isset($state['study_view_role'])) {
-      global $user;
-      // If more than 0, then a view role was set by curation team
-      if ($state['study_view_role'] > 0) {
-        // dpm($user->roles);
-        if (!in_array(user_roles($true)[$state['study_view_role']], $user->roles)
-          && !in_array('administrator', $user->roles)
-        ) {
-          $output .= "<br />";
-          $output .= "This study has been set to be available to only a specific user role<br />";
-          $output .= "If you believe this is an error, please contact us via the contact us page.<br />";
-          return $output;
-        }
-      }
-    }
-
-    if ($state['status'] != 'Approved') {
-      drupal_set_message(t('This submission is still under construction. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
-      if (function_exists('tpps_details_byaccession_page')) {
-        $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
-        // [VS].
-        tpps_add_css_js();
-        // [/VS].
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Show study details.
+  if (isset($state['study_view_role'])) {
+    // If more than 0, then a view role was set by curation team.
+    if ($state['study_view_role'] > 0) {
+      if (!in_array(user_roles($true)[$state['study_view_role']], $user->roles)
+        && !in_array('administrator', $user->roles)
+      ) {
+        $output .= "<br />";
+        $output .= "This study has been set to be available to only a specific user role<br />";
+        $output .= "If you believe this is an error, please contact us via the contact us page.<br />";
         return $output;
       }
     }
+  }
 
-    $map_api_key = variable_get('tpps_maps_api_key', NULL);
-    $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-      async defer></script>"
-      . "<div id=\"_map_wrapper\"></div>";
-    $tree_info = array();
-    if (!empty($state['tree_info'])) {
-      foreach ($state['tree_info'] as $name => $info) {
-        if (!empty($info['lat']) and !empty($info['lng'])) {
-          $tree_info[] = array(
-            $name,
-            $info['lat'],
-            $info['lng'],
-          );
-        }
+  if ($state['status'] != 'Approved') {
+    drupal_set_message(
+      t('This submission is still under construction. '
+      . 'Some of the information may be available here, '
+      . 'but please keep in mind that it may be incomplete '
+      . 'or subject to change in the near future.'),
+      'warning'
+    );
+    if (function_exists('tpps_details_byaccession_page')) {
+      $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
+      return $output;
+    }
+  }
+
+  $map_api_key = variable_get('tpps_maps_api_key', NULL);
+  // [VS]
+  // @TODO Move URL to settings page or better store locally.
+  $url = 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js';
+  // @TODO Move URL to settings page and use variable.
+  $map_api_url = 'https://maps.googleapis.com/maps/api/js';
+  $map_api_tools = '<script src="' . $url . '"></script><script src="'
+    . $map_api_url . '?key=' . $map_api_key
+    . '&callback=initMap" async defer></script>'
+    . '<div id="_map_wrapper"></div>';
+  $tree_info = [];
+  // [/VS]
+  if (!empty($state['tree_info'])) {
+    foreach ($state['tree_info'] as $name => $info) {
+      if (!empty($info['lat']) and !empty($info['lng'])) {
+        $tree_info[] = array(
+          $name,
+          $info['lat'],
+          $info['lng'],
+        );
       }
-      drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
     }
-    $output .= $map_api_tools;
-    // [VS].
-    tpps_add_css_js();
-    // [/VS].
+    drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');
+  }
+  $output .= $map_api_tools;
 
-    $pub_link = $state['title'];
-    $pub_id = db_select('chado.project_pub', 'p')
-      ->fields('p', array('pub_id'))
-      ->condition('project_id', $state['ids']['project_id'])
-      ->execute()->fetchObject()->pub_id;
-    if (!empty($pub_id)) {
-      $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
-      $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
-      $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
-    }
-
-    $output .= "<h2>$pub_link</h2>";
-    $output .= tpps_show_tags(tpps_submission_get_tags($state['accession']));
-    $primary_author = $state['authors'][0];
-    if (preg_match('/,/', $primary_author)) {
-      $parts = explode(',', $primary_author);
-      $lastname = trim($parts[0]);
-    }
-    else {
-      $parts = explode(' ', $primary_author);
-      $lastname = $parts[count($parts) - 1];
-    }
-    $output .= "<h4>$lastname et al {$state['pyear']}";
-    if (!empty($state['journal'])) {
-      $output .= " published in {$state['journal']}";
-    }
-    $output .= "</h4>";
-    $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
-      . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
-          jQuery('#abstract')[0].innerHTML = `{$state['abstract']}`;
-        }));</script>";
-    if (module_exists('cartogratree')) {
-      $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograPlant</a><br>";
-    }
-    $output .= "<a href=\"$base_url/tpps/api/files/$accession\">Download compressed raw files</a><br>";
-    if ($state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published' and $user->uid == tpps_load_submission($accession, FALSE)->uid) {
-      $output .= "<a href=\"$base_url/tpps/$accession/edit-publication\">Edit publication information</a>";
-    }
-
-    $output .= tpps_details_tabs($state);
-    return $output;
+  $pub_link = $state['title'];
+  $pub_id = db_select('chado.project_pub', 'p')
+    ->fields('p', array('pub_id'))
+    ->condition('project_id', $state['ids']['project_id'])
+    ->execute()->fetchObject()->pub_id;
+  if (!empty($pub_id)) {
+    $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
+    $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
+    $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
   }
 
-  drupal_set_message(t('This submission is pending resubmission through the new TPPS pipeline. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
-
-  if (function_exists('tpps_details_byaccession_page')) {
-    $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
-    // [VS].
-    tpps_add_css_js();
-    // [/VS].
+  $output .= "<h2>$pub_link</h2>";
+  $output .= tpps_show_tags(tpps_submission_get_tags($state['accession']));
+  $primary_author = $state['authors'][0];
+  if (preg_match('/,/', $primary_author)) {
+    $parts = explode(',', $primary_author);
+    $lastname = trim($parts[0]);
   }
+  else {
+    $parts = explode(' ', $primary_author);
+    $lastname = $parts[count($parts) - 1];
+  }
+  $output .= "<h4>$lastname et al {$state['pyear']}";
+  if (!empty($state['journal'])) {
+    $output .= " published in {$state['journal']}";
+  }
+  $output .= "</h4>";
+  $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
+    . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
+        jQuery('#abstract')[0].innerHTML = `{$state['abstract']}`;
+      }));</script>";
+  if (module_exists('cartogratree')) {
+    $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograPlant</a><br>";
+  }
+  $output .= "<a href=\"$base_url/tpps/api/files/$accession\">Download compressed raw files</a><br>";
+  if (
+    $state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published'
+    and $user->uid == tpps_load_submission($accession, FALSE)->uid
+  ) {
+    $output .= "<a href=\"$base_url/tpps/$accession/edit-publication\">Edit publication information</a>";
+  }
+
+  $output .= tpps_details_tabs($state);
   return $output;
 }
 
@@ -165,6 +195,7 @@ function tpps_details($accession = NULL) {
  *   HTML for the details tabs.
  */
 function tpps_details_tabs(array &$state) {
+  // @TODO [VS] Use theme('item_list') instead of HTML tags.
   $output = '<ul class="nav nav-tabs" role="tablist">
     <li class="nav-item"><a class="nav-link active" role="tab" data-toggle="tab" href="#species">Species</a></li>
     <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#study">Study Details</a></li>
@@ -436,11 +467,11 @@ function tpps_details_top_callback() {
  * @return array
  *   The populated search form.
  */
-function tpps_details_search(array $form, array $form_state) {
+function tpps_details_search_form(array $form, array $form_state) {
   $params = drupal_get_query_parameters();
-  $form['details_type'] = array(
+  $form['details_type'] = [
     '#type' => 'select',
-    '#options' => array(
+    '#options' => [
       'title' => t('Title'),
       'species' => t('Species'),
       'accession' => t('Accession'),
@@ -451,33 +482,31 @@ function tpps_details_search(array $form, array $form_state) {
       'genotype_name' => t('Genotype Name'),
       'genotype_marker' => t('Genotype Marker Type'),
       'tags' => t('Tags'),
-    ),
-    '#ajax' => array(
-      'wrapper' => 'tpps-details-form',
-      'callback' => 'tpps_details_form_callback',
-    ),
+    ],
+    //'#ajax' => [
+    //  'wrapper' => 'tpps-details-form',
+    //  'callback' => 'tpps_details_search_form_callback',
+    //],
     '#prefix' => '<div id="tpps-details-form">',
     '#default_value' => $params['type'] ?? NULL,
-  );
+  ];
 
-  $ops = array(
-    '~*' => '~*',
-    'LIKE' => 'LIKE',
-    '=' => '=',
-  );
-
-  $form['details_op'] = array(
+  $form['details_op'] = [
     '#type' => 'select',
-    '#options' => $ops,
+    '#options' => [
+      '~*' => '~*',
+      'LIKE' => 'LIKE',
+      '=' => '=',
+    ],
     '#default_value' => $params['op'] ?? NULL,
-  );
+  ];
 
-  $form['details_value'] = array(
+  $form['details_value'] = [
     '#type' => 'textfield',
     '#suffix' => '</div>',
     '#autocomplete_path' => 'tpps/autocomplete/project_title',
     '#default_value' => $params['value'] ?? NULL,
-  );
+  ];
 
   if (empty($form_state['values']['details_type'])) {
     $form_state['values']['details_type'] = $params['type'] ?? NULL;
@@ -523,19 +552,20 @@ function tpps_details_search(array $form, array $form_state) {
     }
   }
 
-  $form['details_search'] = array(
+  $form['details_search'] = [
     '#type' => 'button',
     '#button_type' => 'button',
     '#value' => t('Search'),
-  );
+  ];
 
-  $form['reset_button'] = array(
-    '#markup' => '<button class="btn btn-primary form-button" type="reset"/>Reset</button>',
-  );
+  $form['reset_button'] = [
+    '#markup' => '<button class="btn btn-primary form-button" type="reset">Reset</button>',
+  ];
 
-  $form['#attributes'] = array(
+  // Move to CSS file.
+  $form['#attributes'] = [
     'style' => 'text-align:center',
-  );
+  ];
 
   return $form;
 }
@@ -545,28 +575,28 @@ function tpps_details_search(array $form, array $form_state) {
  *
  * @return string
  *   Tag options as rendered HTML.
+ *
+ * @TODO [VS] Convert to theme-function.
  */
 function tpps_details_tags_sort() {
-  $output = "";
-
   $query = db_select('tpps_tag', 't')
     ->fields('t')
     ->orderBy('static', 'DESC')
     ->orderBy('tpps_tag_id')
     ->execute();
-  $tags = array();
+  $tags = [];
+  // @TODO [VS] Use aliases in DB query to get correct dataset and remove
+  // this loop.
   while (($result = $query->fetchObject())) {
-    $tags[$result->tpps_tag_id] = array(
+    $tags[$result->tpps_tag_id] = [
       'id' => $result->tpps_tag_id,
       'name' => $result->name,
       'color' => $result->color,
       'static' => $result->static,
-    );
+    ];
   }
-
-  $output .= tpps_show_tags($tags);
-
-  return "<label for=\"tpps-tags-filter\">Sort by tags:</label><div id=\"tpps-tags-filter\">" . $output . "</div>";
+  return '<label for="tpps-tags-filter">Sort by tags:</label>'
+    . '<div id="tpps-tags-filter">' . tpps_show_tags($tags) . '</div>';
 }
 
 /**
@@ -580,12 +610,12 @@ function tpps_details_tags_sort() {
  * @return array
  *   The part of the form to be updated.
  */
-function tpps_details_form_callback(array $form, array $form_state) {
-  return array(
+function tpps_details_search_form_callback(array $form, array $form_state) {
+  return [
     'details_type' => $form['details_type'],
     'details_op' => $form['details_op'],
     'details_value' => $form['details_value'],
-  );
+  ];
 }
 
 /**

@@ -1,3 +1,11 @@
+/**
+ * @file
+ *
+ * Javascript which is common for all pages/forms.
+ *
+ * @TODO Specific code must be moved to separate file and loaded on demand.
+ */
+
 jQuery(document).ready(function ($) {
   // Bootstrap tooltip functionality.
   jQuery('[data-toggle="tooltip"]').tooltip();
@@ -247,6 +255,7 @@ jQuery(document).ready(function ($) {
 
   jQuery('#edit-save-comments').attr('type', 'button');
 
+  // [VS] This is probably tabs at Study page like 'Phenotype' and etc.
   var details_tabs = jQuery('.nav-tabs > .nav-item > .nav-link');
   jQuery.each(details_tabs, function() {
     jQuery(this).click(detailsTab);
@@ -255,7 +264,8 @@ jQuery(document).ready(function ($) {
   jQuery('a:contains("Return to TPPS List")').hide();
   jQuery('#edit-details-search').attr('type', 'button');
   jQuery('#edit-details-search').click(detailSearch);
-  jQuery('#tpps-details-search').submit(function() {
+  jQuery('#tpps-details-search').submit(function(e) {
+    // @TODO use e.preventDefaults();
     detailSearch();
     return false;
   });
@@ -272,10 +282,11 @@ jQuery(document).ready(function ($) {
 
   initDetailPages();
 
-  var tags = jQuery('#tpps-tags-filter').children('.tag');
-  jQuery.each(tags, function() {
-    jQuery(this).click(detailTagSearch);
-  });
+  // Moved to js/tpps_details.js
+  //var tags = jQuery('#tpps-tags-filter').children('.tag');
+  //jQuery.each(tags, function() {
+  //  jQuery(this).click(detailTagSearch);
+  //});
 
   var admin_panel_regex = /tpps-admin-panel\/TGDR.*/g;
   if (window.location.pathname.match(admin_panel_regex)) {
@@ -366,14 +377,18 @@ function detailsTab() {
       return;
     }
   }
-  jQuery('#' + detail_type)[0].innerHTML = "Querying database for " + detail_type + " information...<div id='query_timer'></div>";
+  jQuery('#' + detail_type)[0].innerHTML = "Querying database for "
+    + detail_type + " information...<div id='query_timer'></div>";
 
   // create a timer
   var query_timer_current = 0;
   var query_timer = setInterval(function() {
     query_timer_current = query_timer_current + 1;
     if(query_timer_current > 5) {
-      jQuery('#query_timer').html('Querying time: ' + query_timer_current + ' seconds.<br /><b>Thank you for your patience, first time pulls can take up to a minute to complete depending on the size of our dataset but gets faster after the first page load.</b>');
+      jQuery('#query_timer').html('Querying time: ' + query_timer_current
+        + ' seconds.<br /><b>Thank you for your patience, first time pulls'
+        + ' can take up to a minute to complete depending on the size of '
+        + 'our dataset but gets faster after the first page load.</b>');
     }
   }, 1000);
 
@@ -437,6 +452,8 @@ function detailsTab() {
   });
 }
 
+// @TODO Check this. Code moved to js/tpps_details.js and could be
+// removed if not used by other pages.
 function initDetailPages() {
   var details_pages = jQuery('#tpps-details-table > div > ul > li > a');
   if (details_pages.length > 0) {
@@ -454,6 +471,7 @@ function initDetailPages() {
 function detailSearch() {
   var path = '/tpps/details/top';
   var page = 0;
+  console.log(this);
   if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
     page = this.hash.match(/#.*:(.*)/)[1];
   }
@@ -472,29 +490,29 @@ function detailSearch() {
   });
 }
 
-function detailTagSearch() {
-  var path = '/tpps/details/top';
-  var page = 0;
-  if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
-    page = this.hash.match(/#.*:(.*)/)[1];
-  }
+//function detailTagSearch() {
+//  var path = '/tpps/details/top';
+//  var page = 0;
+//  if (this.hash != null && this.hash.match(/#.*:(.*)/) != null) {
+//    page = this.hash.match(/#.*:(.*)/)[1];
+//  }
 
-  jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
-  jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value = 'tags';
-  jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value = jQuery(this).text();
-  jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value = '=';
-  var request = jQuery.post(path, {
-    type: 'tags',
-    value: jQuery(this).text(),
-    op: '=',
-    page: page
-  });
+//  jQuery('#tpps-details-table')[0].innerHTML = 'Loading...';
+//  jQuery('select').filter(function() { return this.id.match(/edit-details-type/); })[0].value = 'tags';
+//  jQuery('input').filter(function() { return this.id.match(/edit-details-value/); })[0].value = jQuery(this).text();
+//  jQuery('select').filter(function() { return this.id.match(/edit-details-op/); })[0].value = '=';
+//  var request = jQuery.post(path, {
+//    type: 'tags',
+//    value: jQuery(this).text(),
+//    op: '=',
+//    page: page
+//  });
 
-  request.done(function (data) {
-    jQuery('#tpps-details-table')[0].innerHTML = data;
-    initDetailPages();
-  });
-}
+//  request.done(function (data) {
+//    jQuery('#tpps-details-table')[0].innerHTML = data;
+//    initDetailPages();
+//  });
+//}
 
 var maps = {};
 
@@ -632,7 +650,6 @@ jQuery.fn.updateMap = function(locations, fid = "") {
 (function ($, Drupal) {
   // Create namespaces.
   Drupal.tpps = Drupal.tpps || {};
-  Drupal.tpps.doi = Drupal.tpps.doi || {};
 
   /**
    * Strip HTML Tags from given string.
