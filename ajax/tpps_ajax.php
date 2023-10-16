@@ -14,6 +14,11 @@
  *   The string to be autocompleted.
  */
 function tpps_autocomplete($type, $string = "") {
+  // @TODO Implement autocomplet for this fields also.
+  if (in_array($type, ['year', 'tags'])) {
+    drupal_json_output([]);
+    return;
+  }
   $function = "tpps_{$type}_autocomplete";
   if (function_exists($function)) {
     $string = preg_replace('/\\\\/', '\\\\\\\\', $string);
@@ -50,7 +55,8 @@ function tpps_author_autocomplete($string) {
  * @param string $string
  *   The string the user has already entered into the text field.
  */
-function tpps_project_title_autocomplete($string) {
+function tpps_title_autocomplete($string) {
+//function tpps_project_title_autocomplete($string) {
   $matches = array();
 
   $query = db_select('chado.plusgeno_view', 'p')
@@ -71,7 +77,8 @@ function tpps_project_title_autocomplete($string) {
  * @param string $string
  *   The string the user has already entered into the text field.
  */
-function tpps_project_accession_autocomplete($string) {
+//function tpps_project_accession_autocomplete($string) {
+function tpps_accession_autocomplete($string) {
   $matches = array();
 
   $query = db_select('chado.plusgeno_view', 'p')
@@ -176,7 +183,8 @@ function tpps_ncbi_species_autocomplete($string) {
  * @param string $string
  *   The string the user has already entered into the text field.
  */
-function tpps_phenotype_autocomplete($string) {
+//Former: function tpps_phenotype_autocomplete($string) {
+function tpps_phenotype_name_autocomplete($string) {
   $matches = array();
 
   $results = chado_select_record('phenotype', array('name'), array(
@@ -221,8 +229,11 @@ function tpps_phenotype_ontology_autocomplete($string) {
  *
  * @param string $string
  *   The string the user has already entered into the text field.
+ *
+ *   @TODO Limit number of results because takes too much time and huge list.
  */
-function tpps_genotype_autocomplete($string) {
+// Former: function tpps_genotype_autocomplete($string) {
+function tpps_genotype_name_autocomplete($string) {
   $matches = array();
 
   $query = db_select('chado.tpps_search_genotype_name', 'g')

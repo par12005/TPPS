@@ -512,6 +512,8 @@ function tpps_details_search_form(array $form, array $form_state) {
     $form_state['values']['details_type'] = $params['type'] ?? NULL;
   }
 
+  // @TODO [VS] Remove this code.
+  //
   if (!empty($form_state['values']['details_type'])) {
     switch ($form_state['values']['details_type']) {
       case 'title':
