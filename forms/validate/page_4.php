@@ -23,26 +23,26 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
 
     for ($i = 1; $i <= $organism_number; $i++) {
+      $organism = &$form_state['values']["organism-$i"] ?? NULL;
       // Note: 1st item skipped because there is a checkbox which allows to
       // skip validation of non-first items so only them must be checked.
-      if ($i > 1) {
-        $organism = &$form_state['values']["organism-$i"];
-        foreach (['phenotype', 'genotype', 'environment'] as $item) {
+      foreach (['phenotype', 'genotype', 'environment'] as $item) {
+        if ($i > 1) {
           if (($organism[$item . '-repeat-check'] ?? NULL) == '1') {
             // phenotype-repeat-check
             // genotype-repeat-check
             // environment-repeat-check
-            unset($organism[$item]);
+            unset($organism[$i]);
           }
-          if (isset($organism[$item])) {
-            call_user_func(
-              'tpps_validate_' . $item,
-              $organism[$item],
-              $i,
-              $form,
-              $form_state
-            );
-          }
+        }
+        if (!empty($organism[$item])) {
+          call_user_func(
+            'tpps_validate_' . $item,
+            $organism[$item],
+            $i,
+            $form,
+            $form_state
+          );
         }
       }
     }
@@ -147,10 +147,10 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
  *   The state of the form being validated.
  */
 function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array &$form_state) {
-  $normal_check = $phenotype['normal-check'];
-  $iso_check = $phenotype['iso-check'];
+  $normal_check = $phenotype['normal-check'] ?? NULL;
+  $iso_check = $phenotype['iso-check'] ?? NULL;
   $id = "organism-$org_num";
-  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
 
   // Uncomment to block form submission and test validation.
   //form_set_error("$id][phenotype][normal-check", 'Debug');
@@ -474,11 +474,11 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
  */
 function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$form_state) {
   $id = "organism-$org_num";
-  $snps = $genotype['SNPs'];
+  $snps = $genotype['SNPs'] ?? NULL;
   $ref_genome = $genotype['ref-genome'] ?? NULL;
   $genotyping_type = $genotype['files']['genotyping-type'] ?? [];
   // WARNING: 'maker-type' is array because multiple values could be selected.
-  $marker_type = $genotype['marker-type'];
+  $marker_type = $genotype['marker-type'] ?? NULL;
   // $file_type is a string (not array) and not always defined:
   // Shown when: Marker Type: SNPs && Genotyping Type: Genotyping.
   // Possiblem values:
@@ -1116,7 +1116,7 @@ function tpps_validate_environment(array &$environment, $org_num, array $form, a
   // Using cartograplant environment layers.
   $group_check = FALSE;
   $new_layers = array();
-  foreach ($environment['env_layers_groups'] as $group_name => $group_id) {
+  foreach (($environment['env_layers_groups'] ?? []) as $group_name => $group_id) {
     if (!empty($group_id)) {
       $group_check = TRUE;
       if ($group_name == 'WorldClim v.2 (WorldClim)') {
