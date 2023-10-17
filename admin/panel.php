@@ -517,7 +517,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#type' => 'textfield',
     '#prefix' => '<h2 style="margin-top: 30px;">Change owner</h2>',
     '#title' => t('Choose a new owner for the submission'),
-    '#default_value' => $submitting_user->mail,
+    '#default_value' => $submitting_user->mail ?? '',
     '#autocomplete_path' => 'tpps/autocomplete/user',
   );
 
