@@ -162,12 +162,13 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       'columns',
     ), NULL, 'file');
 
-    $fid = tpps_get_ajax_value($form_state, array(
-      'tree-accession',
-      "species-$i",
-      'file',
-    ), NULL);
-
+    // [VS]
+    // Previously $fid was an array which caused warnings on Page 3 submit.
+    $fid = tpps_get_ajax_value($form_state,
+      ['tree-accession', "species-$i", 'file', 'fid'],
+      NULL
+    );
+    // [/VS]
     if (!empty($fid) and empty($skip)) {
       $wrapper_id = "{$fid}_map_wrapper";
       $button_id = "{$fid}_map_button";
