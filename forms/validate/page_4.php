@@ -29,20 +29,17 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       foreach (['phenotype', 'genotype', 'environment'] as $item) {
         if ($i > 1) {
           if (($organism[$item . '-repeat-check'] ?? NULL) == '1') {
-            // phenotype-repeat-check
-            // genotype-repeat-check
-            // environment-repeat-check
+            // phenotype-repeat-check,
+            // genotype-repeat-check,
+            // environment-repeat-check.
             unset($organism[$i]);
           }
         }
         if (!empty($organism[$item])) {
-          call_user_func(
-            'tpps_validate_' . $item,
-            $organism[$item],
-            $i,
-            $form,
-            $form_state
-          );
+          // @TODO [VS] Minor. Check if function exists but not in the nexted
+          // loop to avoid checking the same multiple times.
+          $function = 'tpps_validate_' . $item;
+          call_user_func($function, $organism[$item], $i, $form, $form_state);
         }
       }
     }
