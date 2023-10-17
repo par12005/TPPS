@@ -273,7 +273,7 @@ function tpps_form_get_field_value(array $array, array $parents) {
  * @param string $message
  *   Optional helper message.
  */
-function dp($dump, $message = '') {
+function dpv($dump, $message = '') {
   dpm(print_r($dump, 1), $message ?? NULL);
 }
 // [/VS]
