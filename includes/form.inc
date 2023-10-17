@@ -264,4 +264,16 @@ function tpps_form_get_field_value(array $array, array $parents) {
   }
   return drupal_array_get_nested_value($array, $parents) ?? NULL;
 }
+
+/**
+ * Dumps variable using dpm to browser.
+ *
+ * @param mixed $dump
+ *   Variable which must be dumped.
+ * @param string $message
+ *   Optional helper message.
+ */
+function dp($dump, $message = '') {
+  dpm(print_r($dump, 1), $message ?? NULL);
+}
 // [/VS]
