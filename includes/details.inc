@@ -235,6 +235,7 @@ function tpps_details_top() {
 
   $query = db_select('chado.plusgeno_view', 'pg');
   $query->addExpression('count(distinct(pg.accession))', 'count');
+  // $query->addExpression('substring(pg.accession,5)', 'accession_number');
   if (!empty($params['type']) and !empty($params['value']) and !empty($params['op'])) {
     switch ($params['type']) {
       case 'title':
@@ -283,6 +284,7 @@ function tpps_details_top() {
         break;
     }
   }
+
   $query = $query->execute();
   $total = $query->fetchObject()->count;
 
@@ -350,8 +352,10 @@ function tpps_details_top() {
     'phen_count',
     'gen_count',
   ));
+  $submissions->addExpression('SUBSTRING(pg.accession, 5)::integer', 'accession_number_only');
   $submissions->range($start, $per_page);
-  $submissions->orderBy('pg.accession');
+  // $submissions->orderBy('pg.accession');
+  $submissions->orderBy('accession_number_only', 'ASC');
   $submissions = $submissions->execute();
 
   $rows = array();
