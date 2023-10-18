@@ -3092,13 +3092,22 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
     // so we need to get Synonym Id by Unit Id.
     // WARNING: Must be called when $meta[$name]['unit_id'] already set.
     //
-    // @todo Minor. Implement ability to admin to set synonym on Phenotype
-    // edit form when Metadata File is used. List of synonyms must be
-    // limited by Unit from Metadata File.
+    // @todo Minor. Implement ability for admins/curation team to set
+    // synonym on Phenotype edit form when Metadata File is used.
+    // List of synonyms must be limited by Unit from Metadata File.
     if (empty($meta[$name]['synonym_id'])) {
       // Note: Unit Id could belong to many Synonyms and we are
       // using 1st Synonym Id from the list.
-      $meta[$name]['synonym_id'] = tpps_unit_get_synonym($meta[$name]['unit_id']);
+      if ($synonym_id = tpps_unit_get_synonym($meta[$name]['unit_id'])) {
+        $meta[$name]['synonym_id'] = $synonym_id;
+      }
+      else {
+        $message = t(
+         '[WARNING] Unit #@unit_id has no phenotype synonym.',
+         ['@unit_id' => $meta[$name]['unit_id']]
+        );
+        tpps_log($message);
+      }
     }
   }
   print_r($meta);
