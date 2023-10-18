@@ -192,10 +192,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show publication extra fields.
   // Publication Year.
-  //
-  //
-  //
-  // @TODO no parents.
   $year_options = range(1900, date('Y'), 1);
   $year_options = [0 => '- Select -']
     + array_combine($year_options, $year_options);
