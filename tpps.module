@@ -1051,6 +1051,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
  */
 function tpps_main_validate(&$form, &$form_state) {
   global $user;
+  module_load_include('inc', 'tpps', 'includes/form');
 
   if (
     $form_state['triggering_element']['#value'] == 'Back'
