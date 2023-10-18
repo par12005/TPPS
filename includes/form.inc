@@ -3,6 +3,8 @@
 /**
  * @file
  * Helper functions use at any step of TPPS form.
+ *
+ * Usage: module_load_include('inc', 'tpps', 'includes/form');
  */
 
 /**
@@ -275,5 +277,21 @@ function tpps_form_get_field_value(array $array, array $parents) {
  */
 function dpv($dump, $message = '') {
   dpm(print_r($dump, 1), $message ?? NULL);
+}
+
+/**
+ * Generates list of years for form fields.
+ *
+ * @param int $start_year
+ *   Year to start from.
+ *
+ * @return array
+ *   Returns list of years. Key is equal to value.
+ *
+ * @TODO Minor. Move value of the start_year to the settings page.
+ */
+function tpps_get_year_options(int $start_year = 1900) {
+  $year_options = range($start_year, date('Y'), 1);
+  return [0 => '- Select -'] + array_combine($year_options, $year_options);
 }
 // [/VS]

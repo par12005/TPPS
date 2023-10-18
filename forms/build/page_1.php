@@ -192,14 +192,11 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show publication extra fields.
   // Publication Year.
-  $year_options = range(1900, date('Y'), 1);
-  $year_options = [0 => '- Select -']
-    + array_combine($year_options, $year_options);
   $form['publication']['year'] = [
     '#type' => 'select',
     '#title' => t('Year of Publication:')
       . tpps_page_1_required_by_status($form_state),
-    '#options' => $year_options,
+    '#options' => tpps_get_year_options(),
     '#description' => t('If your publication has not been published yet, '
       . 'please choose the expected year of publication.'),
     '#default_value' => tpps_get_ajax_value($form_state, ['publication', 'year'], 0),

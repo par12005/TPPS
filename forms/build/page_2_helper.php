@@ -14,39 +14,41 @@
  *   The form to be populated.
  * @param array $form_state
  *   The state of the form to be populated.
- *
- * @return array
- *   The populated form.
  */
 function tpps_study_date($type, array &$form, array &$form_state) {
 
   $form[$type . 'Date'] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
+    // Must be above 'Data Type' and 'Study Type' fields.
+    '#weight' => -10,
   );
 
   if ($type == "Ending") {
-    $form['EndingDate']['#states'] = array(
-      'invisible' => array(
-      array(
-        array(':input[name="StartingDate[month]"]' => array('value' => '0')),
-        'or',
-        array(':input[name="StartingDate[year]"]' => array('value' => '0')),
-      ),
-      ),
-    );
+    $form['EndingDate']['#states'] = [
+      'invisible' => [
+        [
+          [':input[name="StartingDate[month]"]' => ['value' => '0']],
+          'or',
+          [':input[name="StartingDate[year]"]' => ['value' => '0']],
+        ],
+      ],
+    ];
   }
   else {
-    $form[$type . 'Date']['#title'] = t('<div class="fieldset-title">Experiment/Analysis Dates</div>');
+    $form[$type . 'Date']['#title'] =
+      t('<div class="fieldset-title">Experiment/Analysis Dates</div>');
   }
-
-  $yearArr = array();
-  $yearArr[0] = '- Select -';
-  for ($i = 1970; $i <= 2018; $i++) {
-    $yearArr[$i] = $i;
-  }
-
-  $monthArr = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Year
+  $form[$type . 'Date']['year'] = [
+    '#type' => 'select',
+    '#title' => t("@type Year: *", ['@type' => $type]),
+    '#options' => tpps_get_year_options(),
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Month.
+  $monthArr = [
     0 => '- Select -',
     'January' => 'January',
     'February' => 'February',
@@ -60,13 +62,7 @@ function tpps_study_date($type, array &$form, array &$form_state) {
     'October' => 'October',
     'November' => 'November',
     'December' => 'December',
-  );
-
-  $form[$type . 'Date']['year'] = array(
-    '#type' => 'select',
-    '#title' => t("@type Year: *", array('@type' => $type)),
-    '#options' => $yearArr,
-  );
+  ];
 
   $form[$type . 'Date']['month'] = array(
     '#type' => 'select',
@@ -99,15 +95,22 @@ function tpps_study_date($type, array &$form, array &$form_state) {
     $form['EndingDate']['month']['#prefix'] = '<div id="Endingmonth">';
     $form['EndingDate']['month']['#suffix'] = '</div>';
 
-    if (isset($form_state['values']['StartingDate']['year']) and $form_state['values']['StartingDate']['year'] != '0') {
-      $yearArr = array();
-      $yearArr[0] = '- Select -';
-      for ($i = $form_state['values']['StartingDate']['year']; $i <= 2018; $i++) {
-        $yearArr[$i] = $i;
-      }
-      $form['EndingDate']['year']['#options'] = $yearArr;
+    if (
+      isset($form_state['values']['StartingDate']['year'])
+      && $form_state['values']['StartingDate']['year'] != '0'
+    ) {
+      $form['EndingDate']['year']['#options'] = tpps_get_year_options(
+        ($form_state['values']['StartingDate']['year'] ?? 1900)
+      );
     }
-    if (isset($form_state['values']['EndingDate']['year']) and $form_state['values']['EndingDate']['year'] == $form_state['values']['StartingDate']['year'] and isset($form_state['values']['StartingDate']['month']) and $form_state['values']['StartingDate']['month'] != '0') {
+    if (
+      isset($form_state['values']['EndingDate']['year'])
+      and ($form_state['values']['EndingDate']['year']
+        == $form_state['values']['StartingDate']['year']
+      )
+      and isset($form_state['values']['StartingDate']['month'])
+      and $form_state['values']['StartingDate']['month'] != '0'
+    ) {
       foreach ($monthArr as $key) {
         if ($key != '0' and $key != $form_state['values']['StartingDate']['month']) {
           unset($monthArr[$key]);
@@ -119,8 +122,6 @@ function tpps_study_date($type, array &$form, array &$form_state) {
       $form['EndingDate']['month']['#options'] = $monthArr;
     }
   }
-
-  return $form;
 }
 
 /**
