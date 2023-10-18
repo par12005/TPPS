@@ -23,36 +23,41 @@ require_once 'page_2_helper.php';
  *   The completed Study Design form.
  */
 function tpps_page_2_create_form(array &$form, array $form_state) {
+  // @TODO [VS] Check if those extra fields are really always required.
   tpps_study_date('Starting', $form, $form_state);
-
   tpps_study_date('Ending', $form, $form_state);
 
-  $options = array(
+  $options = [
     0 => '- Select -',
-    'Genotype' => 'Genotype',
-    'Phenotype' => 'Phenotype (and/or manual environmental data)',
-    'Genotype x Phenotype' => 'Genotype x Phenotype (and/or manual environmental data)',
-  );
+    'Genotype' => t('Genotype'),
+    'Phenotype' => t('Phenotype'),
+    'Genotype x Phenotype' => t('Genotype x Phenotype'),
+  ];
 
-  if (module_exists('cartogratree') and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers')) {
-    $options = array(
-      0 => '- Select -',
-      'Genotype' => 'Genotype',
-      'Phenotype' => 'Phenotype (and/or manual environmental data)',
-      'Environment' => 'Environmental layers',
-      'Genotype x Phenotype' => 'Genotype x Phenotype (and/or manual environmental data)',
-      'Genotype x Environment' => 'Genotype x Environmental layers',
-      'Phenotype x Environment' => 'Phenotype (and/or manual environmental data) x Environmental layers',
-      'Genotype x Phenotype x Environment' => 'Genotype x Phenotype (and/or manual environmental data) x Environmental layers',
-    );
+  if (
+    module_exists('cartogratree')
+    && db_table_exists('cartogratree_groups')
+    && db_table_exists('cartogratree_layers')
+  ) {
+    $options = [
+      0 => t('- Select -'),
+      'Genotype' => t('Genotype'),
+      'Phenotype' => t('Phenotype'),
+      'Environment' => t('Environmental'),
+      'Genotype x Phenotype' => t('Genotype x Phenotype'),
+      'Genotype x Environment' => t('Genotype x Environmental'),
+      'Phenotype x Environment' => t('Phenotype x Environmental'),
+      'Genotype x Phenotype x Environment' => t('Genotype x Phenotype x Environmental'),
+    ];
   }
 
-  $form['data_type'] = array(
+  $form['data_type'] = [
     '#type' => 'select',
     '#title' => t('Data Type: *'),
     '#options' => $options,
+    // @TODO [VS] Minor. Use 'container' form element instead of prefixes.
     '#prefix' => '<legend><span class="fieldset-legend"><div class="fieldset-title">Study Design</div></span></legend>',
-  );
+  ];
 
   $form['study_type'] = array(
     '#type' => 'select',
