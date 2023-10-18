@@ -73,7 +73,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
         // [VS] #8669py308
         $condition = (
           $values['location_accuracy'] == 'descriptive_place'
-          && empty($values['desriptive_place'])
+          && empty($values['descriptive_place'])
         );
         if ($condition) {
           form_set_error("tree-accession][species-$i][descriptive_place",

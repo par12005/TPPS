@@ -168,7 +168,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     }
     // @todo get new/custom units from metadata file.
     if (count($new_cvterms) > 0) {
-      $message = 'This submission will create the following new local cvterms: ' . implode(', ', $new_cvterms);
+      $message = 'This submission will create the following new local cvterms: ' . implode(', ', array_unique($new_cvterms));
       $display .= "<div class=\"alert alert-block alert-dismissible alert-warning messages warning\">
         <a class=\"close\" data-dismiss=\"alert\" href=\"#\">×</a>
         <h4 class=\"element-invisible\">Warning message</h4>
@@ -517,7 +517,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#type' => 'textfield',
     '#prefix' => '<h2 style="margin-top: 30px;">Change owner</h2>',
     '#title' => t('Choose a new owner for the submission'),
-    '#default_value' => $submitting_user->mail,
+    '#default_value' => $submitting_user->mail ?? '',
     '#autocomplete_path' => 'tpps/autocomplete/user',
   );
 
