@@ -291,7 +291,47 @@ function dpv($dump, $message = '') {
  * @TODO Minor. Move value of the start_year to the settings page.
  */
 function tpps_get_year_options(int $start_year = 1900) {
-  $year_options = range($start_year, date('Y'), 1);
-  return [0 => '- Select -'] + array_combine($year_options, $year_options);
+  $list = range($start_year, date('Y'), 1);
+  return [0 => t('- Select -')] + array_combine($list, $list);
 }
-// [/VS]
+
+/**
+ * Generates list of months for form fields.
+ *
+ * @return array
+ *   Returns list of month.
+ *   Key is month name in english with leading capital letter.
+ *   Value is a localized month name.
+ *
+ * @TODO Minor. Use list of month name and array_walk() or similar to add t().
+ */
+function tpps_get_month_options($start_month = NULL) {
+  $list = [
+    0 => t('- Select -'),
+    'January' => t('January'),
+    'February' => t('February'),
+    'March' => t('March'),
+    'April' => t('April'),
+    'May' => t('May'),
+    'June' => t('June'),
+    'July' => t('July'),
+    'August' => t('August'),
+    'September' => t('September'),
+    'October' => t('October'),
+    'November' => t('November'),
+    'December' => t('December'),
+  ];
+  // Remove items to leave only '- Select -' and moths after $start_month.
+  if (!empty($start_month)) {
+    foreach (array_keys($list) as $key) {
+      if ($key === 0) {
+        continue;
+      }
+      elseif ($key == $start_month) {
+        break;
+      }
+      unset($list[$key]);
+    }
+  }
+  return $list;
+}

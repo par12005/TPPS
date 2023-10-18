@@ -16,14 +16,12 @@
  *   The state of the form to be populated.
  */
 function tpps_study_date($type, array &$form, array &$form_state) {
-
-  $form[$type . 'Date'] = array(
+  $form[$type . 'Date'] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
     // Must be above 'Data Type' and 'Study Type' fields.
     '#weight' => -10,
-  );
-
+  ];
   if ($type == "Ending") {
     $form['EndingDate']['#states'] = [
       'invisible' => [
@@ -48,48 +46,33 @@ function tpps_study_date($type, array &$form, array &$form_state) {
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Month.
-  $monthArr = [
-    0 => '- Select -',
-    'January' => 'January',
-    'February' => 'February',
-    'March' => 'March',
-    'April' => 'April',
-    'May' => 'May',
-    'June' => 'June',
-    'July' => 'July',
-    'August' => 'August',
-    'September' => 'September',
-    'October' => 'October',
-    'November' => 'November',
-    'December' => 'December',
+
+  $form[$type . 'Date']['month'] = [
+    '#type' => 'select',
+    '#title' => t("@type Month: *", ['@type' => $type]),
+    '#options' => tpps_get_month_options(),
+    '#states' => [
+      'invisible' => [
+        ':input[name="' . $type . 'Date[year]"]' => ['value' => '0'],
+      ],
+    ],
   ];
 
-  $form[$type . 'Date']['month'] = array(
-    '#type' => 'select',
-    '#title' => t("@type Month: *", array('@type' => $type)),
-    '#options' => $monthArr,
-    '#states' => array(
-      'invisible' => array(
-        ':input[name="' . $type . 'Date[year]"]' => array('value' => '0'),
-      ),
-    ),
-  );
-
   if ($type == "Starting") {
-    $form['StartingDate']['year']['#ajax'] = array(
+    $form['StartingDate']['year']['#ajax'] = [
       'callback' => 'tpps_date_year_callback',
       'wrapper' => 'Endingyear',
-    );
-    $form['StartingDate']['month']['#ajax'] = array(
+    ];
+    $form['StartingDate']['month']['#ajax'] = [
       'callback' => 'tpps_date_month_callback',
       'wrapper' => 'Endingmonth',
-    );
+    ];
   }
   else {
-    $form['EndingDate']['year']['#ajax'] = array(
+    $form['EndingDate']['year']['#ajax'] = [
       'callback' => 'tpps_date_month_callback',
       'wrapper' => 'Endingmonth',
-    );
+    ];
     $form['EndingDate']['year']['#prefix'] = '<div id="Endingyear">';
     $form['EndingDate']['year']['#suffix'] = '</div>';
     $form['EndingDate']['month']['#prefix'] = '<div id="Endingmonth">';
@@ -103,23 +86,14 @@ function tpps_study_date($type, array &$form, array &$form_state) {
         ($form_state['values']['StartingDate']['year'] ?? 1900)
       );
     }
+    // @TODO Minor. Move to JS to avoid AJAX requests.
     if (
-      isset($form_state['values']['EndingDate']['year'])
-      and ($form_state['values']['EndingDate']['year']
+      !empty($form_state['values']['StartingDate']['month'])
+      && ($form_state['values']['EndingDate']['year'] ?? 0)
         == $form_state['values']['StartingDate']['year']
-      )
-      and isset($form_state['values']['StartingDate']['month'])
-      and $form_state['values']['StartingDate']['month'] != '0'
     ) {
-      foreach ($monthArr as $key) {
-        if ($key != '0' and $key != $form_state['values']['StartingDate']['month']) {
-          unset($monthArr[$key]);
-        }
-        elseif ($key == $form_state['values']['StartingDate']['month']) {
-          break;
-        }
-      }
-      $form['EndingDate']['month']['#options'] = $monthArr;
+      $form['EndingDate']['month']['#options']
+        = tpps_get_month_options($form_state['values']['StartingDate']['month']);
     }
   }
 }
