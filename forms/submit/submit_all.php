@@ -3095,7 +3095,7 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
     // @todo Minor. Implement ability for admins/curation team to set
     // synonym on Phenotype edit form when Metadata File is used.
     // List of synonyms must be limited by Unit from Metadata File.
-    if (empty($meta[$name]['synonym_id'])) {
+    if (empty($meta[$name]['synonym_id']) && !empty($meta[$name]['unit_id'])) {
       // Note: Unit Id could belong to many Synonyms and we are
       // using 1st Synonym Id from the list.
       if ($synonym_id = tpps_unit_get_synonym($meta[$name]['unit_id'])) {
