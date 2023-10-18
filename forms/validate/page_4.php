@@ -23,32 +23,24 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
 
     for ($i = 1; $i <= $organism_number; $i++) {
-      $organism = $form_values["organism-$i"];
-
-      if ($i > 1 and isset($organism['phenotype-repeat-check']) and $organism['phenotype-repeat-check'] == '1') {
-        unset($form_state['values']["organism-$i"]['phenotype']);
-      }
-      if (isset($form_state['values']["organism-$i"]['phenotype'])) {
-        tpps_validate_phenotype(
-          $form_state['values']["organism-$i"]['phenotype'],
-          $i,
-          $form,
-          $form_state
-        );
-      }
-
-      if ($i > 1 and isset($organism['genotype-repeat-check']) and $organism['genotype-repeat-check'] == '1') {
-        unset($form_state['values']["organism-$i"]['genotype']);
-      }
-      if (isset($form_state['values']["organism-$i"]['genotype'])) {
-        tpps_validate_genotype($form_state['values']["organism-$i"]['genotype'], $i, $form, $form_state);
-      }
-
-      if ($i > 1 and isset($organism['environment-repeat-check']) and $organism['environment-repeat-check'] == '1') {
-        unset($form_state['values']["organism-$i"]['environment']);
-      }
-      if (isset($form_state['values']["organism-$i"]['environment'])) {
-        tpps_validate_environment($form_state['values']["organism-$i"]['environment'], "organism-$i");
+      $organism = &$form_state['values']["organism-$i"] ?? NULL;
+      // Note: 1st item skipped because there is a checkbox which allows to
+      // skip validation of non-first items so only them must be checked.
+      foreach (['phenotype', 'genotype', 'environment'] as $item) {
+        if ($i > 1) {
+          if (($organism[$item . '-repeat-check'] ?? NULL) == '1') {
+            // phenotype-repeat-check,
+            // genotype-repeat-check,
+            // environment-repeat-check.
+            unset($organism[$i]);
+          }
+        }
+        if (!empty($organism[$item])) {
+          // @TODO [VS] Minor. Check if function exists but not in the nexted
+          // loop to avoid checking the same multiple times.
+          $function = 'tpps_validate_' . $item;
+          call_user_func($function, $organism[$item], $i, $form, $form_state);
+        }
       }
     }
 
@@ -59,36 +51,34 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       for ($i = 1; $i <= $organism_number; $i++) {
 
         if (isset($new_form["organism-$i"]['phenotype']['metadata']['upload'])) {
-          $form["organism-$i"]['phenotype']['metadata']['upload'] = $new_form["organism-$i"]['phenotype']['metadata']['upload'];
-          $form["organism-$i"]['phenotype']['metadata']['upload']['#id'] = "edit-organism-$i-phenotype-metadata-upload";
+          $form["organism-$i"]['phenotype']['metadata']['upload']
+            = $new_form["organism-$i"]['phenotype']['metadata']['upload'];
+          $form["organism-$i"]['phenotype']['metadata']['upload']['#id']
+            = "edit-organism-$i-phenotype-metadata-upload";
         }
         if (isset($new_form["organism-$i"]['phenotype']['metadata']['columns'])) {
-          $form["organism-$i"]['phenotype']['metadata']['columns'] = $new_form["organism-$i"]['phenotype']['metadata']['columns'];
-          $form["organism-$i"]['phenotype']['metadata']['columns']['#id'] = "edit-organism-$i-phenotype-metadata-columns";
+          $form["organism-$i"]['phenotype']['metadata']['columns']
+            = $new_form["organism-$i"]['phenotype']['metadata']['columns'];
+          $form["organism-$i"]['phenotype']['metadata']['columns']['#id']
+            = "edit-organism-$i-phenotype-metadata-columns";
         }
 
         if (isset($form["organism-$i"]['phenotype']['file'])) {
-          $form["organism-$i"]['phenotype']['file']['upload'] = $new_form["organism-$i"]['phenotype']['file']['upload'];
-          $form["organism-$i"]['phenotype']['file']['columns'] = $new_form["organism-$i"]['phenotype']['file']['columns'];
-          $form["organism-$i"]['phenotype']['file']['upload']['#id'] = "edit-organism-$i-phenotype-file-upload";
-          $form["organism-$i"]['phenotype']['file']['columns']['#id'] = "edit-organism-$i-phenotype-file-columns";
+          $form["organism-$i"]['phenotype']['file']['upload']
+            = $new_form["organism-$i"]['phenotype']['file']['upload'];
+          $form["organism-$i"]['phenotype']['file']['columns']
+            = $new_form["organism-$i"]['phenotype']['file']['columns'];
+          $form["organism-$i"]['phenotype']['file']['upload']['#id']
+            = "edit-organism-$i-phenotype-file-upload";
+          $form["organism-$i"]['phenotype']['file']['columns']['#id']
+            = "edit-organism-$i-phenotype-file-columns";
         }
 
-        $file_types = array(
-          'snps-assay',
-          'other',
-        );
-
-        $field_types = array(
-          'upload',
-          'columns',
-        );
-
-        foreach ($file_types as $type) {
-          foreach ($field_types as $field) {
+        foreach (['snps-assay', 'other'] as $type) {
+          foreach (['upload', 'columns'] as $field) {
             if (
               isset($form["organism-$i"]['genotype']['files'][$type][$field])
-              and isset($new_form["organism-$i"]['genotype']['files'][$type][$field])
+              && isset($new_form["organism-$i"]['genotype']['files'][$type][$field])
             ) {
               $form["organism-$i"]['genotype']['files'][$type][$field]
                 = $new_form["organism-$i"]['genotype']['files'][$type][$field];
@@ -108,8 +98,8 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       // definitly not needed.
       for ($i = 1; $i <= $organism_number; $i++) {
         $genotype = &$form_state['values']["organism-$i"]['genotype'];
-        $genotyping_type = $genotype['files']['genotyping-type'];
-        $file_type = $genotype['files']['file-type'];
+        $genotyping_type = $genotype['files']['genotyping-type'] ?? [];
+        $file_type = $genotype['files']['file-type'] ?? NULL;
         if ($genotyping_type == 'Genotyping' && $file_type == 'VCF') {
           if (tpps_file_remove($genotype['files']['snps-assay'])) {
             $genotype['files']['snps-assay'] = 0;
@@ -146,18 +136,18 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
  *
  * @param array $phenotype
  *   The form_state values of the phenotype fieldset for organism $id.
- * @param string $org_num
- *   The id of the organism fieldset being validated.
+ * @param int $org_num
+ *   The id of the organism being validated.
  * @param array $form
  *   The form being validated.
  * @param array $form_state
  *   The state of the form being validated.
  */
 function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array &$form_state) {
-  $normal_check = $phenotype['normal-check'];
-  $iso_check = $phenotype['iso-check'];
+  $normal_check = $phenotype['normal-check'] ?? NULL;
+  $iso_check = $phenotype['iso-check'] ?? NULL;
   $id = "organism-$org_num";
-  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
 
   // Uncomment to block form submission and test validation.
   //form_set_error("$id][phenotype][normal-check", 'Debug');
@@ -472,8 +462,8 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
  * @param array $genotype
  *   The form_state values of the genotype fieldset for organism $id.
  *   $form_state['values']["organism-$i"]['genotype'].
- * @param string $org_num
- *   The id of the organism fieldset being validated.
+ * @param int $org_num
+ *   The id of the organism being validated.
  * @param array $form
  *   The form being validated.
  * @param array $form_state
@@ -481,15 +471,19 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
  */
 function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$form_state) {
   $id = "organism-$org_num";
-  $snps = $genotype['SNPs'];
-  $ref_genome = $genotype['ref-genome'];
-  $genotyping_type = $genotype['files']['genotyping-type'];
+  $snps = $genotype['SNPs'] ?? NULL;
+  $ref_genome = $genotype['ref-genome'] ?? NULL;
+  $genotyping_type = $genotype['files']['genotyping-type'] ?? [];
   // WARNING: 'maker-type' is array because multiple values could be selected.
-  $marker_type = $genotype['marker-type'];
-  // Dropdown is visible when:
-  // 'Marker Type': 'SNPs'.
-  // Possiblem values: 'VCF' and 'SNPs Genotype Assay'.
-  $file_type = $genotype['files']['file-type'];
+  $marker_type = $genotype['marker-type'] ?? NULL;
+  // $file_type is a string (not array) and not always defined:
+  // Shown when: Marker Type: SNPs && Genotyping Type: Genotyping.
+  // Possiblem values:
+  // 'VCF', 'SNP Assay file and Assay design file'.
+  // @TODO Check if those values are possible and remove validation if not:
+  // ... and 'SNPs Associations'
+  // ... and 'Other Marker Genotype Spreadsheet'.
+  $file_type = $genotype['files']['file-type'] ?? NULL;
   // File fields:
   $vcf = $genotype['files']['vcf'] ?? 0;
   $snps_assay = $genotype['files']['snps-assay'] ?? 0;
@@ -597,6 +591,19 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   tpps_is_required_field_empty($form_state, [$id, 'genotype', 'marker-type']);
   if (!empty($marker_type['SNPs'])) {
+
+
+
+    // @TODO Required only when: Marker Type: SNPs, Genotyping Type: Genotyping.
+    // $genotyping_type = $genotype['files']['genotyping-type'] ?? [];
+    //if (empty($file_type)) {
+    //  tpps_form_error_required(
+    //    $form_state,
+    //    [$id, 'genotype', 'files', 'file-type']
+    //  );
+    //  // [VS] Return to avoid submission of form.
+    //  return;
+    //}
     if ($is_step2_genotype) {
       if ($genotype['files']['upload_snp_association'] == 'Yes') {
         tpps_is_required_genotype_file_empty($form_state, $org_num, 'snps-association');
@@ -658,12 +665,6 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   }
   // [/VS]
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  if (preg_match('/^0+$/', implode('', $file_type))) {
-    tpps_form_error_required($form_state,
-      [$id, 'genotype', 'files', 'file-type']
-    );
-    return;
-  }
   $loaded_state = tpps_load_submission($form_state['accession']);
   if (!empty($loaded_state['vcf_replace'])) {
     foreach ($loaded_state['vcf_replace'] as $org_num => $fid) {
@@ -682,23 +683,16 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   }
 
   if (
-    !empty($file_type['VCF'])
-    and !$vcf
-    and trim($form_state['values'][$id]['genotype']['files']['local_vcf']) == ''
+    $file_type == 'VCF' &&  !$vcf
+    && trim($form_state['values'][$id]['genotype']['files']['local_vcf']) == ''
   ) {
     tpps_form_error_required($form_state, [$id, 'genotype', 'files', 'vcf']);
   }
 
-  elseif (!empty($file_type['VCF'])) {
+  elseif ($file_type == 'VCF') {
     if (
-      (
-        $ref_genome === 'manual'
-        or $ref_genome === 'manual2'
-        or $ref_genome === 'url'
-      )
-      and isset($assembly)
-      and $assembly
-      and !form_get_errors()
+      !empty($assembly) && !form_get_errors()
+      && in_array($ref_genome, ['manual', 'manual2', 'url'])
     ) {
       if (trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']) != '') {
         $local_vcf_path = trim($form_state['values']["organism-$org_num"]['genotype']['files']['local_vcf']);
@@ -838,7 +832,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     tpps_preserve_valid_file($form_state, $vcf, $org_num, "Genotype_VCF");
   }
 
-  if (!empty($file_type['SNPs Genotype Assay']) and !$snps_assay) {
+  // @TODO Update because field 'file-type' has only this options:
+  // 'SNP Assay file and Assay design file' and 'VCF'.
+  if ($file_type == 'SNPs Genotype Assay' && !$snps_assay) {
     // Field 'snps_assay' is required when:
     // Genotyping Type: Genotyping Assay
     // or (
@@ -850,7 +846,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       [$id, 'genotype', 'files', 'snps-assay']
     );
   }
-  elseif (!empty($file_type['SNPs Genotype Assay'])) {
+  // @TODO Update because field 'file-type' has only this options:
+  // 'SNP Assay file and Assay design file' and 'VCF'.
+  elseif ($file_type == 'SNPs Genotype Assay') {
     $headers = tpps_file_headers($snps_assay);
     $id_col_name = key($headers);
     while (($k = array_search(NULL, $headers))) {
@@ -908,12 +906,16 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     tpps_preserve_valid_file($form_state, $snps_assay, $org_num, "Genotype_SNPs_Assay");
 
     if (!form_get_errors()) {
-      if (!empty($file_type['SNPs Associations']) and !$assoc_file) {
+      // @TODO Update because field 'file-type' has only this options:
+      // 'SNP Assay file and Assay design file' and 'VCF'.
+      if ($file_type == 'SNPs Associations' && !$assoc_file) {
         form_set_error("$id][genotype][files][snps-association",
           t("SNPs Associations file: field is required.")
         );
       }
-      elseif (!empty($file_type['SNPs Associations'])) {
+      // @TODO Update because field 'file-type' has only this options:
+      // 'SNP Assay file and Assay design file' and 'VCF'.
+      elseif ($file_type == 'SNPs Associations') {
         $required_groups = [
           'SNP ID' => ['id' => [1]],
           'Scaffold' => ['scaffold' => [2]],
@@ -1035,8 +1037,10 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Files / Other.
+  // @TODO Update because field 'file-type' has only this options:
+  // 'SNP Assay file and Assay design file' and 'VCF'.
   if (
-    !empty($file_type['Other Marker Genotype Spreadsheet'])
+    $file_type == 'Other Marker Genotype Spreadsheet'
     && !tpps_is_required_genotype_file_empty($form_state, $org_num, 'other')
   ) {
     // ? [VS] Should $form_state be used instead of $form here?
@@ -1097,14 +1101,19 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
  *
  * @param array $environment
  *   The form_state values of the environment fieldset for organism $id.
- * @param string $id
- *   The id of the organism fieldset being validated.
+ * @param int $org_num
+ *   The id of the organism being validated.
+ * @param array $form
+ *   The form being validated.
+ * @param array $form_state
+ *   The state of the form being validated.
  */
-function tpps_validate_environment(array &$environment, $id) {
+function tpps_validate_environment(array &$environment, $org_num, array $form, array &$form_state) {
+  $id = "organism-$org_num";
   // Using cartograplant environment layers.
   $group_check = FALSE;
   $new_layers = array();
-  foreach ($environment['env_layers_groups'] as $group_name => $group_id) {
+  foreach (($environment['env_layers_groups'] ?? []) as $group_name => $group_id) {
     if (!empty($group_id)) {
       $group_check = TRUE;
       if ($group_name == 'WorldClim v.2 (WorldClim)') {
@@ -1140,15 +1149,21 @@ function tpps_validate_environment(array &$environment, $id) {
 
   if (!empty($environment['env_layers']['other'])) {
     if (empty($environment['env_layers']['other_db'])) {
-      form_set_error("$id][environment][env_layers][other_db", t('CartograPlant other environmental layer DB: field is required.'));
+      form_set_error("$id][environment][env_layers][other_db",
+        t('CartograPlant other environmental layer DB: field is required.')
+      );
     }
 
     if (empty($environment['env_layers']['other_name'])) {
-      form_set_error("$id][environment][env_layers][other_name", t('CartograPlant other environmental layer name: field is required.'));
+      form_set_error("$id][environment][env_layers][other_name",
+        t('CartograPlant other environmental layer name: field is required.')
+      );
     }
 
     if (empty($environment['env_layers']['other_params'])) {
-      form_set_error("$id][environment][env_layers][other_params", t('CartograPlant other environmental layer parameters: field is required.'));
+      form_set_error("$id][environment][env_layers][other_params",
+        t('CartograPlant other environmental layer parameters: field is required.')
+      );
     }
 
     if (!form_get_errors()) {
@@ -1161,10 +1176,14 @@ function tpps_validate_environment(array &$environment, $id) {
   $environment['env_layers'] = $new_layers;
 
   if (!$group_check) {
-    form_set_error("$id][environment][env_layers_groups", t('CartograPlant environmental layers groups: field is required.'));
+    form_set_error("$id][environment][env_layers_groups",
+      t('CartograPlant environmental layers groups: field is required.')
+    );
   }
   elseif (empty($new_layers)) {
-    form_set_error("$id][environment][env_layers", t('CartograPlant environmental layers: field is required.'));
+    form_set_error("$id][environment][env_layers",
+      t('CartograPlant environmental layers: field is required.')
+    );
   }
 }
 

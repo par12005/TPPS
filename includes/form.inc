@@ -239,4 +239,41 @@ function tpps_form_navigation_bar(array &$form, array $form_state) {
     '#weight' => -1000,
   ];
 }
+
+/**
+ * Gets value of form element.
+ *
+ * Usage examples:
+ *   $parents = ['genotype', 'marker'];
+ *   tpps_form_get_field_value($form_state['values'], $parents);
+ *
+ * @param array $array
+ *   The array from which to get the value.
+ * @param array $parents
+ *   An array of parent keys of the value, starting with the outermost key.
+ *
+ * @return mixed
+ *   For non-fieldset elements returns value of field.
+ *   For fieldsets returns whole fieldset element.
+ *   Returns NULL if element wasn't found or has no '#value' sub-element.
+ */
+function tpps_form_get_field_value(array $array, array $parents) {
+  $element = drupal_array_get_nested_value($array, $parents);
+  if (($element['#type'] ?? NULL) != 'fieldset') {
+    array_push($parents, '#value');
+  }
+  return drupal_array_get_nested_value($array, $parents) ?? NULL;
+}
+
+/**
+ * Dumps variable using dpm to browser.
+ *
+ * @param mixed $dump
+ *   Variable which must be dumped.
+ * @param string $message
+ *   Optional helper message.
+ */
+function dpv($dump, $message = '') {
+  dpm(print_r($dump, 1), $message ?? NULL);
+}
 // [/VS]

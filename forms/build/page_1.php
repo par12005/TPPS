@@ -106,10 +106,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     'scope' => 'footer',
   ];
 
-  $publication_status = tpps_get_ajax_value(
-    $form_state, ['publication', 'status'], NULL
-  );
-  $doi = tpps_get_ajax_value($form_state, ['doi'], NULL);
+  $doi = tpps_get_ajax_value($form_state, ['doi'], '');
   $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']) ?? 1;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -131,7 +128,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ],
-    '#default_value' => $publication_status,
+    '#default_value' => tpps_get_ajax_value($form_state, ['publication', 'status'], ''),
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.
@@ -139,33 +136,15 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Note:
   // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
   // Accession will be stored in 'old_tgdr' field.
-
-  $doi_suggestion_list = [
-    // Fake.
-    '10.1111/dryad.111',
-    // Real but used. No species.
-    '10.5061/dryad.91mk9',
-    // Not used, no species.
-    '10.21267/IN.2016.6.2294',
-    // Raal, not used, with species.
-    '10.5061/dryad.vk43j',
-  ];
-  foreach ($doi_suggestion_list as $doi_suggestion) {
-    // @todo Use l().
-    $list[] = '<a href"#" class="tpps-suggestion">'
-      . $doi_suggestion . '</a>';
-  }
-  $doi_description = 'Example: <br />' . implode(', ', $list);
-
   // @TODO Minor. Rename field to 'publication_doi'.
-  $parents = ['doi'];
   $form['publication']['doi'] = [
     '#type' => 'textfield',
-    '#title' => t('Publication DOI:'),
+    '#title' => t('Publication DOI:')
+      . tpps_page_1_required_by_status($form_state),
     '#tree' => FALSE,
-    '#parents' => $parents,
+    '#parents' => ['doi'],
     '#default_value' => $doi,
-    '#description' => $doi_description,
+    '#description' => tpps_page_1_get_doi_examples(),
     '#prefix' => '<div id="doi-message"></div>',
     '#states' => [
       'visible' => [
@@ -176,14 +155,13 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     ],
   ];
 
-  $parents = ['dataset_doi'];
   $form['publication']['dataset_doi'] = [
     '#type' => 'textfield',
     '#title' => t('Dataset DOI:'),
-    '#parents' => $parents,
+    '#parents' => ['dataset_doi'],
     '#tree' => FALSE,
-    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
-    '#description' => $doi_description,
+    '#default_value' => tpps_get_ajax_value($form_state, ['dataset_doi'], ''),
+    '#description' => tpps_page_1_get_doi_examples(),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],
@@ -196,7 +174,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Primary Author.
   // Element '#parents' doesn't work but '#tree' => FALSE works.
-  //$parents = ['primaryAuthor'];
   $form['publication']['primaryAuthor'] = [
     '#type' => 'textfield',
     '#title' => t('Primary Author: *'),
@@ -208,7 +185,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'title' => ['First Author of the publication'],
     ],
     '#description' => t('Note: please format in ‘Last, First’ format.'),
-    //'#parents' => $parents,
     '#default_value' => tpps_get_ajax_value($form_state, ['primaryAuthor'], NULL),
   ];
   // Update field's value.
@@ -216,16 +192,21 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show publication extra fields.
   // Publication Year.
+  //
+  //
+  //
+  // @TODO no parents.
   $year_options = range(1900, date('Y'), 1);
   $year_options = [0 => '- Select -']
     + array_combine($year_options, $year_options);
   $form['publication']['year'] = [
     '#type' => 'select',
-    '#title' => t('Year of Publication:'),
+    '#title' => t('Year of Publication:')
+      . tpps_page_1_required_by_status($form_state),
     '#options' => $year_options,
     '#description' => t('If your publication has not been published yet, '
       . 'please choose the expected year of publication.'),
-    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
+    '#default_value' => tpps_get_ajax_value($form_state, ['publication', 'year'], 0),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],
@@ -237,8 +218,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   $form['publication']['title'] = [
     '#type' => 'textfield',
-    '#title' => t('Title of Publication/Study:'),
-    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
+    '#title' => t('Title of Publication/Study:')
+      . tpps_page_1_required_by_status($form_state),
+    '#default_value' => tpps_get_ajax_value($form_state, ['publication', 'title'], ''),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],
@@ -250,8 +232,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   $form['publication']['abstract'] = [
     '#type' => 'textarea',
-    '#title' => t('Abstract/Description:'),
-    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
+    '#title' => t('Abstract/Description:')
+      . tpps_page_1_required_by_status($form_state),
+    '#default_value' => tpps_get_ajax_value($form_state, ['publication', 'abstract'], ''),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],
@@ -263,9 +246,10 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
 
   $form['publication']['journal'] = [
     '#type' => 'textfield',
-    '#title' => t('Journal:'),
+    '#title' => t('Journal:')
+      . tpps_page_1_required_by_status($form_state),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
-    '#default_value' => tpps_get_ajax_value($form_state, $parents, NULL),
+    '#default_value' => tpps_get_ajax_value($form_state, ['publication', 'journal'], ''),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],

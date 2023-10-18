@@ -802,7 +802,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
 
   $marker_parents = [$id, 'genotype', 'marker-type'];
   $genotype_marker_type = array_keys(
-    tpps_get_ajax_value($form_state, $marker_parents)
+    tpps_get_ajax_value($form_state, $marker_parents, [])
   );
   // Get 'Define SSRs/cpSSRs Type' field value to show correct fields
   // which visiblity depends on value of this field.
@@ -873,7 +873,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Genotyping file type: *'),
       '#options' => [
         'SNP Assay file and Assay design file'
-        => t('SNP Assay file and Assay design file'),
+          => t('SNP Assay file and Assay design file'),
         'VCF' => t('VCF'),
       ],
       '#ajax' => [
@@ -2133,9 +2133,5 @@ function tpps_build_field_description() {
  *   Returns value of empty fields in file. Usually it will be 'NA'.
  */
 function tpps_get_empty_field_value(array $form_state, $id, $file_field_name) {
-  $values = $form_state['saved_values'][TPPS_PAGE_4];
-  return (
-    isset($values["organism-$id"]['genotype']['files'][$file_field_name]['other'])
-    ? $values["organism-$id"]['genotype']['files'][$file_field_name]['other'] : 'NA'
-  );
+  return $form_state['saved_values'][TPPS_PAGE_4]["organism-$id"]['genotype']['files'][$file_field_name]['other'] ?? 'NA';
 }
