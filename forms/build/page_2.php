@@ -24,39 +24,20 @@ require_once 'page_2_helper.php';
  */
 function tpps_page_2_create_form(array &$form, array $form_state) {
   $values = $form_state['saved_values'][TPPS_PAGE_2] ?? [];
-  // Field 'Data Type'.
-  $options = [
-    0 => '- Select -',
-    'Genotype' => t('Genotype'),
-    'Phenotype' => t('Phenotype'),
-    'Genotype x Phenotype' => t('Genotype x Phenotype'),
+  $form['study_design'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Study Design'),
   ];
-  if (
-    module_exists('cartogratree')
-    && db_table_exists('cartogratree_groups')
-    && db_table_exists('cartogratree_layers')
-  ) {
-    $options = [
-      0 => t('- Select -'),
-      'Genotype' => t('Genotype'),
-      'Phenotype' => t('Phenotype'),
-      'Environment' => t('Environmental'),
-      'Genotype x Phenotype' => t('Genotype x Phenotype'),
-      'Genotype x Environment' => t('Genotype x Environmental'),
-      'Phenotype x Environment' => t('Phenotype x Environmental'),
-      'Genotype x Phenotype x Environment' => t('Genotype x Phenotype x Environmental'),
-    ];
-  }
-  $form['data_type'] = [
+  // Field 'Data Type'.
+  $form['study_design']['data_type'] = [
     '#type' => 'select',
     '#title' => t('Data Type: *'),
-    '#options' => $options,
+    '#options' => tpps_page_2_get_data_type_list(),
     // @TODO [VS] Minor. Use 'container' form element instead of prefixes.
-    '#prefix' => '<legend><span class="fieldset-legend"><div class="fieldset-title">Study Design</div></span></legend>',
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Field 'Study Type'.
-  $form['study_type'] = [
+  $form['study_design']['study_type'] = [
     '#type' => 'select',
     '#title' => t('Study Type: *'),
     '#options' => [
@@ -75,24 +56,24 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
 
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
-    unset($form['study_type']['#ajax']);
+    unset($form['study_design']['study_type']['#ajax']);
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // TPPS Regular User Form.
   else {
-  // @TODO [VS] Set weight to be before data_type and 'study_type' fields.
+    // @TODO [VS] Set weight to be before data_type and 'study_type' fields.
     tpps_study_date('Starting', $form, $form_state);
     tpps_study_date('Ending', $form, $form_state);
 
-    $form['study_info'] = array(
+    $form['study_info'] = [
       '#type' => 'fieldset',
       '#tree' => TRUE,
       '#collapsible' => TRUE,
       '#prefix' => '<div id="study_info">',
       '#suffix' => '</div>',
-    );
+    ];
 
-    $type = tpps_get_ajax_value($form_state, array('study_type'), 0);
+    $type = tpps_get_ajax_value($form_state, ['study_design', 'study_type'], 0);
 
     switch ($type) {
       case '1':

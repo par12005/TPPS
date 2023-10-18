@@ -203,9 +203,6 @@ select.form-select {
   height: auto;
   min-height: 28px;
 }
-a.fieldset-title {
-  display: contents;
-}
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Navigation bar */
 .tppsc-form .navigation-bar {
@@ -253,5 +250,10 @@ form div.warning {
 }
 select option:selected {
   background: silver;
+}
+fieldset legend{
+  padding-left: 12px;
+  text-transform: uppercase;
+  font-weight: bold;
 }
 /* [/VS] */

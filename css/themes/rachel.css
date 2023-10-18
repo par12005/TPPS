@@ -153,4 +153,9 @@ form.tppsc-form .fieldset-wrapper>.form-item {
 #autocomplete li:hover {
   background: #5a7736; /* Green as buttons */
 }
-/* :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: * /
+
+fieldset legend{
+  padding-left: 0;
+  text-transform: uppercase;
+  font-weight: bold;
+}

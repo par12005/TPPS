@@ -586,3 +586,36 @@ function tpps_control(array &$form, $type, $label) {
     );
   }
 }
+
+/**
+ * Generates list of options for 'Data Type' dropdown.
+ *
+ * @return array
+ *   Returns accociative array where values are localized and keys are in
+ *   english.
+ */
+function tpps_page_2_get_data_type_list() {
+  $options = [
+    0 => '- Select -',
+    'Genotype' => t('Genotype'),
+    'Phenotype' => t('Phenotype'),
+    'Genotype x Phenotype' => t('Genotype x Phenotype'),
+  ];
+  if (
+    module_exists('cartogratree')
+    && db_table_exists('cartogratree_groups')
+    && db_table_exists('cartogratree_layers')
+  ) {
+    $options = [
+      0 => t('- Select -'),
+      'Genotype' => t('Genotype'),
+      'Phenotype' => t('Phenotype'),
+      'Environment' => t('Environmental'),
+      'Genotype x Phenotype' => t('Genotype x Phenotype'),
+      'Genotype x Environment' => t('Genotype x Environmental'),
+      'Phenotype x Environment' => t('Phenotype x Environmental'),
+      'Genotype x Phenotype x Environment' => t('Genotype x Phenotype x Environmental'),
+    ];
+  }
+  return $options;
+}
