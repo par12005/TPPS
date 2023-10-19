@@ -20,6 +20,15 @@ function tpps_refresh_views() {
 }
 
 /**
+ * Refreshes TPPS plusgeno_view which refreshes the TPPS Details Directory listing
+ */
+function tpps_refresh_plusgeno_view() {
+  global $base_url;
+  db_query('refresh materialized view concurrently chado.plusgeno_view;');
+}
+
+
+/**
  * Submits delayed TPPS submissions if they are past their release date.
  */
 function tpps_delayed_submissions() {

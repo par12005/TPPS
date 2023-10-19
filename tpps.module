@@ -537,6 +537,18 @@ function tpps_cronapi() {
     ),
   );
 
+  $freq = variable_get('tpps_refresh_plusgeno_view_frequency', '0 0 * * SAT');
+  $items['tpps_refresh_plusgeno_view'] = array(
+    'title' => t('Refresh TPPS PlusGeno View (TPPS directory listing)'),
+    'callback' => 'tpps_refresh_plusgeno_view',
+    'scheduler' => array(
+      'name' => 'crontab',
+      'crontab' => array(
+        'rules' => array($freq),
+      ),
+    ),
+  ); 
+
   $freq = variable_get('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
   $items['tpps_delayed_submissions'] = array(
     'title' => t('Check to see if any of the delayed TPPS submissions should be published yet'),
