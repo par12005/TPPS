@@ -18,10 +18,11 @@ function tpps_study_export_form(array $form, array &$form_state) {
     '#description' => t('Format is: TGDRxxx'),
   ];
   if (!empty($accession)) {
+    $state = tpps_study_export_get_state($accession);
     $form['tpps_export_state'] = [
       '#type' => 'textarea',
       '#title' => t('State PHP Array'),
-      '#value' => var_export(tpps_study_export_get_state($accession), 1),
+      '#value' => var_export($state, 1),
       '#rows' => 10,
       '#resizable' => TRUE,
     ];
@@ -38,10 +39,36 @@ function tpps_study_export_form(array $form, array &$form_state) {
       . "\ndpm(unserialize(html_entity_decode(\$result)));",
     '#rows' => 10,
     '#resizable' => TRUE,
+    //'#description' => t(
+    //  'Open special page on remote site or use DB dump of certain study.'
+    //  . '<br />Steps:'
+    //  . '<br /> 1. Open: DOMAIN/phppgadmin/'
+    //  . '<br /> 2. Choose table: "public"."tpps_submission"'
+    //  . '<br /> 3. Choose "SQL-query".'
+    //  . '<br /> 4. Run: SELECT submission_state FROM "public"."tpps_submission" WHERE accession = "###";'
+    //  . '<br /> 5. Click "Download".'
+    //  . '<br /> 6. Choose "CSV".'
+    //  . "<br /> 7. Open file and paste it's content."
+    //),
   ];
-  $form['#submit'][] = 'tpps_study_export_form_submit';
-  // @TODO Add simple buttons.
-  return system_settings_form($form);
+  $form['action_export'] = [
+    '#type' => 'submit',
+    '#value' => t('Export'),
+    '#submit' => ['tpps_study_export_form_submit'],
+  ];
+  $form['action_reset'] = [
+    '#type' => 'submit',
+    '#value' => t('Reset'),
+    '#submit' => ['tpps_study_export_form_reset'],
+  ];
+  return $form;
+}
+
+/**
+ * Resets TPPS Export Form.
+ */
+function tpps_study_export_form_reset() {
+  drupal_goto('admin/config/tpps/migration/export');
 }
 
 /**
@@ -61,5 +88,11 @@ function tpps_study_export_get_state($accession) {
     ->range(0, 1)
     ->execute()
     ->fetchField();
-  return unserialize(html_entity_decode($result));
+  $state = unserialize(html_entity_decode($result));
+  foreach ($state['files'] as $fid) {
+    $file = file_load($fid);
+    $file->url = file_create_url($file->uri);
+    $state['tpps_export_files'][$fid] = (array) $file;
+  }
+  return $state;
 }
