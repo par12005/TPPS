@@ -377,6 +377,7 @@ function tpps_menu() {
   // [VS].
   // Reports.
   tpps_menu_add_report_pages($items);
+  tpps_menu_add_study_import_export_pages($items);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items[TPPS_AJAX_URL . '/%'] = [
     // Use POST to send data and GET to just get data.
@@ -547,7 +548,7 @@ function tpps_cronapi() {
         'rules' => array($freq),
       ),
     ),
-  ); 
+  );
 
   $freq = variable_get('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
   $items['tpps_delayed_submissions'] = array(
@@ -1748,5 +1749,39 @@ function tpps_menu_add_report_pages(array &$items = []) {
     'access callback' => 'tpps_access',
     'access arguments' => ['administer tpps module'],
     'file' => 'reports/missing_doi.inc',
+  ];
+}
+
+/**
+ * Adds Study Import/Export pages into hook_menu().
+ *
+ * @param array $items
+ *   Menu items.
+ */
+function tpps_menu_add_study_import_export_pages(array &$items = []) {
+  $items = $items ?? [];
+  $items['admin/config/tpps/migration'] = [
+    'title' => 'Study Migration',
+    'description' => 'Import/Export of TPPS Studies',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_study_import_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/import.inc',
+  ];
+  $items['admin/config/tpps/migration/import'] = [
+    'title' => 'TPPS Study Import',
+    'description' => 'TPPS Study Import',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  ];
+  $items['admin/config/tpps/migration/export'] = [
+    'title' => 'TPPS Study Export',
+    'description' => 'TPPS Study Export',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_study_export_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/export.inc',
+    'type' => MENU_LOCAL_TASK,
   ];
 }
