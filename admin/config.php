@@ -113,6 +113,18 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#description' => t("If CartograPlant is installed, TPPS can add an optional field to the environment section for environment layers, using the data pulled in through CartograPlant."),
   );
 
+  $form['tpps_latest_job_status_slack_updates_api_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('TPPS Latest Job Status Slack Updates API URL'),
+    '#default_value' => variable_get('tpps_latest_job_status_slack_updates_api_url', NULL),
+  );
+
+  $form['tpps_latest_job_status_slack_updates_last_job_id'] = array(
+    '#type' => 'textfield',
+    '#title' => t('TPPS Latest Job Status Slack Updates Last Job ID'),
+    '#default_value' => variable_get('tpps_latest_job_status_slack_updates_last_job_id', NULL),
+  );  
+
   if (module_exists('cartogratree') and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers')) {
     $form['tpps_ct_api_key'] = array(
       '#type' => 'textfield',

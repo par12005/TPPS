@@ -525,6 +525,18 @@ function tpps_access() {
 function tpps_cronapi() {
   $items = array();
 
+  $freq = variable_get('tpps_latest_job_status_slack_updates_job_frequency', '*/15 * * * *');
+  $items['tpps_latest_job_status_slack_updates'] = array(
+    'title' => t('TPPS Jobs Slack Updates'),
+    'callback' => 'tpps_latest_job_status_slack_updates',
+    'scheduler' => array(
+      'name' => 'crontab',
+      'crontab' => array(
+        'rules' => array($freq),
+      ),
+    ),
+  );
+
   $freq = variable_get('tpps_refresh_views_job_frequency', '0 */12 * * *');
   $items['tpps_refresh_views'] = array(
     'title' => t('Refresh TPPS and CartograPlant views'),
@@ -536,6 +548,8 @@ function tpps_cronapi() {
       ),
     ),
   );
+
+
 
   $freq = variable_get('tpps_refresh_plusgeno_view_frequency', '0 0 * * SAT');
   $items['tpps_refresh_plusgeno_view'] = array(
