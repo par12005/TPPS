@@ -25,6 +25,7 @@ define('TPPS_MODULE_PATH', drupal_get_path('module', 'tpps'));
 define('TPPS_IMAGES_PATH', TPPS_MODULE_PATH . '/images/');
 define('TPPS_AJAX_URL', 'ajax/tpps');
 
+require_once 'includes/common.inc';
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';

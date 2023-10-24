@@ -172,6 +172,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   $job->logMessage(print_r($state, 1));
 
   // Update the TGDR with the new_accession.
+  module_load_include('inc', 'tpps', 'includes/common');
   $state = tpps_array_replace($state, $old_accession, $new_accession);
 
   $job->logMessage('New submission data for ' . $new_accession);

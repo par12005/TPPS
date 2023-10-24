@@ -50,6 +50,7 @@ function tpps_study_import_form_reset(array $form, array &$form_state) {
  * Form submitter for 'tpps_form_page_1_settings_form' form.
  */
 function tpps_study_import_form_submit(array $form, array &$form_state) {
+  module_load_include('inc', 'tpps', 'includes/common');
   // Remove useless data from the submission state.
   if ($state_raw = $form_state['values']['tpps_import_submission_state']) {
     eval('$state = ' . $state_raw . ';');
@@ -87,13 +88,12 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
       $state = tpps_array_replace($state, $fid, $new_file->fid);
     }
     // Recreate Study.
-    // drupal_form_submit('tpps_main', $state);
+    drupal_form_submit('tpps_main', $state);
   }
 
-  dpm(print_r($state, 1));
+  //dpm(print_r($state, 1));
   $form_state['rebuild'] = 1;
 }
-
 
 /**
  * Downloads remote file and add to Drupal.
