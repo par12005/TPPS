@@ -198,7 +198,8 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   // Now change the accession number in the tpps_submission table.
   $transaction = db_transaction();
   try {
-    $sql = 'UPDATE tpps_submission SET accession = :new_accession WHERE accession = :old_accession';
+    $sql = 'UPDATE tpps_submission SET accession = :new_accession '
+      . ' WHERE accession = :old_accession';
     chado_query($sql,
       [':new_accession' => $new_accession, ':old_accession' => $old_accession]
     );

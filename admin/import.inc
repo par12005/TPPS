@@ -5,7 +5,7 @@
  * TPPS Study Import Form and related functions.
  *
  *
- * @TODO Use function to get rid of useless data from $form_state
+ * @TODO Minor. Use function to get rid of useless data from $form_state
  * function tpps_form_state_info(array &$new, array &$old);
  */
 
@@ -16,7 +16,8 @@ function tpps_study_import_form(array $form, array &$form_state) {
   $form['tpps_import_new_accession'] = [
     '#type' => 'textfield',
     '#title' => t('New Accession'),
-    '#default_value' => $form_state['input']['tpps_import_new_accession'] ?? '',
+    '#default_value' => $form_state['input']['tpps_import_new_accession']
+    ?? 'TGDR' . tpps_init_project_get_next_accession(),
     '#required' => FALSE,
   ];
   // @TODO Idea. Use file upload field instead of plain code dump.
@@ -36,7 +37,20 @@ function tpps_study_import_form(array $form, array &$form_state) {
     '#value' => t('Reset'),
     '#submit' => ['tpps_study_import_form_reset'],
   ];
+  $form['#validate'][] = 'tpps_study_import_form_validate';
   return $form;
+}
+
+/**
+ * Validation for form 'tpps_study_import_form'.
+ */
+function tpps_study_import_form_validate(array $form, array &$form_state) {
+  $new_accession = $form_state['values']['tpps_import_new_accession'];
+  if (tpps_api_check_accession($new_accession)) {
+    form_set_error('tpps_import_new_accession', t('Accession already in use. '
+      . 'Click "Reset" to get next available value.')
+    );
+  }
 }
 
 /**
@@ -50,15 +64,21 @@ function tpps_study_import_form_reset(array $form, array &$form_state) {
  * Form submitter for 'tpps_form_page_1_settings_form' form.
  */
 function tpps_study_import_form_submit(array $form, array &$form_state) {
+  global $user;
   module_load_include('inc', 'tpps', 'includes/common');
   // Remove useless data from the submission state.
   if ($state_raw = $form_state['values']['tpps_import_submission_state']) {
     eval('$state = ' . $state_raw . ';');
 
     $state['values'] = $state['saved_values'];
-    // We need to remove 'save_values' because some code checks if this
-    // item exists and blocks somehow form submission.
-    unset($state['saved_values']);
+    // Note: $state['saved_values'] is required for normal form submission.
+    // Fix Warning: end() expects parameter 1 to be array, null given in
+    // file_managed_file_validate()
+    // (line 607 of /var/www/Drupal/modules/file/file.module).
+    $state['triggering_element']['#parents'] = ['submit'];
+    // Fix Notice: Undefined index: #value in tpps_main_validate()
+    // (line 1071 of /var/www/Drupal/sites/all/modules/TGDR/tpps.module).
+    $state['triggering_element']['#value'] = t('Review and Submit');
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Change accession.
@@ -76,22 +96,17 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
     // From tpps_init_project().
     $state['values']['dbxref_id'] = tpps_init_project_get_dbxref_id($new_accession);
     $state['values']['status'] = 'Incomplete';
+    tpps_create_submission($state, $user->uid);
 
     // Process files.
     foreach ($state['tpps_export_files'] as $fid => $file) {
-      //dpm($file, $fid);
-      // Download file.
       $new_file = tpps_study_import_download_file($file);
-      //dpm($new_file, $new_file->fid);
-
       // Change fid.
       $state = tpps_array_replace($state, $fid, $new_file->fid);
     }
     // Recreate Study.
     drupal_form_submit('tpps_main', $state);
   }
-
-  //dpm(print_r($state, 1));
   $form_state['rebuild'] = 1;
 }
 
@@ -118,7 +133,7 @@ function tpps_study_import_download_file(array $file) {
   // Move file to Drupal.
   $file = file_save_data(
     $content,
-    'public://tpps_phenotype/' . REQUEST_TIME. '_' . $file['filename'],
+    'public://tpps_phenotype/' . $file['filename'],
     FILE_EXISTS_REPLACE
   );
   return $file;

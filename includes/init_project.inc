@@ -39,24 +39,7 @@ function tpps_init_project(array &$form_state, $accession = NULL) {
 
     // $result = chado_select_record('dbxref', array('accession'), $values, $options);
 
-    // Rish: New patch that sorts based on integer instead of string values.
-    // @TODO Move code which gets new accession number to separate function.
-    $sql = "SELECT *, substr(accession, 5)::INTEGER as accession_number "
-      . "FROM chado.dbxref WHERE accession LIKE 'TGDR%' "
-      . "ORDER BY accession_number DESC LIMIT 1;";
-    $result_query = chado_query($sql, []);
-
-    if (empty($result_query)) {
-      $accession = 'TGDR001';
-    }
-    else {
-      $result = $result_query->fetchObject();
-      $accession = substr($result->accession, 4) + 1;
-      while (strlen($accession) < 3) {
-        $accession = "0$accession";
-      }
-      $accession = "TGDR$accession";
-    }
+    $accession = 'TGDR' . tpps_init_project_get_next_accession();
   }
 
   $form_state['dbxref_id'] = tpps_init_project_get_dbxref_id($accession);
@@ -90,4 +73,29 @@ function tpps_init_project_get_dbxref_id($accession) {
       'accession' => $accession,
     ]
   )['dbxref_id'];
+}
+
+/**
+ * Get next available accession number.
+ *
+ * @return int
+ *   Returns Study accession number (without 'TGDR' prefix).
+ */
+function tpps_init_project_get_next_accession() {
+  // Rish: New patch that sorts based on integer instead of string values.
+  $sql = "SELECT *, substr(accession, 5)::INTEGER as accession_number "
+    . "FROM chado.dbxref WHERE accession LIKE 'TGDR%' "
+    . "ORDER BY accession_number DESC LIMIT 1;";
+  $result_query = chado_query($sql, []);
+  if (empty($result_query)) {
+    $accession = '001';
+  }
+  else {
+    $result = $result_query->fetchObject();
+    $accession = substr($result->accession, 4) + 1;
+    while (strlen($accession) < 3) {
+      $accession = "0$accession";
+    }
+  }
+  return $accession;
 }
