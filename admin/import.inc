@@ -98,11 +98,16 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
     $state['values']['status'] = 'Incomplete';
     tpps_create_submission($state, $user->uid);
 
-    // Process files.
-    foreach ($state['tpps_export_files'] as $fid => $file) {
-      $new_file = tpps_study_import_download_file($file);
-      // Change fid.
-      $state = tpps_array_replace($state, $fid, $new_file->fid);
+    // Process files (if any).
+    if (empty($state['tpps_export_files'])) {
+      drupal_set_message('Study has no files.');
+    }
+    else {
+      foreach ($state['tpps_export_files'] as $fid => $file) {
+        $new_file = tpps_study_import_download_file($file);
+        // Change fid.
+        $state = tpps_array_replace($state, $fid, $new_file->fid);
+      }
     }
     // Recreate Study.
     drupal_form_submit('tpps_main', $state);

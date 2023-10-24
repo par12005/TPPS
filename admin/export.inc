@@ -89,10 +89,15 @@ function tpps_study_export_get_state($accession) {
     ->execute()
     ->fetchField();
   $state = unserialize(html_entity_decode($result));
-  foreach ($state['files'] as $fid) {
-    $file = file_load($fid);
-    $file->url = file_create_url($file->uri);
-    $state['tpps_export_files'][$fid] = (array) $file;
+  if (empty($state['files'])) {
+    drupal_set_message('Study has no files.');
+  }
+  else {
+    foreach ($state['files'] as $fid) {
+      $file = file_load($fid);
+      $file->url = file_create_url($file->uri);
+      $state['tpps_export_files'][$fid] = (array) $file;
+    }
   }
   return $state;
 }
