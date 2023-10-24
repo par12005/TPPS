@@ -3,6 +3,10 @@
 /**
  * @file
  * TPPS Study Import Form and related functions.
+ *
+ *
+ * @TODO Use function to get rid of useless data from $form_state
+ * function tpps_form_state_info(array &$new, array &$old);
  */
 
 /**
@@ -14,10 +18,6 @@ function tpps_study_import_form(array $form, array &$form_state) {
     '#title' => t('New Accession'),
     '#default_value' => $form_state['input']['tpps_import_new_accession'] ?? '',
     '#required' => FALSE,
-    '#description' => t(
-      'Default: files/<br />'
-      . "Path to folder where study's files are stored."
-    ),
   ];
   // @TODO Idea. Use file upload field instead of plain code dump.
   $form['tpps_import_submission_state'] = [
@@ -53,12 +53,30 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
   // Remove useless data from the submission state.
   if ($state_raw = $form_state['values']['tpps_import_submission_state']) {
     eval('$state = ' . $state_raw . ';');
-    $state['values'] = $state['saved_values'];
-    if (!empty($new_accession = $form_state['values']['tpps_import_new_accession'])) {
-      $form_state['values']['frontpage']['accession'] = $new_accession;
-      // Check also $form_state['input'] and $form_state['completed_form'].
-    }
 
+    $state['values'] = $state['saved_values'];
+    // We need to remove 'save_values' because some code checks if this
+    // item exists and blocks somehow form submission.
+    unset($state['saved_values']);
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Change accession.
+    // @TODO Major. Check if new accession is not in use.
+    if (!empty($new_accession = $form_state['values']['tpps_import_new_accession'])) {
+      // $form_state['values']['frontpage']['accession'] = $new_accession;
+      // Check also $form_state['input'] and $form_state['completed_form'].
+      // Update accession value in $form_state.
+      $state = tpps_array_replace(
+        $state,
+        $state['values']['frontpage']['accession'],
+        $new_accession
+      );
+    }
+    // From tpps_init_project().
+    $state['values']['dbxref_id'] = tpps_init_project_get_dbxref_id($new_accession);
+    $state['values']['status'] = 'Incomplete';
+
+    // Process files.
     foreach ($state['tpps_export_files'] as $fid => $file) {
       //dpm($file, $fid);
       // Download file.
@@ -66,45 +84,16 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
       //dpm($new_file, $new_file->fid);
 
       // Change fid.
-      $replacement = ['old' => $fid, 'new' => $new_file->fid];
-      $state = tpps_import_update_fid($state, $replacement);
+      $state = tpps_array_replace($state, $fid, $new_file->fid);
     }
     // Recreate Study.
-    drupal_form_submit('tpps_main', $state);
-    // dpm(print_r($state, 1));
+    // drupal_form_submit('tpps_main', $state);
   }
+
+  dpm(print_r($state, 1));
   $form_state['rebuild'] = 1;
 }
 
-/**
- * Replaces  File Id with new in array recurcively.
- *
- * Will be updated both keys and values.
- *
- * @param array $array
- *   Array to be updated.
- * @param array $replacement
- *   Replacement array. Keys are:
- *   'old' - old value/key,
- *   'new' - new value/key.
- * @return array
- *   Returns updated array.
- */
-function tpps_import_update_fid(array $array, array $replacement) {
-  foreach ($array as $key => $value) {
-    if (!empty($value) && is_array($value)) {
-      $array[$key] = tpps_import_update_fid($value, $replacement);
-    }
-    elseif ((int) $value == (int) $replacement['old']) {
-      $array[$key] = $replacement['new'];
-    }
-    if ((int) $key == (int) $replacement['old']) {
-      $array[$replacement['new']] = $array[$key];
-      unset($array[$key]);
-    }
-  }
-  return $array;
-}
 
 /**
  * Downloads remote file and add to Drupal.
@@ -129,7 +118,7 @@ function tpps_study_import_download_file(array $file) {
   // Move file to Drupal.
   $file = file_save_data(
     $content,
-    'public://tpps_phenotype/' . $file['filename'],
+    'public://tpps_phenotype/' . REQUEST_TIME. '_' . $file['filename'],
     FILE_EXISTS_REPLACE
   );
   return $file;

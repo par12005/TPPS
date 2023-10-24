@@ -164,27 +164,18 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   // tpps_submission_clear_db($old_accession);
 
   $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
-  // Update the form state data for the study
+  // Update the form state data for the study.
   $submission = tpps_load_submission($old_accession, FALSE);
   $state = unserialize($submission->submission_state);
 
   $job->logMessage('Original submission data for ' . $old_accession);
-  $job->logMessage(print_r($state, true));
+  $job->logMessage(print_r($state, 1));
 
-  // Update the TGDR with the new_accession
-  // First encode to JSON before string replacement
-  $state_json = json_encode($state);
-
-  // Now replace the old accession with the new accession
-  $state_json = str_replace($old_accession,$new_accession,$state_json);
-
-  // Now convert JSON back to an array
-  $state = json_decode($state_json,true);
-
-
+  // Update the TGDR with the new_accession.
+  $state = tpps_array_replace($state, $old_accession, $new_accession);
 
   $job->logMessage('New submission data for ' . $new_accession);
-  $job->logMessage(print_r($state, true));
+  $job->logMessage(print_r($state, 1));
 
   // This function will not work here because it tries to update
   // a non existing TGDR (the new one has not been created as yet)
@@ -202,15 +193,14 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
     ->condition('accession', $old_accession)
     ->execute();
 
-
   $job->logMessage('[INFO] Update tpps_submission table study ' . $old_accession . ' to ' . $new_accession);
-  // Now change the accession number in the tpps_submission table
+  // Now change the accession number in the tpps_submission table.
   $transaction = db_transaction();
   try {
-    chado_query('UPDATE tpps_submission SET accession = :new_accession WHERE accession = :old_accession', array(
-      ':new_accession' => $new_accession,
-      ':old_accession' => $old_accession
-    ));
+    $sql = 'UPDATE tpps_submission SET accession = :new_accession WHERE accession = :old_accession';
+    chado_query($sql,
+      [':new_accession' => $new_accession, ':old_accession' => $old_accession]
+    );
   }
   catch (\Exception $e) {
     $transaction->rollback();
