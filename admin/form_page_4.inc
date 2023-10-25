@@ -36,9 +36,12 @@ function tpps_form_page_4_settings_form(array $form, array &$form_state) {
  * Form submitter.
  */
 function tpps_form_page_4_settings_form_submit(array $form, array &$form_state) {
+  // Clear cache on change only.
   if (
-    !empty($form_state['values']['tpps_page_4_cache_synonym_list'])
-    || !empty($form_state['values']['tpps_page_4_cache_unit_list'])
+    ($form_state['values']['tpps_page_4_cache_synonym_list'] ?? NULL)
+      != variable_get('tpps_page_4_cache_synonym_list', FALSE)
+    || ($form_state['values']['tpps_page_4_cache_unit_list'] ?? NULL)
+      != variable_get('tpps_page_4_cache_unit_list', FALSE)
   ) {
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
     // @TODO Minor. Clear only unit/synonym lists.

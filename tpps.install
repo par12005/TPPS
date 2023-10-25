@@ -28,6 +28,8 @@ function tpps_install() {
   variable_set('tpps_top_bar', 'status');
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
+  variable_set('tpps_front_show_pending_status', FALSE);
+  variable_set('tpps_front_show_others_studies', TRUE);
   // Page 1 Settings.
   variable_set('tpps_page_1_doi_check_source', 'public.tpps_submissions');
   variable_set('tpps_page_1_cache_ajax_responses', TRUE);
@@ -308,16 +310,18 @@ function tpps_install() {
  */
 function tpps_uninstall() {
 
-  // [VS]
-  // Main settings.
-  variable_del('tpps_theme');
-  variable_del('tpps_top_bar');
+  // [VS] Remove module's variables.
   // Reports.
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
   variable_del('tpps_report_order_family_not_exist_title');
+  // Main settings.
+  variable_del('tpps_theme');
+  variable_del('tpps_top_bar');
   // Front page.
-  variable_set('tpps_front_cache_accession_list', TRUE);
+  variable_del('tpps_front_cache_accession_list');
+  variable_del('tpps_front_show_pending_status');
+  variable_del('tpps_front_show_others_studies');
   // Page 1.
   variable_det('tpps_page_1_doi_check_source');
   variable_del('tpps_page_1_cache_ajax_responses');
