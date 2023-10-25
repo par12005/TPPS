@@ -257,7 +257,10 @@ function tpps_form_navigation_bar(array &$form, array $form_state) {
  *   For fieldsets returns whole fieldset element.
  *   Returns NULL if element wasn't found or has no '#value' sub-element.
  */
-function tpps_form_get_field_value(array $array, array $parents) {
+function tpps_form_get_field_value(array $array = [], array $parents = []) {
+  if (empty($array) || empty($parents)) {
+    return NULL;
+  }
   $element = drupal_array_get_nested_value($array, $parents);
   if (($element['#type'] ?? NULL) != 'fieldset') {
     array_push($parents, '#value');
