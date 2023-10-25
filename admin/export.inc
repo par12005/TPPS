@@ -3,6 +3,10 @@
 /**
  * @file
  * TPPS Study Import Form and related functions.
+ *
+ *
+ * @TODO Minor. Get status of study in
+ * https://tgwebdev.cam.uchc.edu/admin/reports/db/public.tripal_jobs.
  */
 
 /**
@@ -33,23 +37,9 @@ function tpps_study_export_form(array $form, array &$form_state) {
     '#type' => 'textarea',
     '#title' => t('PHP Code to get data on remote server'),
     '#value' => "\$accession = '$accession';"
-      . "\n\$sql = 'SELECT submission_state FROM tpps_submission "
-      . "WHERE accession = '$accession' LIMIT 1;';"
-      . "\n\$result = db_query(\$sql)->fetchField();"
-      . "\ndpm(unserialize(html_entity_decode(\$result)));",
+      . "\ndpm(var_export(tpps_study_export_get_state(\$accession), 1));",
     '#rows' => 10,
     '#resizable' => TRUE,
-    //'#description' => t(
-    //  'Open special page on remote site or use DB dump of certain study.'
-    //  . '<br />Steps:'
-    //  . '<br /> 1. Open: DOMAIN/phppgadmin/'
-    //  . '<br /> 2. Choose table: "public"."tpps_submission"'
-    //  . '<br /> 3. Choose "SQL-query".'
-    //  . '<br /> 4. Run: SELECT submission_state FROM "public"."tpps_submission" WHERE accession = "###";'
-    //  . '<br /> 5. Click "Download".'
-    //  . '<br /> 6. Choose "CSV".'
-    //  . "<br /> 7. Open file and paste it's content."
-    //),
   ];
   $form['action_export'] = [
     '#type' => 'submit',
@@ -99,5 +89,16 @@ function tpps_study_export_get_state($accession) {
       $state['tpps_export_files'][$fid] = (array) $file;
     }
   }
+  // @TODO Replace hardcoded '3'.
+  //if (empty($state['saved_values']['file_info'][3])) {
+  //  drupal_set_message('Study has no step 3 files.');
+  //}
+  //else {
+  //  foreach (array_keys($state['saved_values']['file_info'][3]) as $fid) {
+  //    $file = file_load($fid);
+  //    $file->url = file_create_url($file->uri);
+  //    $state['tpps_export_files'][$fid] = (array) $file;
+  //  }
+  //}
   return $state;
 }

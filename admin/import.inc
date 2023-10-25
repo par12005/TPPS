@@ -19,6 +19,7 @@ function tpps_study_import_form(array $form, array &$form_state) {
     '#default_value' => $form_state['input']['tpps_import_new_accession']
     ?? 'TGDR' . tpps_init_project_get_next_accession(),
     '#required' => FALSE,
+    '#description' => 'Leave empty to autogenerate accession',
   ];
   // @TODO Idea. Use file upload field instead of plain code dump.
   $form['tpps_import_submission_state'] = [
@@ -70,7 +71,6 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
   if ($state_raw = $form_state['values']['tpps_import_submission_state']) {
     eval('$state = ' . $state_raw . ';');
 
-    $state['values'] = $state['saved_values'];
     // Note: $state['saved_values'] is required for normal form submission.
     // Fix Warning: end() expects parameter 1 to be array, null given in
     // file_managed_file_validate()
@@ -82,21 +82,38 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Change accession.
-    // @TODO Major. Check if new accession is not in use.
-    if (!empty($new_accession = $form_state['values']['tpps_import_new_accession'])) {
-      // $form_state['values']['frontpage']['accession'] = $new_accession;
-      // Check also $form_state['input'] and $form_state['completed_form'].
-      // Update accession value in $form_state.
-      $state = tpps_array_replace(
-        $state,
-        $state['values']['frontpage']['accession'],
-        $new_accession
-      );
+    if (!empty($form_state['values']['tpps_import_new_accession'])) {
+      $new_accession = $form_state['values']['tpps_import_new_accession'];
     }
+    else {
+      $new_accession = 'TGDR' . tpps_init_project_get_next_accession();
+    }
+    // $form_state['values']['frontpage']['accession'] = $new_accession;
+    // Check also $form_state['input'] and $form_state['completed_form'].
+    // Update accession value in $form_state.
+    $state = tpps_array_replace(
+      $state,
+      $state['saved_values']['frontpage']['accession'],
+      $new_accession
+    );
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // From tpps_init_project().
-    $state['values']['dbxref_id'] = tpps_init_project_get_dbxref_id($new_accession);
+    //$state['values']['dbxref_id']
+    $state['saved_values']['dbxref_id']
+      = $state['dbxref_id']
+      = $state['values']['dbxref_id']
+      = tpps_init_project_get_dbxref_id($new_accession);
+
     $state['values']['status'] = 'Incomplete';
+    $state['values'] = $state['saved_values'];
+   // dpm(print_r($state, 1));
     tpps_create_submission($state, $user->uid);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Remove tree pictures.
+    // @TODO Fix this. Not work. Manually removed "stdClass"...
+    //unset($state['complete form']);
+    //unset($state['values']['complete form']);
+    //unset($state['complete form']['tree_pictures']);
 
     // Process files (if any).
     if (empty($state['tpps_export_files'])) {
@@ -104,6 +121,7 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
     }
     else {
       foreach ($state['tpps_export_files'] as $fid => $file) {
+        dpm($file, $fid);
         $new_file = tpps_study_import_download_file($file);
         // Change fid.
         $state = tpps_array_replace($state, $fid, $new_file->fid);
