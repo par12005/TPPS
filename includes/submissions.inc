@@ -1148,6 +1148,7 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
  * @param bool $reset
  *   Flag which defined if cached data must be updated or not.
  *   Default is FALSE (do not update cached data).
+ *
  *   Total execution time (95 items):
  *   Previous:  703.94587516785 msec
  *   No caching 412.0819568634 msec
@@ -1167,7 +1168,8 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
   $key = serialize($conditions);
-  if ($reset || empty($cache) || empty($cache->data[$key])) {
+  $is_cache_allowed = variable_get('tpps_front_cache_accession_list', FALSE);
+  if (!$is_cache_allowed || $reset || empty($cache) || empty($cache->data[$key])) {
     $query = db_select('tpps_submission', 's')->fields('s');
     foreach ($conditions as $item) {
       $query->condition($item[0], $item[1], ($item[2] ?? '='));

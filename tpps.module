@@ -561,7 +561,7 @@ function tpps_cronapi() {
         'rules' => array($freq),
       ),
     ),
-  ); 
+  );
 
   $freq = variable_get('tpps_delayed_submissions_job_frequency', '0 */6 * * *');
   $items['tpps_delayed_submissions'] = array(
@@ -1628,6 +1628,17 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'type' => MENU_DEFAULT_LOCAL_TASK,
   ];
+  $items['admin/config/tpps/form/front'] = [
+    'title' => 'Front',
+    'description' => 'Form Front page Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_form_front_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/form_front.inc',
+    'weight' => 20,
+    'type' => MENU_LOCAL_TASK,
+  ];
   $items['admin/config/tpps/form/page-1'] = [
     'title' => 'Page 1',
     'description' => 'Form Page 1 Settings',
@@ -1636,7 +1647,18 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/form_page_1.inc',
-    'weight' => 20,
+    'weight' => 30,
+    'type' => MENU_LOCAL_TASK,
+  ];
+  $items['admin/config/tpps/form/page-4'] = [
+    'title' => 'Page 4',
+    'description' => 'Form Page 4 Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_form_page_4_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/form_page_4.inc',
+    'weight' => 100,
     'type' => MENU_LOCAL_TASK,
   ];
 
