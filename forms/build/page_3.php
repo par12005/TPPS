@@ -125,15 +125,17 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       ),
       '#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv</span>',
       '#suffix' => '<style>figure {}</style>',
-      'empty' => array(
-        '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
-      ),
+      'empty' => [
+        '#default_value' =>
+          $values['tree-accession']["species-$i"]['file']['empty'] ?? 'NA',
+      ],
       'columns' => array(
         '#description' => t('Please define which columns hold the required data: Plant Identifier and Location. If your plants are located based on a population group, you can provide the population group column and a mapping of population group to location below.'),
       ),
       'no-header' => array(),
       'empty' => array(
-        '#default_value' => isset($values['tree-accession']["species-$i"]['file']['empty']) ? $values['tree-accession']["species-$i"]['file']['empty'] : 'NA',
+        '#default_value' =>
+        $values['tree-accession']["species-$i"]['file']['empty'] ?? 'NA',
       ),
       'columns-options' => array(
         '#type' => 'hidden',

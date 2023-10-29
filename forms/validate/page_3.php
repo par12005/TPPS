@@ -65,14 +65,17 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
         if (gettype($values['pop-group']) === 'array') {
           foreach ($values['pop-group'] as $pop_name => $location) {
             if (empty($location)) {
-              form_set_error("tree-accession][species-$i][pop-group][$pop_name", "Population Group $pop_name Location: field is required.");
+              form_set_error(
+                "tree-accession][species-$i][pop-group][$pop_name",
+                "Population Group $pop_name Location: field is required."
+              );
             }
           }
         }
 
         // [VS] #8669py308
         $condition = (
-          $values['location_accuracy'] == 'descriptive_place'
+          ($values['location_accuracy'] ?? NULL) == 'descriptive_place'
           && empty($values['descriptive_place'])
         );
         if ($condition) {
@@ -81,7 +84,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
         }
 
         $condition = (
-          $values['location_accuracy'] == 'approximate'
+          ($values['location_accuracy'] ?? NULL) == 'approximate'
           && empty($values['coord_precision'])
         );
         if ($condition) {
