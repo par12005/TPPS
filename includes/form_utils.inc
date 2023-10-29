@@ -246,14 +246,27 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
  *   The value of the specified field, or the default value.
  */
 function tpps_get_ajax_value(array &$form_state, array $parents, $default = NULL, $file_name = "") {
-  if (
-    $value = tpps_form_get_field_value($form_state['values'], $parents)
-  ) {
+  $key_exists = NULL;
+  $value = tpps_form_get_field_value($form_state['values'], $parents, $key_exists);
+  // NOTE:
+  // Originally only $form_state['value'] was used to get value because of
+  // error in condition which was always true.
+  // if (isset($value)) { return $value; }
+  // So I updated all the code but to avoid errors reproduced the same
+  // behavior.
+  // NOTE:
+  // $form_state['complete form'] will give an array (form element) instead of
+  // value (or default value).
+  return $value;
+
+  // Useful link:
+  // https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_array_get_nested_value/7.x
+
+  if ($key_exists) {
     return $value;
   }
-  if (
-    $value = tpps_form_get_field_value($form_state['complete form'], $parents)
-  ) {
+  $value = tpps_form_get_field_value($form_state['complete form'], $parents, $key_exists);
+  if ($key_exists) {
     return $value;
   }
 
@@ -328,18 +341,27 @@ function tpps_form_state_info(array &$new, array &$old) {
  *   The standardized file name prefix.
  */
 function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
-  // [VS]
-  if (!form_get_errors() && $file = file_load($fid)) {
-    // Label file as permanent when it's passed validation.
-    $file->status = FILE_STATUS_PERMANENT;
-    file_save($file);
-    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+  if (!form_get_errors()) {
+    if ($file = file_load($fid)) {
+      // [VS]
+      // Label file as permanent when it's passed validation.
+      $file->status = FILE_STATUS_PERMANENT;
+      file_save($file);
+      // [/VS]
+      file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+    }
+    else {
+      $message = t('File not found. FID: @fid', ['@fid' => $fid]);
+      watchdog('tpps', $message, [], WATCHDOG_ERROR);
+      drupal_set_message($message, 'error');
+    }
     if (!empty($org_num) and !empty($prefix)) {
-      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
-      $form_state['file_info'][TPPS_PAGE_3][$file->fid] = "{$prefix}_{$species}";
+      $species = implode('_', explode(' ',
+        $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']
+      ));
+      $form_state['file_info'][TPPS_PAGE_3][$fid] = "{$prefix}_{$species}";
     }
   }
-  // [/VS]
 }
 
 /**

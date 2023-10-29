@@ -251,8 +251,16 @@ function tpps_form_navigation_bar(array &$form, array $form_state) {
  *   The array from which to get the value.
  * @param mixed $parents
  *   An array of parent keys of the value, starting with the outermost key.
+ * @param bool $key_exists
+ *   If given, an already defined variable that is altered by reference.
  *
  * @return mixed
+ *   The requested nested value.
+ *   Possibly NULL if the value is NULL or not all nested parent keys exist.
+ *   $key_exists is altered by reference and is a Boolean that indicates
+ *   whether all nested parent keys exist (TRUE) or not (FALSE).
+ *   This allows to distinguish between the two possibilities when NULL is returned.
+ *
  *   For non-fieldset elements returns value of field.
  *   For fieldsets returns whole fieldset element.
  *   Returns NULL when:
@@ -260,15 +268,19 @@ function tpps_form_navigation_bar(array &$form, array $form_state) {
  *   2. Element has no '#value' sub-element.
  *   3. Empty $array or $parents.
  */
-function tpps_form_get_field_value($array = [], $parents = []) {
+function tpps_form_get_field_value($array = [], $parents = [], &$key_exists = NULL) {
   if (empty($array) || empty($parents)) {
     return NULL;
   }
-  $element = drupal_array_get_nested_value($array, $parents);
-  if (($element['#type'] ?? NULL) != 'fieldset') {
-    array_push($parents, '#value');
+  $element = drupal_array_get_nested_value($array, $parents, $key_exists);
+  if ($key_exists) {
+    if ($element['#type'] != 'fieldset') {
+      array_push($parents, '#value');
+    }
+    $value = drupal_array_get_nested_value($array, $parents, $key_exists);
+    return ($key_exists ? $value : NULL);
   }
-  return drupal_array_get_nested_value($array, $parents) ?? NULL;
+  return NULL;
 }
 
 /**
