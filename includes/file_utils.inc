@@ -531,93 +531,43 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
  *   The state of the form being validated.
  */
 function tpps_save_file_columns(array &$form, array &$form_state) {
+  $saved_values = &$form_state['saved_values'];
 
   if ($form_state['stage'] == TPPS_PAGE_3) {
     for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
-      if (($file = file_load($form_state['values']['tree-accession']["species-$i"]['file'])) and $form_state['values']['tree-accession']["species-$i"]['file'] != 0) {
-        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-      }
-
-      $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
-
-      if (isset($form['tree-accession']["species-$i"]['file']['#value']['columns'])) {
-        foreach ($form['tree-accession']["species-$i"]['file']['#value']['columns'] as $col => $val) {
-          if ($col[0] != '#') {
-            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col] = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$col];
-          }
-        }
-      }
-
+      tpps_save_single_file_columns(
+        $form, $form_state, ['tree-accession', "species-$i"], 'file'
+      );
       if (empty($form_state['values']['tree-accession']['check'])) {
         break;
       }
     }
   }
   elseif ($form_state['stage'] == TPPS_PAGE_4) {
+    // @TODO Species at Page 1 are the same as organisms at Page 4 so
+    // probably we could use $organism_number for all steps. See Step 3 above.
+    $organism_number = $saved_values[TPPS_PAGE_1]['organism']['number'];
     if (isset($form['organism-1']['genotype'])) {
-      for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-
-        if (!empty($form_state['values']["organism-$i"]['genotype']['files']['snps-assay']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['snps-assay']))) {
-          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
-          $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'] = array();
-
-          if (isset($form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'])) {
-            foreach ($form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'] as $col => $val) {
-              if ($col[0] != '#') {
-                $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'][$col] = $form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'][$col];
-              }
-            }
-          }
-        }
-
-        if (!empty($form_state['values']["organism-$i"]['genotype']['files']['other']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['other']))) {
-          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
-          $form_state['values']["organism-$i"]['genotype']['files']['other-columns'] = array();
-
-          if (isset($form["organism-$i"]['genotype']['files']['other']['#value']['columns'])) {
-            foreach ($form["organism-$i"]['genotype']['files']['other']['#value']['columns'] as $col => $val) {
-              if ($col[0] != '#') {
-                $form_state['values']["organism-$i"]['genotype']['files']['other-columns'][$col] = $form["organism-$i"]['genotype']['files']['other']['#value']['columns'][$col];
-              }
-            }
-          }
-        }
+      for ($i = 1; $i <= $organism_number; $i++) {
+        tpps_save_single_file_columns(
+          $form, $form_state, ["organism-$i", 'genotype', 'files'], 'snps-assay'
+        );
+        tpps_save_single_file_columns(
+          $form, $form_state, ["organism-$i", 'genotype', 'files'], 'other'
+        );
       }
     }
 
     if (isset($form['organism-1']['phenotype'])) {
-      for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
+      for ($i = 1; $i <= $organism_number; $i++) {
         if (!empty($form_state['values']["organism-$i"]['phenotype']['normal-check'])) {
-          if (($file = file_load($form_state['values']["organism-$i"]['phenotype']['file'])) and $form_state['values']["organism-$i"]['phenotype']['file'] != 0) {
-            file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-          }
-
-          $form_state['values']["organism-$i"]['phenotype']['file-columns'] = array();
-
-          if (isset($form["organism-$i"]['phenotype']['file']['#value']['columns'])) {
-            foreach ($form["organism-$i"]['phenotype']['file']['#value']['columns'] as $col => $val) {
-              if ($col[0] != '#') {
-                $form_state['values']["organism-$i"]['phenotype']['file-columns'][$col] = $form["organism-$i"]['phenotype']['file']['#value']['columns'][$col];
-              }
-            }
-          }
-
+          tpps_save_single_file_columns(
+            $form, $form_state, ["organism-$i", 'phenotype'], 'file'
+          );
           if ($form_state['values']["organism-$i"]['phenotype']['check'] != '0') {
-            if (($file = file_load($form_state['values']["organism-$i"]['phenotype']['metadata'])) and $form_state['values']["organism-$i"]['phenotype']['metadata'] != 0) {
-              file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-            }
-
-            $form_state['values']["organism-$i"]['phenotype']['metadata-columns'] = array();
-
-            if (isset($form["organism-$i"]['phenotype']['metadata']['#value']['columns'])) {
-              foreach ($form["organism-$i"]['phenotype']['metadata']['#value']['columns'] as $col => $val) {
-                if ($col[0] != '#') {
-                  $form_state['values']["organism-$i"]['phenotype']['metadata-columns'][$col] = $form["organism-$i"]['phenotype']['metadata']['#value']['columns'][$col];
-                }
-              }
-            }
+            tpps_save_single_file_columns(
+              $form, $form_state, ["organism-$i", 'phenotype'], 'metadata'
+            );
           }
         }
       }
@@ -1322,4 +1272,55 @@ function tpps_file_remove($fid) {
     return $result;
   }
   return FALSE;
+}
+
+/**
+ * Saves file's column selections to the values of the form_state.
+ *
+ * WARNING:
+ * Field which stores columns must be named "${field_name}-columns".
+ * Note:
+ * We need those temp variables for parents because we can't use array_push()
+ * as argument of function drupal_array_get|set_nested_value() because:
+ * Argument 2 passed to drupal_array_get_nested_value()
+ * must be of the type array.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ * @param array $form_state
+ *   Drupal Form API State array.
+ * @param array $parents
+ *   An array of parent keys, starting with the outermost key.
+ *   Use path in $form array (not $form_state['values']).
+ */
+function tpps_save_single_file_columns(array &$form, array &$form_state, array $parents, $field_name) {
+  $fid = drupal_array_get_nested_value(
+    $form_state['values'], array_merge($parents, [$field_name])
+  );
+  if ($fid && $file = file_load($fid)) {
+    file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+  }
+
+  drupal_array_set_nested_value(
+    $form_state['values'], array_merge($parents, [$field_name . '-columns']), []
+  );
+
+  $columns = drupal_array_get_nested_value(
+    $form, array_merge($parents, [$field_name, '#value', 'columns'])
+  );
+  if ($columns) {
+    foreach (array_keys($columns) as $col) {
+      if ($col[0] == '#') {
+        continue;
+      }
+      drupal_array_set_nested_value(
+        $form_state['values'],
+        array_merge($parents, [$field_name . '-columns', $col]),
+        drupal_array_get_nested_value(
+          $form,
+          array_merge($parents, [$field_name, '#value', 'columns', $col])
+        )
+      );
+    }
+  }
 }
