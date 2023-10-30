@@ -6,7 +6,7 @@
  */
 
 /**
- * TPPS Page 1 Settings Form.
+ * Generates settings form.
  */
 function tpps_form_page_1_settings_form(array $form, array &$form_state) {
   $form['tpps_page_1_doi_check_source'] = [
@@ -65,11 +65,16 @@ function tpps_form_page_1_settings_form(array $form, array &$form_state) {
 }
 
 /**
- * Form submitter for 'tpps_form_page_1_settings_form' form.
+ * Form submitter.
  */
 function tpps_form_page_1_settings_form_submit(array $form, array &$form_state) {
-  if (!empty($form_state['values']['tpps_page_1_cache_ajax_responses'])) {
+  // Clear cache on change only.
+  if (
+    ($form_state['values']['tpps_page_1_cache_ajax_responses'] ?? NULL)
+    != variable_get('tpps_page_1_cache_ajax_responses', TRUE)
+  ) {
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    // @TODO Minor. Clear only ajax requests.
     cache_clear_all('*', $cache_bin, TRUE);
   }
 }

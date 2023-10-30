@@ -246,10 +246,14 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
  *   The value of the specified field, or the default value.
  */
 function tpps_get_ajax_value(array &$form_state, array $parents, $default = NULL, $file_name = "") {
-  if ($value = tpps_form_get_field_value($form_state['values'], $parents)) {
+  if (
+    $value = tpps_form_get_field_value($form_state['values'], $parents)
+  ) {
     return $value;
   }
-  if ($value = tpps_form_get_field_value($form_state['complete form'], $parents)) {
+  if (
+    $value = tpps_form_get_field_value($form_state['complete form'], $parents)
+  ) {
     return $value;
   }
 

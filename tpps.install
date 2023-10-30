@@ -26,11 +26,18 @@ function tpps_install() {
   // Main settings.
   variable_set('tpps_theme', 'default');
   variable_set('tpps_top_bar', 'status');
+  // Front page.
+  variable_set('tpps_front_cache_accession_list', TRUE);
+  variable_set('tpps_front_show_pending_status', FALSE);
+  variable_set('tpps_front_show_others_studies', TRUE);
   // Page 1 Settings.
   variable_set('tpps_page_1_doi_check_source', 'public.tpps_submissions');
   variable_set('tpps_page_1_cache_ajax_responses', TRUE);
   variable_set('tpps_page_1_dryad_api_url', 'http://datadryad.org/api/v2/datasets/');
   variable_set('tpps_page_1_ajax_debug', FALSE);
+  // Page 4 Settings.
+  variable_set('tpps_page_4_cache_synonym_list', FALSE);
+  variable_set('tpps_page_4_cache_unit_list', FALSE);
   // [/VS]
   tpps_alter_tpps_submissions();
   tpps_alter_tpps_submission_dbxref();
@@ -303,19 +310,26 @@ function tpps_install() {
  */
 function tpps_uninstall() {
 
-  // [VS]
-  // Main settings.
-  variable_del('tpps_theme');
-  variable_del('tpps_top_bar');
+  // [VS] Remove module's variables.
   // Reports.
   variable_del('tpps_report_no_synonym_title');
   variable_del('tpps_report_unit_warning_title');
   variable_del('tpps_report_order_family_not_exist_title');
+  // Main settings.
+  variable_del('tpps_theme');
+  variable_del('tpps_top_bar');
+  // Front page.
+  variable_del('tpps_front_cache_accession_list');
+  variable_del('tpps_front_show_pending_status');
+  variable_del('tpps_front_show_others_studies');
   // Page 1.
   variable_det('tpps_page_1_doi_check_source');
   variable_del('tpps_page_1_cache_ajax_responses');
   variable_del('tpps_page_1_dryad_api_url');
   variable_del('tpps_page_1_ajax_debug');
+  // Page 4 Settings.
+  variable_del('tpps_page_4_cache_synonym_list');
+  variable_del('tpps_page_4_cache_unit_list');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.
@@ -2083,4 +2097,15 @@ function tpps_update_7121() {
   variable_set('tpps_top_bar', 'status');
   // Added new items to 'TPPS' menu.
   menu_rebuild();
+}
+
+/**
+ * Hotfix: Ability to disable unit/synonym list caching.
+ */
+function tpps_update_7122() {
+  // Page 4 Settings.
+  variable_set('tpps_page_4_cache_synonym_list', FALSE);
+  variable_set('tpps_page_4_cache_unit_list', FALSE);
+  // Front page.
+  variable_set('tpps_front_cache_accession_list', TRUE);
 }

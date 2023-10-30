@@ -25,36 +25,48 @@
  *   The form for the TPPS landing page.
  */
 function tpps_front_create_form(array &$form, array $form_state) {
-
   global $base_url;
   global $user;
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
-
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($is_tppsc) {
     if (user_is_logged_in()) {
       // Logged in.
       $options = [
-          'new' => 'Create new TPPSC Submission',
-          'placeholder1' => '------------------------- YOUR STUDIES -------------------------',
-        ]
-        + tpps_submission_get_accession_list([
-          ['status', 'Incomplete', '='],
-          ['uid', $user->uid, '='],
-        ])
-        + [
-          'placeholder2' => '-------------------- OTHER USER STUDIES --------------------'
+        'new' => 'Create new TPPSC Submission',
+        'placeholder1' =>
+          '-------------------------- YOUR STUDIES ----------------------------',
+      ]
+      + tpps_submission_get_accession_list([
+        ['status', 'Incomplete', '='],
+        ['uid', $user->uid, '='],
+      ]);
+      if (variable_get('tpps_front_show_others_studies', TRUE)) {
+        $options = $options + [
+          'placeholder2' =>
+          '------------------------ OTHER USER STUDIES ------------------------',
         ]
         + tpps_submission_get_accession_list([
           ['status', 'Incomplete'],
           ['uid', $user->uid, '<>'],
         ]);
+      }
+      if (variable_get('tpps_front_show_pending_status', FALSE)) {
+        $options = $options + [
+          'placeholder3' =>
+          '------------------------- PENDING APPROVAL -------------------------',
+        ]
+        + tpps_submission_get_accession_list([
+          ['status', 'Pending Approval'],
+          ['uid', $user->uid, '<>'],
+        ]);
+      }
 
       if (count($options) > 1) {
         $form['accession'] = [
           '#type' => 'select',
-          '#title' => t('Would you like to load an old TPPSC submission, or create a new one?'),
+          '#title' => t('Would you like to load an old TPPSC submission, '
+            . 'or create a new one?'),
           '#options' => $options,
           '#default_value' => $form_state['saved_values']['frontpage']['accession'] ?? 'new',
         ];

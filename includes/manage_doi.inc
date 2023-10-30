@@ -84,8 +84,8 @@ function tpps_doi_get_accession($doi, $reset = FALSE) {
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
-  $use_cache = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
-  if ($reset || !$use_cache || empty($cache)) {
+  $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
+  if ($reset || !$is_cache_allowed || empty($cache)) {
     $all_submissions = chado_query("SELECT * FROM public.tpps_submission;");
     foreach ($all_submissions as $item) {
       $form_state = unserialize($item->submission_state);
@@ -114,8 +114,8 @@ function tpps_doi_count_dbxref($doi, $reset = FALSE) {
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
-  $use_cache = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
-  if ($reset || !$use_cache ||  empty($cache) || empty($cache->data[strtolower($doi)])) {
+  $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
+  if ($reset || !$is_cache_allowed ||  empty($cache) || empty($cache->data[strtolower($doi)])) {
     $result = db_select('chado.dbxref', 'd')
       ->condition('accession', $doi)
       ->execute()
@@ -146,8 +146,9 @@ function tpps_get_doi_info($doi, $reset = FALSE) {
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($cid, $cache_bin);
-  $use_cache = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
-  if ($reset || !$use_cache || empty($cache) || !isset($cache->data[$key])) {
+  $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
+
+  if ($reset || !$is_cache_allowed || empty($cache) || !isset($cache->data[$key])) {
     $api_endpoint = variable_get('tpps_page_1_dryad_api_url',
       'http://datadryad.org/api/v2/datasets/');
     $url = $api_endpoint . urlencode('doi:' . $doi);

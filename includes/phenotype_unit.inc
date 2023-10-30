@@ -34,7 +34,9 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($unit_cid, $cache_bin);
 
-  if (empty($cache) || $reset) {
+
+  $is_cache_allowed = variable_get('tpps_page_4_cache_unit_list', FALSE);
+  if (empty($cache) || $reset || !$is_cache_allowed) {
     $cache = [];
     // Get synonyms and related unit groups.
     $synonym_table = db_select('chado.phenotype_synonyms', 'cps')
