@@ -1164,7 +1164,7 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
     foreach ($conditions as $item) {
       $query->condition($item[0], $item[1], ($item[2] ?? '='));
     }
-    $results = $query->orderBy('accession', 'desc')->execute();
+    $results = $query->orderBy('tpps_submission_id', 'desc')->execute();
     foreach ($results as $item) {
       if ($state = unserialize($item->submission_state)) {
         // @TODO Be sure to store 'tpps_type' in $form_state.

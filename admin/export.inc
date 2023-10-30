@@ -15,11 +15,11 @@
 function tpps_study_export_form(array $form, array &$form_state) {
   $accession = $form_state['input']['tpps_export_accession'] ?? '';
   $form['tpps_export_accession'] = [
-    '#type' => 'textfield',
+    '#type' => 'select',
     '#title' => t('Accession'),
+    '#options' => tpps_submission_get_accession_list(),
     '#default_value' => $accession,
     '#required' => TRUE,
-    '#description' => t('Format is: TGDRxxx'),
   ];
   if (!empty($accession)) {
     $state = tpps_study_export_get_state($accession);
