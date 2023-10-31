@@ -11,6 +11,8 @@
  * @param int $synonym_id
  *   Synonym Id. See db table 'chado.phenotype_synonyms'.
  *   Default is 'all' (show all units).
+ *   When selected 'I can't find synonym' (key is integer 'zero')
+ *   then all the units must be shown.
  * @param array $options
  *   Associative array with keys and default values:
  *   'not_in_list_option' => TRUE,
@@ -24,20 +26,24 @@
  *   Returns empty array if synonym not found.
  */
 function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = FALSE) {
-  // '0' value means 'I can't find synonym' and we need to show all the units.
-  $synonym_id = ($synonym_id == 0 ? 'all' : $synonym_id);
+  // When Page 4 loads first time synonym wasn't selected and undefined.
+  // When synonym wasn't sent to server and AJAX request updates part
+  // of form then $synonym_id obtained by tpps_ajax_get_value()
+  // and we have array instead of integer.
+  $synonym_id = (empty($synonym_id) || is_array($synonym_id)) ? 'all' : $synonym_id;
   $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
   $options = array_merge($defaults, $options);
 
+  $is_cache_allowed = variable_get('tpps_page_4_cache_unit_list', FALSE);
   $synonym_cid = 'tpps_synonym_list';
   $unit_cid = 'tpps_unit_list';
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-  $cache = cache_get($unit_cid, $cache_bin);
+  if ($is_cache_allowed) {
+    $cache = cache_get($unit_cid, $cache_bin);
+  }
 
-
-  $is_cache_allowed = variable_get('tpps_page_4_cache_unit_list', FALSE);
-  if (empty($cache) || $reset || !$is_cache_allowed) {
-    $cache = [];
+  if ($reset || empty($cache) || empty($cache->data[$synonym_id] ?? NULL)) {
+    $data = [];
     // Get synonyms and related unit groups.
     $synonym_table = db_select('chado.phenotype_synonyms', 'cps')
       ->fields('cps', [
@@ -68,19 +74,21 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
       ->fetchAllAssoc('unit_cvterm_id', PDO::FETCH_ASSOC);
     // Create list of all units and list of unit groups.
     foreach ($unit_table as $unit_id => $unit) {
-      $cache['all'][$unit_id] = $unit['unit_name'];
+      $data['all'][$unit_id] = $unit['unit_name'];
       $groups[$unit['unit_group']][$unit['unit_cvterm_id']]
         = $unit['unit_name'];
     }
     // Create list of units per synonym.
     foreach ($synonym_unit_group_list as $id => $unit_group) {
-      $cache[$id] = ($groups[$unit_group] ?? NULL);
+      $data[$id] = ($groups[$unit_group] ?? NULL);
     }
-    cache_set($unit_cid, $cache, $cache_bin);
-    $list = $cache[$synonym_id];
+    cache_set($unit_cid, $data, $cache_bin);
+    // There is no need to have extra protection but just to be sure.
+    $list = $data[$synonym_id] ?? $data['all'] ?? [];
   }
   else {
-    $list = $cache->data[$synonym_id];
+    // There is no need to have extra protection but just to be sure.
+    $list = $cache->data[$synonym_id] ?? $cache->data['all'] ?? [];
   }
   // This option must be last.
   if (!empty($list) && $options['not_in_list_option']) {
@@ -104,6 +112,7 @@ function tpps_unit_update_list($form, &$form_state) {
   if (isset($form_state['triggering_element']['#value'])) {
     $synonym_id = $form_state['triggering_element']['#value'];
   }
+
   if (empty($synonym_id)) {
     // When '0' then show all units.
     $synonym_id = 'all';

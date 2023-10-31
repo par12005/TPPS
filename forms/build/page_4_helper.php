@@ -542,6 +542,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
           break;
       }
 
+      // @TODO Reduces list of structures. Fix it!
+
       if ($phenotypes[$i]['env-check']) {
         $terms = array(
           'whole plant' => 'Whole Plant',
