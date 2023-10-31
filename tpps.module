@@ -1549,9 +1549,10 @@ function tpps_flush_caches() {
  *
  * @param array $form
  *   Drupal Form API form array.
- * @param int $page_id
+ * @param mixed $page_id
  *   TPPS Form Page number. Constants like TPPS_PAGE_1 and etc could be
  *   used to improve code readablility.
+ *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
  */
 function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
   // CSS Theme.
@@ -1572,6 +1573,16 @@ function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
         'data' => TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js',
       ];
       $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_page_' . $page_id . '.css';
+    }
+    else if (is_string($page_id)) {
+      // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
+      $form['#attached']['js'][] = [
+        'type' => 'file',
+        'scope' => 'footer',
+        'group' => JS_THEME,
+        'data' => TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js',
+      ];
+      $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css';
     }
     else {
       // Add main files.

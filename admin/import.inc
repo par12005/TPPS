@@ -21,6 +21,18 @@ function tpps_study_import_form(array $form, array &$form_state) {
     '#required' => FALSE,
     '#description' => 'Leave empty to autogenerate accession',
   ];
+  $form['tpps_import_files_replace'] = [
+    '#type' => 'checkbox',
+    '#title' => 'Replace existing files?',
+    '#default_value' => variable_get('tpps_import_file_replace', TRUE),
+    '#description' => t('Behavior when the destination file already exists:'
+      . '<br /><strong>Checked</strong>: replace the existing file. '
+      . 'If a managed file with the destination name exists then its '
+      . 'database entry will be updated. '
+      . 'If no database entry is found then a new one will be created.'
+      . '<br /><strong>Unchecked</strong>: Append _{incrementing number} '
+      . 'until the filename is unique.'),
+  ];
   // @TODO Idea. Use file upload field instead of plain code dump.
   $form['tpps_import_submission_state'] = [
     '#type' => 'textarea',
@@ -46,6 +58,10 @@ function tpps_study_import_form(array $form, array &$form_state) {
  * Validation for form 'tpps_study_import_form'.
  */
 function tpps_study_import_form_validate(array $form, array &$form_state) {
+  // Skip validation if 'Reset' was clicked.
+  if ($form_state['triggering_element']['#value'] == t('Reset')) {
+    return;
+  }
   $new_accession = $form_state['values']['tpps_import_new_accession'];
   if (tpps_api_check_accession($new_accession)) {
     form_set_error('tpps_import_new_accession', t('Accession already in use. '
@@ -67,6 +83,9 @@ function tpps_study_import_form_reset(array $form, array &$form_state) {
 function tpps_study_import_form_submit(array $form, array &$form_state) {
   global $user;
   module_load_include('inc', 'tpps', 'includes/common');
+  variable_set('tpps_import_file_replace',
+    ($form_state['values']['tpps_import_file_replace'] ?? FALSE)
+  );
   // Remove useless data from the submission state.
   if ($state_raw = $form_state['values']['tpps_import_submission_state']) {
     eval('$state = ' . $state_raw . ';');
@@ -157,7 +176,10 @@ function tpps_study_import_download_file(array $file) {
   $file = file_save_data(
     $content,
     'public://tpps_phenotype/' . $file['filename'],
-    FILE_EXISTS_REPLACE
+    (
+      variable_get('tpps_import_file_replace', TRUE) ?
+      FILE_EXISTS_REPLACE : FILE_EXISTS_RENAME
+    )
   );
   return $file;
 }

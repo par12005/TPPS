@@ -259,3 +259,19 @@ function tpps_form_get_field_value($array = [], $parents = []) {
   }
   return drupal_array_get_nested_value($array, $parents) ?? NULL;
 }
+
+/**
+ * Get number of organisms.
+ *
+ * Note: Could be used when TPPS Page 1 submitted.
+ *
+ * @param array $state
+ *   Drupal Form API State array.
+ *
+ * @return mixed
+ *   Returns integer number of organisms.
+ *   Returns NULL if TPPS Page 1 wasn't yet submitted.
+ */
+function tpps_form_get_organism_number(array $state) {
+  return ($state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? NULL);
+}
