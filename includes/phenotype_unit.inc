@@ -30,7 +30,7 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
   // When synonym wasn't sent to server and AJAX request updates part
   // of form then $synonym_id obtained by tpps_ajax_get_value()
   // and we have array instead of integer.
-  $synonym_id = (empty($synonym_id) || is_array($synonym_id)) ? 'all' : $synonym_id;
+  $synonym_id = empty($synonym_id) ? 'all' : $synonym_id;
   $defaults = ['not_in_list_option' => TRUE, 'debug' => FALSE];
   $options = array_merge($defaults, $options);
 
@@ -83,11 +83,9 @@ function tpps_unit_get_list($synonym_id = 'all', array $options = [], $reset = F
       $data[$id] = ($groups[$unit_group] ?? NULL);
     }
     cache_set($unit_cid, $data, $cache_bin);
-    // There is no need to have extra protection but just to be sure.
     $list = $data[$synonym_id] ?? $data['all'] ?? [];
   }
   else {
-    // There is no need to have extra protection but just to be sure.
     $list = $cache->data[$synonym_id] ?? $cache->data['all'] ?? [];
   }
   // This option must be last.
