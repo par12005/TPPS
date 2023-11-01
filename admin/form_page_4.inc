@@ -11,7 +11,7 @@
 function tpps_form_page_4_settings_form(array $form, array &$form_state) {
   $form['tpps_page_4_cache_synonym_list'] = [
     '#type' => 'checkbox',
-    '#title' => t('Cache list of synonyms'),
+    '#title' => t('Cache list of Synonyms'),
     '#default_value' => variable_get('tpps_page_4_cache_synonym_list', FALSE),
     '#description' => t(
       'Default is <strong>unchecked</strong>.<br />'
