@@ -40,18 +40,6 @@ function tpps_study_export_form(array $form, array &$form_state) {
       '#resizable' => TRUE,
     ];
   }
-  // @TODO Minor. Just print function's code:
-  // https://stackoverflow.com/questions/7026690
-  if (0) {
-    $form['tpps_export_code'] = [
-      '#type' => 'textarea',
-      '#title' => t('PHP Code to get data on remote server'),
-      '#value' => "\$accession = '$accession';"
-        . "\ndpm(var_export(tpps_study_export_get_state(\$accession), 1));",
-      '#rows' => 10,
-      '#resizable' => TRUE,
-    ];
-  }
   $form['action_export'] = [
     '#type' => 'submit',
     '#value' => t('Export'),

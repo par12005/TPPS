@@ -1817,19 +1817,42 @@ function tpps_menu_add_study_import_export_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/import.inc',
   ];
-  $items['admin/config/tpps/migration/import'] = [
-    'title' => 'TPPS Study Import',
-    'description' => 'TPPS Study Import',
+  $items['admin/config/tpps/migration/default'] = [
+    'title' => 'Import',
+    'description' => 'Import of TPPS Study',
     'type' => MENU_DEFAULT_LOCAL_TASK,
   ];
+  $items['admin/config/tpps/migration/import'] = [
+    'title' => 'Import',
+    'description' => 'Import of TPPS Studies',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_study_import_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/import.inc',
+  ];
   $items['admin/config/tpps/migration/export'] = [
-    'title' => 'TPPS Study Export',
-    'description' => 'TPPS Study Export',
+    'title' => 'Export',
+    'description' => 'Export of TPPS Study',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_study_export_form'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/export.inc',
     'type' => MENU_LOCAL_TASK,
+    'weight' => -100,
   ];
+  $items['admin/config/tpps/migration/manual_export'] = [
+    'title' => 'Manual Export',
+    'description' => 'Manual Export of TPPS Study',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_study_manual_export_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/manual_export.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 100,
+  ];
+
+
 }
