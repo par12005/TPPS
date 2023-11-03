@@ -5,6 +5,7 @@
  * TPPS Study Import Form and related functions.
  *
  *
+ * @TODO Reuse the same accession. Remove existing study and submit new.
  * @TODO Minor. Use function to get rid of useless data from $form_state
  * function tpps_form_state_info(array &$new, array &$old);
  */
@@ -150,24 +151,6 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
       $new_accession
     );
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // From tpps_init_project().
-    //$state['values']['dbxref_id']
-    $state['saved_values']['dbxref_id']
-      = $state['dbxref_id']
-      = $state['values']['dbxref_id']
-      = tpps_init_project_get_dbxref_id($new_accession);
-
-    $state['values']['status'] = 'Incomplete';
-    $state['values'] = $state['saved_values'];
-   // dpm(print_r($state, 1));
-    tpps_create_submission($state, $user->uid);
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Remove tree pictures.
-    // @TODO Fix this. Not work. Manually removed "stdClass"...
-    //unset($state['complete form']);
-    //unset($state['values']['complete form']);
-    //unset($state['complete form']['tree_pictures']);
-
     // Process files (if any).
     if (empty($state['tpps_export_files'])) {
       drupal_set_message('Study has no files.');
@@ -180,6 +163,18 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
         $state = tpps_array_replace($state, $fid, $new_file->fid);
       }
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // From tpps_init_project().
+    //$state['values']['dbxref_id']
+    $state['saved_values']['dbxref_id']
+      = $state['dbxref_id']
+      = $state['values']['dbxref_id']
+      = tpps_init_project_get_dbxref_id($new_accession);
+
+    $state['values']['status'] = 'Incomplete';
+    $state['values'] = $state['saved_values'];
+   // dpm(print_r($state, 1));
+    tpps_create_submission($state, $user->uid);
     // Recreate Study.
     drupal_form_submit('tpps_main', $state);
   }
@@ -206,6 +201,7 @@ function tpps_study_import_download_file(array $file) {
   curl_setopt($ch, CURLOPT_HEADER, 0);
   $content = curl_exec($ch);
   curl_close($ch);
+
   // Move file to Drupal.
   $file = file_save_data(
     $content,
