@@ -40,6 +40,7 @@ function tpps_study_manual_export_form(array $form, array &$form_state) {
     foreach ($function_list as $function_name) {
       $function_code .= "\n" . tpps_get_function_code($function_name);
     }
+    $cache_reset = REQUEST_TIME;
     // Build the code.
     $code = <<<EOT
 \$accession = '$accession';
@@ -48,9 +49,10 @@ variable_set('tpps_export_show_file_search_report', $show_report);
 $function_code
 
 drupal_set_message(
-  '<div class="form-textarea-wrapper resizable
-   resizable-textarea"><textarea cols="200" rows="20" class="form-textarea"
-   style="width: 100%; background: lightgray;">'
+  '<script type="text/javascript" src="https://tgwebdev.cam.uchc.edu/sites/all/modules/TGDR/js/tpps_study_export.js?$cache_reset"></script>'
+  . '<div class="form-textarea-wrapper resizable
+    resizable-textarea"><textarea id="edit-tpps-export-state" cols="200"
+    rows="20" class="form-textarea" style="width: 100%; background: lightgray;">'
   . var_export(tpps_study_export_get_state(\$accession), 1)
   . '</textarea></div>'
 );
@@ -74,6 +76,7 @@ EOT;
     '#value' => t('Reset'),
     '#submit' => ['tpps_study_manual_export_form_reset'],
   ];
+  tpps_add_css_js($form, 'study_manual_export');
   return $form;
 }
 
