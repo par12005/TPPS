@@ -33,7 +33,16 @@ function tpps_study_export_form(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_export_show_file_search_report', FALSE),
   ];
   if (!empty($accession)) {
-    $state = tpps_study_export_get_state($accession);
+    // Get Submission State.
+    module_load_include('inc', 'tpps', 'includes/submission');
+    $state = tpps_submission_get_state($accession);
+    $fid_list = tpps_submission_get_file_id_list($state);
+    $files = tpps_study_export_get_files_info($fid_list);
+    $state['tpps_export_files'] = $files;
+    tpps_study_export_file_report($fid_list, $files);
+
+
+
     $form['tpps_export_state'] = [
       '#type' => 'textarea',
       '#title' => t('State PHP Array'),
@@ -77,121 +86,28 @@ function tpps_study_export_form_submit(array $form, array &$form_state) {
 }
 
 /**
- * Gets form submission state, prepares files for import.
+ * Gets Submission file's metadata.
  *
- * @param string $accession
- *   Study submission. Format: 'TGDRxxxx'.
+ * @param array $fid_list
+ *   List of File IDs.
  *
  * @return array
- *   Returns Drupal Form API State array with extra 'tpps_export_files'
- *   element which contains files information necessary for re-import on
- *   other server.
+ *   Returns associative array where key is File Id and value is an array
+ *   with File Metadata returned by file_load() and additionally new
+ *   item 'url' which is File's absolute URL.
  */
-function tpps_study_export_get_state($accession) {
-  // Get Submission State.
-  $result = db_select('tpps_submission', 'ts')
-    ->fields('ts', ['submission_state'])
-    ->condition('accession', $accession)
-    ->range(0, 1)
-    ->execute()
-    ->fetchField();
-  $state = unserialize(html_entity_decode($result));
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Process files.
-  // File URL will be added to $form_state to allow to download files on
-  // other server and resubmit study with files.
-  //
-  $state['tpps_export_fid'] = [];
-  // Complete Form.
-  $method_name = 'complete form';
-  if (!empty($state['complete form'])) {
-    $files = tpps_form_search_field($state['complete form'], 'managed_file');
-    //dpm(var_export($files, 1));
-    foreach ($files as $parents) {
-      $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
-    }
-  }
-  $fid_list = array_filter($fid_list ?? []);
-  $methods[$method_name] = $fid_list;
-  if (!empty($fid_list)) {
-    $state['tpps_export_fid'] = array_merge($state['tpps_export_fid'], $fid_list);
-  }
-
-  // Use $form_state['files'] if any.
-  $method_name = 'state files';
-  $fid_list = array_filter($state['files'] ?? []);
-  $methods[$method_name] = $fid_list;
-  if (!empty($fid_list)) {
-    $state['tpps_export_fid'] = array_merge($state['tpps_export_fid'], $fid_list);
-  }
-
-  // Last chance. Use hardcoded path to file fields.
-  $method_name = 'hardcoded';
-  if (!empty($state['values'])) {
-    module_load_include('inc', 'tpps', 'includes/form');
-    $organism_number = tpps_form_get_organism_number($state);
-    foreach (tpps_study_export_get_file_parents($organism_number) as $parents) {
-      $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
-    }
-  }
-  $fid_list = array_filter($fid_list ?? []);
-  $methods[$method_name] = $fid_list;
-  if (!empty($fid_list)) {
-    $state['tpps_export_fid'] = array_merge($state['tpps_export_fid'], $fid_list);
-  }
-  $state['tpps_export_fid'] = array_unique($state['tpps_export_fid']);
-  if (variable_get('tpps_export_show_file_search_report', FALSE)) {
-    tpps_study_export_show_method_report($methods);
-  }
-
-  // Add file's metadata and URL.
-  if (!empty($state['tpps_export_fid'])) {
-    tpps_study_export_get_files_info($state);
-    if (empty($state['tpps_export_files'])) {
-      drupal_set_message(
-        t('Study has files but they not found at server. '
-        . 'Probably those files must be uploaded again.'), 'warning'
-      );
-      drupal_set_message(t('List of File IDs: <pre>@list</pre>',
-        ['@list' => print_r($state['tpps_export_fid'], 1)]
-      ));
-    }
-    else {
-      drupal_set_message(t('Files was found and processed.'));
-      if (variable_get('tpps_export_show_file_search_report', FALSE)) {
-        drupal_set_message(t(
-          'List of files prepared for import: <pre>@list</pre>',
-          ['@list' => print_r($state['tpps_export_files'], 1)]
-        ));
-      }
-    }
-  }
-  else {
-    drupal_set_message(
-      t('No files found in this study. Please double-check.'),
-      'warning'
-    );
-  }
-  unset($state['tpps_export_fid']);
-  return $state;
-}
-
-/**
- * Adds files metadata to the Submission state array.
- *
- * @param array $state
- *   Drupal Form API State Array.
- */
-function tpps_study_export_get_files_info(array &$state) {
-  foreach ($state['tpps_export_fid'] as $fid) {
+function tpps_study_export_get_files_info(array &$fid_list) {
+  $files = [];
+  foreach ($fid_list as $fid) {
     if ($fid) {
       $file = file_load($fid);
       if ($file) {
         $file->url = file_create_url($file->uri);
-        $state['tpps_export_files'][$fid] = (array) $file;
+        $files[$fid] = (array) $file;
       }
     }
   }
+  return $files;
 }
 
 /**
@@ -325,5 +241,42 @@ function tpps_study_export_show_method_report(array $report) {
         '@list' => ($count ? 'List: ' . implode(', ', $list) . '.' : ''),
       ]
     ));
+  }
+}
+
+/**
+ * Show file detection report.
+ *
+ * @param array $fid_list
+ *   List of File Ids.
+ * @param array $files
+ *   List of File metadata.
+ */
+function tpps_study_export_file_report(array &$fid_list = [], array &$files = []) {
+  if (!empty($fid_list)) {
+    if (empty($files) {
+      drupal_set_message(
+        t('Study has files but they not found at server. '
+        . 'Probably those files must be uploaded again.'), 'warning'
+      );
+      drupal_set_message(t('List of File IDs: <pre>@list</pre>',
+        ['@list' => print_r($fid_list, 1)]
+      ));
+    }
+    else {
+      drupal_set_message(t('Files was found and processed.'));
+      if (variable_get('tpps_export_show_file_search_report', FALSE)) {
+        drupal_set_message(t(
+          'List of files prepared for import: <pre>@list</pre>',
+          ['@list' => print_r($files, 1)]
+        ));
+      }
+    }
+  }
+  else {
+    drupal_set_message(
+      t('No files found in this study. Please double-check.'),
+      'warning'
+    );
   }
 }

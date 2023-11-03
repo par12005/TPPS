@@ -166,7 +166,7 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
       // We can't use tpps_update_submission() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
       // redord in chado.dbxref will be left unchanged.
-      tpps_delete_submission_and_files($new_accession, FALSE);
+      tpps_submission_purge($new_accession);
     }
     // $form_state['values']['frontpage']['accession'] = $new_accession;
     // Check also $form_state['input'] and $form_state['completed_form'].

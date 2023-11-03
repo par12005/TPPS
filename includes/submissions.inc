@@ -280,14 +280,45 @@ function tpps_submission_delete_callback($accession) {
 }
 
 /**
- * Deletes a TPPS Submission and it's files.
+ * Removes TPPS Submission and it's files.
  *
  * @param string $accession
  *   The accession of the submission. Format: TGDR12345.
  */
-function tpps_delete_submission_and_files($accession) {
+function tpps_submission_purge($accession) {
   // @TODO Remove usage of files first.
-  tpps_delete_submission($accession);
+  $submission = tpps_load_submission($accession, FALSE);
+  //$dbxref_id = $submission->dbxref_id;
+  //$state = unserialize($submission->submission_state);
+  //$state = tpps_study_export_get_state($accession);
+  $state = tpps_submission_get_state($accession);
+
+  db_delete('tpps_submission')
+    ->condition('accession', $accession)
+    ->execute();
+  db_delete('chado.dbxref')
+    ->condition('accession', $accession)
+    ->execute();
+}
+
+/**
+ * Gets submission state array.
+ *
+ * @param string $accession
+ *   Study submission. Format: 'TGDRxxxx'.
+ *
+ * @return array
+ *   Returns Drupal Form API State array.
+ */
+function tpps_submission_get_state($accession) {
+  $result = db_select('tpps_submission', 'ts')
+    ->fields('ts', ['submission_state'])
+    ->condition('accession', $accession)
+    ->range(0, 1)
+    ->execute()
+    ->fetchField();
+  $state = unserialize(html_entity_decode($result));
+  return $state;
 }
 
 /**
@@ -1241,4 +1272,68 @@ function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
     $list = [0 => '- Select -'] + $list;
   }
   return $list;
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+/**
+ * Gets form submission state, prepares files for import.
+ *
+ * @param string $accession
+ *   Study submission. Format: 'TGDRxxxx'.
+ *
+ * @return array
+ *   Returns Drupal Form API State array with extra 'tpps_export_files'
+ *   element which contains files information necessary for re-import on
+ *   other server.
+ */
+function tpps_submission_get_file_id_list(array $state) {
+  // Process files.
+  // File URL will be added to $form_state to allow to download files on
+  // other server and resubmit study with files.
+  //
+  //@TODO rename to $fid_list;
+  $state['tpps_export_fid'] = [];
+  // Complete Form.
+  $method_name = 'complete form';
+  if (!empty($state['complete form'])) {
+    $files = tpps_form_search_field($state['complete form'], 'managed_file');
+    //dpm(var_export($files, 1));
+    foreach ($files as $parents) {
+      $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
+    }
+  }
+  $fid_list = array_filter($fid_list ?? []);
+  $methods[$method_name] = $fid_list;
+  if (!empty($fid_list)) {
+    $state['tpps_export_fid'] = array_merge($state['tpps_export_fid'], $fid_list);
+  }
+
+  // Use $form_state['files'] if any.
+  $method_name = 'state files';
+  $fid_list = array_filter($state['files'] ?? []);
+  $methods[$method_name] = $fid_list;
+  if (!empty($fid_list)) {
+    $state['tpps_export_fid'] = array_merge($state['tpps_export_fid'], $fid_list);
+  }
+
+  // Last chance. Use hardcoded path to file fields.
+  $method_name = 'hardcoded';
+  if (!empty($state['values'])) {
+    module_load_include('inc', 'tpps', 'includes/form');
+    $organism_number = tpps_form_get_organism_number($state);
+    foreach (tpps_study_export_get_file_parents($organism_number) as $parents) {
+      $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
+    }
+  }
+  $fid_list = array_filter($fid_list ?? []);
+  $methods[$method_name] = $fid_list;
+  if (!empty($fid_list)) {
+    $state['tpps_export_fid'] = array_merge($state['tpps_export_fid'], $fid_list);
+  }
+  $state['tpps_export_fid'] = array_unique($state['tpps_export_fid']);
+  if (variable_get('tpps_export_show_file_search_report', FALSE)) {
+    tpps_study_export_show_method_report($methods);
+  }
+  return $state['tpps_export_fid'];
 }

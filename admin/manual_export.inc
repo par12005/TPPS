@@ -29,13 +29,15 @@ function tpps_study_manual_export_form(array $form, array &$form_state) {
     module_load_include('inc', 'tpps', 'includes/form');
     $function_code = '';
     $function_list = [
-      'tpps_study_export_get_state',
+      'tpps_submission_get_state',
       'tpps_form_search_field',
       'tpps_form_get_organism_number',
       'tpps_study_export_get_file_parents',
-      'tpps_export_show_file_search_report',
       'tpps_study_export_show_method_report',
       'tpps_study_export_get_files_info',
+      // New.
+      'tpps_study_export_file_report',
+      'tpps_submission_get_file_id_list',
     ];
     foreach ($function_list as $function_name) {
       $function_code .= "\n" . tpps_get_function_code($function_name);
@@ -53,11 +55,11 @@ drupal_set_message(
   '<div class="form-textarea-wrapper resizable
     resizable-textarea"><textarea id="edit-tpps-export-state" cols="200"
     rows="20" class="form-textarea" style="width: 100%; background: lightgray;">'
-  . var_export(tpps_study_export_get_state(\$accession), 1)
+  . var_export(tpps_submission_get_state(\$accession), 1)
   . '</textarea></div>'
   . '<script type="text/javascript" src="https://tgwebdev.cam.uchc.edu/sites/all/modules/TGDR/js/tpps_study_export.js?\$cache_reset"></script>'
 );
-// dpm(var_export(tpps_study_export_get_state(\$accession), 1));
+// dpm(var_export(tpps_submission_get_state(\$accession), 1));
 EOT;
     $live_url = 'https://treegenesdb.org/devel/php';
     $dev_url = 'https://tgwebdev.cam.uchc.edu/devel/php';
