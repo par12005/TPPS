@@ -159,6 +159,8 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
       foreach ($state['tpps_export_files'] as $fid => $file) {
         dpm($file, $fid);
         $new_file = tpps_study_import_download_file($file);
+        file_usage_add($new_file, 'tpps', 'tpps_project', substr($new_accession, 4));
+        dpm(print_r($new_file, 1));
         // Change fid.
         $state = tpps_array_replace($state, $fid, $new_file->fid);
       }
@@ -205,7 +207,7 @@ function tpps_study_import_download_file(array $file) {
   // Move file to Drupal.
   $file = file_save_data(
     $content,
-    'public://tpps_phenotype/' . $file['filename'],
+    tpps_study_import_get_folder($file['uri']) . '/' . $file['filename'],
     (
       variable_get('tpps_import_file_replace', TRUE) ?
       FILE_EXISTS_REPLACE : FILE_EXISTS_RENAME
@@ -233,4 +235,20 @@ function tpps_study_import_download_file(array $file) {
  */
 function tpps_study_import_fix_stdclass(&$state_raw) {
   $state_raw = str_replace('stdClass::__set_state', '(object)', $state_raw);
+}
+
+/**
+ * Gets folder from File URI.
+ *
+ * @param string $file_uri
+ *   File URI.
+ *   Example: 'public://tpps_genotype/TGDR1139_Rhizophora_SSR_1.csv'.
+ *
+ * @return string
+ *   Returns folder without trailing slash used in File URI.
+ *   Example: 'public://tpps_genotype'.
+ *   Returns default folder when URI is empty.
+ */
+function tpps_study_import_get_folder($file_uri = NULL) {
+  return $file_uri ? dirname($file_uri) : 'public://';
 }
