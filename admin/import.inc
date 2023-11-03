@@ -22,6 +22,11 @@ function tpps_study_import_form(array $form, array &$form_state) {
     '#required' => FALSE,
     '#description' => 'Leave empty to autogenerate accession',
   ];
+  $form['tpps_import_overwrite_study'] = [
+    '#type' => 'checkbox',
+    '#title' => 'Overwrite existing study?',
+    '#default_value' => $form_state['input']['tpps_import_overwrite_study'] ?? FALSE,
+  ];
   $form['tpps_import_files_replace'] = [
     '#type' => 'checkbox',
     '#title' => 'Replace existing files?',
@@ -75,10 +80,15 @@ function tpps_study_import_form_validate(array $form, array &$form_state) {
     return;
   }
   $new_accession = $form_state['values']['tpps_import_new_accession'];
-  if (tpps_api_check_accession($new_accession)) {
-    form_set_error('tpps_import_new_accession', t('Accession already in use. '
-      . 'Click "Reset" to get next available value.')
-    );
+  if (empty($form_state['values']['tpps_import_overwrite_study'])) {
+    if (tpps_api_check_accession($new_accession)) {
+      form_set_error('tpps_import_new_accession', t('Accession already in use. '
+        . 'Click "Reset" to get next available value.')
+      );
+    }
+  }
+  else {
+    // @TODO Validate accession. Check if 'TGDR' is present and so on.
   }
 }
 
@@ -135,12 +145,15 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
     $state['triggering_element']['#value'] = t('Review and Submit');
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Change accession.
-    if (!empty($form_state['values']['tpps_import_new_accession'])) {
-      $new_accession = $form_state['values']['tpps_import_new_accession'];
-    }
-    else {
-      $new_accession = 'TGDR' . tpps_init_project_get_next_accession();
+    // Accession.
+    $new_accession = $form_state['values']['tpps_import_new_accession']
+      ?? 'TGDR' . tpps_init_project_get_next_accession();
+    if (empty($form_state['values']['tpps_import_overwrite_study'])) {
+      // Remove submission and files.
+      // We can't use tpps_update_submission() because it doesn't manage files
+      // but only overwrites record in chado.tpps_submission table and
+      // redord in chado.dbxref will be left unchanged.
+      tpps_delete_submission_and_files($new_accession, FALSE);
     }
     // $form_state['values']['frontpage']['accession'] = $new_accession;
     // Check also $form_state['input'] and $form_state['completed_form'].
