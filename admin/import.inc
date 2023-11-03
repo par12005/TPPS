@@ -88,6 +88,14 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
   );
   // Remove useless data from the submission state.
   if ($state_raw = $form_state['values']['tpps_import_submission_state']) {
+
+    // Fix 'stdClass' in the dump.
+    // We shouldn't do this on export to have unchanged data.
+    // Though var_export() is designed to "outputs or return a parsable
+    // string representation of a variable", the output of stdClass
+    // objects is not "a parsable string".
+    tpps_study_import_fix_stdclass($state_raw);
+
     eval('$state = ' . $state_raw . ';');
 
     // Note: $state['saved_values'] is required for normal form submission.
@@ -182,4 +190,25 @@ function tpps_study_import_download_file(array $file) {
     )
   );
   return $file;
+}
+
+/**
+ * Fixes issue with 'stdClass' on import of dump created with var_export().
+ *
+ * It's PHP's bug (not Drupal). Read more:
+ * https://www.drupal.org/project/devel/issues/215375
+ * https://bugs.php.net/bug.php?id=67918
+ *
+ * Solution:
+ * https://github.com/laravel/framework/pull/17976/commits/b6f1944bc24d6deb1cb30898b3b3eb660019bc99
+ *
+ * Other solution from 'micro' Drupal's module:
+ * https://www.drupal.org/files/issues/macro.module_0.patch
+ * https://www.drupal.org/project/devel/issues/215375 - issue with other options.
+ *
+ * @param string $state_raw
+ *   Data to be parsed.
+ */
+function tpps_study_import_fix_stdclass(&$state_raw) {
+  $state_raw = str_replace('stdClass::__set_state', '(object)', $state_raw);
 }
