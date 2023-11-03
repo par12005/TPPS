@@ -9,16 +9,11 @@
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Copy to clipboard Submission State field value if any.
-  Drupal.tpps.copy_study_state = function() {
+  Drupal.tpps.copy_study_state() = {
     state = $('#edit-tpps-export-state').val();
-    if (typeof(state) != "undefined") {
+    if (typeof(state) != "undefined" && state.trim().length !== 0) {
       navigator.clipboard.writeText(state);
-      if (state.trim().length === 0) {
-        console.log('Submission State was removed from the clipboard.');
-      }
-      else {
-        console.log('Submission State was copied to the clipboard.');
-      }
+      console.log('Submission State was copied to clipboard.');
     }
   }
   Drupal.tpps.copy_study_state();
@@ -28,7 +23,7 @@
     attach: function (context, settings) {
       // Clear textarea with prev submission state.
       $('#edit-tpps-export-accession', context).on('change', function(e) {
-        console.log('Accession was changed.');
+        console.log('Accession was changed');
         $('#edit-tpps-export-state').val('');
         // Probably it's a overkill but just to be sure we always have
         // up-to-date submission state in clipboard.

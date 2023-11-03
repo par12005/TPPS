@@ -24,12 +24,12 @@ function tpps_study_import_form(array $form, array &$form_state) {
   ];
   $form['tpps_import_overwrite_study'] = [
     '#type' => 'checkbox',
-    '#title' => 'Overwrite existing study?',
+    '#title' => 'Overwrite existing study',
     '#default_value' => $form_state['input']['tpps_import_overwrite_study'] ?? FALSE,
   ];
   $form['tpps_import_files_replace'] = [
     '#type' => 'checkbox',
-    '#title' => 'Replace existing files?',
+    '#title' => 'Replace existing files',
     '#default_value' => variable_get('tpps_import_file_replace', TRUE),
     '#description' => t('Behavior when the destination file already exists:'
       . '<br /><strong>Checked</strong>: replace the existing file. '
@@ -122,7 +122,7 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
     ($form_state['values']['tpps_import_file_replace'] ?? FALSE)
   );
   // Remove useless data from the submission state.
-  if ($state_raw = $form_state['values']['tpps_import_submission_state']) {
+  if ($state_raw = trim($form_state['values']['tpps_import_submission_state'])) {
 
     // Fix 'stdClass' in the dump.
     // We shouldn't do this on export to have unchanged data.

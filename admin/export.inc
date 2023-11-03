@@ -17,7 +17,9 @@
  * TPPS Study Import Form.
  */
 function tpps_study_export_form(array $form, array &$form_state) {
-  $accession = $form_state['input']['tpps_export_accession'] ?? '';
+  $accession = (($form_state['input']['op'] ?? NULL) == t('Reset')
+    ? '' : ($form_state['input']['tpps_export_accession'] ?? '')
+  );
   $form['tpps_export_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),
@@ -38,6 +40,7 @@ function tpps_study_export_form(array $form, array &$form_state) {
       '#value' => var_export($state, 1),
       '#rows' => 10,
       '#resizable' => TRUE,
+      '#attributes' => ['readonly' => 'readonly'],
     ];
   }
   $form['action_export'] = [
@@ -58,6 +61,8 @@ function tpps_study_export_form(array $form, array &$form_state) {
  * Resets TPPS Export Form.
  */
 function tpps_study_export_form_reset() {
+  $form_state['input']['tpps_export_accession'] = '';
+  $form_state['values']['tpps_export_accession'] = '';
   drupal_goto('admin/config/tpps/migration/export');
 }
 
@@ -163,7 +168,7 @@ function tpps_study_export_get_state($accession) {
   }
   else {
     drupal_set_message(
-      t('No files found. Please double-check.'),
+      t('No files found in this study. Please double-check.'),
       'warning'
     );
   }
