@@ -55,7 +55,6 @@ function tpps_study_import_form(array $form, array &$form_state) {
     '#type' => 'textarea',
     '#title' => t('Submission State'),
     '#default_value' => $form_state['input']['tpps_import_submission_state'] ?? '',
-    '#required' => TRUE,
   ];
   $form['action_import'] = [
     '#type' => 'submit',
@@ -74,21 +73,35 @@ function tpps_study_import_form(array $form, array &$form_state) {
 /**
  * Validation for form 'tpps_study_import_form'.
  */
-function tpps_study_import_form_validate(array $form, array &$form_state) {
+function tpps_study_import_form_validate(array &$form, array &$form_state) {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Skip validation if 'Reset' was clicked.
   if ($form_state['triggering_element']['#value'] == t('Reset')) {
     return;
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Validate accession.
   $new_accession = $form_state['values']['tpps_import_new_accession'];
   if (empty($form_state['values']['tpps_import_overwrite_study'])) {
     if (tpps_api_check_accession($new_accession)) {
       form_set_error('tpps_import_new_accession', t('Accession already in use. '
-        . 'Click "Reset" to get next available value.')
+        . theme('item_list', [
+          'items' => [
+            'Check "<strong>Overwrite existing study</strong>" to reuse accession.',
+            'Click "<strong>Reset</strong>" button to get next available accesson.',
+          ],
+        ])
+        )
       );
     }
   }
   else {
     // @TODO Validate accession. Check if 'TGDR' is present and so on.
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Validate Submission State.
+  if (empty($form_state['values']['tpps_import_submission_state'])) {
+    form_set_error('tpps_import_submission_state', t('Submission state is empty.'));
   }
 }
 
