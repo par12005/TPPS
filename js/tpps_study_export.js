@@ -10,6 +10,10 @@
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Copy to clipboard Submission State field value if any.
   Drupal.tpps.copy_study_state = function() {
+    // We need to focus to avoid error message on remote server when
+    // 'Manual Export' code is used and this JS file attached from dev-server
+    // This line is not necessary for regular 'Study Export' form.
+    window.focus();
     state = $('#edit-tpps-export-state').val();
     if (typeof(state) != "undefined") {
       navigator.clipboard.writeText(state);
