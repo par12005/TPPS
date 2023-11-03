@@ -780,6 +780,7 @@ function tpps_completed_display($accession = NULL) {
  */
 function tpps_tab_create($uid) {
 
+  // @TODO [VS] Minor. Replace $user with $account. $user is a current user.
   $user = user_load($uid);
   if (empty($user)) {
     drupal_goto('user');
@@ -788,14 +789,15 @@ function tpps_tab_create($uid) {
   global $base_url;
   $params = drupal_get_query_parameters();
 
-  if (isset($params['accession']) and isset($params['action']) and $params['action'] === 'DELETE') {
+  if (isset($params['accession']) && ($params['action'] ?? NULL) === 'DELETE') {
     tpps_delete_submission($params['accession']);
+    drupal_goto("user/{$uid}/tpps");
   }
 
-  $states = tpps_load_submission_multiple(array(
+  $states = tpps_load_submission_multiple([
     'status' => 'Incomplete',
     'uid' => $user->uid,
-  ));
+  ]);
 
   $rows = array();
   foreach ($states as $state) {

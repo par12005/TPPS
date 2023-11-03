@@ -221,14 +221,15 @@ function tpps_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
-  $items['tpps-submission/%/delete'] = array(
+  // @TODO Change URL to 'tpps/submission/%/delete' to be more REST API.
+  $items['tpps-submission/%/delete'] = [
     'title' => 'TPPS Delete Submission',
-    'page callback' => 'tpps_delete_submission',
-    'page arguments' => array(1),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('tpps delete submission', 1),
     'type' => MENU_CALLBACK,
-  );
+    'page callback' => 'tpps_submission_delete_callback',
+    'page arguments' => [1],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['tpps delete submission', 1],
+  ];
 
   $items['completed-submission/%'] = array(
     'title' => 'TPPS Completed Submission',

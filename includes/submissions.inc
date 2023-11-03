@@ -2,10 +2,12 @@
 
 /**
  * @file
- * Defines functions for manipulation of TPPS Submissions.
+ * Functions for manipulation of TPPS Submissions.
  *
  * To use:
  * module_load_include('inc', 'tpps', 'includes/submissions');
+ *
+ * @TODO Minor. Rename functions to use pattern 'tpps_submission_[action]'.
  */
 
 /**
@@ -242,15 +244,16 @@ function tpps_update_submission(array $state, array $options = array()) {
 }
 
 /**
- * This function deletes a TPPS Submission based on an accession number.
+ * Deletes a TPPS Submission.
  *
- * It also removes the submission record from the chado.dbxref table.
+ * Removes records from tables:
+ * 1. chado.dbxref,
+ * 2. chado.tpps_submission.
  *
  * @param string $accession
- *   The accession number of the submission to delete.
+ *   The accession of the submission. Format: TGDR12345.
  */
-function tpps_delete_submission($accession, $redirect = TRUE) {
-  global $user;
+function tpps_delete_submission($accession) {
   $submission = tpps_load_submission($accession, FALSE);
   $dbxref_id = $submission->dbxref_id;
   $state = unserialize($submission->submission_state);
@@ -262,9 +265,29 @@ function tpps_delete_submission($accession, $redirect = TRUE) {
       ->condition('dbxref_id', $dbxref_id)
       ->execute();
   }
-  if ($redirect) {
-    drupal_goto("user/{$user->uid}/tpps");
-  }
+}
+
+/**
+ * Menu callback to remove the TPPS Submission.
+ *
+ * @param string $accession
+ *   The accession of the submission. Format: TGDR12345.
+ */
+function tpps_submission_delete_callback($accession) {
+  global $user;
+  tpps_delete_submission($accession);
+  drupal_goto("user/{$user->uid}/tpps");
+}
+
+/**
+ * Deletes a TPPS Submission and it's files.
+ *
+ * @param string $accession
+ *   The accession of the submission. Format: TGDR12345.
+ */
+function tpps_delete_submission_and_files($accession) {
+  // @TODO Remove usage of files first.
+  tpps_delete_submission($accession);
 }
 
 /**
@@ -1185,7 +1208,7 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
             // Remove if submission has no Publication Title
             // and this form is shown not after user returned from Page 1.
             // @TODO Move removement to better place.
-            tpps_delete_submission($item->accession, FALSE);
+            tpps_delete_submission($item->accession);
           }
         }
       }
