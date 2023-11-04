@@ -25,7 +25,7 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
     '#default_value' => $show_report,
   ];
   if (!empty($accession)) {
-    module_load_include('inc', 'tpps', 'admin/export');
+    module_load_include('inc', 'tpps', 'admin/submission_export');
     module_load_include('inc', 'tpps', 'includes/form');
     $function_code = '';
     $function_list = [
@@ -40,7 +40,15 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
       'tpps_submission_get_file_id_list',
     ];
     foreach ($function_list as $function_name) {
-      $function_code .= "\n" . tpps_get_function_code($function_name);
+      if (function_exists($function_name)) {
+        $function_code .= "\n" . tpps_get_function_code($function_name);
+      }
+      else {
+        drupal_set_message(
+          t('Function "<strong>@function_name()</strong>" not found.',
+          ['@function_name' => $function_name]), 'error'
+        );
+      }
     }
     // Build the code.
     $code = <<<EOT

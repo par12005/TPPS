@@ -4,7 +4,6 @@
  * @file
  * TPPS Submission Import Form and related functions.
  *
- *
  * @TODO Minor. Use function to get rid of useless data from $form_state
  * function tpps_form_state_info(array &$new, array &$old);
  */
@@ -13,10 +12,6 @@
  * TPPS Submission Import Form.
  */
 function tpps_submission_import_form(array $form, array &$form_state) {
-  $canonical_url = 'admin/config/tpps/migration/import';
-  if (current_path() != $canonical_url) {
-    drupal_goto($canonical_url);
-  }
   $form['tpps_import_new_accession'] = [
     '#type' => 'textfield',
     '#title' => t('New Accession'),
@@ -109,7 +104,7 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
 }
 
 /**
- * Resets TPPS Import Form.
+ * Resets TPPS Submission Import Form.
  */
 function tpps_submission_import_form_reset(array $form, array &$form_state) {
   drupal_goto('admin/config/tpps/migration/import');
@@ -164,7 +159,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // Accession.
     $new_accession = $form_state['values']['tpps_import_new_accession']
       ?? 'TGDR' . tpps_init_project_get_next_accession();
-    if (empty($form_state['values']['tpps_import_overwrite_submission'])) {
+    if (!empty($form_state['values']['tpps_import_overwrite_submission'])) {
       // Remove submission and files.
       // We can't use tpps_update_submission() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
@@ -198,7 +193,6 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // From tpps_init_project().
-    //$state['values']['dbxref_id']
     $state['saved_values']['dbxref_id']
       = $state['dbxref_id']
       = $state['values']['dbxref_id']
@@ -206,10 +200,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
     $state['values']['status'] = 'Incomplete';
     $state['values'] = $state['saved_values'];
-    // dpm(print_r($state, 1));
-    tpps_create_submission($state, $user->uid);
+    dpm(print_r($state, 1));
+    //tpps_create_submission($state, $user->uid);
     // Recreate Submission.
-    drupal_form_submit('tpps_main', $state);
+    //drupal_form_submit('tpps_main', $state);
   }
   $form_state['rebuild'] = 1;
 }
