@@ -33,7 +33,6 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
       'tpps_form_search_field',
       'tpps_form_get_organism_number',
       'tpps_submission_export_get_file_parents',
-      'tpps_submission_export_show_method_report',
       'tpps_submission_export_get_files_info',
       // New.
       'tpps_submission_export_file_report',

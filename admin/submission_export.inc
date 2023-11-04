@@ -4,7 +4,6 @@
  * @file
  * TPPS Submission Export Form and related functions.
  *
- *
  * @TODO Minor. Get status of submission in
  * https://tgwebdev.cam.uchc.edu/admin/reports/db/public.tripal_jobs.
  * @TODO Check $form_state['saved_values'] for files but it's structure differs
@@ -12,6 +11,8 @@
  * dev-server (maybe broken) has no 'values' but only 'saves_values' but in
  * reviewed studies files was detected correclty using 'comolete form'.
  */
+
+module_load_include('inc', 'tpps', 'includes/common');
 
 /**
  * TPPS Study Import Form.
@@ -220,27 +221,6 @@ function tpps_submission_export_get_file_parents($organism_number = 1) {
   //   'phenotype_environment_file' => 0,
   // ];
   return $result;
-}
-
-/**
- * Shows status of search for each method.
- *
- * @param array $report
- *   List of methods and their result. TRUE - success and FALSE - fail.
- */
-function tpps_submission_export_show_method_report(array $report) {
-  foreach ($report as $method => $list) {
-    $count = count($list);
-    drupal_set_message(t('Method "@method": @status. @list',
-      [
-        '@method' => $method,
-        '@status' => ((bool) $count
-          ? t('Found @count', ['@count' => $count])
-          : t('Not found')),
-        '@list' => ($count ? 'List: ' . implode(', ', $list) . '.' : ''),
-      ]
-    ));
-  }
 }
 
 /**

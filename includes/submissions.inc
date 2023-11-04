@@ -1292,61 +1292,99 @@ function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
 /**
  * Gets form submission state, prepares files for import.
  *
- * @param string $accession
- *   Study submission. Format: 'TGDRxxxx'.
+ * @param array $state
+ *   TPPS Submission State.
  *
  * @return array
- *   Returns Drupal Form API State array with extra 'tpps_export_files'
- *   element which contains files information necessary for re-import on
- *   other server.
+ *   Returns list of File IDs or empty array.
  */
 function tpps_submission_get_file_id_list(array $state) {
-  // Process files.
-  // File URL will be added to $form_state to allow to download files on
-  // other server and resubmit study with files.
-  //
-  //@TODO rename to $fid_list;
-  $state['tpps_export_fid'] = [];
+  $result = [];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Complete Form.
   $method_name = 'complete form';
+  $fid_list = [];
   if (!empty($state['complete form'])) {
+    module_load_include('inc', 'tpps', 'admin/submission_export');
     $files = tpps_form_search_field($state['complete form'], 'managed_file');
-    //dpm(var_export($files, 1));
     foreach ($files as $parents) {
       $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
     }
   }
-  $fid_list = array_filter($fid_list ?? []);
-  $methods[$method_name] = $fid_list;
+  $fid_list = array_filter($fid_list);
+  $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
-    $state['tpps_export_fid'] = array_merge($state['tpps_export_fid'], $fid_list);
+    $result = array_merge($result, $fid_list);
   }
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Use $form_state['files'] if any.
-  $method_name = 'state files';
+  $method_name = '$form_state["files"]';
+  $fid_list = [];
   $fid_list = array_filter($state['files'] ?? []);
-  $methods[$method_name] = $fid_list;
+  $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
-    $state['tpps_export_fid'] = array_merge($state['tpps_export_fid'], $fid_list);
+    $result = array_merge($result, $fid_list);
   }
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Use $form_state['file_info'] if any.
+  $method_name = '$form_state["file_info"]';
+  $fid_list = [];
+  $fid_list = array_merge(
+    array_keys($state['file_info'][1] ?? []),
+    array_keys($state['file_info'][2] ?? []),
+    array_keys($state['file_info'][3] ?? []),
+    array_keys($state['file_info'][4] ?? [])
+  );
+  $fid_list = array_filter($fid_list);
+  $report[$method_name] = $fid_list;
+  if (!empty($fid_list)) {
+    $result = array_merge($result, $fid_list);
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Last chance. Use hardcoded path to file fields.
   $method_name = 'hardcoded';
-  if (!empty($state['values'])) {
+  $fid_list = [];
+  if (!empty($state['values']) || !empty($state['saved_values'])) {
     module_load_include('inc', 'tpps', 'includes/form');
     $organism_number = tpps_form_get_organism_number($state);
-    foreach (tpps_submission_export_get_file_parents($organism_number) as $parents) {
-      $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
+    if (!empty($state['values'])) {
+      $organism_number = tpps_form_get_organism_number($state);
+      foreach (tpps_submission_export_get_file_parents($organism_number) as $parents) {
+        $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
+      }
+    }
+    if (!empty($state['saved_values'])) {
+      foreach (tpps_submission_export_get_file_parents($organism_number) as $parents) {
+        $step = ($parents[0] == 'tree-accession') ? 3 : 4;
+        $fid_list[] = drupal_array_get_nested_value(
+          $state['saved_values'][$step],
+          $parents
+        );
+      }
     }
   }
   $fid_list = array_filter($fid_list ?? []);
-  $methods[$method_name] = $fid_list;
+  $fid_list = array_unique($fid_list);
+  $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
-    $state['tpps_export_fid'] = array_merge($state['tpps_export_fid'], $fid_list);
+    $result = array_merge($result, $fid_list);
   }
-  $state['tpps_export_fid'] = array_unique($state['tpps_export_fid']);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Show Report.
   if (variable_get('tpps_export_show_file_search_report', FALSE)) {
-    tpps_submission_export_show_method_report($methods);
+    foreach ($report as $method => $list) {
+      $count = count($list);
+      drupal_set_message(t('Method "@method": @status. @list',
+        [
+          '@method' => $method,
+          '@status' => ((bool) $count
+            ? t('Found @count', ['@count' => $count])
+            : t('Not found')),
+          '@list' => ($count ? 'List: ' . implode(', ', $list) . '.' : ''),
+        ]
+      ));
+    }
   }
-  return $state['tpps_export_fid'];
+  $result = array_unique($result);
+  return $result;
 }

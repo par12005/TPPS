@@ -37,6 +37,13 @@ function tpps_submission_import_form(array $form, array &$form_state) {
       . '<br /><strong>Unchecked</strong>: Append _{incrementing number} '
       . 'until the filename is unique.'),
   ];
+  $form['tpps_import_dry_run'] = [
+    '#type' => 'checkbox',
+    '#title' => 'Dry Run',
+    '#default_value' => $form_state['input']['tpps_import_dry_run'] ?? FALSE,
+    '#description' => t("When checked submission won't be submitted but "
+    . "but files will be downloaded and added to site."),
+  ];
   $form['tpps_import_debug_state'] = [
     '#type' => 'checkboxes',
     '#title' => 'Dump submission state parts:',
@@ -119,6 +126,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   variable_set('tpps_import_file_replace',
     ($form_state['values']['tpps_import_file_replace'] ?? FALSE)
   );
+  $dry_run = (bool) $form_state['values']['tpps_import_dry_run'];
   // Remove useless data from the submission state.
   if ($state_raw = trim($form_state['values']['tpps_import_submission_state'])) {
 
@@ -181,14 +189,19 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     else {
       foreach ($state['tpps_export_files'] as $fid => $file) {
-        dpm($file, $fid);
         $new_file = tpps_submission_import_download_file($file);
         file_usage_add($new_file, 'tpps', 'tpps_project', substr($new_accession, 4));
-        dpm(print_r($new_file, 1));
         // Change fid.
         $state = tpps_array_replace($state, $fid, $new_file->fid);
+        drupal_set_message(t('Original file "<strong>@old_fid</strong>" '
+          . 'was replaced with new "<strong>@new_fid</strong>".',
+          ['@old_fid' => $fid, '@new_fid' => $new_file->fid]
+        ));
+        if ($dry_run) {
+          dpm($file, $fid);
+          dpm(print_r($new_file, 1), 'new file');
+        }
       }
-      dpm(print_r($state, 1));
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -200,10 +213,14 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
     $state['values']['status'] = 'Incomplete';
     $state['values'] = $state['saved_values'];
-    dpm(print_r($state, 1));
-    //tpps_create_submission($state, $user->uid);
-    // Recreate Submission.
-    //drupal_form_submit('tpps_main', $state);
+    if ($dry_run) {
+      dpm(print_r($state, 1));
+    }
+    else {
+      tpps_create_submission($state, $user->uid);
+      // Recreate Submission.
+      drupal_form_submit('tpps_main', $state);
+    }
   }
   $form_state['rebuild'] = 1;
 }
