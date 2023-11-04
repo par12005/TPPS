@@ -284,15 +284,28 @@ function tpps_submission_delete_callback($accession) {
  *
  * @param string $accession
  *   The accession of the submission. Format: TGDR12345.
+ * @param bool $force
+ *   Boolean indicating that the file should be deleted
+ *   if the file not in use by the file_usage table.
+ *   Removement of not used files are safe but I'm not sure that old studies
+ *   created correct records about usage of files so do NOT delete files
+ *   by default.
+ *   But for testing and Study Import file removement should be allowed.
  */
-function tpps_submission_purge($accession) {
-  // @TODO Remove usage of files first.
-  $submission = tpps_load_submission($accession, FALSE);
-  //$dbxref_id = $submission->dbxref_id;
-  //$state = unserialize($submission->submission_state);
-  //$state = tpps_study_export_get_state($accession);
+function tpps_submission_purge($accession, $force = FALSE) {
   $state = tpps_submission_get_state($accession);
-
+  // Remove usage of files first.
+  $fid_list = tpps_submission_get_file_id_list($state);
+  foreach ($fid_list as $fid) {
+    $file = file_load($fid);
+    // Remove file usage record (not file itself).
+    file_usage_delete($file, 'tpps', 'tpps_project', substr($accession, 4), 1);
+    if ($force) {
+      // Remove file from disk.
+      file_delete($file);
+    }
+  }
+  // Remove submission state from DB.
   db_delete('tpps_submission')
     ->condition('accession', $accession)
     ->execute();

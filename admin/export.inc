@@ -36,12 +36,11 @@ function tpps_study_export_form(array $form, array &$form_state) {
     // Get Submission State.
     module_load_include('inc', 'tpps', 'includes/submission');
     $state = tpps_submission_get_state($accession);
+    // Files.
     $fid_list = tpps_submission_get_file_id_list($state);
     $files = tpps_study_export_get_files_info($fid_list);
-    $state['tpps_export_files'] = $files;
     tpps_study_export_file_report($fid_list, $files);
-
-
+    $state['tpps_export_files'] = $files;
 
     $form['tpps_export_state'] = [
       '#type' => 'textarea',
@@ -254,7 +253,7 @@ function tpps_study_export_show_method_report(array $report) {
  */
 function tpps_study_export_file_report(array &$fid_list = [], array &$files = []) {
   if (!empty($fid_list)) {
-    if (empty($files) {
+    if (empty($files)) {
       drupal_set_message(
         t('Study has files but they not found at server. '
         . 'Probably those files must be uploaded again.'), 'warning'

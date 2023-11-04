@@ -5,7 +5,6 @@
  * TPPS Study Import Form and related functions.
  *
  *
- * @TODO Reuse the same accession. Remove existing study and submit new.
  * @TODO Minor. Use function to get rid of useless data from $form_state
  * function tpps_form_state_info(array &$new, array &$old);
  */
@@ -96,7 +95,7 @@ function tpps_study_import_form_validate(array &$form, array &$form_state) {
     }
   }
   else {
-    // @TODO Validate accession. Check if 'TGDR' is present and so on.
+    // @TODO Minor. Validate accession. Check if 'TGDR' is present and so on.
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate Submission State.
@@ -124,7 +123,7 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
   // Remove useless data from the submission state.
   if ($state_raw = trim($form_state['values']['tpps_import_submission_state'])) {
 
-    // Fix 'stdClass' in the dump.
+    // Fix 'stdClass' in the submistion dump createdy by var_export().
     // We shouldn't do this on export to have unchanged data.
     // Though var_export() is designed to "outputs or return a parsable
     // string representation of a variable", the output of stdClass
@@ -166,7 +165,7 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
       // We can't use tpps_update_submission() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
       // redord in chado.dbxref will be left unchanged.
-      tpps_submission_purge($new_accession);
+      tpps_submission_purge($new_accession, $force = TRUE);
     }
     // $form_state['values']['frontpage']['accession'] = $new_accession;
     // Check also $form_state['input'] and $form_state['completed_form'].
@@ -190,7 +189,9 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
         // Change fid.
         $state = tpps_array_replace($state, $fid, $new_file->fid);
       }
+      dpm(print_r($state, 1));
     }
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // From tpps_init_project().
     //$state['values']['dbxref_id']
