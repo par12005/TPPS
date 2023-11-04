@@ -2,7 +2,7 @@
 
 /**
  * @file
- * TPPS Study Import Form and related functions.
+ * TPPS Submission Import Form and related functions.
  *
  *
  * @TODO Minor. Use function to get rid of useless data from $form_state
@@ -10,9 +10,13 @@
  */
 
 /**
- * TPPS Study Import Form.
+ * TPPS Submission Import Form.
  */
-function tpps_study_import_form(array $form, array &$form_state) {
+function tpps_submission_import_form(array $form, array &$form_state) {
+  $canonical_url = 'admin/config/tpps/migration/import';
+  if (current_path() != $canonical_url) {
+    drupal_goto($canonical_url);
+  }
   $form['tpps_import_new_accession'] = [
     '#type' => 'textfield',
     '#title' => t('New Accession'),
@@ -21,10 +25,10 @@ function tpps_study_import_form(array $form, array &$form_state) {
     '#required' => FALSE,
     '#description' => 'Leave empty to autogenerate accession',
   ];
-  $form['tpps_import_overwrite_study'] = [
+  $form['tpps_import_overwrite_submission'] = [
     '#type' => 'checkbox',
-    '#title' => 'Overwrite existing study',
-    '#default_value' => $form_state['input']['tpps_import_overwrite_study'] ?? FALSE,
+    '#title' => 'Overwrite existing submission',
+    '#default_value' => $form_state['input']['tpps_import_overwrite_submission'] ?? FALSE,
   ];
   $form['tpps_import_files_replace'] = [
     '#type' => 'checkbox',
@@ -58,21 +62,21 @@ function tpps_study_import_form(array $form, array &$form_state) {
   $form['action_import'] = [
     '#type' => 'submit',
     '#value' => t('Import'),
-    '#submit' => ['tpps_study_import_form_submit'],
+    '#submit' => ['tpps_submission_import_form_submit'],
   ];
   $form['action_reset'] = [
     '#type' => 'submit',
     '#value' => t('Reset'),
-    '#submit' => ['tpps_study_import_form_reset'],
+    '#submit' => ['tpps_submission_import_form_reset'],
   ];
-  $form['#validate'][] = 'tpps_study_import_form_validate';
+  $form['#validate'][] = 'tpps_submission_import_form_validate';
   return $form;
 }
 
 /**
- * Validation for form 'tpps_study_import_form'.
+ * Validation for form 'tpps_submission_import_form'.
  */
-function tpps_study_import_form_validate(array &$form, array &$form_state) {
+function tpps_submission_import_form_validate(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Skip validation if 'Reset' was clicked.
   if ($form_state['triggering_element']['#value'] == t('Reset')) {
@@ -81,12 +85,12 @@ function tpps_study_import_form_validate(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate accession.
   $new_accession = $form_state['values']['tpps_import_new_accession'];
-  if (empty($form_state['values']['tpps_import_overwrite_study'])) {
+  if (empty($form_state['values']['tpps_import_overwrite_submission'])) {
     if (tpps_api_check_accession($new_accession)) {
       form_set_error('tpps_import_new_accession', t('Accession already in use. '
         . theme('item_list', [
           'items' => [
-            'Check "<strong>Overwrite existing study</strong>" to reuse accession.',
+            'Check "<strong>Overwrite existing submission</strong>" to reuse accession.',
             'Click "<strong>Reset</strong>" button to get next available accesson.',
           ],
         ])
@@ -107,14 +111,14 @@ function tpps_study_import_form_validate(array &$form, array &$form_state) {
 /**
  * Resets TPPS Import Form.
  */
-function tpps_study_import_form_reset(array $form, array &$form_state) {
+function tpps_submission_import_form_reset(array $form, array &$form_state) {
   drupal_goto('admin/config/tpps/migration/import');
 }
 
 /**
  * Form submitter for 'tpps_form_page_1_settings_form' form.
  */
-function tpps_study_import_form_submit(array $form, array &$form_state) {
+function tpps_submission_import_form_submit(array $form, array &$form_state) {
   global $user;
   module_load_include('inc', 'tpps', 'includes/common');
   variable_set('tpps_import_file_replace',
@@ -128,7 +132,7 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
     // Though var_export() is designed to "outputs or return a parsable
     // string representation of a variable", the output of stdClass
     // objects is not "a parsable string".
-    tpps_study_import_fix_stdclass($state_raw);
+    tpps_submission_import_fix_stdclass($state_raw);
 
     eval('$state = ' . $state_raw . ';');
 
@@ -160,7 +164,7 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
     // Accession.
     $new_accession = $form_state['values']['tpps_import_new_accession']
       ?? 'TGDR' . tpps_init_project_get_next_accession();
-    if (empty($form_state['values']['tpps_import_overwrite_study'])) {
+    if (empty($form_state['values']['tpps_import_overwrite_submission'])) {
       // Remove submission and files.
       // We can't use tpps_update_submission() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
@@ -178,12 +182,12 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Process files (if any).
     if (empty($state['tpps_export_files'])) {
-      drupal_set_message('Study has no files.');
+      drupal_set_message('Submission has no files.');
     }
     else {
       foreach ($state['tpps_export_files'] as $fid => $file) {
         dpm($file, $fid);
-        $new_file = tpps_study_import_download_file($file);
+        $new_file = tpps_submission_import_download_file($file);
         file_usage_add($new_file, 'tpps', 'tpps_project', substr($new_accession, 4));
         dpm(print_r($new_file, 1));
         // Change fid.
@@ -202,9 +206,9 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
 
     $state['values']['status'] = 'Incomplete';
     $state['values'] = $state['saved_values'];
-   // dpm(print_r($state, 1));
+    // dpm(print_r($state, 1));
     tpps_create_submission($state, $user->uid);
-    // Recreate Study.
+    // Recreate Submission.
     drupal_form_submit('tpps_main', $state);
   }
   $form_state['rebuild'] = 1;
@@ -220,7 +224,7 @@ function tpps_study_import_form_submit(array $form, array &$form_state) {
  * @return object
  *   Returns Managed File Object.
  */
-function tpps_study_import_download_file(array $file) {
+function tpps_submission_import_download_file(array $file) {
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_URL, $file['url']);
   curl_setopt($ch, CURLOPT_VERBOSE, 1);
@@ -234,7 +238,7 @@ function tpps_study_import_download_file(array $file) {
   // Move file to Drupal.
   $file = file_save_data(
     $content,
-    tpps_study_import_get_folder($file['uri']) . '/' . $file['filename'],
+    tpps_submission_import_get_folder($file['uri']) . '/' . $file['filename'],
     (
       variable_get('tpps_import_file_replace', TRUE) ?
       FILE_EXISTS_REPLACE : FILE_EXISTS_RENAME
@@ -260,7 +264,7 @@ function tpps_study_import_download_file(array $file) {
  * @param string $state_raw
  *   Data to be parsed.
  */
-function tpps_study_import_fix_stdclass(&$state_raw) {
+function tpps_submission_import_fix_stdclass(&$state_raw) {
   $state_raw = str_replace('stdClass::__set_state', '(object)', $state_raw);
 }
 
@@ -276,6 +280,6 @@ function tpps_study_import_fix_stdclass(&$state_raw) {
  *   Example: 'public://tpps_genotype'.
  *   Returns default folder when URI is empty.
  */
-function tpps_study_import_get_folder($file_uri = NULL) {
+function tpps_submission_import_get_folder($file_uri = NULL) {
   return $file_uri ? dirname($file_uri) : 'public://';
 }

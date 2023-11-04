@@ -2,13 +2,13 @@
 
 /**
  * @file
- * Shows code to manually export study when automatic export can't be used.
+ * Shows code to manually export submission when automatic export can't be used.
  */
 
 /**
- * TPPS Study Manual Export Form.
+ * TPPS Submission Manual Export Form.
  */
-function tpps_study_manual_export_form(array $form, array &$form_state) {
+function tpps_submission_manual_export_form(array $form, array &$form_state) {
   $input = &$form_state['input'];
   $accession = $input['tpps_manual_export_accession'] ?? '';
   $show_report = (int) ($input['tpps_manual_export_show_file_search_report'] ?? 0);
@@ -32,11 +32,11 @@ function tpps_study_manual_export_form(array $form, array &$form_state) {
       'tpps_submission_get_state',
       'tpps_form_search_field',
       'tpps_form_get_organism_number',
-      'tpps_study_export_get_file_parents',
-      'tpps_study_export_show_method_report',
-      'tpps_study_export_get_files_info',
+      'tpps_submission_export_get_file_parents',
+      'tpps_submission_export_show_method_report',
+      'tpps_submission_export_get_files_info',
       // New.
-      'tpps_study_export_file_report',
+      'tpps_submission_export_file_report',
       'tpps_submission_get_file_id_list',
     ];
     foreach ($function_list as $function_name) {
@@ -57,7 +57,7 @@ drupal_set_message(
     rows="20" class="form-textarea" style="width: 100%; background: lightgray;">'
   . var_export(tpps_submission_get_state(\$accession), 1)
   . '</textarea></div>'
-  . '<script type="text/javascript" src="https://tgwebdev.cam.uchc.edu/sites/all/modules/TGDR/js/tpps_study_export.js?\$cache_reset"></script>'
+  . '<script type="text/javascript" src="https://tgwebdev.cam.uchc.edu/sites/all/modules/TGDR/js/tpps_submission_export.js?\$cache_reset"></script>'
 );
 // dpm(var_export(tpps_submission_get_state(\$accession), 1));
 EOT;
@@ -77,28 +77,28 @@ EOT;
   $form['action_export'] = [
     '#type' => 'submit',
     '#value' => t('Get Code'),
-    '#submit' => ['tpps_study_manual_export_form_submit'],
+    '#submit' => ['tpps_submission_manual_export_form_submit'],
   ];
   $form['action_reset'] = [
     '#type' => 'submit',
     '#value' => t('Reset'),
-    '#submit' => ['tpps_study_manual_export_form_reset'],
+    '#submit' => ['tpps_submission_manual_export_form_reset'],
   ];
-  tpps_add_css_js($form, 'study_manual_export');
+  tpps_add_css_js($form, 'submission_manual_export');
   return $form;
 }
 
 /**
  * Resets TPPS Export Form.
  */
-function tpps_study_manual_export_form_reset() {
+function tpps_submission_manual_export_form_reset() {
   drupal_goto('admin/config/tpps/migration/manual_export');
 }
 
 /**
  * Form submitter for 'tpps_form_page_1_settings_form' form.
  */
-function tpps_study_manual_export_form_submit(array $form, array &$form_state) {
+function tpps_submission_manual_export_form_submit(array $form, array &$form_state) {
   $form_state['rebuild'] = 1;
 }
 

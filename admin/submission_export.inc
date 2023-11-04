@@ -2,10 +2,10 @@
 
 /**
  * @file
- * TPPS Study Export Form and related functions.
+ * TPPS Submission Export Form and related functions.
  *
  *
- * @TODO Minor. Get status of study in
+ * @TODO Minor. Get status of submission in
  * https://tgwebdev.cam.uchc.edu/admin/reports/db/public.tripal_jobs.
  * @TODO Check $form_state['saved_values'] for files but it's structure differs
  * from $form_state['value'] and splitted by pages. But some studies at
@@ -16,7 +16,7 @@
 /**
  * TPPS Study Import Form.
  */
-function tpps_study_export_form(array $form, array &$form_state) {
+function tpps_submission_export_form(array $form, array &$form_state) {
   $accession = (($form_state['input']['op'] ?? NULL) == t('Reset')
     ? '' : ($form_state['input']['tpps_export_accession'] ?? '')
   );
@@ -38,8 +38,8 @@ function tpps_study_export_form(array $form, array &$form_state) {
     $state = tpps_submission_get_state($accession);
     // Files.
     $fid_list = tpps_submission_get_file_id_list($state);
-    $files = tpps_study_export_get_files_info($fid_list);
-    tpps_study_export_file_report($fid_list, $files);
+    $files = tpps_submission_export_get_files_info($fid_list);
+    tpps_submission_export_file_report($fid_list, $files);
     $state['tpps_export_files'] = $files;
 
     $form['tpps_export_state'] = [
@@ -54,21 +54,21 @@ function tpps_study_export_form(array $form, array &$form_state) {
   $form['action_export'] = [
     '#type' => 'submit',
     '#value' => t('Export'),
-    '#submit' => ['tpps_study_export_form_submit'],
+    '#submit' => ['tpps_submission_export_form_submit'],
   ];
   $form['action_reset'] = [
     '#type' => 'submit',
     '#value' => t('Reset'),
-    '#submit' => ['tpps_study_export_form_reset'],
+    '#submit' => ['tpps_submission_export_form_reset'],
   ];
-  tpps_add_css_js($form, 'study_export');
+  tpps_add_css_js($form, 'submission_export');
   return $form;
 }
 
 /**
  * Resets TPPS Export Form.
  */
-function tpps_study_export_form_reset() {
+function tpps_submission_export_form_reset() {
   $form_state['input']['tpps_export_accession'] = '';
   $form_state['values']['tpps_export_accession'] = '';
   drupal_goto('admin/config/tpps/migration/export');
@@ -77,7 +77,7 @@ function tpps_study_export_form_reset() {
 /**
  * Form submitter for 'tpps_form_page_1_settings_form' form.
  */
-function tpps_study_export_form_submit(array $form, array &$form_state) {
+function tpps_submission_export_form_submit(array $form, array &$form_state) {
   variable_set('tpps_export_show_file_search_report',
     ($form_state['values']['tpps_export_show_file_search_report'] ?? FALSE)
   );
@@ -95,7 +95,7 @@ function tpps_study_export_form_submit(array $form, array &$form_state) {
  *   with File Metadata returned by file_load() and additionally new
  *   item 'url' which is File's absolute URL.
  */
-function tpps_study_export_get_files_info(array &$fid_list) {
+function tpps_submission_export_get_files_info(array &$fid_list) {
   $files = [];
   foreach ($fid_list as $fid) {
     if ($fid) {
@@ -175,13 +175,13 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
  * Gets hardcoded list of file field parents.
  *
  * @param int $organism_number
- *   Number of species in study.
+ *   Number of species in submission.
  *
  * @return array
  *   Returns empty array if number of organisms is zero.
  *   Returns list of parents (from $form_state['values']);
  */
-function tpps_study_export_get_file_parents($organism_number = 1) {
+function tpps_submission_export_get_file_parents($organism_number = 1) {
   $result = [];
 
   for ($i = 1; $i <= $organism_number; $i++) {
@@ -228,7 +228,7 @@ function tpps_study_export_get_file_parents($organism_number = 1) {
  * @param array $report
  *   List of methods and their result. TRUE - success and FALSE - fail.
  */
-function tpps_study_export_show_method_report(array $report) {
+function tpps_submission_export_show_method_report(array $report) {
   foreach ($report as $method => $list) {
     $count = count($list);
     drupal_set_message(t('Method "@method": @status. @list',
@@ -251,7 +251,7 @@ function tpps_study_export_show_method_report(array $report) {
  * @param array $files
  *   List of File metadata.
  */
-function tpps_study_export_file_report(array &$fid_list = [], array &$files = []) {
+function tpps_submission_export_file_report(array &$fid_list = [], array &$files = []) {
   if (!empty($fid_list)) {
     if (empty($files)) {
       drupal_set_message(
@@ -274,7 +274,7 @@ function tpps_study_export_file_report(array &$fid_list = [], array &$files = []
   }
   else {
     drupal_set_message(
-      t('No files found in this study. Please double-check.'),
+      t('No files found in this submission. Please double-check.'),
       'warning'
     );
   }

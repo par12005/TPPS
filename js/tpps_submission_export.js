@@ -1,7 +1,7 @@
 /**
  * @file
  *
- * TPPS Study Export Page specific JS-code.
+ * TPPS Submission Export Page specific JS-code.
  */
 (function($, Drupal) {
   // Create namespaces.
@@ -9,10 +9,10 @@
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Copy to clipboard Submission State field value if any.
-  Drupal.tpps.copy_study_state = function() {
+  Drupal.tpps.copy_submission_state = function() {
     // We need to focus to avoid error message on remote server when
     // 'Manual Export' code is used and this JS file attached from dev-server
-    // This line is not necessary for regular 'Study Export' form.
+    // This line is not necessary for regular 'Submission Export' form.
     window.focus();
     state = $('#edit-tpps-export-state').val();
     if (typeof(state) != "undefined") {
@@ -25,10 +25,10 @@
       }
     }
   }
-  Drupal.tpps.copy_study_state();
+  Drupal.tpps.copy_submission_state();
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Behavior.
-  Drupal.behaviors.tpps_study_export = {
+  Drupal.behaviors.tpps_submission_export = {
     attach: function (context, settings) {
       // Clear textarea with prev submission state.
       $('#edit-tpps-export-accession', context).on('change', function(e) {
@@ -36,7 +36,7 @@
         $('#edit-tpps-export-state').val('');
         // Probably it's a overkill but just to be sure we always have
         // up-to-date submission state in clipboard.
-        Drupal.tpps.copy_study_state();
+        Drupal.tpps.copy_submission_state();
       });
     }
   }

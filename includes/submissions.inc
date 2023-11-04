@@ -1335,7 +1335,7 @@ function tpps_submission_get_file_id_list(array $state) {
   if (!empty($state['values'])) {
     module_load_include('inc', 'tpps', 'includes/form');
     $organism_number = tpps_form_get_organism_number($state);
-    foreach (tpps_study_export_get_file_parents($organism_number) as $parents) {
+    foreach (tpps_submission_export_get_file_parents($organism_number) as $parents) {
       $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
     }
   }
@@ -1346,7 +1346,7 @@ function tpps_submission_get_file_id_list(array $state) {
   }
   $state['tpps_export_fid'] = array_unique($state['tpps_export_fid']);
   if (variable_get('tpps_export_show_file_search_report', FALSE)) {
-    tpps_study_export_show_method_report($methods);
+    tpps_submission_export_show_method_report($methods);
   }
   return $state['tpps_export_fid'];
 }
