@@ -1845,6 +1845,17 @@ function tpps_menu_add_submission_migration_pages(array &$items = []) {
     'file' => 'admin/submission_manual_export.inc',
     'type' => MENU_LOCAL_TASK,
   ];
+  $items['admin/config/tpps/migration/submission_compare'] = [
+    'title' => 'Compare',
+    'description' => 'Compare two TPPS Submissions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_compare_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submission_compare.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 100,
+  ];
 }
 
 /**
