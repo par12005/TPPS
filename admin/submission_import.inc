@@ -222,6 +222,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       drupal_form_submit('tpps_main', $state);
     }
   }
+  drupal_set_message(tpps_table_display($state));
   $form_state['rebuild'] = 1;
 }
 
