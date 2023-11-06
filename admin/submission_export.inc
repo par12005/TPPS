@@ -36,7 +36,7 @@ function tpps_submission_export_form(array $form, array &$form_state) {
   ];
   if (!empty($accession)) {
     // Get Submission State.
-    module_load_include('inc', 'tpps', 'includes/submission');
+    module_load_include('inc', 'tpps', 'includes/submissions');
     $state = tpps_submission_get_state($accession);
     drupal_set_message(tpps_table_display($state));
     // Files.

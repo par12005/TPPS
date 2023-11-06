@@ -26,6 +26,7 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
   ];
   if (!empty($accession)) {
     module_load_include('inc', 'tpps', 'admin/submission_export');
+    module_load_include('inc', 'tpps', 'includes/submissions');
     module_load_include('inc', 'tpps', 'includes/form');
     $function_code = '';
     $function_list = [
@@ -52,17 +53,23 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
     // Build the code.
     $code = <<<EOT
 \$accession = '$accession';
-variable_set('tpps_export_show_file_search_report', $show_report);
+\$show_report = $show_report;
 
 $function_code
 
 \$cache_reset = REQUEST_TIME;
+\$state = tpps_submission_get_state(\$accession);
+// Files.
+\$fid_list = tpps_submission_get_file_id_list(\$state, \$show_report);
+\$files = tpps_submission_export_get_files_info(\$fid_list);
+tpps_submission_export_file_report(\$fid_list, \$files);
+\$state['tpps_export_files'] = \$files;
 
 drupal_set_message(
   '<div class="form-textarea-wrapper resizable
     resizable-textarea"><textarea id="edit-tpps-export-state" cols="200"
     rows="20" class="form-textarea" style="width: 100%; background: lightgray;">'
-  . var_export(tpps_submission_get_state(\$accession), 1)
+  . var_export(\$state, 1)
   . '</textarea></div>'
   . '<script type="text/javascript" src="https://tgwebdev.cam.uchc.edu/sites/all/modules/TGDR/js/tpps_submission_export.js?\$cache_reset"></script>'
 );
