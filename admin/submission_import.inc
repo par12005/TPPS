@@ -117,6 +117,8 @@ function tpps_submission_import_form_reset(array $form, array &$form_state) {
   drupal_goto('admin/config/tpps/migration/import');
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
 /**
  * Form submitter for 'tpps_form_page_1_settings_form' form.
  */
@@ -163,25 +165,9 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // (line 1071 of /var/www/Drupal/sites/all/modules/TGDR/tpps.module).
     $state['triggering_element']['#value'] = t('Review and Submit');
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Accession.
     $new_accession = $form_state['values']['tpps_import_new_accession']
       ?? 'TGDR' . tpps_init_project_get_next_accession();
-    if (!empty($form_state['values']['tpps_import_overwrite_submission'])) {
-      // Remove submission and files.
-      // We can't use tpps_update_submission() because it doesn't manage files
-      // but only overwrites record in chado.tpps_submission table and
-      // redord in chado.dbxref will be left unchanged.
-      tpps_submission_purge($new_accession, $force = TRUE);
-    }
-    // $form_state['values']['frontpage']['accession'] = $new_accession;
-    // Check also $form_state['input'] and $form_state['completed_form'].
-    // Update accession value in $form_state.
-    $state = tpps_array_replace(
-      $state,
-      $state['saved_values']['frontpage']['accession'],
-      $new_accession
-    );
+
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Process files (if any).
     if (empty($state['tpps_export_files'])) {
@@ -214,6 +200,23 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
         }
       }
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Accession.
+    if (!empty($form_state['values']['tpps_import_overwrite_submission'])) {
+      // Remove submission and files.
+      // We can't use tpps_update_submission() because it doesn't manage files
+      // but only overwrites record in chado.tpps_submission table and
+      // redord in chado.dbxref will be left unchanged.
+      tpps_submission_purge($new_accession, $force = TRUE);
+    }
+    // $form_state['values']['frontpage']['accession'] = $new_accession;
+    // Check also $form_state['input'] and $form_state['completed_form'].
+    // Update accession value in $form_state.
+    $state = tpps_array_replace(
+      $state,
+      $state['saved_values']['frontpage']['accession'],
+      $new_accession
+    );
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // From tpps_init_project().
@@ -238,6 +241,16 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
   }
   drupal_set_message(tpps_table_display($state));
+
+  // Show useful links.
+  drupal_set_message(theme('item_list', [
+    'items' => [
+      l('tppsc', 'tppsc'),
+      l('tpps-admin-panel/' . $new_accession, 'tpps-admin-panel/' . $new_accession),
+      l('tpps/details/' . $new_accession, 'tpps/details/' . $new_accession),
+    ]
+  ]));
+
   $form_state['rebuild'] = 1;
 }
 
