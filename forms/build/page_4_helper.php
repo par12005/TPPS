@@ -1101,6 +1101,9 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'wrapper' => "$id-genotype-files",
         'effect' => 'slide',
       ],
+      '#default_value' => tpps_get_ajax_value($form_state,
+        [$id, 'genotype', 'files', 'ploidy'], 'haploid'
+      ),
     ];
     // SSRs.
     if ($ssrs_cpssrs_value != 'cpSSRs') {

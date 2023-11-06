@@ -32,7 +32,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
             // phenotype-repeat-check,
             // genotype-repeat-check,
             // environment-repeat-check.
-            unset($organism[$i]);
+            unset($organism[$item]);
           }
         }
         if (!empty($organism[$item])) {
@@ -1350,15 +1350,17 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
       unset($headers[$k]);
     }
 
-    tpps_ssr_valid_ploidy(
-      $genotype['files'][$ploidy_field_name],
-      // Number of columns.
-      (tpps_file_width($genotype['files'][$field_name]) - 1),
-      // Number of unique columns.
-      (count(array_unique($headers)) - 1),
-      $org_num,
-      $field_name
-    );
+    if (isset($genotype['files'][$ploidy_field_name])) {
+      tpps_ssr_valid_ploidy(
+        $genotype['files'][$ploidy_field_name],
+        // Number of columns.
+        (tpps_file_width($genotype['files'][$field_name]) - 1),
+        // Number of unique columns.
+        (count(array_unique($headers)) - 1),
+        $org_num,
+        $field_name
+      );
+    }
     // Check missing trees.
     if (!form_get_errors()) {
       $missing_trees = tpps_compare_files(
