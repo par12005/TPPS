@@ -24,7 +24,8 @@ function tpps_submission_compare_form(array $form, array &$form_state) {
   $form['tpps_submission_compare_accession_1'] = [
     '#type' => 'select',
     '#title' => t('Accession 1'),
-    '#options' => tpps_submission_get_accession_list(),
+    // Reset cached list of studies to have latest changes.
+    '#options' => tpps_submission_get_accession_list([], TRUE, $reset = TRUE),
     '#default_value' => $accession_1,
     '#required' => TRUE,
   ];
@@ -34,6 +35,7 @@ function tpps_submission_compare_form(array $form, array &$form_state) {
   $form['tpps_submission_compare_accession_2'] = [
     '#type' => 'select',
     '#title' => t('Accession 2'),
+    // No need to reset cached list of studies because we did this above.
     '#options' => tpps_submission_get_accession_list(),
     '#default_value' => $accession_2,
     '#required' => TRUE,
