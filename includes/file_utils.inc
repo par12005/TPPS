@@ -1323,3 +1323,22 @@ function tpps_file_remove($fid) {
   }
   return FALSE;
 }
+
+/**
+ * Adds file usage if necessary.
+ *
+ * Allows to avoid adding usage multiple times and allows correctly delete file.
+ *
+ * @param object $file
+ *   File Object.
+ * @param string $accession
+ *   Stury accession (TGDRxxxx) but integer accession number (xxxx)
+ *   also could be used.
+ */
+function tpps_file_add_usage($file, $accession) {
+  $file_usage = file_usage_list($file);
+  $file_id = str_replace('TGDR', '', $accession);
+  if (empty($file_usage['tpps']['tpps_project'][$file_id] ?? NULL)) {
+    file_usage_add($file, 'tpps', 'tpps_project', $file_id);
+  }
+}

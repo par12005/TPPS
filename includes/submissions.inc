@@ -1260,12 +1260,11 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
 }
 
 /**
-  * Builds list of accessions (values) and their dbxref_id's as a keys.
+ * Builds list of accessions (values) and their dbxref_id's as a keys.
  *
  * @param bool $is_optional
  *   Should this list have an extra item '- Select -' which makes this
  *   dropdown list optional.
- * @access public
  *
  * @return array
  *   Returns array where keys are studie's dbxref_id and value is an
@@ -1390,6 +1389,8 @@ function tpps_submission_get_file_id_list(array $state, $show_report = FALSE) {
 /**
  * Changes status of all the submission files.
  *
+ * If file has no usage yet it will be added.
+ *
  * @param array $form_state
  *   Drupal Form API State array.
  * @param int $status
@@ -1403,6 +1404,7 @@ function tpps_submission_files_set_status(array $form_state, $status = FILE_STAT
     if ($file && $file->status != $status) {
       $file->status = $status;
       file_save($file);
+      tpps_file_add_usage($file, $form_state['accession']);
     }
   }
 }

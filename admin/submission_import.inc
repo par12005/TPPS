@@ -189,9 +189,20 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     else {
       foreach ($state['tpps_export_files'] as $fid => $file) {
+        if (empty($file)) {
+          continue;
+        }
         $new_file = tpps_submission_import_download_file($file);
-        file_usage_add($new_file, 'tpps', 'tpps_project', substr($new_accession, 4));
-        // Change fid.
+        // To avoid errors when page navigation used we need to have
+        // temporary stored files until final form submit ('summarypage').
+        // @TODO Minor. Think about reusage of function
+        // tpps_submission_files_set_status().
+        if ($new_file->status != 0) {
+          $new_file->status = 0;
+          file_save($new_file);
+        }
+        tpps_file_add_usage($new_file, $new_accession);
+        // Change File ID in submission state.
         $state = tpps_array_replace($state, $fid, $new_file->fid);
         drupal_set_message(t('Original file "<strong>@old_fid</strong>" '
           . 'was replaced with new "<strong>@new_fid</strong>".',
@@ -220,6 +231,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       tpps_create_submission($state, $user->uid);
       // Recreate Submission.
       drupal_form_submit('tpps_main', $state);
+      // Clear cached list of studies to have new items at 'frontpage'.
+      $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+      // @TODO Minor. Clear only accession list.
+      cache_clear_all('*', $cache_bin, TRUE);
     }
   }
   drupal_set_message(tpps_table_display($state));
