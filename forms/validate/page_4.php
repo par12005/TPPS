@@ -30,7 +30,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       // Check if validation functions exists.
       $study_type_list = [];
       foreach (['phenotype', 'genotype', 'environment'] as $item) {
-        if (!function_exists('tpps_validate_' . $item) {
+        if (!function_exists('tpps_validate_' . $item)) {
           // Dynamically built function names are:
           // tpps_validate_phenotype(),
           // tpps_validate_genotype(),
@@ -1365,15 +1365,17 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
       unset($headers[$k]);
     }
 
-    tpps_ssr_valid_ploidy(
-      $genotype['files'][$ploidy_field_name],
-      // Number of columns.
-      (tpps_file_width($genotype['files'][$field_name]) - 1),
-      // Number of unique columns.
-      (count(array_unique($headers)) - 1),
-      $org_num,
-      $field_name
-    );
+    if (isset($genotype['files'][$ploidy_field_name])) {
+      tpps_ssr_valid_ploidy(
+        $genotype['files'][$ploidy_field_name],
+        // Number of columns.
+        (tpps_file_width($genotype['files'][$field_name]) - 1),
+        // Number of unique columns.
+        (count(array_unique($headers)) - 1),
+        $org_num,
+        $field_name
+      );
+    }
     // Check missing trees.
     if (!form_get_errors()) {
       $missing_trees = tpps_compare_files(
