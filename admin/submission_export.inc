@@ -28,10 +28,11 @@ function tpps_submission_export_form(array $form, array &$form_state) {
     '#default_value' => $accession,
     '#required' => TRUE,
   ];
+  $show_report = variable_get('tpps_export_show_file_search_report', FALSE);
   $form['tpps_export_show_file_search_report'] = [
     '#type' => 'checkbox',
     '#title' => 'Show File Search Report?',
-    '#default_value' => variable_get('tpps_export_show_file_search_report', FALSE),
+    '#default_value' => $show_report,
   ];
   if (!empty($accession)) {
     // Get Submission State.
@@ -39,7 +40,7 @@ function tpps_submission_export_form(array $form, array &$form_state) {
     $state = tpps_submission_get_state($accession);
     drupal_set_message(tpps_table_display($state));
     // Files.
-    $fid_list = tpps_submission_get_file_id_list($state);
+    $fid_list = tpps_submission_get_file_id_list($state, $show_report);
     $files = tpps_submission_export_get_files_info($fid_list);
     tpps_submission_export_file_report($fid_list, $files);
     $state['tpps_export_files'] = $files;

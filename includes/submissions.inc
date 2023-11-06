@@ -231,12 +231,6 @@ function tpps_update_submission(array $state, array $options = array()) {
   }
   $state['updated'] = time();
   $options['submission_state'] = serialize($state);
-
-
-  // dpm($options);
-  // dpm($state['accession']);
-
-
   db_update('tpps_submission')
     ->fields($options)
     ->condition('accession', $state['accession'])
@@ -295,7 +289,9 @@ function tpps_submission_delete_callback($accession) {
 function tpps_submission_purge($accession, $force = FALSE) {
   $state = tpps_submission_get_state($accession);
   // Remove usage of files first.
-  $fid_list = tpps_submission_get_file_id_list($state);
+  $fid_list = tpps_submission_get_file_id_list($state,
+    variable_get('tpps_export_show_file_search_report', FALSE)
+  );
   foreach ($fid_list as $fid) {
     $file = file_load($fid);
     // Remove file usage record (not file itself).
@@ -1294,11 +1290,13 @@ function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
  *
  * @param array $state
  *   TPPS Submission State.
+ * @param bool $show_report
+ *   When TRUE report will be shown using drupal_set_message().
  *
  * @return array
  *   Returns list of File IDs or empty array.
  */
-function tpps_submission_get_file_id_list(array $state) {
+function tpps_submission_get_file_id_list(array $state, $show_report = FALSE) {
   $result = [];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Complete Form.
@@ -1371,7 +1369,7 @@ function tpps_submission_get_file_id_list(array $state) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show Report.
-  if (variable_get('tpps_export_show_file_search_report', FALSE)) {
+  if ($show_report) {
     foreach ($report as $method => $list) {
       $count = count($list);
       drupal_set_message(t('Method "@method": @status. @list',
