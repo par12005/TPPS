@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This function will check study submission state from database
  * find the file ids and also check the managed tables to see what is
@@ -16,7 +17,7 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
     $serialized_data = unserialize($row->submission_state);
   }
   // print_r($serialized_data['saved_values']);
-  dpm($serialized_data['saved_values']);
+  // dpm($serialized_data['saved_values']);
 
   // print_r($serialized_data['ids']);
   $project_id = $serialized_data['ids']['project_id'];
@@ -111,7 +112,7 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
 
   $markup .= '<div style="display: inline-block; width: 30%; vertical-align: top;">';
   $markup .= '<h4>History/State files</h4>';
-  $overall_file_ids = $serialized_data['files'];
+  $overall_file_ids = $serialized_data['files'] ?? [];
   sort($overall_file_ids);
   foreach ($overall_file_ids as $fid) {
     $markup .= '<div>' . $fid . '-';
@@ -133,4 +134,3 @@ function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $stu
 
   return $form;
 }
-?>
