@@ -336,18 +336,15 @@ function tpps_form_state_info(array &$new, array &$old) {
  *   The standardized file name prefix.
  */
 function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
-  // [VS]
   if (!form_get_errors() && $file = file_load($fid)) {
-    // Label file as permanent when it's passed validation.
-    $file->status = FILE_STATUS_PERMANENT;
-    file_save($file);
     file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     if (!empty($org_num) and !empty($prefix)) {
-      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
+      $species = implode('_', explode(' ',
+        $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']
+      ));
       $form_state['file_info'][TPPS_PAGE_3][$file->fid] = "{$prefix}_{$species}";
     }
   }
-  // [/VS]
 }
 
 /**

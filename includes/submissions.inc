@@ -1386,3 +1386,23 @@ function tpps_submission_get_file_id_list(array $state, $show_report = FALSE) {
   $result = array_unique($result);
   return $result;
 }
+
+/**
+ * Changes status of all the submission files.
+ *
+ * @param array $form_state
+ *   Drupal Form API State array.
+ * @param int $status
+ *   File status. 1 = permanent,
+ *   0 - temporary. Will be removed by cron in 6h.
+ */
+function tpps_submission_files_set_status(array $form_state, $status = FILE_STATUS_PERMANENT) {
+  $fid_list = tpps_submission_get_file_id_list($form_state);
+  foreach ($fid_list as $fid) {
+    $file = file_load($fid);
+    if ($file && $file->status != $status) {
+      $file->status = $status;
+      file_save($file);
+    }
+  }
+}

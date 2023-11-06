@@ -1135,8 +1135,24 @@ function tpps_main_validate(&$form, &$form_state) {
  *
  * This function handles the multi-step aspect of the form, as well as saving
  * input to persistent variables so they can be reloaded later.
+ *
+ * @TODO Minor. Check if files of old submission are removed
+ * when existing TGDR reused.
  */
 function tpps_main_submit($form, &$form_state) {
+  // We need to label all study files as temporary to avoid problems with
+  // page navigation when 'Back' button was used.
+  if (
+    $form_state['stage'] == 'frontpage'
+    && strpos(($form_state['values']['accession'] ?? NULL), 'TGDR') !== FALSE
+    // When old TGDR reused it well be overwritten. No need to change file
+    // status.
+    && !$form_state['values']['use_old_tgdr']
+  ) {
+    $state = tpps_submission_get_state($form_state['values']['accession']);
+    tpps_submission_files_set_status($state, 0);
+  }
+
   // dpm("ON SUBMIT");
   // dpm(array_keys($form_state));
   // dpm('saved_values key contains:');
@@ -1229,6 +1245,9 @@ function tpps_main_submit($form, &$form_state) {
       else {
         $form_state['status'] = 'Pending Approval';
         $form_state['completed'] = time();
+        // [VS] #86ayj4mc5.
+        tpps_submission_files_set_status($form_state, FILE_STATUS_PERMANENT);
+        // [/VS].
         tpps_update_submission($form_state);
         tpps_submit_email($form_state);
         drupal_goto("completed-submission/{$form_state['accession']}");
