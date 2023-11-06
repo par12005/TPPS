@@ -28,7 +28,8 @@ function tpps_install() {
   variable_set('tpps_top_bar', 'status');
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
-  variable_set('tpps_front_show_pending_status', FALSE);
+  variable_set('tpps_front_show_pending_status_mine', FALSE);
+  variable_set('tpps_front_show_pending_status_others', FALSE);
   variable_set('tpps_front_show_others_studies', TRUE);
   // Page 1 Settings.
   variable_set('tpps_page_1_doi_check_source', 'public.tpps_submissions');
@@ -324,7 +325,8 @@ function tpps_uninstall() {
   variable_del('tpps_top_bar');
   // Front page.
   variable_del('tpps_front_cache_accession_list');
-  variable_del('tpps_front_show_pending_status');
+  variable_del('tpps_front_show_pending_status_mine');
+  variable_del('tpps_front_show_pending_status_others');
   variable_del('tpps_front_show_others_studies');
   // Page 1.
   variable_det('tpps_page_1_doi_check_source');

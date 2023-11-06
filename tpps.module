@@ -1146,7 +1146,7 @@ function tpps_main_submit($form, &$form_state) {
   $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
   $persist = TRUE;
 
-  // This happens when the user clicks Save, notice this if clause will do a return
+  // This happens when the user clicks Save, notice this if clause will do a return.
   // This means after saving, the form will be rebuilt based on the rebuild key = TRUE.
   if ($form_state['triggering_element']['#value'] == 'Save') {
     drupal_set_message(t('Your information has been saved!'), 'status');
@@ -1242,7 +1242,7 @@ function tpps_main_submit($form, &$form_state) {
   }
 
   // It'll then come here and also perform a save most likely
-  // which I think will cater for NEXT button
+  // which I think will cater for NEXT button.
   if (isset($form_state['saved_values']['form_build_id'])) {
     $form_state['values']['form_build_id'] = $form_state['saved_values']['form_build_id'];
   }
@@ -1871,3 +1871,4 @@ function tpps_submission_migraion_overview_page() {
     ],
   ]);
 }
+
