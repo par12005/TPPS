@@ -311,18 +311,16 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
             ],
           ],
         ],
-        // [/VS]
-        'structure' => array(
+        'structure' => [
           '#type' => 'select',
           '#title' => 'Phenotype !num Structure: *',
           '#options' => $struct_options,
-          '#default_value' => tpps_load_cvterm('whole plant')->cvterm_id,
-          '#states' => array(
-            'visible' => [
-              tpps_synonym_selector($id) => ['value' => 0],
-            ],
-          ),
-        ),
+          '#states' => [
+            'visible' => [tpps_synonym_selector($id) => ['value' => 0]],
+          ],
+          '#validated' => TRUE,
+        ],
+        // [/VS]
         'struct-other' => array(
           '#type' => 'textfield',
           '#title' => 'Phenotype !num Custom Structure: *',
@@ -464,6 +462,14 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
         ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['unit']['#options'])
         ?? NULL
       );
+
+      // Restore previous value of the Phenotype Structure.
+      $form[$id]['phenotype']['phenotypes-meta'][$i]['structure']['#default_value']
+        = ($phenotypes[$i]['structure']
+          ?? array_key_first($form[$id]['phenotype']['phenotypes-meta'][$i]['structure']['#options'])
+          ?? tpps_load_cvterm('whole plant')->cvterm_id
+          ?? NULL
+        );
       // [/VS]
 
       switch ($phenotypes[$i]['attribute']) {
@@ -657,10 +663,11 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'phenotypes-meta',
       'number',
     ));
-    $phenotype_names = array();
+    $phenotype_names = [];
     for ($i = 1; $i <= $number; $i++) {
       if (!empty($meta[$i]['name'])) {
-        $phenotype_names[] = is_array($meta[$i]['name']) ? $meta[$i]['name']['#value'] : $meta[$i]['name'];
+        $phenotype_names[] = is_array($meta[$i]['name'])
+          ? $meta[$i]['name']['#value'] : $meta[$i]['name'];
       }
     }
 
@@ -721,23 +728,22 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       ),
     );
 
-    $time_check = tpps_get_ajax_value($form_state, array(
-      $id,
-      'phenotype',
-      'time',
-      'time-check',
-    ), $time_default);
+    $time_check = tpps_get_ajax_value($form_state,
+      [$id, 'phenotype', 'time', 'time-check'],
+      $time_default
+    );
     if ($time_check) {
       $time_options = array();
       foreach ($phenotype_names as $name) {
         $time_options[strtolower($name)] = $name;
       }
-      $form[$id]['phenotype']['time']['time_phenotypes'] = array(
+      $form[$id]['phenotype']['time']['time_phenotypes'] = [
         '#type' => 'select',
         '#title' => t('Time-based Phenotypes: *'),
+        // @TODO Dropdown menu is always empty but $time_options is not empty...
         '#options' => $time_options,
         '#description' => t('Please select the phenotypes which are time-based'),
-      );
+      ];
 
       $form[$id]['phenotype']['time']['time_values'] = array(
         '#type' => 'fieldset',
@@ -747,12 +753,13 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       foreach ($time_options as $key => $name) {
         $form[$id]['phenotype']['time']['time_values'][$key] = array(
           '#type' => 'textfield',
-          '#title' => t('(Optional) @name time:', array('@name' => $name)),
-          '#states' => array(
-            'visible' => array(
-              ':input[name="' . $id . '[phenotype][time][time_phenotypes][' . $key . ']"]' => array('checked' => TRUE),
-            ),
-          ),
+          '#title' => t('(Optional) @name time:', ['@name' => $name]),
+          '#states' => [
+            'visible' => [
+              ':input[name="' . $id . '[phenotype][time][time_phenotypes]['
+              . $key . ']"]' => ['checked' => TRUE],
+            ],
+          ],
         );
       }
     }
