@@ -1141,14 +1141,15 @@ function tpps_main_validate(&$form, &$form_state) {
  * when existing TGDR reused.
  */
 function tpps_main_submit($form, &$form_state) {
+  module_load_include('inc', 'tpps', 'includes/submission_file');
   // We need to label all study files as temporary to avoid problems with
   // page navigation when 'Back' button was used.
   if (
     $form_state['stage'] == 'frontpage'
     && strpos(($form_state['values']['accession'] ?? NULL), 'TGDR') !== FALSE
-    // When old TGDR reused it well be overwritten. No need to change file
-    // status.
-    && !$form_state['values']['use_old_tgdr']
+    // @TODO Minor. Check case when old TGDR reused it well be overwritten.
+    // Could we skip file status changing?
+    // && !$form_state['values']['use_old_tgdr']
   ) {
     $state = tpps_submission_get_state($form_state['values']['accession']);
     tpps_submission_file_set_status($state, 0);
@@ -1181,7 +1182,7 @@ function tpps_main_submit($form, &$form_state) {
     return;
   }
 
-  // ELSE, it will do the below logic, read the comment after this switch statement
+  // ELSE, it will do the below logic, read the comment after this switch statement.
   switch ($form_state['stage']) {
     case 'frontpage':
       $persist = FALSE;
@@ -1246,9 +1247,7 @@ function tpps_main_submit($form, &$form_state) {
       else {
         $form_state['status'] = 'Pending Approval';
         $form_state['completed'] = time();
-        // [VS] #86ayj4mc5.
         tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
-        // [/VS].
         tpps_update_submission($form_state);
         tpps_submit_email($form_state);
         drupal_goto("completed-submission/{$form_state['accession']}");

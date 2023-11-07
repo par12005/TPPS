@@ -313,26 +313,6 @@ function tpps_submission_purge($accession, $force = FALSE) {
 }
 
 /**
- * Gets submission state array.
- *
- * @param string $accession
- *   Study submission. Format: 'TGDRxxxx'.
- *
- * @return array
- *   Returns Drupal Form API State array.
- */
-function tpps_submission_get_state($accession) {
-  $result = db_select('tpps_submission', 'ts')
-    ->fields('ts', ['submission_state'])
-    ->condition('accession', $accession)
-    ->range(0, 1)
-    ->execute()
-    ->fetchField();
-  $state = unserialize(html_entity_decode($result));
-  return $state;
-}
-
-/**
  * Updates alternative accessions of a TPPS Submission.
  *
  * @param array $state
@@ -1284,3 +1264,22 @@ function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
   return $list;
 }
 
+/**
+ * Gets submission state array.
+ *
+ * @param string $accession
+ *   Study submission. Format: 'TGDRxxxx'.
+ *
+ * @return array
+ *   Returns Drupal Form API State array.
+ */
+function tpps_submission_get_state($accession) {
+  $result = db_select('tpps_submission', 'ts')
+    ->fields('ts', ['submission_state'])
+    ->condition('accession', $accession)
+    ->range(0, 1)
+    ->execute()
+    ->fetchField();
+  $state = unserialize(html_entity_decode($result));
+  return $state;
+}
