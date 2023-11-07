@@ -15,6 +15,7 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
 
   $form['tpps_manual_export_accession'] = [
     '#type' => 'textfield',
+    '#field_prefix' => 'TGDR',
     '#title' => t('Accession'),
     '#default_value' => $accession,
     '#required' => TRUE,
@@ -25,6 +26,9 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
     '#default_value' => $show_report,
   ];
   if (!empty($accession)) {
+    // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
+    // @TODO Update code to use only 'xxx' format.
+    $accession = 'TGDR' . str_replace('TGDR', '', $accession);
     module_load_include('inc', 'tpps', 'admin/submission_export');
     module_load_include('inc', 'tpps', 'includes/submissions');
     module_load_include('inc', 'tpps', 'includes/submission_file');

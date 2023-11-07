@@ -14,9 +14,10 @@
 function tpps_submission_import_form(array $form, array &$form_state) {
   $form['tpps_import_new_accession'] = [
     '#type' => 'textfield',
+    '#field_prefix' => 'TGDR',
     '#title' => t('New Accession'),
     '#default_value' => $form_state['input']['tpps_import_new_accession']
-    ?? 'TGDR' . tpps_init_project_get_next_accession(),
+    ?? tpps_init_project_get_next_accession(),
     '#required' => FALSE,
     '#description' => 'Leave empty to autogenerate accession',
   ];
@@ -92,6 +93,9 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate accession.
   $new_accession = $form_state['values']['tpps_import_new_accession'];
+  // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
+  // @TODO Update code to use only 'xxx' format.
+  $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
   if (empty($form_state['values']['tpps_import_overwrite_submission'])) {
     if (tpps_api_check_accession($new_accession)) {
       form_set_error('tpps_import_new_accession', t('Accession already in use. '
@@ -190,7 +194,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     $state['triggering_element']['#value'] = t('Review and Submit');
 
     $new_accession = $form_state['values']['tpps_import_new_accession']
-      ?? 'TGDR' . tpps_init_project_get_next_accession();
+      ?? tpps_init_project_get_next_accession();
+    // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
+    // @TODO Update code to use only 'xxx' format.
+    $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Process files (if any).
