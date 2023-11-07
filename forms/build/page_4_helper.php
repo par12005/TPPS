@@ -739,7 +739,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       }
       $form[$id]['phenotype']['time']['time_phenotypes'] = [
         '#type' => 'select',
-        '#title' => t('1Time-based Phenotypes: *'),
+        '#title' => t('Time-based Phenotypes: *'),
         // @TODO Dropdown menu is always empty but $time_options is not empty...
         '#options' => $time_options,
         '#description' => t('Please select the phenotypes which are time-based'),
