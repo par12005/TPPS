@@ -38,6 +38,7 @@ function tpps_submission_export_form(array $form, array &$form_state) {
     // Get Submission State.
     module_load_include('inc', 'tpps', 'includes/submissions');
     $state = tpps_submission_get_state($accession);
+    tpps_submission_export_fixes($state);
     drupal_set_message(tpps_table_display($state));
     // Files.
     $fid_list = tpps_submission_get_file_id_list($state, $show_report);
@@ -260,4 +261,20 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
       'warning'
     );
   }
+}
+
+/**
+ * Removes some minor elements which could broke import.
+ *
+ * The main goal is to export all the data without changes at all but
+ * when it's not possible we need to remove them to allow import of more
+ * important parts to be completed.
+ *
+ * @param array $state
+ *   Submission state.
+ */
+function tpps_submission_export_fixes(array &$state);
+  // This is form element which has a lot of HTML code which breaks
+  // parsing of state on import. See TGDR1089.
+  unset($state['complete form']['comments']['#prefix']);
 }

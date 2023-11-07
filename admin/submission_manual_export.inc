@@ -35,9 +35,9 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
       'tpps_form_get_organism_number',
       'tpps_submission_export_get_file_parents',
       'tpps_submission_export_get_files_info',
-      // New.
       'tpps_submission_export_file_report',
       'tpps_submission_get_file_id_list',
+      'tpps_submission_export_fixes',
     ];
     foreach ($function_list as $function_name) {
       if (function_exists($function_name)) {
@@ -59,6 +59,7 @@ $function_code
 
 \$cache_reset = REQUEST_TIME;
 \$state = tpps_submission_get_state(\$accession);
+tpps_submission_export_fixes(\$state);
 // Files.
 \$fid_list = tpps_submission_get_file_id_list(\$state, \$show_report);
 \$files = tpps_submission_export_get_files_info(\$fid_list);
