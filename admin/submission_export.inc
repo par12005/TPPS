@@ -13,6 +13,8 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/common');
+//module_load_include('inc', 'tpps', 'includes/submissions');
+//module_load_include('inc', 'tpps', 'includes/submission_file');
 
 /**
  * TPPS Study Import Form.
@@ -41,7 +43,7 @@ function tpps_submission_export_form(array $form, array &$form_state) {
     tpps_submission_export_fixes($state);
     drupal_set_message(tpps_table_display($state));
     // Files.
-    $fid_list = tpps_submission_get_file_id_list($state, $show_report);
+    $fid_list = tpps_submission_file_get_id_list($state, $show_report);
     $files = tpps_submission_export_get_files_info($fid_list);
     tpps_submission_export_file_report($fid_list, $files);
     $state['tpps_export_files'] = $files;
@@ -113,118 +115,6 @@ function tpps_submission_export_get_files_info(array &$fid_list) {
   return $files;
 }
 
-/**
- * Searches for a field of given type in array.
- *
- * @param array $array
- *   Drupal Form API array.
- *   This could be a $form or $form_state['complete form']
- *   or any other form array.
- * @param string $field_type
- *   Type of Form API field to be found in given $array.
- *
- * @return array
- *   Returns list of parents to element of requested type.
- *   Returns empty array if no elements found.
- *   Each item of array is a list of parents which could be used by
- *   drupal_array_get_nested_value() and similar.
- *
- *   Example of returned array:
- *   Array
- *   (
- *        [0] => Array
- *            (
- *                [0] => organism-1
- *                [1] => genotype
- *                [2] => tripal_fasta
- *                [3] => file
- *                [4] => file_upload
- *            )
- *
- *         [1] => Array
- *             (
- *                [0] => organism-1
- *                [1] => genotype
- *                [2] => files
- *                [3] => snps-assay
- *           )
- *     ....
- *   );
- */
-function tpps_form_search_field(array $array, $field_type = 'managed_file') {
-  $result = [];
-  if (empty($field_type)) {
-    return $result;
-  }
-  foreach ($array as $key => $value) {
-    $type = ($value['#type'] ?? NULL);
-    if (substr($key, 0, 1) == '#' || empty($type)) {
-      // Elements with leading '#' in name are for internal use Drupal Form API.
-      continue;
-    }
-    if (in_array($type, ['fieldset', 'container'])) {
-      foreach (call_user_func(__FUNCTION__, $value, $field_type) as $item) {
-        $result[] = array_merge([$key], $item);
-      }
-    }
-    // Check if element is 'file'.
-    elseif ($type == $field_type) {
-      $result[] = [$key];
-    }
-  }
-  return $result;
-}
-
-/**
- * Gets hardcoded list of file field parents.
- *
- * @param int $organism_number
- *   Number of species in submission.
- *
- * @return array
- *   Returns empty array if number of organisms is zero.
- *   Returns list of parents (from $form_state['values']);
- */
-function tpps_submission_export_get_file_parents($organism_number = 1) {
-  $result = [];
-
-  for ($i = 1; $i <= $organism_number; $i++) {
-    $organism_id = 'organism-' . $i;
-    $species_id = 'species-' . $i;
-    // Page 3. Accession file.
-    $result = array_merge($result, [
-      ['tree-accession', $species_id, 'file']
-    ]);
-    // Page 4. Phenotype and Genotype.
-    // @TODO Add environmental files?
-    $result = array_merge($result, [
-      // Phenotype.
-      [$organism_id, 'phenotype', 'metadata'],
-      [$organism_id, 'phenotype', 'file'],
-      // Genotype.
-      [$organism_id, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
-      [$organism_id, 'genotype', 'files', 'snps-assay'],
-      [$organism_id, 'genotype', 'files', 'assay-design'],
-      [$organism_id, 'genotype', 'files', 'snps-association'],
-      [$organism_id, 'genotype', 'files', 'snps-pop-struct'],
-      [$organism_id, 'genotype', 'files', 'snps-kinship'],
-      [$organism_id, 'genotype', 'files', 'ssrs'],
-      [$organism_id, 'genotype', 'files', 'ssrs_extra'],
-      [$organism_id, 'genotype', 'files', 'other'],
-      [$organism_id, 'genotype', 'files', 'vcf'],
-    ]);
-  }
-  // Analysis.
-  // @TODO Prepare and check.
-  // 'analysis' = [
-  //   'diversity_file' => 0,
-  //   'population_structure_file' => 0,
-  //   'association_genetics_file' => 0,
-  //   'landscape_genomics_file' => 0,
-  //   'phenotype_environment_file' => 0,
-  // ];
-  return $result;
-}
 
 /**
  * Show file detection report.
@@ -273,7 +163,7 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
  * @param array $state
  *   Submission state.
  */
-function tpps_submission_export_fixes(array &$state);
+function tpps_submission_export_fixes(array &$state) {
   // This is form element which has a lot of HTML code which breaks
   // parsing of state on import. See TGDR1089.
   unset($state['complete form']['comments']['#prefix']);

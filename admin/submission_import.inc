@@ -206,7 +206,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
         // To avoid errors when page navigation used we need to have
         // temporary stored files until final form submit ('summarypage').
         // @TODO Minor. Think about reusage of function
-        // tpps_submission_files_set_status().
+        // tpps_submission_file_set_status().
         if ($new_file->status != 0) {
           $new_file->status = 0;
           file_save($new_file);

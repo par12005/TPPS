@@ -44,6 +44,7 @@ require_once 'includes/form_utils.inc';
 require_once 'includes/details.inc';
 require_once 'includes/cvterm_utils.inc';
 // [VS]
+require_once 'includes/submission_file.inc';
 require_once 'includes/phenotype_synonym.inc';
 require_once 'includes/phenotype_unit.inc';
 require_once 'includes/easy_report.inc';
@@ -1150,7 +1151,7 @@ function tpps_main_submit($form, &$form_state) {
     && !$form_state['values']['use_old_tgdr']
   ) {
     $state = tpps_submission_get_state($form_state['values']['accession']);
-    tpps_submission_files_set_status($state, 0);
+    tpps_submission_file_set_status($state, 0);
   }
 
   // dpm("ON SUBMIT");
@@ -1246,7 +1247,7 @@ function tpps_main_submit($form, &$form_state) {
         $form_state['status'] = 'Pending Approval';
         $form_state['completed'] = time();
         // [VS] #86ayj4mc5.
-        tpps_submission_files_set_status($form_state, FILE_STATUS_PERMANENT);
+        tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
         // [/VS].
         tpps_update_submission($form_state);
         tpps_submit_email($form_state);

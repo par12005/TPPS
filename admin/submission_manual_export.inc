@@ -27,16 +27,17 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
   if (!empty($accession)) {
     module_load_include('inc', 'tpps', 'admin/submission_export');
     module_load_include('inc', 'tpps', 'includes/submissions');
+    module_load_include('inc', 'tpps', 'includes/submission_file');
     module_load_include('inc', 'tpps', 'includes/form');
     $function_code = '';
     $function_list = [
       'tpps_submission_get_state',
       'tpps_form_search_field',
       'tpps_form_get_organism_number',
-      'tpps_submission_export_get_file_parents',
+      'tpps_submission_file_get_parents',
       'tpps_submission_export_get_files_info',
       'tpps_submission_export_file_report',
-      'tpps_submission_get_file_id_list',
+      'tpps_submission_file_get_id_list',
       'tpps_submission_export_fixes',
     ];
     foreach ($function_list as $function_name) {
@@ -61,7 +62,7 @@ $function_code
 \$state = tpps_submission_get_state(\$accession);
 tpps_submission_export_fixes(\$state);
 // Files.
-\$fid_list = tpps_submission_get_file_id_list(\$state, \$show_report);
+\$fid_list = tpps_submission_file_get_id_list(\$state, \$show_report);
 \$files = tpps_submission_export_get_files_info(\$fid_list);
 tpps_submission_export_file_report(\$fid_list, \$files);
 \$state['tpps_export_files'] = \$files;
