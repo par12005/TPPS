@@ -265,18 +265,20 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     else {
       tpps_create_submission($state, $user->uid);
+      // Clear cached list of studies to have new items at 'frontpage'.
+      $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+      // @TODO Minor. Clear only accession list.
+      cache_clear_all('*', $cache_bin, TRUE);
       // Recreate Submission.
       drupal_form_submit('tpps_main', $state);
+      // This code will not be executed because drupal_form_submit() will
+      // redirect in case of success.
       if (form_get_errors()) {
         // Show study info only when there was some validation errors
         // because if study was submitted successfully user will be
         // redirected to the study page with the same table of fields.
         drupal_set_message(tpps_table_display($state));
       }
-      // Clear cached list of studies to have new items at 'frontpage'.
-      $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-      // @TODO Minor. Clear only accession list.
-      cache_clear_all('*', $cache_bin, TRUE);
     }
   }
 
