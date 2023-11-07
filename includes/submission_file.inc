@@ -71,7 +71,6 @@ function tpps_submission_file_get_id_list(array $state, $show_report = FALSE) {
     module_load_include('inc', 'tpps', 'includes/form');
     $organism_number = tpps_form_get_organism_number($state);
     if (!empty($state['values'])) {
-      $organism_number = tpps_form_get_organism_number($state);
       foreach (tpps_submission_file_get_parents($organism_number) as $parents) {
         $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
       }

@@ -35,18 +35,21 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
     module_load_include('inc', 'tpps', 'includes/form');
     $function_code = '';
     $function_list = [
-      'tpps_submission_get_state',
-      'tpps_form_search_field',
-      'tpps_form_get_organism_number',
-      'tpps_submission_file_get_parents',
       'tpps_submission_export_get_files_info',
       'tpps_submission_export_file_report',
-      'tpps_submission_file_get_id_list',
       'tpps_submission_export_fixes',
+      'tpps_submission_file_get_id_list',
+      'tpps_submission_get_state',
+      'tpps_submission_file_get_parents',
+      // Needed but already in main branch.
+      // 'tpps_form_search_field',
+      // 'tpps_form_get_organism_number',
     ];
     foreach ($function_list as $function_name) {
       if (function_exists($function_name)) {
-        $function_code .= "\n" . tpps_get_function_code($function_name);
+        $function_code .=
+          "\nif (!function_exists('$function_name')) {\n"
+          . tpps_get_function_code($function_name) . "}\n";
       }
       else {
         drupal_set_message(
@@ -59,6 +62,8 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
     $code = <<<EOT
 \$accession = '$accession';
 \$show_report = $show_report;
+
+ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_reporting(E_ALL);
 
 $function_code
 
