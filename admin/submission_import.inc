@@ -37,13 +37,6 @@ function tpps_submission_import_form(array $form, array &$form_state) {
       . '<br /><strong>Unchecked</strong>: Append _{incrementing number} '
       . 'until the filename is unique.'),
   ];
-  $form['tpps_import_dry_run'] = [
-    '#type' => 'checkbox',
-    '#title' => 'Dry Run',
-    '#default_value' => $form_state['input']['tpps_import_dry_run'] ?? FALSE,
-    '#description' => t("When checked submission won't be submitted but "
-    . "but files will be downloaded and added to site."),
-  ];
   $form['tpps_import_debug_state'] = [
     '#type' => 'checkboxes',
     '#title' => 'Dump submission state parts:',
@@ -64,6 +57,18 @@ function tpps_submission_import_form(array $form, array &$form_state) {
   $form['action_import'] = [
     '#type' => 'submit',
     '#value' => t('Import'),
+    '#submit' => ['tpps_submission_import_form_submit'],
+  ];
+  $form['action_review_dump'] = [
+    '#type' => 'submit',
+    '#value' => t('Review Dump'),
+    '#submit' => ['tpps_submission_import_review_dump'],
+  ];
+  $form['action_dry_run'] = [
+    // Submission won't be submitted but files will be downloaded
+    // and added to site.
+    '#type' => 'submit',
+    '#value' => t('Dry Run'),
     '#submit' => ['tpps_submission_import_form_submit'],
   ];
   $form['action_reset'] = [
@@ -120,18 +125,30 @@ function tpps_submission_import_form_reset(array $form, array &$form_state) {
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 /**
- * Form submitter for 'tpps_form_page_1_settings_form' form.
+ * Form submitter. Shows submision dump with line numbers.
+ */
+function tpps_submission_import_review_dump(array $form, array &$form_state) {
+  if ($state = trim($form_state['values']['tpps_import_submission_state'])) {
+    // Note: $state is a string.
+    // Show with line numbers.
+    $state_array = preg_split("/\r\n|\n|\r/", $state);
+    dpm(print_r($state_array, 1));
+  }
+  $form_state['rebuild'] = 1;
+}
+
+/**
+ * Form submitter. Imports submission from the dump (with files).
  */
 function tpps_submission_import_form_submit(array $form, array &$form_state) {
   global $user;
+  $dry_run = (bool) ($form_state['triggering_element']['#value'] == t('Dry Run'));
   module_load_include('inc', 'tpps', 'includes/common');
   variable_set('tpps_import_file_replace',
     ($form_state['values']['tpps_import_file_replace'] ?? FALSE)
   );
-  $dry_run = (bool) $form_state['values']['tpps_import_dry_run'];
   // Remove useless data from the submission state.
   if ($state_raw = trim($form_state['values']['tpps_import_submission_state'])) {
-
     // Fix 'stdClass' in the submistion dump createdy by var_export().
     // We shouldn't do this on export to have unchanged data.
     // Though var_export() is designed to "outputs or return a parsable
@@ -139,7 +156,14 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // objects is not "a parsable string".
     tpps_submission_import_fix_stdclass($state_raw);
 
-    eval('$state = ' . $state_raw . ';');
+    try {
+      eval('$state = ' . $state_raw . ';');
+    }
+    catch (Exception $e) {
+      drupal_set_message($e->errorMessage());
+      dpm(print_r($state, 1));
+      return;
+    }
 
     // Debug Report.
     $part_list = ($form_state['input']['tpps_import_debug_state'] ?? []);
@@ -228,19 +252,26 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     $state['values']['status'] = 'Incomplete';
     $state['values'] = $state['saved_values'];
     if ($dry_run) {
-      dpm(print_r($state, 1));
+      // Show with line numbers.
+      $state_array = preg_split("/\r\n|\n|\r/", $state);
+      dpm(print_r($state_array, 1));
     }
     else {
       tpps_create_submission($state, $user->uid);
       // Recreate Submission.
       drupal_form_submit('tpps_main', $state);
+      if (form_get_errors()) {
+        // Show study info only when there was some validation errors
+        // because if study was submitted successfully user will be
+        // redirected to the study page with the same table of fields.
+        drupal_set_message(tpps_table_display($state));
+      }
       // Clear cached list of studies to have new items at 'frontpage'.
       $cache_bin = TPPS_CACHE_BIN ?? 'cache';
       // @TODO Minor. Clear only accession list.
       cache_clear_all('*', $cache_bin, TRUE);
     }
   }
-  drupal_set_message(tpps_table_display($state));
 
   // Show useful links.
   drupal_set_message(theme('item_list', [
