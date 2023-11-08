@@ -67,3 +67,89 @@ function tpps_string_format_indent($string) {
     . str_replace(' ', '&#124;&nbsp;&nbsp;&nbsp;&nbsp;', $spaces)
     . '</span>' . $line_clean;
 }
+
+/**
+ * Parses huge array to show a well-formatted dump.
+ *
+ * Good for huge arrays. For small use dpm() or similar.
+ *
+ * @param array $array
+ *   Array to be dumped.
+ *
+ * @return array
+ *   Returns array with keys:
+ *    'plain_items' and names of sub-array items.
+ */
+function tpps_array_dump(array $array) {
+  $output = [];
+  // Get list of sub-arrays ($part list)
+  foreach (array_keys($array) as $key) {
+    if (is_array($array[$key])) {
+      $part_list[$key] = count($array[$key]);
+    }
+    else {
+      $plain[] = $key;
+    }
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Plain Items.;
+  if (!empty($plain ?? NULL)) {
+    $header = ['#', t('Key'), t('Value')];
+    foreach ($plain as $line => $key) {
+      $plain_rows[] = [
+        [
+          'data' => $line + 1,
+          'style' => 'padding: 0 10px; font-weight: bold;'
+        ],
+        [
+          'data' => check_plain($key),
+          'style' => 'padding: 0 10px; font-weight: bold;'
+        ],
+        [
+          'data' => check_plain(var_export($array[$key], 1)),
+          'style' => 'padding: 0 10px;',
+        ],
+      ];
+    }
+    $output['plain_items'] = [
+      'title' => t('Plain Items'),
+      'data' => theme('table', ['header' => $header, 'rows' => $plain_rows]),
+      'count' => count($plain),
+    ];
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Sub-arrays.
+  if (!empty($part_list ?? NULL)) {
+    ksort($part_list);
+    $header = [
+      ['data' => '#', 'style' => 'font-weight: bold;'],
+      ['data' => t('Data'), 'style' => 'width:100%;'],
+    ];
+    foreach ($part_list as $key => $count) {
+      $rows = [];
+      $state_part = $array[$key] ?? [];
+      $state_array = preg_split("/\r\n|\n|\r/", var_export($state_part, 1));
+      if ($state_part) {
+        foreach ($state_array as $line => $content) {
+          $rows[] = [
+            [
+              'data' => $line + 1,
+              'style' => 'padding: 0 10px; font-weight: bold;',
+            ],
+            [
+              'data' => tpps_string_format_indent($content),
+              'style' => 'padding: 0 10px;',
+            ],
+          ];
+        }
+        $output[$key] = [
+          'title' => $key,
+          'data' => theme('table', ['header' => $header, 'rows' => $rows]),
+          'count' => count($array[$key]),
+        ];
+      }
+    }
+  }
+  return $output;
+}
