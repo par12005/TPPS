@@ -282,15 +282,16 @@ function tpps_menu() {
     'file' => 'admin/logs.php',
   );
 
-  $items['tpps-admin-panel/file-diagnostics/%'] = array(
-    'title' => 'TPPS Admin Panel',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('tpps_admin_files_diagnostics_page', 2),
+  // @TODO Minor. Rename menu item. It's a report but not diagnostics.
+  $items['tpps-admin-panel/file-diagnostics/%'] = [
+    'title' => 'Study File Diagnostics',
+    'page callback' => 'tpps_admin_files_diagnostics_page',
+    'page arguments' => [2],
     'access callback' => 'tpps_access',
-    'access arguments' => array('administer tpps module'),
+    'access arguments' => ['administer tpps module'],
     'type' => MENU_NORMAL_ITEM,
     'file' => 'admin/pages.php',
-  );
+  ];
 
   $items['tpps/doi/%'] = array(
     'title' => 'TPPS DOI',
@@ -1567,54 +1568,66 @@ function tpps_flush_caches() {
  *   This could be useful if $form not yet defined at the beginning of the
  *   form generation callback.
  *
- * @param array $form
- *   Drupal Form API form array.
  * @param mixed $page_id
  *   TPPS Form Page number. Constants like TPPS_PAGE_1 and etc could be
  *   used to improve code readablility.
  *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
+ * @param array $form
+ *   Drupal Form API form array.
+ *   When NULL then CSS/JS will be added as it's a regular page.
  */
-function tpps_add_css_js(array &$form = NULL, $page_id = NULL) {
+function tpps_add_css_js($page_id, array &$form = []) {
   // CSS Theme.
   $theme_path = TPPS_MODULE_PATH . '/css/themes/'
     . variable_get('tpps_theme', 'default') . '.css';
-  if ($form === NULL) {
-    drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
-    drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
-    drupal_add_css($theme_path);
-  }
-  else {
-    if ($page_id && is_numeric($page_id) && $page_id > 0) {
-      // Add page specific files.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'footer',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js',
-      ];
-      $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_page_' . $page_id . '.css';
-    }
-    else if (is_string($page_id)) {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // This is regualar page.
+  if (empty($form)) {
+    if (!empty($page_id) && is_string($page_id)) {
       // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'footer',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js',
-      ];
-      $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css';
+      drupal_add_css(TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css');
+      drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js');
+      drupal_add_css($theme_path);
     }
     else {
       // Add main files.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'footer',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
-      ];
-      $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
-      $form['#attached']['css'][] = $theme_path;
+      drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
+      drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
+      drupal_add_css($theme_path);
     }
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // This is form.
+  if ($page_id && is_numeric($page_id) && $page_id > 0) {
+    // Add page specific files.
+    $form['#attached']['js'][] = [
+      'type' => 'file',
+      'scope' => 'footer',
+      'group' => JS_THEME,
+      'data' => TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js',
+    ];
+    $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_page_' . $page_id . '.css';
+  }
+  elseif (is_string($page_id)) {
+    // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
+    $form['#attached']['js'][] = [
+      'type' => 'file',
+      'scope' => 'footer',
+      'group' => JS_THEME,
+      'data' => TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js',
+    ];
+    $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css';
+  }
+  else {
+    // Add main files.
+    $form['#attached']['js'][] = [
+      'type' => 'file',
+      'scope' => 'footer',
+      'group' => JS_THEME,
+      'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
+    ];
+    $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
+    $form['#attached']['css'][] = $theme_path;
   }
 }
 

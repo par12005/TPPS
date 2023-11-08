@@ -1,126 +1,93 @@
 <?php
 
 /**
+ * @file
+ * File diagnostics page.
+ */
+
+/**
+ * Menu callback. Shows list of files used by study.
+ *
  * This function will check study submission state from database
  * find the file ids and also check the managed tables to see what is
  * missing. This will thus detect old files.
+ *
+ * @param string $accession
+ *   Study accession in format 'TGDRxxxx'.
+ *
+ * @return string
+ *   Returns rendered list of files.
  */
-function tpps_admin_files_diagnostics_page(array $form, array &$form_state, $study_accession = NULL) {
-  $markup = "";
-
-  $results = chado_query('SELECT * FROM tpps_submission WHERE accession = :accession', [
-    ':accession' => $study_accession
-  ]);
-
+function tpps_admin_files_diagnostics_page($accession = NULL) {
+  $results = chado_query(
+    'SELECT * FROM tpps_submission WHERE accession = :accession',
+    [':accession' => $accession]
+  );
   $serialized_data = "";
-  foreach($results as $row) {
+  foreach ($results as $row) {
     $serialized_data = unserialize($row->submission_state);
   }
-  // print_r($serialized_data['saved_values']);
-  // dpm($serialized_data['saved_values']);
-
-  // print_r($serialized_data['ids']);
-  $project_id = $serialized_data['ids']['project_id'];
-
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $project_file_ids = [];
-  // get file_ids from project_id
-  $results = chado_query('SELECT * FROM tpps_project_file_managed WHERE project_id = :project_id', [
-    ':project_id' => $project_id
-  ]);
+  // Get file_ids from project_id.
+  $project_id = $serialized_data['ids']['project_id'];
+  $results = chado_query(
+    'SELECT * FROM tpps_project_file_managed WHERE project_id = :project_id',
+    [':project_id' => $project_id]
+  );
   foreach ($results as $row) {
-    // print_r($row);
     array_push($project_file_ids, $row->fid);
   }
-  // print_r($project_file_ids);
   sort($project_file_ids);
-
   $saved_values = $serialized_data['saved_values'];
-  // print_r($saved_values);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $file_ids = [];
   $organism_count = $saved_values['1']['organism']['number'];
-  // print_r($organism_count);
-  for($i=1; $i<=4; $i++) {
-    if ($i == 3) {
-      for($j=1; $j<=$organism_count; $j++) {
-        if(isset($saved_values[$i]['tree-accession']['species-' . $j]['file'])) {
-          array_push($file_ids, $saved_values[$i]['tree-accession']['species-' . $j]['file']);
-        }
-      }
-    }
-    if ($i == 4) {
-      // Phenotype files
-      for($j=1; $j<=$organism_count; $j++) {
-        if (isset($saved_values[$i]['organism-' . $j]['phenotype']['file'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['file']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['phenotype']['file'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['file']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['phenotype']['metadata'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['metadata']);
-        }
-      }
-      for($j=1; $j<=$organism_count; $j++) {
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-association'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['snps-association']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['vcf'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['vcf']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra']);
-        }
+  for ($j = 1; $j <= $organism_count; $j++) {
+    $parents = [
+      // Page 3. Accession file.
+      [TPPS_PAGE_3, 'tree-accession', 'species-' . $j, 'file'],
+      // Page 4. Phenotype files.
+      [TPPS_PAGE_4, 'organism-' . $j, 'phenotype', 'file'],
+      [TPPS_PAGE_4, 'organism-' . $j, 'phenotype', 'metadata'],
+      // Page 4. Genotype files.
+      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'snps-assay'],
+      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'snps-association'],
+      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'vcf'],
+      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'ssrs'],
+      [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'ssrs_extra'],
+    ];
+    foreach ($parents as $parent) {
+      if ($value = drupal_array_get_nested_value($saved_values, $parent)) {
+        array_push($file_ids, $value);
       }
     }
   }
-  // print_r($file_ids);
   sort($file_ids);
-
-  $markup .= '<div style="font-size: 12px;">';
-  $markup .= '<div style="display: inline-block; width: 30%; vertical-align: top;">';
-  $markup .= '<h4>Project ID Managed</h4>';
-  foreach ($project_file_ids as $fid) {
-    $file = file_load($fid);
-    if ($file) {
-      $file_url = check_plain(file_create_url($file->uri));
-      $markup .= '<div>' . $fid . ' - <a href="' . $file_url .
-        '" target="blank">' . $file->filename . '</a></div>';
-    }
-  }
-  $markup .= '</div>';
-
-  $markup .= '<div style="display: inline-block; width: 30%; vertical-align: top;">';
-  $markup .= '<h4>Submission state</h4>';
-  foreach ($file_ids as $fid) {
-    $file = file_load($fid);
-    if ($file) {
-      $file_url = check_plain(file_create_url($file->uri));
-      $markup .= '<div>' . $fid . ' - <a href="' . $file_url .
-        '" target="blank">' . $file->filename . '</a></div>';
-    }
-  }
-  $markup .= '</div>';
-
-  $markup .= '<div style="display: inline-block; width: 30%; vertical-align: top;">';
-  $markup .= '<h4>History/State files</h4>';
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // History/State files.
   $overall_file_ids = $serialized_data['files'] ?? [];
   sort($overall_file_ids);
-  foreach ($overall_file_ids as $fid) {
-    $file = file_load($fid);
-    if ($file) {
-      $file_url = check_plain(file_create_url($file->uri));
-      $markup .= '<div>' . $fid . ' - <a href="' . $file_url .
-        '" target="blank">' . $file->filename . '</a></div>';
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Output report.
+  $file_lists = [
+    'Project ID Managed' => $project_file_ids,
+    'Submission state' => $file_ids,
+    'History/State files' => $overall_file_ids,
+  ];
+  $options = ['attributes' => ['target' => '_blank']];
+  foreach ($file_lists as $title => $fid_list) {
+    $sublist = [];
+    foreach ($fid_list as $fid) {
+      if ($file = file_load($fid)) {
+        $sublist[] = '<strong>' . $fid . '</strong> - '
+          . l($file->filename, file_create_url($file->uri), $options);
+      }
     }
+    $markup = ($markup ?? '') . theme('item_list',
+      ['title' => t($title), 'items' => $sublist, 'type' => 'ol']
+    );
   }
-  $markup .= '</div>';
-  $form['markup'] = ['#type' => 'markup', '#markup' => $markup];
-  return $form;
+  tpps_add_css_js('file_diagnostics');
+  return '<div id="file-diagnostics">' . $markup . '</div>';
 }

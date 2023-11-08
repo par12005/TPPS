@@ -1,0 +1,13 @@
+/* Styles for tpps-admin-panel/file-diagnostics/TGDRxxxx page */
+
+#file-diagnostics {
+  font-size: 12px;
+  border: 1px solid silver;
+  background: white;
+  padding: 10px;
+}
+#file-diagnostics .item-list {
+  display: inline-block;
+  width: 30%;
+  vertical-align: top;
+}
