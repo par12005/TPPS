@@ -109,7 +109,7 @@ EOT;
     '#value' => t('Reset'),
     '#submit' => ['tpps_submission_manual_export_form_reset'],
   ];
-  tpps_add_css_js($form, 'submission_manual_export');
+  tpps_add_css_js('submission_manual_export', $form);
   return $form;
 }
 

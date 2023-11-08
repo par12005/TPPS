@@ -188,6 +188,6 @@ function tpps_front_create_form(array &$form, array $form_state) {
       ];
     }
   }
-  tpps_add_css_js($form);
+  tpps_add_css_js('main', $form);
   return $form;
 }

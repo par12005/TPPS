@@ -762,7 +762,7 @@ function tpps_completed_display($accession = NULL) {
   }
 
   $display .= tpps_table_display($old_form_state);
-  tpps_add_css_js();
+  tpps_add_css_js('main');
   return render($display);
 }
 
@@ -908,7 +908,7 @@ function tpps_tab_create($uid) {
     $final .= "<p>We could not find any incomplete TPPS Submissions or TPPS Submissions pending approval. If you would like to start a new TPPS Submission, you can start <a href=$base_url/tpps>here.</a></p>";
   }
 
-  tpps_add_css_js();
+  tpps_add_css_js('main');
   return $final;
 }
 

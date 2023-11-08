@@ -402,7 +402,7 @@ function tpps_submission_tag_manage() {
   );
 
   $output = theme('table', $vars);
-  tpps_add_css_js();
+  tpps_add_css_js('main');
   return $output;
 }
 

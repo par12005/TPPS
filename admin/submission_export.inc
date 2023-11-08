@@ -67,7 +67,7 @@ function tpps_submission_export_form(array $form, array &$form_state) {
     '#value' => t('Reset'),
     '#submit' => ['tpps_submission_export_form_reset'],
   ];
-  tpps_add_css_js($form, 'submission_export');
+  tpps_add_css_js('submission_export', $form);
   return $form;
 }
 

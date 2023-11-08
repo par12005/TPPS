@@ -962,7 +962,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   require_once 'forms/build/front.php';
   module_load_include('inc', 'tpps', 'includes/form');
   $form = $form ?? [];
-  tpps_add_css_js($form);
+  tpps_add_css_js('main', $form);
   // Add class to apply CSS rules differntly for TPPS and TPPSc Forms
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
@@ -1550,21 +1550,21 @@ function tpps_flush_caches() {
  * How to use?
  *
  * To add only TPPS Page main CSS/JS files:
- *   tpps_add_css_js($form);
+ *   tpps_add_css_js('main', $form);
  *
  * To add only TPPS Page specific CSS/JS files:
- *   tpps_add_css_js($form, $page_number);
+ *   tpps_add_css_js($page_number, $form);
  *
  * To add both (main and page specific) CSS/JS files:
- *   tpps_add_css_js($form);
- *   tpps_add_css_js($form, $page_number);
+ *   tpps_add_css_js('main', $form);
+ *   tpps_add_css_js($page_number, $form);
  *
  * To add CSS and JS using drupal_add_css/js():
- *   tpps_add_css_js();
+ *   tpps_add_css_js('main');
  *
  * To force using Form API instead of use drupal_add_css/js():
  *   $form = $form ?? [];
- *   tpps_add_css_js($form);
+ *   tpps_add_css_js('main', $form);
  *   This could be useful if $form not yet defined at the beginning of the
  *   form generation callback.
  *
@@ -1575,59 +1575,64 @@ function tpps_flush_caches() {
  * @param array $form
  *   Drupal Form API form array.
  *   When NULL then CSS/JS will be added as it's a regular page.
+ *
+ * @TODO Minor. Get Form Id from the $form and use as a file name.
  */
-function tpps_add_css_js($page_id, array &$form = []) {
-  // CSS Theme.
+function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
+  // Custom CSS Theme.
   $theme_path = TPPS_MODULE_PATH . '/css/themes/'
     . variable_get('tpps_theme', 'default') . '.css';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // This is regualar page.
-  if (empty($form)) {
-    if (!empty($page_id) && is_string($page_id)) {
-      // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
-      drupal_add_css(TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css');
-      drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js');
-      drupal_add_css($theme_path);
-    }
-    else {
+  if ($form === NULL || !is_array($form)) {
+    drupal_add_css($theme_path);
+    if ($page_id == 'main') {
       // Add main files.
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
       drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
-      drupal_add_css($theme_path);
+    }
+    else {
+      // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
+      drupal_add_css(TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css');
+      drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js');
     }
   }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // This is form.
-  if ($page_id && is_numeric($page_id) && $page_id > 0) {
-    // Add page specific files.
-    $form['#attached']['js'][] = [
-      'type' => 'file',
-      'scope' => 'footer',
-      'group' => JS_THEME,
-      'data' => TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js',
-    ];
-    $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_page_' . $page_id . '.css';
-  }
-  elseif (is_string($page_id)) {
-    // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
-    $form['#attached']['js'][] = [
-      'type' => 'file',
-      'scope' => 'footer',
-      'group' => JS_THEME,
-      'data' => TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js',
-    ];
-    $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css';
-  }
   else {
-    // Add main files.
-    $form['#attached']['js'][] = [
-      'type' => 'file',
-      'scope' => 'footer',
-      'group' => JS_THEME,
-      'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
-    ];
-    $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // This is form.
     $form['#attached']['css'][] = $theme_path;
+    if ($page_id == 'main') {
+      // Add main files.
+      $form['#attached']['js'][] = [
+        'type' => 'file',
+        'scope' => 'footer',
+        'group' => JS_THEME,
+        'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
+      ];
+      $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
+    }
+    elseif ($page_id && is_numeric($page_id) && $page_id > 0) {
+      // This it TPPS Page. Add page specific files.
+      $form['#attached']['js'][] = [
+        'type' => 'file',
+        'scope' => 'footer',
+        'group' => JS_THEME,
+        'data' => TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js',
+      ];
+      $form['#attached']['css'][] = TPPS_MODULE_PATH
+        . '/css/tpps_page_' . $page_id . '.css';
+    }
+    else {
+      // Add custom page files. Like 'TPPS Study Export Page' and etc.
+      $form['#attached']['js'][] = [
+        'type' => 'file',
+        'scope' => 'footer',
+        'group' => JS_THEME,
+        'data' => TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js',
+      ];
+      $form['#attached']['css'][] = TPPS_MODULE_PATH
+        . '/css/tpps_' . $page_id . '.css';
+    }
   }
 }
 
