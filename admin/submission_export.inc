@@ -21,17 +21,17 @@ module_load_include('inc', 'tpps', 'includes/common');
  */
 function tpps_submission_export_form(array $form, array &$form_state) {
   $accession = (($form_state['input']['op'] ?? NULL) == t('Reset')
-    ? '' : ($form_state['input']['tpps_export_accession'] ?? '')
+    ? '' : ($form_state['input']['tpps_submission_export_accession'] ?? '')
   );
-  $form['tpps_export_accession'] = [
+  $form['tpps_submission_export_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),
     '#options' => tpps_submission_get_accession_list(),
     '#default_value' => $accession,
     '#required' => TRUE,
   ];
-  $show_report = variable_get('tpps_export_show_file_search_report', FALSE);
-  $form['tpps_export_show_file_search_report'] = [
+  $show_report = variable_get('tpps_submission_export_show_file_search_report', FALSE);
+  $form['tpps_submission_export_show_file_search_report'] = [
     '#type' => 'checkbox',
     '#title' => 'Show File Search Report?',
     '#default_value' => $show_report,
@@ -46,9 +46,9 @@ function tpps_submission_export_form(array $form, array &$form_state) {
     $fid_list = tpps_submission_file_get_id_list($state, $show_report);
     $files = tpps_submission_export_get_files_info($fid_list);
     tpps_submission_export_file_report($fid_list, $files);
-    $state['tpps_export_files'] = $files;
+    $state['tpps_submission_export_files'] = $files;
 
-    $form['tpps_export_state'] = [
+    $form['tpps_submission_export_state'] = [
       '#type' => 'textarea',
       '#title' => t('State PHP Array'),
       '#value' => var_export($state, 1),
@@ -75,8 +75,8 @@ function tpps_submission_export_form(array $form, array &$form_state) {
  * Resets TPPS Export Form.
  */
 function tpps_submission_export_form_reset() {
-  $form_state['input']['tpps_export_accession'] = '';
-  $form_state['values']['tpps_export_accession'] = '';
+  $form_state['input']['tpps_submission_export_accession'] = '';
+  $form_state['values']['tpps_submission_export_accession'] = '';
   drupal_goto('admin/config/tpps/submission/export');
 }
 
@@ -84,8 +84,8 @@ function tpps_submission_export_form_reset() {
  * Form submitter for 'tpps_form_page_1_settings_form' form.
  */
 function tpps_submission_export_form_submit(array $form, array &$form_state) {
-  variable_set('tpps_export_show_file_search_report',
-    ($form_state['values']['tpps_export_show_file_search_report'] ?? FALSE)
+  variable_set('tpps_submission_export_show_file_search_report',
+    ($form_state['values']['tpps_submission_export_show_file_search_report'] ?? FALSE)
   );
   $form_state['rebuild'] = 1;
 }
@@ -137,7 +137,7 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
     }
     else {
       drupal_set_message(t('Files was found and processed.'));
-      if (variable_get('tpps_export_show_file_search_report', FALSE)) {
+      if (variable_get('tpps_submission_export_show_file_search_report', FALSE)) {
         drupal_set_message(t(
           'List of files prepared for import: <pre>@list</pre>',
           ['@list' => print_r($files, 1)]

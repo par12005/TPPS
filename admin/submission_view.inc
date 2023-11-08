@@ -129,7 +129,7 @@ function tpps_submission_view_form_reset() {
  */
 function tpps_submission_view_form_submit(array $form, array &$form_state) {
   //// Debug Report.
-  //$part_list = ($form_state['input']['tpps_import_debug_state'] ?? []);
+  //$part_list = ($form_state['input']['tpps_submission_import_debug_state'] ?? []);
   //foreach ($part_list as $key => $value) {
   //  if (empty($value)) {
   //    continue;

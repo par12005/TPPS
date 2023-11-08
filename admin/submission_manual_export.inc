@@ -74,11 +74,11 @@ tpps_submission_export_fixes(\$state);
 \$fid_list = tpps_submission_file_get_id_list(\$state, \$show_report);
 \$files = tpps_submission_export_get_files_info(\$fid_list);
 tpps_submission_export_file_report(\$fid_list, \$files);
-\$state['tpps_export_files'] = \$files;
+\$state['tpps_submission_export_files'] = \$files;
 
 drupal_set_message(
   '<div class="form-textarea-wrapper resizable
-    resizable-textarea"><textarea id="edit-tpps-export-state" cols="200"
+    resizable-textarea"><textarea id="edit-tpps-submission-export-state" cols="200"
     rows="20" class="form-textarea" style="width: 100%; background: lightgray;">'
   . var_export(\$state, 1)
   . '</textarea></div>'

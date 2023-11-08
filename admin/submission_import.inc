@@ -12,24 +12,24 @@
  * TPPS Submission Import Form.
  */
 function tpps_submission_import_form(array $form, array &$form_state) {
-  $form['tpps_import_new_accession'] = [
+  $form['tpps_submission_import_new_accession'] = [
     '#type' => 'textfield',
     '#field_prefix' => 'TGDR',
     '#title' => t('New Accession'),
-    '#default_value' => $form_state['input']['tpps_import_new_accession']
+    '#default_value' => $form_state['input']['tpps_submission_import_new_accession']
     ?? tpps_init_project_get_next_accession(),
     '#required' => FALSE,
     '#description' => 'Leave empty to autogenerate accession',
   ];
-  $form['tpps_import_overwrite_submission'] = [
+  $form['tpps_submission_import_overwrite_submission'] = [
     '#type' => 'checkbox',
     '#title' => 'Overwrite existing submission',
-    '#default_value' => $form_state['input']['tpps_import_overwrite_submission'] ?? FALSE,
+    '#default_value' => $form_state['input']['tpps_submission_import_overwrite_submission'] ?? FALSE,
   ];
-  $form['tpps_import_files_replace'] = [
+  $form['tpps_submission_import_files_replace'] = [
     '#type' => 'checkbox',
     '#title' => 'Replace existing files',
-    '#default_value' => variable_get('tpps_import_file_replace', TRUE),
+    '#default_value' => variable_get('tpps_submission_import_file_replace', TRUE),
     '#description' => t('Behavior when the destination file already exists:'
       . '<br /><strong>Checked</strong>: replace the existing file. '
       . 'If a managed file with the destination name exists then its '
@@ -39,10 +39,10 @@ function tpps_submission_import_form(array $form, array &$form_state) {
       . 'until the filename is unique.'),
   ];
   // @TODO Idea. Use file upload field instead of plain code dump.
-  $form['tpps_import_submission_state'] = [
+  $form['tpps_submission_import_submission_state'] = [
     '#type' => 'textarea',
     '#title' => t('Submission State'),
-    '#default_value' => $form_state['input']['tpps_import_submission_state'] ?? '',
+    '#default_value' => $form_state['input']['tpps_submission_import_submission_state'] ?? '',
   ];
   $form['action_import'] = [
     '#type' => 'submit',
@@ -81,13 +81,13 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate accession.
-  $new_accession = $form_state['values']['tpps_import_new_accession'];
+  $new_accession = $form_state['values']['tpps_submission_import_new_accession'];
   // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
   // @TODO Update code to use only 'xxx' format.
   $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
-  if (empty($form_state['values']['tpps_import_overwrite_submission'])) {
+  if (empty($form_state['values']['tpps_submission_import_overwrite_submission'])) {
     if (tpps_api_check_accession($new_accession)) {
-      form_set_error('tpps_import_new_accession', t('Accession already in use. '
+      form_set_error('tpps_submission_import_new_accession', t('Accession already in use. '
         . theme('item_list', [
           'items' => [
             'Check "<strong>Overwrite existing submission</strong>" to reuse accession.',
@@ -103,8 +103,8 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate Submission State.
-  if (empty($form_state['values']['tpps_import_submission_state'])) {
-    form_set_error('tpps_import_submission_state', t('Submission state is empty.'));
+  if (empty($form_state['values']['tpps_submission_import_submission_state'])) {
+    form_set_error('tpps_submission_import_submission_state', t('Submission state is empty.'));
   }
 }
 
@@ -121,7 +121,7 @@ function tpps_submission_import_form_reset(array $form, array &$form_state) {
  * Form submitter. Shows submision dump with line numbers.
  */
 function tpps_submission_import_review_dump(array $form, array &$form_state) {
-  if ($state = trim($form_state['values']['tpps_import_submission_state'])) {
+  if ($state = trim($form_state['values']['tpps_submission_import_submission_state'])) {
     // Note: $state is a string.
     // Show with line numbers.
     $state_array = preg_split("/\r\n|\n|\r/", $state);
@@ -137,11 +137,11 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   global $user;
   $dry_run = (bool) ($form_state['triggering_element']['#value'] == t('Dry Run'));
   module_load_include('inc', 'tpps', 'includes/common');
-  variable_set('tpps_import_file_replace',
-    ($form_state['values']['tpps_import_file_replace'] ?? FALSE)
+  variable_set('tpps_submission_import_file_replace',
+    ($form_state['values']['tpps_submission_import_file_replace'] ?? FALSE)
   );
   // Remove useless data from the submission state.
-  if ($state_raw = trim($form_state['values']['tpps_import_submission_state'])) {
+  if ($state_raw = trim($form_state['values']['tpps_submission_import_submission_state'])) {
     // Fix 'stdClass' in the submistion dump createdy by var_export().
     // We shouldn't do this on export to have unchanged data.
     // Though var_export() is designed to "outputs or return a parsable
@@ -168,7 +168,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // (line 1071 of /var/www/Drupal/sites/all/modules/TGDR/tpps.module).
     $state['triggering_element']['#value'] = t('Review and Submit');
 
-    $new_accession = $form_state['values']['tpps_import_new_accession']
+    $new_accession = $form_state['values']['tpps_submission_import_new_accession']
       ?? tpps_init_project_get_next_accession();
     // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
     // @TODO Update code to use only 'xxx' format.
@@ -176,11 +176,11 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Process files (if any).
-    if (empty($state['tpps_export_files'])) {
+    if (empty($state['tpps_submission_export_files'])) {
       drupal_set_message('Submission has no files.');
     }
     else {
-      foreach ($state['tpps_export_files'] as $fid => $file) {
+      foreach ($state['tpps_submission_export_files'] as $fid => $file) {
         if (empty($file)) {
           continue;
         }
@@ -208,7 +208,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Accession.
-    if (!empty($form_state['values']['tpps_import_overwrite_submission'])) {
+    if (!empty($form_state['values']['tpps_submission_import_overwrite_submission'])) {
       // Remove submission and files.
       // We can't use tpps_update_submission() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
@@ -295,7 +295,7 @@ function tpps_submission_import_download_file(array $file) {
     $content,
     tpps_submission_import_get_folder($file['uri']) . '/' . $file['filename'],
     (
-      variable_get('tpps_import_file_replace', TRUE) ?
+      variable_get('tpps_submission_import_file_replace', TRUE) ?
       FILE_EXISTS_REPLACE : FILE_EXISTS_RENAME
     )
   );

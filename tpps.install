@@ -40,9 +40,9 @@ function tpps_install() {
   variable_set('tpps_page_4_cache_synonym_list', FALSE);
   variable_set('tpps_page_4_cache_unit_list', FALSE);
   // Study Export.
-  variable_set('tpps_export_show_file_search_report', FALSE);
+  variable_set('tpps_submission_export_show_file_search_report', FALSE);
   // Study Import.
-  variable_set('tpps_import_file_replace', TRUE);
+  variable_set('tpps_submission_import_file_replace', TRUE);
   // [/VS]
   tpps_alter_tpps_submissions();
   tpps_alter_tpps_submission_dbxref();
@@ -337,9 +337,9 @@ function tpps_uninstall() {
   variable_del('tpps_page_4_cache_synonym_list');
   variable_del('tpps_page_4_cache_unit_list');
   // Study Export.
-  variable_del('tpps_export_show_file_search_report');
+  variable_del('tpps_submission_export_show_file_search_report');
   // Study Import.
-  variable_del('tpps_import_file_replace');
+  variable_del('tpps_submission_import_file_replace');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.

@@ -14,7 +14,7 @@
     // 'Manual Export' code is used and this JS file attached from dev-server
     // This line is not necessary for regular 'Submission Export' form.
     window.focus();
-    state = $('#edit-tpps-export-state').val();
+    state = $('#edit-tpps-submission-export-state').val();
     if (typeof(state) != "undefined") {
       navigator.clipboard.writeText(state);
       if (state.trim().length === 0) {
@@ -31,9 +31,9 @@
   Drupal.behaviors.tpps_submission_export = {
     attach: function (context, settings) {
       // Clear textarea with prev submission state.
-      $('#edit-tpps-export-accession', context).on('change', function(e) {
+      $('#edit-tpps-submission-export-accession', context).on('change', function(e) {
         console.log('Accession was changed.');
-        $('#edit-tpps-export-state').val('');
+        $('#edit-tpps-submission-export-state').val('');
         // Probably it's a overkill but just to be sure we always have
         // up-to-date submission state in clipboard.
         Drupal.tpps.copy_submission_state();

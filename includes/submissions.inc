@@ -292,7 +292,7 @@ function tpps_submission_purge($accession, $force = FALSE) {
   $state = tpps_submission_get_state($accession);
   // Remove usage of files first.
   $fid_list = tpps_submission_file_get_id_list($state,
-    variable_get('tpps_export_show_file_search_report', FALSE)
+    variable_get('tpps_submission_export_show_file_search_report', FALSE)
   );
   foreach ($fid_list as $fid) {
     $file = file_load($fid);
