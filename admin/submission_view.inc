@@ -74,28 +74,33 @@ function tpps_submission_view_form(array $form, array &$form_state) {
       $form['tpps_submission_view_part'] = [
         '#type' => 'select',
         '#title' => 'View submission state parts',
-        '#default_value' => $part,
-        '#options' => array_merge($part_list, ['all' => t('ALL')]),
+        '#default_value' => $part ?? 'none',
+        '#options' => array_merge(
+          ['none' => t('- Select -'), 'all' => t('ALL')],
+          $part_list
+        ),
       ];
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Parts
       $state_part = ($part == 'all') ? $state : ($state[$part] ?? []);
       $state_array = preg_split("/\r\n|\n|\r/", var_export($state_part, 1));
-      foreach ($state_array as $line => $content) {
-        // @TODO Minor. Highlight intends.
-        $rows[] = [$line, '<pre>' . check_plain($content) . '</pre>'];
+      if ($state_part) {
+        foreach ($state_array as $line => $content) {
+          // @TODO Minor. Highlight intends.
+          $rows[] = [$line, '<pre>' . check_plain($content) . '</pre>'];
+        }
+        $form['part'] = [
+          '#type' => 'fieldset',
+          '#title' => $part,
+          '#collapsible' => TRUE,
+        ];
+        $form['part']['table'] = [
+          '#markup' => theme('table', [
+            'header' => ['#', 'Content'],
+            'rows' => $rows,
+          ]),
+        ];
       }
-      $form['part'] = [
-        '#type' => 'fieldset',
-        '#title' => $part,
-        '#collapsible' => TRUE,
-      ];
-      $form['part']['table'] = [
-        '#markup' => theme('table', [
-          'header' => ['Line', 'Content'],
-          'rows' => $rows,
-        ]),
-      ];
       $form['footer_view'] = [
         '#type' => 'submit',
         '#value' => t('View'),

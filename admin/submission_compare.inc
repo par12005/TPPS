@@ -80,10 +80,16 @@ function tpps_submission_compare_form_reset() {
  * Form submitter for 'tpps_form_page_1_settings_form' form.
  */
 function tpps_submission_compare_form_submit(array $form, array &$form_state) {
-  module_load_include('inc', 'tpps', 'includes/submission');
+  $form_state['rebuild'] = 1;
   $accession_1 = $form_state['input']['tpps_submission_compare_accession_1'];
   $accession_2 = $form_state['input']['tpps_submission_compare_accession_2'];
-
+  if ($accession_1 == $accession_2) {
+    drupal_set_message(t('Submission @accession_1 and @accession_2 are equal.',
+      ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
+    ));
+    return;
+  }
+  module_load_include('inc', 'tpps', 'includes/submission');
   $result_1 = array_diff_assoc_recursive(
     tpps_submission_get_state($accession_1),
     tpps_submission_get_state($accession_2)
@@ -122,9 +128,15 @@ function tpps_submission_compare_form_submit(array $form, array &$form_state) {
     ];
     unset($result_2[$key]);
   }
-  $header = ['Key', $accession_1, $accession_2];
-  drupal_set_message(theme('table', ['header' => $header, 'rows' => $rows]));
-  $form_state['rebuild'] = 1;
+  if (!empty($rows)) {
+    $header = ['Key', $accession_1, $accession_2];
+    drupal_set_message(theme('table', ['header' => $header, 'rows' => $rows]));
+  }
+  else {
+    drupal_set_message(t('Submission @accession_1 and @accession_2 are equal.',
+      ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
+    ));
+  }
 }
 
 /**
