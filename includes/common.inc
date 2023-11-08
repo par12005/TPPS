@@ -50,3 +50,20 @@ function tpps_array_replace(array $array, $old, $new) {
   $state_json = str_replace($old, $new, $state_json);
   return json_decode($state_json, TRUE);
 }
+
+/**
+ * Highlights indents with gray vertical bars.
+ *
+ * @param string $string
+ *   String to be processed.
+ *
+ * @return string
+ *   Returns formatted HTML string.
+ */
+function tpps_string_format_indent($string) {
+  $line_clean = ltrim($string);
+  $spaces = str_replace($line_clean, '', $string);
+  return '<span style="color:silver;">'
+    . str_replace(' ', '&#124;&nbsp;&nbsp;&nbsp;&nbsp;', $spaces)
+    . '</span>' . $line_clean;
+}

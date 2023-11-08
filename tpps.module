@@ -1904,6 +1904,16 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'type' => MENU_LOCAL_TASK,
     'weight' => 200,
   ];
+  $items['admin/config/tpps/submission/view/%'] = [
+    'title' => 'View Submission',
+    'description' => 'View TPPS Submission',
+    'page callback' => 'tpps_submission_view_page',
+    'page arguments' => [5],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submission_view.inc',
+    'type' => MENU_CALLBACK,
+  ];
 }
 
 /**
