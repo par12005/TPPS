@@ -38,17 +38,6 @@ function tpps_submission_import_form(array $form, array &$form_state) {
       . '<br /><strong>Unchecked</strong>: Append _{incrementing number} '
       . 'until the filename is unique.'),
   ];
-  $form['tpps_import_debug_state'] = [
-    '#type' => 'checkboxes',
-    '#title' => 'Dump submission state parts:',
-    '#options' => [
-      'values' => 'values',
-      'saved_values' => 'saved_values',
-      'complete form' => 'complete form',
-      'files' => 'files',
-    ],
-    '#default_value' => $form_state['input']['tpps_import_debug_state'] ?? [],
-  ];
   // @TODO Idea. Use file upload field instead of plain code dump.
   $form['tpps_import_submission_state'] = [
     '#type' => 'textarea',
@@ -123,7 +112,7 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
  * Resets TPPS Submission Import Form.
  */
 function tpps_submission_import_form_reset(array $form, array &$form_state) {
-  drupal_goto('admin/config/tpps/migration/import');
+  drupal_goto('admin/config/tpps/submission/import');
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -169,20 +158,6 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       return;
     }
 
-    // Debug Report.
-    $part_list = ($form_state['input']['tpps_import_debug_state'] ?? []);
-    foreach ($part_list as $key => $value) {
-      if (empty($value)) {
-        continue;
-      }
-      elseif (!empty($state[$key])) {
-        dpm(print_r($state[$key], 1), $value);
-      }
-      else {
-        dpm('Submission State part "' . $value . '" is empty.');
-        continue;
-      }
-    }
 
     // Note: $state['saved_values'] is required for normal form submission.
     // Fix Warning: end() expects parameter 1 to be array, null given in

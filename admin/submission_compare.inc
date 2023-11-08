@@ -73,7 +73,7 @@ function tpps_submission_compare_form(array $form, array &$form_state) {
 function tpps_submission_compare_form_reset() {
   $form_state['input']['tpps_submission_compare_accession_1'] = '';
   $form_state['input']['tpps_submission_compare_accession_2'] = '';
-  drupal_goto('admin/config/tpps/migration/compare');
+  drupal_goto('admin/config/tpps/submission/compare');
 }
 
 /**

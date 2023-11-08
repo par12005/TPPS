@@ -381,7 +381,7 @@ function tpps_menu() {
   // [VS].
   // Reports.
   tpps_menu_add_report_pages($items);
-  tpps_menu_add_submission_migration_pages($items);
+  tpps_menu_add_submission_pages($items);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items[TPPS_AJAX_URL . '/%'] = [
     // Use POST to send data and GET to just get data.
@@ -1844,15 +1844,15 @@ function tpps_menu_add_report_pages(array &$items = []) {
  * @param array $items
  *   Menu items.
  */
-function tpps_menu_add_submission_migration_pages(array &$items = []) {
+function tpps_menu_add_submission_pages(array &$items = []) {
   $items = $items ?? [];
-  $items['admin/config/tpps/migration'] = [
-    'title' => 'Submission Migration',
+  $items['admin/config/tpps/submission'] = [
+    'title' => 'Submission',
     'description' => 'TPPS Submission Migraiton',
-    'page callback' => 'tpps_submission_migraion_overview_page',
+    'page callback' => 'tpps_submission_overview_page',
     'access arguments' => ['administer tpps module'],
   ];
-  $items['admin/config/tpps/migration/export'] = [
+  $items['admin/config/tpps/submission/export'] = [
     'title' => 'Export',
     'description' => 'Export of TPPS Submission',
     'page callback' => 'drupal_get_form',
@@ -1862,7 +1862,7 @@ function tpps_menu_add_submission_migration_pages(array &$items = []) {
     'file' => 'admin/submission_export.inc',
     'type' => MENU_LOCAL_TASK,
   ];
-  $items['admin/config/tpps/migration/import'] = [
+  $items['admin/config/tpps/submission/import'] = [
     'title' => 'Import',
     'description' => 'Import of TPPS Submission',
     'page callback' => 'drupal_get_form',
@@ -1872,7 +1872,7 @@ function tpps_menu_add_submission_migration_pages(array &$items = []) {
     'type' => MENU_LOCAL_TASK,
     'file' => 'admin/submission_import.inc',
   ];
-  $items['admin/config/tpps/migration/manual_export'] = [
+  $items['admin/config/tpps/submission/manual_export'] = [
     'title' => 'Manual Export',
     'description' => 'Manual Export of TPPS Submission',
     'page callback' => 'drupal_get_form',
@@ -1882,7 +1882,7 @@ function tpps_menu_add_submission_migration_pages(array &$items = []) {
     'file' => 'admin/submission_manual_export.inc',
     'type' => MENU_LOCAL_TASK,
   ];
-  $items['admin/config/tpps/migration/submission_compare'] = [
+  $items['admin/config/tpps/submission/compare'] = [
     'title' => 'Compare',
     'description' => 'Compare two TPPS Submissions',
     'page callback' => 'drupal_get_form',
@@ -1893,18 +1893,31 @@ function tpps_menu_add_submission_migration_pages(array &$items = []) {
     'type' => MENU_LOCAL_TASK,
     'weight' => 100,
   ];
+  $items['admin/config/tpps/submission/view'] = [
+    'title' => 'View',
+    'description' => 'View TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_view_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submission_view.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 200,
+  ];
 }
 
 /**
- * Menu callback. Shows list of 'Study Migration' subitems.
+ * Menu callback. Shows list of Submission operations.
  */
-function tpps_submission_migraion_overview_page() {
+function tpps_submission_overview_page() {
   return theme('item_list', [
     'title' => t('The TPPS Submission operations'),
     'items' => [
-      l(t('Export'), 'admin/config/tpps/migration/export'),
-      l(t('Import'), 'admin/config/tpps/migration/import'),
-      l(t('Manual Export'), 'admin/config/tpps/migration/manual_export'),
+      l(t('Export'), 'admin/config/tpps/submission/export'),
+      l(t('Import'), 'admin/config/tpps/submission/import'),
+      l(t('Manual Export'), 'admin/config/tpps/submission/manual_export'),
+      l(t('Compare'), 'admin/config/tpps/submission/compare'),
+      l(t('View'), 'admin/config/tpps/submission/view'),
     ],
   ]);
 }

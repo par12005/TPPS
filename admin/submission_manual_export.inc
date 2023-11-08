@@ -117,7 +117,7 @@ EOT;
  * Resets TPPS Export Form.
  */
 function tpps_submission_manual_export_form_reset() {
-  drupal_goto('admin/config/tpps/migration/manual_export');
+  drupal_goto('admin/config/tpps/submission/manual_export');
 }
 
 /**

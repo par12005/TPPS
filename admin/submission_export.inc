@@ -17,7 +17,7 @@ module_load_include('inc', 'tpps', 'includes/common');
 //module_load_include('inc', 'tpps', 'includes/submission_file');
 
 /**
- * TPPS Study Import Form.
+ * TPPS Study Export Form.
  */
 function tpps_submission_export_form(array $form, array &$form_state) {
   $accession = (($form_state['input']['op'] ?? NULL) == t('Reset')
@@ -77,7 +77,7 @@ function tpps_submission_export_form(array $form, array &$form_state) {
 function tpps_submission_export_form_reset() {
   $form_state['input']['tpps_export_accession'] = '';
   $form_state['values']['tpps_export_accession'] = '';
-  drupal_goto('admin/config/tpps/migration/export');
+  drupal_goto('admin/config/tpps/submission/export');
 }
 
 /**
