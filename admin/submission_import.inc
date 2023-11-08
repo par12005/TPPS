@@ -218,11 +218,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // $form_state['values']['frontpage']['accession'] = $new_accession;
     // Check also $form_state['input'] and $form_state['completed_form'].
     // Update accession value in $form_state.
-    $state = tpps_array_replace(
-      $state,
-      $state['saved_values']['frontpage']['accession'],
-      $new_accession
-    );
+    $old_accession = $state['saved_values']['frontpage']['accession'];
+    $state = tpps_array_replace($state, $old_accession, $new_accession);
+    // Store original accession.
+    $state['tpps_submission_import_original_accession'] = $old_accession;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // From tpps_init_project().
