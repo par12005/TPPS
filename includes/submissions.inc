@@ -1245,7 +1245,7 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
     $cache->data[$key] = $list;
     cache_set($cid, $cache->data, $cache_bin);
   }
-  return $cache->data[$key] ?? NULL;
+  return $cache->data[$key] ?? [];
 }
 
 /**

@@ -38,8 +38,8 @@ function tpps_front_create_form(array &$form, array $form_state) {
           '------------------------ YOUR / INCOMPLETE -------------------------',
       ]
       + tpps_submission_get_accession_list([
-        ['status', 'Incomplete', '='],
-        ['uid', $user->uid, '='],
+        ['status', 'Incomplete'],
+        ['uid', $user->uid],
       ]);
       if (variable_get('tpps_front_show_pending_status_mine', FALSE)) {
         $options = $options + [
