@@ -39,35 +39,63 @@ function tpps_init_project(array &$form_state, $accession = NULL) {
 
     // $result = chado_select_record('dbxref', array('accession'), $values, $options);
 
-    // Rish: New patch that sorts based on integer instead of string values
-    $result_query = chado_query("SELECT *, substr(accession, 5)::INTEGER as accession_number " . 
-      "FROM chado.dbxref WHERE accession LIKE 'TGDR%' "  .
-      "ORDER BY accession_number DESC LIMIT 1;", []);
-
-    if (empty($result_query)) {
-      $accession = 'TGDR001';
-    }
-    else {
-      $result = []; // create an empty array
-      $result[] = $result_query->fetchObject(); // add the first record found into result
-      $accession = substr($result[0]->accession, 4) + 1;
-      while (strlen($accession) < 3) {
-        $accession = "0$accession";
-      }
-      $accession = "TGDR$accession";
-    }
+    $accession = 'TGDR' . tpps_init_project_get_next_accession();
   }
 
-  $dbxref_id = chado_insert_record('dbxref', array(
-    'db_id' => variable_get('tpps_local_db')->db_id,
-    'accession' => $accession,
-  ));
-
-  $form_state['dbxref_id'] = $dbxref_id['dbxref_id'];
+  $form_state['dbxref_id'] = tpps_init_project_get_dbxref_id($accession);
+  // @todo [VS] It's better to use REQUEST_TIME to have the same timestamp
+  // even if processing takes more then 1 second.
   $form_state['created'] = time();
   $form_state['accession'] = $accession;
   $form_state['saved_values']['frontpage']['accession'] = $accession;
   $form_state['status'] = 'Incomplete';
+  return $form_state['dbxref_id'];
+}
 
-  return $dbxref_id;
+/**
+ * Get dbxref_id for new accession.
+ *
+ * WARNING: Be sure to check if given $accession is not in use yet.
+ * See tpps_init_project().
+ *
+ * @param string $accession
+ *   Study accession in format 'TGDRnnnn'.
+ *
+ * @return int
+ *   Returns dbxref_id (example: 10515652) for given accession
+ *   and db_id = 95 (which is 'tpps_local_db' Id).
+ */
+function tpps_init_project_get_dbxref_id($accession) {
+  return chado_insert_record(
+    'dbxref',
+    [
+      'db_id' => variable_get('tpps_local_db')->db_id,
+      'accession' => $accession,
+    ]
+  )['dbxref_id'];
+}
+
+/**
+ * Get next available accession number.
+ *
+ * @return int
+ *   Returns Study accession number (without 'TGDR' prefix).
+ */
+function tpps_init_project_get_next_accession() {
+  // Rish: New patch that sorts based on integer instead of string values.
+  $sql = "SELECT *, substr(accession, 5)::INTEGER as accession_number "
+    . "FROM chado.dbxref WHERE accession LIKE 'TGDR%' "
+    . "ORDER BY accession_number DESC LIMIT 1;";
+  $result_query = chado_query($sql, []);
+  if (empty($result_query)) {
+    $accession = '001';
+  }
+  else {
+    $result = $result_query->fetchObject();
+    $accession = substr($result->accession, 4) + 1;
+    while (strlen($accession) < 3) {
+      $accession = "0$accession";
+    }
+  }
+  return $accession;
 }

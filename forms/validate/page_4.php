@@ -26,7 +26,24 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       $organism = &$form_state['values']["organism-$i"] ?? NULL;
       // Note: 1st item skipped because there is a checkbox which allows to
       // skip validation of non-first items so only them must be checked.
+      //
+      // Check if validation functions exists.
+      $study_type_list = [];
       foreach (['phenotype', 'genotype', 'environment'] as $item) {
+        if (!function_exists('tpps_validate_' . $item)) {
+          // Dynamically built function names are:
+          // tpps_validate_phenotype(),
+          // tpps_validate_genotype(),
+          // tpps_validate_environment().
+          watchdog('tpps', 'Validation function for @study_type not found.',
+            ['@study_type' => $item], WATCHDOG_ERROR
+          );
+          continue;
+        }
+        $study_type_list[] = $item;
+      }
+
+      foreach ($study_type_list as $item) {
         if ($i > 1) {
           if (($organism[$item . '-repeat-check'] ?? NULL) == '1') {
             // phenotype-repeat-check,
@@ -36,8 +53,6 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
           }
         }
         if (!empty($organism[$item])) {
-          // @TODO [VS] Minor. Check if function exists but not in the nexted
-          // loop to avoid checking the same multiple times.
           $function = 'tpps_validate_' . $item;
           call_user_func($function, $organism[$item], $i, $form, $form_state);
         }

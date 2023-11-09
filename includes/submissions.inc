@@ -1,11 +1,15 @@
 <?php
 
+module_load_include('inc', 'tpps', 'includes/submission_file');
+
 /**
  * @file
- * Defines functions for manipulation of TPPS Submissions.
+ * Functions for manipulation of TPPS Submissions.
  *
  * To use:
  * module_load_include('inc', 'tpps', 'includes/submissions');
+ *
+ * @TODO Minor. Rename functions to use pattern 'tpps_submission_[action]'.
  */
 
 /**
@@ -164,27 +168,19 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   // tpps_submission_clear_db($old_accession);
 
   $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
-  // Update the form state data for the study
+  // Update the form state data for the study.
   $submission = tpps_load_submission($old_accession, FALSE);
   $state = unserialize($submission->submission_state);
 
   $job->logMessage('Original submission data for ' . $old_accession);
-  $job->logMessage(print_r($state, true));
+  $job->logMessage(print_r($state, 1));
 
-  // Update the TGDR with the new_accession
-  // First encode to JSON before string replacement
-  $state_json = json_encode($state);
-
-  // Now replace the old accession with the new accession
-  $state_json = str_replace($old_accession,$new_accession,$state_json);
-
-  // Now convert JSON back to an array
-  $state = json_decode($state_json,true);
-
-
+  // Update the TGDR with the new_accession.
+  module_load_include('inc', 'tpps', 'includes/common');
+  $state = tpps_array_replace($state, $old_accession, $new_accession);
 
   $job->logMessage('New submission data for ' . $new_accession);
-  $job->logMessage(print_r($state, true));
+  $job->logMessage(print_r($state, 1));
 
   // This function will not work here because it tries to update
   // a non existing TGDR (the new one has not been created as yet)
@@ -202,15 +198,15 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
     ->condition('accession', $old_accession)
     ->execute();
 
-
   $job->logMessage('[INFO] Update tpps_submission table study ' . $old_accession . ' to ' . $new_accession);
-  // Now change the accession number in the tpps_submission table
+  // Now change the accession number in the tpps_submission table.
   $transaction = db_transaction();
   try {
-    chado_query('UPDATE tpps_submission SET accession = :new_accession WHERE accession = :old_accession', array(
-      ':new_accession' => $new_accession,
-      ':old_accession' => $old_accession
-    ));
+    $sql = 'UPDATE tpps_submission SET accession = :new_accession '
+      . ' WHERE accession = :old_accession';
+    chado_query($sql,
+      [':new_accession' => $new_accession, ':old_accession' => $old_accession]
+    );
   }
   catch (\Exception $e) {
     $transaction->rollback();
@@ -237,12 +233,6 @@ function tpps_update_submission(array $state, array $options = array()) {
   }
   $state['updated'] = time();
   $options['submission_state'] = serialize($state);
-
-
-  // dpm($options);
-  // dpm($state['accession']);
-
-
   db_update('tpps_submission')
     ->fields($options)
     ->condition('accession', $state['accession'])
@@ -250,15 +240,16 @@ function tpps_update_submission(array $state, array $options = array()) {
 }
 
 /**
- * This function deletes a TPPS Submission based on an accession number.
+ * Deletes a TPPS Submission.
  *
- * It also removes the submission record from the chado.dbxref table.
+ * Removes records from tables:
+ * 1. chado.dbxref,
+ * 2. chado.tpps_submission.
  *
  * @param string $accession
- *   The accession number of the submission to delete.
+ *   The accession of the submission. Format: TGDR12345.
  */
-function tpps_delete_submission($accession, $redirect = TRUE) {
-  global $user;
+function tpps_delete_submission($accession) {
   $submission = tpps_load_submission($accession, FALSE);
   $dbxref_id = $submission->dbxref_id;
   $state = unserialize($submission->submission_state);
@@ -270,9 +261,62 @@ function tpps_delete_submission($accession, $redirect = TRUE) {
       ->condition('dbxref_id', $dbxref_id)
       ->execute();
   }
-  if ($redirect) {
-    drupal_goto("user/{$user->uid}/tpps");
+}
+
+/**
+ * Menu callback to remove the TPPS Submission.
+ *
+ * @param string $accession
+ *   The accession of the submission. Format: TGDR12345.
+ */
+function tpps_submission_delete_callback($accession) {
+  global $user;
+  tpps_delete_submission($accession);
+  drupal_goto("user/{$user->uid}/tpps");
+}
+
+/**
+ * Removes TPPS Submission and it's files.
+ *
+ * @param string $accession
+ *   The accession of the submission. Format: TGDR12345.
+ * @param bool $force
+ *   Boolean indicating that the file should be deleted
+ *   if the file not in use by the file_usage table.
+ *   Removement of not used files are safe but I'm not sure that old studies
+ *   created correct records about usage of files so do NOT delete files
+ *   by default.
+ *   But for testing and Study Import file removement should be allowed.
+ */
+function tpps_submission_purge($accession, $force = FALSE) {
+  $state = tpps_submission_get_state($accession);
+  if (empty($state)) {
+    // Submission not exists. Nothing to do.
+    // @TODO Minor. Query DB table 'file_usage' to find if there is orphan
+    // files related to this non-existing submission.
+    return;
   }
+  // Remove usage of files first.
+  $fid_list = tpps_submission_file_get_id_list($state,
+    variable_get('tpps_submission_export_show_file_search_report', FALSE)
+  );
+  foreach ($fid_list as $fid) {
+    if ($file = file_load($fid)) {
+      // Remove file usage record (not file itself).
+      file_usage_delete($file, 'tpps', 'tpps_project', substr($accession, 4), 1);
+      if ($force) {
+        // Remove file from disk.
+        file_delete($file);
+      }
+    }
+  }
+  // Remove submission state from DB.
+  db_delete('tpps_submission')
+    ->condition('accession', $accession)
+    ->execute();
+  db_delete('chado.dbxref')
+    ->condition('accession', $accession)
+    ->execute();
 }
 
 /**
@@ -365,7 +409,7 @@ function tpps_submission_tag_manage() {
   );
 
   $output = theme('table', $vars);
-  tpps_add_css_js();
+  tpps_add_css_js('main');
   return $output;
 }
 
@@ -1174,7 +1218,7 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
     foreach ($conditions as $item) {
       $query->condition($item[0], $item[1], ($item[2] ?? '='));
     }
-    $results = $query->orderBy('accession', 'desc')->execute();
+    $results = $query->orderBy('tpps_submission_id', 'desc')->execute();
     foreach ($results as $item) {
       if ($state = unserialize($item->submission_state)) {
         // @TODO Be sure to store 'tpps_type' in $form_state.
@@ -1193,7 +1237,7 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
             // Remove if submission has no Publication Title
             // and this form is shown not after user returned from Page 1.
             // @TODO Move removement to better place.
-            tpps_delete_submission($item->accession, FALSE);
+            tpps_delete_submission($item->accession);
           }
         }
       }
@@ -1205,12 +1249,11 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
 }
 
 /**
-  * Builds list of accessions (values) and their dbxref_id's as a keys.
+ * Builds list of accessions (values) and their dbxref_id's as a keys.
  *
  * @param bool $is_optional
  *   Should this list have an extra item '- Select -' which makes this
  *   dropdown list optional.
- * @access public
  *
  * @return array
  *   Returns array where keys are studie's dbxref_id and value is an

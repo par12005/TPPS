@@ -35,26 +35,36 @@ function tpps_front_create_form(array &$form, array $form_state) {
       $options = [
         'new' => 'Create new TPPSC Submission',
         'placeholder1' =>
-          '-------------------------- YOUR STUDIES ----------------------------',
+          '------------------------ YOUR / INCOMPLETE -------------------------',
       ]
       + tpps_submission_get_accession_list([
         ['status', 'Incomplete', '='],
         ['uid', $user->uid, '='],
       ]);
-      if (variable_get('tpps_front_show_others_studies', TRUE)) {
+      if (variable_get('tpps_front_show_pending_status_mine', FALSE)) {
         $options = $options + [
           'placeholder2' =>
-          '------------------------ OTHER USER STUDIES ------------------------',
+          '--------------------- YOUR / PENDING APPROVAL ----------------------',
+        ]
+        + tpps_submission_get_accession_list([
+          ['status', 'Pending Approval'],
+          ['uid', $user->uid],
+        ]);
+      }
+      if (variable_get('tpps_front_show_others_studies', TRUE)) {
+        $options = $options + [
+          'placeholder3' =>
+          '----------------------- OTHERS / INCOMPLETE ------------------------',
         ]
         + tpps_submission_get_accession_list([
           ['status', 'Incomplete'],
           ['uid', $user->uid, '<>'],
         ]);
       }
-      if (variable_get('tpps_front_show_pending_status', FALSE)) {
+      if (variable_get('tpps_front_show_pending_status_others', FALSE)) {
         $options = $options + [
-          'placeholder3' =>
-          '------------------------- PENDING APPROVAL -------------------------',
+          'placeholder4' =>
+          '--------------------- OTHERS / PENDING APPROVAL --------------------',
         ]
         + tpps_submission_get_accession_list([
           ['status', 'Pending Approval'],
@@ -178,6 +188,6 @@ function tpps_front_create_form(array &$form, array $form_state) {
       ];
     }
   }
-  tpps_add_css_js($form);
+  tpps_add_css_js('main', $form);
   return $form;
 }

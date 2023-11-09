@@ -43,7 +43,7 @@ function tpps_details($accession = NULL) {
     $output .= render($form);
     $output .= tpps_details_tags_sort();
     $output .= "<div id='tpps-details-table'>" . tpps_details_top() . "</div>";
-    tpps_add_css_js();
+    tpps_add_css_js('main');
     return $output;
   }
 
@@ -73,7 +73,7 @@ function tpps_details($accession = NULL) {
       if (function_exists('tpps_details_byaccession_page')) {
         $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
         // [VS].
-        tpps_add_css_js();
+        tpps_add_css_js('main');
         // [/VS].
         return $output;
       }
@@ -98,7 +98,7 @@ function tpps_details($accession = NULL) {
     }
     $output .= $map_api_tools;
     // [VS].
-    tpps_add_css_js();
+    tpps_add_css_js('main');
     // [/VS].
 
     $pub_link = $state['title'];
@@ -149,7 +149,7 @@ function tpps_details($accession = NULL) {
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
     // [VS].
-    tpps_add_css_js();
+    tpps_add_css_js('main');
     // [/VS].
   }
   return $output;

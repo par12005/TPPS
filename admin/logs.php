@@ -27,7 +27,7 @@ function tpps_admin_panel_logs(array $form, array &$form_state, $job_log_file = 
   //   }
 
   $form = $form ?? [];
-  tpps_add_css_js($form);
+  tpps_add_css_js('main', $form);
 
   $job_log_file_parts = explode('_', $job_log_file);
   $accession = $job_log_file_parts[0];
