@@ -66,8 +66,12 @@ function tpps_submission_view_form(array $form, array $form_state) {
   }
 
   module_load_include('inc', 'tpps', 'includes/submissions');
+  // @TODO Validate $accession.
   if (empty($state = tpps_submission_get_state($accession))) {
-    drupal_set_message('No submission found.', 'error');
+    drupal_set_message(t('Submission "<strong>@accession</strong>" not found. '
+      . 'Please choose from the list below.',
+      ['@accession' => $accession]), 'error'
+    );
     drupal_goto('admin/config/tpps/submission/view');
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -75,15 +79,20 @@ function tpps_submission_view_form(array $form, array $form_state) {
     '#type' => 'hidden',
     '#value' => $accession,
   ];
-  $form['tpps_submission_accession_2'] = [
-    '#type' => 'select',
-    '#title' => t('Accession'),
-    '#options' => tpps_submission_get_accession_list(),
-  ];
   $form['header_back'] = [
     '#type' => 'submit',
     '#value' => t('Back'),
     '#submit' => ['tpps_submission_view_select_form_reset'],
+  ];
+  $form['action_purge'] = [
+    '#type' => 'submit',
+    '#value' => t('Purge'),
+    '#submit' => ['tpps_submission_view_form_submit'],
+  ];
+  $form['tpps_submission_accession_2'] = [
+    '#type' => 'select',
+    '#title' => t('Accession'),
+    '#options' => tpps_submission_get_accession_list(),
   ];
   $form['action_compare'] = [
     '#type' => 'submit',
@@ -113,10 +122,16 @@ function tpps_submission_view_form(array $form, array $form_state) {
  * Form submitter for 'tpps_form_page_1_settings_form' form.
  */
 function tpps_submission_view_form_submit(array $form, array &$form_state) {
+  $button = $form_state['triggering_element']['#value'];
   $accession_1 = ($form_state['values']['tpps_submission_accession_1'] ?? '');
-  $accession_2 = ($form_state['values']['tpps_submission_accession_2'] ?? '');
-  drupal_goto(
-    'admin/config/tpps/submission/compare/'
-    . $accession_1 . '/' . $accession_2
-  );
+  if ($button == t('Compare')) {
+    $accession_2 = ($form_state['values']['tpps_submission_accession_2'] ?? '');
+    drupal_goto(
+      'admin/config/tpps/submission/compare/'
+      . $accession_1 . '/' . $accession_2
+    );
+  }
+  elseif ($button == t('Purge')) {
+    drupal_goto('admin/config/tpps/submission/purge/' . $accession_1);
+  }
 }

@@ -10,10 +10,13 @@ module_load_include('inc', 'tpps', 'includes/common');
 /**
  * Menu callback. TPPS Study View Form.
  */
-function tpps_submission_purge_form(array $form, array &$form_state) {
-  $accession = (($form_state['input']['op'] ?? NULL) == t('Reset')
-    ? '' : ($form_state['input']['tpps_submission_accession'] ?? '')
-  );
+function tpps_submission_purge_form(array $form, array &$form_state, $accession = '') {
+  if (($form_state['input']['op'] ?? NULL) == t('Reset')) {
+    $accession = '';
+  }
+  elseif (empty($accession)) {
+    $accession = $form_state['input']['tpps_submission_accession'] ?? '';
+  }
   $form['warning'] = [
     '#markup' => '<h3>'
     . t("WARNING: Submission's records in database and files (if they not in use) will be removed.")

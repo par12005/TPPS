@@ -1939,6 +1939,16 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'type' => MENU_LOCAL_TASK,
     'weight' => 250,
   ];
+  $items['admin/config/tpps/submission/purge/%'] = [
+    'title' => 'Purge Submission',
+    'description' => 'Purge TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_purge_form', 5],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submission_purge.inc',
+    'type' => MENU_CALLBACK,
+  ];
 }
 
 /**
@@ -1953,6 +1963,7 @@ function tpps_submission_overview_page() {
       l(t('Manual Export'), 'admin/config/tpps/submission/manual_export'),
       l(t('Compare'), 'admin/config/tpps/submission/compare'),
       l(t('View'), 'admin/config/tpps/submission/view'),
+      l(t('Purge'), 'admin/config/tpps/submission/purge'),
     ],
   ]);
 }
