@@ -53,6 +53,8 @@ function tpps_submission_view_select_form_submit(array $form, array &$form_state
   drupal_goto('admin/config/tpps/submission/view/' . $accession);
 }
 
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
 /**
  * Menu callback. Single submission view page.
  */
@@ -69,10 +71,24 @@ function tpps_submission_view_form(array $form, array $form_state) {
     drupal_goto('admin/config/tpps/submission/view');
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $form['tpps_submission_accession_1'] = [
+    '#type' => 'hidden',
+    '#value' => $accession,
+  ];
+  $form['tpps_submission_accession_2'] = [
+    '#type' => 'select',
+    '#title' => t('Accession'),
+    '#options' => tpps_submission_get_accession_list(),
+  ];
   $form['header_back'] = [
     '#type' => 'submit',
     '#value' => t('Back'),
     '#submit' => ['tpps_submission_view_select_form_reset'],
+  ];
+  $form['action_compare'] = [
+    '#type' => 'submit',
+    '#value' => t('Compare'),
+    '#submit' => ['tpps_submission_view_form_submit'],
   ];
   $parsed = tpps_array_dump($state);
   foreach ($parsed as $key => $item) {
@@ -91,4 +107,16 @@ function tpps_submission_view_form(array $form, array $form_state) {
     '#submit' => ['tpps_submission_view_select_form_reset'],
   ];
   return $form;
+}
+
+/**
+ * Form submitter for 'tpps_form_page_1_settings_form' form.
+ */
+function tpps_submission_view_form_submit(array $form, array &$form_state) {
+  $accession_1 = ($form_state['values']['tpps_submission_accession_1'] ?? '');
+  $accession_2 = ($form_state['values']['tpps_submission_accession_2'] ?? '');
+  drupal_goto(
+    'admin/config/tpps/submission/compare/'
+    . $accession_1 . '/' . $accession_2
+  );
 }

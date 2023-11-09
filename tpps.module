@@ -1882,6 +1882,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file' => 'admin/submission_manual_export.inc',
     'type' => MENU_LOCAL_TASK,
   ];
+  // Compare
   $items['admin/config/tpps/submission/compare'] = [
     'title' => 'Select to compare',
     'description' => 'Select two TPPS Submissions for comarison',
@@ -1894,19 +1895,20 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'weight' => 100,
   ];
   $items['admin/config/tpps/submission/compare/%/%'] = [
-    'title' => 'Compare',
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [4, 5, 6],
     'description' => 'Compare two TPPS Submissions',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_compare_form'],
+    'page arguments' => ['tpps_submission_compare_form', 5, 6],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_compare.inc',
     'type' => MENU_CALLBACK,
-    'weight' => 100,
   ];
+  // View.
   $items['admin/config/tpps/submission/view'] = [
     'title' => 'View',
-    'description' => 'View TPPS Submission',
+    'description' => 'View Submissions',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_view_select_form'],
     'access arguments' => ['administer tpps module'],
@@ -1916,7 +1918,8 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'weight' => 200,
   ];
   $items['admin/config/tpps/submission/view/%'] = [
-    'title' => 'Single Submission View',
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [4, 5],
     'description' => 'View TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_view_form'],
@@ -1926,7 +1929,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'type' => MENU_CALLBACK,
   ];
   $items['admin/config/tpps/submission/purge'] = [
-    'title' => 'Purge',
+    'title' => 'Purge Submission',
     'description' => 'Purge TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_purge_form'],
@@ -1954,3 +1957,25 @@ function tpps_submission_overview_page() {
   ]);
 }
 
+/**
+ * Dynamyc menu item titles for TPPS Submisssion pages.
+ *
+ * @param string $op
+ *   Operation.
+ * @param string $accession
+ *   Study Accession.
+ * @param string $extra
+ *   Extra data.
+ *
+ * @return string
+ *   Returns menu item title.
+ */
+function tpps_submission_title($op, $accession, $extra = '') {
+  return t('@op Submission @accession @extra',
+    [
+      '@op' => ucfirst($op),
+      '@accession' => $accession,
+      '@extra' => ($extra ? 'with ' . $extra : ''),
+    ]
+  );
+}
