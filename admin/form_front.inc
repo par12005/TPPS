@@ -26,10 +26,16 @@ function tpps_form_front_settings_form(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_front_show_others_studies', TRUE),
     '#description' => t('Default is <strong>unchecked</strong>.'),
   ];
-  $form['tpps_front_show_pending_status'] = [
+  $form['tpps_front_show_pending_status_mine'] = [
     '#type' => 'checkbox',
-    '#title' => t('Show "Pending Approval" studies in the list of accessions'),
-    '#default_value' => variable_get('tpps_front_show_pending_status', FALSE),
+    '#title' => t("Show mine studies in 'Pending Approval' status in the list of accessions"),
+    '#default_value' => variable_get('tpps_front_show_pending_status_mine', FALSE),
+    '#description' => t('Default is <strong>unchecked</strong>.'),
+  ];
+  $form['tpps_front_show_pending_status_others'] = [
+    '#type' => 'checkbox',
+    '#title' => t("Show other user's studies in 'Pending Approval' status in the list of accessions"),
+    '#default_value' => variable_get('tpps_front_show_pending_status_others', FALSE),
     '#description' => t('Default is <strong>unchecked</strong>.'),
   ];
   $form['#submit'][] = 'tpps_form_front_settings_form_submit';
@@ -44,8 +50,10 @@ function tpps_form_front_settings_form_submit(array $form, array &$form_state) {
   if (
     ($form_state['values']['tpps_front_cache_accession_list'] ?? NULL)
       != variable_get('tpps_front_cache_accession_list', TRUE)
-    || ($form_state['values']['tpps_front_show_pending_status'] ?? NULL)
-      != variable_get('tpps_front_show_pending_status', FALSE)
+    || ($form_state['values']['tpps_front_show_pending_status_mine'] ?? NULL)
+      != variable_get('tpps_front_show_pending_status_mine', FALSE)
+    || ($form_state['values']['tpps_front_show_pending_status_others'] ?? NULL)
+      != variable_get('tpps_front_show_pending_status_others', FALSE)
     || ($form_state['values']['tpps_front_show_others_studies'] ?? NULL)
       != variable_get('tpps_front_show_others_studies', TRUE)
   ) {

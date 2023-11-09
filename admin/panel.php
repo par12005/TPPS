@@ -34,7 +34,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   else {
     tpps_manage_submission_form($form, $form_state, $accession);
   }
-  tpps_add_css_js($form);
+  tpps_add_css_js('main', $form);
   return $form;
 }
 
@@ -45,10 +45,10 @@ function tpps_manage_generate_all_materialized_views(array $form, array &$form_s
   global $user;
 
   $form = $form ?? [];
-  tpps_add_css_js($form);
+  tpps_add_css_js('main', $form);
   module_load_include('php', 'tpps', 'forms/submit/submit_all');
 
-  $includes = array();
+  $includes = [];
   $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
   $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
   $args = array();

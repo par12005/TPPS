@@ -6,17 +6,6 @@
  */
 
 /**
- * Gets domain name.
- *
- * @return string
- *   Returns domain name.
- */
-function tpps_get_hostname() {
-  global $base_url;
-  return explode('://', $base_url)[1];
-}
-
-/**
  * Adds buttons Back/Save/Next to the forms.
  *
  * The same buttons will be added above and below main form.
@@ -238,18 +227,6 @@ function tpps_form_navigation_bar(array &$form, array $form_state) {
     '#markup' => '<div class="navigation-bar">' . $markup . '</div>',
     '#weight' => -1000,
   ];
-}
-
-/**
- * Dumps variable using dpm to browser.
- *
- * @param mixed $dump
- *   Variable which must be dumped.
- * @param string $message
- *   Optional helper message.
- */
-function dpv($dump, $message = '') {
-  dpm(print_r($dump, 1), $message ?? NULL);
 }
 
 /**
