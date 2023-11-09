@@ -240,9 +240,8 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     else {
       tpps_create_submission($state, $user->uid);
       // Clear cached list of studies to have new items at 'frontpage'.
-      $cache_bin = TPPS_CACHE_BIN ?? 'cache';
       // @TODO Minor. Clear only accession list.
-      cache_clear_all('*', $cache_bin, TRUE);
+      cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
       // Recreate Submission.
       drupal_form_submit('tpps_main', $state);
       // This code will not be executed because drupal_form_submit() will

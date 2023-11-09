@@ -1883,6 +1883,17 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'type' => MENU_LOCAL_TASK,
   ];
   $items['admin/config/tpps/submission/compare'] = [
+    'title' => 'Select to compare',
+    'description' => 'Select two TPPS Submissions for comarison',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_compare_select_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submission_compare.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 100,
+  ];
+  $items['admin/config/tpps/submission/compare/%/%'] = [
     'title' => 'Compare',
     'description' => 'Compare two TPPS Submissions',
     'page callback' => 'drupal_get_form',
@@ -1890,14 +1901,14 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_compare.inc',
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_CALLBACK,
     'weight' => 100,
   ];
   $items['admin/config/tpps/submission/view'] = [
     'title' => 'View',
     'description' => 'View TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_view_form'],
+    'page arguments' => ['tpps_submission_view_select_form'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_view.inc',
@@ -1905,14 +1916,25 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'weight' => 200,
   ];
   $items['admin/config/tpps/submission/view/%'] = [
-    'title' => 'View Submission',
+    'title' => 'Single Submission View',
     'description' => 'View TPPS Submission',
-    'page callback' => 'tpps_submission_view_page',
-    'page arguments' => [5],
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_view_form'],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_view.inc',
     'type' => MENU_CALLBACK,
+  ];
+  $items['admin/config/tpps/submission/purge'] = [
+    'title' => 'Purge',
+    'description' => 'Purge TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_purge_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submission_purge.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 250,
   ];
 }
 

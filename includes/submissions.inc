@@ -295,12 +295,13 @@ function tpps_submission_purge($accession, $force = FALSE) {
     variable_get('tpps_submission_export_show_file_search_report', FALSE)
   );
   foreach ($fid_list as $fid) {
-    $file = file_load($fid);
-    // Remove file usage record (not file itself).
-    file_usage_delete($file, 'tpps', 'tpps_project', substr($accession, 4), 1);
-    if ($force) {
-      // Remove file from disk.
-      file_delete($file);
+    if ($file = file_load($fid)) {
+      // Remove file usage record (not file itself).
+      file_usage_delete($file, 'tpps', 'tpps_project', substr($accession, 4), 1);
+      if ($force) {
+        // Remove file from disk.
+        file_delete($file);
+      }
     }
   }
   // Remove submission state from DB.

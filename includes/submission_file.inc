@@ -94,6 +94,7 @@ function tpps_submission_file_get_id_list(array $state, $show_report = FALSE) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show Report.
   if ($show_report) {
+    drupal_set_message(t("Submisssion's Files detection report"));
     foreach ($report as $method => $list) {
       $count = count($list);
       drupal_set_message(t('Method "@method": @status. @list',
