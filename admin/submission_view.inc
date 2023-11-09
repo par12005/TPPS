@@ -77,6 +77,10 @@ function tpps_submission_view_form(array $form, array $form_state) {
     '#type' => 'hidden',
     '#value' => $accession,
   ];
+  $form['tpps_submission_current_accession'] = [
+    '#markup' => '<h3>' . t('Current Accession: @accession',
+    ['@accession' => $accession]) . '</h3>',
+  ];
   $form['header_back'] = [
     '#type' => 'submit',
     '#value' => t('Back'),
@@ -89,7 +93,7 @@ function tpps_submission_view_form(array $form, array $form_state) {
   ];
   $form['tpps_submission_accession_2'] = [
     '#type' => 'select',
-    '#title' => t('Accession'),
+    '#title' => t('Accession to compare with'),
     '#options' => tpps_submission_get_accession_list(),
   ];
   $form['action_compare'] = [

@@ -1884,8 +1884,8 @@ function tpps_menu_add_submission_pages(array &$items = []) {
   ];
   // Compare
   $items['admin/config/tpps/submission/compare'] = [
-    'title' => 'Select to compare',
-    'description' => 'Select two TPPS Submissions for comarison',
+    'title' => 'Compare',
+    'description' => 'Select TPPS Submissions to compare',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_compare_form'],
     'access arguments' => ['administer tpps module'],

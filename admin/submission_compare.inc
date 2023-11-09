@@ -161,6 +161,19 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
     ));
     return $form;
   }
+  $form['warning'] = [
+    '#markup' => t('<h3>WARNING: Shown only items which are different.</h3>')
+    . theme('item_list', [
+      'items' => [
+        l(t('View @accession', ['@accession' => $accession_1]),
+          'admin/config/tpps/submission/view/' . $accession_1
+        ),
+        l(t('View @accession', ['@accession' => $accession_2]),
+        'admin/config/tpps/submission/view/' . $accession_2
+        ),
+      ]
+    ]),
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show comparison report.
   $parsed_1 = tpps_array_dump($result_1, $sticky = FALSE);
@@ -188,15 +201,18 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
  *   Keys are: 'title', 'data' and 'count'.
  */
 function tpps_submission_compare_show_diff(array &$form, array &$parsed_1, array &$parsed_2) {
-  $accession_1 = ($form['tpps_submission_accession_1']['#value'] ?? '');
-  $accession_2 = ($form['tpps_submission_accession_2']['#value'] ?? '');
-  if (empty($parsed_1) || empty($accession_1) || empty($accession_2)) {
+  if (
+    (empty($parsed_1) && empty($parsed_2))
+    || empty($accession_1 = ($form['tpps_submission_accession_1']['#value'] ?? ''))
+    || empty($accession_2 = ($form['tpps_submission_accession_2']['#value'] ?? ''))
+  ) {
     return;
   }
-  foreach (array_keys($parsed_1) as $key) {
-    $title_1 = $accession_1 . ($parsed_1[$key]['count']
+  $key_list = !empty($parsed_1) ? array_keys($parsed_1) : array_keys($parsed_2);
+  foreach ($key_list as $key) {
+    $title_1 = $accession_1 . (($parsed_1[$key]['count'] ?? NULL)
       ? ' (' . $parsed_1[$key]['count'] . ')' : '');
-    $title_2 = $accession_2 . ($parsed_2[$key]['count']
+    $title_2 = $accession_2 . (($parsed_2[$key]['count'] ?? NULL)
       ? ' (' . $parsed_2[$key]['count'] . ')' : '');
     $fieldset_title = ($parsed_1[$key]['title'] ?? $key)
          . ' [' . ($parsed_1[$key]['count'] ?? 0)
@@ -222,10 +238,13 @@ function tpps_submission_compare_show_diff(array &$form, array &$parsed_1, array
               ],
             ],
           ],
-        ])
-      ]
+        ]),
+      ],
     ];
     unset($parsed_2[$key]);
   }
-  tpps_submission_compare_show_diff($form, $parsed_2, $parsed_1);
+  // Do not change $parsed_1 array to not break the loop but for now
+  // it was completely processed.
+  $parsed_1 = [];
+  tpps_submission_compare_show_diff($form, $parsed_1, $parsed_2);
 }
