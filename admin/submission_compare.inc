@@ -131,6 +131,15 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
     );
   }
 
+  $form = [];
+  $form['tpps_submission_accession_1'] = [
+    '#type' => 'hidden',
+    '#value' => $accession_1,
+  ];
+  $form['tpps_submission_accession_2'] = [
+    '#type' => 'hidden',
+    '#value' => $accession_2,
+  ];
   module_load_include('inc', 'tpps', 'includes/submission');
   $result_1 = array_diff_assoc_recursive(
     tpps_submission_get_state($accession_1),
@@ -140,42 +149,83 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
     tpps_submission_get_state($accession_2),
     tpps_submission_get_state($accession_1)
   );
-  // @TODO Show in 2 columns.
-  //dpm(print_r($result_1, 1), "$accession_1 vs $accession_2");
-  //dpm(print_r($result_2, 1), "$accession_2 vs $accession_1");
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $function = 'var_export';
-  // Show report.
-  foreach (array_keys($result_1) as $key) {
-    $rows[] = [
-      [
-        'data' => $key,
-        'style' => 'vertical-align:top;font-weight:bold;'
-      ],
-      [
-        'data' => '<pre>' . call_user_func($function, $result_1[$key], 1) . '</pre>',
-        'style' => 'vertical-align:top;'
-      ],
-      [
-        'data' => '<pre>' . call_user_func($function, ($result_2[$key] ?? NULL), 1) . '</pre>',
-        'style' => 'vertical-align:top;'
-      ],
-    ];
-    unset($result_2[$key]);
-  }
-  foreach ($result_2 as $key => $value) {
-    $rows[] = [
-      $key, '', '<pre>' . call_user_func($function, $value, 1) . '</pre>',
-    ];
-    unset($result_2[$key]);
-  }
-  if (!empty($rows)) {
-    $header = ['Key', $accession_1, $accession_2];
-    drupal_set_message(theme('table', ['header' => $header, 'rows' => $rows]));
-  }
-  else {
-    drupal_set_message(t('Submission @accession_1 and @accession_2 are equal.',
+
+  $form['header_back'] = [
+    '#type' => 'submit',
+    '#value' => t('Back'),
+    '#submit' => ['tpps_submission_compare_form_reset'],
+  ];
+  if (empty($result_1) && empty($result_2)) {
+    drupal_set_message(t('Submissions "@accession_1" and "@accession_2" are equal.',
       ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
     ));
+    return $form;
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Show comparison report.
+  $parsed_1 = tpps_array_dump($result_1, $sticky = FALSE);
+  $parsed_2 = tpps_array_dump($result_2, $sticky = FALSE);
+  // Process items only in $result_2.
+  tpps_submission_compare_show_diff($form, $parsed_1, $parsed_2);
+  $form['footer_back'] = [
+    '#type' => 'submit',
+    '#value' => t('Back'),
+    '#submit' => ['tpps_submission_compare_form_reset'],
+  ];
+  return $form;
+}
+
+/**
+ * Shows comparison report in 2 columns.
+ *
+ * @param array $form
+ *   Drupal Form API Array.
+ * @param array $parsed_1
+ *   Prepared array. See tpps_array_dump().
+ *   Keys are: 'title', 'data' and 'count'.
+ * @param array $parsed_2
+ *   Prepared array. See tpps_array_dump().
+ *   Keys are: 'title', 'data' and 'count'.
+ */
+function tpps_submission_compare_show_diff(array &$form, array &$parsed_1, array &$parsed_2) {
+  $accession_1 = ($form['tpps_submission_accession_1']['#value'] ?? '');
+  $accession_2 = ($form['tpps_submission_accession_2']['#value'] ?? '');
+  if (empty($parsed_1) || empty($accession_1) || empty($accession_2)) {
+    return;
+  }
+  foreach (array_keys($parsed_1) as $key) {
+    $title_1 = $accession_1 . ($parsed_1[$key]['count']
+      ? ' (' . $parsed_1[$key]['count'] . ')' : '');
+    $title_2 = $accession_2 . ($parsed_2[$key]['count']
+      ? ' (' . $parsed_2[$key]['count'] . ')' : '');
+    $fieldset_title = ($parsed_1[$key]['title'] ?? $key)
+         . ' [' . ($parsed_1[$key]['count'] ?? 0)
+         . ' / ' . ($parsed_2[$key]['count'] ?? 0) . ']';
+    $form[$key . '_container'] = [
+      '#type' => 'fieldset',
+      '#title' => $fieldset_title,
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      // Show 2 columns.
+      $key . '_data' => [
+        '#markup' => theme('table', [
+          'header' => [$title_1, $title_2],
+          'rows' => [
+            [
+              [
+                'data' => ($parsed_1[$key]['data'] ?? NULL),
+                'style' => 'width: 50%; vertical-align: top;',
+              ],
+              [
+                'data' => ($parsed_2[$key]['data'] ?? NULL),
+                'style' => 'width: 50%; vertical-align: top;',
+              ],
+            ],
+          ],
+        ])
+      ]
+    ];
+    unset($parsed_2[$key]);
+  }
+  tpps_submission_compare_show_diff($form, $parsed_2, $parsed_1);
 }

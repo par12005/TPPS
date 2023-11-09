@@ -75,12 +75,14 @@ function tpps_string_format_indent($string) {
  *
  * @param array $array
  *   Array to be dumped.
+ * @param bool $sticky
+ *   Should table has sticky header or not.
  *
  * @return array
  *   Returns array with keys:
  *    'plain_items' and names of sub-array items.
  */
-function tpps_array_dump(array $array) {
+function tpps_array_dump(array $array, $sticky = TRUE) {
   $output = [];
   // Get list of sub-arrays ($part list)
   foreach (array_keys($array) as $key) {
@@ -94,26 +96,26 @@ function tpps_array_dump(array $array) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Plain Items.;
   if (!empty($plain ?? NULL)) {
-    $header = ['#', t('Key'), t('Value')];
+    ksort($plain);
     foreach ($plain as $line => $key) {
       $plain_rows[] = [
         [
           'data' => $line + 1,
-          'style' => 'padding: 0 10px; font-weight: bold;'
+          'style' => 'padding: 0 10px; font-weight: bold;',
         ],
         [
           'data' => check_plain($key),
-          'style' => 'padding: 0 10px; font-weight: bold;'
+          'style' => 'padding: 0 10px; font-weight: bold;',
         ],
         [
           'data' => check_plain(var_export($array[$key], 1)),
-          'style' => 'padding: 0 10px;',
+          'style' => 'padding: 0 10px; width:100%;',
         ],
       ];
     }
     $output['plain_items'] = [
       'title' => t('Plain Items'),
-      'data' => theme('table', ['header' => $header, 'rows' => $plain_rows]),
+      'data' => theme('table', ['rows' => $plain_rows, 'sticky' => $sticky]),
       'count' => count($plain),
     ];
   }
@@ -122,10 +124,6 @@ function tpps_array_dump(array $array) {
   // Sub-arrays.
   if (!empty($part_list ?? NULL)) {
     ksort($part_list);
-    $header = [
-      ['data' => '#', 'style' => 'font-weight: bold;'],
-      ['data' => t('Data'), 'style' => 'width:100%;'],
-    ];
     foreach ($part_list as $key => $count) {
       $rows = [];
       $state_part = $array[$key] ?? [];
@@ -139,13 +137,13 @@ function tpps_array_dump(array $array) {
             ],
             [
               'data' => tpps_string_format_indent($content),
-              'style' => 'padding: 0 10px;',
+              'style' => 'padding: 0 10px; width:100%;',
             ],
           ];
         }
         $output[$key] = [
           'title' => $key,
-          'data' => theme('table', ['header' => $header, 'rows' => $rows]),
+          'data' => theme('table', ['rows' => $rows, 'sticky' => $sticky]),
           'count' => count($array[$key]),
         ];
       }

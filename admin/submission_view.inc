@@ -6,8 +6,6 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/common');
-//module_load_include('inc', 'tpps', 'includes/submissions');
-//module_load_include('inc', 'tpps', 'includes/submission_file');
 
 /**
  * Menu callback. TPPS Study View Form.
