@@ -65,9 +65,11 @@ function tpps_submission_purge_form_submit(array $form, array &$form_state) {
     $accession,
     !($form['values']['tpps_submission_leave_files'] ?? FALSE)
   );
-  drupal_set_message(t("Submission @accession and it's files was removed",
-    ['@accession' => $accession]
-  ));
+  drupal_set_message(
+    t("Submission @accession and it's files was removed",
+      ['@accession' => $accession]
+    )
+  );
   cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
   drupal_goto('admin/config/tpps/submission/purge');
 }

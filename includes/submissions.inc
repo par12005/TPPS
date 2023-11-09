@@ -290,6 +290,12 @@ function tpps_submission_delete_callback($accession) {
  */
 function tpps_submission_purge($accession, $force = FALSE) {
   $state = tpps_submission_get_state($accession);
+  if (empty($state)) {
+    // Submission not exists. Nothing to do.
+    // @TODO Minor. Query DB table 'file_usage' to find if there is orphan
+    // files related to this non-existing submission.
+    return;
+  }
   // Remove usage of files first.
   $fid_list = tpps_submission_file_get_id_list($state,
     variable_get('tpps_submission_export_show_file_search_report', FALSE)

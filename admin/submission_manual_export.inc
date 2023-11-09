@@ -84,7 +84,6 @@ drupal_set_message(
   . '</textarea></div>'
   . '<script type="text/javascript" src="https://tgwebdev.cam.uchc.edu/sites/all/modules/TGDR/js/tpps_submission_export.js?\$cache_reset"></script>'
 );
-// dpm(var_export(tpps_submission_get_state(\$accession), 1));
 EOT;
     $live_url = 'https://treegenesdb.org/devel/php';
     $dev_url = 'https://tgwebdev.cam.uchc.edu/devel/php';

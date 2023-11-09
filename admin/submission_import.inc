@@ -125,7 +125,7 @@ function tpps_submission_import_review_dump(array $form, array &$form_state) {
     // Note: $state is a string.
     // Show with line numbers.
     $state_array = preg_split("/\r\n|\n|\r/", $state);
-    dpm(print_r($state_array, 1));
+    drupal_set_message('<pre>' . print_r($state_array, 1) . '</pre>');
   }
   $form_state['rebuild'] = 1;
 }
@@ -154,10 +154,9 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     catch (Exception $e) {
       drupal_set_message($e->errorMessage());
-      dpm(print_r($state, 1));
+      drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
       return;
     }
-
 
     // Note: $state['saved_values'] is required for normal form submission.
     // Fix Warning: end() expects parameter 1 to be array, null given in
@@ -201,8 +200,8 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
           ['@old_fid' => $fid, '@new_fid' => $new_file->fid]
         ));
         if ($dry_run) {
-          dpm($file, $fid);
-          dpm(print_r($new_file, 1), 'new file');
+          drupal_set_message($fid . ': <pre>' . print_r($file, 1) . '</pre>');
+          drupal_set_message('New file: <pre>' . print_r($new_file, 1) . '</pre>');
         }
       }
     }
@@ -221,21 +220,23 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     $old_accession = $state['saved_values']['frontpage']['accession'];
     $state = tpps_array_replace($state, $old_accession, $new_accession);
     // Store original accession.
-    $state['tpps_submission_import_original_accession'] = $old_accession;
+    $state['tpps_submission_import']['original_accession'] = $old_accession;
+    $state['tpps_submission_import']['imported'] = REQUEST_TIME;
+    $state['tpps_submission_import']['imported_date'] = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i T');
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // From tpps_init_project().
     $state['saved_values']['dbxref_id']
       = $state['dbxref_id']
-      = $state['values']['dbxref_id']
-      = tpps_init_project_get_dbxref_id($new_accession);
+        = $state['values']['dbxref_id']
+          = tpps_init_project_get_dbxref_id($new_accession);
 
     $state['values']['status'] = 'Incomplete';
     $state['values'] = $state['saved_values'];
     if ($dry_run) {
       // Show with line numbers.
-      $state_array = preg_split("/\r\n|\n|\r/", $state);
-      dpm(print_r($state_array, 1));
+      $state_array = preg_split("/\r\n|\n|\r/", var_export($state, 1));
+      drupal_set_message('<pre>' . print_r($state_array, 1) . '</pre>');
     }
     else {
       tpps_create_submission($state, $user->uid);
@@ -255,15 +256,17 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
   }
 
-  // Show useful links.
-  drupal_set_message(theme('item_list', [
-    'items' => [
-      l('tppsc', 'tppsc'),
-      l('tpps-admin-panel/' . $new_accession, 'tpps-admin-panel/' . $new_accession),
-      l('tpps/details/' . $new_accession, 'tpps/details/' . $new_accession),
-    ]
-  ]));
-
+  if (!$dry_run) {
+    $url_list = [
+      'tppsc', "tpps-admin-panel/$new_accession", "tpps/details/$new_accession",
+    ];
+    foreach ($url_list as $url) {
+      $items[] = l($url, $url);
+    }
+    drupal_set_message(
+      t('Useful links:') . '<br />' . theme('item_list', ['items' => $items])
+    );
+  }
   $form_state['rebuild'] = 1;
 }
 
