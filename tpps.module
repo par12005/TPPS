@@ -1929,7 +1929,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'type' => MENU_CALLBACK,
   ];
   $items['admin/config/tpps/submission/purge'] = [
-    'title' => 'Purge Submission',
+    'title' => 'Purge',
     'description' => 'Purge TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_purge_form'],
@@ -1940,7 +1940,8 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'weight' => 250,
   ];
   $items['admin/config/tpps/submission/purge/%'] = [
-    'title' => 'Purge Submission',
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [4, 5, 6],
     'description' => 'Purge TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_purge_form', 5],
