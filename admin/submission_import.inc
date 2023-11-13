@@ -244,7 +244,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       // @TODO Minor. Clear only accession list.
       cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
       // Recreate Submission.
-      drupal_form_submit('tpps_main', $state);
+      drupal_form_submit(($state['build_info']['form_id'] ?? 'tpps_main'), $state);
       // This code will not be executed because drupal_form_submit() will
       // redirect in case of success.
       if (form_get_errors()) {
