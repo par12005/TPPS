@@ -1740,6 +1740,17 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file' => 'admin/synonym.inc',
     'type' => MENU_LOCAL_TASK,
   ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submit All.
+  $items['admin/config/tpps/submit-all'] = [
+    'title' => 'Submit All',
+    'description' => 'Tripal Job Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submit_all_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submit_all.inc',
+  ];
 }
 
 /**

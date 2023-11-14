@@ -43,6 +43,8 @@ function tpps_install() {
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
   // Study Import.
   variable_set('tpps_submission_import_file_replace', TRUE);
+  // Submit All.
+  variable_set('tpps_submit_all_dump_report_to_file', FALSE);
   // [/VS]
   tpps_alter_tpps_submissions();
   tpps_alter_tpps_submission_dbxref();
@@ -340,6 +342,8 @@ function tpps_uninstall() {
   variable_del('tpps_submission_export_show_file_search_report');
   // Study Import.
   variable_del('tpps_submission_import_file_replace');
+  // Submit All.
+  variable_del('tpps_submit_all_dump_report_to_file');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.

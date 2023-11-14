@@ -5385,9 +5385,11 @@ function tpps_get_code_parts($part) {
  *      TRIPAL_INFO: (default) Informational messages.
  *      TRIPAL_DEBUG: Debug-level messages.
  */
-function tpps_log($message, $variables = array(), $severity = TRIPAL_INFO) {
+function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
+  // Writes to file and will be shown at site.
   tpps_job_logger_write($message, $variables);
+  // Command line messages.
   $tpps_job->logMessage($message, $variables, $severity);
 }
 
