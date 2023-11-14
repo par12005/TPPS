@@ -805,11 +805,10 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
       case 'approximate':
         $options['exact'] = NULL;
         $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
-        $condition = (
-          !array_key_exists(tpps_get_tag_id('No Location Information'),
-          tpps_submission_get_tags($form_state['accession']))
-        );
-        if ($condition) {
+        if (
+          !empty($tag_id = tpps_get_tag_id('No Location Information'))
+          && !array_key_exists($tag_id, tpps_submission_get_tags($form_state['accession']))
+        ) {
           tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
         }
         break;
@@ -989,7 +988,7 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
     if (empty($species_codes[$i])) {
       // Not sure if it's a blocker for phenotype and environement.
       // Seems it's used for 'genotype' only.
-      echo t("[WARNING] Secies code for i = @count is empty.\n", ['@count' => $i]);
+      echo t("[WARNING] Species code for i = @count is empty.\n", ['@count' => $i]);
     }
     echo t("[DEBUG] Processing genotype data for species code '@code' and i = @count\n",
       ['@code' => $species_codes[$i], '@count' => $i]);
