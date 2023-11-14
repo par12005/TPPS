@@ -356,7 +356,10 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
         $phenotype_names = array();
         if ($phenotype['format'] == 0) {
-          $phenotype_file_name_cols = $groups['Phenotype Data']['0'];
+          // If there is only one column with data then it will be a string
+          // but we need an array.
+          $phenotype_file_name_cols = is_array($groups['Phenotype Data']['0'])
+            ? $groups['Phenotype Data']['0'] : [$groups['Phenotype Data']['0']];
           $headers = tpps_file_headers($phenotype_file, !empty($phenotype['file-no-header']));
           foreach ($phenotype_file_name_cols as $column_index) {
             $phenotype_names[] = $headers[$column_index];
