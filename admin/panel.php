@@ -777,6 +777,10 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
     '#type' => 'submit',
     '#value' => t('Save phenotype changes'),
   ];
+  $form['phenotypes_edit']['phenotype_clear'] = [
+    '#type' => 'submit',
+    '#value' => t('Clear phenotype changes'),
+  ];
   // [/VS] #8669rmrw5.
 }
 
@@ -1169,12 +1173,7 @@ function tpps_admin_panel_validate($form, &$form_state) {
     // [VS]
     // Custom Units are not allowed and must be manually reviewed/added
     // by admin before study could be processed.
-    $condition = (in_array(
-      $form_state['triggering_element']['#value'],
-      // Allow to edit and approve (without saving changes).
-      ['Save phenotype changes', 'Approve']
-    ));
-    if ($condition) {
+    if ($form_state['triggering_element']['#value'] == 'Save phenotype changes') {
       foreach ($form_state['values']['phenotypes_edit'] as $key => $phenotype_meta) {
         if (!is_array($phenotype_meta)) {
           // There is a button [phenotype_update] => Save phenotype changes
@@ -1525,24 +1524,44 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_goto('<front>');
       break;
 
+    case 'Clear phenotype changes':
+      drupal_set_message('Cleared phenotype changes.');
+      unset($state['phenotypes_edit']);
+      unset($form_state['values']['phenotypes_edit']);
+      unset($form_state['values']['phenotype_update']);
+      tpps_update_submission($state);
+      break;
+
     case 'Save phenotype changes':
+      drupal_set_message('Saved phenotype changes.');
+      if (!empty($form_state['values']['phenotypes_edit'])) {
+        $state['phenotypes_edit'] = $form_state['values']['phenotypes_edit'];
+        // Remove helper button.
+        unset($form_state['values']['phenotype_update']);
+        unset($form_state['values']['phenotypes_edit']);
+      }
+      tpps_update_submission($state);
+      break;
+
     case 'Approve':
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
       $uid = $user->uid;
       $state['submitting_uid'] = $user->uid;
 
-      if ($form_state['triggering_element']['#value'] == 'Approve') {
-        $params['subject'] = "$type_label Submission Approved: "
-          . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-        $params['accession'] = $state['accession'];
-        drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
-        drupal_mail($type, 'user_approved', $to, user_preferred_language(user_load_by_name($to)), $params, $from, TRUE);
-
-      }
-      else {
-        drupal_set_message(t('Submission saved.'), 'status');
-      }
+      $params['subject'] = "$type_label Submission Approved: "
+        . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+      $params['accession'] = $state['accession'];
+      drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
+      drupal_mail(
+        $type,
+        'user_approved',
+        $to,
+        user_preferred_language(user_load_by_name($to)),
+        $params,
+        $from,
+        TRUE
+      );
       $state['revised_files'] = $state['revised_files'] ?? array();
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
@@ -1550,11 +1569,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
             $state['revised_files'][$fid] = $form_state['values']["edit_file_{$fid}_file"];
           }
         }
-      }
-      if (!empty($form_state['values']['phenotypes_edit'])) {
-        // Remove helper button.
-        unset($form_state['values']['phenotype_update']);
-        $state['phenotypes_edit'] = $form_state['values']['phenotypes_edit'];
       }
       if (!empty($form_state['values']['study_location'])) {
         $state['saved_values'][TPPS_PAGE_3]['study_location']['type']
@@ -1570,14 +1584,31 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = array($accession);
       if ($state['saved_values']['summarypage']['release']) {
-        $jid = tripal_add_job("$type_label Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+        $jid = tripal_add_job(
+          "$type_label Record Submission - $accession",
+          'tpps', 'tpps_submit_all',
+          $args,
+          $state['submitting_uid'],
+          10,
+          $includes,
+          TRUE
+        );
         $state['job_id'] = $jid;
       }
       else {
         $date = $state['saved_values']['summarypage']['release-date'];
         $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
         if (time() > $time) {
-          $jid = tripal_add_job("$type_label Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+          $jid = tripal_add_job(
+            "$type_label Record Submission - $accession",
+            'tpps',
+            'tpps_submit_all',
+            $args,
+            $state['submitting_uid'],
+            10,
+            $includes,
+            TRUE
+          );
           $state['job_id'] = $jid;
         }
         else {
