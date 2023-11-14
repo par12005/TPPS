@@ -147,8 +147,11 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   if ($status == 'Pending Approval' and preg_match('/P/', $submission_state['saved_values'][TPPS_PAGE_2]['data_type'])) {
     $new_cvterms = array();
+    $page4 = &$submission_state['saved_values'][TPPS_PAGE_4];
     for ($i = 1; $i <= $submission_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-      $phenotype = $submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
+      // @TODO Could we just skip when it's checked?
+      $phenotype = (!empty($page4["organism-$i"]['phenotype-repeat-check']))
+        ? $page4["organism-1"]['phenotype'] : $page4["organism-$i"]['phenotype'];
       for ($j = 1; $j <= $phenotype['phenotypes-meta']['number']; $j++) {
         if ($phenotype['phenotypes-meta'][$j]['structure'] === 'other') {
           $new_cvterms[] = $phenotype['phenotypes-meta'][$j]['struct-other'];
@@ -652,6 +655,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
  */
 function tpps_phenotype_editor(array &$form, array &$form_state, array &$submission) {
   // [VS] #8669rmrw5
+  $page4 = &$submission['saved_values'][TPPS_PAGE_4];
   $form['phenotypes_edit'] = array(
     '#type' => 'fieldset',
     '#title' => t('Admin Phenotype Editor'),
@@ -669,7 +673,9 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
   $unit_list = tpps_unit_get_list('all', ['debug' => FALSE], TRUE);
 
   for ($i = 1; $i <= $submission['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-    $phenotype = $submission['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'];
+    // @TODO Could we just skip when it's checked?
+    $phenotype = (!empty($page4["organism-$i"]['phenotype-repeat-check']))
+      ? $page4["organism-1"]['phenotype'] : $page4["organism-$i"]['phenotype'];
     for ($j = 1; $j <= $phenotype['phenotypes-meta']['number']; $j++) {
       $phenotypes[$j] = $phenotype['phenotypes-meta'][$j];
       // Add units from submission.
