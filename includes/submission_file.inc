@@ -124,7 +124,7 @@ function tpps_submission_file_get_id_list(array $state, $show_report = FALSE) {
  *   0 - temporary. Will be removed by cron in 6h.
  */
 function tpps_submission_file_set_status(array $form_state, $status = FILE_STATUS_PERMANENT) {
-  $fid_list = tpps_submission_file_get_id_list($form_state);
+  $fid_list = tpps_submission_file_get_id_list($form_state, FALSE);
   foreach ($fid_list as $fid) {
     $file = file_load($fid);
     if ($file && $file->status != $status) {

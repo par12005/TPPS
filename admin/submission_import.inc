@@ -26,7 +26,7 @@ function tpps_submission_import_form(array $form, array &$form_state) {
     '#title' => 'Overwrite existing submission',
     '#default_value' => $form_state['input']['tpps_submission_import_overwrite_submission'] ?? FALSE,
   ];
-  $form['tpps_submission_import_files_replace'] = [
+  $form['tpps_submission_import_file_replace'] = [
     '#type' => 'checkbox',
     '#title' => 'Replace existing files',
     '#default_value' => variable_get('tpps_submission_import_file_replace', TRUE),
@@ -292,13 +292,14 @@ function tpps_submission_import_download_file(array $file) {
   curl_close($ch);
 
   // Move file to Drupal.
+  $action = (
+    variable_get('tpps_submission_import_file_replace', TRUE) ?
+    FILE_EXISTS_REPLACE : FILE_EXISTS_RENAME
+  );
   $file = file_save_data(
     $content,
     tpps_submission_import_get_folder($file['uri']) . '/' . $file['filename'],
-    (
-      variable_get('tpps_submission_import_file_replace', TRUE) ?
-      FILE_EXISTS_REPLACE : FILE_EXISTS_RENAME
-    )
+    $action
   );
   return $file;
 }
