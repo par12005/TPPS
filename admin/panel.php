@@ -121,30 +121,25 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
     foreach ($submission_state['file_info'] as $files) {
       foreach ($files as $fid => $file_type) {
-        $file = file_load($fid) ?? NULL;
-
-        $form["edit_file_{$fid}_check"] = array(
-          '#type' => 'checkbox',
-          '#title' => t('I would like to upload a revised version of this file'),
-          '#prefix' => "<div id=\"file_{$fid}_options\">",
-        );
-
-        $form["edit_file_{$fid}_file"] = array(
-          '#type' => 'managed_file',
-          '#title' => 'Upload new file',
-          '#upload_location' => dirname($file->uri),
-          '#upload_validators' => array(
-            'file_validate_extensions' => array(),
-          ),
-          '#states' => array(
-            'visible' => array(
-              ":input[name=\"edit_file_{$fid}_check\"]" => array('checked' => TRUE),
-            ),
-          ),
-        );
-        $form["edit_file_{$fid}_markup"] = array(
-          '#markup' => '</div>',
-        );
+        if (!empty($file = file_load($fid))) {
+          $form["edit_file_{$fid}_check"] = [
+            '#type' => 'checkbox',
+            '#title' => t('I would like to upload a revised version of this file'),
+            '#prefix' => "<div id=\"file_{$fid}_options\">",
+          ];
+          $form["edit_file_{$fid}_file"] = [
+            '#type' => 'managed_file',
+            '#title' => 'Upload new file',
+            '#upload_location' => dirname($file->uri),
+            '#upload_validators' => ['file_validate_extensions' => []],
+            '#states' => [
+              'visible' => [
+                ":input[name=\"edit_file_{$fid}_check\"]" => ['checked' => TRUE],
+              ],
+            ],
+          ];
+          $form["edit_file_{$fid}_markup"] = ['#markup' => '</div>'];
+        }
       }
     }
   }
