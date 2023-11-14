@@ -176,7 +176,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Process files (if any).
     if (empty($state['tpps_submission_export_files'])) {
-      drupal_set_message('Submission has no files.');
+      drupal_set_message('Submission has no files.', 'warning');
     }
     else {
       foreach ($state['tpps_submission_export_files'] as $fid => $file) {
@@ -184,6 +184,13 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
           continue;
         }
         $new_file = tpps_submission_import_download_file($file);
+        if (empty($new_file)) {
+          drupal_set_message(t('File @url is empty.',
+            ['@url' => l($file['url'], $file['url'])]), 'error'
+          );
+          $form['rebuild'] = 1;
+          return;
+        }
         // To avoid errors when page navigation used we need to have
         // temporary stored files until final form submit ('summarypage').
         // @TODO Minor. Think about reusage of function
@@ -207,7 +214,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Accession.
-    if (!empty($form_state['values']['tpps_submission_import_overwrite_submission'])) {
+    if (
+      $dry_run
+      || !empty($form_state['values']['tpps_submission_import_overwrite_submission'])
+    ) {
       // Remove submission and files.
       // We can't use tpps_update_submission() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
@@ -222,7 +232,8 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // Store original accession.
     $state['tpps_submission_import']['original_accession'] = $old_accession;
     $state['tpps_submission_import']['imported'] = REQUEST_TIME;
-    $state['tpps_submission_import']['imported_date'] = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i T');
+    $state['tpps_submission_import']['imported_date']
+      = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i T');
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // From tpps_init_project().
@@ -281,26 +292,17 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
  *   Returns Managed File Object.
  */
 function tpps_submission_import_download_file(array $file) {
-  $ch = curl_init();
-  curl_setopt($ch, CURLOPT_URL, $file['url']);
-  curl_setopt($ch, CURLOPT_VERBOSE, 1);
-  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-  curl_setopt($ch, CURLOPT_AUTOREFERER, FALSE);
-  curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-  curl_setopt($ch, CURLOPT_HEADER, 0);
-  $content = curl_exec($ch);
-  curl_close($ch);
-
+  if (empty($content = file_get_contents($file['url']))) {
+    return NULL;
+  }
   // Move file to Drupal.
+  $path = tpps_submission_import_get_folder($file['uri']) . '/' . $file['filename'];
   $action = (
     variable_get('tpps_submission_import_file_replace', TRUE) ?
+    // Replace = 1, Rename = 0.
     FILE_EXISTS_REPLACE : FILE_EXISTS_RENAME
   );
-  $file = file_save_data(
-    $content,
-    tpps_submission_import_get_folder($file['uri']) . '/' . $file['filename'],
-    $action
-  );
+  $file = file_save_data($content, $path, $action);
   return $file;
 }
 
