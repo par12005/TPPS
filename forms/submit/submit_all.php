@@ -986,7 +986,14 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
   // Submit raw data.
   for ($i = 1; $i <= $organism_number; $i++) {
     tpps_submit_phenotype($form_state, $i, $job);
-    echo "[DEBUG] Processing genotype data for species code $species_codes and i = $i\n";
+    if (empty($species_codes[$i])) {
+      // Not sure if it's a blocker for phenotype and environement.
+      // Seems it's used for 'genotype' only.
+      echo t("[WARNING] Secies code for i = @count is empty.\n", ['@count' => $i]);
+    }
+    echo t("[DEBUG] Processing genotype data for species code '@code' and i = @count\n",
+      ['@code' => $species_codes[$i], '@count' => $i]);
+
     tpps_submit_genotype($form_state, $species_codes, $i, $job);
     tpps_submit_environment($form_state, $i, $job);
   }
