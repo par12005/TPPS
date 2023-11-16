@@ -27,6 +27,7 @@ function tpps_details_list() {
   $query = $query->execute();
   $num_species = $query->fetchObject()->count;
 
+  // @TODO Minor. Replace with l().
   $tpps_link = "<b><a target=\"blank\" href=\"/tpps\">submit your study</a></b>";
   $output .= "This page reflects community submissions associated with published studies. Each submission is associated with a longterm identifier that connects the genotype, phenotype, and/or environmental metrics assessed. These studies represent diversity assessements, association mapping, and landscape genomics. We accept studies with a variety of marker types. We encourage you to $tpps_link to TreeGenes and utilize the provided accession in your publication. We currently have <b>$num_studies</b> studies representing <b>$num_species</b> species.";
   if (module_exists('cartogratree')) {
@@ -56,35 +57,40 @@ function tpps_details_list() {
 function tpps_details($accession = NULL) {
   global $base_url;
   global $user;
-  $output = "";
 
+  // @TODO This should never happen. Remove if possible.
   if (empty($accession)) {
     drupal_goto('tpps/details');
   }
 
-  $output = "<a href=\"$base_url/tpps/details\">Return to TPPS Details</a>$output";
+  $output = l(t('Return to TPPS Details'), $base_url . '/tpps/details');
   $state = tpps_load_submission($accession);
-  // dpm($state);
   if (!empty($state)) {
-
     if (isset($state['study_view_role'])) {
-      global $user;
       // If more than 0, then a view role was set by curation team
       if ($state['study_view_role'] > 0) {
-        // dpm($user->roles);
-        if (!in_array(user_roles($true)[$state['study_view_role']], $user->roles)
+        if (
+          !in_array(user_roles($true)[$state['study_view_role']], $user->roles)
+          // @TODO Minor. Admins must always has access so this check could
+          // be done earlier and avoid extra checks.
           && !in_array('administrator', $user->roles)
         ) {
-          $output .= "<br />";
-          $output .= "This study has been set to be available to only a specific user role<br />";
-          $output .= "If you believe this is an error, please contact us via the contact us page.<br />";
+          $output .= t("<br />This study has been set to be available to only "
+            . "a specific user role. <br />If you believe this is an error, "
+            . "please contact us via the contact us page.<br />");
+          // @TODO Minor. Use drupal_set_message() and redirect to 'tpps/detals' page.
           return $output;
         }
       }
     }
 
     if ($state['status'] != 'Approved') {
-      drupal_set_message(t('This submission is still under construction. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
+      drupal_set_message(
+        t('This submission is still under construction. Some of the information '
+        . 'may be available here, but please keep in mind that it may be '
+        . 'incomplete or subject to change in the near future.'),
+        'warning'
+      );
       if (function_exists('tpps_details_byaccession_page')) {
         $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
         // [VS].
@@ -180,6 +186,8 @@ function tpps_details($accession = NULL) {
  *   HTML for the details tabs.
  */
 function tpps_details_tabs(array &$state) {
+  $page4 = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
+
   $output = '<ul class="nav nav-tabs" role="tablist">
     <li class="nav-item"><a class="nav-link active" role="tab" data-toggle="tab" href="#species">Species</a></li>
     <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#study">Study Details</a></li>
@@ -188,13 +196,13 @@ function tpps_details_tabs(array &$state) {
   $g_exist = FALSE;
   $mass_spectro_exist = FALSE;
   for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
-    if (!empty($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype'])) {
+    if (!empty($page4["organism-$i"]['phenotype'])) {
       $p_exist = TRUE;
     }
-    if (!empty($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])) {
+    if (!empty($page4["organism-$i"]['genotype'])) {
       $g_exist = TRUE;
     }
-    if ($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['iso-check'] == TRUE) {
+    if ($p_exist && !empty($page4["organism-$i"]['phenotype']['iso-check'])) {
       $mass_spectro_exist = TRUE;
     }
   }
@@ -202,11 +210,14 @@ function tpps_details_tabs(array &$state) {
   $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes / Environments</a></li>' : "";
   $output .= $g_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
   $output .= $mass_spectro_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#mass_spectrometry">Mass Spectrometry</a></li>' : "";
+  $output .= '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#submission">Submission</a></li>';
+
   $output .= '</ul><div id="tab-content" class="tab-content">';
 
   $output .= "<div id=\"species\" role=\"tabpanel\" class=\"tab-pane fade in active\"></div>";
   $output .= "<div id=\"study\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
   $output .= "<div id=\"trees\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
+  $output .= "<div id=\"submission\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
 
   $output .= $p_exist ? "<div id=\"phenotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
   $output .= $g_exist ? "<div id=\"genotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
@@ -225,9 +236,14 @@ function tpps_details_tabs(array &$state) {
  *   The type of details we want to print.
  */
 function tpps_details_tab($accession, $type) {
-  $function = "tpps_details_$type";
-  $state = tpps_load_submission($accession);
-  print($function($state));
+  if ($type == 'submission') {
+    print(tpps_submission_overview_page());
+  }
+  else {
+    $function = "tpps_details_$type";
+    $state = tpps_load_submission($accession);
+    print($function($state));
+  }
 }
 
 /**

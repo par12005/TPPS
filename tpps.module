@@ -2009,7 +2009,7 @@ function tpps_menu_add_detials_pages(array &$items = []) {
   // default pager but there is also filter form at page and this probably
   // was the reason why AJAX content reloading was used.
   $items['tpps/details/top'] = [
-    'title' => 'TPPS Details',
+    'title' => 'TPPS Details List Callback',
     'page callback' => 'tpps_details_top_callback',
     'access callback' => 'tpps_access',
     'access arguments' => ['access tpps details'],
@@ -2023,9 +2023,11 @@ function tpps_menu_add_detials_pages(array &$items = []) {
     'access arguments' => ['access tpps details'],
     'type' => MENU_NORMAL_ITEM,
   ];
+  // AJAX-callback for Tabs. See /js/tpps.js function detailsTab().
   $items['tpps/details/%/%'] = [
-    'title' => 'TPPS Details',
+    'title' => 'TPPS Details Tab Callback',
     'page callback' => 'tpps_details_tab',
+    // 1st is accession, 2nd is tab machine name.
     'page arguments' => [2, 3],
     'access callback' => 'tpps_access',
     'access arguments' => ['access tpps details'],
