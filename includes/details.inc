@@ -423,13 +423,6 @@ function tpps_details_top() {
 }
 
 /**
- * Serves as a direct callback to print the contents of tpps_details_top().
- */
-function tpps_details_top_callback() {
-  print(tpps_details_top());
-}
-
-/**
  * Define a search form to search and filter through the TPPS Details page.
  *
  * @param array $form
