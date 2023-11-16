@@ -45,6 +45,8 @@ function tpps_install() {
   variable_set('tpps_submission_import_file_replace', TRUE);
   // Submit All.
   variable_set('tpps_submit_all_dump_report_to_file', FALSE);
+  // Theme Settings.
+  variable_set('tpps_theme_fix_pager', FALSE);
   // [/VS]
   tpps_alter_tpps_submissions();
   tpps_alter_tpps_submission_dbxref();
@@ -344,6 +346,8 @@ function tpps_uninstall() {
   variable_del('tpps_submission_import_file_replace');
   // Submit All.
   variable_del('tpps_submit_all_dump_report_to_file');
+  // Theme Settings.
+  variable_del('tpps_theme_fix_pager');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.
