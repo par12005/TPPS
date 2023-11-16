@@ -1999,15 +1999,18 @@ function tpps_menu_add_detials_pages(array &$items = []) {
   $items = $items ?? [];
   $items['tpps/details'] = [
     'title' => 'TPPS Details',
-    'page callback' => 'tpps_details',
-    'page arguments' => [],
+    'page callback' => 'tpps_details_list',
     'access callback' => 'tpps_access',
     'access arguments' => ['access tpps details'],
     'type' => MENU_NORMAL_ITEM,
   ];
+  // This is actually an AJAX-callback which used to repload pages on page
+  // 'tpps/details'. Seems it's a custom pager and could be replaced with
+  // default pager but there is also filter form at page and this probably
+  // was the reason why AJAX content reloading was used.
   $items['tpps/details/top'] = [
     'title' => 'TPPS Details',
-    'page callback' => 'tpps_details_top',
+    'page callback' => 'tpps_details_top_callback',
     'access callback' => 'tpps_access',
     'access arguments' => ['access tpps details'],
     'type' => MENU_CALLBACK,
@@ -2028,8 +2031,4 @@ function tpps_menu_add_detials_pages(array &$items = []) {
     'access arguments' => ['access tpps details'],
     'type' => MENU_CALLBACK,
   ];
-
-
-
-
 }
