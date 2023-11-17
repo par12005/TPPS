@@ -3,6 +3,8 @@
 /**
  * @file
  * Defines the admin settings form at admin/config/content/tpps.
+ *
+ * @TODO Make each fieldset separate tab.
  */
 
 /**
@@ -123,7 +125,7 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#type' => 'textfield',
     '#title' => t('TPPS Latest Job Status Slack Updates Last Job ID'),
     '#default_value' => variable_get('tpps_latest_job_status_slack_updates_last_job_id', NULL),
-  );  
+  );
 
   if (module_exists('cartogratree') and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers')) {
     $form['tpps_ct_api_key'] = array(
@@ -245,6 +247,24 @@ function tpps_admin_settings(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_report_order_family_not_exist_title'),
     '#description' => t('Used on admin panel page and as page title on report page.'),
   ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Theme Settings.
+  $form['theme_settings'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Theme Settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  ];
+  // Pager fix.
+  $form['theme_settings']['tpps_theme_fix_pager'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Restore original position of "Next" button of pager'),
+    '#default_value' => variable_get('tpps_theme_fix_pager'),
+    '#description' => t("Theme 'Dawn' moves 'Next' button of pager to the "
+      . "very right position (after 'Last' button. <br />When checked "
+      . "original position (before 'Last' button) will be restored."),
+  ];
   // [/VS]
 
   return system_settings_form($form);
@@ -260,7 +280,8 @@ function tpps_admin_settings_validate($form, &$form_state) {
     if (substr($key, -10) == '_files_dir') {
       $location = "public://$value";
       if (!file_prepare_directory($location, FILE_CREATE_DIRECTORY)) {
-        form_set_error("$key", t("Error: path must be valid and current user must have permissions to access that path."));
+        form_set_error("$key", t("Error: path must be valid and current user "
+          . "must have permissions to access that path."));
       }
     }
     elseif ($key == 'tpps_admin_email') {
@@ -272,8 +293,16 @@ function tpps_admin_settings_validate($form, &$form_state) {
       if (!empty($value) and !module_exists('cartogratree')) {
         form_set_error("$key", t("Error: The CartograPlant module is not installed."));
       }
-      elseif (!empty($value) and (!db_table_exists('cartogratree_groups') or !db_table_exists('cartogratree_layers') or !db_table_exists('cartogratree_fields'))) {
-        form_set_error("$key", t("Error: TPPS was unable to find the required CartograPlant tables for environmental layers."));
+      elseif (
+        !empty($value)
+        && (
+          !db_table_exists('cartogratree_groups')
+          or !db_table_exists('cartogratree_layers')
+          or !db_table_exists('cartogratree_fields')
+        )
+      ) {
+        form_set_error("$key", t("Error: TPPS was unable to find the required "
+          . "CartograPlant tables for environmental layers."));
       }
     }
     elseif ($key == 'tpps_zenodo_prefix') {

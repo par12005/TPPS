@@ -1327,10 +1327,10 @@ function tpps_file_remove($fid) {
 /**
  * Adds file usage if necessary.
  *
- * Allows to avoid adding usage multiple times and allows correctly delete file.
+ * Adds file usage only once to allow file correct deletion.
  *
  * @param object $file
- *   File Object.
+ *   File Object. See file_load($fid).
  * @param string $accession
  *   Stury accession (TGDRxxxx) but integer accession number (xxxx)
  *   also could be used.
