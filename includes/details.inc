@@ -179,6 +179,10 @@ function tpps_details($accession = NULL) {
 /**
  * Returns a template for details tabs.
  *
+ * To add new tab - just add new element to $tab_list array.
+ * Note that all links in content will be replaced with current path and
+ * fragment so update /js/tpps.js if you don't want that. Search 'submission'.
+ *
  * @param array $state
  *   The form state of the submission.
  *
@@ -188,43 +192,57 @@ function tpps_details($accession = NULL) {
 function tpps_details_tabs(array &$state) {
   $page4 = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
 
-  $output = '<ul class="nav nav-tabs" role="tablist">
-    <li class="nav-item"><a class="nav-link active" role="tab" data-toggle="tab" href="#species">Species</a></li>
-    <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#study">Study Details</a></li>
-    <li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#trees">Plants</a></li>';
-  $p_exist = FALSE;
-  $g_exist = FALSE;
-  $mass_spectro_exist = FALSE;
+  $tab_items = [];
+  $content = [];
+  $tabs_list = [
+    'species' => 'Species',
+    'study' => 'Study Details',
+    'trees' => 'Plants',
+  ];
   for ($i = 1; $i <= $state['stats']['species_count']; $i++) {
     if (!empty($page4["organism-$i"]['phenotype'])) {
-      $p_exist = TRUE;
+      $tabs_list['phenotype'] = 'Phenotypes / Environments';
     }
     if (!empty($page4["organism-$i"]['genotype'])) {
-      $g_exist = TRUE;
+      $tabs_list['genotype'] = 'Genotypes';
     }
-    if ($p_exist && !empty($page4["organism-$i"]['phenotype']['iso-check'])) {
-      $mass_spectro_exist = TRUE;
+    if (
+      !empty($page4["organism-$i"]['phenotype'])
+      && !empty($page4["organism-$i"]['phenotype']['iso-check'])
+    ) {
+      $tabs_list['mass_spectrometry'] = 'Mass Spectrometry';
     }
   }
-
-  $output .= $p_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#phenotype">Phenotypes / Environments</a></li>' : "";
-  $output .= $g_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#genotype">Genotypes</a></li>' : "";
-  $output .= $mass_spectro_exist ? '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#mass_spectrometry">Mass Spectrometry</a></li>' : "";
-  $output .= '<li class="nav-item"><a class="nav-link" role="tab" data-toggle="tab" href="#submission">Submission</a></li>';
-
-  $output .= '</ul><div id="tab-content" class="tab-content">';
-
-  $output .= "<div id=\"species\" role=\"tabpanel\" class=\"tab-pane fade in active\"></div>";
-  $output .= "<div id=\"study\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
-  $output .= "<div id=\"trees\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
-  $output .= "<div id=\"submission\" role=\"tabpanel\" class=\"tab-pane fade\"></div>";
-
-  $output .= $p_exist ? "<div id=\"phenotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
-  $output .= $g_exist ? "<div id=\"genotype\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
-  $output .= $mass_spectro_exist ? "<div id=\"mass_spectrometry\" role=\"tabpanel\" class=\"tab-pane fade\"></div>" : "";
-
-  $output .= '</div>';
-  return $output;
+  $tabs_list['submission'] = 'Submission';
+  // Build HTML.
+  // Only first element must have class 'active'.
+  $content_class = 'tab-pane fade in active';
+  foreach ($tabs_list as $key => $title) {
+    $tab_items[] = [
+      'data' => l(t($title), '',
+      [
+        'external' => TRUE,
+        'fragment' => $key,
+        'attributes' => [
+          'class' => ['nav-link'],
+          'role' => 'tab',
+          'data-toggle' => 'tab',
+        ],
+      ]),
+      'class' => ['nav-item'],
+    ];
+    $content[] = '<div id="' . $key . '" role="tabpanel" '
+      . 'class="' . $content_class . '"></div>';
+    $content_class = 'tab-pane fade';
+  }
+  return theme('item_list', [
+    'items' => $tab_items,
+    'type' => 'ul',
+    'attributes' => [
+      'class' => ['nav', 'nav-tabs'],
+      'role' => 'tablist',
+    ],
+  ]) . '<div id="tab-content" class="tab-content">' . implode('', $content) . '</div>';
 }
 
 /**
