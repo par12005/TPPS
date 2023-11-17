@@ -91,11 +91,12 @@ function tpps_details($accession = NULL) {
         . 'incomplete or subject to change in the near future.'),
         'warning'
       );
-      if (function_exists('tpps_details_byaccession_page')) {
+      if (
+        variable_get('tpps_details_use_external_tabs', FALSE)
+        && function_exists('tpps_details_byaccession_page')
+      ) {
         $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
-        // [VS].
         tpps_add_css_js('main');
-        // [/VS].
         return $output;
       }
     }
@@ -115,52 +116,69 @@ function tpps_details($accession = NULL) {
           );
         }
       }
-      drupal_add_js(array('tpps' => array('tree_info' => $tree_info)), 'setting');
+      drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');
     }
     $output .= $map_api_tools;
     // [VS].
     tpps_add_css_js('main');
     // [/VS].
 
-    $pub_link = $state['title'];
-    $pub_id = db_select('chado.project_pub', 'p')
-      ->fields('p', array('pub_id'))
-      ->condition('project_id', $state['ids']['project_id'])
-      ->execute()->fetchObject()->pub_id;
-    if (!empty($pub_id)) {
-      $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
-      $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
-      $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
+    if (!empty($pub_link = $state['title'] ?? NULL)) {
+      $pub_id = db_select('chado.project_pub', 'p')
+        ->fields('p', array('pub_id'))
+        ->condition('project_id', $state['ids']['project_id'])
+        ->execute()->fetchObject()->pub_id ?? NULL;
+      if (!empty($pub_id)) {
+        $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
+        $pub_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
+        $pub_link = "<a href='$base_url/Publication/$pub_id'>$pub_link</a>";
+      }
+      $output .= "<h2>$pub_link</h2>";
     }
-
-    $output .= "<h2>$pub_link</h2>";
     $output .= tpps_show_tags(tpps_submission_get_tags($state['accession']));
-    $primary_author = $state['authors'][0];
-    if (preg_match('/,/', $primary_author)) {
-      $parts = explode(',', $primary_author);
-      $lastname = trim($parts[0]);
+    if ($primary_author = $state['authors'][0] ?? NULL) {
+      if (preg_match('/,/', $primary_author)) {
+        $parts = explode(',', $primary_author);
+        $lastname = trim($parts[0]);
+      }
+      else {
+        $parts = explode(' ', $primary_author);
+        $lastname = $parts[count($parts) - 1];
+      }
+      $output .= "<h4>$lastname et al {$state['pyear']}";
+      if (!empty($state['journal'])) {
+        $output .= " published in {$state['journal']}";
+      }
+      $output .= "</h4>";
+      // @TODO Minor. Use l() and drupal_add_js().
+      $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
+        . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
+            jQuery('#abstract')[0].innerHTML = `{$state['abstract']}`;
+          }));</script>";
     }
     else {
-      $parts = explode(' ', $primary_author);
-      $lastname = $parts[count($parts) - 1];
+      $output .= '<br />';
     }
-    $output .= "<h4>$lastname et al {$state['pyear']}";
-    if (!empty($state['journal'])) {
-      $output .= " published in {$state['journal']}";
-    }
-    $output .= "</h4>";
-    $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
-      . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
-          jQuery('#abstract')[0].innerHTML = `{$state['abstract']}`;
-        }));</script>";
     if (module_exists('cartogratree')) {
-      $output .= "<a href=\"$base_url/cartogratree?accession=$accession\" target=\"blank\">View in CartograPlant</a><br>";
-    }
-    $output .= "<a href=\"$base_url/tpps/api/files/$accession\">Download compressed raw files</a><br>";
-    if ($state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published' and $user->uid == tpps_load_submission($accession, FALSE)->uid) {
-      $output .= "<a href=\"$base_url/tpps/$accession/edit-publication\">Edit publication information</a>";
+      $items[] = l(t('View in CartograPlant'), 'cartogratree',
+        [
+          'query' => ['accession' => $accession],
+          'attributes' => ['target' => 'blank'],
+        ]
+      );
+      $items[] = l(t('Download compressed raw files'),
+        'tpps/api/files/' . $accession, ['attributes' => ['target' => 'blank']]
+      );
     }
 
+    // @TODO We already loaded $state. Try to reuse it instead of loading it again.
+    if (
+      $state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published'
+      && $user->uid == (tpps_load_submission($accession, FALSE)->uid ?? NULL)
+    ) {
+      $items[] = l(t('Edit publication information'), 'tpps/' . $accession . '/edit-publication');
+    }
+    $output .= theme('item_list', ['items' => $items]);
     $output .= tpps_details_tabs($state);
     return $output;
   }
