@@ -230,9 +230,11 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     $old_accession = $state['saved_values']['frontpage']['accession'];
     $state = tpps_array_replace($state, $old_accession, $new_accession);
     // Store original accession.
-    $state['tpps_submission_import']['original_accession'] = $old_accession;
-    $state['tpps_submission_import']['imported'] = REQUEST_TIME;
-    $state['tpps_submission_import']['imported_date']
+    // @TODO Minor. Remove 'saved_values' but be sure to restore those values
+    // when submission reopened using '/tppsc' form.
+    $state['saved_values']['tpps_submission_import']['original_accession'] = $old_accession;
+    $state['saved_values']['tpps_submission_import']['imported'] = REQUEST_TIME;
+    $state['saved_values']['tpps_submission_import']['imported_date']
       = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i T');
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
