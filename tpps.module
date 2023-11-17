@@ -188,11 +188,11 @@ function tpps_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_submission_edit_publication', 1),
     'access callback' => 'tpps_access',
+    // @TODO Must be 'edit ... submission' permission.
     'access arguments' => array('view own tpps submission', 1),
     'type' => MENU_NORMAL_ITEM,
   );
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items['user/%/tpps'] = array(
     'title' => 'TPPS Submissions',
@@ -215,9 +215,9 @@ function tpps_menu() {
   $items['completed-submission/%'] = array(
     'title' => 'TPPS Completed Submission',
     'page callback' => 'tpps_completed_display',
-    'page arguments' => array(1),
+    'page arguments' => [1],
     'access callback' => 'tpps_access',
-    'access arguments' => array('view own tpps submission', 1),
+    'access arguments' => ['view own tpps submission', 1],
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -381,46 +381,42 @@ function tpps_menu() {
  * Implements hook_permission().
  *
  * Defines custom TPPS permissions.
+ *
+ * @TODO Minor. Implement new permissions.
+ *   'view any submission'
+ *   'edit own/any submission'
  */
 function tpps_permission() {
-  $perms = array();
-
-  $perms['access tpps form'] = array(
-    'title' => t('Access TPPS Form'),
-    'description' => t('Access TPPS Submission form and create submissions.'),
-  );
-
-  $perms['access tpps details'] = array(
-    'title' => t('Access TPPS Details'),
-    'description' => t('Access TPPS Complete Submissions Details page.'),
-  );
-
-  $perms['administer tpps module'] = array(
-    'title' => t('Administer TPPS module'),
-    'description' => t('Make changes to TPPS configuration.'),
-  );
-
-  $perms['user tpps submissions'] = array(
-    'title' => t('User TPPS Submissions'),
-    'description' => t('View all TPPS Submissions for a particular user.'),
-  );
-
-  $perms['approve tpps submissions'] = array(
-    'title' => t('Approve/Reject TPPS submissions'),
-    'description' => t('Approve or reject pending TPPS submissions.'),
-  );
-
-  $perms['tpps delete submission'] = array(
-    'title' => t('Delete TPPS submissions'),
-    'description' => t('Delete incomplete TPPS submissions.'),
-  );
-
-  $perms['view own tpps submission'] = array(
-    'title' => t('View own TPPS submissions'),
-    'description' => t('View TPPS submissions as a particular user.'),
-  );
-
-  return $perms;
+  return [
+    'access tpps form' => [
+      'title' => t('Access TPPS Form'),
+      'description' => t('Access TPPS Submission form and create submissions.'),
+    ],
+    'access tpps details' => [
+      'title' => t('Access TPPS Details'),
+      'description' => t('Access TPPS Complete Submissions Details page.'),
+    ],
+    'administer tpps module' => [
+      'title' => t('Administer TPPS module'),
+      'description' => t('Make changes to TPPS configuration.'),
+    ],
+    'user tpps submissions' => [
+      'title' => t('User TPPS Submissions'),
+      'description' => t('View all TPPS Submissions for a particular user.'),
+    ],
+    'approve tpps submissions' => [
+      'title' => t('Approve/Reject TPPS submissions'),
+      'description' => t('Approve or reject pending TPPS submissions.'),
+    ],
+    'tpps delete submission' => [
+      'title' => t('Delete TPPS submissions'),
+      'description' => t('Delete incomplete TPPS submissions.'),
+    ],
+    'view own tpps submission' => [
+      'title' => t('View own TPPS submissions'),
+      'description' => t('View TPPS submissions as a particular user.'),
+    ],
+  ];
 }
 
 /**
@@ -456,7 +452,8 @@ function tpps_access() {
         return TRUE;
       }
 
-      $params = drupal_get_query_parameters(NULL, array());
+      // @TODO Check if it was an attempt to get $_GET['q']?
+      $params = drupal_get_query_parameters(NULL, []);
       $path = $params['q'];
       preg_match('/^([^\/]+)\/?.*$/', $path, $matches);
       $form_type = $matches[1] ?? NULL;
@@ -465,7 +462,7 @@ function tpps_access() {
 
       if (($state = tpps_load_submission($accession, FALSE))) {
         $type_pass = ($submission_type == $form_type) || preg_match('/^tpps\/TGDR[0-9]+\/.+$/', $path);
-        if ($state->status == "Incomplete" and $state->uid == $user->uid and $type_pass) {
+        if ($state->status == "Incomplete" && $state->uid == $user->uid && $type_pass) {
           return TRUE;
         }
       }
@@ -473,16 +470,17 @@ function tpps_access() {
 
     case 'user tpps submissions':
       $uid = $args[1] ?? NULL;
-      if (!empty($uid) and $uid == $user->uid) {
-        return TRUE;
-      }
-
-      return FALSE;
+      return (!empty($uid) && $uid == $user->uid);
 
     case 'view own tpps submission':
       $accession = $args[1] ?? NULL;
+      // Allow admins to access any study.
+      if (user_access('administer tpps module', $user)) {
+        return TRUE;
+      }
+      // Check if user submitted this study.
       if (($state = tpps_load_submission($accession, FALSE))) {
-        if ($state->status != "Incomplete" and $state->uid == $user->uid) {
+        if ($state->status != "Incomplete" && $state->uid == $user->uid) {
           return TRUE;
         }
       }
@@ -498,6 +496,7 @@ function tpps_access() {
       return FALSE;
 
     default:
+      // @TODO This is unsafe.
       return TRUE;
   }
 }
@@ -1930,7 +1929,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'description' => 'Purge TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_purge_form'],
-    'access arguments' => ['administer tpps module'],
+    'access arguments' => ['tpps delete submission'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_purge.inc',
     'type' => MENU_LOCAL_TASK,
@@ -1942,7 +1941,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'description' => 'Purge TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_purge_form', 5],
-    'access arguments' => ['administer tpps module'],
+    'access arguments' => ['tpps delete submission'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_purge.inc',
     'type' => MENU_CALLBACK,
