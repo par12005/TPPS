@@ -805,11 +805,10 @@ function tpps_submit_page_3(array &$form_state, TripalJob &$job = NULL) {
       case 'approximate':
         $options['exact'] = NULL;
         $options['precision'] = $tree_accession['coord_precision'] ?? NULL;
-        $condition = (
-          !array_key_exists(tpps_get_tag_id('No Location Information'),
-          tpps_submission_get_tags($form_state['accession']))
-        );
-        if ($condition) {
+        if (
+          !empty($tag_id = tpps_get_tag_id('No Location Information'))
+          && !array_key_exists($tag_id, tpps_submission_get_tags($form_state['accession']))
+        ) {
           tpps_submission_add_tag($form_state['accession'], 'Approximate Coordinates');
         }
         break;
@@ -986,7 +985,14 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
   // Submit raw data.
   for ($i = 1; $i <= $organism_number; $i++) {
     tpps_submit_phenotype($form_state, $i, $job);
-    echo "[DEBUG] Processing genotype data for species code $species_codes and i = $i\n";
+    if (empty($species_codes[$i])) {
+      // Not sure if it's a blocker for phenotype and environement.
+      // Seems it's used for 'genotype' only.
+      echo t("[WARNING] Species code for i = @count is empty.\n", ['@count' => $i]);
+    }
+    echo t("[DEBUG] Processing genotype data for species code '@code' and i = @count\n",
+      ['@code' => $species_codes[$i], '@count' => $i]);
+
     tpps_submit_genotype($form_state, $species_codes, $i, $job);
     tpps_submit_environment($form_state, $i, $job);
   }
@@ -5378,9 +5384,11 @@ function tpps_get_code_parts($part) {
  *      TRIPAL_INFO: (default) Informational messages.
  *      TRIPAL_DEBUG: Debug-level messages.
  */
-function tpps_log($message, $variables = array(), $severity = TRIPAL_INFO) {
+function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
+  // Writes to file and will be shown at site.
   tpps_job_logger_write($message, $variables);
+  // Command line messages.
   $tpps_job->logMessage($message, $variables, $severity);
 }
 

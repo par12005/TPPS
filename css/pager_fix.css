@@ -1,0 +1,13 @@
+/**
+ * @file
+ * Fixes pager's button 'Next' position.
+ */
+
+/*
+ * Theme 'Dawn' moves 'Next' button of pager to the very right position (after
+ * 'Last' button. This fix restores original position (before 'Last' button).
+ */
+.page-tpps .pager-next>a,
+.page-tpps .pager-next>span {
+  float: none;
+}

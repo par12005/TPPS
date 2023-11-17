@@ -162,18 +162,21 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
     return $form;
   }
   $form['warning'] = [
-    '#markup' => t('<h3>WARNING: Shown only items which are different.</h3>')
-    . theme('item_list', [
-      'items' => [
-        l(t('View @accession', ['@accession' => $accession_1]),
-          'admin/config/tpps/submission/view/' . $accession_1
-        ),
-        l(t('View @accession', ['@accession' => $accession_2]),
-        'admin/config/tpps/submission/view/' . $accession_2
-        ),
-      ]
-    ]),
+    '#markup' => t('<h3>WARNING: Shown only items which are different.</h3>'),
   ];
+  $form['links']['#markup'] = theme('item_list', [
+    'items' => [
+      $accession_1 . ': ' . implode(', ', [
+        l(t('View Submission'), 'admin/config/tpps/submission/view/' . $accession_1),
+        l(t('Study at Admin Panel'), 'tpps-admin-panel/' . $accession_1),
+      ]),
+      $accession_2 . ': ' . implode(', ', [
+        l(t('View Submission'), 'admin/config/tpps/submission/view/' . $accession_2),
+        l(t('Study at Admin Panel'), 'tpps-admin-panel/' . $accession_2),
+      ]),
+    ],
+  ]);
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show comparison report.
   $parsed_1 = tpps_array_dump($result_1, $sticky = FALSE);

@@ -188,31 +188,12 @@ function tpps_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('tpps_submission_edit_publication', 1),
     'access callback' => 'tpps_access',
+    // @TODO Must be 'edit ... submission' permission.
     'access arguments' => array('view own tpps submission', 1),
     'type' => MENU_NORMAL_ITEM,
   );
 
-  $items['tpps/details'] = array(
-    'title' => 'TPPS Details',
-    'page callback' => 'tpps_details',
-    'page arguments' => array(),
-    'access callback' => 'tpps_access',
-    'access arguments' => array('access tpps details'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-
-  $items['tpps/details/top'] = $items['tpps/details'];
-  $items['tpps/details/top']['page callback'] = 'tpps_details_top_callback';
-  $items['tpps/details/top']['type'] = MENU_CALLBACK;
-
-  $items['tpps/details/%'] = $items['tpps/details'];
-  $items['tpps/details/%']['page arguments'] = array(2);
-
-  $items['tpps/details/%/%'] = $items['tpps/details/%'];
-  $items['tpps/details/%/%']['page arguments'] = array(2, 3);
-  $items['tpps/details/%/%']['page callback'] = 'tpps_details_tab';
-  $items['tpps/details/%/%']['type'] = MENU_CALLBACK;
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items['user/%/tpps'] = array(
     'title' => 'TPPS Submissions',
     'page callback' => 'tpps_tab_create',
@@ -221,7 +202,6 @@ function tpps_menu() {
     'access arguments' => array('user tpps submissions', 1),
     'type' => MENU_LOCAL_TASK,
   );
-
   // @TODO Change URL to 'tpps/submission/%/delete' to be more REST API.
   $items['tpps-submission/%/delete'] = [
     'title' => 'TPPS Delete Submission',
@@ -235,9 +215,9 @@ function tpps_menu() {
   $items['completed-submission/%'] = array(
     'title' => 'TPPS Completed Submission',
     'page callback' => 'tpps_completed_display',
-    'page arguments' => array(1),
+    'page arguments' => [1],
     'access callback' => 'tpps_access',
-    'access arguments' => array('view own tpps submission', 1),
+    'access arguments' => ['view own tpps submission', 1],
     'type' => MENU_NORMAL_ITEM,
   );
 
@@ -304,7 +284,6 @@ function tpps_menu() {
   );
 
 
-  tpps_menu_add_settings_pages($items);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $items['tpps/autocomplete/%'] = array(
@@ -379,7 +358,8 @@ function tpps_menu() {
   );
 
   // [VS].
-  // Reports.
+  tpps_menu_add_detials_pages($items);
+  tpps_menu_add_settings_pages($items);
   tpps_menu_add_report_pages($items);
   tpps_menu_add_submission_pages($items);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -401,46 +381,42 @@ function tpps_menu() {
  * Implements hook_permission().
  *
  * Defines custom TPPS permissions.
+ *
+ * @TODO Minor. Implement new permissions.
+ *   'view any submission'
+ *   'edit own/any submission'
  */
 function tpps_permission() {
-  $perms = array();
-
-  $perms['access tpps form'] = array(
-    'title' => t('Access TPPS Form'),
-    'description' => t('Access TPPS Submission form and create submissions.'),
-  );
-
-  $perms['access tpps details'] = array(
-    'title' => t('Access TPPS Details'),
-    'description' => t('Access TPPS Complete Submissions Details page.'),
-  );
-
-  $perms['administer tpps module'] = array(
-    'title' => t('Administer TPPS module'),
-    'description' => t('Make changes to TPPS configuration.'),
-  );
-
-  $perms['user tpps submissions'] = array(
-    'title' => t('User TPPS Submissions'),
-    'description' => t('View all TPPS Submissions for a particular user.'),
-  );
-
-  $perms['approve tpps submissions'] = array(
-    'title' => t('Approve/Reject TPPS submissions'),
-    'description' => t('Approve or reject pending TPPS submissions.'),
-  );
-
-  $perms['tpps delete submission'] = array(
-    'title' => t('Delete TPPS submissions'),
-    'description' => t('Delete incomplete TPPS submissions.'),
-  );
-
-  $perms['view own tpps submission'] = array(
-    'title' => t('View own TPPS submissions'),
-    'description' => t('View TPPS submissions as a particular user.'),
-  );
-
-  return $perms;
+  return [
+    'access tpps form' => [
+      'title' => t('Access TPPS Form'),
+      'description' => t('Access TPPS Submission form and create submissions.'),
+    ],
+    'access tpps details' => [
+      'title' => t('Access TPPS Details'),
+      'description' => t('Access TPPS Complete Submissions Details page.'),
+    ],
+    'administer tpps module' => [
+      'title' => t('Administer TPPS module'),
+      'description' => t('Make changes to TPPS configuration.'),
+    ],
+    'user tpps submissions' => [
+      'title' => t('User TPPS Submissions'),
+      'description' => t('View all TPPS Submissions for a particular user.'),
+    ],
+    'approve tpps submissions' => [
+      'title' => t('Approve/Reject TPPS submissions'),
+      'description' => t('Approve or reject pending TPPS submissions.'),
+    ],
+    'tpps delete submission' => [
+      'title' => t('Delete TPPS submissions'),
+      'description' => t('Delete incomplete TPPS submissions.'),
+    ],
+    'view own tpps submission' => [
+      'title' => t('View own TPPS submissions'),
+      'description' => t('View TPPS submissions as a particular user.'),
+    ],
+  ];
 }
 
 /**
@@ -476,7 +452,8 @@ function tpps_access() {
         return TRUE;
       }
 
-      $params = drupal_get_query_parameters(NULL, array());
+      // @TODO Check if it was an attempt to get $_GET['q']?
+      $params = drupal_get_query_parameters(NULL, []);
       $path = $params['q'];
       preg_match('/^([^\/]+)\/?.*$/', $path, $matches);
       $form_type = $matches[1] ?? NULL;
@@ -485,7 +462,7 @@ function tpps_access() {
 
       if (($state = tpps_load_submission($accession, FALSE))) {
         $type_pass = ($submission_type == $form_type) || preg_match('/^tpps\/TGDR[0-9]+\/.+$/', $path);
-        if ($state->status == "Incomplete" and $state->uid == $user->uid and $type_pass) {
+        if ($state->status == "Incomplete" && $state->uid == $user->uid && $type_pass) {
           return TRUE;
         }
       }
@@ -493,16 +470,17 @@ function tpps_access() {
 
     case 'user tpps submissions':
       $uid = $args[1] ?? NULL;
-      if (!empty($uid) and $uid == $user->uid) {
-        return TRUE;
-      }
-
-      return FALSE;
+      return (!empty($uid) && $uid == $user->uid);
 
     case 'view own tpps submission':
       $accession = $args[1] ?? NULL;
+      // Allow admins to access any study.
+      if (user_access('administer tpps module', $user)) {
+        return TRUE;
+      }
+      // Check if user submitted this study.
       if (($state = tpps_load_submission($accession, FALSE))) {
-        if ($state->status != "Incomplete" and $state->uid == $user->uid) {
+        if ($state->status != "Incomplete" && $state->uid == $user->uid) {
           return TRUE;
         }
       }
@@ -518,6 +496,7 @@ function tpps_access() {
       return FALSE;
 
     default:
+      // @TODO This is unsafe.
       return TRUE;
   }
 }
@@ -1590,6 +1569,9 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       // Add main files.
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
       drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
+      if (variable_get('tpps_theme_fix_pager')) {
+        drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');
+      }
     }
     else {
       // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
@@ -1610,6 +1592,9 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
         'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
       ];
       $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
+      if (variable_get('tpps_theme_fix_pager')) {
+        $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/pager_fix.css';
+      }
     }
     elseif ($page_id && is_numeric($page_id) && $page_id > 0) {
       // This it TPPS Page. Add page specific files.
@@ -1739,6 +1724,17 @@ function tpps_menu_add_settings_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/synonym.inc',
     'type' => MENU_LOCAL_TASK,
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submit All.
+  $items['admin/config/tpps/submit-all'] = [
+    'title' => 'Submit All',
+    'description' => 'Tripal Job Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submit_all_settings_form'],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submit_all.inc',
   ];
 }
 
@@ -1929,22 +1925,23 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'type' => MENU_CALLBACK,
   ];
   $items['admin/config/tpps/submission/purge'] = [
-    'title' => 'Purge Submission',
+    'title' => 'Purge',
     'description' => 'Purge TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_purge_form'],
-    'access arguments' => ['administer tpps module'],
+    'access arguments' => ['tpps delete submission'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_purge.inc',
     'type' => MENU_LOCAL_TASK,
     'weight' => 250,
   ];
   $items['admin/config/tpps/submission/purge/%'] = [
-    'title' => 'Purge Submission',
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [4, 5, 6],
     'description' => 'Purge TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_purge_form', 5],
-    'access arguments' => ['administer tpps module'],
+    'access arguments' => ['tpps delete submission'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_purge.inc',
     'type' => MENU_CALLBACK,
@@ -1989,4 +1986,50 @@ function tpps_submission_title($op, $accession, $extra = '') {
       '@extra' => ($extra ? 'with ' . $extra : ''),
     ]
   );
+}
+
+/**
+ * Adds Submission Import/Export pages into hook_menu().
+ *
+ * @param array $items
+ *   Menu items.
+ */
+function tpps_menu_add_detials_pages(array &$items = []) {
+  $items = $items ?? [];
+  $items['tpps/details'] = [
+    'title' => 'TPPS Details',
+    'page callback' => 'tpps_details_list',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access tpps details'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  // This is actually an AJAX-callback which used to repload pages on page
+  // 'tpps/details'. Seems it's a custom pager and could be replaced with
+  // default pager but there is also filter form at page and this probably
+  // was the reason why AJAX content reloading was used.
+  $items['tpps/details/top'] = [
+    'title' => 'TPPS Details List Callback',
+    'page callback' => 'tpps_details_top_callback',
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access tpps details'],
+    'type' => MENU_CALLBACK,
+  ];
+  $items['tpps/details/%'] = [
+    'title' => 'TPPS Details',
+    'page callback' => 'tpps_details',
+    'page arguments' => [2],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access tpps details'],
+    'type' => MENU_NORMAL_ITEM,
+  ];
+  // AJAX-callback for Tabs. See /js/tpps.js function detailsTab().
+  $items['tpps/details/%/%'] = [
+    'title' => 'TPPS Details Tab Callback',
+    'page callback' => 'tpps_details_tab',
+    // 1st is accession, 2nd is tab machine name.
+    'page arguments' => [2, 3],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access tpps details'],
+    'type' => MENU_CALLBACK,
+  ];
 }

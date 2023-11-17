@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Define the helper functions for the GxPxE Data page.
@@ -2094,22 +2093,21 @@ function tpps_build_field_name($id) {
     '#attributes' => [
       'data-toggle' => ['tooltip'],
       'data-placement' => ['right'],
-      'title' => ['If your phenotype name does not exist in our database, '
+      'title' => [
+        'If your phenotype name does not exist in our database, '
         . 'don\'t worry about it! We will create new phenotype metadata '
-        . 'in the database for you.'],
+        . 'in the database for you.',
+      ],
       // Alternative title for one of fields:
       // 'title' => ['If your phenotype name is not in the '
       // . 'autocomplete list, don\'t worry about it! We will create new '
       // . 'phenotype metadata in the database for you.'],
-      ],
-    '#description' => t('Phenotype "name" is the human-readable name of the '
-      . 'phenotype, where "attribute" is the thing that the phenotype is '
-      . 'describing. Phenotype "name" should match the data in the '
-      . '"Phenotype Name/Identifier" column that you select in your '
-      . '<a href="@url">Phenotype file</a> below.',
+    ],
+    '#description' => t('<strong>WARNING: <br />Phenotype "name" should match the '
+      . 'data in the "Phenotype Name/Identifier" column that you select '
+      . 'in your !link below.</strong>',
       [
-        '@url' => url(
-          '/tpps',
+        '!link' => l(t('Phenotype file'), $_GET['q'],
           ['fragment' => "edit-$id-phenotype-file-ajax-wrapper"]
         ),
       ]

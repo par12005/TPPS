@@ -113,7 +113,9 @@ jQuery(document).ready(function ($) {
     jQuery("#map_wrapper").hide();
   }
 
-  var preview_record_buttons = jQuery('input').filter(function() { return this.id.match(/-tripal-eutils-callback/); });
+  var preview_record_buttons = jQuery('input').filter(
+    function() { return this.id.match(/-tripal-eutils-callback/); }
+  );
   jQuery.each(preview_record_buttons, function() {
     jQuery(this).attr('type', 'button');
   });
@@ -347,6 +349,7 @@ var detail_pages = {
   "phenotype": 0,
   "genotype": 0,
   "environment": 0,
+  "submission": 0,
 };
 
 function detailsTab() {
@@ -354,6 +357,7 @@ function detailsTab() {
   var path = clicked_tab.pathname;
   var detail_type = clicked_tab.hash.substr(1);
   var page = detail_pages[detail_type];
+
   if (clicked_tab.hash.match(/#(.*):(.*)/) !== null) {
     detail_type = clicked_tab.hash.match(/#(.*):(.*)/)[1];
     page = clicked_tab.hash.match(/#(.*):(.*)/)[2];
@@ -366,14 +370,16 @@ function detailsTab() {
       return;
     }
   }
-  jQuery('#' + detail_type)[0].innerHTML = "Querying database for " + detail_type + " information...<div id='query_timer'></div>";
+  jQuery('#' + detail_type)[0].innerHTML = "Querying database for "
+    + detail_type + " information...<div id='query_timer'></div>";
 
   // create a timer
   var query_timer_current = 0;
   var query_timer = setInterval(function() {
     query_timer_current = query_timer_current + 1;
     if(query_timer_current > 5) {
-      jQuery('#query_timer').html('Querying time: ' + query_timer_current + ' seconds.<br /><b>Thank you for your patience, first time pulls can take up to a minute to complete depending on the size of our dataset but gets faster after the first page load.</b>');
+      jQuery('#query_timer').html('Querying time: ' + query_timer_current
+        + ' seconds.<br /><b>Thank you for your patience, first time pulls can take up to a minute to complete depending on the size of our dataset but gets faster after the first page load.</b>');
     }
   }, 1000);
 
@@ -402,7 +408,8 @@ function detailsTab() {
             clearInterval(query_timer);
           } catch (err) {}
           console.log(evt);
-          jQuery('#' + detail_type)[0].innerHTML = "Loading " + detail_type + " information... " + Math.ceil(evt.loaded / 100) + ' KB';
+          jQuery('#' + detail_type)[0].innerHTML = "Loading "
+            + detail_type + " information... " + Math.ceil(evt.loaded / 100) + ' KB';
           if (evt.lengthComputable) {
               var percentComplete = evt.loaded / evt.total;
               // Do something with download progress
@@ -430,7 +437,13 @@ function detailsTab() {
         if (this.search.match(/\?page=(.*)/) !== null) {
           page = this.search.match(/\?page=(.*)/)[1];
         }
-        this.href = '#' + detail_type + ':' + page;
+        if (detail_type != 'submission') {
+          this.href = '#' + detail_type + ':' + page;
+        }
+        else {
+          var path = window.location.pathname;
+          this.href = this.href + '/' + path.substring(path.lastIndexOf('/') + 1);
+        }
         jQuery(this).click(detailsTab);
       });
     }
