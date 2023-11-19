@@ -32,7 +32,8 @@ function tpps_synonym_get_list(array $options = [], $reset = FALSE) {
   $synonym_cid = 'tpps_synonym_list';
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
   $cache = cache_get($synonym_cid, $cache_bin);
-  if (empty($cache->data) || $reset) {
+  $is_cache_allowed = variable_get('tpps_page_4_cache_synonym_list', FALSE);
+  if (empty($cache->data) || $reset || !$is_cache_allowed) {
     // Using chado_select_record() don't allow to use fetchAllKeyed().
     $query = db_select('chado.phenotype_synonyms', 'cps')
       ->fields('cps', ['phenotype_synonyms_id', 'synonym'])

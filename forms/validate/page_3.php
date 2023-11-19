@@ -65,31 +65,31 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
         if (gettype($values['pop-group']) === 'array') {
           foreach ($values['pop-group'] as $pop_name => $location) {
             if (empty($location)) {
-              form_set_error("tree-accession][species-$i][pop-group][$pop_name", "Population Group $pop_name Location: field is required.");
+              form_set_error(
+                "tree-accession][species-$i][pop-group][$pop_name",
+                "Population Group $pop_name Location: field is required."
+              );
             }
           }
         }
 
         // [VS] #8669py308
-        $condition = (
+        if (
           $values['location_accuracy'] == 'descriptive_place'
           && empty($values['descriptive_place'])
-        );
-        if ($condition) {
+        ) {
           form_set_error("tree-accession][species-$i][descriptive_place",
             t("Descriptive Place: field is required."));
         }
 
-        $condition = (
+        if (
           $values['location_accuracy'] == 'approximate'
           && empty($values['coord_precision'])
-        );
-        if ($condition) {
+        ) {
           form_set_error("tree-accession][species-$i][coord_precision",
             t("Coordinates accuracy: field is required."));
         }
         // [/VS] #8669py308
-
         if (!form_get_errors()) {
           $options = array(
             'no_header' => !empty($values['file-no-header']),
@@ -127,10 +127,14 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
       $form_state['rebuild'] = TRUE;
       $new_form = drupal_rebuild_form('tpps_main', $form_state, $form);
       for ($i = 1; $i <= $species_number; $i++) {
-        $form['tree-accession']["species-$i"]['file']['upload'] = $new_form['tree-accession']["species-$i"]['file']['upload'];
-        $form['tree-accession']["species-$i"]['file']['columns'] = $new_form['tree-accession']["species-$i"]['file']['columns'];
-        $form['tree-accession']["species-$i"]['file']['upload']['#id'] = "edit-tree-accession-species-$i-file-upload";
-        $form['tree-accession']["species-$i"]['file']['columns']['#id'] = "edit-tree-accession-species-$i-file-columns";
+        $form['tree-accession']["species-$i"]['file']['upload']
+          = $new_form['tree-accession']["species-$i"]['file']['upload'];
+        $form['tree-accession']["species-$i"]['file']['columns']
+          = $new_form['tree-accession']["species-$i"]['file']['columns'];
+        $form['tree-accession']["species-$i"]['file']['upload']['#id']
+          = "edit-tree-accession-species-$i-file-upload";
+        $form['tree-accession']["species-$i"]['file']['columns']['#id']
+          = "edit-tree-accession-species-$i-file-columns";
         if (!$multi_file) {
           break;
         }

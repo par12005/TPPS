@@ -139,7 +139,7 @@ class SubmissionsTest extends TripalTestCase {
 
     $this->assertNotEmpty(tpps_load_submission($accession));
 
-    tpps_delete_submission($accession, FALSE);
+    tpps_delete_submission($accession);
     $this->assertEmpty(tpps_load_submission($accession));
 
     $query = db_select('chado.dbxref', 'dbx')

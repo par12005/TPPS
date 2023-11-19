@@ -26,18 +26,33 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       $organism = &$form_state['values']["organism-$i"] ?? NULL;
       // Note: 1st item skipped because there is a checkbox which allows to
       // skip validation of non-first items so only them must be checked.
+      //
+      // Check if validation functions exists.
+      $study_type_list = [];
       foreach (['phenotype', 'genotype', 'environment'] as $item) {
+        if (!function_exists('tpps_validate_' . $item)) {
+          // Dynamically built function names are:
+          // tpps_validate_phenotype(),
+          // tpps_validate_genotype(),
+          // tpps_validate_environment().
+          watchdog('tpps', 'Validation function for @study_type not found.',
+            ['@study_type' => $item], WATCHDOG_ERROR
+          );
+          continue;
+        }
+        $study_type_list[] = $item;
+      }
+
+      foreach ($study_type_list as $item) {
         if ($i > 1) {
           if (($organism[$item . '-repeat-check'] ?? NULL) == '1') {
             // phenotype-repeat-check,
             // genotype-repeat-check,
             // environment-repeat-check.
-            unset($organism[$i]);
+            unset($organism[$item]);
           }
         }
         if (!empty($organism[$item])) {
-          // @TODO [VS] Minor. Check if function exists but not in the nexted
-          // loop to avoid checking the same multiple times.
           $function = 'tpps_validate_' . $item;
           call_user_func($function, $organism[$item], $i, $form, $form_state);
         }
@@ -341,7 +356,10 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         $phenotype_file_tree_col = $groups['Tree Identifier']['1'];
         $phenotype_names = array();
         if ($phenotype['format'] == 0) {
-          $phenotype_file_name_cols = $groups['Phenotype Data']['0'];
+          // If there is only one column with data then it will be a string
+          // but we need an array.
+          $phenotype_file_name_cols = is_array($groups['Phenotype Data']['0'])
+            ? $groups['Phenotype Data']['0'] : [$groups['Phenotype Data']['0']];
           $headers = tpps_file_headers($phenotype_file, !empty($phenotype['file-no-header']));
           foreach ($phenotype_file_name_cols as $column_index) {
             $phenotype_names[] = $headers[$column_index];
@@ -1350,15 +1368,17 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
       unset($headers[$k]);
     }
 
-    tpps_ssr_valid_ploidy(
-      $genotype['files'][$ploidy_field_name],
-      // Number of columns.
-      (tpps_file_width($genotype['files'][$field_name]) - 1),
-      // Number of unique columns.
-      (count(array_unique($headers)) - 1),
-      $org_num,
-      $field_name
-    );
+    if (isset($genotype['files'][$ploidy_field_name])) {
+      tpps_ssr_valid_ploidy(
+        $genotype['files'][$ploidy_field_name],
+        // Number of columns.
+        (tpps_file_width($genotype['files'][$field_name]) - 1),
+        // Number of unique columns.
+        (count(array_unique($headers)) - 1),
+        $org_num,
+        $field_name
+      );
+    }
     // Check missing trees.
     if (!form_get_errors()) {
       $missing_trees = tpps_compare_files(

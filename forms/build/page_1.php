@@ -34,7 +34,7 @@ function tpps_page_1_create_form(array &$form, array &$form_state) {
     // TPPS Form.
     $form = array_merge($form, tpps_page_1_create_regular_form($form, $form_state));
   }
-  tpps_add_css_js($form, TPPS_PAGE_1);
+  tpps_add_css_js(TPPS_PAGE_1, $form);
   return $form;
 }
 

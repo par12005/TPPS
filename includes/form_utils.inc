@@ -220,7 +220,6 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
   return $default;
 }
 
-
 /**
  * Retrieves the value of a field that may have been altered through ajax.
  *
@@ -231,30 +230,43 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
  * can also pass the file name in order to find saved_values such as
  * 'file-columns', or 'file-no-header'.
  *
- * @param array $form_state
- *   Drupal Form API state of the form.
+ * @param array $state
+ *   The state of the form.
  * @param array $parents
  *   The parents leading to the list number.
- *   Path to the form element which value must to be found.
  * @param mixed $default
  *   The default value to return.
- *   Will be returned if form element not found.
  * @param string $file_name
  *   Optional - the name of the file.
  *
  * @return mixed
  *   The value of the specified field, or the default value.
  */
-function tpps_get_ajax_value(array &$form_state, array $parents, $default = NULL, $file_name = "") {
-  if ($value = tpps_form_get_field_value($form_state['values'], $parents)) {
-    return $value;
+function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $file_name = "") {
+  $page = $state['stage'];
+  $value_parents = $parents;
+  array_unshift($value_parents, 'values');
+  $element = drupal_array_get_nested_value($state, $value_parents);
+  if (isset($element['#type']) and $element['#type'] != 'fieldset') {
+    array_push($value_parents, '#value');
   }
-  if ($value = tpps_form_get_field_value($form_state['complete form'], $parents)) {
-    return $value;
+  $val = drupal_array_get_nested_value($state, $value_parents);
+  if (isset($val)) {
+    return $val;
   }
 
-  // @TODO Try to reuse tpps_form_get_field_value(). Maybe $file_name could
-  // be obtained from $form_state using field's type?
+  // @TODO [VS] Avoid code duplication. See above.
+  $complete_parents = $parents;
+  array_unshift($complete_parents, 'complete form');
+  $element = drupal_array_get_nested_value($state, $complete_parents);
+  if (isset($element['#type']) and $element['#type'] != 'fieldset') {
+    array_push($complete_parents, '#value');
+  }
+  $val = drupal_array_get_nested_value($state, $complete_parents);
+  if (isset($val)) {
+    return $val;
+  }
+
   $saved_value_parents = $parents;
   if (!empty($file_name)) {
     $saved_value_parents = array();
@@ -270,9 +282,9 @@ function tpps_get_ajax_value(array &$form_state, array $parents, $default = NULL
       $saved_value_parents[] = $item;
     }
   }
-  // Note: Value of $form_state['stage'] is a page number.
-  array_unshift($saved_value_parents, 'saved_values', $form_state['stage']);
-  return drupal_array_get_nested_value($form_state, $saved_value_parents) ?? $default;
+  array_unshift($saved_value_parents, 'saved_values', $page);
+  $saved_val = drupal_array_get_nested_value($state, $saved_value_parents);
+  return $saved_val ?? $default;
 }
 
 /**
@@ -324,18 +336,15 @@ function tpps_form_state_info(array &$new, array &$old) {
  *   The standardized file name prefix.
  */
 function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
-  // [VS]
   if (!form_get_errors() && $file = file_load($fid)) {
-    // Label file as permanent when it's passed validation.
-    $file->status = FILE_STATUS_PERMANENT;
-    file_save($file);
     file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     if (!empty($org_num) and !empty($prefix)) {
-      $species = implode('_', explode(' ', $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']));
+      $species = implode('_', explode(' ',
+        $form_state['saved_values'][TPPS_PAGE_1]['organism'][$org_num]['name']
+      ));
       $form_state['file_info'][TPPS_PAGE_3][$file->fid] = "{$prefix}_{$species}";
     }
   }
-  // [/VS]
 }
 
 /**
@@ -887,3 +896,5 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
     tpps_update_submission($state);
   }
 }
+
+

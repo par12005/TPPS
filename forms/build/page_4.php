@@ -242,7 +242,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         ],
       ],
     ];
-    tpps_add_css_js($form, TPPS_PAGE_4);
+    tpps_add_css_js(TPPS_PAGE_4, $form);
     tpps_add_curation_tool($form);
   }
   return $form;
