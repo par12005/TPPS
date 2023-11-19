@@ -1568,16 +1568,20 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     drupal_add_css($theme_path);
     if ($page_id == 'main') {
       // Add main files.
+      if (file_exists($js_file = TPPS_MODULE_PATH . TPPS_JS_PATH)) {
+        drupal_add_js($js_file);
+      }
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
-      drupal_add_js(TPPS_MODULE_PATH . TPPS_JS_PATH);
       if (variable_get('tpps_theme_fix_pager')) {
         drupal_add_css(TPPS_MODULE_PATH . '/css/pager_fix.css');
       }
     }
     else {
       // Add custom page files. Like 'TPPS Study Export Page' and 'study_export'.
+      if (file_exists($js_file = TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js')) {
+        drupal_add_js($js_file);
+      }
       drupal_add_css(TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css');
-      drupal_add_js(TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js');
     }
   }
   else {
@@ -1586,12 +1590,14 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     $form['#attached']['css'][] = $theme_path;
     if ($page_id == 'main') {
       // Add main files.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'footer',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . TPPS_JS_PATH,
-      ];
+      if (file_exists($js_file = TPPS_MODULE_PATH . TPPS_JS_PATH)) {
+        $form['#attached']['js'][] = [
+          'type' => 'file',
+          'scope' => 'footer',
+          'group' => JS_THEME,
+          'data' => $js_file,
+        ];
+      }
       $form['#attached']['css'][] = TPPS_MODULE_PATH . TPPS_CSS_PATH;
       if (variable_get('tpps_theme_fix_pager')) {
         $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/pager_fix.css';
@@ -1599,25 +1605,29 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     }
     elseif ($page_id && is_numeric($page_id) && $page_id > 0) {
       // This it TPPS Page. Add page specific files.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'footer',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js',
-      ];
-      $form['#attached']['css'][] = TPPS_MODULE_PATH
-        . '/css/tpps_page_' . $page_id . '.css';
+      if (file_exists($js_file = TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js')) {
+        $form['#attached']['js'][] = [
+          'type' => 'file',
+          'scope' => 'footer',
+          'group' => JS_THEME,
+          'data' => $js_file,
+        ];
+      }
+      $css_file = TPPS_MODULE_PATH . '/css/tpps_page_' . $page_id . '.css';
+      $form['#attached']['css'][] = $css_file;
     }
     else {
       // Add custom page files. Like 'TPPS Study Export Page' and etc.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'footer',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js',
-      ];
-      $form['#attached']['css'][] = TPPS_MODULE_PATH
-        . '/css/tpps_' . $page_id . '.css';
+      if (file_exists($js_file = TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js')) {
+        $form['#attached']['js'][] = [
+          'type' => 'file',
+          'scope' => 'footer',
+          'group' => JS_THEME,
+          'data' => $js_file,
+        ];
+      }
+      $css_file = TPPS_MODULE_PATH . '/css/tpps_' . $page_id . '.css';
+      $form['#attached']['css'][] = $css_file;
     }
   }
 }

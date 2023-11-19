@@ -619,3 +619,85 @@ function tpps_page_2_get_data_type_list() {
   }
   return $options;
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// TPPSc.
+
+/**
+ * This function creates fields for the plantation study type.
+ *
+ * @param array $form
+ *   The form to be populated.
+ */
+function tppsc_plantation(array &$form) {
+  tpps_add_css_js(TPPS_PAGE_2, $form);
+  $form['treatment'] = [
+    '#type' => 'fieldset',
+    '#title' => t('<div class="fieldset-title">Treatments:</div>'),
+  ];
+  $form['treatment']['check'] = [
+    '#type' => 'select',
+    '#title' => t('Do you have information about the treatments to these plants?'),
+    '#options' => [
+      'no' => t('No'),
+      'yes' => t('Yes'),
+    ],
+    '#default_value' => 'no',
+  ];
+
+  // @TODO use container.
+  $treatment_list = tpps_treatments_get_list();
+  $states = [
+    'visible' => [
+      ':input[name="study_info[treatment][check]"]' => ['value' => 'yes'],
+    ],
+  ];
+  foreach ($treatment_list as $option) {
+    if ($option == 'Seasonal Environment') {
+      $form['treatment']["$option-description"] = [
+        '#type' => 'textfield',
+        '#title' => t('@option <br />Seasonal environmental description', ['@option' => $option]),
+        '#states' => $states,
+      ];
+      continue;
+    }
+    $form['treatment']["$option"] = [
+      '#type' => 'checkbox',
+      '#title' => t($option),
+      '#states' => $states,
+    ];
+  }
+}
+
+/**
+ * Get list of treatments.
+ *
+ * @return array
+ *   Returns non-localized list of treatment names.
+ */
+function tpps_treatments_get_list() {
+  return [
+    'Seasonal Environment',
+    'Air temperature regime',
+    'Soil Temperature regime',
+    'Antibiotic regime',
+    'Chemical administration',
+    'Disease status',
+    'Fertilizer regime',
+    'Fungicide regime',
+    'Gaseous regime',
+    'Gravity Growth hormone regime',
+    'Mechanical treatment',
+    'Mineral nutrient regime',
+    'Humidity regime',
+    'Non-mineral nutrient regime',
+    'Radiation (light, UV-B, X-ray) regime',
+    'Rainfall regime',
+    'Salt regime',
+    'Watering regime',
+    'Water temperature regime',
+    'Pesticide regime',
+    'pH regime',
+    'other perturbation',
+  ];
+}

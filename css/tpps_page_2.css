@@ -1,0 +1,10 @@
+/**
+ * @file
+ * CSS rules specific for TPPS Page 2 form only.
+ */
+form.tppsc-form .fieldset-wrapper>.form-item.form-type-checkbox,
+form.tppsc-form .form-item.form-type-textfield.form-item-study-info-treatment-Seasonal-Environment-description {
+  margin: 0;
+  padding: 0;
+}
+

@@ -54,9 +54,48 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     ],
   ];
 
+  
+  $form['study_info'] = [
+    '#type' => 'fieldset',
+    '#tree' => TRUE,
+    '#collapsible' => TRUE,
+    '#prefix' => '<div id="study_info">',
+    '#suffix' => '</div>',
+  ];
+
+  $type = tpps_get_ajax_value($form_state, ['study_design', 'study_type'], 0);
+  // Study Type.
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
-    unset($form['study_design']['study_type']['#ajax']);
+    //unset($form['study_design']['study_type']['#ajax']);
+    switch ($type) {
+      case '1':
+        tpps_natural_population($form['study_info']);
+        break;
+
+      case '2':
+        tpps_growth_chamber($form['study_info']);
+        break;
+
+      case '3':
+        tpps_greenhouse($form['study_info']);
+        unset($form['study_info']['humidity']['uncontrolled']);
+        unset($form['study_info']['light']['uncontrolled']);
+        unset($form['study_info']['rooting']['ph']['uncontrolled']);
+        break;
+
+      case '4':
+        tpps_common_garden($form['study_info']);
+        break;
+
+      case '5':
+        tppsc_plantation($form['study_info']);
+        break;
+
+      default:
+        $form['study_info']['#prefix'] = '<div id="study_info" style="display:none;">';
+        break;
+    }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // TPPS Regular User Form.
@@ -64,16 +103,6 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     // @TODO [VS] Set weight to be before data_type and 'study_type' fields.
     tpps_study_date('Starting', $form, $form_state);
     tpps_study_date('Ending', $form, $form_state);
-
-    $form['study_info'] = [
-      '#type' => 'fieldset',
-      '#tree' => TRUE,
-      '#collapsible' => TRUE,
-      '#prefix' => '<div id="study_info">',
-      '#suffix' => '</div>',
-    ];
-
-    $type = tpps_get_ajax_value($form_state, ['study_design', 'study_type'], 0);
 
     switch ($type) {
       case '1':
