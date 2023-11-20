@@ -206,79 +206,99 @@ function tpps_greenhouse(array &$form) {
  * @param array $form
  *   The form to be populated.
  */
-function tpps_common_garden(array &$form) {
+function tpps_common_garden(array &$form, array $form_state) {
+  $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
 
-  $form['#title'] = t('<div class="fieldset-title">Common Garden Information:</div>');
+  $form['#title'] = t('Common Garden Information');
 
-  $form['irrigation'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Irrigation.
+  $form['irrigation'] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
-  );
-
-  $form['irrigation']['option'] = array(
+  ];
+  $irrigation_options = [
+    'Irrigation from top',
+    'Irrigation from bottom',
+    'Drip Irrigation',
+    'Other',
+    'No Irrigation',
+  ];
+  if ($is_tppsc) {
+    $irrigation_options[] = 'Unknown';
+  }
+  $form['irrigation']['option'] = [
     '#type' => 'select',
     '#title' => t('Irrigation Type: *'),
-    '#options' => array(
-      0 => t('- Select -'),
-      'Irrigation from top' => t('Irrigation from top'),
-      'Irrigation from bottom' => t('Irrigation from bottom'),
-      'Drip Irrigation' => t('Drip Irrigation'),
-      'Other' => t('Other'),
-      'No Irrigation' => t('No Irrigation'),
+    '#options' => tpps_form_build_option_list(
+      $irrigation_options, $optional = TRUE
     ),
-  );
-
-  $form['irrigation']['other'] = array(
+  ];
+  $form['irrigation']['other'] = [
     '#type' => 'textfield',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="study_info[irrigation][option]"]' => array('value' => 'Other'),
-      ),
-    ),
-  );
+    '#states' => [
+      'visible' => [
+        ':input[name="study_info[irrigation][option]"]' => ['value' => 'Other'],
+      ],
+    ],
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-  tpps_control($form, 'salinity', 'Salinity');
+  if (!$is_tppsc) {
+    // @TODO Check if it must be shown.
+    tpps_control($form, 'salinity', 'Salinity');
+  }
 
-  $form['biotic_env'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Biotic Environment.
+  $form['biotic_env'] = [
     '#type' => 'fieldset',
+    '#title' => t('Biotic Environment: *'),
     '#tree' => TRUE,
-  );
-
-  $form['biotic_env']['option'] = array(
+  ];
+  $form['biotic_env']['option'] = [
     '#type' => 'checkboxes',
     '#title' => t('Biotic Environment: *'),
-    '#options' => drupal_map_assoc(array(
-      t('Herbivores'),
-      t('Mutulists'),
-      t('Pathogens'),
-      t('Endophytes'),
-      t('Other'),
-      t('None'),
-    )),
-  );
+    '#options' => tpps_form_build_option_list([
+      'Herbivores',
+      'Mutulists',
+      'Pathogens',
+      'Endophytes',
+      'Other',
+      'None',
+    ], $optional = FALSE),
+  ];
 
-  $form['biotic_env']['other'] = array(
+  $form['biotic_env']['other'] = [
     '#type' => 'textfield',
     '#title' => t('Please specify Biotic Environment Type: *'),
-    '#states' => array(
-      'visible' => array(
-        ':input[name="study_info[biotic_env][option][Other]"]' => array('checked' => TRUE),
-      ),
-    ),
-  );
+    '#states' => [
+      'visible' => [
+        ':input[name="study_info[biotic_env][option][Other]"]' => ['checked' => TRUE],
+      ],
+    ],
+  ];
 
-  $form['season'] = array(
+  if (!$is_tppsc) {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Season.
+  $form['season'] = [
     '#type' => 'checkboxes',
     '#title' => t('Seasons: *'),
-    '#options' => drupal_map_assoc(array(
-      t('Spring'),
-      t('Summer'),
-      t('Fall'),
-      t('Winter'),
-    )),
+    '#options' => tpps_form_build_option_list([
+      'Spring',
+      'Summer',
+      'Fall',
+      'Winter',
+    ], $optional = FALSE),
     '#description' => t('If you do not know which season your samples were collected, please select all.'),
-  );
+  ];
 
+  //function tpps_treatments_get_list() {
+  //no:
+  // 'Air temperature regime',
+  // 'Soil Temperature regime',
+  //
   $treatment_options = drupal_map_assoc(array(
     t('Seasonal environment'),
     t('Antibiotic regime'),
@@ -330,6 +350,14 @@ function tpps_common_garden(array &$form) {
       ),
     );
   }
+
+
+
+  }
+  else {
+    tpps_build_treatment($form);
+  }
+
 }
 
 /**
@@ -630,6 +658,49 @@ function tpps_page_2_get_data_type_list() {
  *   The form to be populated.
  */
 function tppsc_plantation(array &$form) {
+  tpps_build_treatment($form);
+}
+
+/**
+ * Get list of treatments.
+ *
+ * @return array
+ *   Returns non-localized list of treatment names.
+ */
+function tpps_treatments_get_list() {
+  return [
+    'Seasonal Environment',
+    'Air temperature regime',
+    'Soil Temperature regime',
+    'Antibiotic regime',
+    'Chemical administration',
+    'Disease status',
+    'Fertilizer regime',
+    'Fungicide regime',
+    'Gaseous regime',
+    'Gravity Growth hormone regime',
+    'Mechanical treatment',
+    'Mineral nutrient regime',
+    'Humidity regime',
+    'Non-mineral nutrient regime',
+    'Radiation (light, UV-B, X-ray) regime',
+    'Rainfall regime',
+    'Salt regime',
+    'Watering regime',
+    'Water temperature regime',
+    'Pesticide regime',
+    'pH regime',
+    'Other perturbation',
+  ];
+}
+
+/**
+ * This function creates fields for the plantation study type.
+ *
+ * @param array $form
+ *   The form to be populated.
+ */
+function tpps_build_treatment(array &$form) {
   tpps_add_css_js(TPPS_PAGE_2, $form);
   $form['treatment'] = [
     '#type' => 'fieldset',
@@ -667,37 +738,4 @@ function tppsc_plantation(array &$form) {
       '#states' => $states,
     ];
   }
-}
-
-/**
- * Get list of treatments.
- *
- * @return array
- *   Returns non-localized list of treatment names.
- */
-function tpps_treatments_get_list() {
-  return [
-    'Seasonal Environment',
-    'Air temperature regime',
-    'Soil Temperature regime',
-    'Antibiotic regime',
-    'Chemical administration',
-    'Disease status',
-    'Fertilizer regime',
-    'Fungicide regime',
-    'Gaseous regime',
-    'Gravity Growth hormone regime',
-    'Mechanical treatment',
-    'Mineral nutrient regime',
-    'Humidity regime',
-    'Non-mineral nutrient regime',
-    'Radiation (light, UV-B, X-ray) regime',
-    'Rainfall regime',
-    'Salt regime',
-    'Watering regime',
-    'Water temperature regime',
-    'Pesticide regime',
-    'pH regime',
-    'other perturbation',
-  ];
 }

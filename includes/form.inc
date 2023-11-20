@@ -332,26 +332,23 @@ function tpps_get_year_options(int $start_year = 1900) {
  *   Returns list of month.
  *   Key is month name in english with leading capital letter.
  *   Value is a localized month name.
- *
- * @TODO Minor. Use list of month name and array_walk() or similar to add t().
  */
 function tpps_get_month_options($start_month = NULL) {
-  $list = [
-    0 => t('- Select -'),
-    'January' => t('January'),
-    'February' => t('February'),
-    'March' => t('March'),
-    'April' => t('April'),
-    'May' => t('May'),
-    'June' => t('June'),
-    'July' => t('July'),
-    'August' => t('August'),
-    'September' => t('September'),
-    'October' => t('October'),
-    'November' => t('November'),
-    'December' => t('December'),
-  ];
-  // Remove items to leave only '- Select -' and moths after $start_month.
+  $list = tpps_form_build_option_list([
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ], $optional = TRUE);
+  // Remove items to leave only '- Select -' and months after $start_month.
   if (!empty($start_month)) {
     foreach (array_keys($list) as $key) {
       if ($key === 0) {
@@ -364,4 +361,32 @@ function tpps_get_month_options($start_month = NULL) {
     }
   }
   return $list;
+}
+
+/**
+ * Creates localized list of options where keys are default language.
+ *
+ * @param array $list
+ *   Not translated list of options in default language.
+ * @param bool $optional
+ *   When TRUE then extra element '- Select -' will be added to the top of the
+ *   resulting list.
+ *
+ * @return array
+ *   Returns array where keys are not translated and values are translated
+ *   to user's language.
+ *
+ * @todo Test if lines will be processed correctly by t().
+ */
+function tpps_form_build_option_list(array $list = [], $optional = FALSE) {
+  $output = array_combine($list, array_map(
+    function ($s) {
+      return t($s);
+    }, $list)
+  );
+  if ($optional) {
+    $output = array_merge([0 => t('- Select -')], $output);
+  }
+  dpm(print_r($output, 1));
+  return $output;
 }

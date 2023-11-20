@@ -48,13 +48,17 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
       4 => t('Experimental/Common Garden'),
       5 => t('Plantation'),
     ],
+
+    // @TODO Remove debug code!
+    '#default_value' => 4,
+
     '#ajax' => [
       'wrapper' => 'study_info',
       'callback' => 'tpps_study_type_callback',
     ],
   ];
 
-  
+
   $form['study_info'] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
@@ -63,14 +67,18 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#suffix' => '</div>',
   ];
 
-  $type = tpps_get_ajax_value($form_state, ['study_design', 'study_type'], 0);
+  $type = tpps_get_ajax_value(
+    $form_state,
+    ['study_design', 'study_type'],
+    $form['study_design']['study_type']['#default_value'] ?? 0
+  );
   // Study Type.
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
     //unset($form['study_design']['study_type']['#ajax']);
     switch ($type) {
       case '1':
-        tpps_natural_population($form['study_info']);
+        // Show nothing.
         break;
 
       case '2':
@@ -85,7 +93,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
         break;
 
       case '4':
-        tpps_common_garden($form['study_info']);
+        tpps_common_garden($form['study_info'], $form_state);
         break;
 
       case '5':
