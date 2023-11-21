@@ -34,6 +34,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#title' => t('Data Type: *'),
     '#options' => tpps_page_2_get_data_type_list(),
     // @TODO [VS] Minor. Use 'container' form element instead of prefixes.
+    '#default_value' => $values['data_type'] ?? NULL,
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Field 'Study Type'.
@@ -48,7 +49,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
       4 => t('Experimental/Common Garden'),
       5 => t('Plantation'),
     ],
-
+    '#default_value' => $values['study_type'] ?? NULL,
     // @TODO Remove debug code!
     '#default_value' => 4,
 
@@ -57,7 +58,6 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
       'callback' => 'tpps_study_type_callback',
     ],
   ];
-
 
   $form['study_info'] = [
     '#type' => 'fieldset',
@@ -97,7 +97,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
         break;
 
       case '5':
-        tppsc_plantation($form['study_info']);
+        tppsc_plantation($form['study_info'], $form_state);
         break;
 
       default:
@@ -129,11 +129,11 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
         break;
 
       case '4':
-        tpps_common_garden($form['study_info']);
+        tpps_common_garden($form['study_info'], $form_state);
         break;
 
       case '5':
-        tpps_plantation($form['study_info']);
+        tpps_plantation($form['study_info'], $form_state);
         break;
 
       default:

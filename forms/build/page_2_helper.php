@@ -210,6 +210,11 @@ function tpps_common_garden(array &$form, array $form_state) {
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
 
   $form['#title'] = t('Common Garden Information');
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Assession field.
+  if ($is_tppsc) {
+    tpps_page2_build_assession_field($form);
+  }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Irrigation.
@@ -243,9 +248,8 @@ function tpps_common_garden(array &$form, array $form_state) {
     ],
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
   if (!$is_tppsc) {
-    // @TODO Check if it must be shown.
+    // @todo Check if it must be shown.
     tpps_control($form, 'salinity', 'Salinity');
   }
 
@@ -280,82 +284,82 @@ function tpps_common_garden(array &$form, array $form_state) {
   ];
 
   if (!$is_tppsc) {
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Season.
-  $form['season'] = [
-    '#type' => 'checkboxes',
-    '#title' => t('Seasons: *'),
-    '#options' => tpps_form_build_option_list([
-      'Spring',
-      'Summer',
-      'Fall',
-      'Winter',
-    ], $optional = FALSE),
-    '#description' => t('If you do not know which season your samples were collected, please select all.'),
-  ];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Season.
+    $form['season'] = [
+      '#type' => 'checkboxes',
+      '#title' => t('Seasons: *'),
+      '#options' => tpps_form_build_option_list([
+        'Spring',
+        'Summer',
+        'Fall',
+        'Winter',
+      ], $optional = FALSE),
+      '#description' => t('If you do not know which season your samples were collected, please select all.'),
+    ];
 
-  //function tpps_treatments_get_list() {
-  //no:
-  // 'Air temperature regime',
-  // 'Soil Temperature regime',
-  //
-  $treatment_options = drupal_map_assoc(array(
-    t('Seasonal environment'),
-    t('Antibiotic regime'),
-    t('Chemical administration'),
-    t('Disease status'),
-    t('Fertilizer regime'),
-    t('Fungicide regime'),
-    t('Gaseous regime'),
-    t('Gravity Growth hormone regime'),
-    t('Herbicide regime'),
-    t('Mechanical treatment'),
-    t('Mineral nutrient regime'),
-    t('Non-mineral nutrient regime'),
-    t('Salt regime'),
-    t('Watering regime'),
-    t('Pesticide regime'),
-    t('pH regime'),
-    t('Other perturbation'),
-  ));
+    //function tpps_treatments_get_list() {
+    //no:
+    // 'Air temperature regime',
+    // 'Soil Temperature regime',
+    //
+    $treatment_options = drupal_map_assoc(array(
+      t('Seasonal environment'),
+      t('Antibiotic regime'),
+      t('Chemical administration'),
+      t('Disease status'),
+      t('Fertilizer regime'),
+      t('Fungicide regime'),
+      t('Gaseous regime'),
+      t('Gravity Growth hormone regime'),
+      t('Herbicide regime'),
+      t('Mechanical treatment'),
+      t('Mineral nutrient regime'),
+      t('Non-mineral nutrient regime'),
+      t('Salt regime'),
+      t('Watering regime'),
+      t('Pesticide regime'),
+      t('pH regime'),
+      t('Other perturbation'),
+    ));
 
-  $form['treatment'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Treatments:</div>'),
-  );
+    $form['treatment'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('<div class="fieldset-title">Treatments:</div>'),
+    );
 
-  $form['treatment']['check'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('My Common Garden experiment used treatments/regimes/perturbations.'),
-  );
-
-  foreach ($treatment_options as $option) {
-    $form['treatment']["$option"] = array(
+    $form['treatment']['check'] = array(
       '#type' => 'checkbox',
-      '#title' => t("@opt", array('@opt' => $option)),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="study_info[treatment][check]"]' => array('checked' => TRUE),
-        ),
-      ),
+      '#title' => t('My Common Garden experiment used treatments/regimes/perturbations.'),
     );
-    $form['treatment']["$option-description"] = array(
-      '#type' => 'textfield',
-      '#description' => t("@opt Description *", array('@opt' => $option)),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="study_info[treatment][' . $option . ']"]' => array('checked' => TRUE),
-          ':input[name="study_info[treatment][check]"]' => array('checked' => TRUE),
+
+    foreach ($treatment_options as $option) {
+      $form['treatment']["$option"] = array(
+        '#type' => 'checkbox',
+        '#title' => t("@opt", array('@opt' => $option)),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="study_info[treatment][check]"]' => array('checked' => TRUE),
+          ),
         ),
-      ),
-    );
-  }
+      );
+      $form['treatment']["$option-description"] = array(
+        '#type' => 'textfield',
+        '#description' => t("@opt Description *", array('@opt' => $option)),
+        '#states' => array(
+          'visible' => array(
+            ':input[name="study_info[treatment][' . $option . ']"]' => array('checked' => TRUE),
+            ':input[name="study_info[treatment][check]"]' => array('checked' => TRUE),
+          ),
+        ),
+      );
+    }
 
 
 
   }
   else {
-    tpps_build_treatment($form);
+    tpps_build_treatment($form, $form_state);
   }
 
 }
@@ -624,10 +628,9 @@ function tpps_control(array &$form, $type, $label) {
  */
 function tpps_page_2_get_data_type_list() {
   $options = [
-    0 => '- Select -',
-    'Genotype' => t('Genotype'),
-    'Phenotype' => t('Phenotype'),
-    'Genotype x Phenotype' => t('Genotype x Phenotype'),
+    'Genotype',
+    'Phenotype',
+    'Genotype x Phenotype',
   ];
   if (
     module_exists('cartogratree')
@@ -635,17 +638,16 @@ function tpps_page_2_get_data_type_list() {
     && db_table_exists('cartogratree_layers')
   ) {
     $options = [
-      0 => t('- Select -'),
-      'Genotype' => t('Genotype'),
-      'Phenotype' => t('Phenotype'),
-      'Environment' => t('Environmental'),
-      'Genotype x Phenotype' => t('Genotype x Phenotype'),
-      'Genotype x Environment' => t('Genotype x Environmental'),
-      'Phenotype x Environment' => t('Phenotype x Environmental'),
-      'Genotype x Phenotype x Environment' => t('Genotype x Phenotype x Environmental'),
+      'Genotype',
+      'Phenotype',
+      'Environment',
+      'Genotype x Phenotype',
+      'Genotype x Environment',
+      'Phenotype x Environment',
+      'Genotype x Phenotype x Environment',
     ];
   }
-  return $options;
+  return tpps_form_build_option_list($options, $optional = TRUE);
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -658,7 +660,7 @@ function tpps_page_2_get_data_type_list() {
  *   The form to be populated.
  */
 function tppsc_plantation(array &$form) {
-  tpps_build_treatment($form);
+  tpps_build_treatment($form, $form_state);
 }
 
 /**
@@ -667,31 +669,55 @@ function tppsc_plantation(array &$form) {
  * @return array
  *   Returns non-localized list of treatment names.
  */
-function tpps_treatments_get_list() {
-  return [
-    'Seasonal Environment',
-    'Air temperature regime',
-    'Soil Temperature regime',
-    'Antibiotic regime',
-    'Chemical administration',
-    'Disease status',
-    'Fertilizer regime',
-    'Fungicide regime',
-    'Gaseous regime',
-    'Gravity Growth hormone regime',
-    'Mechanical treatment',
-    'Mineral nutrient regime',
-    'Humidity regime',
-    'Non-mineral nutrient regime',
-    'Radiation (light, UV-B, X-ray) regime',
-    'Rainfall regime',
-    'Salt regime',
-    'Watering regime',
-    'Water temperature regime',
-    'Pesticide regime',
-    'pH regime',
-    'Other perturbation',
-  ];
+function tpps_treatments_get_list(array $form_state) {
+  $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
+  if ($is_tppsc) {
+    return [
+      'Seasonal Environment',
+      'Air temperature regime',
+      'Soil Temperature regime',
+      'Antibiotic regime',
+      'Chemical administration',
+      'Disease status',
+      'Fertilizer regime',
+      'Fungicide regime',
+      'Gaseous regime',
+      'Gravity Growth hormone regime',
+      'Mechanical treatment',
+      'Mineral nutrient regime',
+      'Humidity regime',
+      'Non-mineral nutrient regime',
+      'Radiation (light, UV-B, X-ray) regime',
+      'Rainfall regime',
+      'Salt regime',
+      'Watering regime',
+      'Water temperature regime',
+      'Pesticide regime',
+      'pH regime',
+      'Other perturbation',
+    ];
+  }
+  else {
+    return [
+      'Seasonal environment',
+      'Antibiotic regime',
+      'Chemical administration',
+      'Disease status',
+      'Fertilizer regime',
+      'Fungicide regime',
+      'Gaseous regime',
+      'Gravity Growth hormone regime',
+      'Herbicide regime',
+      'Mechanical treatment',
+      'Mineral nutrient regime',
+      'Non-mineral nutrient regime',
+      'Salt regime',
+      'Watering regime',
+      'Pesticide regime',
+      'pH regime',
+      'Other perturbation',
+    ];
+  }
 }
 
 /**
@@ -700,11 +726,11 @@ function tpps_treatments_get_list() {
  * @param array $form
  *   The form to be populated.
  */
-function tpps_build_treatment(array &$form) {
+function tpps_build_treatment(array &$form, array $form_state) {
   tpps_add_css_js(TPPS_PAGE_2, $form);
   $form['treatment'] = [
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Treatments:</div>'),
+    '#title' => t('Treatments'),
   ];
   $form['treatment']['check'] = [
     '#type' => 'select',
@@ -717,7 +743,7 @@ function tpps_build_treatment(array &$form) {
   ];
 
   // @TODO use container.
-  $treatment_list = tpps_treatments_get_list();
+  $treatment_list = tpps_treatments_get_list($form_state);
   $states = [
     'visible' => [
       ':input[name="study_info[treatment][check]"]' => ['value' => 'yes'],
@@ -738,4 +764,18 @@ function tpps_build_treatment(array &$form) {
       '#states' => $states,
     ];
   }
+}
+
+/**
+ * Adds 'Assession' field to form.
+ *
+ * @param array $form
+ *   Drupal Form API array or it's part.
+ */
+function tpps_page2_build_assession_field(array &$form) {
+  $form['assessions'] = [
+    '#type' => 'select',
+    '#title' => t('Number of times the populations were assessed (on average): *'),
+    '#options' => tpps_form_build_option_list(range(1, 30), $optional = TRUE),
+  ];
 }
