@@ -387,6 +387,5 @@ function tpps_form_build_option_list(array $list = [], $optional = FALSE) {
   if ($optional) {
     $output = array_merge([0 => t('- Select -')], $output);
   }
-  dpm(print_r($output, 1));
   return $output;
 }

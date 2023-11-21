@@ -29,6 +29,7 @@ function tpps_install() {
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
   variable_set('tpps_front_show_pending_status_mine', FALSE);
+  variable_set('tpps_front_show_approved_status_mine', FALSE);
   variable_set('tpps_front_show_pending_status_others', FALSE);
   variable_set('tpps_front_show_others_studies', TRUE);
   // Page 1 Settings.
@@ -43,6 +44,7 @@ function tpps_install() {
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
   // Study Import.
   variable_set('tpps_submission_import_file_replace', TRUE);
+  variable_set('tpps_submission_import_show_report', FALSE);
   // Submit All.
   variable_set('tpps_submit_all_dump_report_to_file', FALSE);
   // Theme Settings.
@@ -330,6 +332,7 @@ function tpps_uninstall() {
   // Front page.
   variable_del('tpps_front_cache_accession_list');
   variable_del('tpps_front_show_pending_status_mine');
+  variable_del('tpps_front_show_approved_status_mine');
   variable_del('tpps_front_show_pending_status_others');
   variable_del('tpps_front_show_others_studies');
   // Page 1.
@@ -344,6 +347,7 @@ function tpps_uninstall() {
   variable_del('tpps_submission_export_show_file_search_report');
   // Study Import.
   variable_del('tpps_submission_import_file_replace');
+  variable_del('tpps_submission_import_show_report');
   // Submit All.
   variable_del('tpps_submit_all_dump_report_to_file');
   // Theme Settings.

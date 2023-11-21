@@ -32,6 +32,12 @@ function tpps_form_front_settings_form(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_front_show_pending_status_mine', FALSE),
     '#description' => t('Default is <strong>unchecked</strong>.'),
   ];
+  $form['tpps_front_show_approved_status_mine'] = [
+    '#type' => 'checkbox',
+    '#title' => t("Show mine studies in 'Approved' status in the list of accessions"),
+    '#default_value' => variable_get('tpps_front_show_approved_status_mine', FALSE),
+    '#description' => t('Default is <strong>unchecked</strong>.'),
+  ];
   $form['tpps_front_show_pending_status_others'] = [
     '#type' => 'checkbox',
     '#title' => t("Show other user's studies in 'Pending Approval' status in the list of accessions"),

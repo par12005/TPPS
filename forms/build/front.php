@@ -47,6 +47,14 @@ function tpps_front_create_form(array &$form, array $form_state) {
           ]),
         ];
       }
+      if (variable_get('tpps_front_show_approved_status_mine', FALSE)) {
+        $options = $options + [
+          'YOUR / APPROVED' => tpps_submission_get_accession_list([
+            ['status', 'Approved'],
+            ['uid', $user->uid],
+          ]),
+        ];
+      }
       if (variable_get('tpps_front_show_others_studies', TRUE)) {
         $options = $options + [
           ' OTHERS / INCOMPLETE ' => tpps_submission_get_accession_list([
