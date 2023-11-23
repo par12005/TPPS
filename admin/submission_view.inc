@@ -9,6 +9,13 @@ module_load_include('inc', 'tpps', 'includes/common');
 
 /**
  * Menu callback. TPPS Study View Form.
+ *
+ * Shows dropdown list of existing studies to be selected for view.
+ *
+ * @TODO Convert to use '/tpps/submission' to show list of studies with
+ * action-buttons (View, Compare and etc.).
+ * Use /tpps/submission/%/[operation].
+ * @TODO Move each page to separate file.
  */
 function tpps_submission_view_select_form(array $form, array &$form_state) {
   $accession = (($form_state['input']['op'] ?? NULL) == t('Reset')
@@ -54,7 +61,7 @@ function tpps_submission_view_select_form_submit(array $form, array &$form_state
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 /**
- * Menu callback. Single submission view page.
+ * Menu callback. Shows a single submission data.
  */
 function tpps_submission_view_form(array $form, array $form_state) {
   $accession = arg(5);
@@ -72,15 +79,41 @@ function tpps_submission_view_form(array $form, array $form_state) {
     );
     drupal_goto('admin/config/tpps/submission/view');
   }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $form['tpps_submission_accession_1'] = [
-    '#type' => 'hidden',
-    '#value' => $accession,
-  ];
   $form['tpps_submission_current_accession'] = [
     '#markup' => '<h3>' . t('Current Accession: @accession',
     ['@accession' => $accession]) . '</h3>',
   ];
+  $form['tpps_submission_accession_1'] = [
+    '#type' => 'hidden',
+    '#value' => $accession,
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Import data.
+  $import_meta = $state['saved_values']['tpps_submission_import'] ?? NULL;
+  if ($import_meta) {
+    $items = [
+      t(
+        // @TODO Use link.
+        'Original Accession: @accession',
+        ['@accession' => ($import_meta['original_accession'] ?? NULL)]
+      ),
+      t(
+        'Import Date: @date.',
+        ['@date' => ($import_meta['imported_date'] ?? NULL)]
+      ),
+      t(
+        'Import Timestamp: @timestamp.',
+        ['@timestamp' => ($import_meta['imported'] ?? NULL)]
+      ),
+    ];
+    $form['original_accession'] = [
+      '#markup' => theme('item_list', [
+        'title' => t('Import Metadata'),
+        'items' => $items,
+      ]),
+    ];
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['header_back'] = [
     '#type' => 'submit',
     '#value' => t('Back'),
@@ -101,7 +134,10 @@ function tpps_submission_view_form(array $form, array $form_state) {
     '#value' => t('Compare'),
     '#submit' => ['tpps_submission_view_form_submit'],
   ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Show the data!
   $parsed = tpps_array_dump($state);
+
   foreach ($parsed as $key => $item) {
     $form[$key . '_container'] = [
       '#type' => 'fieldset',
