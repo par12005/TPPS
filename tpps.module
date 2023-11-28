@@ -1894,19 +1894,27 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_manual_export.inc',
-    'type' => MENU_LOCAL_TASK,
   ];
   // Compare
+  $items['tpps/submission/%/compare'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'Compare two TPPS Submissions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_compare', 2],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submission_compare.inc',
+  ];
   $items['tpps/submission/%/compare/%'] = [
     'title callback' => 'tpps_submission_title',
     'title arguments' => [2, 3, 4],
-    'description' => 'Compare two TPPS Submissions',
+    'description' => 'Comparison of two TPPS Submissions',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_compare', 2, 4],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_compare.inc',
-    'type' => MENU_CALLBACK,
   ];
   $items['tpps/submission/%/purge'] = [
     'title callback' => 'tpps_submission_title',

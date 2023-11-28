@@ -20,7 +20,6 @@ module_load_include('inc', 'tpps', 'admin/submission_list');
  */
 function tpps_submission_compare_form(array $form, array &$form_state, $accession_1 = '', $accession_2 = '') {
   tpps_submission_list_validate_accession($accession_1);
-  tpps_submission_list_validate_accession($accession_2);
 
   if (($form_state['input']['op'] ?? NULL) == t('Reset')) {
     $accession_1 = $accession_2 = '';
