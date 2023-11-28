@@ -20,6 +20,11 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
     '#default_value' => $accession ?? 'TGDR12450' ?? NULL,
     '#required' => TRUE,
   ];
+  $form['tpps_submission_debug_mode'] = [
+    '#type' => 'checkbox',
+    '#title' => 'Debug Mode',
+    '#default_value' => FALSE,
+  ];
   $form['action'] = ['#type' => 'container'];
   $buttons = ['view', 'export', 'import', 'compare', 'purge'];
   foreach ($buttons as $key) {
@@ -37,9 +42,11 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
  */
 function tpps_submission_list_form_submit(array $form, array &$form_state) {
   $action = $form_state['triggering_element']['#name'] ?? NULL;
+  $_SESSION['tpps_submission_debug_mode']
+    = $form_state['values']['tpps_submission_debug_mode'] ?? FALSE;
+
   if ($action == 'import') {
     drupal_goto('tpps/submission/' . $action);
-    dpm('import');
   }
   else {
     $path = 'tpps/submission';
@@ -55,7 +62,7 @@ function tpps_submission_list_form_submit(array $form, array &$form_state) {
  * @param array $form
  *   Drupal Form API array.
  */
-function tpps_submission_list_add_buttons(array &$form) {
+function tpps_submission_list_add_buttons(array &$form, $add_action = TRUE) {
   $form['action'] = ['#type' => 'container'];
   // Back-button.
   $action = 'back';
@@ -65,18 +72,20 @@ function tpps_submission_list_add_buttons(array &$form) {
     '#value' => t(ucfirst($action)),
     '#submit' => ['tpps_submission_list_back'],
   ];
-  // Main action button.
-  $main_action = check_plain(arg(3));
-  // Get caller function name.
-  $function = debug_backtrace(
-    !DEBUG_BACKTRACE_PROVIDE_OBJECT|DEBUG_BACKTRACE_IGNORE_ARGS, 2
-  )[1]['function'];
-  $form['action'][$main_action] = [
-    '#type' => 'submit',
-    '#name' => $main_action,
-    '#value' => t(ucfirst($main_action)),
-    '#submit' => [$function . '_submit'],
-  ];
+  if ($add_action) {
+    // Main action button.
+    $main_action = check_plain(arg(3));
+    // Get caller function name.
+    $function = debug_backtrace(
+      !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2
+    )[1]['function'];
+    $form['action'][$main_action] = [
+      '#type' => 'submit',
+      '#name' => $main_action,
+      '#value' => t(ucfirst($main_action)),
+      '#submit' => [$function . '_submit'],
+    ];
+  }
 }
 
 /**
@@ -96,5 +105,8 @@ function tpps_submission_list_validate_accession($accession) {
  * TPPS Submission form submitter for 'Back' button.
  */
 function tpps_submission_list_back() {
+  // For some reasons messages from export/import pages duplicates when 'Back'
+  // button clicked so we simply clear all messages out.
+  drupal_get_messages();
   drupal_goto('tpps/submission');
 }

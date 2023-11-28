@@ -20,54 +20,31 @@ module_load_include('inc', 'tpps', 'admin/submission_list');
  */
 function tpps_submission_export_form(array $form, array &$form_state, $accession = '') {
   tpps_submission_list_validate_accession($accession);
-  $form['tpps_submission_export_accession'] = [
-    '#type' => 'select',
-    '#title' => t('Accession'),
-    '#options' => tpps_submission_get_accession_list(),
-    '#default_value' => $accession,
-    '#required' => TRUE,
-  ];
-  $show_report = variable_get('tpps_submission_export_show_file_search_report', FALSE);
-  $form['tpps_submission_export_show_file_search_report'] = [
-    '#type' => 'checkbox',
-    '#title' => 'Show File Search Report?',
-    '#default_value' => $show_report,
-  ];
-  if (!empty($accession)) {
-    // Get Submission State.
-    module_load_include('inc', 'tpps', 'includes/submissions');
-    $state = tpps_submission_get_state($accession);
-    tpps_submission_export_fixes($state);
-    //drupal_set_message(tpps_table_display($state));
-    // Files.
-    $fid_list = tpps_submission_file_get_id_list($state, $show_report);
-    $files = tpps_submission_export_get_files_info($fid_list);
-    tpps_submission_export_file_report($fid_list, $files);
-    $state['tpps_submission_export_files'] = $files;
-
-    $form['tpps_submission_export_state'] = [
-      '#type' => 'textarea',
-      '#title' => t('State PHP Array'),
-      '#value' => var_export($state, 1),
-      '#rows' => 10,
-      '#resizable' => TRUE,
-      '#attributes' => ['readonly' => 'readonly'],
-    ];
-  }
-
-  tpps_add_css_js('submission_export', $form);
-  tpps_submission_list_add_buttons($form);
-  return $form;
-}
-
-/**
- * Form submitter for 'tpps_form_page_1_settings_form' form.
- */
-function tpps_submission_export_form_submit(array $form, array &$form_state) {
-  variable_set('tpps_submission_export_show_file_search_report',
-    ($form_state['values']['tpps_submission_export_show_file_search_report'] ?? FALSE)
+  // Get Submission State.
+  module_load_include('inc', 'tpps', 'includes/submissions');
+  $state = tpps_submission_get_state($accession);
+  tpps_submission_export_fixes($state);
+  //drupal_set_message(tpps_table_display($state));
+  // Files.
+  $fid_list = tpps_submission_file_get_id_list(
+    $state,
+    ($_SESSION['tpps_submission_debug_mode'] ?? FALSE)
   );
-  $form_state['rebuild'] = 1;
+  $files = tpps_submission_export_get_files_info($fid_list);
+  tpps_submission_export_file_report($fid_list, $files);
+  $state['tpps_submission_export_files'] = $files;
+
+  $form['tpps_submission_export_state'] = [
+    '#type' => 'textarea',
+    '#title' => t('State PHP Array'),
+    '#value' => var_export($state, 1),
+    '#rows' => 10,
+    '#resizable' => TRUE,
+    '#attributes' => ['readonly' => 'readonly'],
+  ];
+  tpps_submission_list_add_buttons($form, $add_action = FALSE);
+  tpps_add_css_js('submission_export', $form);
+  return $form;
 }
 
 /**

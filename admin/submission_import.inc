@@ -144,7 +144,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   global $user;
   $dry_run = (bool) ($form_state['triggering_element']['#value'] == t('Dry Run'));
 
-  $show_report = TRUE;
+  $debug_mode = ($_SESSION['tpps_submission_debug_mode'] ?? FALSE);
   module_load_include('inc', 'tpps', 'includes/common');
   variable_set('tpps_submission_import_file_replace',
     ($form_state['values']['tpps_submission_import_file_replace'] ?? FALSE)
@@ -172,7 +172,9 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
     // @TODO Update code to use only 'xxx' format.
     $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
-    tpps_submission_import_process_files($state, $new_accession, ($show_report || $dry_run));
+    tpps_submission_import_process_files($state, $new_accession,
+      ($debug_mode || $dry_run)
+    );
     if (
       $dry_run
       || !empty($form_state['values']['tpps_submission_import_overwrite_submission'])
