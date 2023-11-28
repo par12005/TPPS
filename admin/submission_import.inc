@@ -47,6 +47,8 @@ function tpps_submission_import_form(array $form, array &$form_state) {
     '#title' => t('Submission State'),
     '#default_value' => $form_state['input']['tpps_submission_import_submission_state'] ?? '',
   ];
+  // @TODO Add 'show report' option.
+
   // @TODO Use tpps_submission_list_add_buttons($form);
   $form['action'] = ['#type' => 'container'];
   $form['action']['import'] = [
@@ -141,6 +143,8 @@ function tpps_submission_import_review_dump(array $form, array &$form_state) {
 function tpps_submission_import_form_submit(array $form, array &$form_state) {
   global $user;
   $dry_run = (bool) ($form_state['triggering_element']['#value'] == t('Dry Run'));
+
+  $show_report = TRUE;
   module_load_include('inc', 'tpps', 'includes/common');
   variable_set('tpps_submission_import_file_replace',
     ($form_state['values']['tpps_submission_import_file_replace'] ?? FALSE)
@@ -163,62 +167,12 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       return;
     }
 
-    // Note: $state['saved_values'] is required for normal form submission.
-    // Fix Warning: end() expects parameter 1 to be array, null given in
-    // file_managed_file_validate()
-    // (line 607 of /var/www/Drupal/modules/file/file.module).
-    $state['triggering_element']['#parents'] = ['submit'];
-    // Fix Notice: Undefined index: #value in tpps_main_validate()
-    // (line 1071 of /var/www/Drupal/sites/all/modules/TGDR/tpps.module).
-    $state['triggering_element']['#value'] = t('Review and Submit');
-
     $new_accession = $form_state['values']['tpps_submission_import_new_accession']
       ?? tpps_init_project_get_next_accession();
     // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
     // @TODO Update code to use only 'xxx' format.
     $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Process files (if any).
-    if (empty($state['tpps_submission_export_files'])) {
-      drupal_set_message('Submission has no files.', 'warning');
-    }
-    else {
-      foreach ($state['tpps_submission_export_files'] as $fid => $file) {
-        if (empty($file)) {
-          continue;
-        }
-        $new_file = tpps_submission_import_download_file($file);
-        if (empty($new_file)) {
-          drupal_set_message(t('File @url is empty.',
-            ['@url' => l($file['url'], $file['url'])]), 'error'
-          );
-          $form['rebuild'] = 1;
-          return;
-        }
-        // To avoid errors when page navigation used we need to have
-        // temporary stored files until final form submit ('summarypage').
-        // @TODO Minor. Think about reusage of function
-        // tpps_submission_file_set_status().
-        if ($new_file->status != 0) {
-          $new_file->status = 0;
-          file_save($new_file);
-        }
-        tpps_file_add_usage($new_file, $new_accession);
-        // Change File ID in submission state.
-        $state = tpps_array_replace($state, $fid, $new_file->fid);
-        drupal_set_message(t('Original file "<strong>@old_fid</strong>" '
-          . 'was replaced with new "<strong>@new_fid</strong>".',
-          ['@old_fid' => $fid, '@new_fid' => $new_file->fid]
-        ));
-        if ($dry_run) {
-          drupal_set_message($fid . ': <pre>' . print_r($file, 1) . '</pre>');
-          drupal_set_message('New file: <pre>' . print_r($new_file, 1) . '</pre>');
-        }
-      }
-    }
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Accession.
+    tpps_submission_import_process_files($state, $new_accession, ($show_report || $dry_run));
     if (
       $dry_run
       || !empty($form_state['values']['tpps_submission_import_overwrite_submission'])
@@ -229,28 +183,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       // redord in chado.dbxref will be left unchanged.
       tpps_submission_purge($new_accession, $force = TRUE);
     }
-    // $form_state['values']['frontpage']['accession'] = $new_accession;
-    // Check also $form_state['input'] and $form_state['completed_form'].
-    // Update accession value in $form_state.
-    $old_accession = $state['saved_values']['frontpage']['accession'];
-    $state = tpps_array_replace($state, $old_accession, $new_accession);
-    // Store original accession.
-    // @TODO Minor. Remove 'saved_values' but be sure to restore those values
-    // when submission reopened using '/tppsc' form.
-    $state['saved_values']['tpps_submission_import']['original_accession'] = $old_accession;
-    $state['saved_values']['tpps_submission_import']['imported'] = REQUEST_TIME;
-    $state['saved_values']['tpps_submission_import']['imported_date']
-      = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O');
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // From tpps_init_project().
-    $state['saved_values']['dbxref_id']
-      = $state['dbxref_id']
-        = $state['values']['dbxref_id']
-          = tpps_init_project_get_dbxref_id($new_accession);
-
-    $state['values']['status'] = 'Incomplete';
-    $state['values'] = $state['saved_values'];
+    tpps_submission_import_state_mods($state, $new_accession);
     if ($dry_run) {
       // Show with line numbers.
       $state_array = preg_split("/\r\n|\n|\r/", var_export($state, 1));
@@ -348,4 +281,101 @@ function tpps_submission_import_fix_stdclass(&$state_raw) {
  */
 function tpps_submission_import_get_folder($file_uri = NULL) {
   return $file_uri ? dirname($file_uri) : 'public://';
+}
+
+/**
+ * Required modifications on Submission State array to import study.
+ *
+ * @param array $state
+ *   Submission State.
+ * @param string $new_accession
+ *   New study accession. For example: TGDRxxxx.
+ */
+function tpps_submission_import_state_mods(array &$state, $new_accession) {
+  // Note: $state['saved_values'] is required for normal form submission.
+  // Fix Warning: end() expects parameter 1 to be array, null given in
+  // file_managed_file_validate()
+  // (line 607 of /var/www/Drupal/modules/file/file.module).
+  $state['triggering_element']['#parents'] = ['submit'];
+  // Fix Notice: Undefined index: #value in tpps_main_validate()
+  // (line 1071 of /var/www/Drupal/sites/all/modules/TGDR/tpps.module).
+  $state['triggering_element']['#value'] = t('Review and Submit');
+
+  // $form_state['values']['frontpage']['accession'] = $new_accession;
+  // Check also $form_state['input'] and $form_state['completed_form'].
+  // Update accession value in $form_state.
+  $old_accession = $state['saved_values']['frontpage']['accession'];
+  $state = tpps_array_replace($state, $old_accession, $new_accession);
+  // Store original accession.
+  // @TODO Minor. Remove 'saved_values' but be sure to restore those values
+  // when submission reopened using '/tppsc' form.
+  $state['saved_values']['tpps_submission_import']['original_accession'] = $old_accession;
+  $state['saved_values']['tpps_submission_import']['imported'] = REQUEST_TIME;
+  $state['saved_values']['tpps_submission_import']['imported_date']
+    = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O');
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // From tpps_init_project().
+  $state['saved_values']['dbxref_id']
+    = $state['dbxref_id']
+      = $state['values']['dbxref_id']
+        = tpps_init_project_get_dbxref_id($new_accession);
+
+  module_load_include('php', 'tpps', 'forms/build/page_1');
+  $state['ids']['project_id'] = tpps_get_project_id($state['dbxref_id']);
+  $state['values']['status'] = 'Incomplete';
+  $state['values'] = $state['saved_values'];
+}
+
+/**
+ * Prepare files for import.
+ *
+ * Files will be downloaded, added to drupal's managed files. File Ids in
+ * Submssion State will be updated.
+ *
+ * @param array $state
+ *   Submission State.
+ * @param string $new_accession
+ *   New (local) study accession.
+ * @param bool $show_report
+ *   When TRUE messages about status of each file processing will be shown.
+ *   When FALSE (default) then no messages will be shown ("silent mode").
+ */
+function tpps_submission_import_process_files(array &$state, $new_accession, $show_report = FALSE) {
+  if (empty($state['tpps_submission_export_files']) && $show_report) {
+    drupal_set_message('Submission has no files.', 'warning');
+  }
+  else {
+    foreach ($state['tpps_submission_export_files'] as $fid => $file) {
+      if (empty($file)) {
+        continue;
+      }
+      $new_file = tpps_submission_import_download_file($file);
+      if (empty($new_file)) {
+        drupal_set_message(t('File @url is empty.',
+          ['@url' => l($file['url'], $file['url'])]), 'error'
+        );
+        $form['rebuild'] = 1;
+        return;
+      }
+      // To avoid errors when page navigation used we need to have
+      // temporary stored files until final form submit ('summarypage').
+      // @TODO Minor. Think about reusage of function
+      // tpps_submission_file_set_status().
+      if ($new_file->status != 0) {
+        $new_file->status = 0;
+        file_save($new_file);
+      }
+      tpps_file_add_usage($new_file, $new_accession);
+      // Change File ID in submission state.
+      $state = tpps_array_replace($state, $fid, $new_file->fid);
+      if ($show_report) {
+        drupal_set_message(t('Original file "<strong>@old_fid</strong>" '
+          . 'was replaced with new "<strong>@new_fid</strong>".',
+          ['@old_fid' => $fid, '@new_fid' => $new_file->fid]
+        ));
+        drupal_set_message($fid . ': <pre>' . print_r($file, 1) . '</pre>');
+        drupal_set_message('New file: <pre>' . print_r($new_file, 1) . '</pre>');
+      }
+    }
+  }
 }
