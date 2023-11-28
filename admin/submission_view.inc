@@ -8,77 +8,25 @@
 module_load_include('inc', 'tpps', 'includes/common');
 
 /**
- * Menu callback. TPPS Study View Form.
- *
- * Shows dropdown list of existing studies to be selected for view.
- *
- * @TODO Convert to use '/tpps/submission' to show list of studies with
- * action-buttons (View, Compare and etc.).
- * Use /tpps/submission/%/[operation].
- * @TODO Move each page to separate file.
- */
-function tpps_submission_view_select_form(array $form, array &$form_state) {
-  $accession = (($form_state['input']['op'] ?? NULL) == t('Reset')
-    ? '' : ($form_state['input']['tpps_submission_accession'] ?? '')
-  );
-  $form['tpps_submission_accession'] = [
-    '#type' => 'select',
-    '#title' => t('Accession'),
-    '#options' => tpps_submission_get_accession_list(),
-    '#default_value' => $accession,
-    '#required' => TRUE,
-  ];
-  $form['action_view'] = [
-    '#type' => 'submit',
-    '#value' => t('View'),
-    '#submit' => ['tpps_submission_view_select_form_submit'],
-  ];
-  $form['action_reset'] = [
-    '#type' => 'submit',
-    '#value' => t('Reset'),
-    '#submit' => ['tpps_submission_view_select_form_reset'],
-  ];
-  return $form;
-}
-
-/**
- * Resets TPPS Export Form.
- */
-function tpps_submission_view_select_form_reset() {
-  $form_state['input']['tpps_submission_view_accession'] = '';
-  $form_state['values']['tpps_submission_view_accession'] = '';
-  drupal_goto('admin/config/tpps/submission/view');
-}
-
-/**
- * Form submitter for 'tpps_form_page_1_settings_form' form.
- */
-function tpps_submission_view_select_form_submit(array $form, array &$form_state) {
-  $accession = ($form_state['input']['tpps_submission_accession'] ?? '');
-  drupal_goto('admin/config/tpps/submission/view/' . $accession);
-}
-
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-/**
  * Menu callback. Shows a single submission data.
  */
-function tpps_submission_view_form(array $form, array $form_state) {
-  $accession = arg(5);
+function tpps_submission_view_form(array $form, array $form_state, $accession = '') {
   if (empty($accession)) {
     drupal_set_message('Empty accession.', 'error');
-    drupal_goto('admin/config/tpps/submission/view');
+    drupal_goto('tpps/submission');
   }
 
-  module_load_include('inc', 'tpps', 'includes/submissions');
   // @TODO Validate $accession.
+  module_load_include('inc', 'tpps', 'includes/submissions');
   if (empty($state = tpps_submission_get_state($accession))) {
     drupal_set_message(t('Submission "<strong>@accession</strong>" not found. '
       . 'Please choose from the list below.',
       ['@accession' => $accession]), 'error'
     );
-    drupal_goto('admin/config/tpps/submission/view');
+    drupal_goto('tpps/submission');
   }
+
+
   $form['tpps_submission_current_accession'] = [
     '#markup' => '<h3>' . t('Current Accession: @accession',
     ['@accession' => $accession]) . '</h3>',
@@ -114,22 +62,13 @@ function tpps_submission_view_form(array $form, array $form_state) {
     ];
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $form['header_back'] = [
-    '#type' => 'submit',
-    '#value' => t('Back'),
-    '#submit' => ['tpps_submission_view_select_form_reset'],
-  ];
-  $form['action_purge'] = [
-    '#type' => 'submit',
-    '#value' => t('Purge'),
-    '#submit' => ['tpps_submission_view_form_submit'],
-  ];
   $form['tpps_submission_accession_2'] = [
     '#type' => 'select',
     '#title' => t('Accession to compare with'),
     '#options' => tpps_submission_get_accession_list(),
   ];
-  $form['action_compare'] = [
+  $form['action'] = ['#type' => 'container'];
+  $form['action']['compare'] = [
     '#type' => 'submit',
     '#value' => t('Compare'),
     '#submit' => ['tpps_submission_view_form_submit'],
@@ -148,11 +87,6 @@ function tpps_submission_view_form(array $form, array $form_state) {
       'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
     ];
   }
-  $form['footer_back'] = [
-    '#type' => 'submit',
-    '#value' => t('Back'),
-    '#submit' => ['tpps_submission_view_select_form_reset'],
-  ];
   return $form;
 }
 
@@ -164,12 +98,7 @@ function tpps_submission_view_form_submit(array $form, array &$form_state) {
   $accession_1 = ($form_state['values']['tpps_submission_accession_1'] ?? '');
   if ($button == t('Compare')) {
     $accession_2 = ($form_state['values']['tpps_submission_accession_2'] ?? '');
-    drupal_goto(
-      'admin/config/tpps/submission/compare/'
-      . $accession_1 . '/' . $accession_2
-    );
-  }
-  elseif ($button == t('Purge')) {
-    drupal_goto('admin/config/tpps/submission/purge/' . $accession_1);
+    $path = 'tpps/submission/' . $accession_1 . '/compare/' . $accession_2;
+    drupal_goto($path);
   }
 }

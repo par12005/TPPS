@@ -203,6 +203,9 @@ function tpps_menu() {
     'type' => MENU_LOCAL_TASK,
   );
   // @TODO Change URL to 'tpps/submission/%/delete' to be more REST API.
+  // @TODO Major. Very dangerous because allows to remove without confirmation.
+  // So XSS could be used to remove any study by sending link to someone who
+  // has 'tpps delete submission' permission.
   $items['tpps-submission/%/delete'] = [
     'title' => 'TPPS Delete Submission',
     'type' => MENU_CALLBACK,
@@ -1842,34 +1845,49 @@ function tpps_menu_add_report_pages(array &$items = []) {
  */
 function tpps_menu_add_submission_pages(array &$items = []) {
   $items = $items ?? [];
-  $items['admin/config/tpps/submission'] = [
+  // List of all submissions and action-buttons.
+  $items['tpps/submission'] = [
     'title' => 'Submission',
     'description' => 'TPPS Submission Migraiton',
-    'page callback' => 'tpps_submission_overview_page',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_list_form'],
     'access arguments' => ['administer tpps module'],
+    'file' => 'admin/submission_list.inc',
   ];
-  $items['admin/config/tpps/submission/export'] = [
-    'title' => 'Export',
+  $items['tpps/submission/%'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2],
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_list_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file' => 'admin/submission_list.inc',
+  ];
+  // View.
+  $items['tpps/submission/%/view'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'View TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_view_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'admin/submission_view.inc',
+  ];
+  // Export.
+  $items['tpps/submission/%/export'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
     'description' => 'Export of TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_export_form'],
+    'page arguments' => ['tpps_submission_export_form', 2],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_export.inc',
-    'type' => MENU_LOCAL_TASK,
   ];
-  $items['admin/config/tpps/submission/import'] = [
-    'title' => 'Import',
-    'description' => 'Import of TPPS Submission',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_import_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'admin/submission_import.inc',
-  ];
-  $items['admin/config/tpps/submission/manual_export'] = [
-    'title' => 'Manual Export',
+  // Manual Export.
+  $items['tpps/submission/%/manual_export'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
     'description' => 'Manual Export of TPPS Submission',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_manual_export_form'],
@@ -1879,77 +1897,43 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'type' => MENU_LOCAL_TASK,
   ];
   // Compare
-  $items['admin/config/tpps/submission/compare'] = [
-    'title' => 'Compare',
-    'description' => 'Select TPPS Submissions to compare',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_compare_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_compare.inc',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 100,
-  ];
-  $items['admin/config/tpps/submission/compare/%/%'] = [
+  $items['tpps/submission/%/compare/%'] = [
     'title callback' => 'tpps_submission_title',
-    'title arguments' => [4, 5, 6],
+    'title arguments' => [2, 3, 4],
     'description' => 'Compare two TPPS Submissions',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_compare', 5, 6],
+    'page arguments' => ['tpps_submission_compare', 2, 4],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_compare.inc',
     'type' => MENU_CALLBACK,
   ];
-  // View.
-  $items['admin/config/tpps/submission/view'] = [
-    'title' => 'View',
-    'description' => 'View Submissions',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_view_select_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_view.inc',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 200,
-  ];
-  $items['admin/config/tpps/submission/view/%'] = [
+  $items['tpps/submission/%/purge'] = [
     'title callback' => 'tpps_submission_title',
-    'title arguments' => [4, 5],
-    'description' => 'View TPPS Submission',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_view_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_view.inc',
-    'type' => MENU_CALLBACK,
-  ];
-  $items['admin/config/tpps/submission/purge'] = [
-    'title' => 'Purge',
+    'title arguments' => [2, 3],
     'description' => 'Purge TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_purge_form'],
+    'page arguments' => ['tpps_submission_purge_form', 2],
     'access arguments' => ['tpps delete submission'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_purge.inc',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 250,
   ];
-  $items['admin/config/tpps/submission/purge/%'] = [
-    'title callback' => 'tpps_submission_title',
-    'title arguments' => [4, 5, 6],
-    'description' => 'Purge TPPS Submission',
+  $items['tpps/submission/import'] = [
+    'title' => 'Import',
+    'description' => 'Import of TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_purge_form', 5],
-    'access arguments' => ['tpps delete submission'],
+    'page arguments' => ['tpps_submission_import_form'],
+    'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_purge.inc',
-    'type' => MENU_CALLBACK,
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'admin/submission_import.inc',
   ];
 }
 
 /**
  * Menu callback. Shows list of Submission operations.
+ *
+ * Used by tpps_details_tab($accession, $type);
  */
 function tpps_submission_overview_page() {
   return theme('item_list', [
@@ -1968,21 +1952,21 @@ function tpps_submission_overview_page() {
 /**
  * Dynamyc menu item titles for TPPS Submisssion pages.
  *
- * @param string $op
- *   Operation.
  * @param string $accession
  *   Study Accession.
+ * @param string $op
+ *   Operation.
  * @param string $extra
  *   Extra data.
  *
  * @return string
  *   Returns menu item title.
  */
-function tpps_submission_title($op, $accession, $extra = '') {
-  return t('@op Submission @accession @extra',
+function tpps_submission_title($accession = '', $op = '', $extra = '') {
+  return t('Submission @accession @op @extra',
     [
-      '@op' => ucfirst($op),
-      '@accession' => $accession,
+      '@op' => ucfirst($op ?? NULL),
+      '@accession' => $accession ?? NULL,
       '@extra' => ($extra ? 'with ' . $extra : ''),
     ]
   );

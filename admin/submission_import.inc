@@ -8,6 +8,9 @@
  * function tpps_form_state_info(array &$new, array &$old);
  */
 
+module_load_include('inc', 'tpps', 'includes/common');
+module_load_include('inc', 'tpps', 'admin/submission_list');
+
 /**
  * TPPS Submission Import Form.
  */
@@ -44,24 +47,26 @@ function tpps_submission_import_form(array $form, array &$form_state) {
     '#title' => t('Submission State'),
     '#default_value' => $form_state['input']['tpps_submission_import_submission_state'] ?? '',
   ];
-  $form['action_import'] = [
+  // @TODO Use tpps_submission_list_add_buttons($form);
+  $form['action'] = ['#type' => 'container'];
+  $form['action']['import'] = [
     '#type' => 'submit',
     '#value' => t('Import'),
     '#submit' => ['tpps_submission_import_form_submit'],
   ];
-  $form['action_review_dump'] = [
+  $form['action']['review_dump'] = [
     '#type' => 'submit',
     '#value' => t('Review Dump'),
     '#submit' => ['tpps_submission_import_review_dump'],
   ];
-  $form['action_dry_run'] = [
+  $form['action']['dry_run'] = [
     // Submission won't be submitted but files will be downloaded
     // and added to site.
     '#type' => 'submit',
     '#value' => t('Dry Run'),
     '#submit' => ['tpps_submission_import_form_submit'],
   ];
-  $form['action_reset'] = [
+  $form['action']['reset'] = [
     '#type' => 'submit',
     '#value' => t('Reset'),
     '#submit' => ['tpps_submission_import_form_reset'],
@@ -112,7 +117,7 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
  * Resets TPPS Submission Import Form.
  */
 function tpps_submission_import_form_reset(array $form, array &$form_state) {
-  drupal_goto('admin/config/tpps/submission/import');
+  drupal_goto('tpps/submission/import');
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -235,7 +240,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     $state['saved_values']['tpps_submission_import']['original_accession'] = $old_accession;
     $state['saved_values']['tpps_submission_import']['imported'] = REQUEST_TIME;
     $state['saved_values']['tpps_submission_import']['imported_date']
-      = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i T');
+      = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O');
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // From tpps_init_project().

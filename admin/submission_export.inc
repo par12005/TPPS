@@ -13,16 +13,13 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/common');
-//module_load_include('inc', 'tpps', 'includes/submissions');
-//module_load_include('inc', 'tpps', 'includes/submission_file');
+module_load_include('inc', 'tpps', 'admin/submission_list');
 
 /**
  * TPPS Study Export Form.
  */
-function tpps_submission_export_form(array $form, array &$form_state) {
-  $accession = (($form_state['input']['op'] ?? NULL) == t('Reset')
-    ? '' : ($form_state['input']['tpps_submission_export_accession'] ?? '')
-  );
+function tpps_submission_export_form(array $form, array &$form_state, $accession = '') {
+  tpps_submission_list_validate_accession($accession);
   $form['tpps_submission_export_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),
@@ -57,27 +54,10 @@ function tpps_submission_export_form(array $form, array &$form_state) {
       '#attributes' => ['readonly' => 'readonly'],
     ];
   }
-  $form['action_export'] = [
-    '#type' => 'submit',
-    '#value' => t('Export'),
-    '#submit' => ['tpps_submission_export_form_submit'],
-  ];
-  $form['action_reset'] = [
-    '#type' => 'submit',
-    '#value' => t('Reset'),
-    '#submit' => ['tpps_submission_export_form_reset'],
-  ];
-  tpps_add_css_js('submission_export', $form);
-  return $form;
-}
 
-/**
- * Resets TPPS Export Form.
- */
-function tpps_submission_export_form_reset() {
-  $form_state['input']['tpps_submission_export_accession'] = '';
-  $form_state['values']['tpps_submission_export_accession'] = '';
-  drupal_goto('admin/config/tpps/submission/export');
+  tpps_add_css_js('submission_export', $form);
+  tpps_submission_list_add_buttons($form);
+  return $form;
 }
 
 /**
@@ -114,7 +94,6 @@ function tpps_submission_export_get_files_info(array &$fid_list) {
   }
   return $files;
 }
-
 
 /**
  * Show file detection report.

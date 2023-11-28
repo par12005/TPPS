@@ -1,0 +1,100 @@
+<?php
+
+/**
+ * @file
+ * List of TPPS Submission with action buttons.
+ *
+ * @TODO Minor. Show submission list as table?
+ */
+
+module_load_include('inc', 'tpps', 'includes/common');
+
+/**
+ * TPPS Study Export Form.
+ */
+function tpps_submission_list_form(array $form, array &$form_state = [], $accession = '') {
+  $form['tpps_submission_accession'] = [
+    '#type' => 'select',
+    '#title' => t('Accession'),
+    '#options' => tpps_submission_get_accession_list(),
+    '#default_value' => $accession ?? 'TGDR12450' ?? NULL,
+    '#required' => TRUE,
+  ];
+  $form['action'] = ['#type' => 'container'];
+  $buttons = ['view', 'export', 'import', 'compare', 'purge'];
+  foreach ($buttons as $key) {
+    $form['action'][$key] = [
+      '#type' => 'submit',
+      '#name' => $key,
+      '#value' => t(ucfirst($key)),
+    ];
+  }
+  return $form;
+}
+
+/**
+ * Form submitter for 'tpps_form_page_1_settings_form' form.
+ */
+function tpps_submission_list_form_submit(array $form, array &$form_state) {
+  $action = $form_state['triggering_element']['#name'] ?? NULL;
+  if ($action == 'import') {
+    drupal_goto('tpps/submission/' . $action);
+    dpm('import');
+  }
+  else {
+    $path = 'tpps/submission';
+    $accession = $form_state['values']['tpps_submission_accession'] ?? '';
+    $path .= ($accession && $action) ? '/' . $accession . '/' . $action : '';
+    drupal_goto($path);
+  }
+}
+
+/**
+ * Adds 'Back' button to TPPS Submission subforms.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ */
+function tpps_submission_list_add_buttons(array &$form) {
+  $form['action'] = ['#type' => 'container'];
+  // Back-button.
+  $action = 'back';
+  $form['action'][$action] = [
+    '#type' => 'submit',
+    '#name' => $action,
+    '#value' => t(ucfirst($action)),
+    '#submit' => ['tpps_submission_list_back'],
+  ];
+  // Main action button.
+  $main_action = check_plain(arg(3));
+  // Get caller function name.
+  $function = debug_backtrace(
+    !DEBUG_BACKTRACE_PROVIDE_OBJECT|DEBUG_BACKTRACE_IGNORE_ARGS, 2
+  )[1]['function'];
+  $form['action'][$main_action] = [
+    '#type' => 'submit',
+    '#name' => $main_action,
+    '#value' => t(ucfirst($main_action)),
+    '#submit' => [$function . '_submit'],
+  ];
+}
+
+/**
+ * Validates study accession for subforms.
+ *
+ * @param string $accession
+ *   Study accession. Example: TGDR23423.
+ */
+function tpps_submission_list_validate_accession($accession) {
+  if (empty($accession)) {
+    drupal_set_message(t('Empty accession.', 'warning'));
+    drupal_goto('tpps/submission');
+  }
+}
+
+/**
+ * TPPS Submission form submitter for 'Back' button.
+ */
+function tpps_submission_list_back() {
+  drupal_goto('tpps/submission');
+}
