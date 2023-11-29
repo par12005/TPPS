@@ -15,6 +15,8 @@ module_load_include('inc', 'tpps', 'admin/submission_list');
  * TPPS Submission Import Form.
  */
 function tpps_submission_import_form(array $form, array &$form_state) {
+  $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('theme', $form);
   $form['tpps_submission_import_new_accession'] = [
     '#type' => 'textfield',
     '#field_prefix' => 'TGDR',

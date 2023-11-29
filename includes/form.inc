@@ -3,6 +3,9 @@
 /**
  * @file
  * Helper functions use at any step of TPPS form.
+ *
+ * To use:
+ * module_load_include('inc', 'tpps', 'includes/form');
  */
 
 /**
@@ -305,4 +308,37 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
     }
   }
   return $result;
+}
+
+/**
+ * Adds form fieldset for reports.
+ *
+ * Used by TPPS Submission Forms.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ * @param array $meta
+ *   Report's metadata. Format:
+ *   <unique key> => [
+ *    'title' => '',
+ *    'data' => '',
+ *   ].
+ */
+function tpps_submission_form_add_report(array &$form, array $meta) {
+  $form['report'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Reports'),
+    '#collapsed' => FALSE,
+    '#collapsible' => FALSE,
+    '#weight' => 100,
+  ];
+  foreach ($meta as $key => $report) {
+    $form['report'][($key ?? md5(time))] = [
+      '#title' => $report['title'],
+      '#type' => 'fieldset',
+      '#collapsed' => TRUE,
+      '#collapsible' => TRUE,
+      'list' => ['#markup' => $report['data']],
+    ];
+  }
 }

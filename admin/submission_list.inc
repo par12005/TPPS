@@ -13,6 +13,8 @@ module_load_include('inc', 'tpps', 'includes/common');
  * TPPS Study Export Form.
  */
 function tpps_submission_list_form(array $form, array &$form_state = [], $accession = '') {
+  $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('theme', $form);
   $form['tpps_submission_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),

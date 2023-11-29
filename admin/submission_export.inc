@@ -26,12 +26,9 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   tpps_submission_export_fixes($state);
   //drupal_set_message(tpps_table_display($state));
   // Files.
-  $fid_list = tpps_submission_file_get_id_list(
-    $state,
-    ($_SESSION['tpps_submission_debug_mode'] ?? FALSE)
-  );
+  $fid_list = tpps_submission_file_get_id_list($state, $form);
   $files = tpps_submission_export_get_files_info($fid_list);
-  tpps_submission_export_file_report($fid_list, $files);
+  tpps_submission_export_file_report($fid_list, $files, $form);
   $state['tpps_submission_export_files'] = $files;
 
   $form['tpps_submission_export_state'] = [
@@ -79,26 +76,29 @@ function tpps_submission_export_get_files_info(array &$fid_list) {
  *   List of File Ids.
  * @param array $files
  *   List of File metadata.
+ * @param array $form
+ *   Drupal Form API array to add report to.
  */
-function tpps_submission_export_file_report(array &$fid_list = [], array &$files = []) {
+function tpps_submission_export_file_report(array &$fid_list = [], array &$files = [], array &$form = []) {
   if (!empty($fid_list)) {
     if (empty($files)) {
       drupal_set_message(
-        t('Study has files but they not found at server. '
-        . 'Probably those files must be uploaded again.'), 'warning'
+        t('Study has files but they not found at server.'
+          . '<br/>Probably those files must be uploaded again.'
+          . '<br />List of File IDs: @list',
+          ['@list' => implode(', ', $fid_list)]
+        ),
+        'warning'
       );
-      drupal_set_message(t('List of File IDs: <pre>@list</pre>',
-        ['@list' => print_r($fid_list, 1)]
-      ));
     }
     else {
-      drupal_set_message(t('Files was found and processed.'));
-      if (variable_get('tpps_submission_export_show_file_search_report', FALSE)) {
-        drupal_set_message(t(
-          'List of files prepared for import: <pre>@list</pre>',
-          ['@list' => print_r($files, 1)]
-        ));
-      }
+      drupal_set_message(t('Files was found and processed. See report below.'));
+      tpps_submission_form_add_report($form, [
+        'files_prepared_for_import' => [
+          'title' => t('List of files prepared for import'),
+          'data' => t('<pre>@list</pre>', ['@list' => print_r($files, 1)]),
+        ],
+      ]);
     }
   }
   else {

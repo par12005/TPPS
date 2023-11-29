@@ -1525,38 +1525,35 @@ function tpps_flush_caches() {
 /**
  * Adds CSS and JS files to page.
  *
- * We add both CSS and JS even if only one is required because it's better
- * for caching system to have less unique pages and more pages with the
- * same set of attached files.
- *
- * How to use?
- *
- * To add only TPPS Page main CSS/JS files:
- *   tpps_add_css_js('main', $form);
- *
- * To add only TPPS Page specific CSS/JS files:
- *   tpps_add_css_js($page_number, $form);
- *
- * To add both (main and page specific) CSS/JS files:
- *   tpps_add_css_js('main', $form);
- *   tpps_add_css_js($page_number, $form);
- *
- * To add CSS and JS using drupal_add_css/js():
- *   tpps_add_css_js('main');
- *
- * To force using Form API instead of use drupal_add_css/js():
- *   $form = $form ?? [];
- *   tpps_add_css_js('main', $form);
- *   This could be useful if $form not yet defined at the beginning of the
- *   form generation callback.
+ * 1. Theme styles will be loaded in any case.
+ * 2. We add both CSS and JS even if only one is required because it's better
+ *    for caching system to have less unique pages and more pages with the
+ *    same set of attached files.
  *
  * @param mixed $page_id
- *   TPPS Form Page number. Constants like TPPS_PAGE_1 and etc could be
- *   used to improve code readablility.
+ *   When string it could be a 'theme', 'main' or a page name.
+ *   When integer it's TPPS Form Page Id.
+ *
+ *   What is $page_id?
+ *                      | $page_id     | CSS       | JS        | File                          |
+ *   -------------------+--------------+-----------+-----------+-------------------------------+
+ *   Theme              | 'theme'      | Yes       | No        | /css/theme/<name>.css         |
+ *   TPPS main CSS/JS   | 'main'       | Yes       | Yes       | /css/tpps.css                 |
+ *   Specific Page Id   | $page_number | If exists | If exists | /css/tpps_page_${page_id}.css |
+ *   Specific Page Name | $page_name   | If exists | If exists | /css/tpps_${page_name}.css    |
+ *
+ *   Constants like TPPS_PAGE_1 and etc could be used to improve code readablility.
  *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
+ *
  * @param array $form
  *   Drupal Form API form array.
  *   When NULL then CSS/JS will be added as it's a regular page.
+ *
+ *   To force using Form API instead of use drupal_add_css/js():
+ *     $form = $form ?? [];
+ *     tpps_add_css_js('main', $form);
+ *   This could be useful if $form not yet defined at the beginning of the
+ *   form generation callback.
  *
  * @TODO Minor. Get Form Id from the $form and use as a file name.
  */
@@ -1568,6 +1565,10 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
   // This is regualar page.
   if ($form === NULL || !is_array($form)) {
     drupal_add_css($theme_path);
+    if ($page_id == 'theme') {
+      // We only add theme.
+      return;
+    }
     if ($page_id == 'main') {
       // Add main files.
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
@@ -1586,6 +1587,10 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // This is form.
     $form['#attached']['css'][] = $theme_path;
+    if ($page_id == 'theme') {
+      // We only add theme.
+      return;
+    }
     if ($page_id == 'main') {
       // Add main files.
       $form['#attached']['js'][] = [

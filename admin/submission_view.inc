@@ -54,12 +54,12 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
         ['@timestamp' => ($import_meta['imported'] ?? NULL)]
       ),
     ];
-    $form['original_accession'] = [
-      '#markup' => theme('item_list', [
+    tpps_submission_form_add_report($form, [
+      'import_metadata' => [
         'title' => t('Import Metadata'),
-        'items' => $items,
-      ]),
-    ];
+        'data' => theme('item_list', ['items' => $items]),
+      ],
+    ]);
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['tpps_submission_accession_2'] = [
@@ -76,9 +76,15 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show the data!
   $parsed = tpps_array_dump($state);
+  $form['submission'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Submission'),
+    '#collapsed' => FALSE,
+    '#collapsible' => FALSE,
+  ];
 
   foreach ($parsed as $key => $item) {
-    $form[$key . '_container'] = [
+    $form['submission'][$key . '_container'] = [
       '#type' => 'fieldset',
       '#title' => ($item['title'] ?? $key)
         . ($item['count'] ? ' (' . $item['count'] . ')' : ''),
@@ -87,6 +93,9 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
       'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
     ];
   }
+  // Add custom class to have nice look.
+  $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('theme', $form);
   return $form;
 }
 
