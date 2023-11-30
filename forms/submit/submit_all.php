@@ -2780,7 +2780,7 @@ function tpps_generate_popstruct($study_accession, $vcf_location) {
       $insert_sql = "INSERT INTO public.cartogratree_popstruct_layer (uniquename,population,study_accession,latitude,longitude) ";
       $insert_sql .= "VALUES (";
       $insert_sql .= "'" . $tree_id ."',". $tree_data[$tree_id]['population'] .",";
-      $insert_sql .= "'" . $study_accession ."',". $tree_data[$tree_id]['latitude'] ."," . $tree_data[$tree_id]['latitude'] . "";
+      $insert_sql .= "'" . $study_accession ."',". $tree_data[$tree_id]['latitude'] ."," . $tree_data[$tree_id]['longitude'] . "";
       $insert_sql .= ")";
       // echo $insert_sql . "\n";
       chado_query($insert_sql);
