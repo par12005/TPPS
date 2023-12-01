@@ -19,7 +19,7 @@ module_load_include('inc', 'tpps', 'admin/submission_list');
  * TPPS Study Import Form.
  */
 function tpps_submission_compare_form(array $form, array &$form_state, $accession_1 = '', $accession_2 = '') {
-  tpps_submission_list_validate_accession($accession_1);
+  //tpps_submission_list_validate_accession($accession_1);
 
   if (($form_state['input']['op'] ?? NULL) == t('Reset')) {
     $accession_1 = $accession_2 = '';
@@ -46,12 +46,13 @@ function tpps_submission_compare_form(array $form, array &$form_state, $accessio
     '#required' => TRUE,
   ];
   // Actions
-  $form['action_compare'] = [
+  $form['action'] = ['#type' => 'container'];
+  $form['action']['compare'] = [
     '#type' => 'submit',
     '#value' => t('Compare'),
     '#submit' => ['tpps_submission_compare_form_submit'],
   ];
-  $form['action_reset'] = [
+  $form['action']['reset'] = [
     '#type' => 'submit',
     '#value' => t('Reset'),
     '#submit' => ['tpps_submission_compare_form_reset'],
@@ -65,7 +66,7 @@ function tpps_submission_compare_form(array $form, array &$form_state, $accessio
 function tpps_submission_compare_form_reset() {
   $form_state['input']['tpps_submission_compare_accession_1'] = '';
   $form_state['input']['tpps_submission_compare_accession_2'] = '';
-  drupal_goto('admin/config/tpps/submission/compare');
+  drupal_goto('tpps/submission');
 }
 
 /**
@@ -81,7 +82,7 @@ function tpps_submission_compare_form_submit(array $form, array &$form_state) {
     $form_state['rebuild'] = 1;
     return;
   }
-  drupal_goto('admin/config/tpps/submission/compare/' . $accession_1 . '/' . $accession_2);
+  drupal_goto('tpps/submission/' . $accession_1 . '/compare/' . $accession_2);
 }
 
 /**
@@ -129,9 +130,7 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
       . 'Provided: "@accession_1" and "@accession_2".',
       ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
     ));
-    drupal_goto('admin/config/tpps/submission/compare/' .
-      $accession_1 . '/' . $accession_2
-    );
+    drupal_goto('tpps/submission/compare/' . $accession_1 . '/' . $accession_2);
   }
 
   $form = [];
@@ -170,11 +169,11 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
   $form['links']['#markup'] = theme('item_list', [
     'items' => [
       $accession_1 . ': ' . implode(', ', [
-        l(t('View Submission'), 'admin/config/tpps/submission/view/' . $accession_1),
+        l(t('View Submission'), 'tpps/submission/' . $accession_1 . '/view'),
         l(t('Study at Admin Panel'), 'tpps-admin-panel/' . $accession_1),
       ]),
       $accession_2 . ': ' . implode(', ', [
-        l(t('View Submission'), 'admin/config/tpps/submission/view/' . $accession_2),
+        l(t('View Submission'), 'tpps/submission/' . $accession_2 . '/view'),
         l(t('Study at Admin Panel'), 'tpps-admin-panel/' . $accession_2),
       ]),
     ],

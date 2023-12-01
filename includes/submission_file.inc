@@ -105,7 +105,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
     ];
   }
   if ($rows) {
-    tpps_submission_form_add_report($form, [
+    tpps_form_add_report($form, [
       'files_detection_methods' => [
         'title' => t('Files Detection Methods'),
         'data' => theme('table', [

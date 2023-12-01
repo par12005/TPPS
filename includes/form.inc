@@ -324,7 +324,7 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
  *    'data' => '',
  *   ].
  */
-function tpps_submission_form_add_report(array &$form, array $meta) {
+function tpps_form_add_report(array &$form, array $meta) {
   $form['report'] = [
     '#type' => 'fieldset',
     '#title' => t('Reports'),
@@ -340,5 +340,43 @@ function tpps_submission_form_add_report(array &$form, array $meta) {
       '#collapsible' => TRUE,
       'list' => ['#markup' => $report['data']],
     ];
+  }
+}
+
+/**
+ * Sets focus on given field by name.
+ *
+ * WARNING: Be sure element has no 'autofocus' attribute because it won't work.
+ *
+ * @param array $form
+ *   Drupal Form API Array to be updated.
+ * @param string $fieldname
+ *   Field name. Use key from $form array. Example: 'tpps_submission_accession'.
+ *   When $fieldname is empty we just do not add JS
+ *   because it's not critical feature.
+ */
+function tpps_form_autofocus(array &$form = [], $fieldname = '') {
+  if (!empty($fieldname)) {
+    $js = <<<EOT
+      (function ($) {
+        $(document).ready(function() {
+          setTimeout(
+            function() {
+              $('[name="$fieldname"').get(0).focus();
+            },
+            1000
+          );
+        });
+      })(jQuery)
+EOT;
+    $form['#attached']['js'][] = [
+      'type' => 'inline',
+      'data' => $js,
+      'scope' => 'footer',
+      'group' => JS_THEME,
+      'weight' => 5,
+    ];
+    // @TODO Minor. Field could be not on 1st level.
+    unset($form[$fieldname]['#attributes']['autofocus']);
   }
 }

@@ -26,6 +26,9 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     drupal_goto('tpps/submission');
   }
 
+  // Add custom class to have nice look.
+  $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('theme', $form);
 
   $form['tpps_submission_current_accession'] = [
     '#markup' => '<h3>' . t('Current Accession: @accession',
@@ -54,7 +57,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
         ['@timestamp' => ($import_meta['imported'] ?? NULL)]
       ),
     ];
-    tpps_submission_form_add_report($form, [
+    tpps_form_add_report($form, [
       'import_metadata' => [
         'title' => t('Import Metadata'),
         'data' => theme('item_list', ['items' => $items]),
@@ -93,9 +96,6 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
       'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
     ];
   }
-  // Add custom class to have nice look.
-  $form['#attributes']['class'][] = 'tpps-submission';
-  tpps_add_css_js('theme', $form);
   return $form;
 }
 

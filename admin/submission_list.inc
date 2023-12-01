@@ -8,33 +8,43 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/common');
+module_load_include('inc', 'tpps', 'includes/form');
 
 /**
  * TPPS Study Export Form.
  */
-function tpps_submission_list_form(array $form, array &$form_state = [], $accession = '') {
+function tpps_submission_list_form(array $form, array &$form_state = [], $accession = NULL) {
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
+  // Accession.
+  $accession_list = tpps_submission_get_accession_list();
   $form['tpps_submission_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),
-    '#options' => tpps_submission_get_accession_list(),
-    '#default_value' => $accession ?? 'TGDR12450' ?? NULL,
+    '#options' => array_merge(['new' => t('New')], $accession_list),
+    '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
     '#required' => TRUE,
+    //'#attributes' => ['autofocus' => ''],
   ];
-  $form['tpps_submission_debug_mode'] = [
-    '#type' => 'checkbox',
-    '#title' => 'Debug Mode',
-    '#default_value' => FALSE,
-  ];
+  tpps_form_autofocus($form, 'tpps_submission_accession');
+  // Buttons.
   $form['action'] = ['#type' => 'container'];
-  $buttons = ['view', 'export', 'import', 'compare', 'purge'];
+  $buttons = ['create', 'view', 'export', 'import', 'compare', 'purge'];
   foreach ($buttons as $key) {
     $form['action'][$key] = [
       '#type' => 'submit',
       '#name' => $key,
       '#value' => t(ucfirst($key)),
     ];
+    // States. Show/Hide buttons.
+    if ($key != 'import') {
+      $state = ($key == 'create') ? 'value' : '!value';
+      $form['action'][$key]['#states'] = [
+        'visible' => [
+          ':input[name="tpps_submission_accession"]' => [$state => 'new'],
+        ],
+      ];
+    }
   }
   return $form;
 }
@@ -44,15 +54,17 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
  */
 function tpps_submission_list_form_submit(array $form, array &$form_state) {
   $action = $form_state['triggering_element']['#name'] ?? NULL;
-  $_SESSION['tpps_submission_debug_mode']
-    = $form_state['values']['tpps_submission_debug_mode'] ?? FALSE;
+  $path = 'tpps/submission';
+  $accession = $form_state['values']['tpps_submission_accession'] ?? '';
 
-  if ($action == 'import') {
-    drupal_goto('tpps/submission/' . $action);
+  if ($accession == 'new' && $action == 'create') {
+    drupal_goto('tppsc');
   }
   else {
-    $path = 'tpps/submission';
-    $accession = $form_state['values']['tpps_submission_accession'] ?? '';
+    if ($accession == 'new' && $action != 'import') {
+      drupal_set_message(t('Please select existing accession.'), 'error');
+      drupal_goto($path);
+    }
     $path .= ($accession && $action) ? '/' . $accession . '/' . $action : '';
     drupal_goto($path);
   }

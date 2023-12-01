@@ -4,6 +4,8 @@
  * @file
  * TPPS Submission Import Form and related functions.
  *
+ * @TODO Minor. There is no ability to specify accession. Only next one could
+ * be used or existing one overritten.
  * @TODO Minor. Use function to get rid of useless data from $form_state
  * function tpps_form_state_info(array &$new, array &$old);
  */
@@ -14,22 +16,27 @@ module_load_include('inc', 'tpps', 'admin/submission_list');
 /**
  * TPPS Submission Import Form.
  */
-function tpps_submission_import_form(array $form, array &$form_state) {
+function tpps_submission_import_form(array $form, array &$form_state, $accession = '') {
+  tpps_submission_list_validate_accession($accession);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
-  $form['tpps_submission_import_new_accession'] = [
-    '#type' => 'textfield',
+
+  // Show warning about using existing accession.
+  if ($accession != 'new') {
+    drupal_set_message(t('WARNING: <br />Study @accession will be overwriten.',
+      ['@accession' => $accession]), 'warning'
+    );
+  }
+  // Accession.
+  $accession_list = tpps_submission_get_accession_list();
+  $next_accession = tpps_init_project_get_next_accession();
+  $form['tpps_submission_import_accession'] = [
+    '#type' => 'select',
     '#field_prefix' => 'TGDR',
-    '#title' => t('New Accession'),
-    '#default_value' => $form_state['input']['tpps_submission_import_new_accession']
-    ?? tpps_init_project_get_next_accession(),
+    '#title' => t('Accession'),
+    '#options' => array_merge([$next_accession => $next_accession], $accession_list),
+    '#default_value' => $accession ?? $next_accession ?? NULL,
     '#required' => FALSE,
-    '#description' => 'Leave empty to autogenerate accession',
-  ];
-  $form['tpps_submission_import_overwrite_submission'] = [
-    '#type' => 'checkbox',
-    '#title' => 'Overwrite existing submission',
-    '#default_value' => $form_state['input']['tpps_submission_import_overwrite_submission'] ?? FALSE,
   ];
   $form['tpps_submission_import_file_replace'] = [
     '#type' => 'checkbox',
@@ -43,13 +50,11 @@ function tpps_submission_import_form(array $form, array &$form_state) {
       . '<br /><strong>Unchecked</strong>: Append _{incrementing number} '
       . 'until the filename is unique.'),
   ];
-  // @TODO Idea. Use file upload field instead of plain code dump.
   $form['tpps_submission_import_submission_state'] = [
     '#type' => 'textarea',
     '#title' => t('Submission State'),
     '#default_value' => $form_state['input']['tpps_submission_import_submission_state'] ?? '',
   ];
-  // @TODO Add 'show report' option.
 
   // @TODO Use tpps_submission_list_add_buttons($form);
   $form['action'] = ['#type' => 'container'];
@@ -90,23 +95,10 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate accession.
-  $new_accession = $form_state['values']['tpps_submission_import_new_accession'];
+  $new_accession = $form_state['values']['tpps_submission_import_accession'];
   // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
   // @TODO Update code to use only 'xxx' format.
   $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
-  if (empty($form_state['values']['tpps_submission_import_overwrite_submission'])) {
-    if (tpps_api_check_accession($new_accession)) {
-      form_set_error('tpps_submission_import_new_accession', t('Accession already in use. '
-        . theme('item_list', [
-          'items' => [
-            'Check "<strong>Overwrite existing submission</strong>" to reuse accession.',
-            'Click "<strong>Reset</strong>" button to get next available accesson.',
-          ],
-        ])
-        )
-      );
-    }
-  }
   else {
     // @TODO Minor. Validate accession. Check if 'TGDR' is present and so on.
   }
@@ -146,7 +138,6 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   global $user;
   $dry_run = (bool) ($form_state['triggering_element']['#value'] == t('Dry Run'));
 
-  $debug_mode = ($_SESSION['tpps_submission_debug_mode'] ?? FALSE);
   module_load_include('inc', 'tpps', 'includes/common');
   variable_set('tpps_submission_import_file_replace',
     ($form_state['values']['tpps_submission_import_file_replace'] ?? FALSE)
@@ -165,22 +156,17 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     catch (Exception $e) {
       drupal_set_message($e->errorMessage());
-      drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
+      drupal_set_message('<pre>' . print_r($state, 1) . '</pre>')e
       return;
     }
 
-    $new_accession = $form_state['values']['tpps_submission_import_new_accession']
+    $new_accession = $form_state['values']['tpps_submission_import_accession']
       ?? tpps_init_project_get_next_accession();
     // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
     // @TODO Update code to use only 'xxx' format.
     $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
-    tpps_submission_import_process_files($state, $new_accession,
-      ($debug_mode || $dry_run)
-    );
-    if (
-      $dry_run
-      || !empty($form_state['values']['tpps_submission_import_overwrite_submission'])
-    ) {
+    tpps_submission_import_process_files($state, $new_accession, $form);
+    if ($dry_run) {
       // Remove submission and files.
       // We can't use tpps_update_submission() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
@@ -189,9 +175,15 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     tpps_submission_import_state_mods($state, $new_accession);
     if ($dry_run) {
-      // Show with line numbers.
+      // Report.
       $state_array = preg_split("/\r\n|\n|\r/", var_export($state, 1));
-      drupal_set_message('<pre>' . print_r($state_array, 1) . '</pre>');
+      tpps_form_add_report($form, [
+        'submission_state' => [
+          'title' => t('Submission State'),
+          // Show with line numbers.
+          'data' => '<pre>' . print_r($state_array, 1) . '</pre>',
+        ],
+      ]);
     }
     else {
       tpps_create_submission($state, $user->uid);
@@ -206,22 +198,34 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
         // Show study info only when there was some validation errors
         // because if study was submitted successfully user will be
         // redirected to the study page with the same table of fields.
-        drupal_set_message(tpps_table_display($state));
+        tpps_form_add_report($form, [
+          'study_details' => [
+            'title' => t('Study Details'),
+            'data' => tpps_table_display($state),
+          ],
+        ]);
       }
     }
   }
 
+  // Useful links.
   if (!$dry_run) {
     $url_list = [
-      'tppsc', "tpps-admin-panel/$new_accession", "tpps/details/$new_accession",
+      'tppsc',
+      "tpps-admin-panel/$new_accession",
+      "tpps/details/$new_accession",
     ];
     foreach ($url_list as $url) {
       $items[] = l($url, $url);
     }
-    drupal_set_message(
-      t('Useful links:') . '<br />' . theme('item_list', ['items' => $items])
-    );
+    tpps_form_add_report($form, [
+      'useful_links' => [
+        'title' => t('Useful links'),
+        'data' => theme('item_list', ['items' => $items]),
+      ],
+    ]);
   }
+
   $form_state['rebuild'] = 1;
 }
 
@@ -340,12 +344,11 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
  *   Submission State.
  * @param string $new_accession
  *   New (local) study accession.
- * @param bool $show_report
- *   When TRUE messages about status of each file processing will be shown.
- *   When FALSE (default) then no messages will be shown ("silent mode").
+ * @param array $form
+ *   Drupal Form API array which will be used to add report.
  */
-function tpps_submission_import_process_files(array &$state, $new_accession, $show_report = FALSE) {
-  if (empty($state['tpps_submission_export_files']) && $show_report) {
+function tpps_submission_import_process_files(array &$state, $new_accession, array &$form = []) {
+  if (empty($state['tpps_submission_export_files'])) {
     drupal_set_message('Submission has no files.', 'warning');
   }
   else {
@@ -372,14 +375,20 @@ function tpps_submission_import_process_files(array &$state, $new_accession, $sh
       tpps_file_add_usage($new_file, $new_accession);
       // Change File ID in submission state.
       $state = tpps_array_replace($state, $fid, $new_file->fid);
-      if ($show_report) {
-        drupal_set_message(t('Original file "<strong>@old_fid</strong>" '
-          . 'was replaced with new "<strong>@new_fid</strong>".',
-          ['@old_fid' => $fid, '@new_fid' => $new_file->fid]
-        ));
-        drupal_set_message($fid . ': <pre>' . print_r($file, 1) . '</pre>');
-        drupal_set_message('New file: <pre>' . print_r($new_file, 1) . '</pre>');
-      }
+
+      // Report.
+      $message = t(
+        'Original file #@original_fid was replaced with new file #@new_fid',
+        ['@new_fid' => $new_file->fid, '@original_fid' => $fid]
+      );
+      drupal_set_message($message);
+      tpps_form_add_report($form, [
+        'import_file_' . $fid => [
+          'title' => $message,
+          'data' => 'Original file: <pre>' . print_r($file, 1) . '</pre>'
+            . '<hr />New file: <pre>' . print_r($new_file, 1) . '</pre>',
+        ],
+      ]);
     }
   }
 }

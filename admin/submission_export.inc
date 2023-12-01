@@ -93,7 +93,7 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
     }
     else {
       drupal_set_message(t('Files was found and processed. See report below.'));
-      tpps_submission_form_add_report($form, [
+      tpps_form_add_report($form, [
         'files_prepared_for_import' => [
           'title' => t('List of files prepared for import'),
           'data' => t('<pre>@list</pre>', ['@list' => print_r($files, 1)]),
