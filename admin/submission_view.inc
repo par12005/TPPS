@@ -6,18 +6,16 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/common');
+module_load_include('inc', 'tpps', 'includes/form');
+module_load_include('inc', 'tpps', 'admin/submission_list');
+module_load_include('inc', 'tpps', 'includes/submissions');
 
 /**
  * Menu callback. Shows a single submission data.
  */
 function tpps_submission_view_form(array $form, array $form_state, $accession = '') {
-  if (empty($accession)) {
-    drupal_set_message('Empty accession.', 'error');
-    drupal_goto('tpps/submission');
-  }
+  tpps_submission_list_validate_accession($accession);
 
-  // @TODO Validate $accession.
-  module_load_include('inc', 'tpps', 'includes/submissions');
   if (empty($state = tpps_submission_get_state($accession))) {
     drupal_set_message(t('Submission "<strong>@accession</strong>" not found. '
       . 'Please choose from the list below.',
@@ -26,9 +24,6 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     drupal_goto('tpps/submission');
   }
 
-  // Add custom class to have nice look.
-  $form['#attributes']['class'][] = 'tpps-submission';
-  tpps_add_css_js('theme', $form);
 
   $form['tpps_submission_current_accession'] = [
     '#markup' => '<h3>' . t('Current Accession: @accession',
@@ -96,6 +91,10 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
       'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
     ];
   }
+  //tpps_submission_list_add_buttons($form);
+  tpps_form_autofocus($form, 'tpps_submission_import_accession');
+  $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('theme', $form);
   return $form;
 }
 

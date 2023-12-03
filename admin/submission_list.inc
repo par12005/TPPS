@@ -14,7 +14,6 @@ module_load_include('inc', 'tpps', 'includes/form');
  * TPPS Study Export Form.
  */
 function tpps_submission_list_form(array $form, array &$form_state = [], $accession = NULL) {
-  $form['#attributes']['class'][] = 'tpps-submission';
   // Accession.
   $accession_list = tpps_submission_get_accession_list();
   $form['tpps_submission_accession'] = [
@@ -49,6 +48,7 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
     }
   }
   tpps_form_autofocus($form, 'tpps_submission_accession');
+  $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;
 }

@@ -45,9 +45,9 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
     '#title' => t('Submission State'),
     '#default_value' => $form_state['input']['tpps_submission_import_submission_state'] ?? '',
   ];
-  $form['#attributes']['class'][] = 'tpps-submission';
   $form['#validate'][] = 'tpps_submission_import_form_validate';
   tpps_form_autofocus($form, 'tpps_submission_import_accession');
+  $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   tpps_submission_list_add_buttons($form);
   return $form;

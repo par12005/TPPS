@@ -61,6 +61,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   tpps_form_autofocus($form, 'tpps_submission_export_state');
   tpps_submission_list_add_buttons($form);
   tpps_add_css_js('submission_export', $form);
+  $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   $form['report']['#states'] = [
     'visible' => [

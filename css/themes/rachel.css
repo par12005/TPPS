@@ -133,8 +133,10 @@ form.tppsc-form      fieldset legend span.fieldset-legend {
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Buttons */
-form.tpps-submission input.btn.form-submit,
-form.tppsc-form      input.btn.form-submit {
+form.tpps-submission .btn.form-submit,
+form.tppsc-form      .btn.form-submit,
+form.tpps-submission .btn.form-button,
+form.tppsc-form      .btn.form-button {
   height: 60px;
   background: #5a7736;
   color: white;
@@ -150,28 +152,23 @@ form.tppsc-form      input.btn.form-submit {
   border-radius: 10px;
   border: none;
 }
-form.tpps-submission input.btn.form-button,
-form.tppsc-form      input.btn.form-button {
-  background: #5a7736;
-  color: white;
-  -webkit-border-radius: 0;
-  -moz-border-radius: 0;
-  border-radius: 0;
-  border: none;
-  font-weight: bold;
-  text-transform: uppercase;
-  text-align: center;
+form.tpps-submission a.btn.form-submit,
+form.tppsc-form      a.btn.form-submit,
+form.tpps-submission a.btn.form-button,
+form.tppsc-form      a.btn.form-button {
+  display: inline;
+  padding: 20px 50px;
 }
 /* TPPS Submission */
-form.tpps-submission input.btn.form-submit:hover,
-form.tpps-submission input.btn.form-button:hover,
-form.tpps-submission input.btn.form-submit:focus,
-form.tpps-submission input.btn.form-button:focus,
+form.tpps-submission .btn.form-submit:hover,
+form.tpps-submission .btn.form-button:hover,
+form.tpps-submission .btn.form-submit:focus,
+form.tpps-submission .btn.form-button:focus,
 /* TPPSc Form */
-form.tppsc-form input.btn.form-submit:hover,
-form.tppsc-form input.btn.form-button:hover,
-form.tppsc-form input.btn.form-submit:focus,
-form.tppsc-form input.btn.form-button:focus {
+form.tppsc-form .btn.form-submit:hover,
+form.tppsc-form .btn.form-button:hover,
+form.tppsc-form .btn.form-submit:focus,
+form.tppsc-form .btn.form-button:focus {
   background-color: #3b413b;
 }
 
@@ -210,6 +207,12 @@ form fieldset legend span.fieldset-legend {
 table {
   /* Light Green */
   border: 1px solid #b5e0ba;
+  width: 100%;
+}
+table thead tr th {
+  border: 1px solid #dedede;
+  background: #c9c9c9;
+  padding: 10px;
 }
 /* Fix missing colors for odd/even rows */
 tr.even {

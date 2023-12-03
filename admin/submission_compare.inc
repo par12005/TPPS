@@ -13,68 +13,43 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/common');
+module_load_include('inc', 'tpps', 'includes/form');
 module_load_include('inc', 'tpps', 'admin/submission_list');
 
 /**
  * TPPS Study Import Form.
  */
 function tpps_submission_compare_form(array $form, array &$form_state, $accession_1 = '', $accession_2 = '') {
-  //tpps_submission_list_validate_accession($accession_1);
-
-  if (($form_state['input']['op'] ?? NULL) == t('Reset')) {
-    $accession_1 = $accession_2 = '';
-  }
-  else {
-    $accession_1 = $accession_1 ?? $form_state['input']['tpps_submission_compare_accession_1'] ?? '';
-    $accession_2 = $accession_2 ?? $form_state['input']['tpps_submission_compare_accession_2'] ?? '';
-  }
-  $options = tpps_submission_get_accession_list([], TRUE, $reset = TRUE);
-  $form['tpps_submission_compare_accession_1'] = [
+  tpps_submission_list_validate_accession($accession_1);
+  $accession_list = tpps_submission_get_accession_list();
+  $form['tpps_submission_accession_1'] = [
     '#type' => 'select',
     '#title' => t('Accession 1'),
-    // Reset cached list of studies to have latest changes.
-    '#options' => $options,
-    '#default_value' => $accession_1,
+    '#options' => $accession_list,
+    '#default_value' => $accession_1 ?? array_key_first($accession_list) ?? '',
     '#required' => TRUE,
   ];
-  $form['tpps_submission_compare_accession_2'] = [
+  $form['tpps_submission_accession_2'] = [
     '#type' => 'select',
     '#title' => t('Accession 2'),
-    // No need to reset cached list of studies because we did this above.
-    '#options' => $options,
-    '#default_value' => $accession_2,
+    '#options' => $accession_list,
+    '#default_value' => $accession_2 ?? array_key_first($accession_list) ?? '',
     '#required' => TRUE,
   ];
-  // Actions
-  $form['action'] = ['#type' => 'container'];
-  $form['action']['compare'] = [
-    '#type' => 'submit',
-    '#value' => t('Compare'),
-    '#submit' => ['tpps_submission_compare_form_submit'],
-  ];
-  $form['action']['reset'] = [
-    '#type' => 'submit',
-    '#value' => t('Reset'),
-    '#submit' => ['tpps_submission_compare_form_reset'],
-  ];
+  tpps_form_autofocus($form, 'tpps_submission_accession_2');
+  tpps_submission_list_add_buttons($form);
+  $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('theme', $form);
   return $form;
-}
-
-/**
- * Resets TPPS Submission Compare Form.
- */
-function tpps_submission_compare_form_reset() {
-  $form_state['input']['tpps_submission_compare_accession_1'] = '';
-  $form_state['input']['tpps_submission_compare_accession_2'] = '';
-  drupal_goto('tpps/submission');
 }
 
 /**
  * Submitter for TPPS Submission Compare form.
  */
 function tpps_submission_compare_form_submit(array $form, array &$form_state) {
-  $accession_1 = $form_state['input']['tpps_submission_compare_accession_1'];
-  $accession_2 = $form_state['input']['tpps_submission_compare_accession_2'];
+  $accession_1 = $form_state['input']['tpps_submission_accession_1'] ?? NULL;
+  $accession_2 = $form_state['input']['tpps_submission_accession_2'] ?? NULL;
+  tpps_submission_list_validate_accession($accession_1);
   if ($accession_1 == $accession_2) {
     drupal_set_message(t('Submission @accession_1 and @accession_2 are equal.',
       ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
@@ -82,7 +57,12 @@ function tpps_submission_compare_form_submit(array $form, array &$form_state) {
     $form_state['rebuild'] = 1;
     return;
   }
-  drupal_goto('tpps/submission/' . $accession_1 . '/compare/' . $accession_2);
+  if ($accession_1 && !$accession_2) {
+    drupal_goto('tpps/submission/' . $accession_1 . '/compare');
+  }
+  else {
+    drupal_goto('tpps/submission/' . $accession_1 . '/compare/' . $accession_2);
+  }
 }
 
 /**
@@ -125,12 +105,13 @@ function array_diff_assoc_recursive(array $array1, array $array2) {
  * Menu callback. TPPS Submission Compare Page.
  */
 function tpps_submission_compare(array $form, array &$form_state, $accession_1 = '', $accession_2 = '') {
-  if (empty($accession_1) || empty($accession_2)) {
-    drupal_set_message(t('Two accessions are required. '
-      . 'Provided: "@accession_1" and "@accession_2".',
-      ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
-    ));
-    drupal_goto('tpps/submission/compare/' . $accession_1 . '/' . $accession_2);
+  if (empty($accession_1)) {
+    drupal_set_message(t('Accession 1 is required.'), 'warning');
+    drupal_goto('tpps/submission');
+  }
+  elseif (empty($accession_2)) {
+    drupal_set_message(t('Accession 2 is required.'), 'waring');
+    drupal_goto('tpps/submission/' . $accession_1 . '/compare');
   }
 
   $form = [];
@@ -152,11 +133,6 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
     tpps_submission_get_state($accession_1)
   );
 
-  $form['header_back'] = [
-    '#type' => 'submit',
-    '#value' => t('Back'),
-    '#submit' => ['tpps_submission_compare_form_reset'],
-  ];
   if (empty($result_1) && empty($result_2)) {
     drupal_set_message(t('Submissions "@accession_1" and "@accession_2" are equal.',
       ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
@@ -185,11 +161,7 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
   $parsed_2 = tpps_array_dump($result_2, $sticky = FALSE);
   // Process items only in $result_2.
   tpps_submission_compare_show_diff($form, $parsed_1, $parsed_2);
-  $form['footer_back'] = [
-    '#type' => 'submit',
-    '#value' => t('Back'),
-    '#submit' => ['tpps_submission_compare_form_reset'],
-  ];
+  tpps_add_css_js('theme', $form);
   return $form;
 }
 

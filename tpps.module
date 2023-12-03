@@ -1900,13 +1900,13 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_manual_export.inc',
   ];
-  // Compare
+  // Compare.
   $items['tpps/submission/%/compare'] = [
     'title callback' => 'tpps_submission_title',
     'title arguments' => [2, 3],
     'description' => 'Compare two TPPS Submissions',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_compare', 2],
+    'page arguments' => ['tpps_submission_compare_form', 2],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_compare.inc',
@@ -1921,6 +1921,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_compare.inc',
   ];
+
   $items['tpps/submission/%/purge'] = [
     'title callback' => 'tpps_submission_title',
     'title arguments' => [2, 3],
