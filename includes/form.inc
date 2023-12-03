@@ -347,6 +347,7 @@ function tpps_form_add_report(array &$form, array $meta) {
  * Sets focus on given field by name.
  *
  * WARNING: Be sure element has no 'autofocus' attribute because it won't work.
+ * Timeout is required to have element at page.
  *
  * @param array $form
  *   Drupal Form API Array to be updated.
@@ -354,17 +355,37 @@ function tpps_form_add_report(array &$form, array $meta) {
  *   Field name. Use key from $form array. Example: 'tpps_submission_accession'.
  *   When $fieldname is empty we just do not add JS
  *   because it's not critical feature.
+ * @param array $parents
+ *   Optional and not critical. Allows to remove 'autofocus' attribute.
+ *
+ * @TODO Use separate JS file and send field name using Drupal.setting JS object.
+ * @TODO Minor. Use CSS id intead of name attribute to set focus.
  */
-function tpps_form_autofocus(array &$form = [], $fieldname = '') {
-  if (!empty($fieldname)) {
+function tpps_form_autofocus(array &$form = [], $fieldname = '', array $parents = []) {
+  // Delay in msec.
+  $timeout = 1000;
+  if (empty($fieldname)) {
+    return;
+  }
+  if ($parents) {
+    $path = array_merge($parents, [$fieldname]);
+    // We need 'publication[status]'.
+    $js_name = str_replace($parents[0] . ']', $parents[0], implode('][', $path)) . ']';
+    $field = drupal_array_get_nested_value($form, $path) ?? NULL;
+  }
+  else {
+    $js_name = $fieldname;
+    $field = $form[$fieldname] ?? NULL;
+  }
+  if (!empty($js_name)) {
     $js = <<<EOT
       (function ($) {
         $(document).ready(function() {
           setTimeout(
             function() {
-              $('[name="$fieldname"').get(0).focus();
+              $('[name="$js_name"').get(0).focus();
             },
-            1000
+            $timeout
           );
         });
       })(jQuery)
@@ -377,6 +398,6 @@ EOT;
       'weight' => 5,
     ];
     // @TODO Minor. Field could be not on 1st level.
-    unset($form[$fieldname]['#attributes']['autofocus']);
+    unset($field['#attributes']['autofocus']);
   }
 }
