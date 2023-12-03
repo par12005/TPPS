@@ -41,8 +41,6 @@ function tpps_install() {
   variable_set('tpps_page_4_cache_unit_list', FALSE);
   // Study Export.
   variable_set('tpps_submission_export_show_file_search_report', FALSE);
-  // Study Import.
-  variable_set('tpps_submission_import_file_replace', TRUE);
   // Submit All.
   variable_set('tpps_submit_all_log_cli_show_time', FALSE);
   // Theme Settings.
@@ -342,8 +340,6 @@ function tpps_uninstall() {
   variable_del('tpps_page_4_cache_unit_list');
   // Study Export.
   variable_del('tpps_submission_export_show_file_search_report');
-  // Study Import.
-  variable_del('tpps_submission_import_file_replace');
   // Submit All.
   variable_del('tpps_submit_all_log_cli_show_time');
   // Theme Settings.

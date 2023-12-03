@@ -1895,7 +1895,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'title arguments' => [2, 3],
     'description' => 'Manual Export of TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_manual_export_form'],
+    'page arguments' => ['tpps_submission_manual_export_form', 2],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_manual_export.inc',
@@ -1931,14 +1931,14 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'admin/submission_purge.inc',
   ];
-  $items['tpps/submission/import'] = [
-    'title' => 'Import',
+  $items['tpps/submission/%/import'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
     'description' => 'Import of TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_import_form'],
+    'page arguments' => ['tpps_submission_import_form', 2],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'type' => MENU_LOCAL_TASK,
     'file' => 'admin/submission_import.inc',
   ];
 }

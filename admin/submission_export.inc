@@ -14,17 +14,31 @@
 
 module_load_include('inc', 'tpps', 'includes/common');
 module_load_include('inc', 'tpps', 'admin/submission_list');
+module_load_include('inc', 'tpps', 'includes/submissions');
+module_load_include('inc', 'tpps', 'includes/form');
 
 /**
  * TPPS Study Export Form.
  */
 function tpps_submission_export_form(array $form, array &$form_state, $accession = '') {
   tpps_submission_list_validate_accession($accession);
+
+  $accession_list = tpps_submission_get_accession_list();
+  $form['tpps_submission_accession'] = [
+    '#type' => 'select',
+    '#title' => t('Accession'),
+    '#options' => array_merge([
+      'new' => t(
+        'New (@next_accession)',
+        ['@next_accession' => 'TGDR' . tpps_init_project_get_next_accession()]
+      ),
+    ], $accession_list),
+    '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
+    '#required' => TRUE,
+  ];
   // Get Submission State.
-  module_load_include('inc', 'tpps', 'includes/submissions');
   $state = tpps_submission_get_state($accession);
   tpps_submission_export_fixes($state);
-  //drupal_set_message(tpps_table_display($state));
   // Files.
   $fid_list = tpps_submission_file_get_id_list($state, $form);
   $files = tpps_submission_export_get_files_info($fid_list);
@@ -38,9 +52,21 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     '#rows' => 10,
     '#resizable' => TRUE,
     '#attributes' => ['readonly' => 'readonly'],
+    '#states' => [
+      'visible' => [
+        ':input[name="tpps_submission_accession"]' => ['value' => $accession],
+      ],
+    ],
   ];
-  tpps_submission_list_add_buttons($form, $add_action = FALSE);
+  tpps_form_autofocus($form, 'tpps_submission_export_state');
+  tpps_submission_list_add_buttons($form);
   tpps_add_css_js('submission_export', $form);
+  tpps_add_css_js('theme', $form);
+  $form['report']['#states'] = [
+    'visible' => [
+      ':input[name="tpps_submission_accession"]' => ['value' => $accession],
+    ],
+  ];
   return $form;
 }
 

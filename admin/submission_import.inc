@@ -12,14 +12,13 @@
 
 module_load_include('inc', 'tpps', 'includes/common');
 module_load_include('inc', 'tpps', 'admin/submission_list');
+module_load_include('inc', 'tpps', 'includes/form');
 
 /**
  * TPPS Submission Import Form.
  */
 function tpps_submission_import_form(array $form, array &$form_state, $accession = '') {
   tpps_submission_list_validate_accession($accession);
-  $form['#attributes']['class'][] = 'tpps-submission';
-  tpps_add_css_js('theme', $form);
 
   // Show warning about using existing accession.
   if ($accession != 'new') {
@@ -29,58 +28,28 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
   }
   // Accession.
   $accession_list = tpps_submission_get_accession_list();
-  $next_accession = tpps_init_project_get_next_accession();
   $form['tpps_submission_import_accession'] = [
     '#type' => 'select',
-    '#field_prefix' => 'TGDR',
     '#title' => t('Accession'),
-    '#options' => array_merge([$next_accession => $next_accession], $accession_list),
-    '#default_value' => $accession ?? $next_accession ?? NULL,
-    '#required' => FALSE,
-  ];
-  $form['tpps_submission_import_file_replace'] = [
-    '#type' => 'checkbox',
-    '#title' => 'Replace existing files',
-    '#default_value' => variable_get('tpps_submission_import_file_replace', TRUE),
-    '#description' => t('Behavior when the destination file already exists:'
-      . '<br /><strong>Checked</strong>: replace the existing file. '
-      . 'If a managed file with the destination name exists then its '
-      . 'database entry will be updated. '
-      . 'If no database entry is found then a new one will be created.'
-      . '<br /><strong>Unchecked</strong>: Append _{incrementing number} '
-      . 'until the filename is unique.'),
+    '#options' => array_merge([
+      'new' => t(
+        'New (@next_accession)',
+        ['@next_accession' => 'TGDR' . tpps_init_project_get_next_accession()]
+      ),
+    ], $accession_list),
+    '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
+    '#required' => TRUE,
   ];
   $form['tpps_submission_import_submission_state'] = [
     '#type' => 'textarea',
     '#title' => t('Submission State'),
     '#default_value' => $form_state['input']['tpps_submission_import_submission_state'] ?? '',
   ];
-
-  // @TODO Use tpps_submission_list_add_buttons($form);
-  $form['action'] = ['#type' => 'container'];
-  $form['action']['import'] = [
-    '#type' => 'submit',
-    '#value' => t('Import'),
-    '#submit' => ['tpps_submission_import_form_submit'],
-  ];
-  $form['action']['review_dump'] = [
-    '#type' => 'submit',
-    '#value' => t('Review Dump'),
-    '#submit' => ['tpps_submission_import_review_dump'],
-  ];
-  $form['action']['dry_run'] = [
-    // Submission won't be submitted but files will be downloaded
-    // and added to site.
-    '#type' => 'submit',
-    '#value' => t('Dry Run'),
-    '#submit' => ['tpps_submission_import_form_submit'],
-  ];
-  $form['action']['reset'] = [
-    '#type' => 'submit',
-    '#value' => t('Reset'),
-    '#submit' => ['tpps_submission_import_form_reset'],
-  ];
+  $form['#attributes']['class'][] = 'tpps-submission';
   $form['#validate'][] = 'tpps_submission_import_form_validate';
+  tpps_form_autofocus($form, 'tpps_submission_import_accession');
+  tpps_add_css_js('theme', $form);
+  tpps_submission_list_add_buttons($form);
   return $form;
 }
 
@@ -89,17 +58,10 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
  */
 function tpps_submission_import_form_validate(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Skip validation if 'Reset' was clicked.
-  if ($form_state['triggering_element']['#value'] == t('Reset')) {
-    return;
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate accession.
-  $new_accession = $form_state['values']['tpps_submission_import_accession'];
-  // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
-  // @TODO Update code to use only 'xxx' format.
-  $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
-  else {
+  if ($form_state['values']['tpps_submission_import_accession'] ?? NULL) {
+    // Note: $accession could be 'new'.
+    drupal_goto('tpps/submission');
     // @TODO Minor. Validate accession. Check if 'TGDR' is present and so on.
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -107,13 +69,6 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
   if (empty($form_state['values']['tpps_submission_import_submission_state'])) {
     form_set_error('tpps_submission_import_submission_state', t('Submission state is empty.'));
   }
-}
-
-/**
- * Resets TPPS Submission Import Form.
- */
-function tpps_submission_import_form_reset(array $form, array &$form_state) {
-  drupal_goto('tpps/submission/import');
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -139,9 +94,6 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   $dry_run = (bool) ($form_state['triggering_element']['#value'] == t('Dry Run'));
 
   module_load_include('inc', 'tpps', 'includes/common');
-  variable_set('tpps_submission_import_file_replace',
-    ($form_state['values']['tpps_submission_import_file_replace'] ?? FALSE)
-  );
   // Remove useless data from the submission state.
   if ($state_raw = trim($form_state['values']['tpps_submission_import_submission_state'])) {
     // Fix 'stdClass' in the submistion dump createdy by var_export().
@@ -156,7 +108,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     catch (Exception $e) {
       drupal_set_message($e->errorMessage());
-      drupal_set_message('<pre>' . print_r($state, 1) . '</pre>')e
+      drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
       return;
     }
 
@@ -245,12 +197,7 @@ function tpps_submission_import_download_file(array $file) {
   }
   // Move file to Drupal.
   $path = tpps_submission_import_get_folder($file['uri']) . '/' . $file['filename'];
-  $action = (
-    variable_get('tpps_submission_import_file_replace', TRUE) ?
-    // Replace = 1, Rename = 0.
-    FILE_EXISTS_REPLACE : FILE_EXISTS_RENAME
-  );
-  $file = file_save_data($content, $path, $action);
+  $file = file_save_data($content, $path, FILE_EXISTS_RENAME);
   return $file;
 }
 

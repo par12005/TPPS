@@ -15,18 +15,20 @@ module_load_include('inc', 'tpps', 'includes/form');
  */
 function tpps_submission_list_form(array $form, array &$form_state = [], $accession = NULL) {
   $form['#attributes']['class'][] = 'tpps-submission';
-  tpps_add_css_js('theme', $form);
   // Accession.
   $accession_list = tpps_submission_get_accession_list();
   $form['tpps_submission_accession'] = [
     '#type' => 'select',
     '#title' => t('Accession'),
-    '#options' => array_merge(['new' => t('New')], $accession_list),
+    '#options' => array_merge([
+      'new' => t(
+        'New (@next_accession)',
+        ['@next_accession' => 'TGDR' . tpps_init_project_get_next_accession()]
+      ),
+    ], $accession_list),
     '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
     '#required' => TRUE,
-    //'#attributes' => ['autofocus' => ''],
   ];
-  tpps_form_autofocus($form, 'tpps_submission_accession');
   // Buttons.
   $form['action'] = ['#type' => 'container'];
   $buttons = ['create', 'view', 'export', 'import', 'compare', 'purge'];
@@ -46,6 +48,8 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
       ];
     }
   }
+  tpps_form_autofocus($form, 'tpps_submission_accession');
+  tpps_add_css_js('theme', $form);
   return $form;
 }
 
@@ -61,10 +65,6 @@ function tpps_submission_list_form_submit(array $form, array &$form_state) {
     drupal_goto('tppsc');
   }
   else {
-    if ($accession == 'new' && $action != 'import') {
-      drupal_set_message(t('Please select existing accession.'), 'error');
-      drupal_goto($path);
-    }
     $path .= ($accession && $action) ? '/' . $accession . '/' . $action : '';
     drupal_goto($path);
   }
@@ -110,7 +110,15 @@ function tpps_submission_list_add_buttons(array &$form, $add_action = TRUE) {
  */
 function tpps_submission_list_validate_accession($accession) {
   if (empty($accession)) {
-    drupal_set_message(t('Empty accession.', 'warning'));
+
+    drupal_set_message(t('Empty accession in @function().',
+      [
+        '@function' => debug_backtrace(
+          !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2
+        )[1]['function'],
+      ]
+    ), 'warning');
+
     drupal_goto('tpps/submission');
   }
 }
