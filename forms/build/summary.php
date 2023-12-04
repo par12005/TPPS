@@ -22,8 +22,11 @@
  */
 function tpps_summary_create_form(array &$form, array $form_state) {
 
+  // @TODO Update top navigation bar.
   $supplemental_upload_location = 'public://' . variable_get('tpps_supplemental_files_dir', 'tpps_supplemental');
 
+  $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('theme', $form);
   $form['comments'] = array(
     '#type' => 'textarea',
     '#title' => 'If you have any additional comments about this submission you would like to include, please write them here:',
