@@ -455,23 +455,28 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
 }
 
 /**
- * This helper function is used in the api call /tpps/<accession>/accession-file-tree-ids
- * to get all tree_ids detected from a tree accession file
+ * Menu callback for '/tpps/<accession>/accession-file-tree-ids.
+ *
+ * Gets all tree_ids detected from a tree accession file.
  */
 function tpps_accession_file_tree_ids($accession = NULL, $i = 1) {
-  require_once(__DIR__ . '/../forms/submit/submit_all.php');
-  $form_state = tpps_load_submission($accession); // get the form state
+  // @TODO [VS] Check if this include really required. Seems it's not used.
+  require_once __DIR__ . '/../forms/submit/submit_all.php';
+  $form_state = tpps_load_submission($accession);
   drupal_json_output(tpps_accession_get_accession_file_tree_ids($form_state, $i));
-
-
 }
 
-/** This function will generate the tree_ids and place it in a standardized
- *  array format similar to other functions like vcf markers etc. The actually
- *  array design is a specific key format to make things easy to understand
+/**
+ * Generates the list of tree_ids.
+ *
+ * Note: Array design is a specific key format to make things easy to
+ * understand similar to other functions like vcf markers etc.
+ *
+ * @return array
+ *   Returns tree_id in a standardized array format.
  */
 function tpps_accession_get_accession_file_tree_ids($form_state, $i) {
-  require_once(__DIR__ . '/../includes/file_utils.inc');
+  require_once __DIR__ . '/../includes/file_utils.inc';
 
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
   // $location = tpps_accession_file_location($form_state, $i);
@@ -479,7 +484,8 @@ function tpps_accession_get_accession_file_tree_ids($form_state, $i) {
   $options = [
     'tree_id_column' => $thirdpage['tree-accession']['species-' . $i]['file-groups']['Tree Id'][1]
   ];
-  $options['no_header'] = !empty($tree_accession['file-no-header']); // detect if there is a header or not
+  // Detect if there is a header or not.
+  $options['no_header'] = !empty($tree_accession['file-no-header']);
   tpps_file_iterator($fid, 'tpps_accession_file_tree_ids_iterate_line', $options);
 
   $output = [
@@ -492,11 +498,14 @@ function tpps_accession_get_accession_file_tree_ids($form_state, $i) {
 }
 
 /**
- * This function iterates through each row of the accession file and returns
- * the tree_ids based on the column specified in TPPS
+ * Iterates through each row of the accession file to get Tree Id.
+ *
+ * Updates given by reference $options with the tree_ids based on the
+ * column specified in TPPS.
  */
 function tpps_accession_file_tree_ids_iterate_line($row, &$options, $job = NULL) {
-  $tree_id_column = $options['tree_id_column']; // eg A
+  // Eg. A.
+  $tree_id_column = $options['tree_id_column'];
   if (!isset($options['values'])) {
     $options['values'] = [];
     $options['duplicate_values'] = [];
@@ -505,28 +514,32 @@ function tpps_accession_file_tree_ids_iterate_line($row, &$options, $job = NULL)
   }
   $tree_id = $row[$tree_id_column];
 
-  $options['count'] = $options['count'] + 1; // increase count by 1
+  // Increase count by 1.
+  $options['count'] = $options['count'] + 1;
   if (isset($options['values'][$tree_id])) {
-    $options['duplicate_values'][$tree_id] = 1; // set as duplicate_value
+    $options['duplicate_values'][$tree_id] = 1;
   }
   else {
-    $options['unique_count'] = $options['unique_count'] + 1; // it's unique so increment
+    // It's unique so increment.
+    $options['unique_count'] = $options['unique_count'] + 1;
   }
-  $options['values'][$tree_id] = 1; // record that the tree exists
+  // Record that the tree exists.
+  $options['values'][$tree_id] = 1;
 }
 
-
 /**
- * This helper function is used in the api call /tpps/<accession>/vcf_tree_ids
- * to get all tree-ids detected from a vcf file
+ * Menu callback for '/tpps/<accession>/vcf_tree_ids'.
+ *
+ * Gets all tree-ids detected from a vcf file.
  */
 function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
-  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  require_once __DIR__ . '/../forms/submit/submit_all.php';
 
   $form_state = tpps_load_submission($accession);
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
-  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
+  // Returns array['status','location'].
+  $vcf_location = tpps_vcf_location($form_state, $i);
   $result = [];
   if ($vcf_location['status'] == 'exists') {
     $result = tpps_genotype_get_vcf_tree_ids($vcf_location['location']);
@@ -534,13 +547,13 @@ function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
   drupal_json_output($result);
 }
 
-
 /**
- * This helper function is used in the api call /tpps/<accession>/vcf_markers
- * to get all markers detected from a vcf file
+ * Menu callback for '/tpps/<accession>/vcf_markers'.
+ *
+ * Gets all markers detected from a vcf file.
  */
 function tpps_vcf_markers($accession = NULL, $i = 1) {
-  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  require_once __DIR__ . '/../forms/submit/submit_all.php';
 
   $form_state = tpps_load_submission($accession);
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
@@ -578,25 +591,31 @@ function tpps_snps_assay_markers($accession = NULL, $i = 1) {
 // }
 
 function tpps_assay_design_markers($accession = NULL, $i = 1) {
-  require_once(__DIR__ . '/../forms/submit/submit_all.php');
-  $form_state = tpps_load_submission($accession); // get the form state
+  require_once __DIR__ . '/../forms/submit/submit_all.php';
+  $form_state = tpps_load_submission($accession);
   drupal_json_output(tpps_get_assay_design_file_markers($form_state, $i));
-
-
 }
 
-/** This function will generate the markers and place it in a standardized
- *  array format similar to other functions like vcf markers etc. The actually
- *  array design is a specific key format to make things easy to understand
+/**
+ * Generates the markers.
+ *
+ * @param array $form_state
+ *   Drupal Form API state array.
+ * @param int $i
+ *   Organism Id.
+ *
+ * @return array
+ *   Returns markers in a standardized array format.
  */
-function tpps_get_assay_design_file_markers($form_state, $i) {
-  require_once(__DIR__ . '/../includes/file_utils.inc');
+function tpps_get_assay_design_file_markers(array $form_state, $i) {
+  require_once __DIR__ . '/../includes/file_utils.inc';
 
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   $fid = $genotype['files']['assay-design'];
   $file_headers = tpps_file_headers($fid, FALSE);
-  $marker_name_column = NULL; // empty until found, this will contain A or B or C etc
+  // Empty until found, this will contain A or B or C etc.
+  $marker_name_column = NULL;
   foreach ($file_headers as $column => $column_name) {
     $column_name_normalized = strtolower($column_name);
     $column_name_normalized = str_replace(' ', '_', $column_name_normalized);

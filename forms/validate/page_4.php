@@ -109,7 +109,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     // We shouldn't remove any files until validation passed.
     if (!form_get_errors()) {
       // We are removing genotype files here to allow on user to get exactly
-      // the same form as was submitted and rmeove files only when they
+      // the same form as was submitted and remove files only when they
       // definitly not needed.
       for ($i = 1; $i <= $organism_number; $i++) {
         $genotype = &$form_state['values']["organism-$i"]['genotype'];

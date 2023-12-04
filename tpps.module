@@ -110,15 +110,15 @@ function tpps_menu() {
   // This will return information about a study's Accession tree ids
   // First % = accession
   // Second % = organism_index (1 or 2 or 3 etc) @TODO
-  $items['tpps/%/accession-file-tree-ids'] = array(
+  $items['tpps/%/accession-file-tree-ids'] = [
     'title' => 'TPPS Accession Tree Ids',
     'page callback' => 'tpps_accession_file_tree_ids',
-    'page arguments' => array(1),
-    'access arguments' => array('access content'),
+    'page arguments' => [1],
+    'access arguments' => ['access content'],
     // 'access callback' => 'tpps_access',
     // 'access arguments' => array('access tpps form', 1),
     'type' => MENU_CALLBACK,
-  );
+  ];
 
 
   // This will return information about a study's VCF tree ids
