@@ -29,6 +29,7 @@ function tpps_install() {
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
   variable_set('tpps_front_show_pending_status_mine', FALSE);
+  variable_set('tpps_front_show_approved_status_mine', FALSE);
   variable_set('tpps_front_show_pending_status_others', FALSE);
   variable_set('tpps_front_show_others_studies', TRUE);
   // Page 1 Settings.
@@ -328,6 +329,7 @@ function tpps_uninstall() {
   // Front page.
   variable_del('tpps_front_cache_accession_list');
   variable_del('tpps_front_show_pending_status_mine');
+  variable_del('tpps_front_show_approved_status_mine');
   variable_del('tpps_front_show_pending_status_others');
   variable_del('tpps_front_show_others_studies');
   // Page 1.

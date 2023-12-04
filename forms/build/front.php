@@ -51,6 +51,16 @@ function tpps_front_create_form(array &$form, array $form_state) {
           ['uid', $user->uid],
         ]);
       }
+      if (variable_get('tpps_front_show_approved_status_mine', FALSE)) {
+        $options = $options + [
+          'placeholder222' =>
+          '------------------------- YOUR / APPROVED --------------------------',
+        ]
+        + tpps_submission_get_accession_list([
+          ['status', 'Approved'],
+          ['uid', $user->uid],
+        ]);
+      }
       if (variable_get('tpps_front_show_others_studies', TRUE)) {
         $options = $options + [
           'placeholder3' =>
