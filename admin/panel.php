@@ -1444,7 +1444,13 @@ function tpps_admin_panel_submit($form, &$form_state) {
         // dpm($args);
         $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession", 'tpps', 'tpps_generate_popstruct', $args, $user->uid, 10, $includes, TRUE);
       }
+      else if (!empty($state['saved_values'][4]['organism-1']['genotype']['files']['local_vcf'])) {
+        $location = strip_tags($state['saved_values'][4]['organism-1']['genotype']['files']['local_vcf']);
+        $args = array($accession, $location);
+        $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession", 'tpps', 'tpps_generate_popstruct', $args, $user->uid, 10, $includes, TRUE);
+      }
       else {
+        // dpm($state['saved_values'][4]);
         drupal_set_message("Could not find a VCF tied to organism-1, are you sure you linked a VCF file?");
       }
       break;
