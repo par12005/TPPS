@@ -11,7 +11,7 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/common');
-module_load_include('inc', 'tpps', 'admin/submission_list');
+module_load_include('inc', 'tpps', 'pages/submission/list');
 module_load_include('inc', 'tpps', 'includes/form');
 
 /**

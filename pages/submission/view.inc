@@ -7,7 +7,7 @@
 
 module_load_include('inc', 'tpps', 'includes/common');
 module_load_include('inc', 'tpps', 'includes/form');
-module_load_include('inc', 'tpps', 'admin/submission_list');
+module_load_include('inc', 'tpps', 'pages/submission/list');
 module_load_include('inc', 'tpps', 'includes/submissions');
 
 /**
@@ -65,8 +65,8 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     '#title' => t('Accession to compare with'),
     '#options' => tpps_submission_get_accession_list(),
   ];
-  $form['action'] = ['#type' => 'container'];
-  $form['action']['compare'] = [
+  $form['actions'] = ['#type' => 'container'];
+  $form['actions']['compare'] = [
     '#type' => 'submit',
     '#value' => t('Compare'),
     '#submit' => ['tpps_submission_view_form_submit'],
@@ -92,7 +92,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     ];
   }
   //tpps_submission_list_add_buttons($form);
-  tpps_form_autofocus($form, 'tpps_submission_import_accession');
+  tpps_form_autofocus($form, 'tpps_submission_accession_2');
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;

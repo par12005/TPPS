@@ -14,7 +14,7 @@
 
 module_load_include('inc', 'tpps', 'includes/common');
 module_load_include('inc', 'tpps', 'includes/form');
-module_load_include('inc', 'tpps', 'admin/submission_list');
+module_load_include('inc', 'tpps', 'pages/submission/list');
 
 /**
  * TPPS Study Import Form.
@@ -161,6 +161,7 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
   $parsed_2 = tpps_array_dump($result_2, $sticky = FALSE);
   // Process items only in $result_2.
   tpps_submission_compare_show_diff($form, $parsed_1, $parsed_2);
+  $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;
 }

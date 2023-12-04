@@ -1857,7 +1857,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_list_form'],
     'access arguments' => ['administer tpps module'],
-    'file' => 'admin/submission_list.inc',
+    'file' => 'pages/submission/start.inc',
   ];
   $items['tpps/submission/%'] = [
     'title callback' => 'tpps_submission_title',
@@ -1865,7 +1865,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_list_form', 2],
     'access arguments' => ['administer tpps module'],
-    'file' => 'admin/submission_list.inc',
+    'file' => 'pages/submission/start.inc',
   ];
   // View.
   $items['tpps/submission/%/view'] = [
@@ -1875,8 +1875,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_view_form', 2],
     'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_view.inc',
+    'file' => 'pages/submission/view.inc',
   ];
   // Export.
   $items['tpps/submission/%/export'] = [
@@ -1886,8 +1885,17 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_export_form', 2],
     'access arguments' => ['administer tpps module'],
+    'file' => 'pages/submission/export.inc',
+  ];
+  $items['tpps/submission/%/import'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'Import of TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_import_form', 2],
+    'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_export.inc',
+    'file' => 'pages/submission/import.inc',
   ];
   // Manual Export.
   $items['tpps/submission/%/manual_export'] = [
@@ -1898,7 +1906,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page arguments' => ['tpps_submission_manual_export_form', 2],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_manual_export.inc',
+    'file' => 'pages/submission/manual_export.inc',
   ];
   // Compare.
   $items['tpps/submission/%/compare'] = [
@@ -1908,8 +1916,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_compare_form', 2],
     'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_compare.inc',
+    'file' => 'pages/submission/compare.inc',
   ];
   $items['tpps/submission/%/compare/%'] = [
     'title callback' => 'tpps_submission_title',
@@ -1918,8 +1925,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_compare', 2, 4],
     'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_compare.inc',
+    'file' => 'pages/submission/compare.inc',
   ];
 
   $items['tpps/submission/%/purge'] = [
@@ -1930,17 +1936,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page arguments' => ['tpps_submission_purge_form', 2],
     'access arguments' => ['tpps delete submission'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_purge.inc',
-  ];
-  $items['tpps/submission/%/import'] = [
-    'title callback' => 'tpps_submission_title',
-    'title arguments' => [2, 3],
-    'description' => 'Import of TPPS Submission',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_import_form', 2],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_import.inc',
+    'file' => 'pages/submission/purge.inc',
   ];
 }
 

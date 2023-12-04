@@ -29,10 +29,10 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
     '#required' => TRUE,
   ];
   // Buttons.
-  $form['action'] = ['#type' => 'container'];
+  $form['actions'] = ['#type' => 'container'];
   $buttons = ['create', 'view', 'export', 'import', 'compare', 'purge'];
   foreach ($buttons as $key) {
-    $form['action'][$key] = [
+    $form['actions'][$key] = [
       '#type' => 'submit',
       '#name' => $key,
       '#value' => t(ucfirst($key)),
@@ -40,7 +40,7 @@ function tpps_submission_list_form(array $form, array &$form_state = [], $access
     // States. Show/Hide buttons.
     if ($key != 'import') {
       $state = ($key == 'create') ? 'value' : '!value';
-      $form['action'][$key]['#states'] = [
+      $form['actions'][$key]['#states'] = [
         'visible' => [
           ':input[name="tpps_submission_accession"]' => [$state => 'new'],
         ],
@@ -77,10 +77,10 @@ function tpps_submission_list_form_submit(array $form, array &$form_state) {
  *   Drupal Form API array.
  */
 function tpps_submission_list_add_buttons(array &$form, $add_action = TRUE) {
-  $form['action'] = ['#type' => 'container'];
+  $form['actions'] = ['#type' => 'container'];
   // Back-button.
   $action = 'back';
-  $form['action'][$action] = [
+  $form['actions'][$action] = [
     '#type' => 'submit',
     '#name' => $action,
     '#value' => t(ucfirst($action)),
@@ -93,7 +93,7 @@ function tpps_submission_list_add_buttons(array &$form, $add_action = TRUE) {
     $function = debug_backtrace(
       !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2
     )[1]['function'];
-    $form['action'][$main_action] = [
+    $form['actions'][$main_action] = [
       '#type' => 'submit',
       '#name' => $main_action,
       '#value' => t(ucfirst($main_action)),

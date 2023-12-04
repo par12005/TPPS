@@ -13,7 +13,7 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/common');
-module_load_include('inc', 'tpps', 'admin/submission_list');
+module_load_include('inc', 'tpps', 'pages/submission/list');
 module_load_include('inc', 'tpps', 'includes/submissions');
 module_load_include('inc', 'tpps', 'includes/form');
 
@@ -45,6 +45,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   tpps_submission_export_file_report($fid_list, $files, $form);
   $state['tpps_submission_export_files'] = $files;
 
+
   $form['tpps_submission_export_state'] = [
     '#type' => 'textarea',
     '#title' => t('State PHP Array'),
@@ -58,10 +59,17 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
       ],
     ],
   ];
-  tpps_form_autofocus($form, 'tpps_submission_export_state');
   tpps_submission_list_add_buttons($form);
-  tpps_add_css_js('submission_export', $form);
+  // Add extra 'Manual Export' button.
+  $form['actions']['manual_export'] = [
+    '#type' => 'submit',
+    '#name' => 'manual_export',
+    '#value' => t('Manual Export'),
+    '#submit' => ['tpps_submission_export_manual_submit'],
+  ];
+  tpps_form_autofocus($form, 'tpps_submission_export_state');
   $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('submission_export', $form);
   tpps_add_css_js('theme', $form);
   $form['report']['#states'] = [
     'visible' => [
@@ -69,6 +77,15 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     ],
   ];
   return $form;
+}
+
+/**
+ * Form submitter. Redirects to manual export page.
+ */
+function tpps_submission_export_manual_submit(array $form, array $form_state) {
+  $accession = $form_state['tpps_submission_accession'];
+  tpps_submission_list_validate_accession($accession);
+  drupal_goto('tpps/submission/' . $accession . '/manual_export');
 }
 
 /**
