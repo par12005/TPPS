@@ -440,7 +440,15 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $f
  *   The groups and the column option types that the file was valid for.
  */
 function tpps_file_validate_columns(array &$form_state, array $required_groups, array $file_element) {
-  $cols = $file_element['#value']['columns'];
+
+
+
+  //dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2), 1));
+
+
+
+
+  $cols = $file_element['#value']['columns'] ?? NULL;
 
   $parents = $file_element['#parents'];
   $new_end_columns = end($parents) . "-columns";

@@ -25,6 +25,12 @@ define('TPPS_MODULE_PATH', drupal_get_path('module', 'tpps'));
 define('TPPS_IMAGES_PATH', TPPS_MODULE_PATH . '/images/');
 define('TPPS_AJAX_URL', 'ajax/tpps');
 
+// Page3. Accession file columns.
+define('TPPS_COLUMN_PLANT_IDENTIFIER', 1);
+define('TPPS_COLUMN_LATITUDE', 4);
+define('TPPS_COLUMN_LONGITUDE', 5);
+define('TPPS_COLUMN_POPULATION_GROUP', 12);
+
 require_once 'includes/common.inc';
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
@@ -657,12 +663,16 @@ function tpps_element_info_alter(&$type) {
  *   The extended managed_file element.
  */
 function tpps_managed_file_process(array $element, array &$form_state, array $form) {
-  if ($form_state['build_info']['form_id'] !== 'tpps_main') {
+  if (!in_array($form_state['build_info']['form_id'], ['tppsc_main', 'tpps_main'])) {
+    // Only make changes to $element if it is part of the
+    // 'tppsc_main' or 'tpps_main' form.
     return $element;
   }
   if (isset($element['columns'])) {
     require_once 'ajax/tpps_ajax.php';
-    $fid = $element['#value']['fid'];
+    if (empty($fid = $element['#value']['fid'])) {
+      return $element;
+    }
     $wrapper = substr($element['#id'], 0, -7) . '-ajax-wrapper';
 
     $saved_value_parents = $no_header_parents = $element['#parents'];
@@ -677,40 +687,35 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       $no_header = drupal_array_get_nested_value($form_state['saved_values'][$form_state['stage']], $saved_value_parents);
     }
 
-    $element['no-header'] = array(
+    $element['no-header'] = [
       '#type' => 'checkbox',
       '#title' => 'My file has no header row',
-      '#ajax' => array(
+      '#ajax' => [
         'wrapper' => $wrapper,
         'callback' => 'tpps_no_header_callback',
-      ),
-      '#states' => isset($element['#states']) ? $element['#states'] : NULL,
-      '#default_value' => $no_header ? $no_header : NULL,
-    );
+      ],
+      '#states' => $element['#states'] ?? NULL,
+      '#default_value' => $no_header ?? NULL,
+    ];
 
-    if (!empty($fid) and ($file = file_load($fid))) {
-
+    $file = file_load(($fid ?? ''));
+    if ($file && ($file->filesize ?? FALSE)) {
       $saved_vals = $form_state['saved_values'][$form_state['stage']];
       $element['columns']['#type'] = 'fieldset';
-      $element['columns']['#title'] = t('<div class="fieldset-title" style="font-size:.8em">Define Data</div>');
+      $element['columns']['#title'] = t('Define Data');
       $element['columns']['#collapsible'] = TRUE;
 
       // Stop using the file so it can be deleted if the user clicks 'remove'.
       file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
       $content = tpps_parse_file($fid, 3, !empty($no_header));
-
       $options = $element['columns-options']['#value'];
-
       $first = TRUE;
-
       foreach ($content['headers'] as $key => $item) {
         $item_parents = $element['#parents'];
         array_pop($item_parents);
         $item_parents[] = end($element['#parents']) . '-columns';
         $item_parents[] = $key;
-
         $default = drupal_array_get_nested_value($saved_vals, $item_parents);
-
         if (!isset($default)) {
           foreach ($options as $k => $val) {
             similar_text(strtolower($val), strtolower($item), $percent);
@@ -721,19 +726,23 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
           }
         }
         // dpm($item_parents);
-        $element['columns'][$key] = array(
+        $element['columns'][$key] = [
           '#type' => 'select',
           '#title' => $item,
           '#options' => $options,
           '#default_value' => $default,
-          '#prefix' => "<th>",
-          '#suffix' => "</th>",
-          '#attributes' => array(
-            'data-toggle' => array('tooltip'),
-            'data-placement' => array('top'),
-            'title' => array("Select the type of data the '$item' column holds"),
-          ),
-        );
+          '#prefix' => '<th>',
+          '#suffix' => '</th>',
+          '#attributes' => [
+            'data-toggle' => ['tooltip'],
+            'data-placement' => ['top'],
+            'title' => [
+              t('Select the type of data the "@item" column holds',
+                ['@item' => $item]
+              ),
+            ],
+          ],
+        ];
 
         if ($first) {
           $first = FALSE;
@@ -742,32 +751,31 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
         if (!empty($no_header)) {
           $element['columns'][$key]['#title'] = '';
-          $element['columns'][$key]['#attributes']['title'] = array("Select the type of data column $item holds");
+          $element['columns'][$key]['#attributes']['title'] = ["Select the type of data column $item holds"];
         }
 
         if ($form_state['stage'] == TPPS_PAGE_3) {
           $species_num = $element['#parents'];
           array_pop($species_num);
           $species_num = "-" . end($species_num);
-          $element['columns'][$key]['#ajax'] = array(
+          $element['columns'][$key]['#ajax'] = [
             'callback' => 'tpps_accession_pop_group',
             'wrapper' => "population-mapping$species_num",
-          );
+          ];
         }
       }
 
       $rows = $content;
       unset($rows['headers']);
-      $vars = array(
+      $table = theme('table', [
         'header' => $content['headers'],
         'rows' => $rows,
-        'attributes' => array('class' => array('view')),
+        'attributes' => ['class' => ['view']],
         'caption' => '',
         'colgroups' => NULL,
         'sticky' => FALSE,
         'empty' => '',
-      );
-      $table = theme('table', $vars);
+      ]);
       preg_match('/(*UTF8)\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/us', $table, $matches);
 
       $element['columns'][$first_col]['#prefix'] = "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>" . $element['columns'][$first_col]['#prefix'];
@@ -778,11 +786,13 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
   }
 
   if (isset($element['empty'])) {
-
     $element['empty']['#type'] = 'textfield';
     $element['empty']['#title'] = t('File Upload empty field:');
-    $element['empty']['#states'] = isset($element['#states']) ? $element['#states'] : NULL;
-    $element['empty']['#description'] = t('By default, TPPS will treat cells with the value "NA" as empty. If you used a different empty value indicator, please provide it here.');
+    $element['empty']['#states'] = $element['#states'] ?? NULL;
+    $element['empty']['#description'] = t('By default, TPPS will treat cells '
+      . 'with the value "NA" as empty. If you used a different empty value '
+      . 'indicator, please provide it here.'
+    );
   }
 
   return $element;
@@ -795,14 +805,14 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
  * tpps_leaves function, which populates most default values.
  */
 function tpps_form_alter(&$form, &$form_state, $form_id) {
-  if ($form['#form_id'] == 'tpps_main') {
+  if (in_array($form['#form_id'], ['tpps_main', 'tppsc_main'])) {
     $stage = $form_state['stage'];
 
     if (!isset($form_state['saved_values'][$stage])) {
-      $form_state['saved_values'][$stage] = array();
+      $form_state['saved_values'][$stage] = [];
     }
     if (!isset($form_state['values'])) {
-      $form_state['values'] = array();
+      $form_state['values'] = [];
     }
 
     tpps_leaves($form, $form_state['values'], $form_state['saved_values'][$stage]);
@@ -850,7 +860,10 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
       );
       // If element is a type that should pull from 'saved_values', try to load
       // the old value.
-      if (in_array($element['#type'], $load_defaults) and !isset($element['#default_value']) and isset($saved_vals[$key])) {
+      if (in_array($element['#type'], $load_defaults)
+        && !isset($element['#default_value'])
+        && isset($saved_vals[$key])
+      ) {
         $element['#default_value'] = $saved_vals[$key];
       }
       // If element is a select type and still has no default value, then there
@@ -890,7 +903,7 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
  * Adds the side bar to TPPS form pages before they are rendered.
  */
 function tpps_page_build(&$page) {
-  $js_settings = drupal_static('drupal_add_js', array())['settings']['data'] ?? array();
+  $js_settings = drupal_static('drupal_add_js', [])['settings']['data'] ?? [];
   $step = NULL;
   foreach ($js_settings as $info) {
     if (array_key_exists('tpps', $info)) {
@@ -901,11 +914,18 @@ function tpps_page_build(&$page) {
     }
   }
 
-  if (empty($page['content']['system_main']['#form_id']) or $page['content']['system_main']['#form_id'] != 'tpps_main' or empty($step)) {
+  if (
+    empty($page['content']['system_main']['#form_id'])
+    || !in_array(
+      $page['content']['system_main']['#form_id'],
+      ['tpps_main', 'tppsc_main']
+    )
+    || empty($step)
+  ) {
     return $page;
   }
 
-  if ($step != 'frontpage' and $step != TPPS_PAGE_1 and $step != 'summarypage') {
+  if ($step != 'frontpage' && $step != TPPS_PAGE_1 && $step != 'summarypage') {
     $blockObject = block_load('views', 'tpps_status');
     $blockObject->title = 'TPPS Status';
     $blockObject->subject = '';

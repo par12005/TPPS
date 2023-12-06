@@ -129,9 +129,17 @@ function tpps_study_location(array &$form, array &$form_state) {
       $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
       async defer></script>"
       . "<div id=\"_map_wrapper\"></div>";
-      drupal_add_js(array('tpps' => array('tree_info' => $coords)), 'setting');
-      drupal_add_js(array('tpps' => array('study_locations' => TRUE)), 'setting');
 
+      $form['#attached']['js'][] = [
+        'type' => 'setting',
+        'scope' => 'footer',
+        'data' => [
+          'tpps' => [
+            'tree_info' => $coords,
+            'study_locations' => TRUE,
+          ],
+        ],
+      ];
       $form['study_location']['map-button']['#suffix'] = $map_api_tools;
     }
   }
