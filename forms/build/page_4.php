@@ -282,7 +282,7 @@ function tpps_add_curation_tool(array &$form) {
     $form['diagnostics-curation'][$key] = [
       '#type' => 'button',
       '#value' => t($title),
-      '#attributes' => ['class' => [$key]],
+      '#attributes' => ['class' => [$key, 'form-button']],
     ];
   }
   $form['diagnostics-curation']['diagnostic-curation-results'] = [
