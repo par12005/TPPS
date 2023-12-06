@@ -769,13 +769,12 @@ function tpps_details_study(array &$state) {
   $study_file_ids = tpps_details_get_study_file_ids($state);
   // foreach ($state['files'] as $fid) {
   foreach ($study_file_ids as $fid) {
-    $file = file_load($fid);
-    if ($file) {
+    $file = file_load($fid ?? '');
+    if ($file && $file->filesize) {
       $file_url = check_plain(file_create_url($file->uri));
-      if(stripos($file_url, 'core/labs') === FALSE) {
+      if (stripos($file_url, 'core/labs') === FALSE) {
         $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
       }
-
     }
   }
 

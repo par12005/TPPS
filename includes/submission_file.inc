@@ -126,7 +126,7 @@ function tpps_submission_file_get_id_list(array $state, $show_report = FALSE) {
 function tpps_submission_file_set_status(array $form_state, $status = FILE_STATUS_PERMANENT) {
   $fid_list = tpps_submission_file_get_id_list($form_state, FALSE);
   foreach ($fid_list as $fid) {
-    $file = file_load($fid);
+    $file = file_load($fid ?? '');
     if ($file && $file->status != $status) {
       $file->status = $status;
       file_save($file);

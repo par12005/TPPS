@@ -643,12 +643,12 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       'Maximum Value',
     );
 
-    $form[$id]['phenotype']['metadata']['columns-options'] = array(
+    $form[$id]['phenotype']['metadata']['columns-options'] = [
       '#type' => 'hidden',
       '#value' => $column_options,
-    );
+    ];
 
-    $form[$id]['phenotype']['metadata']['no-header'] = array();
+    $form[$id]['phenotype']['metadata']['no-header'] = [];
 
     // Get names of manual phenotypes.
     $meta = tpps_get_ajax_value($form_state, array(
@@ -690,6 +690,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     }
 
     // Merge names.
+    // @TODO Check file size not zero.
     if (!empty($name_col) and !is_array($meta_fid) and !empty(file_load($meta_fid))) {
       $names = tpps_parse_file_column($meta_fid, $name_col);
       $phenotype_names = array_merge($phenotype_names, $names);
@@ -1948,6 +1949,7 @@ function tpps_genotype_build_file_field(array &$fields, array $meta) {
       $fields['files'][$file_field_name]['#default_value']
         = $fields['files'][$file_field_name]['#value'];
     }
+    // @TODO Check file size not zero.
     if (
       !empty($fields['files'][$file_field_name]['#default_value'])
       && ($file = file_load($fields['files'][$file_field_name]['#default_value']))

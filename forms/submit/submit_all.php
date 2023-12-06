@@ -5042,7 +5042,10 @@ function tpps_snps_assay_location($form_state, $i) {
     $snp_file = file_load($snp_fid);
     $location = tpps_get_location($snp_file->uri);
     $results['location'] = $location;
-    if ($location == '' or $location == null) {
+    if (!$file->filesize) {
+      $results['status'] = 'empty';
+    }
+    elseif ($location == '' or $location == null) {
       $results['status'] = 'missing';
     }
   }
@@ -5065,7 +5068,10 @@ function tpps_assay_design_location($form_state, $i) {
     $snp_file = file_load($snp_fid);
     $location = tpps_get_location($snp_file->uri);
     $results['location'] = $location;
-    if ($location == '' or $location == null) {
+    if (!$file->filesize) {
+      $results['status'] = 'empty';
+    }
+    elseif ($location == '' or $location == NULL) {
       $results['status'] = 'missing';
     }
   }
@@ -5169,7 +5175,10 @@ function tpps_accession_file_location($form_state, $i) {
     $file = file_load($fid);
     $location = tpps_get_location($file->uri);
     $results['location'] = $location;
-    if ($location == '' or $location == null) {
+    if (!$file->filesize) {
+      $results['status'] = 'empty';
+    }
+    elseif ($location == '' or $location == NULL) {
       $results['status'] = 'missing';
     }
   }
@@ -5202,7 +5211,10 @@ function tpps_vcf_location($form_state, $i) {
       $vcf_file = file_load($vcf_fid);
       $location = tpps_get_location($vcf_file->uri);
       $results['location'] = $location;
-      if ($location == '' or $location == null) {
+      if (!$file->filesize) {
+        $results['status'] = 'empty';
+      }
+      elseif ($location == '' or $location == null) {
         $results['status'] = 'missing';
       }
     }
@@ -5210,7 +5222,10 @@ function tpps_vcf_location($form_state, $i) {
       $results['status'] = 'exists';
       $location = $genotype['files']['local_vcf'];
       $results['location'] = $location;
-      if (!file_exists($location)) {
+      if (!$file->filesize) {
+        $results['status'] = 'empty';
+      }
+      elseif (!file_exists($location)) {
         $results['status'] = 'missing';
       }
     }

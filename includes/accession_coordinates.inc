@@ -6,26 +6,25 @@
  */
 
 /**
- * Returns an array of standardized coordinates based on a file id number.
+ * Returns an array of standardized coordinates based on a File Id in POST.
  */
 function tpps_accession_coordinates() {
   $params = drupal_get_query_parameters($_POST);
-
-  if (!empty($params['fid']) and file_load($params['fid'])) {
-    $coordinates = array();
-    $columns = array(
+  $fid = $params['fid'] ?? '';
+  $file = file_load($fid);
+  if ($file && $file->filesize) {
+    $coordinates = [];
+    $columns = [
       'id_col' => $params['id_col'],
       'lat_col' => $params['lat_col'],
       'long_col' => $params['long_col'],
-    );
-
-    $options = array(
+    ];
+    $options = [
       'no_header' => $params['no-header'],
       'columns' => $columns,
       'coords' => &$coordinates,
-    );
-    tpps_file_iterator($params['fid'], 'tpps_get_coordinates', $options);
-
+    ];
+    tpps_file_iterator($fid, 'tpps_get_coordinates', $options);
     drupal_json_output($coordinates);
   }
 }

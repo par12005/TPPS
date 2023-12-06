@@ -14,131 +14,134 @@ module_load_include('inc', 'tpps', 'includes/form');
  *   The form that is being validated.
  * @param array $form_state
  *   The state of the form that is being validated.
+ *
+ * @todo Check if file has zero length ($file->filesize) and show error message.
  */
 function tpps_page_4_validate_form(array &$form, array &$form_state) {
-  if ($form_state['submitted'] == '1') {
-    unset($form_state['file_info'][TPPS_PAGE_4]);
+  if ($form_state['submitted'] != '1') {
+    return;
+  }
+  unset($form_state['file_info'][TPPS_PAGE_4]);
 
-    $form_values = $form_state['values'];
-    $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+  $form_values = $form_state['values'];
+  $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+
+  for ($i = 1; $i <= $organism_number; $i++) {
+    $organism = &$form_state['values']["organism-$i"] ?? NULL;
+    // Note: 1st item skipped because there is a checkbox which allows to
+    // skip validation of non-first items so only them must be checked.
+    //
+    // Check if validation functions exists.
+    $study_type_list = [];
+    foreach (['phenotype', 'genotype', 'environment'] as $item) {
+      if (!function_exists('tpps_validate_' . $item)) {
+        // Dynamically built function names are:
+        // tpps_validate_phenotype(),
+        // tpps_validate_genotype(),
+        // tpps_validate_environment().
+        watchdog('tpps', 'Validation function for @study_type not found.',
+          ['@study_type' => $item], WATCHDOG_ERROR
+        );
+        continue;
+      }
+      $study_type_list[] = $item;
+    }
+
+    foreach ($study_type_list as $item) {
+      if ($i > 1) {
+        if (($organism[$item . '-repeat-check'] ?? NULL) == '1') {
+          // phenotype-repeat-check,
+          // genotype-repeat-check,
+          // environment-repeat-check.
+          unset($organism[$item]);
+        }
+      }
+      if (!empty($organism[$item])) {
+        $function = 'tpps_validate_' . $item;
+        call_user_func($function, $organism[$item], $i, $form, $form_state);
+      }
+    }
+  }
+
+  if (form_get_errors() and !$form_state['rebuild']) {
+    $form_state['rebuild'] = TRUE;
+    $new_form = drupal_rebuild_form('tpps_main', $form_state, $form);
 
     for ($i = 1; $i <= $organism_number; $i++) {
-      $organism = &$form_state['values']["organism-$i"] ?? NULL;
-      // Note: 1st item skipped because there is a checkbox which allows to
-      // skip validation of non-first items so only them must be checked.
-      //
-      // Check if validation functions exists.
-      $study_type_list = [];
-      foreach (['phenotype', 'genotype', 'environment'] as $item) {
-        if (!function_exists('tpps_validate_' . $item)) {
-          // Dynamically built function names are:
-          // tpps_validate_phenotype(),
-          // tpps_validate_genotype(),
-          // tpps_validate_environment().
-          watchdog('tpps', 'Validation function for @study_type not found.',
-            ['@study_type' => $item], WATCHDOG_ERROR
-          );
-          continue;
-        }
-        $study_type_list[] = $item;
+
+      if (isset($new_form["organism-$i"]['phenotype']['metadata']['upload'])) {
+        $form["organism-$i"]['phenotype']['metadata']['upload']
+          = $new_form["organism-$i"]['phenotype']['metadata']['upload'];
+        $form["organism-$i"]['phenotype']['metadata']['upload']['#id']
+          = "edit-organism-$i-phenotype-metadata-upload";
+      }
+      if (isset($new_form["organism-$i"]['phenotype']['metadata']['columns'])) {
+        $form["organism-$i"]['phenotype']['metadata']['columns']
+          = $new_form["organism-$i"]['phenotype']['metadata']['columns'];
+        $form["organism-$i"]['phenotype']['metadata']['columns']['#id']
+          = "edit-organism-$i-phenotype-metadata-columns";
       }
 
-      foreach ($study_type_list as $item) {
-        if ($i > 1) {
-          if (($organism[$item . '-repeat-check'] ?? NULL) == '1') {
-            // phenotype-repeat-check,
-            // genotype-repeat-check,
-            // environment-repeat-check.
-            unset($organism[$item]);
-          }
-        }
-        if (!empty($organism[$item])) {
-          $function = 'tpps_validate_' . $item;
-          call_user_func($function, $organism[$item], $i, $form, $form_state);
-        }
+      if (isset($form["organism-$i"]['phenotype']['file'])) {
+        $form["organism-$i"]['phenotype']['file']['upload']
+          = $new_form["organism-$i"]['phenotype']['file']['upload'];
+        $form["organism-$i"]['phenotype']['file']['columns']
+          = $new_form["organism-$i"]['phenotype']['file']['columns'];
+        $form["organism-$i"]['phenotype']['file']['upload']['#id']
+          = "edit-organism-$i-phenotype-file-upload";
+        $form["organism-$i"]['phenotype']['file']['columns']['#id']
+          = "edit-organism-$i-phenotype-file-columns";
       }
-    }
 
-    if (form_get_errors() and !$form_state['rebuild']) {
-      $form_state['rebuild'] = TRUE;
-      $new_form = drupal_rebuild_form('tpps_main', $form_state, $form);
-
-      for ($i = 1; $i <= $organism_number; $i++) {
-
-        if (isset($new_form["organism-$i"]['phenotype']['metadata']['upload'])) {
-          $form["organism-$i"]['phenotype']['metadata']['upload']
-            = $new_form["organism-$i"]['phenotype']['metadata']['upload'];
-          $form["organism-$i"]['phenotype']['metadata']['upload']['#id']
-            = "edit-organism-$i-phenotype-metadata-upload";
-        }
-        if (isset($new_form["organism-$i"]['phenotype']['metadata']['columns'])) {
-          $form["organism-$i"]['phenotype']['metadata']['columns']
-            = $new_form["organism-$i"]['phenotype']['metadata']['columns'];
-          $form["organism-$i"]['phenotype']['metadata']['columns']['#id']
-            = "edit-organism-$i-phenotype-metadata-columns";
-        }
-
-        if (isset($form["organism-$i"]['phenotype']['file'])) {
-          $form["organism-$i"]['phenotype']['file']['upload']
-            = $new_form["organism-$i"]['phenotype']['file']['upload'];
-          $form["organism-$i"]['phenotype']['file']['columns']
-            = $new_form["organism-$i"]['phenotype']['file']['columns'];
-          $form["organism-$i"]['phenotype']['file']['upload']['#id']
-            = "edit-organism-$i-phenotype-file-upload";
-          $form["organism-$i"]['phenotype']['file']['columns']['#id']
-            = "edit-organism-$i-phenotype-file-columns";
-        }
-
-        foreach (['snps-assay', 'other'] as $type) {
-          foreach (['upload', 'columns'] as $field) {
-            if (
-              isset($form["organism-$i"]['genotype']['files'][$type][$field])
-              && isset($new_form["organism-$i"]['genotype']['files'][$type][$field])
-            ) {
-              $form["organism-$i"]['genotype']['files'][$type][$field]
-                = $new_form["organism-$i"]['genotype']['files'][$type][$field];
-              $form["organism-$i"]['genotype']['files'][$type][$field]['#id']
-                = "edit-organism-$i-genotype-files-{$type}-{$field}";
-            }
+      foreach (['snps-assay', 'other'] as $type) {
+        foreach (['upload', 'columns'] as $field) {
+          if (
+            isset($form["organism-$i"]['genotype']['files'][$type][$field])
+            && isset($new_form["organism-$i"]['genotype']['files'][$type][$field])
+          ) {
+            $form["organism-$i"]['genotype']['files'][$type][$field]
+              = $new_form["organism-$i"]['genotype']['files'][$type][$field];
+            $form["organism-$i"]['genotype']['files'][$type][$field]['#id']
+              = "edit-organism-$i-genotype-files-{$type}-{$field}";
           }
         }
       }
     }
+  }
 
-    // Validation passed and form is going to be submitted.
-    // We shouldn't remove any files until validation passed.
-    if (!form_get_errors()) {
-      // We are removing genotype files here to allow on user to get exactly
-      // the same form as was submitted and remove files only when they
-      // definitly not needed.
-      for ($i = 1; $i <= $organism_number; $i++) {
-        $genotype = &$form_state['values']["organism-$i"]['genotype'];
-        $genotyping_type = $genotype['files']['genotyping-type'] ?? [];
-        $file_type = $genotype['files']['file-type'] ?? NULL;
-        if ($genotyping_type == 'Genotyping' && $file_type == 'VCF') {
-          if (tpps_file_remove($genotype['files']['snps-assay'])) {
-            $genotype['files']['snps-assay'] = 0;
-          }
-          if (tpps_file_remove($genotype['files']['assay-design'])) {
-            $genotype['files']['assay-design'] = 0;
+  // Validation passed and form is going to be submitted.
+  // We shouldn't remove any files until validation passed.
+  if (!form_get_errors()) {
+    // We are removing genotype files here to allow on user to get exactly
+    // the same form as was submitted and remove files only when they
+    // definitly not needed.
+    for ($i = 1; $i <= $organism_number; $i++) {
+      $genotype = &$form_state['values']["organism-$i"]['genotype'];
+      $genotyping_type = $genotype['files']['genotyping-type'] ?? [];
+      $file_type = $genotype['files']['file-type'] ?? NULL;
+      if ($genotyping_type == 'Genotyping' && $file_type == 'VCF') {
+        if (tpps_file_remove($genotype['files']['snps-assay'])) {
+          $genotype['files']['snps-assay'] = 0;
+        }
+        if (tpps_file_remove($genotype['files']['assay-design'])) {
+          $genotype['files']['assay-design'] = 0;
+        }
+      }
+      else {
+        if (tpps_file_remove($genotype['files']['vcf'])) {
+          $genotype['files']['vcf'] = 0;
+        }
+      }
+      // Remove SSR/cpSSR files which was uploaded but not in use.
+      if (!empty($genotype['marker-type']['SSRs/cpSSRs'])) {
+        if ($genotype['SSRs/cpSSRs'] == 'cpSSRs') {
+          if (tpps_file_remove($genotype['files']['ssrs'])) {
+            $genotype['files']['ssrs'] = 0;
           }
         }
-        else {
-          if (tpps_file_remove($genotype['files']['vcf'])) {
-            $genotype['files']['vcf'] = 0;
-          }
-        }
-        // Remove SSR/cpSSR files which was uploaded but not in use.
-        if (!empty($genotype['marker-type']['SSRs/cpSSRs'])) {
-          if ($genotype['SSRs/cpSSRs'] == 'cpSSRs') {
-            if (tpps_file_remove($genotype['files']['ssrs'])) {
-              $genotype['files']['ssrs'] = 0;
-            }
-          }
-          if ($genotype['SSRs/cpSSRs'] == 'SSRs') {
-            if (tpps_file_remove($genotype['files']['ssrs_extra'])) {
-              $genotype['files']['ssrs_extra'] = 0;
-            }
+        if ($genotype['SSRs/cpSSRs'] == 'SSRs') {
+          if (tpps_file_remove($genotype['files']['ssrs_extra'])) {
+            $genotype['files']['ssrs_extra'] = 0;
           }
         }
       }
@@ -220,18 +223,24 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         }
       }
       // Do not allow empty units in metadata file.
-      $groups = $phenotype['metadata-groups'];
-      $columns = [
-        'name' => $groups['Phenotype Id']['1'],
-        'attr' => $groups['Attribute']['2'],
-        'desc' => $groups['Description']['3'],
-        'unit' => $groups['Unit']['4'],
-      ];
-      $meta_options = [
-        'meta_columns' => $columns,
-        'id' => $id,
-      ];
-      tpps_file_iterator($phenotype_meta, 'tpps_unit_validate_metafile', $meta_options);
+      if ($groups = $phenotype['metadata-groups'] ?? NULL) {
+        $columns = [
+          'name' => $groups['Phenotype Id']['1'],
+          'attr' => $groups['Attribute']['2'],
+          'desc' => $groups['Description']['3'],
+          'unit' => $groups['Unit']['4'],
+        ];
+        $meta_options = [
+          'meta_columns' => $columns,
+          'id' => $id,
+        ];
+        tpps_file_iterator($phenotype_meta, 'tpps_unit_validate_metafile', $meta_options);
+      }
+      else {
+        form_set_error("$id][phenotype][metadata",
+          t("Phenotype Metadata File: No groups found.")
+        );
+      }
     }
     else {
       // Metafile was NOT checked. Manually added metadata.
@@ -686,13 +695,21 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   $loaded_state = tpps_load_submission($form_state['accession']);
   if (!empty($loaded_state['vcf_replace'])) {
     foreach ($loaded_state['vcf_replace'] as $org_num => $fid) {
-      if (file_load($fid)) {
-        $form_state['values'][$id]['genotype']['files']['vcf'] = $fid;
-        $vcf = $fid;
-        $form_state['values'][$id]['genotype']['files']['local_vcf_check'] = NULL;
-        $form_state['values'][$id]['genotype']['files']['local_vcf'] = NULL;
+      $file = file_load($fid ?? '');
+      if ($file) {
+        if ($file->filesize == 0) {
+          form_set_error("$org_num][genotype][files][local_vcf",
+            t('Local VCF File: File has zero length.')
+          );
+        }
+        else {
+          $form_state['values'][$id]['genotype']['files']['vcf'] = $fid;
+          $vcf = $fid;
+          $form_state['values'][$id]['genotype']['files']['local_vcf_check'] = NULL;
+          $form_state['values'][$id]['genotype']['files']['local_vcf'] = NULL;
+        }
       }
-      if (!file_load($fid)) {
+      else {
         form_set_error("$org_num][genotype][files][local_vcf",
           t("Local VCF File: File could not be loaded properly.")
         );

@@ -40,19 +40,19 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
     $values = &$form_state['values']['tree-accession']["species-$i"];
     $file_element = $form['tree-accession']["species-$i"]['file'];
 
+    $fid = $values['file'] ?? '';
     // Check if file was uploaded.
-    if (empty($values['file'])) {
+    if (empty($fid)) {
       form_set_error("tree-accession][species-$i][file",
-        t('Plant Accession file: field is required.')
+        t('Plant Accession File: Field is required.')
       );
     }
     else {
+      $file = file_load($fid);
       // Check if file has zero length.
-      // Note: $values['file'] as actually File Id but not Drupal File object.
-      $file = file_load($values['file'] ?? '');
       if ($file->filesize == 0) {
         form_set_error("tree-accession][species-$i][file",
-          t('Plant Accession file: file has zero length.')
+          t('Plant Accession File: File has zero length.')
         );
         break;
       }
@@ -119,7 +119,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
             'empty' => $values['file-empty'],
             'org_num' => $i,
           ];
-          tpps_file_iterator($values['file'], 'tpps_accession_valid_locations', $options);
+          tpps_file_iterator($fid 'tpps_accession_valid_locations', $options);
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         if (!form_get_errors() and (!$multi_file and $species_number > 1)) {
@@ -132,12 +132,9 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
             'org_num' => $i,
             'page_1_species' => $form_state['saved_values'][TPPS_PAGE_1]['organism'],
           );
-          tpps_file_iterator($values['file'], 'tpps_accession_valid_species', $options);
+          tpps_file_iterator($fid, 'tpps_accession_valid_species', $options);
         }
-        tpps_preserve_valid_file($form_state, $values['file'], $i, "Plant_Accession");
-
-
-
+        tpps_preserve_valid_file($form_state, $fid, $i, "Plant_Accession");
       }
     }
 

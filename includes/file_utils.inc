@@ -225,7 +225,7 @@ function tpps_increment_hex($hex) {
       $add = 0;
     }
     $new = base_convert($num, 10, 16) . $new;
-    if ($i == 0 and $add) {
+    if ($i == 0 && $add) {
       $new = '41' . $new;
     }
   }
@@ -441,15 +441,21 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $f
  */
 function tpps_file_validate_columns(array &$form_state, array $required_groups, array $file_element) {
 
+  $title_parts = explode(':', $file_element['#title']);
+  $error_prompt = $title_parts[0];
 
-
-  //dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2), 1));
-
-
-
+  // Check if file has zero length.
+  if (!($file_element['#file']->filesize ?? NULL)) {
+    // We highlight an empty value field because file field not visible
+    // when file was uploaded.
+    form_set_error($file_element['#name'] . '[empty]',
+      $error_prompt . ': File has zero length.'
+    );
+    // No need to validate empty file.
+    return [];
+  }
 
   $cols = $file_element['#value']['columns'] ?? NULL;
-
   $parents = $file_element['#parents'];
   $new_end_columns = end($parents) . "-columns";
   $new_end_no_header = end($parents) . "-no-header";
@@ -457,20 +463,17 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   $group_path = array_pop($parents) . "-groups";
   $values = drupal_array_get_nested_value($form_state['values'], $parents);
   // Initialize form column values in form state.
-  $values[$new_end_columns] = array();
+  $values[$new_end_columns] = [];
   // Hold onto the location of the columns in form state.
   $state_column_values = &$values[$new_end_columns];
-  $values[$new_end_no_header] = isset($file_element['#value']['no-header']) ? $file_element['#value']['no-header'] : NULL;
-  $values[$new_end_empty] = isset($file_element['#value']['empty']) ? $file_element['#value']['empty'] : NULL;
+  $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
+  $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
 
-  $title_parts = explode(':', $file_element['#title']);
-  $error_prompt = $title_parts[0];
-
-  $groups = array();
-  $required_groups_flat = array();
+  $groups = [];
+  $required_groups_flat = [];
   foreach ($required_groups as $group => $combinations) {
     $groups[$group] = array();
-    $required_groups_flat[$group] = array();
+    $required_groups_flat[$group] = [];
     foreach ($combinations as $name => $combination) {
       $required_groups_flat[$group] = array_merge($required_groups_flat[$group], $combination);
     }
@@ -493,7 +496,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   // dpm($required_groups);
   foreach ($required_groups as $group => $combinations) {
     $group_valid = FALSE;
-    $groups[$group]['#type'] = array();
+    $groups[$group]['#type'] = [];
     foreach ($combinations as $name => $combination) {
       $combination_valid = TRUE;
       foreach ($combination as $type) {
@@ -509,7 +512,15 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
 
     if (!$group_valid) {
-      form_set_error($file_element['#name'] . "[columns][$group", "$error_prompt: Please specify a column or columns that hold $group.");
+      form_set_error(
+        $file_element['#name'] . "[columns][$group",
+        t('@field_name: Please specify a column or columns that hold @group.',
+          [
+            '@field_name' => $error_prompt,
+            '@group' => $group,
+          ]
+        )
+      );
     }
   }
 
@@ -523,7 +534,6 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
 
   $values[$group_path] = $groups;
   drupal_array_set_nested_value($form_state['values'], $parents, $values);
-
   return $groups;
 }
 
