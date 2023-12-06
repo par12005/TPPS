@@ -444,12 +444,12 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   $title_parts = explode(':', $file_element['#title']);
   $error_prompt = $title_parts[0];
 
-  // Check if file has zero length.
+  // Check if file has zero length (empty).
   if (!($file_element['#file']->filesize ?? NULL)) {
     // We highlight an empty value field because file field not visible
     // when file was uploaded.
     form_set_error($file_element['#name'] . '[empty]',
-      $error_prompt . ': File has zero length.'
+      $error_prompt . ': File is empty.'
     );
     // No need to validate empty file.
     return [];

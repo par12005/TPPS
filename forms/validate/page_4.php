@@ -10,12 +10,13 @@ module_load_include('inc', 'tpps', 'includes/form');
 /**
  * Defines the data integrity checks for the fourth page of the form.
  *
+ * Note: File size validation will be done in includes/file_utils.inc
+ * if function tpps_file_validate_columns().
+ *
  * @param array $form
  *   The form that is being validated.
  * @param array $form_state
  *   The state of the form that is being validated.
- *
- * @todo Check if file has zero length ($file->filesize) and show error message.
  */
 function tpps_page_4_validate_form(array &$form, array &$form_state) {
   if ($form_state['submitted'] != '1') {
@@ -699,7 +700,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       if ($file) {
         if ($file->filesize == 0) {
           form_set_error("$org_num][genotype][files][local_vcf",
-            t('Local VCF File: File has zero length.')
+            t('Local VCF File: File is empty.')
           );
         }
         else {
