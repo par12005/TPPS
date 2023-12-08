@@ -65,7 +65,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
           'Location (latitude/longitude or country/state or population group)' => [
            // @TODO [VS] Replace 'magic' numbers with constant with more
             // descriptive names. See tpps_page_3_create_form() for columns.
-            'approx' => [2, 3],
+            'approx' => [TPPS_COLUMN_COUNTRY, TPPS_COLUMN_STATE],
             'gps' => [TPPS_COLUMN_LATITUDE, TPPS_COLUMN_LONGITUDE],
             'pop_group' => [TPPS_COLUMN_POPULATION_GROUP],
           ],
@@ -73,8 +73,8 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
 
         if (!$multi_file and $species_number > 1) {
           $required_groups['Genus and Species'] = [
-            'separate' => [6, 7],
-            'combined' => [10],
+            'separate' => [TPPS_COLUMN_GENUS, TPPS_COLUMN_SPECIES],
+            'combined' => [TPPS_COLUMN_GENUS_AND_SPECIES],
           ];
         }
 

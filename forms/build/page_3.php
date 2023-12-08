@@ -84,27 +84,28 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     $column_options = [
       '0' => 'N/A',
       TPPS_COLUMN_PLANT_IDENTIFIER => t('Plant Identifier'),
-      '2' => t('Country'),
-      '3' => t('State'),
+      TPPS_COLUMN_COUNTRY => t('Country'),
+      TPPS_COLUMN_STATE => t('State'),
       TPPS_COLUMN_LATITUDE => t('Latitude'),
       TPPS_COLUMN_LONGITUDE => t('Longitude'),
-      '8' => t('County'),
-      '9' => t('District'),
+      TPPS_COLUMN_COUNTY => t('County'),
+      TPPS_COLUMN_DISTRICT => t('District'),
       TPPS_COLUMN_POPULATION_GROUP => t('Population Group'),
-      '13' => t('Clone Number'),
+      TPPS_COLUMN_CLONE_NUMBER => t('Clone Number'),
     ];
 
     $title = t('@name Accession File: *', ['@name' => $name])
-      . '<br />' .$file_description;
+      . '<br />' . $file_description;
     if ($species_number > 1 and !$check) {
       $title = t('Plant Accession File: *') . "<br>$file_description";
-      $column_options['6'] = t('Genus');
-      $column_options['7'] = t('Species');
-      $column_options['10'] = t('Genus + Species');
+      $column_options[TPPS_COLUMN_GENUS] = t('Genus');
+      $column_options[TPPS_COLUMN_SPECIES] = t('Species');
+      $column_options[TPPS_COLUMN_GENUS_AND_SPECIES] = t('Genus + Species');
     }
 
     if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] != '1') {
-      $column_options['11'] = t('Source Plant Identifier');
+      $column_options[TPPS_COLUMN_SOURCE_PLANT_IDENTIFIER]
+        = t('Source Plant Identifier');
     }
 
     $form['tree-accession']["species-$i"] = [

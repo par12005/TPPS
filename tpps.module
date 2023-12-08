@@ -27,9 +27,19 @@ define('TPPS_AJAX_URL', 'ajax/tpps');
 
 // Page3. Accession file columns.
 define('TPPS_COLUMN_PLANT_IDENTIFIER', 1);
+define('TPPS_COLUMN_COUNTRY', 2);
+define('TPPS_COLUMN_STATE', 3);
 define('TPPS_COLUMN_LATITUDE', 4);
 define('TPPS_COLUMN_LONGITUDE', 5);
+define('TPPS_COLUMN_GENUS', 6);
+define('TPPS_COLUMN_SPECIES', 7);
+define('TPPS_COLUMN_COUNTY', 8);
+define('TPPS_COLUMN_DISTRICT', 9);
+define('TPPS_COLUMN_GENUS_AND_SPECIES', 10);
+define('TPPS_COLUMN_SOURCE_PLANT_IDENTIFIER', 11);
 define('TPPS_COLUMN_POPULATION_GROUP', 12);
+define('TPPS_COLUMN_CLONE_NUMBER', 13);
+
 
 require_once 'includes/common.inc';
 require_once 'includes/display.inc';
