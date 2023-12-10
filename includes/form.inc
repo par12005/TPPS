@@ -350,6 +350,7 @@ function tpps_form_add_report(array &$form, array $meta) {
  * Timeout is required to have element at page.
  * NOTE: Multistep forms could call this function multiple times for each
  * step but if field not found in $form extra JS code will not be added to page.
+ * See js/tpps_autofocus.js file.
  *
  * @param array $form
  *   Drupal Form API Array to be updated.
@@ -360,7 +361,6 @@ function tpps_form_add_report(array &$form, array $meta) {
  * @param array $parents
  *   Optional and not critical. Allows to remove 'autofocus' attribute.
  *
- * @TODO Use separate JS file and send field name using Drupal.setting JS object.
  * @TODO Minor. Use CSS id intead of name attribute to set focus.
  */
 function tpps_form_autofocus(array &$form = [], $fieldname = '', array $parents = []) {
@@ -371,31 +371,30 @@ function tpps_form_autofocus(array &$form = [], $fieldname = '', array $parents 
   }
   if ($parents) {
     $path = array_merge($parents, [$fieldname]);
-    // We need 'publication[status]'.
-    $js_name = str_replace($parents[0] . ']', $parents[0], implode('][', $path)) . ']';
+    // We need not Drupal From API Field name but HTML fieldname.
+    // Example: 'publication[status]'.
+    $html_fieldname = str_replace(
+      $parents[0] . ']', $parents[0], implode('][', $path)
+    ) . ']';
     $field = drupal_array_get_nested_value($form, $path) ?? NULL;
   }
   else {
-    $js_name = $fieldname;
+    $html_fieldname = $fieldname;
     $field = $form[$fieldname] ?? NULL;
   }
-  if ($field && !empty($js_name)) {
+  if ($field && !empty($html_fieldname)) {
     // Do nothing if field not found at form.
-    $js = <<<EOT
-      (function ($) {
-        $(document).ready(function() {
-          setTimeout(
-            function() {
-              $('[name="$js_name"').get(0).focus();
-            },
-            $timeout
-          );
-        });
-      })(jQuery)
-EOT;
+    tpps_add_css_js('autofocus', $form);
     $form['#attached']['js'][] = [
-      'type' => 'inline',
-      'data' => $js,
+      'type' => 'setting',
+      'data' => [
+        'tpps' => [
+          'autoFocus' => [
+            'FieldName' => $html_fieldname,
+            'Timeout' => $timeout,
+          ],
+        ],
+      ],
       'scope' => 'footer',
       'group' => JS_THEME,
       'weight' => 5,
