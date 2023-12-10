@@ -119,7 +119,7 @@ function tpps_page_3_validate_form(array &$form, array &$form_state) {
             'empty' => $values['file-empty'],
             'org_num' => $i,
           ];
-          tpps_file_iterator($fid 'tpps_accession_valid_locations', $options);
+          tpps_file_iterator($fid, 'tpps_accession_valid_locations', $options);
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         if (!form_get_errors() and (!$multi_file and $species_number > 1)) {
