@@ -58,8 +58,10 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
         }
       }
       if (!empty($organism[$item])) {
-        $function = 'tpps_validate_' . $item;
-        call_user_func($function, $organism[$item], $i, $form, $form_state);
+        call_user_func_array(
+          'tpps_validate_' . $item,
+          [&$organism[$item], $i, $form, &$form_state]
+        );
       }
     }
   }
@@ -114,7 +116,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
   // We shouldn't remove any files until validation passed.
   if (!form_get_errors()) {
     // We are removing genotype files here to allow on user to get exactly
-    // the same form as was submitted and remove files only when they
+    // the same form as was submitted and rmeove files only when they
     // definitly not needed.
     for ($i = 1; $i <= $organism_number; $i++) {
       $genotype = &$form_state['values']["organism-$i"]['genotype'];
@@ -168,10 +170,12 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
   $id = "organism-$org_num";
   $thirdpage = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
 
-  // Uncomment to block form submission and test validation.
-  //form_set_error("$id][phenotype][normal-check", 'Debug');
 
-  if (empty($normal_check) and empty($iso_check)) {
+  // Uncomment to block form submission and test validation.
+  // form_set_error("$id][phenotype][normal-check", 'Remove debug code.');
+
+
+  if (empty($normal_check) && empty($iso_check)) {
     form_set_error("$id][phenotype][normal-check",
       t('Please choose at least one category of phenotypes to upload')
     );
@@ -184,8 +188,39 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     $phenotype_meta = $phenotype['metadata'];
     $phenotype_file = $phenotype['file'];
 
-    // Metafile was checked.
+    if (empty($phenotype_file)) {
+      form_set_error("$id][phenotype][file",
+        t('Phenotype File: field is required.')
+      );
+    }
+    else {
+      $file_header = tpps_file_get_header($phenotype_file);
+      if (is_array($file_header) && $file_phenotypes_count = count($file_header)) {
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Check if number of Phenotypes matches number of phenotypes in file.
+        // Note: number of phenotypes not equal to number of columns.
+        if ($phenotype_number != ($file_phenotypes_count - 1)) {
+          $message = t('Number of phenotypes do NOT match number of columns '
+              . 'in phenotype file.'
+              . '<br />Number of added phenotypes: <strong>@count</strong>.'
+              . '<br />Number of phenotypes in file: <strong>@file_count</stong>.',
+              [
+                '@count' => $phenotype_number,
+                '@file_count' => ($file_phenotypes_count - 1),
+              ]
+            );
+          form_set_error("$id][phenotype][file", $message);
+        }
+      }
+    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Phenotype Metafile was used.
     if ($is_metadata_file) {
+
+
+
+      // @TODO Major. Validate if metafile matches phenotype file using columns.
+
       // Clear manually added metadata to show correct data at edit page.
       if (!empty($phenotype['phenotypes-meta']['number'])) {
         for ($i = 1; $i <= $phenotype_number; $i++) {
@@ -243,17 +278,18 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         );
       }
     }
+    // Manually added Phenotype Metadata. File wasn't used.
     else {
-      // Metafile was NOT checked. Manually added metadata.
-      // $phenotype['metadata'] holds Phenotype Metadata File Id.
+      // $phenotype['metadata'] could have Phenotype Metadata File Id if user
+      // first uploaded file and then decided to manually add phenotypes.
+      // We need to remove this file if it exists.
       if (!empty($phenotype['metadata'])) {
         // Remove already uploaded file.
-        $file = file_load($phenotype['metadata']);
+        $file = file_load($phenotype['metadata'] ?? '');
         file_delete($file);
         // Clear metadatafile field.
         unset($phenotype['metadata']);
       }
-
       for ($i = 1; $i <= $phenotype_number; $i++) {
         $current_phenotype = &$phenotype['phenotypes-meta']["$i"];
         // [VS] Synonym form.
@@ -273,18 +309,44 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
             tpps_synonym_restore_values($current_phenotype);
           }
         }
+
         // [/VS]
         // Main form.
         $name = $current_phenotype['name'];
         $description = $current_phenotype['description'];
         if ($name == '') {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][name",
-            "Phenotype $i Name: field is required.");
+          form_set_error(
+            $id . '][phenotype][phenotypes-meta][' . $i . '][name',
+            t(
+              'Phenotype @phenotype_id Name: field is required.',
+              ['@phenotype_id' => $i]
+            )
+          );
         }
         if ($description == '') {
-          form_set_error("$id][phenotype][phenotypes-meta][$i][description",
-            "Phenotype $i Description: field is required.");
+          form_set_error(
+            $id . '][phenotype][phenotypes-meta][' . $i . '][description',
+            t('Phenotype @phenotype_id Description: field is required.',
+              ['@phenotype_id' => $i]
+            )
+          );
         }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Check if phenotype name matches column names in Phenotype File.
+        if ($file_header && !in_array(($name ?? NULL), $file_header)) {
+          $message = t('Phenotype @phenotype_id Name: Name '
+            . '"<strong>@phenotype_name</strong>" do not match any column name '
+            . 'in Phenotype File.<br />Columns in file are: @column_list.',
+            [
+              '@phenotype_id' => $i,
+              '@phenotype_name' => $name,
+              '@column_list' => implode(', ', $file_header),
+            ]
+          );
+          form_set_error("$id][phenotype][phenotypes-meta][$i][name", $message);
+        }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Validate 'Attribute'.
         if (!$current_phenotype['attribute']) {
           form_set_error("$id][phenotype][phenotypes-meta][$i][attribute",
             "Phenotype $i Attribute: field is required.");
@@ -337,16 +399,13 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         }
       }
       if (empty($form_state['values'][$id]['phenotype']['time']['time_phenotypes'])) {
-        form_set_error("$id][phenotype][time][time_phenotypes", t("Time-based Phenotypes: field is required."));
+        form_set_error("$id][phenotype][time][time_phenotypes",
+          t("Time-based Phenotypes: field is required.")
+        );
       }
     }
 
-    if (empty($phenotype_file)) {
-      form_set_error("$id][phenotype][file",
-        t("Phenotype File: field is required.")
-      );
-    }
-    else {
+    if (!empty($phenotype_file)) {
       $required_groups = [
         'Tree Identifier' => ['id' => [1]],
         'Phenotype Data' => ['phenotype-data' => [0]],
@@ -1335,10 +1394,11 @@ function tpps_ssr_valid_ploidy($ploidy, $num_columns, $num_unique_columns, $org_
  * @param array $options
  *   Additional options set when calling tpps_file_iterator().
  */
-function tpps_unit_validate_metafile($row, array &$options = array()) {
+function tpps_unit_validate_metafile($row, array &$options = []) {
   $columns = $options['meta_columns'];
   if (empty($row[$columns['unit']])) {
-    form_set_error("${options['id']}][phenotype][metadata",
+    form_set_error(
+      $options['id'] . '][phenotype][metadata',
       t('Phenotype Metadata File: Empty unit not allowed.')
       . '<br />Row: ' . implode(', ', $row)
     );
