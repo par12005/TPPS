@@ -1891,7 +1891,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_list_form'],
     'access arguments' => ['administer tpps module'],
-    'file' => 'pages/submission/start.inc',
+    'file' => 'pages/submission/list.inc',
   ];
   $items['tpps/submission/%'] = [
     'title callback' => 'tpps_submission_title',
@@ -1899,7 +1899,7 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tpps_submission_list_form', 2],
     'access arguments' => ['administer tpps module'],
-    'file' => 'pages/submission/start.inc',
+    'file' => 'pages/submission/list.inc',
   ];
   // View.
   $items['tpps/submission/%/view'] = [
