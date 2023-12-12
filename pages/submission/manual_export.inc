@@ -71,7 +71,7 @@ $function_code
 \$state = tpps_submission_get_state(\$accession);
 tpps_submission_export_fixes(\$state);
 // Files.
-\$fid_list = tpps_submission_file_get_id_list(\$state, \$show_report);
+\$fid_list = tpps_submission_file_get_id_list(\$state);
 \$files = tpps_submission_export_get_files_info(\$fid_list);
 tpps_submission_export_file_report(\$fid_list, \$files);
 \$state['tpps_submission_export_files'] = \$files;

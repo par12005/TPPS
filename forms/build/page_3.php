@@ -361,6 +361,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       }
     </style>';
   }
+  tpps_form_autofocus($form, 'tree-accession_species-1_file', ['files']);
   tpps_add_buttons($form, 'page_3');
   return $form;
 }

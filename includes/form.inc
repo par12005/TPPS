@@ -3,6 +3,9 @@
 /**
  * @file
  * Helper functions use at any step of TPPS form.
+ *
+ * To use:
+ * module_load_include('inc', 'tpps', 'includes/form');
  */
 
 /**
@@ -305,4 +308,98 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
     }
   }
   return $result;
+}
+
+/**
+ * Adds form fieldset for reports.
+ *
+ * Used by TPPS Submission Forms.
+ *
+ * @param array $form
+ *   Drupal Form API array.
+ * @param array $meta
+ *   Report's metadata. Format:
+ *   <unique key> => [
+ *    'title' => '',
+ *    'data' => '',
+ *   ].
+ */
+function tpps_form_add_report(array &$form, array $meta) {
+  $form['report'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Reports'),
+    '#collapsed' => FALSE,
+    '#collapsible' => FALSE,
+    '#weight' => 100,
+  ];
+  foreach ($meta as $key => $report) {
+    $form['report'][($key ?? md5(time))] = [
+      '#title' => $report['title'],
+      '#type' => 'fieldset',
+      '#collapsed' => TRUE,
+      '#collapsible' => TRUE,
+      'list' => ['#markup' => $report['data']],
+    ];
+  }
+}
+
+/**
+ * Sets focus on given field by name.
+ *
+ * WARNING: Be sure element has no 'autofocus' attribute because it won't work.
+ * Timeout is required to have element at page.
+ * NOTE: Multistep forms could call this function multiple times for each
+ * step but if field not found in $form extra JS code will not be added to page.
+ * See js/tpps_autofocus.js file.
+ *
+ * @param array $form
+ *   Drupal Form API Array to be updated.
+ * @param string $fieldname
+ *   Field name. Use key from $form array. Example: 'tpps_submission_accession'.
+ *   When $fieldname is empty we just do not add JS
+ *   because it's not critical feature.
+ * @param array $parents
+ *   Optional and not critical. Allows to remove 'autofocus' attribute.
+ *
+ * @TODO Minor. Use CSS id intead of name attribute to set focus.
+ */
+function tpps_form_autofocus(array &$form = [], $fieldname = '', array $parents = []) {
+  // Delay in msec.
+  $timeout = 1000;
+  if (empty($fieldname)) {
+    return;
+  }
+  if ($parents) {
+    $path = array_merge($parents, [$fieldname]);
+    // We need not Drupal From API Field name but HTML fieldname.
+    // Example: 'publication[status]'.
+    $html_fieldname = str_replace(
+      $parents[0] . ']', $parents[0], implode('][', $path)
+    ) . ']';
+    $field = drupal_array_get_nested_value($form, $path) ?? NULL;
+  }
+  else {
+    $html_fieldname = $fieldname;
+    $field = $form[$fieldname] ?? NULL;
+  }
+  if ($field && !empty($html_fieldname)) {
+    // Do nothing if field not found at form.
+    tpps_add_css_js('autofocus', $form);
+    $form['#attached']['js'][] = [
+      'type' => 'setting',
+      'data' => [
+        'tpps' => [
+          'autoFocus' => [
+            'FieldName' => $html_fieldname,
+            'Timeout' => $timeout,
+          ],
+        ],
+      ],
+      'scope' => 'footer',
+      'group' => JS_THEME,
+      'weight' => 5,
+    ];
+    // @TODO Minor. Field could be not on 1st level.
+    unset($field['#attributes']['autofocus']);
+  }
 }
