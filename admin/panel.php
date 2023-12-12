@@ -1356,7 +1356,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = array($state);
-      $jid = tripal_add_job("Generate VCF to SNPs Flat file - $accession (project_id=$project_id)", 'tpps', 'tpps_genotype_vcf_to_flat_files', $args, $user->uid, 10, $includes, TRUE);
+      $jid = tripal_add_job("Generate VCF to SNPs Flat file - $accession (project_id=$project_id)", 'tpps', 'tpps_genotypes_to_flat_files_and_find_studies_overlaps', $args, $user->uid, 10, $includes, TRUE);
       break;
     case 'Save VCF Import Setting':
       // dpm($form_state['values']);
