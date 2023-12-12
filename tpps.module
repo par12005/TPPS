@@ -673,11 +673,11 @@ function tpps_element_info_alter(&$type) {
  *   The extended managed_file element.
  */
 function tpps_managed_file_process(array $element, array &$form_state, array $form) {
-  if (!in_array($form_state['build_info']['form_id'], ['tppsc_main', 'tpps_main'])) {
-    // Only make changes to $element if it is part of the
-    // 'tppsc_main' or 'tpps_main' form.
+  if (!tpps_is_main_form($form_state)) {
+    // Only make changes if it is part of the 'tppsc_main' or 'tpps_main' form.
     return $element;
   }
+
   if (isset($element['columns'])) {
     require_once 'ajax/tpps_ajax.php';
     if (empty($fid = $element['#value']['fid'])) {
@@ -690,23 +690,28 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     $no_header_parents[] = 'no-header';
 
     $no_header = drupal_array_get_nested_value($form_state['complete form'], $no_header_parents);
-    $callback = isset($form_state['triggering_element']['#ajax']['callback']) ? $form_state['triggering_element']['#ajax']['callback'] : NULL;
+    $callback = $form_state['triggering_element']['#ajax']['callback'] ?? NULL;
     if (!$no_header and ($callback != 'tpps_no_header_callback')) {
       $end = array_pop($saved_value_parents);
       $saved_value_parents[] = $end . "-no-header";
-      $no_header = drupal_array_get_nested_value($form_state['saved_values'][$form_state['stage']], $saved_value_parents);
+      $no_header = drupal_array_get_nested_value(
+        $form_state['saved_values'][$form_state['stage']],
+        $saved_value_parents
+      );
     }
 
-    $element['no-header'] = [
-      '#type' => 'checkbox',
-      '#title' => 'My file has no header row',
-      '#ajax' => [
-        'wrapper' => $wrapper,
-        'callback' => 'tpps_no_header_callback',
-      ],
-      '#states' => $element['#states'] ?? NULL,
-      '#default_value' => $no_header ?? NULL,
-    ];
+    if (!empty($element['no-header'])) {
+      $element['no-header'] = [
+        '#type' => 'checkbox',
+        '#title' => 'My file has no header row',
+        '#ajax' => [
+          'wrapper' => $wrapper,
+          'callback' => 'tpps_no_header_callback',
+        ],
+        '#states' => $element['#states'] ?? NULL,
+        '#default_value' => $no_header ?? NULL,
+      ];
+    }
 
     $file = file_load(($fid ?? ''));
     if ($file && ($file->filesize ?? FALSE)) {
@@ -714,9 +719,9 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       $element['columns']['#type'] = 'fieldset';
       $element['columns']['#title'] = t('Define Data');
       $element['columns']['#collapsible'] = TRUE;
-
       // Stop using the file so it can be deleted if the user clicks 'remove'.
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      $accession = substr($form_state['accession'], 4);
+      file_usage_delete($file, 'tpps', 'tpps_project', $accession);
       $content = tpps_parse_file($fid, 3, !empty($no_header));
       $options = $element['columns-options']['#value'];
       $first = TRUE;
@@ -735,7 +740,6 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
             }
           }
         }
-        // dpm($item_parents);
         $element['columns'][$key] = [
           '#type' => 'select',
           '#title' => $item,
@@ -2062,4 +2066,21 @@ function tpps_menu_add_detials_pages(array &$items = []) {
     'access arguments' => ['access tpps details'],
     'type' => MENU_CALLBACK,
   ];
+}
+
+/**
+ * Checks if Form's Id is 'tppsc_main' or 'tpps_main'.
+ *
+ * @param array $form_state
+ *   Drupal From API State array.
+ *
+ * @return bool
+ *   Returns TRUE if given $form_state belongs to one on forms processed by
+ *   this module ('tppsc_main' or 'tpps_main'). Returns FALSE otherwise.
+ */
+function tpps_is_main_form(array $form_state) {
+  return in_array(
+    $form_state['build_info']['form_id'] ?? NULL,
+    ['tppsc_main', 'tpps_main']
+  );
 }

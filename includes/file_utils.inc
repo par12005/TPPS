@@ -1392,6 +1392,11 @@ function tpps_file_add_usage($file, $accession) {
  * very simple and there is no need to have a separate function just to return
  * received parameter.
  *
+ * Difference from tpps_file_headers():
+ * 1. Not used special keys for columns like 'A', 'B' and etc.
+ * 2. Not used extra function as File Iterrator callback.
+ * 3. Returns simple (not indexed) array (not array of arrays).
+ *
  * @param mixed $data
  *   When called 1st time $data will be File Id.
  *   When called as a file iterator it will be an array $row.

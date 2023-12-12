@@ -168,12 +168,10 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
   $normal_check = $phenotype['normal-check'] ?? NULL;
   $iso_check = $phenotype['iso-check'] ?? NULL;
   $id = "organism-$org_num";
-  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
-
+  $page3 = $form_state['saved_values'][TPPS_PAGE_3] ?? NULL;
 
   // Uncomment to block form submission and test validation.
-  // form_set_error("$id][phenotype][normal-check", 'Remove debug code.');
-
+  // form_set_error('DEBUG', 'Remove debug code.');
 
   if (empty($normal_check) && empty($iso_check)) {
     form_set_error("$id][phenotype][normal-check",
@@ -183,7 +181,6 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
 
   if ($normal_check) {
     $phenotype_number = $phenotype['phenotypes-meta']['number'];
-    $is_metadata_file = (bool) $phenotype['check'];
     // File Id of metadata file.
     $phenotype_meta = $phenotype['metadata'];
     $phenotype_file = $phenotype['file'];
@@ -193,34 +190,10 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         t('Phenotype File: field is required.')
       );
     }
-    else {
-      $file_header = tpps_file_get_header($phenotype_file);
-      if (is_array($file_header) && $file_phenotypes_count = count($file_header)) {
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Check if number of Phenotypes matches number of phenotypes in file.
-        // Note: number of phenotypes not equal to number of columns.
-        if ($phenotype_number != ($file_phenotypes_count - 1)) {
-          $message = t('Number of phenotypes do NOT match number of columns '
-              . 'in phenotype file.'
-              . '<br />Number of added phenotypes: <strong>@count</strong>.'
-              . '<br />Number of phenotypes in file: <strong>@file_count</stong>.',
-              [
-                '@count' => $phenotype_number,
-                '@file_count' => ($file_phenotypes_count - 1),
-              ]
-            );
-          form_set_error("$id][phenotype][file", $message);
-        }
-      }
-    }
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Phenotype Metafile was used.
+    $is_metadata_file = (bool) ($phenotype['check'] && !empty($phenotype_file));
     if ($is_metadata_file) {
-
-
-
-      // @TODO Major. Validate if metafile matches phenotype file using columns.
-
       // Clear manually added metadata to show correct data at edit page.
       if (!empty($phenotype['phenotypes-meta']['number'])) {
         for ($i = 1; $i <= $phenotype_number; $i++) {
@@ -230,13 +203,40 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
       }
       if (empty($phenotype['metadata'])) {
         // $phenotype['metadata'] holds File Id of Phenotype Metadata file.
-        //tpps_form_error_required($form_state, [$id, 'phenotype', 'metadata']);
+        // @TODO Use:
+        // tpps_form_error_required($form_state, [$id, 'phenotype', 'metadata']);
         form_set_error("$id][phenotype][metadata",
-          t("Phenotype Metadata File: field is required.")
+          t('Phenotype Metadata File: field is required.')
         );
       }
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Metadata file was used.
       else {
-        // Metadata file was used.
+        // Check if number of Phenotypes matches number of phenotypes in file.
+        // Note: number of phenotypes not equal to number of columns.
+        if (!form_get_errors() && !empty($phenotype_file)) {
+          $file_header = tpps_file_get_header($phenotype_file);
+          $metadata_file_len = tpps_file_len($phenotype_meta);
+          if (
+            is_array($file_header)
+            && $file_phenotypes_count = count($file_header)
+          ) {
+            if ($metadata_file_len != ($file_phenotypes_count - 1)) {
+              $message = t('Number of phenotypes in Phenotype Metadata file '
+                . ' NOT matches number of columns in Phenotype file.'
+                . '<br />Number of phenotypes in Metadata File: <strong>@count</strong>.'
+                . '<br />Number of phenotypes in Phenotype File: <strong>@file_count</strong>.',
+                [
+                  '@count' => $metadata_file_len,
+                  '@file_count' => ($file_phenotypes_count - 1),
+                ]
+              );
+              form_set_error("$id][phenotype][file", $message);
+            }
+          }
+        }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         $required_groups = [
           'Phenotype Id' => ['id' => [1]],
           'Attribute' => ['attr' => [2]],
@@ -271,6 +271,43 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
           'id' => $id,
         ];
         tpps_file_iterator($phenotype_meta, 'tpps_unit_validate_metafile', $meta_options);
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // Validate if metafile matches phenotype file using columns.
+        if ($file_header) {
+          // $form_state['values'] has no value but $form_state['input']
+          // has is so we will use it.
+          $phenotype_no_header = $form_state['input'][$id]['phenotype']['file']['no-header'] ?? NULL;
+          // Check if checkbox 'My file has no header row' wasn't checked.
+          if ($phenotype_no_header) {
+            // @TODO Check if phenotype file could be without header?
+            drupal_set_message(
+              t('Phenotype file has no header in 1st row so validation was NOT'
+              . ' completed. Please check if Phenotype Names in both files are'
+              . ' the same.'),
+              'warning'
+            );
+          }
+          else {
+            $phenotype_metadata_fid = $phenotype['metadata'];
+            // Check if list of phenotype names from metafile matches column names
+            // in phenotype file.
+            // $file_header contains list of phenotype file column names.
+            $options = [
+              'columns' => [$columns['name']],
+              // List of phenotype file column names.
+              'phenotypes' => $file_header,
+              // $id is a string (not integer). Example: 'organism-1'.
+              'organism_name' => $id,
+              'column_name' => $columns['name'],
+            ];
+            tpps_file_iterator(
+              $phenotype_metadata_fid,
+              'tpps_validate_metafile_phenotype_names',
+              $options
+            );
+          }
+        }
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       }
       else {
         form_set_error("$id][phenotype][metadata",
@@ -290,6 +327,30 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         // Clear metadatafile field.
         unset($phenotype['metadata']);
       }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Check number of phenotypes.
+      // Note: number of phenotypes not equal to number of columns.
+      if (!form_get_errors() && !empty($phenotype_file)) {
+        $file_header = tpps_file_get_header($phenotype_file);
+        if (
+          is_array($file_header)
+          && $file_phenotypes_count = count($file_header)
+        ) {
+          if ($phenotype_number != ($file_phenotypes_count - 1)) {
+            $message = t('Number of phenotypes NOT matches number of columns '
+                . 'in Phenotype File.'
+                . '<br />Number of manually added phenotypes: <strong>@count</strong>.'
+                . '<br />Number of phenotypes in Phenotype File: <strong>@file_count</strong>.',
+                [
+                  '@count' => $phenotype_number,
+                  '@file_count' => ($file_phenotypes_count - 1),
+                ]
+              );
+            form_set_error("$id][phenotype][file", $message);
+          }
+        }
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       for ($i = 1; $i <= $phenotype_number; $i++) {
         $current_phenotype = &$phenotype['phenotypes-meta']["$i"];
         // [VS] Synonym form.
@@ -454,7 +515,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         }
 
         if (isset($phenotype_file_tree_col)) {
-          $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+          $species_index = empty($page3['tree-accession']['check']) ? 'species-1' : "species-$org_num";
           $tree_accession_file = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
           $column_vals = $form_state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-columns'];
 
@@ -524,12 +585,12 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
     }
 
     if (!form_get_errors()) {
-      $species_index = empty($thirdpage['tree-accession']['check'])
+      $species_index = empty($page3['tree-accession']['check'])
         ? 'species-1' : "species-$org_num";
-      $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
-      $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+      $tree_accession_file = $page3['tree-accession'][$species_index]['file'];
+      $id_col_accession_name = $page3['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
-      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
+      $acc_no_header = $page3['tree-accession'][$species_index]['file-no-header'];
       $missing_trees = tpps_compare_files($phenotype['iso'], $tree_accession_file, $id_col_name, $id_col_accession_name, FALSE, $acc_no_header);
 
       if ($missing_trees !== []) {
@@ -577,7 +638,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   $assay_design = $genotype['files']['assay-design'] ?? 0;
   $assoc_file = $genotype['files']['snps-association'] ?? 0;
   $other_file = $genotype['files']['other'] ?? 0;
-  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
+  $page3 = $form_state['saved_values'][TPPS_PAGE_3];
   $path = [$id, 'genotype', 'files'];
 
   // [VS]
@@ -589,9 +650,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
       'Genotype x Phenotype',
     ]
   );
-  $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-  $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
-  $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+  $species_index = empty($page3['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+  $tree_accession_file = $page3['tree-accession'][$species_index]['file'];
+  $id_col_accession_name = $page3['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate 'Reference Assembly used' field.
@@ -973,8 +1034,8 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     // #86782z4xu Skip this check if we reuse files from existing study.
     // @todo Minor. Maybe better to get new list of trees and use it in
     // all other checks to be sure we have the same list in other files.
-    if (!form_get_errors() && empty($thirdpage['existing_trees'])) {
-      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
+    if (!form_get_errors() && empty($page3['existing_trees'])) {
+      $acc_no_header = $page3['tree-accession'][$species_index]['file-no-header'];
       $missing_trees = tpps_compare_files(
         $snps_assay,
         $tree_accession_file,
@@ -1159,7 +1220,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
     }
 
     if (!form_get_errors()) {
-      $acc_no_header = $thirdpage['tree-accession'][$species_index]['file-no-header'];
+      $acc_no_header = $page3['tree-accession'][$species_index]['file-no-header'];
       $other_no_header = $genotype['files']['other-no-header'] ?? FALSE;
       $missing_trees = tpps_compare_files(
         $other_file,
@@ -1421,10 +1482,10 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
   $id = 'organism-' . $org_num;
   $path = [$id, 'genotype', 'files'];
   $genotype = $form_state['values'][$id]['genotype'];
-  $thirdpage = $form_state['saved_values'][TPPS_PAGE_3];
-  $species_index = empty($thirdpage['tree-accession']['check']) ? 'species-1' : "species-$org_num";
-  $tree_accession_file = $thirdpage['tree-accession'][$species_index]['file'];
-  $id_col_accession_name = $thirdpage['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+  $page3 = $form_state['saved_values'][TPPS_PAGE_3];
+  $species_index = empty($page3['tree-accession']['check']) ? 'species-1' : "species-$org_num";
+  $tree_accession_file = $page3['tree-accession'][$species_index]['file'];
+  $id_col_accession_name = $page3['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
 
   $ploidy_field_name = 'ploidy';
   if ($field_name == 'ssrs') {
@@ -1465,7 +1526,7 @@ function tpps_validate_ssr(array &$form_state, $org_num, $field_name) {
         $id_col_name,
         $id_col_accession_name,
         FALSE,
-        $thirdpage['tree-accession'][$species_index]['file-no-header']
+        $page3['tree-accession'][$species_index]['file-no-header']
       );
 
       if ($missing_trees !== []) {
@@ -1518,4 +1579,41 @@ function tpps_is_required_genotype_file_empty(array $form_state, $org_num, $fiel
   return tpps_is_required_field_empty(
     $form_state, ['organism-' . $org_num, 'genotype', 'files', $field_name]
   );
+}
+
+/**
+ * Checks if names in Phenotype Metadata File and Phenotype File matches.
+ *
+ * File Iterator callback for Phenotype Metadata File.
+ * WARNING:
+ * Only first error message will be shown because form_set_error() do not use
+ * arrays for messages but stores only singe error message.
+ *
+ * @param mixed $row
+ *   Single row from Phenotype File.
+ * @param array $options
+ *   Options with the keys:
+ *   - 'phenotypes' - list of Phenotype names in Phenotype Metadata File.
+ *   - 'column_name' - column name (for example 'A') which contains Phenotype
+ *     Names in Phenotype File.
+ *   - 'organism_name' - Organism Name used in HTML Forms. Eg., 'organism-1'.
+ */
+function tpps_validate_metafile_phenotype_names($row, array $options = []) {
+  $file_header = $options['phenotypes'];
+  $column_name = $options['column_name'];
+  if (!in_array($row[$column_name], $file_header)) {
+    $organism_name = $options['organism_name'];
+    // @TODO Minor. Get Organism Name for this message.
+    $message = t('Phenotype Metadata File for organism '
+      . '#<strong>@organism_id</strong> : Phenotype name '
+      . '"<strong>@phenotype_name</strong>" from metafile was NOT found in '
+      . 'Phenotype File.<br />Phenotype File columns: @column_list.',
+      [
+        '@organism_id' => str_replace('organism-', '', $organism_name),
+        '@phenotype_name' => $row[$column_name],
+        '@column_list' => implode(', ', $file_header),
+      ]
+    );
+    form_set_error($organism_name . '][phenotype][metadata', $message);
+  }
 }
