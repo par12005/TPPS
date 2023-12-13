@@ -77,11 +77,13 @@ function tpps_submission_file_get_id_list(array $state, $show_report = FALSE) {
     }
     if (!empty($state['saved_values'])) {
       foreach (tpps_submission_file_get_parents($organism_number) as $parents) {
-        $step = ($parents[0] == 'tree-accession') ? 3 : 4;
-        $fid_list[] = drupal_array_get_nested_value(
-          $state['saved_values'][$step],
-          $parents
-        );
+        $step = ($parents[0] == 'tree-accession') ? TPPS_PAGE_3 : TPPS_PAGE_4;
+        if (!empty($state['saved_values'][$step])) {
+          $fid_list[] = drupal_array_get_nested_value(
+            $state['saved_values'][$step],
+            $parents
+          );
+        }
       }
     }
   }
