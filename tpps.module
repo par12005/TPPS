@@ -1137,9 +1137,9 @@ function tpps_main_submit($form, &$form_state) {
     $state = tpps_submission_get_state($form_state['values']['accession']);
     tpps_submission_file_set_status($state, 0);
   }
-  // We need to change status of files when user clicked 'Back' to
-  // avoid errors and allow to edit study.
-  if ($form_state['triggering_element']['#value'] == 'Back') {
+  // We need to change status of files when user clicked 'Back' or 'Next'
+  // buttons to avoid errors and allow to edit study.
+  if (in_array($form_state['triggering_element']['#value'], ['Back', 'Next'])) {
     tpps_submission_file_set_status($form_state, 0);
   }
 
