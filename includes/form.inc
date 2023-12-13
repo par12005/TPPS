@@ -10,19 +10,23 @@
  *
  * The same buttons will be added above and below main form.
  *
- * @param array $form
- *   Drupal Form API array.
- * @param string $page
- *   Page number with 'page_' prefix to improve readability.
- * @param array $meta
- *   Submission metadata.
- *   'organism_number' - int Organism Number;
- *   'data_type' - Contains:
- *      'G' for genotype,
- *      'P' for phenotype,
- *      'E' for environment.
+ * @param array $chest
+ *   Metadata where keys are:
+ *   'form' array
+ *     Drupal Form Array.
+ *   'page' string
+ *     Page number with 'page_' prefix to improve readability.
+ *   'organism_number' int
+ *     Organism Number.
+ *   'data_type' string
+ *     Study Data Type which contains:
+ *       'G' for genotype,
+ *       'P' for phenotype,
+ *       'E' for environment.
  */
-function tpps_add_buttons(array &$form, $page, array $meta = []) {
+function tpps_form_add_buttons(array $chest) {
+  $form = &$chest['form'];
+  $page = $chest['page'];
   $scope_list = [
     'header' => -100,
     'footer' => 100,
@@ -59,9 +63,9 @@ function tpps_add_buttons(array &$form, $page, array $meta = []) {
         ];
 
         // Pre-validate VCF.
-        if (!empty($meta['data_type']) && preg_match('/G/', $meta['data_type'])) {
-          $pre_valid_states = array();
-          for ($i = 1; $i <= $meta['organism_number']; $i++) {
+        if (!empty($chest['data_type']) && preg_match('/G/', $chest['data_type'])) {
+          $pre_valid_states = [];
+          for ($i = 1; $i <= $chest['organism_number']; $i++) {
             $pre_valid_states["input[name=\"organism-{$i}[genotype][files][file-type][VCF]\"]"]
               = ['checked' => FALSE];
           }
@@ -305,4 +309,35 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
     }
   }
   return $result;
+}
+
+/**
+ * Adds selectbox with 'Yes/No' options to the form.
+ *
+ * @param array $chest
+ *   Associative array with metadata to build the field.
+ *     'name' => 'genotype_are_markers_identical',
+ *     'title' => t('Are your genotype markers identical accross species?'),
+ *     'default_value' => 'yes',
+ *     'required' bool If field is required (will have extra '- Select -' element.
+ *     'form' => &$form,
+ *     'form_state' => &$form_state,
+ */
+function tpps_form_add_yesno_field(array $chest) {
+  $field_name = $chest['field_name'];
+  unset($chest['field_name']);
+  $saved_values = $chest['form_state']['saved_values'][TPPS_PAGE_4] ?? [];
+  $default_value = $saved_values[$field_name] ?? NULL;
+  $options = ['yes' => t('Yes'), 'no' => t('No')];
+  if (!($chest['#required'] ?? FALSE)) {
+    $options = [0 => t('- Select -')] + $options;
+  }
+  $form = &$chest['form'];
+  unset($chest['form']);
+  unset($chest['form_state']);
+  $form[$field_name] = array_merge([
+    '#type' => 'select',
+    '#options' => $options,
+    '#default_value' => $default_value,
+  ], $chest);
 }

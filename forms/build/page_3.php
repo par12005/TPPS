@@ -347,6 +347,6 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       }
     </style>';
   }
-  tpps_add_buttons($form, 'page_3');
+  tpps_form_add_buttons(['form' => &$form, 'page' => 'page_3']);
   return $form;
 }

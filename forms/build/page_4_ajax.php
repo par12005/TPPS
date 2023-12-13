@@ -3,6 +3,8 @@
 /**
  * @file
  * Defines ajax functions necessary for the fourth page of the form.
+ *
+ * @TODO Use single function but send required element in request.
  */
 
 /**
@@ -21,9 +23,9 @@
  */
 function tpps_ajax_bioproject_callback(array &$form, array $form_state) {
 
-  $ajax_id = $form_state['triggering_element']['#parents'][0];
+  $id = $form_state['triggering_element']['#parents'][0];
 
-  return $form[$ajax_id]['genotype']['tripal_eutils'];
+  return $form[$id]['genotype']['tripal_eutils'];
 }
 
 /**

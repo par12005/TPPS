@@ -20,10 +20,7 @@
  *   The populated form.
  */
 function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
-  $phenotype_upload_location = 'public://' . variable_get(
-    'tpps_phenotype_files_dir',
-    'tpps_phenotype'
-  );
+  $phenotype_dir = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
 
   $form[$id]['phenotype'] = [
     '#type' => 'fieldset',
@@ -70,10 +67,8 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
     $form[$id]['phenotype']['iso'] = array(
       '#type' => 'managed_file',
       '#title' => t('Phenotype Isotope/Mass Spectrometry file: *'),
-      '#upload_location' => $phenotype_upload_location,
-      '#upload_validators' => array(
-        'file_validate_extensions' => array('csv tsv'),
-      ),
+      '#upload_location' => 'public://' . $phenotype_dir,
+      '#upload_validators' => ['file_validate_extensions' => ['csv tsv']],
       '#description' => t('Please upload a file containing all of your '
         . 'isotope/mass spectrometry data. The format of this file is very '
         . 'important! The first column of your file should contain plant '
@@ -614,7 +609,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
       '#title' => t('Phenotype Metadata File: <br/ >Please upload a file '
       . 'containing columns with the name, attribute, structure, '
       . 'description, and units of each of your phenotypes: *'),
-      '#upload_location' => "$phenotype_upload_location",
+      '#upload_location' => 'public://' . $phenotype_dir,
       '#upload_validators' => ['file_validate_extensions' => ['csv tsv']],
       '#states' => [
         'visible' => [
@@ -1317,6 +1312,9 @@ function tpps_environment(array &$form, array &$form_state, $id) {
 
   if ($cartogratree_env and db_table_exists('cartogratree_groups') and db_table_exists('cartogratree_layers') and db_table_exists('cartogratree_fields')) {
 
+    // @TODO Remove this extra DB request.
+    // Use global $conf instead.
+    // See https://api.drupal.org/api/drupal/includes%21bootstrap.inc/function/variable_get/7.x
     $query = db_select('variable', 'v')
       ->fields('v')
       ->condition('name', db_like('tpps_layer_group_') . '%', 'LIKE');
@@ -1699,7 +1697,6 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fields['tripal_fasta'] = $fasta;
 }
 
-// [VS]
 /**
  * Creates fields describing the genotype markers used in the submission.
  *
@@ -1788,7 +1785,6 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     ),
   );
 
-  // [VS]
   $fields['SNPs']['targeted-capture-other'] = [
     '#type' => 'textfield',
     '#title' => t('Other Targeted Capture: *'),
@@ -1828,7 +1824,6 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
   ];
 }
 
-// [/VS]
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // Helper functions.
 
