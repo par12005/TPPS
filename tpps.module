@@ -1137,6 +1137,11 @@ function tpps_main_submit($form, &$form_state) {
     $state = tpps_submission_get_state($form_state['values']['accession']);
     tpps_submission_file_set_status($state, 0);
   }
+  // We need to change status of files when user clicked 'Back' to
+  // avoid errors and allow to edit study.
+  if ($form_state['triggering_element']['#value'] == 'Back') {
+    tpps_submission_file_set_status($form_state, 0);
+  }
 
   // dpm("ON SUBMIT");
   // dpm(array_keys($form_state));
@@ -1162,6 +1167,7 @@ function tpps_main_submit($form, &$form_state) {
     // dpm($form_state['saved_values']);
 
     tpps_update_submission($form_state);
+    tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
     return;
   }
 
