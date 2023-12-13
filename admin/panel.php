@@ -34,6 +34,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   else {
     tpps_manage_submission_form($form, $form_state, $accession);
   }
+  $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('main', $form);
   return $form;
 }
@@ -652,6 +653,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
  *   The state of the form element to be populated.
  * @param array $submission
  *   The submission being managed.
+ *
+ * @TODO Remove this code. It's not used.
  */
 function tpps_phenotype_editor(array &$form, array &$form_state, array &$submission) {
   // [VS] #8669rmrw5

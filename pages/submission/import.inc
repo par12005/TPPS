@@ -59,9 +59,9 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
 function tpps_submission_import_form_validate(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate accession.
-  if ($form_state['values']['tpps_submission_import_accession'] ?? NULL) {
+  if (empty($form_state['values']['tpps_submission_import_accession'])) {
     // Note: $accession could be 'new'.
-    drupal_goto('tpps/submission');
+    form_set_error('tpps_submission_import_accession', t('Empty Accession.'));
     // @TODO Minor. Validate accession. Check if 'TGDR' is present and so on.
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -112,8 +112,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       return;
     }
 
-    $new_accession = $form_state['values']['tpps_submission_import_accession']
-      ?? tpps_init_project_get_next_accession();
+    $new_accession = $form_state['values']['tpps_submission_import_accession'];
+    if ($new_accession == 'new') {
+      $new_accession = tpps_init_project_get_next_accession();
+    }
     // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
     // @TODO Update code to use only 'xxx' format.
     $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);

@@ -602,9 +602,9 @@ function tpps_table_display(array &$state, array $options = array()) {
         }
 
         // @TODO [VS] Use Drupal Form API instead of HTML in PHP.
-        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button btn form-button\" type=\"button\" value=\"Preview file\"></input>";
+        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button btn form-button form-submit\" type=\"button\" value=\"Preview file\"></input>";
         if (tpps_access('administer tpps module')) {
-          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button btn form-button\" type=\"button\" value=\"Show full file\"></input>";
+          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button btn form-button form-submit\" type=\"button\" value=\"Show full file\"></input>";
         }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if (!$flat['#skip_loc']) {
@@ -612,7 +612,7 @@ function tpps_table_display(array &$state, array $options = array()) {
             $wrapper_id = "{$fid}_map_wrapper";
             $button_id = "{$fid}_map_button";
             $val_str .= "<div id=\"$wrapper_id\"></div>"
-              . "<input id=\"$button_id\" type=\"button\" class=\"btn form-button\" "
+              . "<input id=\"$button_id\" type=\"button\" class=\"btn form-button form-submit\" "
               . "value=\"Click here to view plants on map!\"></input>";
 
             drupal_add_js(array(
