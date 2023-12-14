@@ -2220,11 +2220,11 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
         // search for all markers ($trees_markers_location)
         $unique_tree_id = trim($unique_tree_id);
         if ($unique_tree_id != "") {
-          $cmd = "awk '$2 == \"" . $unique_tree_id . "\" {print $1}' $trees_markers_location";
-          print_r($cmd . "\n");
+          $cmd2 = "awk '$2 == \"" . $unique_tree_id . "\" {print $1}' $trees_markers_location";
+          // print_r($cmd . "\n");
           $cmd2_output = [];
-          exec($cmd, $cmd2_output);
-          // print_r($cmd_output);
+          exec($cmd2, $cmd2_output);
+          // print_r($cmd2_output);
           // print_r("\n");
           
           $markers_array = [];
@@ -2234,6 +2234,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
             $line = trim($line);
             $markers_array[] = "'" . $line . "'";
           }
+          $cmd2_output = []; // reset
           // INSERT THE MARKERS
           echo "Inserting markers ($markers_array_count) for $accession TREE_ID $unique_tree_id\n";
           try {
