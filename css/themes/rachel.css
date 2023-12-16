@@ -73,16 +73,26 @@ form.tppsc-form .fieldset-wrapper>.form-item {
 .tppsc-form fieldset.form-wrapper {
   /* Dark grey */
   border-left: 3px solid #6b706b;
-  margin: 20px 0 0 20px;
+  margin: 20px 0 0 20px !important;
   padding: 0 20px;
 }
 .tppsc-form fieldset.form-wrapper legend {
   border: none !important;
   color: black !important;
+  padding: 0 10px !important;
 }
 .tppsc-form fieldset.form-wrapper legend span {
   padding-left: 10px;
   line-height: normal;
+}
+/* Fixed not collapsible fieldset's label */
+form.tpps-submission fieldset legend span.fieldset-legend,
+form.tppsc-form      fieldset legend span.fieldset-legend {
+  padding-left: 12px;
+  font-size: 16px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #555;
 }
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
