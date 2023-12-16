@@ -794,12 +794,12 @@ function tpps_phenotype_number_clear($button_name, $value) {
  */
 function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // [VS]
-  $genotype_upload_location = 'public://' . variable_get('tpps_genotype_files_dir', 'tpps_genotype');
-  $fields = array(
+  $genotype_dir = variable_get('tpps_genotype_files_dir', 'tpps_genotype');
+  $fields = [
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Genotype Information:</div>'),
+    '#title' => t('Genotype Information:'),
     '#collapsible' => TRUE,
-  );
+  ];
   tpps_page_4_marker_info($fields, $form_state, $id);
   tpps_page_4_ref($fields, $form_state, $id);
 
@@ -829,18 +829,10 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Note: Marker Type allows multiple values to be selected.
   if (in_array('SNPs', $genotype_marker_type)) {
-    $is_step2_genotype = in_array(
-      $form_state['saved_values'][TPPS_PAGE_2]['data_type'],
-      [
-        'Genotype x Environment',
-        'Genotype x Phenotype x Environment',
-        'Genotype x Phenotype',
-      ]
-    );
     $upload_snp_association = tpps_get_ajax_value(
       $form_state, [$id, 'genotype', 'files', 'upload_snp_association'], 'Yes'
     );
-    if ($is_step2_genotype) {
+    if (tpps_is_genotype_data_type($form_state)) {
       $fields['files']['upload_snp_association'] = [
         '#type' => 'select',
         '#title' => t('Would you like to upload a SNP association file?'),
@@ -915,7 +907,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
             . 'identifiers which match the plant identifiers you provided '
             . 'in your plant accession file, and all of the remaining '
             . 'columns should contain SNP data.'),
-          'upload_location' => "$genotype_upload_location",
+          'upload_location' => 'public://' . $genotype_dir,
           'use_fid' => TRUE,
         ]);
       }
@@ -926,7 +918,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
           '#title' => t($title . ': please select an already existing '
             . 'spreadsheet with columns for the Plant ID of genotypes '
             . 'used in this study: *'),
-          '#upload_location' => "$genotype_upload_location",
+          'upload_location' => 'public://' . $genotype_dir,
           '#autocomplete_path' => 'snp-assay-file/upload',
           '#description' => t("Please select an already existing spreadsheet "
             . "file containing SNP Genotype Assay data. The format of this "
@@ -956,7 +948,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'id' => $id,
         'file_field_name' => $file_field_name,
         'title' => $title,
-        'upload_location' => "$genotype_upload_location",
+        'upload_location' => 'public://' . $genotype_dir,
       ]);
       $fields['files']['assay-citation'] = [
         '#type' => 'textfield',
@@ -980,7 +972,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'id' => $id,
         'file_field_name' => $file_field_name,
         'title' => $title,
-        'upload_location' => "$genotype_upload_location",
+        'upload_location' => 'public://' . $genotype_dir,
         'description' => t('Please upload a spreadsheet file containing '
           . 'SNPs Association data. When your file is uploaded, you will '
           . 'be shown a table with your column header names, several '
@@ -1063,7 +1055,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         // @todo [VS] Replace with 'required' with default value 'TRUE'.
         'optional' => TRUE,
         'title' => t('SNPs Population Structure File'),
-        'upload_location' => "$genotype_upload_location",
+        'upload_location' => 'public://' . $genotype_dir,
       ]);
       // SNPs Kinship File.
       tpps_genotype_build_file_field($fields, [
@@ -1072,7 +1064,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'file_field_name' => 'snps-kinship',
         'optional' => TRUE,
         'title' => t('SNPs Kinship File'),
-        'upload_location' => "$genotype_upload_location",
+        'upload_location' => 'public://' . $genotype_dir,
       ]);
     }
     else {
@@ -1116,7 +1108,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'id' => $id,
         'file_field_name' => $file_field_name,
         'title' => $title,
-        'upload_location' => "$genotype_upload_location",
+        'upload_location' => 'public://' . $genotype_dir,
         'description' => t('Please upload a spreadsheet containing your '
           . 'SSRs data. The format of this file is very important! TPPS will '
           . 'parse your file based on the ploidy you have selected above. '
@@ -1150,7 +1142,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
         'id' => $id,
         'file_field_name' => $file_field_name,
         'title' => $title,
-        'upload_location' => "$genotype_upload_location",
+        'upload_location' => 'public://' . $genotype_dir,
         // Note:
         // Difference from form 'ssrs' field: 'cpSSRs' (2nd line).
         'description' => t('Please upload a spreadsheet containing your '
@@ -1207,7 +1199,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'id' => $id,
       'file_field_name' => $file_field_name,
       'title' => $title,
-      'upload_location' => "$genotype_upload_location",
+      'upload_location' => 'public://' . $genotype_dir,
       'description' => $description,
       'empty_field_value' => tpps_get_empty_field_value(
         $form_state, $id, $file_field_name
@@ -1263,7 +1255,7 @@ function tpps_genotype(array &$form, array &$form_state, array $values, $id) {
       'id' => $id,
       'file_field_name' => $file_field_name,
       'title' => $title,
-      'upload_location' => "$genotype_upload_location",
+      'upload_location' => 'public://' . $genotype_dir,
       'description' => '',
       'extensions' => ['gz tar zip'],
     ]);
@@ -1875,7 +1867,7 @@ function tpps_add_file_selector(array $form_state, array &$fields, $id, $title, 
  *     'file_field_name' => $file_field_name,
  *     'optional' => TRUE,
  *     'title' => $title,
- *     'upload_location' => "$genotype_upload_location",
+ *     'upload_location' => 'public://' . $genotype_dir,
  *     'description' => $description,
  *     'extensions' => $extensions, // Default: ['csv tsv xlsx']
  *     'states' => $states, // Default is ''.

@@ -22,15 +22,21 @@ require_once 'page_4_helper.php';
  */
 function tpps_page_4_create_form(array &$form, array &$form_state) {
   global $user;
-  $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-  $page2_values = $form_state['saved_values'][TPPS_PAGE_2] ?? [];
-  $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? [];
+  $page1_values = &$form_state['saved_values'][TPPS_PAGE_1] ?? [];
+  $page2_values = &$form_state['saved_values'][TPPS_PAGE_2] ?? [];
+  $page4_values = &$form_state['saved_values'][TPPS_PAGE_4] ?? [];
 
-  $organism_number = $page1_values['organism']['number'];
-  $data_type = $page2_values['data_type'];
+  // Data which could be shared.
+  $chest = [
+    'form' => &$form,
+    'form_state' => &$form_state,
+    'organism_number' => $page1_values['organism']['number'],
+    'data_type' => $page2_values['data_type'],
+  ];
 
   $form['#tree'] = TRUE;
-  for ($i = 1; $i <= $organism_number; $i++) {
+  for ($i = 1; $i <= $chest['organism_number']; $i++) {
+    $chest['i'] = $i;
     $name = $page1_values['organism'][$i]['name'];
     $form["organism-$i"] = [
       '#type' => 'fieldset',
@@ -40,14 +46,10 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     ];
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Data Type includes phenotype.
-    if (preg_match('/P/', $data_type)) {
-      tpps_page4_add_data_type([
-        'type' => 'phenotype',
-        'type_name' => t('Phenotype'),
-        'i' => $i,
-        'form' => &$form,
-        'form_state' => $form_state,
-      ]);
+    if (tpps_is_phenotype_data_type($form_state)) {
+      tpps_page4_add_data_type(array_merge($chest,
+        ['type' => 'phenotype', 'type_name' => t('Phenotype')]
+      ));
 
       $normal_check = tpps_get_ajax_value(
         $form_state,
@@ -74,6 +76,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
             ],
           ],
         ];
+        $phenotype_dir = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
 
         $form["organism-$i"]['phenotype']['format'][0]['#prefix'] =
           '<figure><img src="/' . TPPS_IMAGES_PATH . 'phenotype_format_1.png">'
@@ -86,8 +89,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           '#type' => 'managed_file',
           '#title' => t('Phenotype file: Please upload a file containing '
             . 'columns for Plant Identifier, Phenotype Data: *'),
-          '#upload_location' => 'public://'
-            . variable_get('tpps_phenotype_files_dir', 'tpps_phenotype'),
+          '#upload_location' => 'public://' . $phenotype_dir,
           '#upload_validators' => ['file_validate_extensions' => ['csv tsv']],
           '#tree' => TRUE,
           '#states' => [
@@ -109,9 +111,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         ];
 
         $format = tpps_get_ajax_value(
-          $form_state,
-          ["organism-$i", 'phenotype', 'format'],
-          0
+          $form_state, ["organism-$i", 'phenotype', 'format'], 0
         );
 
         if ($format == 0) {
@@ -162,46 +162,27 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         }
       }
     }
-
-    // Data Type includes Genotype.
-    if (preg_match('/G/', $data_type)) {
-      tpps_form_add_yesno_field([
-        'field_name' => 'genotype_are_markers_identical',
-        '#title' => t('Are your genotype markers identical accross species?'),
-        '#width' => 100,
-        'form' => &$form,
-        'form_state' => &$form_state,
-      ]);
-      tpps_page4_add_data_type([
-        'type' => 'genotype',
-        'type_name' => t('Genotype'),
-        'i' => $i,
-        'form' => &$form,
-        'form_state' => $form_state,
-      ]);
+    if (tpps_is_genotype_data_type($form_state)) {
+      tpps_form_add_yesno_field(array_merge($chest,
+        [
+          '#name' => 'genotype_are_markers_identical',
+          '#title' => t('Are your genotype markers identical accross species?'),
+          '#width' => -1000,
+        ]
+      ));
+      tpps_page4_add_data_type(array_merge($chest,
+        ['type' => 'genotype', 'type_name' => t('Genotype')]
+      ));
     }
-    // Data Type contains 'Environment'.
-    if (preg_match('/E/', $data_type)) {
-      tpps_page4_add_data_type([
-        'type' => 'environment',
-        'type_name' => t('Environmental'),
-        'i' => $i,
-        'form' => &$form,
-        'form_state' => $form_state,
-      ]);
+    if (tpps_is_environment_data_type($form_state)) {
+      tpps_page4_add_data_type(array_merge($chest,
+        ['type' => 'environment', 'type_name' => t('Environmental')]
+      ));
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  tpps_form_add_buttons([
-    'form' => &$form,
-    'page' => 'page_4',
-    'organism_number' => $organism_number,
-    'data_type' => $data_type,
-  ]);
-  tpps_add_curation_tool([
-    'form' => &$form,
-    'form_state' => $form_state,
-  ]);
+  tpps_form_add_buttons(array_merge($chest, ['page' => 'page_4']));
+  tpps_add_curation_tool($chest);
   tpps_add_css_js(TPPS_PAGE_4, $form);
   return $form;
 }
@@ -360,4 +341,52 @@ function tpps_page4_add_data_type(array $chest) {
     ];
   }
 }
-// [/VS].
+
+/**
+ * Checks if study has phenotype data.
+ *
+ * @param array $form_state
+ *   Drupal Form State.
+ *
+ * @return bool
+ *   Returns TRUE if it has and FALSE otherwise.
+ *
+ * @todo Better to detect is once on Page 2 submit and store in $form_state.
+ */
+function tpps_is_phenotype_data_type(array $form_state) {
+  $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'] ?? '';
+  return (bool) preg_match('/P/', $data_type);
+}
+
+/**
+ * Checks if study has genotype data.
+ *
+ * @param array $form_state
+ *   Drupal Form State.
+ *
+ * @return bool
+ *   Returns TRUE if it has and FALSE otherwise.
+ *
+ * @todo Better to detect is once on Page 2 submit and store in $form_state.
+ */
+function tpps_is_genotype_data_type(array $form_state) {
+  $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'] ?? '';
+  return (bool) preg_match('/P/', $data_type);
+}
+
+/**
+ * Checks if study has environment data.
+ *
+ * @param array $form_state
+ *   Drupal Form State.
+ *
+ * @return bool
+ *   Returns TRUE if it has and FALSE otherwise.
+ *
+ * @todo Better to detect is once on Page 2 submit and store in $form_state.
+ */
+function tpps_is_environment_data_type(array $form_state) {
+  $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'] ?? '';
+  return (bool) preg_match('/P/', $data_type);
+}
+

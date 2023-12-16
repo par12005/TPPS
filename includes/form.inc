@@ -315,29 +315,54 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
  * Adds selectbox with 'Yes/No' options to the form.
  *
  * @param array $chest
- *   Associative array with metadata to build the field.
- *     'name' => 'genotype_are_markers_identical',
- *     'title' => t('Are your genotype markers identical accross species?'),
- *     'default_value' => 'yes',
- *     'required' bool If field is required (will have extra '- Select -' element.
- *     'form' => &$form,
- *     'form_state' => &$form_state,
+ *   Associative array with metadata to build the field. Keys are:
+ *   'form' array
+ *      Required. Drupal Form Array. E.g., &$form.
+ *   'form_state' array
+ *      Optional. Drupal Form Array. E.g., &$form_state.
+ *   Element with prefix '#' which are Drupal Form API fields.
+ *   See https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x
+ *
+ *   Required:
+ *     '#name' string
+ *        Unique name in $form array and HTML 'name' attribute.
+ *     '#title' string
+ *        Localized field title.
+ *   Optional: '#default_value', '#required', '#state' and etc.
  */
 function tpps_form_add_yesno_field(array $chest) {
-  $field_name = $chest['field_name'];
-  unset($chest['field_name']);
-  $saved_values = $chest['form_state']['saved_values'][TPPS_PAGE_4] ?? [];
-  $default_value = $saved_values[$field_name] ?? NULL;
+  // Validate required elements.
+  if (empty($chest['form'])) {
+    watchdog('tpps', 'Empty $form received', [], WATCHDOG_ERROR);
+    return;
+  }
+  else {
+    $form = &$chest['form'];
+  }
+  if (empty($chest['#name']) || empty($chest['#title'])) {
+    watchdog('tpps', 'Empty "#name" or "#title" received', [], WATCHDOG_ERROR);
+    return;
+  }
+
+  // $form_state is optional and used for default value only.
+  $form_state = &$chest['form_state'] ?? [];
+  unset($chest['form_state']);
+  // Default value.
+  $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? NULL;
+  // Options.
   $options = ['yes' => t('Yes'), 'no' => t('No')];
   if (!($chest['#required'] ?? FALSE)) {
     $options = [0 => t('- Select -')] + $options;
   }
-  $form = &$chest['form'];
-  unset($chest['form']);
-  unset($chest['form_state']);
-  $form[$field_name] = array_merge([
+  // Build field using defaults.
+  $defaults = [
     '#type' => 'select',
     '#options' => $options,
-    '#default_value' => $default_value,
-  ], $chest);
+    '#default_value' => ($page4_values[$chest['#name']] ?? NULL),
+  ];
+  $field = array_filter($chest, function ($e) {
+    return strpos($e, '#') !== FALSE;
+  }, ARRAY_FILTER_USE_KEY);
+
+  $form[$chest['#name']] = array_merge($defaults, $field);
 }
