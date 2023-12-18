@@ -18,15 +18,36 @@
             && typeof(settings.tpps.organismNumber) != 'undefined'
           ) {
             if (settings.tpps.organismNumber > 1) {
+              // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+              // Check if genotype data is identical.
+              repeatCounter = 0;
+              for (let i = 1; i <= settings.tpps.organismNumber; i++) {
+                $repeatCheckBox = $('input[name="organism-' + i + '[genotype-repeat-check]"]', $form);
+                repeatCounter = repeatCounter + $repeatCheckBox.val();
+              }
+              console.log(
+                repeatCounter,
+                settings.tpps.organismNumber
+              );
+              if (settings.tpps.organismNumber == repeatCounter) {
+                // Only when all organisms has the checkbox checked.
+                $('.form-select[name="organism-1[genotype][are_genotype_markers_identical]"]', $form).val('yes');
+              }
+              else if (repeatCounter) {
+                // If at least some of them was set then not identical for sure.
+                $('.form-select[name="organism-1[genotype][are_genotype_markers_identical]"]', $form).val('no');
+              }
+              // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
               $('.form-select[name="organism-1[genotype][are_genotype_markers_identical]"]', $form)
-              .change(function() {
+              .blur(function() {
+                let value = $(this).val();
                 for (let i = 2; i <= settings.tpps.organismNumber; i++) {
                   $repeatCheckBox = $('input[name="organism-' + i
                     + '[genotype-repeat-check]"]', $form);
-                  if ($(this).val() == 'yes') {
+                  if (value == 'yes') {
                     $repeatCheckBox.prop('checked', true).trigger('change');
                   }
-                  else if ($(this).val() == 'no') {
+                  else if (value == 'no') {
                     $repeatCheckBox.prop('checked', false).trigger('change');
                   }
                 }
@@ -52,7 +73,9 @@
               let markerTypeName = 'organism-' + i + '[genotype][marker-type][]';
               let $markerTypeField = $(':input[name="' + markerTypeName + '"]', $form);
               // Main field must be hidden.
-              $markerTypeField.parent('.form-item').hide();
+              // @TODO Remove debug code. Uncomment.
+              // $markerTypeField.parent('.form-item').hide();
+
               for (const [fieldName, markerName] of Object.entries(settings.tpps.markerTypeFieldList)) {
                 let $field = $(':input[name="organism-' + i + '[genotype][' + fieldName + ']"]', $form);
                 $field.change(function() {
@@ -77,7 +100,7 @@
                       markers.splice($.inArray(markerName, markers), 1);
                     }
                   }
-                  $markerTypeField.val(markers);
+                  $markerTypeField.val(markers).trigger('change');
                 });
               }
             }
