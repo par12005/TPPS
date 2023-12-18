@@ -28,8 +28,8 @@ function tpps_form_add_buttons(array $chest) {
   $form = &$chest['form'];
   $page = $chest['page'];
   $scope_list = [
-    'header' => -100,
-    'footer' => 100,
+    'header' => -1000,
+    'footer' => 1000,
   ];
 
   foreach ($scope_list as $scope => $weight) {
@@ -322,15 +322,19 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
  *      Optional. Drupal Form Array. E.g., &$form_state.
  *   Element with prefix '#' which are Drupal Form API fields.
  *   See https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x
+ *     'field_name' string
+ *        Unique name for the field. Note: it's not '#name'.
  *
  *   Required:
- *     '#name' string
- *        Unique name in $form array and HTML 'name' attribute.
+ *
  *     '#title' string
  *        Localized field title.
  *   Optional: '#default_value', '#required', '#state' and etc.
+ *     '#name' string
+ *        Unique name in $form array and HTML 'name' attribute.
  */
 function tpps_form_add_yesno_field(array $chest) {
+
   // Validate required elements.
   if (empty($chest['form'])) {
     watchdog('tpps', 'Empty $form received', [], WATCHDOG_ERROR);
@@ -339,10 +343,17 @@ function tpps_form_add_yesno_field(array $chest) {
   else {
     $form = &$chest['form'];
   }
-  if (empty($chest['#name']) || empty($chest['#title'])) {
-    watchdog('tpps', 'Empty "#name" or "#title" received', [], WATCHDOG_ERROR);
+  if (empty($chest['field_name']) || empty($chest['#title'])) {
+    watchdog('tpps', 'Empty "name" or "#title" received', [], WATCHDOG_ERROR);
     return;
   }
+  if (!isset($chest['i'])) {
+    return;
+  }
+  $field_name = $chest['field_name'];
+  $i = $chest['i'];
+
+  $organism_name = 'organism-' . $i;
 
   // $form_state is optional and used for default value only.
   $form_state = &$chest['form_state'] ?? [];
@@ -350,6 +361,8 @@ function tpps_form_add_yesno_field(array $chest) {
   // Default value.
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? NULL;
   // Options.
+  // Machine names are in lower case to indicate that it's not human readable
+  // name which could be localized.
   $options = ['yes' => t('Yes'), 'no' => t('No')];
   if (!($chest['#required'] ?? FALSE)) {
     $options = [0 => t('- Select -')] + $options;
@@ -358,11 +371,13 @@ function tpps_form_add_yesno_field(array $chest) {
   $defaults = [
     '#type' => 'select',
     '#options' => $options,
-    '#default_value' => ($page4_values[$chest['#name']] ?? NULL),
+    '#default_value' => ($page4_values[$field_name] ?? NULL),
+    '#tree' => TRUE,
   ];
   $field = array_filter($chest, function ($e) {
     return strpos($e, '#') !== FALSE;
   }, ARRAY_FILTER_USE_KEY);
-
-  $form[$chest['#name']] = array_merge($defaults, $field);
+  $field = array_merge($defaults, $field);
+  $parents = array_merge(($chest['parents'] ?? []), [$field_name]);
+  drupal_array_set_nested_value($form, $parents, $field);
 }

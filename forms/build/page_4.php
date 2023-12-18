@@ -7,6 +7,7 @@
 
 require_once 'page_4_ajax.php';
 require_once 'page_4_helper.php';
+require_once 'page_4_genotype.php';
 
 /**
  * Creates the GxPxE Data form page.
@@ -40,7 +41,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     $name = $page1_values['organism'][$i]['name'];
     $form["organism-$i"] = [
       '#type' => 'fieldset',
-      '#title' => "<div class=\"fieldset-title\">$name:</div>",
+      '#title' => t($name),
+      //'#title' => "<div class=\"fieldset-title\">$name:</div>",
       '#tree' => TRUE,
       '#collapsible' => TRUE,
     ];
@@ -163,13 +165,6 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       }
     }
     if (tpps_is_genotype_data_type($form_state)) {
-      tpps_form_add_yesno_field(array_merge($chest,
-        [
-          '#name' => 'genotype_are_markers_identical',
-          '#title' => t('Are your genotype markers identical accross species?'),
-          '#width' => -1000,
-        ]
-      ));
       tpps_page4_add_data_type(array_merge($chest,
         ['type' => 'genotype', 'type_name' => t('Genotype')]
       ));
@@ -183,6 +178,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   tpps_form_add_buttons(array_merge($chest, ['page' => 'page_4']));
   tpps_add_curation_tool($chest);
+  // Now JS is empty but could be used later.
   tpps_add_css_js(TPPS_PAGE_4, $form);
   return $form;
 }
@@ -259,6 +255,7 @@ function tpps_add_curation_tool(array $chest) {
     '#type' => 'container',
     '#attributes' => ['id' => 'diagnostic-curation-results'],
   ];
+  tpps_add_css_js('page_4_curation_tool', $form);
 }
 
 /**
@@ -294,7 +291,8 @@ function tpps_page4_add_data_type(array $chest) {
   $i = $chest['i'] ?? 0;
   $organism_name = 'organism-' . $i;
   $form = &$chest['form'] ?? [];
-  $form_state = $chest['form_state'] ?? [];
+  $form_state = &$chest['form_state'] ?? [];
+
   $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? [];
   $type = $chest['type'] ?? '';
@@ -302,21 +300,31 @@ function tpps_page4_add_data_type(array $chest) {
 
   // List of dynamically build function names for code management:
   // tpps_phenotype(),
-  // tpps_genotype(),
+  // tpps_genotype() or tpps_genotype_form(),
   // tpps_environment().
-  $function_name = 'tpps_' . $type;
-  if ($type == 'environment') {
-    $args = [&$form, &$form_state, $organism_name];
+  if ($type == 'genotype') {
+    $function_name = 'tpps_' . $type . '_subform';
+    call_user_func($function_name, $chest);
   }
-  elseif (in_array($type, ['phenotype', 'genotype'])) {
-    $args = [&$form, &$form_state, $page4_values, $organism_name];
+  elseif (in_array($type, ['environment', 'phenotype'])) {
+    $function_name = 'tpps_' . $type;
+    // @TODO Rename all functions to have suffix '_subform'.
+    if ($type == 'environment') {
+      $args = [&$form, &$form_state, $organism_name];
+    }
+    elseif ($type == 'phenotype') {
+      $args = [&$form, &$form_state, $page4_values, $organism_name];
+    }
+    $field = call_user_func_array($function_name, $args);
+    $form[$organism_name][$type] = $field;
   }
   else {
     $message = t('Unsupported data type: @type.', ['@type' => $type]);
     drupal_set_message($message, 'error');
     return;
   }
-  $form[$organism_name][$type] = call_user_func_array($function_name, $args);
+  // Main fields.
+  // Repeat check.
   if ($i > 1) {
     $form[$organism_name][$type . '-repeat-check'] = [
       '#type' => 'checkbox',
@@ -331,7 +339,6 @@ function tpps_page4_add_data_type(array $chest) {
         ]
       ),
       '#default_value' => ($page4_values[$organism_name][$type . '-repeat-check'] ?? 1),
-      '#weight' => -100,
     ];
     $form[$organism_name][$type]['#states'] = [
       'invisible' => [
@@ -371,7 +378,7 @@ function tpps_is_phenotype_data_type(array $form_state) {
  */
 function tpps_is_genotype_data_type(array $form_state) {
   $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'] ?? '';
-  return (bool) preg_match('/P/', $data_type);
+  return (bool) preg_match('/G/', $data_type);
 }
 
 /**
@@ -387,6 +394,5 @@ function tpps_is_genotype_data_type(array $form_state) {
  */
 function tpps_is_environment_data_type(array $form_state) {
   $data_type = $form_state['saved_values'][TPPS_PAGE_2]['data_type'] ?? '';
-  return (bool) preg_match('/P/', $data_type);
+  return (bool) preg_match('/E/', $data_type);
 }
-
