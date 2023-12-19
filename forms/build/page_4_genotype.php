@@ -26,7 +26,9 @@ function tpps_genotype_subform(array $chest) {
   $organism_name = 'organism-' . $i;
 
   // Get necessary data.
+  $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? [];
+  $organism_number = $page1_values['organism']['number'];
   $marker_parents = [$organism_name, 'genotype', 'marker-type'];
   $genotype_marker_type = array_keys(
     tpps_get_ajax_value($form_state, $marker_parents, [])
@@ -50,6 +52,7 @@ function tpps_genotype_subform(array $chest) {
       [
         'field_name' => 'are_genotype_markers_identical',
         '#title' => t('Are your genotype markers identical accross species?'),
+        '#default_value' => (($organism_number == 1) ? 'yes' : 0),
       ]
     ));
     // Next 3 questions must be shown/hidden only for 1st organism.
@@ -81,7 +84,8 @@ function tpps_genotype_subform(array $chest) {
         '#title' => t('Does your study include @marker_name data?',
           [
             '@marker_name' => ($marker_name == 'Other'
-              ? strtolower($marker_name) : $marker_name),
+            // Just a fast workaround. Sorry :(.
+            ? strtolower($marker_name) : str_replace('s', '', $marker_name)),
           ]
         ),
         '#default_value' => $default_value,
