@@ -176,7 +176,9 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     }
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Button's weight: -1000 (header) and 1000 (footer).
   tpps_form_add_buttons(array_merge($chest, ['page' => 'page_4']));
+  // Curation Tool's weight: 1100 (under button's in footer).
   tpps_add_curation_tool($chest);
   // Now JS is empty but could be used later.
   tpps_add_css_js(TPPS_PAGE_4, $form);
@@ -216,8 +218,8 @@ function tpps_add_curation_tool(array $chest) {
     '#title' => '🌟 Curation Diagnostics',
     '#description' => 'These diagnostics <b>require you to save this package</b> '
       . 'with data before functions will work',
-    // Must be below navigation buttons Back/Next which has weight 100.
-    '#weight' => 200,
+    // Must be below navigation buttons Back/Next which has weight 1000 in footer.
+    '#weight' => 1100,
   ];
 
   // 1st row of buttons.
