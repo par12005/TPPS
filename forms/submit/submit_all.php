@@ -2236,11 +2236,11 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
           }
           $cmd2_output = []; // reset
           // INSERT THE MARKERS
-          echo "Inserting markers ($markers_array_count) for $accession TREE_ID $unique_tree_id\n";
+          echo "Inserting markers ($markers_array_count) for $accession TREE_ID $accession-$unique_tree_id\n";
           try {
             chado_query("INSERT INTO chado.markers_and_study_accession_per_individual_tree (accession, tree_id, markers)
               VALUES (
-                '$accession','$unique_tree_id', ARRAY[" . implode(',',$markers_array) . "]
+                '$accession','$accession-$unique_tree_id', ARRAY[" . implode(',',$markers_array) . "]
               )
             ");
           }
@@ -2687,6 +2687,17 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
                 // Found a match between the tree_id genotype and the genotype_name from records
                 // echo "Found match (and using variant_name $variant_name ($variant_id) to add to genotype call\n";
 
+
+                ob_start();
+                chado_insert_record('feature_genotype', [
+                  'feature_id' => $variant_id,
+                  'genotype_id' => $genotype_id,
+                  'chromosome_id' => NULL,
+                  'rank' => 0,
+                  'cgroup' => 0,
+                  'cvterm_id' => $snp_cvterm,
+                ]);
+                ob_end_clean();
 
                 $variant_ids[$variant_id] = true;
 
@@ -3430,6 +3441,18 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       //   ),
       // );
 
+      // RISH - 12/18/2023 - Requested by Emily
+      ob_start();
+      chado_insert_record('feature_genotype', [
+        'feature_id' => $variant_name_id,
+        'genotype_id' => $genotype_id,
+        'chromosome_id' => NULL,
+        'rank' => 0,
+        'cgroup' => 0,
+        'cvterm_id' => $type_cvterm,
+      ]);
+      ob_end_clean();      
+
       fwrite($options['fhandle'], "$tree_id,$variant_name\n");
       
  
@@ -3491,10 +3514,10 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
   echo "Found $markers_array_count markers for $tree_id\n";
   if ($markers_array_count > 0) {
     // Check whether table already contains
-    echo "Inserting markers for $accession TREE_ID $tree_id\n";
+    echo "Inserting markers for $accession TREE_ID $accession-$tree_id\n";
     chado_query("INSERT INTO chado.markers_and_study_accession_per_individual_tree (accession, tree_id, markers)
       VALUES (
-        '$accession','$tree_id', ARRAY[" . implode(',',$markers_array) . "]
+        '$accession','$accession-$tree_id', ARRAY[" . implode(',',$markers_array) . "]
       )
     ");
     echo "Insert successful\n";
