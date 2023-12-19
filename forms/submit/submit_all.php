@@ -2688,7 +2688,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
                 // echo "Found match (and using variant_name $variant_name ($variant_id) to add to genotype call\n";
 
 
-                ob_start();
+                // ob_start();
                 chado_insert_record('feature_genotype', [
                   'feature_id' => $variant_id,
                   'genotype_id' => $genotype_id,
@@ -2697,7 +2697,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
                   'cgroup' => 0,
                   'cvterm_id' => $snp_cvterm,
                 ]);
-                ob_end_clean();
+                // ob_end_clean();
 
                 $variant_ids[$variant_id] = true;
 
@@ -3442,7 +3442,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       // );
 
       // RISH - 12/18/2023 - Requested by Emily
-      ob_start();
+      //ob_start();
       chado_insert_record('feature_genotype', [
         'feature_id' => $variant_name_id,
         'genotype_id' => $genotype_id,
@@ -3451,7 +3451,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
         'cgroup' => 0,
         'cvterm_id' => $type_cvterm,
       ]);
-      ob_end_clean();      
+      //ob_end_clean();      
 
       fwrite($options['fhandle'], "$tree_id,$variant_name\n");
       
