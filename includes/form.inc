@@ -381,3 +381,101 @@ function tpps_form_add_yesno_field(array $chest) {
   $parents = array_merge(($chest['parents'] ?? []), [$field_name]);
   drupal_array_set_nested_value($form, $parents, $field);
 }
+
+/**
+ * Moves form field to the new place and saves structure in $form_state.
+ *
+ * Each relocated field will be wrapped with invisible container which could
+ * be found in $form array by name:'relocated-field-container'.
+ *
+ * There is no sense to use it if "'#tree' => TRUE" wasn't used and
+ * $form_state['values'] contains flat list of values.
+ * Field will have unchanged parents in non-flat list of values.
+ *
+ * WARNING: Be sure to use $form_state but not $form for validation.
+ * NOTE: $form_state['complete_form'][...][$field_name]['#parents']
+ *   will have $chest['#parents'] array.
+ *   and
+ *   $form_state['complete_form'][...][$field_name]['#array_parents']
+ *   will have $chest['new_parents'] but related to the top of the $form
+ *   and  will include extra element 'relocated-field-container'
+ *   which is an invisible container (not fieldset) for relocated field.
+ *
+ * Usage example:
+ *   tpps_form_relocate_field([
+ *     'form' => &$fields,
+ *     'current_parents' => [],
+ *     'field_name' => 'ref-genome',
+ *     'new_parents' => ['SNPs'],
+ *     '#parents' => [$id, 'genotype'],
+ *   ]);
+ *
+ * @param array $chest
+ *   Metadata. Keys are:
+ *   'form' array
+ *       Required. Drupal Form API array or it's element.
+ *       Note: when form's element was used '#parents' must be specified
+ *       directly because there is no way to detect correct parents.
+ *
+ *       WARNING: Send 'form' as a reference to get updates. E.g.,
+ *       tpps_form_relocate_field(['form' => &$form, ... ]);
+ *
+ *   'field_name' string
+ *      Required. Name of the field to be moved.
+ *
+ *   'current_parents' array
+ *     Optional. Default is empty array.
+ *     List of the parents in given $chest['form'] array.
+ *     Relative to given $chest['form'].
+ *     Must not include $chest['field_name'].
+ *
+ *   'new_parents' array
+ *     Required. List of parents for a new field location.
+ *     Relative to given $chest['form'].
+ *     Must not include $chest['field_name'].
+ *
+ *   '#parents' array
+ *     Optional if $chest['form'] contains whole form.
+ *     Defaults in this case: $chest['current_parents'].
+ *     Required when $chest['form'] contains sub-element for the form.
+ *
+ *     Form API element '#parents' for a field at new location. Those parents
+ *     will be used in $form_state array.
+ *     Could include $chest['field_name'].
+ *
+ *     See:
+ *     https://www.drupal.org/docs/7/api/form-api/tree-and-parents ;
+ *     https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x#parents .
+ */
+function tpps_form_relocate_field(array $chest) {
+  $form = &$chest['form'] ?? NULL;
+  $field_name = $chest['field_name'] ?? NULL;
+  $current_parents = $chest['current_parents'] ?? [];
+  $new_parents = $chest['new_parents'] ?? NULL;
+  $parents = $chest['#parents'] ?? $current_parents;
+  // Validate $chest content.
+  if (!$form || !$field_name || !$new_parents) {
+    return;
+  }
+  // Create container at new place.
+  // Without this container we can't use '#parents' for the field we are moving.
+  $container_key = 'relocated-field-container';
+  drupal_array_set_nested_value(
+    $form,
+    array_merge($new_parents, [$container_key]),
+    ['#type' => 'container', '#tree' => FALSE]
+  );
+  // Get parent form element.
+  // Note: drupal_array_get_nested_value() allows to set to NULL but doesn't
+  // remove index (or field name) from the form array so we need a reference
+  // to the parent element to totally remove element.
+  $parent_element = &drupal_array_get_nested_value($form, $current_parents);
+  // Move to new place.
+  drupal_array_set_nested_value(
+    $form,
+    array_merge($new_parents, [$container_key, $field_name]),
+    array_merge($parent_element[$field_name], ['#parents' => $parents])
+  );
+  // Unset original form element.
+  unset($parent_element[$field_name]);
+}
