@@ -20,15 +20,12 @@
             if (settings.tpps.organismNumber > 1) {
               // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
               // Check if genotype data is identical.
-              repeatCounter = 0;
-              for (let i = 1; i <= settings.tpps.organismNumber; i++) {
+              repeatCounter = 1;
+              // Note: 1st organism doesn't have checkbox 'genotype-repeat-check'.
+              for (let i = 2; i <= settings.tpps.organismNumber; i++) {
                 $repeatCheckBox = $('input[name="organism-' + i + '[genotype-repeat-check]"]', $form);
-                repeatCounter = repeatCounter + $repeatCheckBox.val();
+                repeatCounter = +repeatCounter + +$repeatCheckBox.prop('checked');
               }
-              console.log(
-                repeatCounter,
-                settings.tpps.organismNumber
-              );
               if (settings.tpps.organismNumber == repeatCounter) {
                 // Only when all organisms has the checkbox checked.
                 $('.form-select[name="organism-1[genotype][are_genotype_markers_identical]"]', $form).val('yes');
