@@ -1474,6 +1474,28 @@ if (!function_exists('array_key_first')) {
 
 }
 
+// WARNING: Required because dev-server has PHP 7.0.2.
+//
+// See https://www.php.net/manual/en/function.array-key-last.php#124007
+if (!function_exists('array_key_first')) {
+
+  /**
+   * Polifill for array_key_last() implemented in PHP 7.3.0 and higher.
+   *
+   * @param array $arr
+   *   Array to be processed.
+   *
+   * @return string
+   *   Returns key of the last element of the given array.
+   */
+  function array_key_first(array $arr) {
+    foreach ($arr as $key => $unused) {
+      return $key;
+    }
+  }
+
+}
+
 /**
  * Implements hook_init().
  *
