@@ -453,6 +453,20 @@ function tpps_form_add_yesno_field(array $chest) {
  *     https://www.drupal.org/docs/7/api/form-api/tree-and-parents ;
  *     https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x#parents .
  *
+ *     When new location is a top level of the $form and '#parents' must
+ *     be empty array then use "'#parents' => []" or "'#parents' => ['doi']".
+ *     E.g.,
+ *     tpps_form_relocate_field([
+ *       'form' => &$form,
+ *       'current_parents' => ['publication'],
+ *       'field_name' => 'doi',
+ *       'new_parents' => ['publication', 'test'],
+ *       '#parents' => [], // or '#parents' => ['doi'],
+ *       '#name' => 'doi',
+ *     ]);
+ *     Note: This field was previously manually relocated from $form['doi']
+ *     to $form['publication']['doi'] so 'current_parents' is not [].
+ *
  *   '#name' string
  *     HTML attribute name of the field. Optional when:
  *     1. $chest['form'] contains whole form, or
@@ -465,6 +479,7 @@ function tpps_form_relocate_field(array $chest) {
   $field_name = $chest['field_name'] ?? NULL;
   $current_parents = $chest['current_parents'] ?? [];
   $new_parents = $chest['new_parents'] ?? NULL;
+
   $parents = $chest['#parents'] ?? $current_parents;
   // Add field name to the end of parents because without this $form_state
   // will not have value. We could require to add this field name in $chest
