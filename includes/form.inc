@@ -385,6 +385,10 @@ function tpps_form_add_yesno_field(array $chest) {
 /**
  * Moves form field to the new place and saves structure in $form_state.
  *
+ * Use this function to move fields in browser for end user but
+ * when submit_all.php script must be left untouched or structure of
+ * $form_state must be left unchanged to avoid any data damage in database.
+ *
  * Each relocated field will be wrapped with invisible container which could
  * be found in $form array by name:'relocated-field-container'.
  *
@@ -407,7 +411,9 @@ function tpps_form_add_yesno_field(array $chest) {
  *     'current_parents' => [],
  *     'field_name' => 'ref-genome',
  *     'new_parents' => ['SNPs'],
+ *     // Optional if 'form' contains whole form:
  *     '#parents' => [$id, 'genotype'],
+ *     '#name' => $i . '][genotype][ref-genome]',
  *   ]);
  *
  * @param array $chest
@@ -435,17 +441,24 @@ function tpps_form_add_yesno_field(array $chest) {
  *     Must not include $chest['field_name'].
  *
  *   '#parents' array
- *     Optional if $chest['form'] contains whole form.
- *     Defaults in this case: $chest['current_parents'].
- *     Required when $chest['form'] contains sub-element for the form.
- *
  *     Form API element '#parents' for a field at new location. Those parents
  *     will be used in $form_state array.
+ *     Required when $chest['form'] contains sub-element for the form.
+ *     Optional if $chest['form'] contains whole form.
+ *     Defaults in this case: $chest['current_parents'].
+ *
  *     Could include $chest['field_name'].
  *
  *     See:
  *     https://www.drupal.org/docs/7/api/form-api/tree-and-parents ;
  *     https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x#parents .
+ *
+ *   '#name' string
+ *     HTML attribute name of the field. Optional when:
+ *     1. $chest['form'] contains whole form, or
+ *     2. Drupal Form States API not used, or
+ *     3. Field's name not important and not used by JS or CSS.
+ *     When not specified than will be built using $chest['current_parents'].
  */
 function tpps_form_relocate_field(array $chest) {
   $form = &$chest['form'] ?? NULL;
@@ -453,8 +466,15 @@ function tpps_form_relocate_field(array $chest) {
   $current_parents = $chest['current_parents'] ?? [];
   $new_parents = $chest['new_parents'] ?? NULL;
   $parents = $chest['#parents'] ?? $current_parents;
+  // Add field name to the end of parents because without this $form_state
+  // will not have value. We could require to add this field name in $chest
+  // but it's not clear why parents must include field name,
+  // not user friendly and duplicaiton of data.
+  if (end($parents) != $field_name) {
+    array_push($parents, $field_name);
+  }
   // Validate $chest content.
-  if (!$form || !$field_name || !$new_parents) {
+  if (!$form || !$field_name || (!$new_parents && !$current_parents)) {
     return;
   }
   // Create container at new place.
@@ -470,11 +490,31 @@ function tpps_form_relocate_field(array $chest) {
   // remove index (or field name) from the form array so we need a reference
   // to the parent element to totally remove element.
   $parent_element = &drupal_array_get_nested_value($form, $current_parents);
-  // Move to new place.
+  // Get '#name' HTML-tag attribute.
+  $name = $chest['#name'] ?? NULL;
+  if (empty($name)) {
+    $current_parents_number = count($chest['current_parents']);
+    if ($current_parents_number == 0) {
+      $name = $chest['field_name'];
+    }
+    else {
+      // Separate 1st element of array.
+      $name = reset($chest['current_parents']);
+      unset($chest['current_parents'][key($chest['current_parents'])]);
+      // Build name for the nested field.
+      $name .= (count($chest['current_parents'])
+        ? '[' . implode('][', $chest['current_parents']) . ']' : '')
+        . '[' . $chest['field_name'] . ']';
+    }
+  }
+  // Relocate field to better place.
   drupal_array_set_nested_value(
     $form,
     array_merge($new_parents, [$container_key, $field_name]),
-    array_merge($parent_element[$field_name], ['#parents' => $parents])
+    array_merge(
+      $parent_element[$field_name],
+      ['#parents' => $parents, '#name' => $name]
+    )
   );
   // Unset original form element.
   unset($parent_element[$field_name]);
