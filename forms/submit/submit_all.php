@@ -2077,7 +2077,9 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
   $accession = $form_state['accession'];
   if ($genotype['files']['file-type'] == 'VCF') {
     // @TODO Comment out after testing
+    // echo "Skipping VCF processing during debug\n";
     // return;
+
     $transaction = db_transaction();
     try {
     //if ($disable_vcf_import == 0) {
@@ -2410,7 +2412,6 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
           // $marker_name = $variant_name . $marker; // Original by Peter
           // Emily updated suggestion on Tuesday August 9th 2022
           $marker_name = $scaffold_id . '_' . $position . '-' . $species_code;
-
           // $description = "$ref:$alt"; // Replaced with genotype_combination within $detected_genotypes array (5/31/2023)
 
           // $genotype_name = "$marker-$species_code-$scaffold_id-$position"; // Original by Peter
@@ -2485,6 +2486,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
           // );
 
           // Rish code to test a single insert and get the id
+          // echo "feature_name: $variant_name\n";
           try {
             $results = chado_insert_record('feature', [
               'name' => $variant_name,
@@ -2633,7 +2635,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
             // $genotype_name_without_combination = rtrim($genotype_name_without_combination, '_');
             // echo "Genotype name without combination: $genotype_name_without_combination\n";
 
-
+            // echo "name: $marker_type . '-' . $genotype_name_without_combination, uniquename: $genotype_desc\n";
             try {
               $results = chado_insert_record('genotype', [
                 'name' => $marker_type . '-' . $genotype_name_without_combination,
@@ -3328,6 +3330,8 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
         ':uniquename' => $variant_name,
         ':organism_id' => $organism_id
     ]);
+    
+    // echo "variant_name: $variant_name\n";
     $variant_name_id = NULL;
     foreach ($results as $row) {
       $variant_name_id = $row->feature_id;
@@ -3421,6 +3425,8 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
         'type_id' => $type_cvterm,
       ]);
       ob_end_clean();
+      // echo "name: $genotype_name_without_call, uniquename: $genotype_name, $val, $type_cvterm\n";
+      
 
       $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
         ':uniquename' => $genotype_name
@@ -3442,7 +3448,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       // );
 
       // RISH - 12/18/2023 - Requested by Emily
-      //ob_start();
+      ob_start();
       chado_insert_record('feature_genotype', [
         'feature_id' => $variant_name_id,
         'genotype_id' => $genotype_id,
@@ -3451,7 +3457,8 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
         'cgroup' => 0,
         'cvterm_id' => $type_cvterm,
       ]);
-      //ob_end_clean();      
+      // echo "feature_id: $variant_name_id, genotype_id: $genotype_id\n";
+      ob_end_clean();      
 
       fwrite($options['fhandle'], "$tree_id,$variant_name\n");
       
