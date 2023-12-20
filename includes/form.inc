@@ -492,14 +492,6 @@ function tpps_form_relocate_field(array $chest) {
   if (!$form || !$field_name || (!$new_parents && !$current_parents)) {
     return;
   }
-  // Create container at new place.
-  // Without this container we can't use '#parents' for the field we are moving.
-  $container_key = 'relocated-field-container';
-  drupal_array_set_nested_value(
-    $form,
-    array_merge($new_parents, [$container_key]),
-    ['#type' => 'container', '#tree' => FALSE]
-  );
   // Get parent form element.
   // Note: drupal_array_get_nested_value() allows to set to NULL but doesn't
   // remove index (or field name) from the form array so we need a reference
@@ -523,13 +515,12 @@ function tpps_form_relocate_field(array $chest) {
     }
   }
   // Relocate field to better place.
+  $new_field = array_merge(
+    $parent_element[$field_name],
+    ['#tree' => FALSE, '#parents' => $parents, '#name' => $name]
+  );
   drupal_array_set_nested_value(
-    $form,
-    array_merge($new_parents, [$container_key, $field_name]),
-    array_merge(
-      $parent_element[$field_name],
-      ['#parents' => $parents, '#name' => $name]
-    )
+    $form, array_merge($new_parents, [$field_name]), $new_field
   );
   // Unset original form element.
   unset($parent_element[$field_name]);
