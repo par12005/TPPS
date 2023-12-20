@@ -673,7 +673,7 @@ jQuery.fn.updateMap = function(locations, fid = "") {
       $('.tpps-suggestion').not('.tpps-suggestion-processed').on('click', function(e) {
         e.preventDefault();
         let selectedText= $(this).text();
-        console.log(selectedText);
+        //console.log(selectedText);
         $(this)
           .parents('.form-item')
           .find('input.form-text')
