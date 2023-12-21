@@ -119,6 +119,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#prefix' => '<div id="publication-container">',
     '#suffix' => '</div>',
   ];
+
   $form['publication']['status'] = [
     '#type' => 'select',
     '#title' => t('Publication Status: *'),
@@ -128,7 +129,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ],
-    '#default_value' => tpps_get_ajax_value($form_state, ['publication', 'status'], ''),
+    '#default_value' => tpps_get_ajax_value(
+      $form_state, ['publication', 'status'], ''
+    ),
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.
@@ -137,12 +140,10 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
   // Accession will be stored in 'old_tgdr' field.
   // @TODO Minor. Rename field to 'publication_doi'.
-  $form['publication']['doi'] = [
+  $form['doi'] = [
     '#type' => 'textfield',
     '#title' => t('Publication DOI:')
       . tpps_page_1_required_by_status($form_state),
-    '#tree' => FALSE,
-    '#parents' => ['doi'],
     '#default_value' => $doi,
     '#description' => tpps_page_1_get_doi_examples(),
     '#prefix' => '<div id="doi-message"></div>',
@@ -154,12 +155,16 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       ],
     ],
   ];
+  tpps_form_relocate_field([
+    'form' => &$form,
+    'current_parents' => [],
+    'field_name' => 'doi',
+    'new_parents' => ['publication'],
+  ]);
 
-  $form['publication']['dataset_doi'] = [
+  $form['dataset_doi'] = [
     '#type' => 'textfield',
     '#title' => t('Dataset DOI:'),
-    '#parents' => ['dataset_doi'],
-    '#tree' => FALSE,
     '#default_value' => tpps_get_ajax_value($form_state, ['dataset_doi'], ''),
     '#description' => tpps_page_1_get_doi_examples(),
     '#states' => [
@@ -170,6 +175,12 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       ],
     ],
   ];
+  tpps_form_relocate_field([
+    'form' => &$form,
+    'current_parents' => [],
+    'field_name' => 'dataset_doi',
+    'new_parents' => ['publication'],
+  ]);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Primary Author.
@@ -230,7 +241,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#type' => 'textarea',
     '#title' => t('Abstract/Description:')
       . tpps_page_1_required_by_status($form_state),
-    '#default_value' => tpps_get_ajax_value($form_state, ['publication', 'abstract'], ''),
+    '#default_value' => tpps_get_ajax_value(
+      $form_state, ['publication', 'abstract'], ''
+    ),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],
@@ -245,7 +258,9 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#title' => t('Journal:')
       . tpps_page_1_required_by_status($form_state),
     '#autocomplete_path' => 'tpps/autocomplete/journal',
-    '#default_value' => tpps_get_ajax_value($form_state, ['publication', 'journal'], ''),
+    '#default_value' => tpps_get_ajax_value(
+      $form_state, ['publication', 'journal'], ''
+    ),
     '#states' => [
       'visible' => [
         [':input[name="publication[status]"]' => ['value' => 'Published']],
@@ -255,6 +270,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     ],
   ];
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // @TODO Check. Mockup has no fieldset - just buttons.
   tpps_secondary_authors($form, $saved_values, $form_state);
 
