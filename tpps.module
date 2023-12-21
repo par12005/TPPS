@@ -720,7 +720,6 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
             }
           }
         }
-        // dpm($item_parents);
         $element['columns'][$key] = array(
           '#type' => 'select',
           '#title' => $item,
@@ -941,12 +940,15 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   require_once 'forms/build/front.php';
   module_load_include('inc', 'tpps', 'includes/form');
   $form = $form ?? [];
+  $frontpage_values = $form_state['saved_values']['frontpage'] ?? NULL;
+  // JS and CSS.
   tpps_add_css_js('main', $form);
   // Add class to apply CSS rules differntly for TPPS and TPPSc Forms
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] = 'tpps-form';
 
+  // Stage/Page.
   if (!isset($form_state['stage'])) {
     if (!isset($accession)) {
       // First access, no accession in link.
@@ -966,44 +968,55 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   }
   else {
     // Not first access.
-    if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')) {
+    if (
+      !isset($frontpage_values['accession'])
+      || ($frontpage_values['accession'] ?? NULL) === 'new'
+    ) {
       // No submissions, or selected to create new submission.
-      if (tpps_access('administer tpps module') and !empty($form_state['saved_values']['frontpage']['custom_accession_check'])) {
-        $accession = $form_state['saved_values']['frontpage']['custom_accession'];
+      if (
+        tpps_access('administer tpps module')
+        && !empty($frontpage_values['custom_accession_check'])
+      ) {
+        $accession = $frontpage_values['custom_accession'];
       }
       tpps_init_project($form_state, $accession);
       tpps_create_submission($form_state, $user->uid);
     }
-    $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
+    $old_form_state = tpps_load_submission($frontpage_values['accession']);
     tpps_form_state_info($form_state, $old_form_state);
   }
 
-  // [VS].
-  // @todo Minor.Check if this setting must be added always and move to the
-  // beginning of function if possible.
-  $form['#attached']['js'][] = [
-    'data' => ['tpps' => ['stage' => $form_state['stage']]],
-    'type' => 'setting',
-  ];
-  $form['accession'] = [
-    '#type' => 'hidden',
-    '#value' => $form_state['accession'],
-  ];
-  // [/VS].
   if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
     tpps_init_project($form_state);
   }
 
+  // Accession.
+  // Must be after tpps_init_project() which sets accession for new studies.
+  $accession = $form_state['accession'] ?? $frontpage_values['accession'] ?? NULL;
+  $form['#attached']['js'][] = [
+    'data' => [
+      'tpps' => [
+        'stage' => $form_state['stage'] ?? NULL,
+        'accession' => $accession,
+      ]
+    ],
+    'type' => 'setting',
+  ];
+  // Hidden form accession element.
+  // Note: Adding this elements to $form heare require all sub-functions to
+  // use reference and not return $form array.
+  $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
+
+
   module_load_include('inc', 'tpps', 'includes/status_bar');
   tpps_status_bar($form, $form_state);
 
+  $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
   if (
-    !isset($form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'])
-    && (
-      ($form_state['tpps_type'] ?? NULL) != 'tppsc'
-    )
+    !isset($page1_values['primaryAuthor'])
+    && ($form_state['tpps_type'] ?? NULL) != 'tppsc'
   ) {
-    $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
+    $contact_bundle = tripal_load_bundle_entity(['label' => 'Tripal Contact Profile']);
     if ($contact_bundle) {
       $query = new EntityFieldQuery();
       $results = $query->entityCondition('entity_type', 'TripalEntity')
@@ -1135,12 +1148,6 @@ function tpps_main_submit($form, &$form_state) {
     tpps_submission_file_set_status($state, 0);
   }
 
-  // dpm("ON SUBMIT");
-  // dpm(array_keys($form_state));
-  // dpm('saved_values key contains:');
-  // dpm($form_state['saved_values']);
-  // dpm('values key contains:');
-  // dpm($form_state['values']);
   $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
   $persist = TRUE;
 
@@ -1148,16 +1155,11 @@ function tpps_main_submit($form, &$form_state) {
   // This means after saving, the form will be rebuilt based on the rebuild key = TRUE.
   if ($form_state['triggering_element']['#value'] == 'Save') {
     drupal_set_message(t('Your information has been saved!'), 'status');
-    // dpm($form_state['saved_values']);
     if (isset($form_state['saved_values']['form_build_id'])) {
       $form_state['values']['form_build_id'] = $form_state['saved_values']['form_build_id'];
     }
     $form_state['saved_values']['form_build_id'] = $form_state['values']['form_build_id'];
     $form_state['rebuild'] = TRUE;
-    // dpm('ON SAVE');
-    // dpm('Form state saved_values:');
-    // dpm($form_state['saved_values']);
-
     tpps_update_submission($form_state);
     return;
   }
@@ -1249,7 +1251,6 @@ function tpps_main_submit($form, &$form_state) {
   $form_state['rebuild'] = TRUE;
 
   if ($persist) {
-    // dpm('PERSIST END');
     tpps_update_submission($form_state);
   }
 }
