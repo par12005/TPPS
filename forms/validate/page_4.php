@@ -5,8 +5,6 @@
  * Defines the data integrity checks for the fourth page of the form.
  */
 
-module_load_include('inc', 'tpps', 'includes/form');
-
 /**
  * Defines the data integrity checks for the fourth page of the form.
  *
@@ -16,6 +14,16 @@ module_load_include('inc', 'tpps', 'includes/form');
  *   The state of the form that is being validated.
  */
 function tpps_page_4_validate_form(array &$form, array &$form_state) {
+  // @TODO Remove debug code.
+  if ($debug_mode = 0) {
+    // Form submission is blocked in debug mode.
+    form_set_error('sdfsdf', 'Debug');
+    dpm(print_r($form_state['values']['organism-1']['genotype'], 1), 'form_state');
+    //dpm(print_r($form_state['values']['complete_form'], 1), 'complete_form');
+    //dpm(print_r($form['organism-1']['genotype'], 1));
+    return;
+  }
+
   if ($form_state['submitted'] == '1') {
     unset($form_state['file_info'][TPPS_PAGE_4]);
 

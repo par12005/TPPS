@@ -1504,8 +1504,6 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   );
 
   $genome_dir = variable_get('tpps_local_genome_dir', NULL);
-  $ref_genome_arr = array();
-  $ref_genome_arr[0] = '- Select -';
 
   if ($genome_dir) {
     $existing_genomes = array();
@@ -1532,11 +1530,13 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     }
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Field 'Reference Assembly'.
   // Perform a database lookup as well using new query from Emily Grau (6/6/2023).
-  $time_now = time();
+  // @TODO Move this to constant or (better) to settings page.
   $time_expire_period = 3 * 24 * 60 * 60;
   $time_genome_query_results_time = variable_get('tpps_genome_query_results_time', 0);
-  if ($time_now > ($time_genome_query_results_time + $time_expire_period)) {
+  if (REQUEST_TIME > ($time_genome_query_results_time + $time_expire_period)) {
     chado_query("DROP TABLE IF EXISTS chado.tpps_ref_genomes;", []);
     chado_query("CREATE TABLE chado.tpps_ref_genomes AS (
       select distinct a.name, a.analysis_id, a.programversion, o.genus||' '||o.species as species from chado.analysis a
@@ -1545,7 +1545,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
       join chado.organism o on f.organism_id = o.organism_id
       where f.type_id in (379,595,597,825,1245) AND a.name LIKE '% v%'
     )", []);
-    variable_set('tpps_genome_query_results_time', $time_now);
+    variable_set('tpps_genome_query_results_time', REQUEST_TIME);
   }
   $genome_query_results = chado_query("select * FROM chado.tpps_ref_genomes;", []);
   foreach ($genome_query_results as $genome_query_row) {
@@ -1554,20 +1554,28 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     $existing_genomes[$genome_query_row->name] = $genome_query_row->name;
   }
   ksort($existing_genomes);
-  $ref_genome_arr += $existing_genomes;
-
-  $ref_genome_arr["url"] = 'I can provide a URL to the website of my reference file(s)';
-  $ref_genome_arr["bio"] = 'I can provide a GenBank accession number (BioProject, WGS, TSA) and select assembly file(s) from a list';
-  $ref_genome_arr["manual"] = 'I can upload my own reference genome file';
-  $ref_genome_arr["manual2"] = 'I can upload my own reference transcriptome file';
-  $ref_genome_arr["none"] = 'I am unable to provide a reference assembly';
-
+  $ref_genome_arr = array_merge(['0' => '- Select -'], $existing_genomes, [
+    // @todo Use t() for option's names. Check if they are used by other code.
+    "url" => 'I can provide a URL to the website of my reference file(s)',
+    "bio" => 'I can provide a GenBank accession number (BioProject, WGS, TSA) '
+      . 'and select assembly file(s) from a list',
+    "manual" => 'I can upload my own reference genome file',
+    "manual2" => 'I can upload my own reference transcriptome file',
+    "none" => 'I am unable to provide a reference assembly',
+  ]);
   $fields['ref-genome'] = [
     '#type' => 'select',
     '#title' => t('Reference Assembly used: *'),
     '#options' => $ref_genome_arr,
   ];
-
+  tpps_form_relocate_field([
+    'form' => &$fields,
+    'current_parents' => [],
+    'field_name' => 'ref-genome',
+    'new_parents' => ['SNPs'],
+    '#parents' => [$id, 'genotype'],
+  ]);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
   $class = 'EutilsImporter';
   tripal_load_include_importer_class($class);
