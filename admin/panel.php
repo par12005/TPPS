@@ -510,6 +510,17 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#suffix' => '<div style="margin-bottom: 30px;"></div>'
   );
 
+
+
+  $form['VCF_SNPS_TO_FLAT_FILE_SAVE'] = array(
+    '#type' => 'submit',
+    '#prefix' => '<h2 style="margin-top: 30px;">VCF SNPS TO FLAT FILE</h2>',
+    '#description' => 'Converts VCF SNPS into FLAT files including Tree IDs',
+    '#value' => t('Run VCF SNPS to Flat File'),
+    '#suffix' => '<div style="margin-bottom: 30px;"></div>'
+  );
+
+
   $submitting_user = user_load($submission_state['submitting_uid']);
   $form['change_owner'] = array(
     '#type' => 'textfield',
@@ -1337,7 +1348,16 @@ function tpps_admin_panel_submit($form, &$form_state) {
         drupal_set_message($tag_name . " cannot be removed from study.","error");
       }
       break;
-
+    case 'Run VCF SNPS to Flat File':
+      // TODO Flat files functions and Tripal job
+      global $user;
+      $project_id = $state['ids']['project_id'] ?? NULL;
+      $includes = array();
+      $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
+      $args = array($state);
+      $jid = tripal_add_job("Generate VCF to SNPs Flat file - $accession (project_id=$project_id)", 'tpps', 'tpps_genotypes_to_flat_files_and_find_studies_overlaps', $args, $user->uid, 10, $includes, TRUE);
+      break;
     case 'Save VCF Import Setting':
       // dpm($form_state['values']);
       if ($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
