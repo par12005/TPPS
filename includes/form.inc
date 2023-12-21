@@ -385,16 +385,15 @@ function tpps_form_add_yesno_field(array $chest) {
 /**
  * Moves form field to the new place and saves structure in $form_state.
  *
+ * Field will have unchanged parents in non-flat list of $form_state['values'].
+ *
  * Use this function to move fields in browser for end user but
  * when submit_all.php script must be left untouched or structure of
  * $form_state must be left unchanged to avoid any data damage in database.
  *
- * Each relocated field will be wrapped with invisible container which could
- * be found in $form array by name:'relocated-field-container'.
- *
- * There is no sense to use it if "'#tree' => TRUE" wasn't used and
- * $form_state['values'] contains flat list of values.
- * Field will have unchanged parents in non-flat list of values.
+ * There is no sense to use this function when field hasn't "'#tree' => TRUE"
+ * (could be inherited from the parent elements) because $form_state['values']
+ * will contains flat list of values.
  *
  * WARNING: Be sure to use $form_state but not $form for validation.
  * NOTE: $form_state['complete_form'][...][$field_name]['#parents']
