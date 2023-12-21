@@ -457,60 +457,61 @@ function tpps_form_add_yesno_field(array $chest) {
  *     E.g.,
  *     tpps_form_relocate_field([
  *       'form' => &$form,
- *       'current_parents' => ['publication'],
+ *       'current_parents' => [],
  *       'field_name' => 'doi',
- *       'new_parents' => ['publication', 'test'],
- *       '#parents' => [], // or '#parents' => ['doi'],
- *       '#name' => 'doi',
+ *       'new_parents' => ['publication'],
+ *       // '#parents' => [],
+ *       // or '#parents' => ['doi'],
+ *       // '#name' => 'doi',
  *     ]);
  *     Note: This field was previously manually relocated from $form['doi']
  *     to $form['publication']['doi'] so 'current_parents' is not [].
  *
  *   '#name' string
- *     HTML attribute name of the field. Optional when:
- *     1. $chest['form'] contains whole form, or
- *     2. Drupal Form States API not used, or
- *     3. Field's name not important and not used by JS or CSS.
- *     When not specified than will be built using $chest['current_parents'].
+ *     Optional. HTML attribute name of the field.
+ *     Value will be generated using '#parents' and 'field_name'.
+ *     Note that '#name' attribute could be used by JS/CSS and Drupal's Form
+ *     States API. Use it to have a custom HTML-attribute 'name' of field.
  */
 function tpps_form_relocate_field(array $chest) {
   $form = &$chest['form'] ?? NULL;
   $field_name = $chest['field_name'] ?? NULL;
   $current_parents = $chest['current_parents'] ?? [];
   $new_parents = $chest['new_parents'] ?? NULL;
+  // Validate $chest content.
+  if (!$form || !$field_name || (!$new_parents && !$current_parents)) {
+    return;
+  }
 
+  // Get '#parents' field's attribute.
   $parents = $chest['#parents'] ?? $current_parents;
   // Add field name to the end of parents because without this $form_state
   // will not have value. We could require to add this field name in $chest
   // but it's not clear why parents must include field name,
   // not user friendly and duplicaiton of data.
   if (end($parents) != $field_name) {
+    // WARNING: This array will be used to build '#name' attribute and field
+    // name also expects at the end of this array.
     array_push($parents, $field_name);
-  }
-  // Validate $chest content.
-  if (!$form || !$field_name || (!$new_parents && !$current_parents)) {
-    return;
   }
   // Get parent form element.
   // Note: drupal_array_get_nested_value() allows to set to NULL but doesn't
   // remove index (or field name) from the form array so we need a reference
   // to the parent element to totally remove element.
   $parent_element = &drupal_array_get_nested_value($form, $current_parents);
-  // Get '#name' HTML-tag attribute.
+
+  // Get '#name' field's attribute.
   $name = $chest['#name'] ?? NULL;
   if (empty($name)) {
-    $current_parents_number = count($chest['current_parents']);
-    if ($current_parents_number == 0) {
+    if (count($parents) == 1) {
       $name = $chest['field_name'];
     }
     else {
       // Separate 1st element of array.
-      $name = reset($chest['current_parents']);
-      unset($chest['current_parents'][key($chest['current_parents'])]);
+      $name = reset($parents);
+      unset($parents[key($parents)]);
       // Build name for the nested field.
-      $name .= (count($chest['current_parents'])
-        ? '[' . implode('][', $chest['current_parents']) . ']' : '')
-        . '[' . $chest['field_name'] . ']';
+      $name .= (count($parents) ? '[' . implode('][', $parents) . ']' : '');
     }
   }
   // Relocate field to better place.
