@@ -471,13 +471,13 @@ function tpps_form_relocate_field(array $chest) {
   if (!$form || !$field_name || (!$new_parents && !$current_parents)) {
     return;
   }
+
+  // Get '#parents' field's attribute.
+  $parents = $chest['#parents'] ?? $current_parents;
   // If field name was added to $chest['current_parents'] then remove it.
   if ($current_parents && end($parents) == $field_name) {
     array_pop($parents);
   }
-
-  // Get '#parents' field's attribute.
-  $parents = $chest['#parents'] ?? $current_parents;
   // Add field name to the end of parents because without this $form_state
   // will not have value. We could require to add this field name in $chest
   // but it's not clear why parents must include field name,

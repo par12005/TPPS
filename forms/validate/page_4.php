@@ -5,6 +5,8 @@
  * Defines the data integrity checks for the fourth page of the form.
  */
 
+module_load_include('inc', 'tpps', 'includes/form');
+
 /**
  * Defines the data integrity checks for the fourth page of the form.
  *
@@ -121,7 +123,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       // definitly not needed.
       for ($i = 1; $i <= $organism_number; $i++) {
         $genotype = &$form_state['values']["organism-$i"]['genotype'];
-        $genotyping_type = $genotype['files']['genotyping-type'] ?? [];
+        $genotyping_type = $genotype['SNPs']['genotyping-type'] ?? [];
         $file_type = $genotype['files']['file-type'] ?? NULL;
         if ($genotyping_type == 'Genotyping' && $file_type == 'VCF') {
           if (tpps_file_remove($genotype['files']['snps-assay'])) {
@@ -498,8 +500,8 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
 function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$form_state) {
   $id = "organism-$org_num";
   $snps = $genotype['SNPs'] ?? NULL;
-  $ref_genome = $genotype['ref-genome'] ?? NULL;
-  $genotyping_type = $genotype['files']['genotyping-type'] ?? [];
+  $ref_genome = $genotype['SNPs']['ref-genome'] ?? NULL;
+  $genotyping_type = $genotype['SNPs']['genotyping-type'] ?? [];
   // WARNING: 'maker-type' is array because multiple values could be selected.
   $marker_type = $genotype['marker-type'] ?? NULL;
   // $file_type is a string (not array) and not always defined:
@@ -537,7 +539,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
   // This field must be shown on any value of 'Marker Type' field.
   if (!$ref_genome) {
     tpps_form_error_required($form_state,
-      [$id, 'genotype', 'ref-genome']
+      [$id, 'genotype', 'SNPs', 'ref-genome']
     );
   }
   elseif ($ref_genome === 'bio') {
@@ -621,7 +623,7 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
 
 
     // @TODO Required only when: Marker Type: SNPs, Genotyping Type: Genotyping.
-    // $genotyping_type = $genotype['files']['genotyping-type'] ?? [];
+    // $genotyping_type = $genotype['SNPs']['genotyping-type'] ?? [];
     //if (empty($file_type)) {
     //  tpps_form_error_required(
     //    $form_state,
@@ -636,7 +638,9 @@ function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$
         tpps_is_required_genotype_file_empty($form_state, $org_num, 'snps-association-type');
         tpps_is_required_genotype_file_empty($form_state, $org_num, 'snps-association-tool');
       }
-      tpps_is_required_genotype_file_empty($form_state, $org_num, 'genotyping-type');
+      tpps_is_required_field_empty($form_state,
+        ['organism-' . $org_num, 'genotype', 'SNPs', 'genotyping-type']
+      );
       tpps_is_required_genotype_file_empty($form_state, $org_num, 'snps-assay');
       tpps_is_required_genotype_file_empty($form_state, $org_num, 'assay-design');
     }

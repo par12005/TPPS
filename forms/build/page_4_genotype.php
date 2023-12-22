@@ -119,7 +119,7 @@ function tpps_genotype_subform(array $chest) {
   ];
 
   $genotyping_type_parents = [
-    $organism_name, 'genotype', 'files', 'genotyping-type'
+    $organism_name, 'genotype', 'SNPs', 'genotyping-type'
   ];
   $file_type_parents = [$organism_name, 'genotype', 'files', 'file-type'];
   // Value is a string because mutiple values not allowed.
@@ -148,6 +148,7 @@ function tpps_genotype_subform(array $chest) {
         ],
       ];
     }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     $fields['files']['genotyping-type'] = [
       '#type' => 'select',
       '#title' => t('Genotyping Type: *'),
@@ -161,7 +162,15 @@ function tpps_genotype_subform(array $chest) {
         'effect' => 'slide',
       ],
     ];
-
+    tpps_form_relocate_field([
+      'form' => &$fields,
+      'current_parents' => ['files'],
+      'field_name' => 'genotyping-type',
+      'new_parents' => ['SNPs'],
+      '#parents' => [$organism_name, 'genotype', 'files'],
+      // '#name' => 'organism-1[genotype][files][genotyping-type]',
+    ]);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Genotype File Type.
     $fields['files']['file-type'] = [
       '#type' => 'select',
@@ -178,7 +187,7 @@ function tpps_genotype_subform(array $chest) {
       ],
       '#states' => [
         'visible' => [
-          ':input[name="' . $organism_name . '[genotype][files][genotyping-type]"]'
+          ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
           => ['value' => 'Genotyping'],
         ],
       ],
