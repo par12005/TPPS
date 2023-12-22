@@ -385,26 +385,22 @@ function tpps_form_add_yesno_field(array $chest) {
 /**
  * Moves form field to the new place and saves structure in $form_state.
  *
- * Field will have unchanged parents in non-flat list of $form_state['values'].
+ * Relocated field will have the same parents (the same structure)
+ * in non-flat list under $form_state['values']. It means only UI changes.
  *
- * Use this function to move fields in browser for end user but
- * when submit_all.php script must be left untouched or structure of
- * $form_state must be left unchanged to avoid any data damage in database.
+ * NOTES:
+ * 1. Just move field in $form array if values are stored as flat list
+ *    under $form_state['values'] (when '#tree' => FALSE').
+ * 2. When field was relocated be sure to update parents in code which
+ *    validates this field. For example:
+ *    tpps_form_error_required($form_state, [$id, 'phenotype', 'metadata']);
+ * 3. In validator- and submitter-functions use $form_state (not $form).
+ * 4. $form_state['complete_form'][...][$field_name]['#parents']
+ *    will be $chest['#parents'].
+ * 5. $form_state['complete_form'][...][$field_name]['#array_parents']
+ *    will be $chest['new_parents'] but updated to point from the $form root.
  *
- * There is no sense to use this function when field hasn't "'#tree' => TRUE"
- * (could be inherited from the parent elements) because $form_state['values']
- * will contains flat list of values.
- *
- * WARNING: Be sure to use $form_state but not $form for validation.
- * NOTE: $form_state['complete_form'][...][$field_name]['#parents']
- *   will have $chest['#parents'] array.
- *   and
- *   $form_state['complete_form'][...][$field_name]['#array_parents']
- *   will have $chest['new_parents'] but related to the top of the $form
- *   and  will include extra element 'relocated-field-container'
- *   which is an invisible container (not fieldset) for relocated field.
- *
- * Usage example:
+ * Example of relocation using sub-form:
  *   tpps_form_relocate_field([
  *     'form' => &$fields,
  *     'current_parents' => [],
@@ -414,44 +410,6 @@ function tpps_form_add_yesno_field(array $chest) {
  *     '#parents' => [$id, 'genotype'],
  *     '#name' => $i . '][genotype][ref-genome]',
  *   ]);
- *
- * @param array $chest
- *   Metadata. Keys are:
- *   'form' array
- *       Required. Drupal Form API array or it's element.
- *       Note: when form's element was used '#parents' must be specified
- *       directly because there is no way to detect correct parents.
- *
- *       WARNING: Send 'form' as a reference to get updates. E.g.,
- *       tpps_form_relocate_field(['form' => &$form, ... ]);
- *
- *   'field_name' string
- *      Required. Name of the field to be moved.
- *
- *   'current_parents' array
- *     Optional. Default is empty array.
- *     List of the parents in given $chest['form'] array.
- *     Relative to given $chest['form'].
- *     Must not include $chest['field_name'].
- *
- *   'new_parents' array
- *     Required. List of parents for a new field location.
- *     Relative to given $chest['form'].
- *     Must not include $chest['field_name'].
- *
- *   '#parents' array
- *     Form API element '#parents' for a field at new location. Those parents
- *     will be used in $form_state array.
- *     Required when $chest['form'] contains sub-element for the form.
- *     Optional if $chest['form'] contains whole form.
- *     Defaults in this case: $chest['current_parents'].
- *
- *     Could include $chest['field_name'].
- *
- *     See:
- *     https://www.drupal.org/docs/7/api/form-api/tree-and-parents ;
- *     https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x#parents .
- *
  *     When new location is a top level of the $form and '#parents' must
  *     be empty array then use "'#parents' => []" or "'#parents' => ['doi']".
  *     E.g.,
@@ -467,6 +425,36 @@ function tpps_form_add_yesno_field(array $chest) {
  *     Note: This field was previously manually relocated from $form['doi']
  *     to $form['publication']['doi'] so 'current_parents' is not [].
  *
+ * @param array $chest
+ *   Metadata. Keys are:
+ *   'form' array
+ *       Required. Drupal Form API array or it's element.
+ *       Note: when sub-form (nested element) was used then '#parents' must be
+ *       specified directly because there is no way to detect correct parents.
+ *
+ *       WARNING: Send 'form' as a reference to get updates. E.g.,
+ *       tpps_form_relocate_field(['form' => &$form, ... ]);
+ *
+ *   'field_name' string
+ *      Required. Name of the field to be relocated.
+ *
+ *   'current_parents' array
+ *     Optional. Default is empty array.
+ *     List of the parents related to $chest['form'] array to the
+ *     $chest['field_name'] element. Shouldn't have field's name at the end.
+ *
+ *   'new_parents' array
+ *     Required. List of parents for a new field location related to
+ *     $chest['form']. Shouldn't have field's name at the end.
+ *
+ *   '#parents' array
+ *     Form API element '#parents' for a field at new location. Those parents
+ *     will be used in $form_state array to store field's value.
+ *     Required ONLY when $chest['form'] contains sub-form (nested element).
+ *     See:
+ *     https://www.drupal.org/docs/7/api/form-api/tree-and-parents ;
+ *     https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x#parents .
+ *
  *   '#name' string
  *     Optional. HTML attribute name of the field.
  *     Value will be generated using '#parents' and 'field_name'.
@@ -477,10 +465,15 @@ function tpps_form_relocate_field(array $chest) {
   $form = &$chest['form'] ?? NULL;
   $field_name = $chest['field_name'] ?? NULL;
   $current_parents = $chest['current_parents'] ?? [];
+
   $new_parents = $chest['new_parents'] ?? NULL;
   // Validate $chest content.
   if (!$form || !$field_name || (!$new_parents && !$current_parents)) {
     return;
+  }
+  // If field name was added to $chest['current_parents'] then remove it.
+  if ($current_parents && end($parents) == $field_name) {
+    array_pop($parents);
   }
 
   // Get '#parents' field's attribute.
