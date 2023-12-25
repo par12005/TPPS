@@ -448,20 +448,30 @@ function tpps_form_add_yesno_field(array $chest) {
  *     $chest['form']. Shouldn't have field's name at the end.
  *
  *   '#parents' array
- *     Form API element '#parents' for a field at new location. Those parents
- *     will be used in $form_state array to store field's value.
- *     Required ONLY when $chest['form'] contains sub-form (nested element).
+ *     Form API element '#parents' for relocating field.
+ *     Value is $chest['current_parents'] for whole form in $chest['form'] but
+ *     when sub-form element was used then this item must be set because there
+ *     is no way to detect automatically parents from the top level of form.
+ *     So required only when $chest['form'] contains sub-form element.
+ *     Value determines position under $form_state['values'] when submitted.
  *     See:
  *     https://www.drupal.org/docs/7/api/form-api/tree-and-parents ;
  *     https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x#parents .
  *
  *   '#name' string
- *     Optional. HTML attribute name of the field.
- *     Value will be generated using '#parents' and 'field_name'.
- *     Note that '#name' attribute could be used by JS/CSS and Drupal's Form
- *     States API. Use it to have a custom HTML-attribute 'name' of field.
+ *     Optional. HTML attribute name of the field which must be left unchanged
+ *     to have JS/CSS and Drupal Form States working.
+ *     Value will be generated automatically using '#parents' and 'field_name'.
+ *   'debug_mode' bool
+ *     When TRUE then debug messages will be shown and dump of the $chest.
  */
 function tpps_form_relocate_field(array $chest) {
+  if ($chest['debug_mode'] ?? FALSE) {
+    // Only for single field.
+    dpm(print_r($chest, 1));
+  }
+  // All fields will be affected.
+  $default_debug_mode = TRUE;
   $form = &$chest['form'] ?? NULL;
   $field_name = $chest['field_name'] ?? NULL;
   $current_parents = $chest['current_parents'] ?? [];
@@ -471,6 +481,7 @@ function tpps_form_relocate_field(array $chest) {
   if (!$form || !$field_name || (!$new_parents && !$current_parents)) {
     return;
   }
+  $debug_mode = $chest['debug_mode'] ?? $default_debug_mode ?? FALSE;
 
   // Get '#parents' field's attribute.
   $parents = $chest['#parents'] ?? $current_parents;
@@ -492,6 +503,13 @@ function tpps_form_relocate_field(array $chest) {
   // remove index (or field name) from the form array so we need a reference
   // to the parent element to totally remove element.
   $parent_element = &drupal_array_get_nested_value($form, $current_parents);
+  if (empty($parent_element[$field_name])) {
+    $message = 'Field <strong>"@field_name"</strong> was NOT found and NOT relocated.';
+    $params = ['@field_name' => $chest['field_name']];
+    watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+    drupal_set_message(t($message, $params), 'error');
+    return;
+  }
 
   // Get '#name' field's attribute.
   $name = $chest['#name'] ?? NULL;
@@ -512,9 +530,224 @@ function tpps_form_relocate_field(array $chest) {
     $parent_element[$field_name],
     ['#tree' => FALSE, '#parents' => $parents, '#name' => $name]
   );
-  drupal_array_set_nested_value(
-    $form, array_merge($new_parents, [$field_name]), $new_field
-  );
-  // Unset original form element.
-  unset($parent_element[$field_name]);
+  // Check if new location exists. For example fieldset could be added later
+  // and overwrite relocated field.
+  $new_location = &drupal_array_get_nested_value($form, $new_parents);
+  if (empty($new_location)) {
+    $message = 'Field <strong>"@field_name"</strong> was NOT relocated '
+      . 'because new location not exists.';
+    $params = ['@field_name' => $chest['field_name']];
+    drupal_set_message(t($message, $params), 'error');
+    watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+    return;
+  }
+  else {
+    drupal_array_set_nested_value($new_location, [$field_name], $new_field);
+    // Unset original form element.
+    unset($parent_element[$field_name]);
+    if ($debug_mode) {
+      $message = 'Field <strong>"@field_name"</strong> was relocated.';
+      $params = ['@field_name' => $chest['field_name']];
+      drupal_set_message(t($message, $params), 'status');
+    }
+  }
+}
+
+/**
+ * Adds File Upload field to form.
+ *
+ * @param array $chest
+ *   Data. Keys are:
+ *   'form_state' array
+ *     Submitted Form API values.
+ *   'form' array
+ *     Drupal Form API array with fields.
+ *   'organism_id' string
+ *     Organism Id. Example: 'organism-1'.
+ *   'title' string
+ *     Human readable name of the related file upload field
+ *     (including trailing word 'File').
+ *   'name' string
+ *     Machine field name.
+ *   'parents' array
+ *     List of parents of the field.
+ *
+ *   Example:
+ *   tpps_form_build_file_field([
+ *     'form' => &$form,
+ *     'parents' => [$organism_name, 'genotype', 'files'],
+ *     'form_state' => $form_state,
+ *     'organism_name' => $id,
+ *     'field_name' => $file_field_name,
+ *     'optional' => TRUE,
+ *     'title' => $title,
+ *     'upload_location' => 'public://' . $genotype_dir,
+ *     'description' => $description,
+ *     'extensions' => $extensions, // Default: ['csv tsv xlsx']
+ *     'states' => $states, // Default is ''.
+ *     'empty_field_value' => 'NA',
+ *     // Element 'extra_elements' allow to add any not expected form elements.
+ *     'extra_elements' => [],
+ *     'use_fid' => FALSE, // Default is FALSE. See below.
+ *   ]);
+ *
+ *   List of fields which used 'fid'-related code:
+ *     'snps-assay',
+ *     'ssrs',
+ *     'ssrs_extra'.
+ *
+ *   List of fields which not used 'fid'-related code:
+ *     'assay-design',
+ *     'snps-pop-struct',
+ *     'snps-association',
+ *     'snps-kinship',
+ *     'indels', // was removed.
+ *     'vcf',
+ *     'other'.
+ */
+function tpps_form_build_file_field(array $chest) {
+  if (empty($field_name = $chest['field_name'])) {
+    return;
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Map from the $chest.
+  $fields = &$chest['form'];
+  $form = &$chest['form'];
+  $form_state = $chest['form_state'] ?? [];
+  $organism_name = $chest['organism_name'];
+  $allow_file_reuse = $chest['allow_file_reuse'] ?? FALSE;
+  $parents = $chest['parents'] ?? [];
+
+  $title = $chest['title'] ?? '';
+  $optional = $chest['optional'] ?? FALSE;
+  $upload_location = $chest['upload_location'] ?? '';
+  $extensions = $chest['extensions'] ?? ['csv tsv'];
+  $description = $chest['description'] ?? '';
+  $states = $chest['states'] ?? '';
+  $empty_field_value = $chest['empty_field_value'] ?? 'NA';
+  // Some fields have used this piece of code before.
+  // To use: $meta['use_fid'] = TRUE; Default is FALSE.
+  $use_fid = $chest['use_fid'] ?? FALSE;
+  $extra_elements = $chest['extra_elements'] ?? [];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Get treasure.
+  //
+  // Debug Mode.
+  // When enabled field's machine name will be shown in field's decription.
+  $debug_mode = FALSE;
+  // Main element to work with.
+  $parent_element = &drupal_array_get_nested_value($form, $parents);
+  // Upload folder.
+  if (empty($upload_location) && ($chest['type'] ?? FALSE)) {
+    $upload_location == 'public://' . variable_get(
+      'tpps_' . $chest['type'] . '_files_dir', 'tpps_' . $chest['type']
+    );
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Add checkbox to select existing file or upload new one.
+  // Note: This code is outdated and not tested. Currently not used but there
+  // is a task about File Reusage and this code could became useful.
+  if ($allow_file_reuse && 0) {
+    $selector_name = $chest['field_name'] . '_file_selector';
+    $parent_element[$selector_name] = [
+      '#type' => 'checkbox',
+      '#title' => t('Reference Existing @title', ['@title' => $chest['title']]),
+      '#default_value' => tpps_get_ajax_value(
+        $form_state, array_merge($parents, [$selector_name])
+      ),
+      '#states' => $states,
+    ];
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // File Upload Field.
+  $parent_element[$field_name] = [
+    '#type' => 'managed_file',
+    '#title' => $title . (!empty($optional) ? ':' : ': *'),
+    '#upload_location' => $upload_location,
+    '#upload_validators' => ['file_validate_extensions' => $extensions],
+    '#description' => $description
+    . ($debug_mode ? '<br/>Field name: <strong>' . $field_name . '</strong>' : ''),
+    '#tree' => TRUE,
+    '#states' => $states,
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Customization.
+  //
+  // Add extra text field for empty field value. Default is FALSE.
+  if (!empty($empty_field_value)) {
+    $parent_element[$field_name]['empty'] = [
+      '#default_value' => $empty_field_value,
+    ];
+  }
+  // @TODO Minor. Think about using elements with leading '#' to use them as
+  // defaults for fields.
+  if (!empty($extra_elements)) {
+    $parent_element[$field_name] = array_merge(
+      $parent_element[$field_name], $extra_elements
+    );
+  }
+  // Some fields have used this piece of code before.
+  // @TODO [VS] Check if this code could be removed. It's not used on form
+  // generation and when validation failed.
+  if (!empty($use_fid)) {
+    if (isset($parent_element[$field_name]['#value']['fid'])) {
+      $parent_element[$field_name]['#default_value']
+        = $parent_element[$field_name]['#value']['fid'];
+    }
+  }
+  // Most of fields have used this code so only 2 must be excluded.
+  if (!in_array($field_name, ['snps-association', 'other'])) {
+    // Field 'snps-association' excluded because it didn't have this code.
+    if (isset($parent_element[$field_name]['#value'])) {
+      $parent_element[$field_name]['#default_value']
+        = $parent_element[$field_name]['#value'];
+    }
+    if (
+      !empty($parent_element[$field_name]['#default_value'])
+      && ($file = file_load($parent_element[$field_name]['#default_value']))
+    ) {
+      // Stop using the file so it can be deleted if the user clicks 'remove'.
+      if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
+        // Study Id is a number in 'TGDRXXX'.
+        $study_id = substr($form_state['accession'], 4);
+        file_usage_delete($file, 'tpps', 'tpps_project', $study_id);
+      }
+    }
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Add autocomplete field.
+  // Note: This code is outdated and not tested. Currently not used but there
+  // is a task about File Reusage and this code could became useful.
+  if ($allow_file_reuse && 0) {
+    // @TODO Update validation/submit to use '_upload' prefix.
+    $autocomplete_field_name = $field_name . '_autocomplete';
+    $parent_element[$autocomplete_field_name] = [
+      '#type' => 'textfield',
+      '#title' => t($title . ': please select an already existing '
+        . 'spreadsheet with columns for the Plant ID of genotypes '
+        . 'used in this study: *'),
+      //'#upload_location' => $upload_location,
+      '#autocomplete_path' => 'tpps/autocomplete/' . $field_name,
+      '#description' => t("Please select an already existing spreadsheet "
+        . "file containing SNP Genotype Assay data. The format of this "
+        . "file is very important! The first column of your file should "
+        . "contain plant identifiers which match the plant identifiers "
+        . "you provided in your plant accession file, and all of the "
+        . "remaining columns should contain SNP data."),
+
+
+      // @TODO UPdate states.
+      //
+      '#states' => [
+        'visible' => [
+          ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
+            => ['!value' => 'Genotyping Assay'],
+          // &&
+          ':input[name="' . $organism_name . '[genotype][files][file-type]"]'
+            => ['!value' => 'SNP Assay file and Assay design file'],
+        ],
+      ],
+    ];
+  }
 }

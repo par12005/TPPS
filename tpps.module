@@ -286,16 +286,16 @@ function tpps_menu() {
 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $items['tpps/autocomplete/%'] = array(
+  $items['tpps/autocomplete/%'] = [
     'title' => 'TPPS Autocomplete',
     'description' => 'Autocomplete functions for TPPS module',
     'page callback' => 'tpps_autocomplete',
-    'page arguments' => array(2),
+    'page arguments' => [2],
     'access callback' => 'tpps_access',
-    'access arguments' => array('access content'),
+    'access arguments' => ['access content'],
     'type' => MENU_NORMAL_ITEM,
     'file' => 'ajax/tpps_ajax.php',
-  );
+  ];
   /*
    * Ajax Callback for accession coordinates.
    */
@@ -348,13 +348,6 @@ function tpps_menu() {
     'access callback' => 'tpps_access',
     'access arguments' => array('administer tpps module'),
     'type' => MENU_CALLBACK,
-  );
-
-  $items['snp-assay-file/upload'] = array(
-    'title' => 'Autocomplete for snp files',
-    'page callback' => 'tpps_snpassay_file_selector',
-    'access arguments' => array('access content'),
-    'type' => MENU_CALLBACK
   );
 
   // [VS].
@@ -1415,35 +1408,11 @@ function tpps_block_view_alter(&$data, $block) {
 }
 
 /**
- * Menu callback for snp file selector field.
- */
-function tpps_snpassay_file_selector($string) {
-  $matches = array();
-  $result = db_select('file_managed', 'f')
-    ->fields('f', array('fid', 'filename'))
-    ->condition('f.filename', '%' . db_like($string) . '%', 'LIKE')
-    ->condition('f.filename', '%SNP%', 'LIKE')
-    ->orderBy('f.timestamp', 'DESC')
-    ->execute();
-
-  // Save the query to matches.
-  foreach ($result as $row) {
-    $value = $row->filename . ' (' . $row->fid . ')';
-    $matches[$row->fid] = $row->filename;
-  }
-
-  // Return the result to the form in JSON format.
-  drupal_json_output($matches);
-}
-
-/**
  * Implements hook_media_browser_plugins_alter().
  */
 function tpps_media_browser_plugins_alter(&$plugins) {
-  //if (variable_get('disable_media_upload', 0)) {
   unset($plugins['upload']);
   unset($plugins['media_default--media_browser_my_files']);
-  //}
 }
 
 // WARNING: Required because dev-server has PHP 7.0.2.

@@ -22,6 +22,28 @@ function tpps_autocomplete($type, $string = "") {
 }
 
 /**
+ * Autocomplete callback. Get list of SNPs Assay file names.
+ *
+ * @param string $string
+ *   String to search in filename.
+ */
+function tpps_snps_assay_autocomplete($string) {
+  $matches = [];
+  $result = db_select('file_managed', 'f')
+    ->fields('f', ['fid', 'filename'])
+    ->condition('f.filename', '%SNP%', 'LIKE')
+    ->condition('f.filename', '%' . db_like($string) . '%', 'LIKE')
+    ->orderBy('f.timestamp', 'DESC')
+    ->execute();
+  // Save the query to matches.
+  foreach ($result as $row) {
+    $value = $row->filename . ' (' . $row->fid . ')';
+    $matches[$row->fid] = $row->filename;
+  }
+  drupal_json_output($matches);
+}
+
+/**
  * Author auto-complete matching.
  *
  * @param string $string

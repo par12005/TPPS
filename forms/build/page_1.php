@@ -161,7 +161,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     'field_name' => 'doi',
     'new_parents' => ['publication'],
   ]);
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['dataset_doi'] = [
     '#type' => 'textfield',
     '#title' => t('Dataset DOI:'),
@@ -198,6 +198,22 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#description' => t('Note: please format in ‘Last, First’ format.'),
     '#default_value' => tpps_get_ajax_value($form_state, ['primaryAuthor'], NULL),
   ];
+  // @todo Remove debug code.
+  // Set to 1 to check if field's relocation works.
+  if (0) {
+    $form['publication']['test'] = [
+      '#type' => 'fieldset',
+      '#title' => t('TEST'),
+      '#collapsible' => FALSE,
+    ];
+    tpps_form_relocate_field([
+      'form' => &$form['publication'],
+      'current_parents' => [],
+      'field_name' => 'primaryAuthor',
+      'new_parents' => ['test'],
+      '#parents' => ['publication', 'test'],
+    ]);
+  }
   // Update field's value.
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
