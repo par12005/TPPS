@@ -29,16 +29,19 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
 
   // Data which could be shared.
   $chest = [
+    // Common data (per study).
     'form' => &$form,
     'form_state' => &$form_state,
-    'organism_number' => $page1_values['organism']['number'],
-    'data_type' => $page2_values['data_type'],
+    'page1_values' => &$form_state['saved_values'][TPPS_PAGE_1] ?? [],
+    'page2_values' => &$form_state['saved_values'][TPPS_PAGE_2] ?? [],
+    'page3_values' => &$form_state['saved_values'][TPPS_PAGE_3] ?? [],
+    'page4_values' => &$form_state['saved_values'][TPPS_PAGE_4] ?? [],
   ];
 
   $form['#tree'] = TRUE;
-  for ($i = 1; $i <= $chest['organism_number']; $i++) {
-    $chest['i'] = $i;
-    $name = $page1_values['organism'][$i]['name'];
+  for ($i = 1; $i <= tpps_chest_get($chest, 'organism_count'); $i++) {
+    $chest['organism_id'] = $i;
+    $name = tpps_chest_get($chest, 'organism_name', $i);
     $form["organism-$i"] = [
       '#type' => 'fieldset',
       '#title' => t($name),
@@ -49,8 +52,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // Data Type includes phenotype.
     if (tpps_is_phenotype_data_type($form_state)) {
-      tpps_page4_add_data_type(array_merge($chest,
-        ['type' => 'phenotype', 'type_name' => t('Phenotype')]
+      tpps_page4_add_data_type(array_merge(
+        $chest, ['type' => 'phenotype', 'type_name' => t('Phenotype')]
       ));
 
       $normal_check = tpps_get_ajax_value(
@@ -165,13 +168,13 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       }
     }
     if (tpps_is_genotype_data_type($form_state)) {
-      tpps_page4_add_data_type(array_merge($chest,
-        ['type' => 'genotype', 'type_name' => t('Genotype')]
+      tpps_page4_add_data_type(array_merge(
+        $chest, ['type' => 'genotype', 'type_name' => t('Genotype')]
       ));
     }
     if (tpps_is_environment_data_type($form_state)) {
-      tpps_page4_add_data_type(array_merge($chest,
-        ['type' => 'environment', 'type_name' => t('Environmental')]
+      tpps_page4_add_data_type(array_merge(
+        $chest, ['type' => 'environment', 'type_name' => t('Environmental')]
       ));
     }
   }
@@ -283,26 +286,36 @@ function tpps_add_curation_tool_button(array &$form, $key, $name) {
  *
  * @param array $chest
  *   Metadata where keys are:
- *     'type' string Data type. E.g., 'environment'.
- *     'name'string Localized name of data type. E.g., t('Environmental').
- *     'i' int Number of organism.
- *     'form' array Drupal Form Array passed by reference. E.g., &$form.
- *     'form_state' array Drupal Form State Array. E.g., $form_state.
+ *   'form' array
+ *     Drupal Form Array passed by reference. E.g., &$form.
+ *   'form_state' array
+ *     Drupal Form State Array. E.g., $form_state.
+ *
+ *   Specific data:
+ *   'organism_id' int
+ *     Currently processed organism number.
+ *
+ *   'name'string
+ *     Localized name of data type. E.g., t('Environmental').
+ *
+ *   'type' string
+ *     Machine data type name. E.g., 'phenotype'.
+ *   'type_name' string
+ *     Localized human readable data type name. E.g., 'Phenotype'.
  */
 function tpps_page4_add_data_type(array $chest) {
-  $i = $chest['i'] ?? 0;
+  $i = $chest['organism_id'] ?? 0;
   $organism_name = 'organism-' . $i;
   $form = &$chest['form'] ?? [];
   $form_state = &$chest['form_state'] ?? [];
 
-  $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-  $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? [];
+  $page4_values = &$form_state['saved_values'][TPPS_PAGE_4] ?? [];
   $type = $chest['type'] ?? '';
   $type_name = $chest['type_name'] ?? '';
 
   // List of dynamically build function names for code management:
   // tpps_phenotype(),
-  // tpps_genotype() or tpps_genotype_form(),
+  // tpps_genotype() or tpps_genotype_subform(),
   // tpps_environment().
   if ($type == 'genotype') {
     $function_name = 'tpps_' . $type . '_subform';
@@ -336,8 +349,8 @@ function tpps_page4_add_data_type(array $chest) {
         [
           '@type_name' => ucfirst($type_name),
           '@type_lower_name' => strtolower($type_name),
-          '@current_organism_name' => $page1_values['organism'][$i]['name'] ?? '',
-          '@prev_organism_name' => $page1_values['organism'][$i - 1]['name'] ?? '',
+          '@current_organism_name' => tpps_chest_get($chest, 'organism_name', $i),
+          '@prev_organism_name' => tpps_chest_get($chest, 'organism_name', ($i - 1)),
         ]
       ),
       '#default_value' => ($page4_values[$organism_name][$type . '-repeat-check'] ?? 1),

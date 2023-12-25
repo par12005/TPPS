@@ -11,29 +11,45 @@
  * @param array $chest
  *   Accosiative array with metadata.
  *
+ *   Per study data:
+ *   'form' array
+ *     Reference to the Drupal Form Array.
+ *   'form_state' array
+ *     Drupal Form State Array.
+ *   'page1_values' => &$form_state['saved_values'][TPPS_PAGE_1] ?? [],
+ *   'page2_values' => &$form_state['saved_values'][TPPS_PAGE_2] ?? [],
+ *   'page3_values' => &$form_state['saved_values'][TPPS_PAGE_3] ?? [],
+ *   'page4_values' => &$form_state['saved_values'][TPPS_PAGE_4] ?? [],
+ *
+ *   Per organism data:
+ *   'organism_id' int 1
+ *     Organism number (or Id). E.g., 1. See 'organism_number'.
+ *   'type' string
+ *     Machine name of the data type. E.g., 'genotype'.
+ *   'type_name'
+ *      Human readable data type name. 'Genotype'
+ *
  * @return array
  *   The populated form.
  *
- * @TODO Do not return but update $form.
+ * @TODO Do not return because we update $form.
  */
 function tpps_genotype_subform(array $chest) {
-  if (!isset($chest['i'])) {
+  if (!isset($chest['organism_id']) || !isset($chest['type'])) {
     return [];
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Map from the $chest.
-  $form = isset($chest['form']) ? $form = &$chest['form'] : [];
-  $form_state = isset($chest['form_state']) ? $form_state = &$chest['form_state'] : [];
-  $i = $chest['i'];
-  // Treasure.
+  $form = &$chest['form'];
+  $form_state = &$chest['form_state'];
+  $i = $chest['organism_id'];
+  $organism_count = $chest['organism_count'] ?? 1;
+  $type = $chest['type'] ?? '';
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Get "treasure" from the $chest.
+  $page4_values = &$form_state['saved_values'][TPPS_PAGE_4] ?? [];
+  $organism_count = $chest['page1_values']['organism']['number'];
   $organism_name = 'organism-' . $i;
-  $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-  $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? [];
-  $organism_number = $page1_values['organism']['number'];
-  $marker_parents = [$organism_name, 'genotype', 'marker-type'];
-  $genotype_marker_type = array_keys(
-    tpps_get_ajax_value($form_state, $marker_parents, [])
-  );
   $genotype_dir = variable_get(
     'tpps_' . $chest['type'] . '_files_dir',
     'tpps_' . $chest['type']
@@ -45,15 +61,20 @@ function tpps_genotype_subform(array $chest) {
     '#collapsible' => TRUE,
     '#weight' => 0,
   ];
+  $chest['parents'] = [$organism_name, $type];
+
+  $marker_parents = [$organism_name, 'genotype', 'marker-type'];
+  $genotype_marker_type = array_keys(
+    tpps_get_ajax_value($form_state, $marker_parents, [])
+  );
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $chest['parents'] = [$organism_name, $chest['type']];
   // Only for 1st organism.
   if ($i == 1) {
     tpps_form_add_yesno_field(array_merge($chest,
       [
         'field_name' => 'are_genotype_markers_identical',
         '#title' => t('Are your genotype markers identical accross species?'),
-        '#default_value' => (($organism_number == 1) ? 'yes' : 0),
+        '#default_value' => (($organism_count == 1) ? 'yes' : 0),
       ]
     ));
     // Next 3 questions must be shown/hidden only for 1st organism.
@@ -209,9 +230,7 @@ function tpps_genotype_subform(array $chest) {
   ];
 
   // File upload field.
-  tpps_form_build_file_field([
-    'form' => &$chest['form'],
-    'form_state' => $form_state,
+  tpps_form_build_file_field(array_merge($chest, [
     'parents' => [$organism_name, 'genotype', 'files'],
     'field_name' => $file_field_name,
     'title' => $title,
@@ -296,7 +315,11 @@ function tpps_genotype_subform(array $chest) {
         $fields['files'][$file_field_name],
         [
           'empty' => [
-            '#default_value' => $page4_values[$organism_name]['genotype']['files'][$file_field_name]['empty'] ?? 'NA',
+            '#default_value' => tpps_array_get_value(
+              $chest['page4_values'],
+              [$organism_name, 'genotype', 'files', $file_field_name, 'empty'],
+              'NA'
+            ),
           ],
           'columns' => [
             '#description' => t('Please define which columns hold the '

@@ -802,4 +802,46 @@ function tpps_array_get_value(array &$array, array $parents, $default = NULL) {
 function tpps_array_set_value(array &$array, array $parents, $value = NULL) {
   drupal_array_set_nested_value($array, $parents, $value);
 }
+
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Chest
+
+/**
+ * Gets submission value by short name from the $chest.
+ *
+ * @param array $chest
+ *   Metadata. Required keys are: 'form' and 'form_state'.
+ * @param string $name
+ *   Short name (synonym) of the field.
+ *   Possible values are:
+ *     'organism_name'
+ *       Organism name. Requires 3rd argument: $organism_id.
+ *       Usage: tpps_chest_get($chest, 'organism_name', $orgainsm_id).
+ *     'organism_count'
+ *       Number of organisms in the study.
+ *       Usage: tpps_chest_get($chest, 'organism_number').
+ *
+ * @return mixed
+ *   Returns value or $default if element not found.
+ */
+function tpps_chest_get(array $chest, $name) {
+  if (empty($chest) || empty($name)) {
+    return NULL;
+  }
+  // Search for an item by name.
+  switch ($name) {
+    case 'organism_name':
+      if (func_num_args() < 3) {
+        return NULL;
+      }
+      $parents = [
+        'saved_values', TPPS_PAGE_1, 'organism', func_get_arg(2), 'name',
+      ];
+      break;
+
+    case 'organism_count':
+      $parents = ['saved_values', TPPS_PAGE_1, 'orgainsm', 'number'];
+      break;
+  }
+  return tpps_array_get_value($chest['form_state'], $parents, $default);
+}
