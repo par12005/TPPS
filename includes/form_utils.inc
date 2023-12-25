@@ -230,6 +230,8 @@ function tpps_get_ajax_number(array &$state, array $parents, $up, $down, $defaul
  * can also pass the file name in order to find saved_values such as
  * 'file-columns', or 'file-no-header'.
  *
+ * See tpps_array_get/set_value() for more common solution.
+ *
  * @param array $state
  *   The state of the form.
  * @param array $parents
@@ -255,7 +257,7 @@ function tpps_get_ajax_value(array &$state, array $parents, $default = NULL, $fi
     return $val;
   }
 
-  // @TODO [VS] Avoid code duplication. See above.
+  // @todo Minor. Combine with code above to avoid duplication. Use loop.
   $complete_parents = $parents;
   array_unshift($complete_parents, 'complete form');
   $element = drupal_array_get_nested_value($state, $complete_parents);

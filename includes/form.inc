@@ -751,3 +751,55 @@ function tpps_form_build_file_field(array $chest) {
     ];
   }
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// TPPS Array
+
+/**
+ * Gets value of the nested element from the array.
+ *
+ * Shortcut for function drupal_array_get_nested_value() with default value.
+ * See
+ * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_array_get_nested_value/7.x#.
+ *
+ * Note:
+ * Function tpps_get_ajax_value() is more specific. It does much more and
+ * works with 'values' and 'complete form' elements of given arrays.
+ *
+ * @param array $array
+ *   Array to search.
+ * @param array $parents
+ *   List of the element's parents (including element name).
+ * @param mixed $default
+ *   The default value.
+ *   Will be used only when drupal_array_get_nested_value() reports that element
+ *   wasn't found so if element's value was empty string, zero, NULL or FALSE
+ *   it will be returned correctly.
+ *
+ * @return mixed
+ *   Returns the reference (!) to the value of the element of the array.
+ *   Returns $default if element wasn't found in given array.
+ */
+function tpps_array_get_value(array &$array, array $parents, $default = NULL) {
+  $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
+  return ($key_exist) ? $value : $default;
+}
+
+/**
+ * Sets value of the nested element in the array.
+ *
+ * Shortcut for function drupal_array_set_nested_value().
+ * See
+ * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_array_set_nested_value/7.x#.
+ *
+ * @param array $array
+ *   Array to search.
+ * @param array $parents
+ *   List of the element's parents (including element name).
+ * @param mixed $value
+ *   The value.
+ */
+function tpps_array_set_value(array &$array, array $parents, $value = NULL) {
+  drupal_array_set_nested_value($array, $parents, $value);
+}
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
