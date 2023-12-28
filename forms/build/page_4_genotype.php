@@ -26,8 +26,8 @@
  *     Organism number (or Id). E.g., 1. See 'organism_number'.
  *   'type' string
  *     Machine name of the data type. E.g., 'genotype'.
- *   'type_name'
- *      Human readable data type name. 'Genotype'
+ *   'type_name' string
+ *      Human readable data type name. E.g., 'Genotype'.
  *
  * @return array
  *   The populated form.
@@ -54,6 +54,7 @@ function tpps_genotype_subform(array $chest) {
     'tpps_' . $chest['type'] . '_files_dir',
     'tpps_' . $chest['type']
   );
+
   $fields = &$form[$organism_name][$chest['type']];
   $fields = [
     '#type' => 'fieldset',
@@ -61,7 +62,6 @@ function tpps_genotype_subform(array $chest) {
     '#collapsible' => TRUE,
     '#weight' => 0,
   ];
-  $chest['parents'] = [$organism_name, $type];
 
   $marker_parents = [$organism_name, 'genotype', 'marker-type'];
   $genotype_marker_type = array_keys(
@@ -72,6 +72,7 @@ function tpps_genotype_subform(array $chest) {
   if ($i == 1) {
     tpps_form_add_yesno_field(array_merge($chest,
       [
+        'parents' => [$organism_name, $type],
         'field_name' => 'are_genotype_markers_identical',
         '#title' => t('Are your genotype markers identical accross species?'),
         '#default_value' => (($organism_count == 1) ? 'yes' : 0),
@@ -102,6 +103,7 @@ function tpps_genotype_subform(array $chest) {
     );
     tpps_form_add_yesno_field(array_merge($chest,
       [
+        'parents' => [$organism_name, $type],
         'field_name' => $field_name,
         '#title' => t('Does your study include @marker_name data?',
           [
@@ -247,7 +249,7 @@ function tpps_genotype_subform(array $chest) {
       . 'columns should contain SNP data.'),
     'use_fid' => TRUE,
     'states' => $states,
-  ]);
+  ]));
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 
@@ -311,6 +313,17 @@ function tpps_genotype_subform(array $chest) {
           . 'a SNP Annotation (non synonymous, coding, etc).'),
         '#tree' => TRUE,
       ]);
+
+
+      //dpm(
+      //  tpps_array_get_value(
+      //    $chest,
+      //    ['page4_values', $organism_name, 'genotype', 'files', $file_field_name, 'empty'],
+      //  'NA'
+      //));
+      return;
+
+
       $fields['files'][$file_field_name] = array_merge(
         $fields['files'][$file_field_name],
         [
@@ -978,4 +991,3 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   $fields['tripal_fasta'] = $fasta;
 }
-

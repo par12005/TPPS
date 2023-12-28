@@ -23,21 +23,14 @@ require_once 'page_4_genotype.php';
  */
 function tpps_page_4_create_form(array &$form, array &$form_state) {
   global $user;
-  $page1_values = &$form_state['saved_values'][TPPS_PAGE_1] ?? [];
-  $page2_values = &$form_state['saved_values'][TPPS_PAGE_2] ?? [];
-  $page4_values = &$form_state['saved_values'][TPPS_PAGE_4] ?? [];
 
-  // Data which could be shared.
-  $chest = [
-    // Common data (per study).
-    'form' => &$form,
-    'form_state' => &$form_state,
-    'page1_values' => &$form_state['saved_values'][TPPS_PAGE_1] ?? [],
-    'page2_values' => &$form_state['saved_values'][TPPS_PAGE_2] ?? [],
-    'page3_values' => &$form_state['saved_values'][TPPS_PAGE_3] ?? [],
-    'page4_values' => &$form_state['saved_values'][TPPS_PAGE_4] ?? [],
-  ];
-
+  // Store valueable data to the $chest.
+  $chest = ['form' => &$form, 'form_state' => &$form_state];
+  for ($i = 1; $i <= 4; $i++) {
+    if (isset($form_state['saved_values'][$i])) {
+      $chest['page' . $i . '_values'] = &$form_state['saved_values'][$i];
+    }
+  }
   $form['#tree'] = TRUE;
   for ($i = 1; $i <= tpps_chest_get($chest, 'organism_count'); $i++) {
     $chest['organism_id'] = $i;
@@ -45,7 +38,6 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     $form["organism-$i"] = [
       '#type' => 'fieldset',
       '#title' => t($name),
-      //'#title' => "<div class=\"fieldset-title\">$name:</div>",
       '#tree' => TRUE,
       '#collapsible' => TRUE,
     ];
@@ -55,7 +47,6 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
       tpps_page4_add_data_type(array_merge(
         $chest, ['type' => 'phenotype', 'type_name' => t('Phenotype')]
       ));
-
       $normal_check = tpps_get_ajax_value(
         $form_state,
         ["organism-$i", 'phenotype', 'normal-check'],
@@ -70,7 +61,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
             'callback' => 'tpps_phenotype_file_format_callback',
             'wrapper' => "edit-organism-$i-phenotype-file-ajax-wrapper",
           ],
-          '#default_value' => ($page4_values["organism-$i"]['phenotype']['format'] ?? 0),
+          '#default_value' => ($chest['page4_values']["organism-$i"]['phenotype']['format'] ?? 0),
           '#description' => t('Please select a file format type from the '
             . 'listed options. Below please see examples of each format type.'
           ),
@@ -106,7 +97,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
         ];
 
         $form["organism-$i"]['phenotype']['file']['empty'] = [
-          '#default_value' => $page4_values["organism-$i"]['phenotype']['file']['empty'] ?? t('NA'),
+          '#default_value' => $chest['page4_values']["organism-$i"]['phenotype']['file']['empty'] ?? t('NA'),
         ];
 
         $form["organism-$i"]['phenotype']['file']['columns'] = [
@@ -152,8 +143,8 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
 
       // This will check if there are Time Phenotypes saved from the
       // saved values and use this to re-check the checkboxes on the form.
-      if (isset($page4_values["organism-$i"]['phenotype']['time']['time_phenotypes'])) {
-        $time_phenotypes = $page4_values["organism-$i"]['phenotype']['time']['time_phenotypes'] ?? [];
+      if (isset($chest['page4_values']["organism-$i"]['phenotype']['time']['time_phenotypes'])) {
+        $time_phenotypes = $chest['page4_values']["organism-$i"]['phenotype']['time']['time_phenotypes'] ?? [];
         $count_time_phenotypes = count($time_phenotypes);
         if ($count_time_phenotypes > 0) {
           foreach ($time_phenotypes as $time_phenotype) {
@@ -309,7 +300,6 @@ function tpps_page4_add_data_type(array $chest) {
   $form = &$chest['form'] ?? [];
   $form_state = &$chest['form_state'] ?? [];
 
-  $page4_values = &$form_state['saved_values'][TPPS_PAGE_4] ?? [];
   $type = $chest['type'] ?? '';
   $type_name = $chest['type_name'] ?? '';
 
@@ -328,7 +318,7 @@ function tpps_page4_add_data_type(array $chest) {
       $args = [&$form, &$form_state, $organism_name];
     }
     elseif ($type == 'phenotype') {
-      $args = [&$form, &$form_state, $page4_values, $organism_name];
+      $args = [&$form, &$form_state, $chest['page4_values'], $organism_name];
     }
     $field = call_user_func_array($function_name, $args);
     $form[$organism_name][$type] = $field;
@@ -353,7 +343,7 @@ function tpps_page4_add_data_type(array $chest) {
           '@prev_organism_name' => tpps_chest_get($chest, 'organism_name', ($i - 1)),
         ]
       ),
-      '#default_value' => ($page4_values[$organism_name][$type . '-repeat-check'] ?? 1),
+      '#default_value' => ($chest['page4_values'][$organism_name][$type . '-repeat-check'] ?? 1),
     ];
     $form[$organism_name][$type]['#states'] = [
       'invisible' => [

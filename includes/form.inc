@@ -3,6 +3,9 @@
 /**
  * @file
  * Helper functions use at any step of TPPS form.
+ *
+ *
+ * module_load_include('inc', 'tpps', 'includes/form');
  */
 
 /**
@@ -347,11 +350,11 @@ function tpps_form_add_yesno_field(array $chest) {
     watchdog('tpps', 'Empty "name" or "#title" received', [], WATCHDOG_ERROR);
     return;
   }
-  if (!isset($chest['i'])) {
+  if (!isset($chest['organism_id'])) {
     return;
   }
   $field_name = $chest['field_name'];
-  $i = $chest['i'];
+  $i = $chest['organism_id'];
 
   $organism_name = 'organism-' . $i;
 
@@ -371,7 +374,7 @@ function tpps_form_add_yesno_field(array $chest) {
   $defaults = [
     '#type' => 'select',
     '#options' => $options,
-    '#default_value' => ($page4_values[$field_name] ?? NULL),
+    '#default_value' => ($chest['page4_values'][$field_name] ?? NULL),
     '#tree' => TRUE,
   ];
   $field = array_filter($chest, function ($e) {
@@ -758,31 +761,44 @@ function tpps_form_build_file_field(array $chest) {
 /**
  * Gets value of the nested element from the array.
  *
+ * To get value by reference use:
+ * $ref = &tpps_array_get_value($array, $parents, $default);
+ *
  * Shortcut for function drupal_array_get_nested_value() with default value.
  * See
  * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_array_get_nested_value/7.x#.
  *
  * Note:
- * Function tpps_get_ajax_value() is more specific. It does much more and
- * works with 'values' and 'complete form' elements of given arrays.
+ * This function is very common but gunction tpps_get_ajax_value() is more
+ * specific. It does much more and works with 'values' and 'complete form'
+ * elements of given arrays.
  *
  * @param array $array
  *   Array to search.
  * @param array $parents
  *   List of the element's parents (including element name).
+ *   When empty array then original $array will be returned.
  * @param mixed $default
  *   The default value.
  *   Will be used only when drupal_array_get_nested_value() reports that element
  *   wasn't found so if element's value was empty string, zero, NULL or FALSE
  *   it will be returned correctly.
+ *   Note: that $default passed by reference and will be returned by reference.
  *
  * @return mixed
  *   Returns the reference (!) to the value of the element of the array.
- *   Returns $default if element wasn't found in given array.
+ *   Returns $default if element wasn't found in given array but not reference.
+ *   Returns $array when $parents is an empty array.
  */
-function tpps_array_get_value(array &$array, array $parents, $default = NULL) {
+function &tpps_array_get_value(array &$array, array $parents = [], $default = '') {
   $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
-  return ($key_exist) ? $value : $default;
+  if ($key_exists) {
+    return $value;
+  }
+  else {
+    dpm($default, 'default');
+    //return $default;
+  }
 }
 
 /**
@@ -796,6 +812,7 @@ function tpps_array_get_value(array &$array, array $parents, $default = NULL) {
  *   Array to search.
  * @param array $parents
  *   List of the element's parents (including element name).
+ *   When $parents is an empty array then $array = $value.
  * @param mixed $value
  *   The value.
  */
@@ -822,26 +839,45 @@ function tpps_array_set_value(array &$array, array $parents, $value = NULL) {
  *       Usage: tpps_chest_get($chest, 'organism_number').
  *
  * @return mixed
- *   Returns value or $default if element not found.
+ *   Returns value if element not found.
+ *
+ * @TODO Replace with class Chest and find better name.
  */
-function tpps_chest_get(array $chest, $name) {
+function &tpps_chest_get(array $chest, $name) {
+  // Define NULL as variable to return it as reference.
+  $null = NULL;
+  // Validate.
   if (empty($chest) || empty($name)) {
-    return NULL;
+    return $null;
   }
-  // Search for an item by name.
+  // Prepare parents for TPPS Pages.
+  for ($i = 1; $i <= 4; $i++) {
+    $page_parents[$i] = ['form_state', 'saved_values', $i];
+  }
+  // Get parents.
   switch ($name) {
     case 'organism_name':
       if (func_num_args() < 3) {
-        return NULL;
+        return $null;
       }
-      $parents = [
-        'saved_values', TPPS_PAGE_1, 'organism', func_get_arg(2), 'name',
-      ];
+      $parents = array_merge($page_parents[1],
+        ['organism', func_get_arg(2), 'name']
+      );
       break;
 
     case 'organism_count':
-      $parents = ['saved_values', TPPS_PAGE_1, 'orgainsm', 'number'];
+      $parents = array_merge($page_parents[1],
+        ['organism', 'number']
+      );
       break;
   }
-  return tpps_array_get_value($chest['form_state'], $parents, $default);
+
+  // Get value.
+  if ($parents) {
+    $value = &drupal_array_get_nested_value($chest, $parents);
+    return $value;
+  }
+  else {
+    return $null;
+  }
 }
