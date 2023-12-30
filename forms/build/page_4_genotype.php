@@ -175,6 +175,7 @@ function tpps_genotype_subform(array $chest) {
     ];
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Genotyping Type.
   $fields['files']['genotyping-type'] = [
     '#type' => 'select',
     '#title' => t('Genotyping Type: *'),
@@ -200,19 +201,21 @@ function tpps_genotype_subform(array $chest) {
       'SNP Assay file and Assay design file' => t('SNP Assay file and Assay design file'),
       'VCF' => t('VCF'),
     ],
-      // @TODO Use Drupal Form States.
-    //'#ajax' => [
-    //  'callback' => 'tpps_genotype_files_callback',
-    //  'wrapper' => "$organism_name-genotype-files",
-    //  'effect' => 'slide',
-    //],
     '#states' => [
       'visible' => [
-        ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
-        => ['value' => 'Genotyping'],
+        ':input[name="' . $organism_name . '[genotype][files][genotyping-type]"]'
+          => ['value' => 'Genotyping'],
       ],
     ],
   ];
+  tpps_form_relocate_field([
+    'form' => &$fields,
+    'current_parents' => ['files'],
+    'field_name' => 'file-type',
+    'new_parents' => ['SNPs'],
+    '#parents' => [$organism_name, 'genotype', 'files'],
+    '#name' => 'organism-1[genotype][files][file-type]',
+  ]);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNP Assay File.
@@ -221,7 +224,7 @@ function tpps_genotype_subform(array $chest) {
   $states = [
     'visible' => [
       [
-        ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
+        ':input[name="' . $organism_name . '[genotype][genotyping-type]"]'
         => ['value' => 'Genotyping Assay'],
       ],
       'or',
@@ -693,34 +696,38 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       5 => t('Genotyping Array'),
     ],
   ];
-  $fields['SNPs']['GBS'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // GBS Type.
+  $fields['SNPs']['GBS'] = [
     '#type' => 'select',
     '#title' => t('GBS Type: *'),
-    '#options' => array(
+    '#options' => [
       0 => t('- Select -'),
       1 => t('RADSeq'),
       2 => t('ddRAD-Seq'),
       3 => t('NextRAD'),
       4 => t('RAPTURE'),
       5 => t('Other'),
-    ),
+    ],
     '#states' => [
       'visible' => [
         ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => ['value' => '1'],
       ],
     ],
-  );
-  $fields['SNPs']['GBS-other'] = array(
+  ];
+  $fields['SNPs']['GBS-other'] = [
     '#type' => 'textfield',
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[genotype][SNPs][GBS]"]' => array('value' => '5'),
-        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '1'),
-      ),
-    ),
-  );
-
-  $fields['SNPs']['targeted-capture'] = array(
+    '#title' => t('Other GBS Type: *'),
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $id . '[genotype][SNPs][GBS]"]' => ['value' => '5'],
+        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => ['value' => '1'],
+      ],
+    ],
+  ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Targeted Capture Type.
+  $fields['SNPs']['targeted-capture'] = [
     '#type' => 'select',
     '#title' => t('Targeted Capture Type: *'),
     '#options' => [
@@ -728,12 +735,12 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       1 => t('Exome Capture'),
       2 => t('Other'),
     ],
-    '#states' => array(
-      'visible' => array(
-        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => array('value' => '2'),
-      ),
-    ),
-  );
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => ['value' => '2'],
+      ],
+    ],
+  ];
 
   $fields['SNPs']['targeted-capture-other'] = [
     '#type' => 'textfield',
@@ -745,8 +752,8 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       ],
     ],
   ];
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Field 'Define SSRs/cpSSRs Type'.
   // @TODO Minor. Better to rename field to avoid '/' in name
   // and make it more meaningful.
