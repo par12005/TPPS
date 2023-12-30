@@ -54,6 +54,7 @@ function tpps_genotype_subform(array $chest) {
     'tpps_' . $chest['type'] . '_files_dir',
     'tpps_' . $chest['type']
   );
+  tpps_add_css_js('page_4_genotype', $form);
 
   $fields = &$form[$organism_name][$chest['type']];
   $fields = [
@@ -108,7 +109,7 @@ function tpps_genotype_subform(array $chest) {
         '#title' => t('Does your study include @marker_name data?',
           [
             '@marker_name' => ($marker_name == 'Other'
-            // Just a fast workaround. Sorry :(.
+            // Just a quick fix :(.
             ? strtolower($marker_name) : str_replace('s', '', $marker_name)),
           ]
         ),
@@ -636,7 +637,6 @@ function tpps_genotype_subform(array $chest) {
   //  tpps_build_disabled_file_field($fields, $file_field_name);
   //}
 
-  tpps_add_css_js('page_4_genotype', $form);
   return $fields;
 }
 
