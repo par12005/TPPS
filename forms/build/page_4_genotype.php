@@ -998,3 +998,48 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   $fields['tripal_fasta'] = $fasta;
 }
+
+/**
+ * Adds checkbox to select existing file or upload new one.
+ *
+ * @return mixed
+ *   Returns value of file field.
+ */
+function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
+  extract($meta);
+  module_load_include('inc', 'tpps', 'includes/common');
+  $hostname = tpps_get_hostname();
+  $fields['files'][$file_field_name . '_file-location'] = [
+    '#type' => 'select',
+    '#title' => t('VCF File Location'),
+    '#options' => [
+      'local' => t('My VCF File is stored locally'),
+      'remote' => t('My VCF File is stored at @hostname',
+        ['@hostname' => $hostname]),
+    ],
+    '#weight' => 90,
+  ];
+  $fields['files'][$file_field_name]['#states'] = [
+    'visible' => [
+      ':input[name="' . $id . '[genotype][files]['
+        . $file_field_name . '_file-location]"]' => ['value' => 'local'],
+    ],
+  ];
+  $fields['files'][$file_field_name]['#weight'] = 100;
+  $fields['files']['local_' . $file_field_name] = [
+    '#type' => 'textfield',
+    '#title' => t('Path to VCF File at @hostname: *',
+      ['@hostname' => $hostname]
+    ),
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $id . '[genotype][files]['
+          . $file_field_name . '_file-location]"]' => ['value' => 'remote'],
+      ],
+    ],
+    '#description' => t('Please provide the full path to your vcf file '
+      . 'stored on @hostname', ['@hostname' => $hostname]
+    ),
+    '#weight' => 100,
+  ];
+}
