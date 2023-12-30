@@ -214,8 +214,81 @@ function tpps_genotype_subform(array $chest) {
     'field_name' => 'file-type',
     'new_parents' => ['SNPs'],
     '#parents' => [$organism_name, 'genotype', 'files'],
-    '#name' => 'organism-1[genotype][files][file-type]',
+    '#name' => $organism_name . '[genotype][files][file-type]',
   ]);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // VCF Location.
+  $file_field_name = 'vcf';
+  $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
+  if ($is_tppsc) {
+    tpps_add_dropdown_file_selector(array_merge($chest, [
+      'form' => &$fields,
+      // Note: 'parents' not yet implemented.
+      'parents' => ['files'],
+      'file_field_name' => $file_field_name,
+      'file_name' => t('VCF'),
+      'organism_name' => $organism_name,
+    ]));
+    tpps_form_relocate_field([
+      'form' => &$fields,
+      'current_parents' => ['files'],
+      'field_name' => $file_field_name . '_file-location',
+      'new_parents' => ['SNPs'],
+      '#parents' => [$organism_name, 'genotype', 'files'],
+      '#name' => $organism_name . '[genotype][files][' . $file_field_name . '_file-location]',
+    ]);
+    tpps_form_relocate_field([
+      'form' => &$fields,
+      'current_parents' => ['files'],
+      'field_name' => 'local_' . $file_field_name,
+      'new_parents' => ['SNPs'],
+      '#parents' => [$organism_name, 'genotype', 'files'],
+      '#name' => $organism_name . '[genotype][files][local_' . $file_field_name . ']',
+    ]);
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // VCF File.
+  $title = t('VCF File');
+  $file_field_name = 'vcf';
+  tpps_form_build_file_field(array_merge($chest, [
+    'parents' => [$organism_name, 'genotype', 'files'],
+    'field_name' => $file_field_name,
+    'title' => $title,
+    'organism_name' => $organism_name,
+    'type' => $chest['type'],
+    'description' => '',
+    'extensions' => ['gz tar zip'],
+  ]));
+  if ($is_tppsc) {
+    tpps_array_set_value(
+      $chest['form'],
+      [$organism_name, 'genotype', 'files', $file_field_name, '#states'],
+      [
+        'visible' => [
+          ':input[name="' . $organism_name . '[genotype][files][file-type]"]'
+          => ['value' => 'VCF'],
+          ':input[name="' . $organism_name . '[genotype][files]['
+          . $file_field_name . '_file-location]"]' => ['value' => 'local'],
+        ],
+      ]
+    );
+  }
+  tpps_form_relocate_field([
+    'form' => &$fields,
+    'current_parents' => ['files'],
+    'field_name' => $file_field_name,
+    'new_parents' => ['SNPs'],
+    '#parents' => [$organism_name, 'genotype', 'files'],
+    '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+  ]);
+
+
+
+
+  // @TODO.
+
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNP Assay File.
@@ -600,38 +673,7 @@ function tpps_genotype_subform(array $chest) {
   //  tpps_build_disabled_file_field($fields, 'other');
   //}
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Genotype VCF File.
-  $title = t('Genotype VCF File');
-  $file_field_name = 'vcf';
-  //if (
-  //  $genotyping_type_check == 'Genotyping'
-  //  && $file_type_value == 'VCF'
-  //) {
-  tpps_form_build_file_field([
-    'form' => &$form,
-    'form_state' => $form_state,
-    'parents' => [$organism_name, 'genotype', 'files'],
-    'field_name' => $file_field_name,
-    'title' => $title,
-    'organism_name' => $organism_name,
-    'type' => $chest['type'],
-    'description' => '',
-    'extensions' => ['gz tar zip'],
-  ]);
 
-    // @todo This field must be shown for admins/curators only but condition
-    // didn't work correctly and was commented out.
-    //if (
-    //  isset($form_state['tpps_type'])
-    //  && $form_state['tpps_type'] == 'tppsc'
-    //) {
-      tpps_add_dropdown_file_selector($fields, [
-        'form_state' => $form_state,
-        'file_field_name' => $file_field_name,
-        'id' => $organism_name,
-      ]);
-  //}
   //
   //
   // @TODO Move upper.
@@ -1002,44 +1044,56 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 /**
  * Adds checkbox to select existing file or upload new one.
  *
+ * @param $chest array
+ *   Required data.
+ *
  * @return mixed
  *   Returns value of file field.
  */
-function tpps_add_dropdown_file_selector(array &$fields, array $meta) {
-  extract($meta);
+function tpps_add_dropdown_file_selector(array $chest) {
+  if (!isset($chest['form']) || empty($chest['file_field_name'])
+    || empty($chest['file_name']) || empty($chest['organism_name'])
+  ) {
+    return;
+  }
+  $form = &$chest['form'];
+  $file_field_name = $chest['file_field_name'];
+  $file_name = $chest['file_name'];
+  $organism_name = $chest['organism_name'];
+  // @TODO Use $parents instead of hardcoded 'files' element.
+  $parents = $chest['parents'];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   module_load_include('inc', 'tpps', 'includes/common');
-  $hostname = tpps_get_hostname();
-  $fields['files'][$file_field_name . '_file-location'] = [
+  $params = [
+    '@file_name' => $file_name,
+    '@hostname' => tpps_get_hostname(),
+  ];
+  $form['files'][$file_field_name . '_file-location'] = [
     '#type' => 'select',
-    '#title' => t('VCF File Location'),
+    '#title' => t('@file_name location', $params),
     '#options' => [
-      'local' => t('My VCF File is stored locally'),
-      'remote' => t('My VCF File is stored at @hostname',
-        ['@hostname' => $hostname]),
+      'local' => t('My @file_name is stored locally', $params),
+      'remote' => t('My @file_name is stored at @hostname', $params),
     ],
-    '#weight' => 90,
-  ];
-  $fields['files'][$file_field_name]['#states'] = [
-    'visible' => [
-      ':input[name="' . $id . '[genotype][files]['
-        . $file_field_name . '_file-location]"]' => ['value' => 'local'],
-    ],
-  ];
-  $fields['files'][$file_field_name]['#weight'] = 100;
-  $fields['files']['local_' . $file_field_name] = [
-    '#type' => 'textfield',
-    '#title' => t('Path to VCF File at @hostname: *',
-      ['@hostname' => $hostname]
-    ),
+    '#default_value' => '',
     '#states' => [
       'visible' => [
-        ':input[name="' . $id . '[genotype][files]['
-          . $file_field_name . '_file-location]"]' => ['value' => 'remote'],
+        ':input[name="' . $organism_name . '[genotype][files][file-type]"]'
+        => ['value' => 'VCF'],
       ],
     ],
-    '#description' => t('Please provide the full path to your vcf file '
-      . 'stored on @hostname', ['@hostname' => $hostname]
-    ),
-    '#weight' => 100,
+  ];
+
+  $form['files']['local_' . $file_field_name] = [
+    '#type' => 'textfield',
+    '#title' => t('Path to @file_name at @hostname: *', $params),
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype][files]['
+        . $file_field_name . '_file-location]"]' => ['value' => 'remote'],
+      ],
+    ],
+    '#description' => t('Please provide the full path to your @file_name file '
+      . 'stored on @hostname', $params),
   ];
 }
