@@ -1,0 +1,22 @@
+/**
+ * @file
+ * Adds dark theme to site.
+ */
+
+body.html {
+  background-color: #212428 !important;
+}
+
+#main .region-sidebar-second div.block.contextual-links-region,
+#main .region-sidebar-second div.block.contextual-links-region form,
+footer#footer,
+form.tpps-form, form.tppsc-form,
+.tpps-form select, .tppsc-form select,
+.tpps-form input.form-text, .tppsc-form input.form-text {
+  background: #373a3c !important;
+}
+form.tppsc-form, form.tpps-form,
+form.tppsc-form div fieldset.form-wrapper legend a,
+form.tpps-form div fieldset.form-wrapper legend a {
+  color: white !important;
+}

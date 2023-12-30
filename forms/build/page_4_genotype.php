@@ -78,7 +78,7 @@ function tpps_genotype_subform(array $chest) {
         '#default_value' => (($organism_count == 1) ? 'yes' : 0),
       ]
     ));
-    // Next 3 questions must be shown/hidden only for 1st organism.
+    // Оnly for non-first questions. Next 3 questions are dependent on 1st one.
     $chest['#states'] = [
       'invisible' => [
         ':input[name="organism-1[genotype][are_genotype_markers_identical]"]' => ['value' => 0],
