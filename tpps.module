@@ -1555,12 +1555,11 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     . variable_get('tpps_theme', 'default') . '.css';
   module_load_include('inc', 'tpps', 'includes/common');
   $dark_theme_path = TPPS_MODULE_PATH . '/css/dark_theme.css';
-  $live_site = (bool) (tpps_get_hostname() == 'treegenesdb.org');
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // This is regualar page.
   if ($form === NULL || !is_array($form)) {
     drupal_add_css($theme_path);
-    if (!$live_site) {
+    if (variable_get('tpps_dark_theme')) {
       drupal_add_css($dark_theme_path);
     }
     if ($page_id == 'main') {
@@ -1581,7 +1580,7 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // This is form.
     $form['#attached']['css'][] = $theme_path;
-    if (!$live_site) {
+    if (variable_get('tpps_dark_theme')) {
       $form['#attached']['css'][] = $dark_theme_path;
     }
     if ($page_id == 'main') {

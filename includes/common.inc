@@ -20,6 +20,18 @@ function tpps_get_hostname() {
 }
 
 /**
+ * Checks if it's a live site.
+ *
+ * @return bool
+ *   Returns TRUE code runs at production server and FALSE otherwise.
+ */
+function is_live_site() {
+  // @TODO Minor. Move value of the live domain to the settings page.
+  $live_domian = 'treegenesdb.org';
+  return (bool) (tpps_get_hostname() == $live_domain);
+}
+
+/**
  * Dumps variable using dpm to browser.
  *
  * @param mixed $dump
