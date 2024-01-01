@@ -662,30 +662,37 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
     $no_header_parents[] = '#value';
     $no_header_parents[] = 'no-header';
 
-    $no_header = drupal_array_get_nested_value($form_state['complete form'], $no_header_parents);
-    $callback = isset($form_state['triggering_element']['#ajax']['callback']) ? $form_state['triggering_element']['#ajax']['callback'] : NULL;
+    $no_header = drupal_array_get_nested_value(
+      $form_state['complete form'],
+      $no_header_parents
+    );
+    $callback = $form_state['triggering_element']['#ajax']['callback'] ?? NULL;
     if (!$no_header and ($callback != 'tpps_no_header_callback')) {
       $end = array_pop($saved_value_parents);
-      $saved_value_parents[] = $end . "-no-header";
-      $no_header = drupal_array_get_nested_value($form_state['saved_values'][$form_state['stage']], $saved_value_parents);
+      $saved_value_parents[] = $end . '-no-header';
+      $no_header = drupal_array_get_nested_value(
+        $form_state['saved_values'][$form_state['stage']],
+        $saved_value_parents
+      );
     }
 
-    $element['no-header'] = array(
+    $element['no-header'] = [
       '#type' => 'checkbox',
-      '#title' => 'My file has no header row',
-      '#ajax' => array(
+      '#title' => t('My file has no header row'),
+      '#ajax' => [
         'wrapper' => $wrapper,
         'callback' => 'tpps_no_header_callback',
-      ),
-      '#states' => isset($element['#states']) ? $element['#states'] : NULL,
-      '#default_value' => $no_header ? $no_header : NULL,
-    );
+      ],
+      '#states' => $element['#states'] ?? NULL,
+      '#default_value' => $no_header ?? NULL,
+    ];
 
     if (!empty($fid) and ($file = file_load($fid))) {
-
       $saved_vals = $form_state['saved_values'][$form_state['stage']];
       $element['columns']['#type'] = 'fieldset';
-      $element['columns']['#title'] = t('<div class="fieldset-title" style="font-size:.8em">Define Data</div>');
+      $element['columns']['#title'] = t(
+        '<div class="fieldset-title" style="font-size:.8em">Define Data</div>'
+      );
       $element['columns']['#collapsible'] = TRUE;
 
       // Stop using the file so it can be deleted if the user clicks 'remove'.
@@ -713,19 +720,22 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
             }
           }
         }
-        $element['columns'][$key] = array(
+        $item_title = [
+          t('Select the type of data column @item holds', ['@item' => $item]),
+        ];
+        $element['columns'][$key] = [
           '#type' => 'select',
           '#title' => $item,
           '#options' => $options,
           '#default_value' => $default,
-          '#prefix' => "<th>",
-          '#suffix' => "</th>",
-          '#attributes' => array(
-            'data-toggle' => array('tooltip'),
-            'data-placement' => array('top'),
-            'title' => array("Select the type of data the '$item' column holds"),
-          ),
-        );
+          '#prefix' => '<th>',
+          '#suffix' => '</th>',
+          '#attributes' => [
+            'data-toggle' => ['tooltip'],
+            'data-placement' => ['top'],
+            'title' => $item_title,
+          ],
+        ];
 
         if ($first) {
           $first = FALSE;
@@ -734,47 +744,55 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
         if (!empty($no_header)) {
           $element['columns'][$key]['#title'] = '';
-          $element['columns'][$key]['#attributes']['title'] = array("Select the type of data column $item holds");
+          $element['columns'][$key]['#attributes']['title'] = $item_title,
         }
 
         if ($form_state['stage'] == TPPS_PAGE_3) {
           $species_num = $element['#parents'];
           array_pop($species_num);
-          $species_num = "-" . end($species_num);
-          $element['columns'][$key]['#ajax'] = array(
+          $species_num = '-' . end($species_num);
+          $element['columns'][$key]['#ajax'] = [
             'callback' => 'tpps_accession_pop_group',
             'wrapper' => "population-mapping$species_num",
-          );
+          ];
         }
       }
 
       $rows = $content;
       unset($rows['headers']);
-      $vars = array(
+      $vars = [
         'header' => $content['headers'],
         'rows' => $rows,
-        'attributes' => array('class' => array('view')),
+        'attributes' => ['class' => ['view']],
         'caption' => '',
         'colgroups' => NULL,
         'sticky' => FALSE,
         'empty' => '',
-      );
+      ];
       $table = theme('table', $vars);
-      preg_match('/(*UTF8)\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/us', $table, $matches);
+      preg_match(
+        '/(*UTF8)\A(.*<thead[A-Z|a-z|"|\'|-|_|0-9]*>).*(<\/thead>.*<\/table>)/us',
+        $table, $matches
+      );
 
-      $element['columns'][$first_col]['#prefix'] = "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>" . $element['columns'][$first_col]['#prefix'];
-      $element['columns'][$key]['#suffix'] = "</tr>" . $matches[2] . "</div>";
-      $warning = "Please note that if you remain idle on a TPPS page with files for more than 6 hours, you run the risk of having those files reset if you do not click \"Save\".";
-      $element['columns'][$key]['#suffix'] = $element['columns'][$key]['#suffix'] . $warning;
+      $element['columns'][$first_col]['#prefix'] =
+        "<div style=\"overflow-x:auto\">" . $matches[1] . "<tr>"
+        . $element['columns'][$first_col]['#prefix'];
+      $element['columns'][$key]['#suffix'] = '</tr>' . $matches[2] . '</div>';
+      $element['columns'][$key]['#suffix'] = $element['columns'][$key]['#suffix']
+        . t('Please note that if you remain idle on a TPPS page with files '
+        . 'for more than 6 hours, you run the risk of having those files '
+        . 'reset if you do not click "Save".');
     }
   }
 
   if (isset($element['empty'])) {
-
     $element['empty']['#type'] = 'textfield';
     $element['empty']['#title'] = t('File Upload empty field:');
-    $element['empty']['#states'] = isset($element['#states']) ? $element['#states'] : NULL;
-    $element['empty']['#description'] = t('By default, TPPS will treat cells with the value "NA" as empty. If you used a different empty value indicator, please provide it here.');
+    $element['empty']['#states'] = $element['#states'] ?? NULL;
+    $element['empty']['#description'] = t('By default, TPPS will treat  '
+      . 'cells with the value "NA" as empty. If you used a different empty '
+      . 'value indicator, please provide it here.');
   }
 
   return $element;
