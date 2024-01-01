@@ -744,7 +744,7 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 
         if (!empty($no_header)) {
           $element['columns'][$key]['#title'] = '';
-          $element['columns'][$key]['#attributes']['title'] = $item_title,
+          $element['columns'][$key]['#attributes']['title'] = $item_title;
         }
 
         if ($form_state['stage'] == TPPS_PAGE_3) {

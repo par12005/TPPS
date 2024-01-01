@@ -1002,59 +1002,6 @@ function tpps_build_disabled_file_field(array &$fields, $file_field_name) {
 
 
 /**
- * Updates description of related file field on 'Ploidy' field value change.
- *
- * @param array $fields
- *   Drupal Form API array with Genotype form.
- * @param array $meta
- *   Metadata for function. Associative array with keys:
- *     'id', 'form_state', 'source_field_name', 'target_field_name'.
- *   Example:
- *   tpps_genotype_update_description($fields, [
- *     'id' => $id, // Organism Number.
- *     // Drupal Form API $form_state.
- *     'form_state' => $form_state,
- *     // Source field name. Usually selectbox.
- *     'source_field_name' => 'ploidy',
- *     // Genotype file field name which must be updated.
- *     'file_field_name' => 'ssrs',
- *   ]); //.
- */
-function tpps_genotype_update_description(array &$fields, array $meta) {
-  $ploidy = tpps_get_ajax_value($meta['form_state'], [
-    $meta['id'],
-    'genotype',
-    'files',
-    $meta['source_field_name'],
-  ]);
-
-  switch ($ploidy) {
-    case 'Haploid':
-      $fields['files'][$meta['target_field_name']]['#description']
-        .= '<br/>For haploid, TPPS assumes that each remaining column in the '
-        . 'spreadsheet is a marker.';
-      break;
-
-    case 'Diploid':
-      $fields['files'][$meta['target_field_name']]['#description']
-        .= '<br />For diploid, TPPS will assume that pairs of columns together '
-        . 'are describing an individual marker, so the second and third '
-        . 'columns would be the first marker, the fourth and fifth columns '
-        . 'would be the second marker, etc.';
-      break;
-
-    case 'Polyploid':
-      $fields['files'][$meta['target_field_name']]['#description']
-        .= '<br />For polyploid, TPPS will read columns until it arrives at a '
-        . 'non-empty column with a different name from the last.';
-      break;
-
-    default:
-      break;
-  }
-}
-
-/**
  * Builds Phenotype Name form field.
  *
  * @param string $id

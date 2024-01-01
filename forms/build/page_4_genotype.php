@@ -127,14 +127,54 @@ function tpps_genotype_subform(array $chest) {
   //  ],
   //],
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+  // This field is hidden but left to avoid changes in submit_all.php script.
+  $fields['marker-type'] = [
+    '#type' => 'select',
+    '#multiple' => TRUE,
+    '#title' => t('Marker Type: *'),
+    '#options' => [
+      'SNPs' => t('SNPs'),
+      'SSRs/cpSSRs' => t('SSRs/cpSSRs'),
+      'Other' => t('Other'),
+    ],
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Fieldsets.
+  // SNPs.
+  $fields['SNPs'] = [
+    '#type' => 'fieldset',
+    '#title' => t('SNPs Information:'),
+    '#collapsible' => TRUE,
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_snp_data]"]' => ['value' => 'yes'],
+      ],
+    ],
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // SNPs Fieldset's fields.
   tpps_page_4_marker_info($fields, $form_state, $organism_name);
+  tpps_page_4_genotype_ssrs(array_merge($chest, [
+    'organism_name' => $organism_name,
+  ]));
+  // Other.
+  $fields['other'] = [
+    '#type' => 'fieldset',
+    '#title' => t('Other Information:'),
+    '#collapsible' => TRUE,
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_other_data]"]' => ['value' => 'yes'],
+      ],
+    ],
+  ];
   tpps_page_4_ref($fields, $form_state, $organism_name);
 
-  // Get 'Define SSRs/cpSSRs Type' field value to show correct fields
-  // which visiblity depends on value of this field.
-  $ssrs_cpssrs_value = tpps_get_ajax_value(
-    $form_state, [$organism_name, 'genotype', 'SSRs/cpSSRs'], 'SSRs'
-  );
 
   $fields['files'] = [
     '#type' => 'fieldset',
@@ -190,7 +230,7 @@ function tpps_genotype_subform(array $chest) {
     'field_name' => 'genotyping-type',
     'new_parents' => ['SNPs'],
     '#parents' => [$organism_name, 'genotype', 'files'],
-    '#name' => 'organism-1[genotype][files][genotyping-type]',
+    '#name' => $organism_name . '[genotype][files][genotyping-type]',
   ]);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Genotype File Type.
@@ -494,114 +534,7 @@ function tpps_genotype_subform(array $chest) {
       }
     }
   //}
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  //if (in_array('SSRs/cpSSRs', $genotype_marker_type)) {
-    $fields['files']['ploidy'] = [
-      '#type' => 'select',
-      '#title' => t('SSR Ploidy: *'),
-      '#options' => [
-        'Haploid' => t('Haploid'),
-        'Diploid' => t('Diploid'),
-        'Polyploid' => t('Polyploid'),
-      ],
-      // Note:
-      // SSRs / cpSSRs Spreadsheet fields are loaded via AJAX to have updated
-      // description. See function tpps_genotype_update_description().
-      // This could be done in browser on client side using JS
-      // but for now it was left as is.
-        // @TODO Use Drupal Form States.
-      //'#ajax' => [
-      //  'callback' => 'tpps_genotype_files_callback',
-      //  'wrapper' => "$organism_name-genotype-files",
-      //  'effect' => 'slide',
-      //],
-      '#default_value' => tpps_get_ajax_value($form_state,
-        [$organism_name, 'genotype', 'files', 'ploidy'], 'haploid'
-      ),
-    ];
-    // SSRs.
-    if ($ssrs_cpssrs_value != 'cpSSRs') {
-      // 'SSRs' or 'Both SSRs and cpSSRs'.
-      $file_field_name = 'ssrs';
-      $title = t('SSRs Spreadsheet');
-      tpps_form_build_file_field([
-        'form' => &$form,
-        'form_state' => $form_state,
-        'parents' => [$organism_name, 'genotype', 'files'],
-        'field_name' => $file_field_name,
-        'title' => $title,
-        'organism_name' => $organism_name,
-        'type' => $chest['type'],
-        'description' => t('Please upload a spreadsheet containing your '
-          . 'SSRs data. The format of this file is very important! TPPS will '
-          . 'parse your file based on the ploidy you have selected above. '
-          . 'For any ploidy, TPPS will assume that the first column of your '
-          . 'file is the column that holds the Plant Identifier that matches '
-          . 'your accession file.'),
-        // Add extra text field for empty field value.
-        'empty_field_value' => tpps_get_empty_field_value(
-          $form_state, $organism_name, $file_field_name
-        ),
-        'use_fid' => TRUE,
-      ]);
-      tpps_genotype_update_description($fields, [
-        'id' => $organism_name,
-        'form_state' => $form_state,
-        'source_field_name' => 'ploidy',
-        'target_field_name' => $file_field_name,
-      ]);
-    }
-    else {
-      tpps_build_disabled_file_field($fields, 'ssrs');
-    }
-    // End of 'SSRs' field.
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // 'cpSSRs'.
-    if ($ssrs_cpssrs_value != 'SSRs') {
-      $file_field_name = 'ssrs_extra';
-      $title = t('cpSSRs Spreadsheet');
-      tpps_form_build_file_field([
-        'field_name' => $file_field_name,
-        'title' => $title,
-        'form' => &$form,
-        'form_state' => $form_state,
-        'organism_name' => $organism_name,
-        'type' => $chest['type'],
-        // Note:
-        // Difference from form 'ssrs' field: 'cpSSRs' (2nd line).
-        'description' => t('Please upload a spreadsheet containing your '
-          . 'cpSSRs data. The format of this file is very important! TPPS will '
-          . 'parse your file based on the ploidy you have selected above. '
-          . 'For any ploidy, TPPS will assume that the first column of your '
-          . 'file is the column that holds the Plant Identifier that matches '
-          . 'your accession file.'),
-        // Add extra text field for empty field value.
-        'empty_field_value' => tpps_get_empty_field_value(
-          $form_state, $organism_name, $file_field_name
-        ),
-        'use_fid' => TRUE,
-      ]);
-      tpps_genotype_update_description($fields, [
-        'id' => $organism_name,
-        'form_state' => $form_state,
-        'source_field_name' => 'ploidy',
-        'target_field_name' => $file_field_name,
-      ]);
-    }
-    else {
-      tpps_build_disabled_file_field($fields, 'ssrs_extra');
-    }
-    // End of 'cpSSR' field.
-    //
-    //
-    // @TODO Move disabled fields upper.
-  //}
-  //else {
-  //  $file_field_list = ['ssrs', 'ssrs_extra'];
-  //  foreach ($file_field_list as $file_field_name) {
-  //    tpps_build_disabled_file_field($fields, $file_field_name);
-  //  }
-  //}
+
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   //if (in_array('Other', $genotype_marker_type)) {
@@ -696,36 +629,6 @@ function tpps_genotype_subform(array $chest) {
  *   The id of the organism fieldset being populated.
  */
 function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
-  $fields['marker-type'] = [
-    '#type' => 'select',
-    '#multiple' => TRUE,
-    '#title' => t('Marker Type: *'),
-    '#options' => [
-      'SNPs' => t('SNPs'),
-      'SSRs/cpSSRs' => t('SSRs/cpSSRs'),
-      'Other' => t('Other'),
-    ],
-    // @TODO Use #states.
-    //'#ajax' => [
-    //  'callback' => 'tpps_genotype_files_callback',
-    //  'wrapper' => "$id-genotype-files",
-    //  'effect' => 'slide',
-    //],
-  ];
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // SNPs
-  $fields['SNPs'] = [
-    '#type' => 'fieldset',
-    '#title' => t('SNPs Information:'),
-    '#collapsible' => TRUE,
-    '#states' => [
-      'visible' => [
-        ':input[name="' . $id . '[genotype][marker-type]"]' => ['value' => 'SNPs'],
-      ],
-    ],
-
-  ];
   $fields['SNPs']['genotyping-design'] = [
     '#type' => 'select',
     '#title' => t('Define Experimental Design: *'),
@@ -753,7 +656,8 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     ],
     '#states' => [
       'visible' => [
-        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => ['value' => '1'],
+        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' =>
+        ['value' => '1'],
       ],
     ],
   ];
@@ -763,7 +667,8 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
     '#states' => [
       'visible' => [
         ':input[name="' . $id . '[genotype][SNPs][GBS]"]' => ['value' => '5'],
-        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => ['value' => '1'],
+        ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' =>
+        ['value' => '1'],
       ],
     ],
   ];
@@ -791,35 +696,6 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       'visible' => [
         ':input[name="' . $id . '[genotype][SNPs][targeted-capture]"]' => ['value' => '2'],
         ':input[name="' . $id . '[genotype][SNPs][genotyping-design]"]' => ['value' => '2'],
-      ],
-    ],
-  ];
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Field 'Define SSRs/cpSSRs Type'.
-  // @TODO Minor. Better to rename field to avoid '/' in name
-  // and make it more meaningful.
-  $fields['SSRs/cpSSRs'] = [
-    '#type' => 'select',
-    '#title' => t('Define SSRs/cpSSRs Type: *'),
-    '#options' => [
-      'SSRs' => t('SSRs'), // Original from Peter
-      'cpSSRs' => t('cpSSRs'), // Original from Peter
-      'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
-    ],
-    // Fields 'SSRs' and 'cpSSRs' are switched good on already loaded page
-    // but when page loaded first time or changed Ploidy (which updates
-    // form using AJAX) then both fields are shown which is not correct.
-    // #TODO use #states.
-    //'#ajax' => [
-    //  'callback' => 'tpps_genotype_files_callback',
-    //  'wrapper' => "$id-genotype-files",
-    //  'effect' => 'slide',
-    //],
-    '#states' => [
-      'visible' => [
-        ':input[name="' . $id . '[genotype][marker-type]"]'
-        => ['value' => 'SSRs/cpSSRs'],
       ],
     ],
   ];
@@ -1096,4 +972,185 @@ function tpps_add_dropdown_file_selector(array $chest) {
     '#description' => t('Please provide the full path to your @file_name file '
       . 'stored on @hostname', $params),
   ];
+}
+
+/**
+ * SSRs/cpSSRs fields.
+ *
+ * @param array $chest
+ *   Required metadata.
+ */
+function tpps_page_4_genotype_ssrs(array $chest) {
+  $form = &$chest['form'];
+  $organism_name = $chest['organism_name'];
+  $fields = &$form[$organism_name][$chest['type']];
+  // SSRs/cpSSRs.
+  $fields['ssrs_cpssrs'] = [
+    '#type' => 'fieldset',
+    '#title' => t('SSRs/cpSSRs Information:'),
+    '#collapsible' => TRUE,
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_ssr_cpssr_data]"]' => ['value' => 'yes'],
+      ],
+    ],
+  ];
+  // @TODO Minor. Better to rename field to avoid '/' in name
+  // and make it more meaningful.
+  $fields['SSRs/cpSSRs'] = [
+    '#type' => 'select',
+    '#title' => t('Define SSRs/cpSSRs Type: *'),
+    '#options' => [
+      'SSRs' => t('SSRs'),
+      'cpSSRs' => t('cpSSRs'),
+      'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
+    ],
+    '#default_value' => tpps_get_ajax_value(
+      $chest['form_state'], [$organism_name, 'genotype', 'SSRs/cpSSRs'], 'SSRs'
+    ),
+    '#states' => [
+      'visible' => [
+        ':input[name="' . $organism_name . '[genotype]'
+        . '[does_study_include_ssr_cpssr_data]"]' => ['value' => 'yes'],
+      ],
+    ],
+  ];
+  tpps_form_relocate_field([
+    'form' => &$fields,
+    'current_parents' => [],
+    'field_name' => 'SSRs/cpSSRs',
+    'new_parents' => ['ssrs_cpssrs'],
+    '#parents' => [$organism_name, 'genotype'],
+    '#name' => $organism_name . '[genotype][SSRs/cpSSRs]',
+  ]);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // @TODO update validation and submit_all.php
+  $fields['files']['ploidy'] = [
+    '#type' => 'select',
+    '#title' => t('SSR Ploidy: *'),
+    '#options' => [
+      'Haploid' => t('Haploid'),
+      'Diploid' => t('Diploid'),
+      'Polyploid' => t('Polyploid'),
+    ],
+    '#default_value' => tpps_get_ajax_value(
+      $chest['form_state'], [$organism_name, 'genotype', 'files', 'ploidy'], 'Haploid'
+    ),
+    //'#states' => [
+    //  'visible' => [
+    //    ':input[name="' . $organism_name . '[genotype][SSRs/cpSSRs]"]'
+    //    => ['value' => 'Both SSRs and cpSSRs'],
+    //  ],
+    //],
+  ];
+  tpps_form_relocate_field([
+    'form' => &$fields,
+    'current_parents' => ['files'],
+    'field_name' => 'ploidy',
+    'new_parents' => ['ssrs_cpssrs'],
+    '#parents' => [$organism_name, 'genotype', 'files'],
+    '#name' => $organism_name . '[genotype][files][ploidy]',
+  ]);
+  if (variable_get('tpps_page_4_update_ploidy_description', TRUE)) {
+    // Allow 'Ploidy' field desctiptio be update on the fly.
+    $ploidy_description = [
+      'Haploid' => t('For haploid, TPPS assumes that each remaining column '
+        . 'in the spreadsheet is a marker.'),
+      'Diploid' => t('For diploid, TPPS will assume that pairs of columns '
+        . 'together are describing an individual marker, so the second and '
+        . 'third columns would be the first marker, the fourth and fifth '
+        . 'columns would be the second marker, etc.'),
+      'Polyploid' => t('For polyploid, TPPS will read columns until it arrives '
+        . 'at a non-empty column with a different name from the last.'),
+    ];
+    $form['#attached']['js'][] = [
+      'type' => 'setting',
+      'data' => [
+        'tpps' => [
+          'ploidyDescriptions' => $ploidy_description,
+          'ssrFields' => ['ssrs', 'ssrs_extra'],
+        ],
+      ],
+      'scope' => 'footer',
+    ];
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // SSRs field.
+  //
+  // Note: Description differs only single word '@type'.
+  $ssr_field_description = 'Please upload a spreadsheet containing your '
+    . '@type data. The format of this file is very important! TPPS will '
+    . 'parse your file based on the ploidy you have selected above. '
+    . 'For any ploidy, TPPS will assume that the first column of your '
+    . 'file is the column that holds the Plant Identifier that matches '
+    . 'your accession file.';
+  $file_field_name = 'ssrs';
+  $title = t('SSRs Spreadsheet');
+  tpps_form_build_file_field(array_merge($chest, [
+    'parents' => [$organism_name, 'genotype', 'files'],
+    'field_name' => $file_field_name,
+    'title' => $title,
+    'organism_name' => $organism_name,
+    'type' => $chest['type'],
+    'description' => t($ssr_field_description, ['@type' => 'SSR']),
+    // Add extra text field for empty field value.
+    'empty_field_value' => tpps_get_empty_field_value(
+      $chest['form_state'], $organism_name, $file_field_name
+    ),
+    'use_fid' => TRUE,
+    // Visible when: 'SSRs' or 'Both SSRs and cpSSRs'.
+    'states' => [
+      'invisible' => [
+        ':input[name="' . $organism_name . '[genotype][SSRs/cpSSRs]"]'
+        => ['value' => 'cpSSRs'],
+      ],
+    ],
+  ]));
+  dpm(tpps_array_get_value(
+    $chest, ['form', $organism_name, 'genotype', 'files', $file_field_name]
+  ));
+  tpps_form_relocate_field([
+    'form' => &$fields,
+    'current_parents' => ['files'],
+    'field_name' => 'ssrs',
+    'new_parents' => ['ssrs_cpssrs'],
+    '#parents' => [$organism_name, 'genotype', 'files'],
+    '#name' => $organism_name . '[genotype][files][ssrs]',
+  ]);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // csSSR Field.
+  $file_field_name = 'ssrs_extra';
+  $title = t('cpSSRs Spreadsheet');
+  tpps_form_build_file_field(array_merge($chest, [
+    'parents' => [$organism_name, 'genotype', 'files'],
+    'field_name' => $file_field_name,
+    'title' => $title,
+    'organism_name' => $organism_name,
+    'type' => $chest['type'],
+    'description' => t($ssr_field_description, ['@type' => 'spSSR']),
+    // Add extra text field for empty field value.
+    'empty_field_value' => tpps_get_empty_field_value(
+      $chest['form_state'], $organism_name, $file_field_name
+    ),
+    'use_fid' => TRUE,
+    // Visible when: 'cpSSRs' or 'Both SSRs and cpSSRs'.
+    'states' => [
+      'invisible' => [
+        ':input[name="' . $organism_name . '[genotype][SSRs/cpSSRs]"]'
+        => ['value' => 'SSRs'],
+      ],
+    ],
+  ]));
+  tpps_form_relocate_field([
+    'form' => &$fields,
+    'current_parents' => ['files'],
+    'field_name' => 'ssrs_extra',
+    'new_parents' => ['ssrs_cpssrs'],
+    '#parents' => [$organism_name, 'genotype', 'files'],
+    '#name' => $organism_name . '[genotype][files][ssrs_extra]',
+  ]);
 }

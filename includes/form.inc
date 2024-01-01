@@ -615,7 +615,6 @@ function tpps_form_build_file_field(array $chest) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Map from the $chest.
-  $fields = &$chest['form'];
   $form = &$chest['form'];
   $form_state = $chest['form_state'] ?? [];
   $organism_name = $chest['organism_name'];
@@ -652,7 +651,7 @@ function tpps_form_build_file_field(array $chest) {
   // Add checkbox to select existing file or upload new one.
   // Note: This code is outdated and not tested. Currently not used but there
   // is a task about File Reusage and this code could became useful.
-  if ($allow_file_reuse && 0) {
+  if ($allow_file_reuse) {
     $selector_name = $chest['field_name'] . '_file_selector';
     $parent_element[$selector_name] = [
       '#type' => 'checkbox',
@@ -692,6 +691,7 @@ function tpps_form_build_file_field(array $chest) {
     );
   }
   // Some fields have used this piece of code before.
+  // See function tpps_managed_file_process() which uses $fid.
   // @TODO [VS] Check if this code could be removed. It's not used on form
   // generation and when validation failed.
   if (!empty($use_fid)) {

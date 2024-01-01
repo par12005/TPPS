@@ -103,40 +103,33 @@
             }
           }
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+          // Update 'Ploidy' field description.
           if (
             typeof(settings.tpps) != 'undefined'
             && typeof(settings.tpps.organismNumber) != 'undefined'
+            && typeof(settings.tpps.ploidyDescriptions) != 'undefined'
           ) {
             // We can't use Drupal States API because it doesn't work with
             // multiple select form elements.
             for (let i = 1; i <= settings.tpps.organismNumber; i++) {
-              var organism_name = '#edit-organism-' + i;
-              $(organism_name + '-genotype-snps-genotyping-design').parent().hide();
-              $(organism_name + '-genotype-ssrscpssrs').parent().hide();
-              $(organism_name + '-genotype-marker-type', context).bind('change', function() {
-                if ($.inArray('SNPs', $(this).val()) !== -1) {
-                  $(organism_name + '-genotype-snps').show();
-                  $(organism_name + '-genotype-snps-genotyping-design').parent().show();
-                }
-                else {
-                  $(organism_name + '-genotype-snps').hide();
-                }
-
-                if ($.inArray('SSRs/cpSSRs', $(this).val()) !== -1) {
-                  $(organism_name + '-genotype-ssrscpssrs').parent().show();
-                }
-                else {
-                  $(organism_name + '-genotype-ssrscpssrs').parent().hide();
-                }
-                if ($.inArray('Other', $(this).val()) !== -1) {
-                  $(organism_name + '-genotype-other-marker').parent().show();
-                }
-                else {
-                  $(organism_name + '-genotype-other-marker').parent().hide();
+              let ploidySelector = '[name="organism-' + i + '[genotype][files][ploidy]"]';
+              $(ploidySelector).change(function() {
+                for (const [value, description] of Object.entries(settings.tpps.ploidyDescriptions)) {
+                  if ($(this).val() == value) {
+                    for (const ssrFieldName of settings.tpps.ssrFields) {
+                      let ssrSelector = '[name="organism-' + i + '[genotype][files][' + ssrFieldName +']"]';
+                      console.log($(ssrSelector));
+                      console.log(
+                        $(ssrSelector).parents('.form-item').find('.description').html()
+                      );
+                      // @TODO Add 'description' with leading '<br/>
+                      // console.log( $(this).val());
+                      // console.log(ssrFieldName);
+                      // console.log( description );
+                    }
+                  }
                 }
               });
-              // Hide all Genotype related fields by default.
-              $(organism_name + '-genotype-marker-type').trigger('change');
             }
           }
           // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
