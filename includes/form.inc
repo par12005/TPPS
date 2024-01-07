@@ -671,8 +671,9 @@ function tpps_form_build_file_field(array $chest) {
     '#upload_validators' => ['file_validate_extensions' => $extensions],
     '#description' => $description
     . ($debug_mode ? '<br/>Field name: <strong>' . $field_name . '</strong>' : ''),
-    '#tree' => TRUE,
+    //'#tree' => TRUE,
     '#states' => $states,
+    //'#parents' => $parents,
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.

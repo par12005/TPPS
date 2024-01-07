@@ -650,7 +650,8 @@ function tpps_element_info_alter(&$type) {
  *   The extended managed_file element.
  */
 function tpps_managed_file_process(array $element, array &$form_state, array $form) {
-  if ($form_state['build_info']['form_id'] !== 'tpps_main') {
+  $form_id = $form_state['build_info']['form_id'];
+  if (!in_array($form_id, ['tpps_main', 'tppsc_main'])) {
     return $element;
   }
   if (isset($element['columns'])) {
@@ -666,6 +667,8 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
       $form_state['complete form'],
       $no_header_parents
     );
+
+
     $callback = $form_state['triggering_element']['#ajax']['callback'] ?? NULL;
     if (!$no_header and ($callback != 'tpps_no_header_callback')) {
       $end = array_pop($saved_value_parents);
@@ -801,20 +804,15 @@ function tpps_managed_file_process(array $element, array &$form_state, array $fo
 /**
  * Implements hook_form_alter().
  *
- * Initializes form state values and saved_values to empty arrays, and calls the
- * tpps_leaves function, which populates most default values.
+ * Initializes form state values and saved_values to empty arrays, and
+ * calls the tpps_leaves function, which populates most default values.
  */
 function tpps_form_alter(&$form, &$form_state, $form_id) {
-  if ($form['#form_id'] == 'tpps_main') {
+  if (in_array($form_id, ['tpps_main', 'tppsc_main'])) {
     $stage = $form_state['stage'];
-
-    if (!isset($form_state['saved_values'][$stage])) {
-      $form_state['saved_values'][$stage] = array();
-    }
-    if (!isset($form_state['values'])) {
-      $form_state['values'] = array();
-    }
-
+    $form_state['saved_values'][$stage] = $form_state['saved_values'][$stage] ?? [];
+    $form_state['values'] = $form_state['values'] ?? [];
+    // Populate default values for most form fields.
     tpps_leaves($form, $form_state['values'], $form_state['saved_values'][$stage]);
   }
 }
@@ -832,40 +830,65 @@ function tpps_form_alter(&$form, &$form_state, $form_id) {
 function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
   foreach ($elements as $key => &$element) {
     if ((gettype($key) != 'string' or $key[0] != '#') and isset($element['#type'])) {
+      //if ($key == 'ssrs') {
+      //  dpm($element['#tree'], $key . ' tree');
+      //  dpm($element['#parents'], $key . ' parents');
+      //}
 
       // If #tree is not set in the current element, and #tree is set and false
       // in the parent element, then set #tree to false in the current element.
-      if (!isset($element['#tree']) and isset($elements['#tree']) and !$elements['#tree']) {
+      if (
+        !isset($element['#tree'])
+        // @TODO Variable names are too close. Note: $elements != $element.
+        && isset($elements['#tree']) && !$elements['#tree']
+      ) {
         $element['#tree'] = FALSE;
       }
 
       // If #tree is not set or is set to true, then populate the #parents array
       // with the parents of the parent element plus the current key. Otherwise,
       // the #parents array should just be the current key.
-      if (!isset($element['#tree']) or $element['#tree']) {
-        $element['#parents'] = array_merge($elements['#parents'], array($key));
+      if (empty($element['#parents'])) {
+        if (!isset($element['#tree']) || $element['#tree']) {
+          $element['#parents'] = array_merge($elements['#parents'], [$key]);
+        }
+        else {
+          $element['#parents'] = [$key];
+        }
       }
       else {
-        $element['#parents'] = array($key);
+        if (end($element['#parents']) != $key) {
+          array_push($element['#parents'], $key);
+        }
+      }
+      if ($key == 'ssrs') {
+        dpm($element, $key);
       }
 
       // Element types that should be loading some default value, usually for
       // the purposes of persistent form data.
-      $load_defaults = array(
+      $load_defaults = [
         'textfield',
         'textarea',
         'checkbox',
         'select',
         'managed_file',
-      );
+      ];
       // If element is a type that should pull from 'saved_values', try to load
       // the old value.
-      if (in_array($element['#type'], $load_defaults) and !isset($element['#default_value']) and isset($saved_vals[$key])) {
+      if (
+        in_array($element['#type'], $load_defaults)
+        and !isset($element['#default_value'])
+        and isset($saved_vals[$key])
+      ) {
         $element['#default_value'] = $saved_vals[$key];
       }
       // If element is a select type and still has no default value, then there
       // is no saved value, so the default should be 0.
-      elseif ($element['#type'] == 'select' and !isset($element['#default_value'])) {
+      elseif (
+        $element['#type'] == 'select'
+        && !isset($element['#default_value'])
+      ) {
         $element['#default_value'] = 0;
       }
 
@@ -875,17 +898,20 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
         // Get checkboxes options.
         foreach ($options as $option) {
           // If the option does not have a default, pull from 'saved_values'.
-          if (!isset($element[$option]['#default_value']) and isset($saved_vals[$key][$option])) {
+          if (
+            !isset($element[$option]['#default_value'])
+            && isset($saved_vals[$key][$option])
+          ) {
             $element[$option]['#default_value'] = $saved_vals[$key][$option];
           }
         }
       }
 
       if ($element['#type'] == 'fieldset') {
-        if (empty($saved_vals[$key]) or !is_array($saved_vals[$key])) {
+        if (empty($saved_vals[$key]) || !is_array($saved_vals[$key])) {
           $saved_vals[$key] = array();
         }
-        if (empty($vals[$key]) or !is_array($vals[$key])) {
+        if (empty($vals[$key]) || !is_array($vals[$key])) {
           $vals[$key] = array();
         }
         tpps_leaves($element, $vals[$key], $saved_vals[$key]);
@@ -898,9 +924,20 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
  * Implements hook_page_build().
  *
  * Adds the side bar to TPPS form pages before they are rendered.
+ * Adds the tppsc Status side bar to the page before it is rendered.
+ *
+ * Note: array $page contains TPPSc/TPPS form array.
  */
 function tpps_page_build(&$page) {
-  $js_settings = drupal_static('drupal_add_js', array())['settings']['data'] ?? array();
+  $form_id = $page['content']['system_main']['#form_id'] ?? NULL;
+  if (!in_array($form_id, ['tpps_main', 'tppsc_main'])) {
+    return $page;
+  }
+
+  // Note: Module TPPSc used this check for step value:
+  // $page['content']['system_main']['step']['#default_value']
+  // but this $page['content']['system_main']['step'] not set even at Page 4.
+  $js_settings = drupal_static('drupal_add_js', [])['settings']['data'] ?? [];
   $step = NULL;
   foreach ($js_settings as $info) {
     if (array_key_exists('tpps', $info)) {
@@ -910,21 +947,20 @@ function tpps_page_build(&$page) {
       }
     }
   }
-
-  if (empty($page['content']['system_main']['#form_id']) or $page['content']['system_main']['#form_id'] != 'tpps_main' or empty($step)) {
+  if (empty($step)) {
     return $page;
   }
-
-  if ($step != 'frontpage' and $step != TPPS_PAGE_1 and $step != 'summarypage') {
+  if (!in_array($step, ['frontpage', TPPS_PAGE_1, 'summarypage'])) {
     $blockObject = block_load('views', 'tpps_status');
     $blockObject->title = 'TPPS Status';
     $blockObject->subject = '';
     $blockObject->region = 'Content';
-    $block = _block_get_renderable_array(_block_render_blocks(array($blockObject)));
-    $tpps_status = "<div class='block block-system contextual-links-region block-menu tpps-status-block'>{$block['views_tpps_status']['#markup']}</div>";
+    $block = _block_get_renderable_array(_block_render_blocks([$blockObject]));
+    $tpps_status = '<div class="block block-system contextual-links-region '
+      . 'block-menu tpps-status-block">'
+      . $block['views_tpps_status']['#markup'] . '</div>';
     drupal_add_region_content('sidebar_second', $tpps_status);
   }
-
   return $page;
 }
 
