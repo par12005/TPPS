@@ -861,10 +861,6 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
           array_push($element['#parents'], $key);
         }
       }
-      if ($key == 'ssrs') {
-        dpm($element, $key);
-      }
-
       // Element types that should be loading some default value, usually for
       // the purposes of persistent form data.
       $load_defaults = [

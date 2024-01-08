@@ -475,7 +475,7 @@ function tpps_form_relocate_field(array $chest) {
     dpm(print_r($chest, 1));
   }
   // All fields will be affected.
-  $default_debug_mode = TRUE;
+  $default_debug_mode = FALSE;
   $form = &$chest['form'] ?? NULL;
   $field_name = $chest['field_name'] ?? NULL;
   $current_parents = $chest['current_parents'] ?? [];
@@ -532,7 +532,14 @@ function tpps_form_relocate_field(array $chest) {
   // Relocate field to better place.
   $new_field = array_merge(
     $parent_element[$field_name],
-    ['#tree' => FALSE, '#parents' => $parents, '#name' => $name]
+    [
+      '#tree' => FALSE,
+      // With last element (field name):
+      '#parents' => $parents,
+      // Without last element (field name):
+      // '#parents' => array_slice($parents, 0, -1),
+      '#name' => $name,
+    ]
   );
   // Check if new location exists. For example fieldset could be added later
   // and overwrite relocated field.
@@ -671,10 +678,11 @@ function tpps_form_build_file_field(array $chest) {
     '#upload_validators' => ['file_validate_extensions' => $extensions],
     '#description' => $description
     . ($debug_mode ? '<br/>Field name: <strong>' . $field_name . '</strong>' : ''),
-    //'#tree' => TRUE,
+    '#tree' => TRUE,
     '#states' => $states,
-    //'#parents' => $parents,
+    '#parents' => $parents,
   ];
+  // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
   //
@@ -764,7 +772,7 @@ function tpps_form_build_file_field(array $chest) {
  * Gets value of the nested element from the array.
  *
  * To get value by reference use:
- * $ref = &tpps_array_get_value($array, $parents, $default);
+ * $ref = &tpps_array_get_value($array, $parents);
  *
  * Shortcut for function drupal_array_get_nested_value() with default value.
  * See
@@ -780,26 +788,20 @@ function tpps_form_build_file_field(array $chest) {
  * @param array $parents
  *   List of the element's parents (including element name).
  *   When empty array then original $array will be returned.
- * @param mixed $default
- *   The default value.
- *   Will be used only when drupal_array_get_nested_value() reports that element
- *   wasn't found so if element's value was empty string, zero, NULL or FALSE
- *   it will be returned correctly.
- *   Note: that $default passed by reference and will be returned by reference.
  *
  * @return mixed
  *   Returns the reference (!) to the value of the element of the array.
  *   Returns $default if element wasn't found in given array but not reference.
  *   Returns $array when $parents is an empty array.
  */
-function &tpps_array_get_value(array &$array, array $parents = [], $default = '') {
+function &tpps_array_get_value(array &$array, array $parents = []) {
   $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
   if ($key_exists) {
     return $value;
   }
   else {
-    dpm($default, 'default');
-    //return $default;
+    $null = NULL;
+    return $null;
   }
 }
 

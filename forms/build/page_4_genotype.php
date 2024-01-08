@@ -3,6 +3,13 @@
 /**
  * @file
  * Page 4 Genotype related functions.
+ *
+ * Rules:
+ * 1. Field's visibility is controlled by Drupal's State API and '#required'
+ *    attribute must not be used because it broke validation and require extra
+ *    processing.
+ * 2. Validation step will check if field was visible and is required.
+ *    So no need to do this at form building step.
  */
 
 /**
@@ -435,9 +442,9 @@ function tpps_genotype_subform(array $chest) {
       //dpm(
       //  tpps_array_get_value(
       //    $chest,
-      //    ['page4_values', $organism_name, 'genotype', 'files', $file_field_name, 'empty'],
-      //  'NA'
-      //));
+      //    ['page4_values', $organism_name, 'genotype', 'files', $file_field_name, 'empty'])
+      //    ?? 'NA',
+      //);
       return;
 
 
@@ -447,9 +454,8 @@ function tpps_genotype_subform(array $chest) {
           'empty' => [
             '#default_value' => tpps_array_get_value(
               $chest['page4_values'],
-              [$organism_name, 'genotype', 'files', $file_field_name, 'empty'],
-              'NA'
-            ),
+              [$organism_name, 'genotype', 'files', $file_field_name, 'empty'])
+              ?? 'NA',
           ],
           'columns' => [
             '#description' => t('Please define which columns hold the '
@@ -1029,7 +1035,6 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   ]);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // @TODO update validation and submit_all.php
   $fields['files']['ploidy'] = [
     '#type' => 'select',
     '#title' => t('SSR Ploidy: *'),
@@ -1041,12 +1046,6 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     '#default_value' => tpps_get_ajax_value(
       $chest['form_state'], [$organism_name, 'genotype', 'files', 'ploidy'], 'Haploid'
     ),
-    //'#states' => [
-    //  'visible' => [
-    //    ':input[name="' . $organism_name . '[genotype][SSRs/cpSSRs]"]'
-    //    => ['value' => 'Both SSRs and cpSSRs'],
-    //  ],
-    //],
   ];
   tpps_form_relocate_field([
     'form' => &$fields,
@@ -1083,6 +1082,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SSRs field.
   //
+  $file_field_name = 'ssrs';
   // Note: Description differs only single word '@type'.
   $ssr_field_description = 'Please upload a spreadsheet containing your '
     . '@type data. The format of this file is very important! TPPS will '
@@ -1090,13 +1090,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     . 'For any ploidy, TPPS will assume that the first column of your '
     . 'file is the column that holds the Plant Identifier that matches '
     . 'your accession file.';
-  $file_field_name = 'ssrs';
   $title = t('SSRs Spreadsheet');
-
-  //dpm(print_r(
-  //  array_keys($chest)
-  //, 1));
-
   tpps_form_build_file_field(array_merge($chest, [
     'parents' => [$organism_name, 'genotype', 'files'],
     'field_name' => $file_field_name,
@@ -1117,11 +1111,6 @@ function tpps_page_4_genotype_ssrs(array $chest) {
       ],
     ],
   ]));
-
-  dpm(tpps_array_get_value(
-    $chest['form'], [$organism_name, 'genotype', 'files', $file_field_name]
-  ), 'NOT relocated');
-
   tpps_form_relocate_field([
     'form' => &$fields,
     'current_parents' => ['files'],
@@ -1130,10 +1119,6 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
     '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
   ]);
-  dpm(tpps_array_get_value(
-    $chest['form'], [$organism_name, 'genotype', $ssr_fieldset, $file_field_name]
-  ), 'relocated');
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // csSSR Field.
   $title = t('cpSSRs Spreadsheet');
@@ -1158,10 +1143,6 @@ function tpps_page_4_genotype_ssrs(array $chest) {
       ],
     ],
   ]));
-  dpm(tpps_array_get_value(
-    $chest['form'], [$organism_name, 'genotype', 'files', $file_field_name]
-  ), 'original');
-
   tpps_form_relocate_field([
     'form' => &$fields,
     'current_parents' => ['files'],
@@ -1170,8 +1151,4 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
     '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
   ]);
-  dpm(tpps_array_get_value(
-    $chest['form'],
-    [$organism_name, 'genotype', $ssr_fieldset, $file_field_name]
-  ), 'relocated');
 }
