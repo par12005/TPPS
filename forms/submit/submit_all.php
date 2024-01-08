@@ -3010,6 +3010,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
     $options['scaffold_cvterm'] = tpps_load_cvterm('scaffold')->cvterm_id;
     $options['phenotype_meta'] = $form_state['data']['phenotype_meta'];
     $options['pub_id'] = $form_state['ids']['pub_id'];
+    $options['all_variants'] = [];
 
     $multi_insert_options['fk_overrides']['featureloc'] = array(
       'srcfeature' => array(
@@ -3048,6 +3049,31 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
 
       tpps_log('[INFO] - Inserting SNP genotype_spreadsheet data into database using insert_multi...');
       tpps_chado_insert_multi($options['records'], $multi_insert_options);
+
+      // Add all variants (markers) to the chado.studies_with_markers table
+      // GOAL: Push unique variants to chado.studies_with_markers
+      $unique_variant_ids_string = implode(',',array_keys($options['all_variant_ids']));
+
+      // UNIQUE VARIANTS Step 1 - check to see if there's already a record
+      $accession_count_results = chado_query('SELECT count(*) as c1 FROM chado.studies_with_markers WHERE accession ILIKE :accession', [
+        ':accession' => $accession
+      ]);
+      $accession_count = $accession_count_results->fetchObject()->c1;
+
+      if ($accession_count > 0) {
+        // UPDATE
+        echo "UPDATE chado.studies_with_markers for $accession\n";
+        chado_query("UPDATE chado.studies_with_markers SET markers = ARRAY[" . $unique_variant_ids_string . "] WHERE accession ILIKE '" . $accession . "';");
+      }
+      else {
+        // INSERT
+        echo "INSERT chado.studies_with_markers for $accession\n";
+        chado_query("insert into chado.studies_with_markers (accession, markers) values ('" . $accession . "', ARRAY[" . $unique_variant_ids_string . "]);");
+      }
+      // Clean up memory
+      unset($unique_variant_ids_string);      
+
+
     } catch (Exception $ex) {
       echo "An exception occurred.\n";
       print_r($ex);
@@ -3324,6 +3350,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
     ]);
     ob_end_clean();
 
+
     // Lookup the marker_name_id
     $results = chado_query("SELECT feature_id FROM chado.feature
       WHERE uniquename = :uniquename AND organism_id = :organism_id", [
@@ -3336,6 +3363,10 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
     foreach ($results as $row) {
       $variant_name_id = $row->feature_id;
     }
+
+
+    // this will at the end of everything be used to insert / update studies_with_markers
+    $options['all_variant_ids'][$variant_name_id] = 1;    
 
 
     if (!empty($associations) and !empty($associations[$variant_name])) {
