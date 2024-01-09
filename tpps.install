@@ -2142,10 +2142,13 @@ function tpps_update_7123() {
   $column_name = 'submission_interface';
   if (!db_field_exists($table_name, $column_name)) {
     $schema = drupal_get_schema($table_name);
+    // @TODO Test this update.
     // db_add_field() not work but maybe because drupal's db user has no
     // permission to alter tables?
+    // But executed in pgmyadmin query worked:
+    //   ALTER TABLE tpps_submission ADD COLUMN submission_interface text;
+    //
     //db_add_field($table_name, $column_name, $schema['fields'][$column_name]);
-    // Note: no need to create an index for this column.
     $sql = 'ALTER TABLE tpps_submission ADD COLUMN submission_interface text;';
     db_query($sql);
   }

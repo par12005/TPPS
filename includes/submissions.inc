@@ -35,7 +35,7 @@ module_load_include('inc', 'tpps', 'includes/submission_interface');
  */
 function tpps_load_submission($accession, $state = TRUE) {
   $result = db_select('tpps_submission', 's')
-    // @TODO exclude 'submission_interface' column.
+    // @TODO Minor. Exclude 'submission_interface' column.
     ->fields('s')
     ->condition('accession', $accession)
     ->range(0, 1)
@@ -48,6 +48,7 @@ function tpps_load_submission($accession, $state = TRUE) {
     return $result;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Search for alternative accessions.
   $query = db_select('tpps_submission', 's');
   $query->join('tpps_submission_dbxref', 's_dbx', 's.tpps_submission_id = s_dbx.tpps_submission_id');
@@ -66,7 +67,10 @@ function tpps_load_submission($accession, $state = TRUE) {
     return $result;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Provide legacy support for older TPPS submissions.
+  // @TODO Both dev- and live-sites stil have studies stored in variables.
+  // They must be removed to improve performance of site.
   global $user;
   $state = variable_get('tpps_incomplete_' . $user->mail . $accession, NULL);
   if (!empty($state)) {

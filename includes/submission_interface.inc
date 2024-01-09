@@ -25,87 +25,91 @@
  * Additional attributes of the submission record can be updated by populating
  * the options parameter.
  *
- * @param array $state
+ * @param array $form_state
  *   The form_state of the submission.
  * @param array $options
  *   Additional submission attributes to update.
+ *
+ *
+ *   @TODO Get rid of $options and get accession from $form_state.
  */
-function tpps_si_update(array $state, array $options = array()) {
-  if (empty($options['status']) and !empty($state['status'])) {
-    $options['status'] = $state['status'];
+function tpps_submission_interface_update(array $form_state, array $options = []) {
+  if (empty($form_state) || empty($form_state['accession'])) {
+    return;
   }
-  $state['updated'] = time();
-  // @TODO Convert $state to the interface.
-  // Should we receive $form_state or prepared $interface.
-  $options['submission_interface'] = serialize($state);
+  // @TODO Replace with oneliner in original function tpps_submission_update().
+  $form_state['updated'] = REQUEST_TIME;
+  $accession = $form_state['accession'];
+
+  $fields = [
+    'submission_interface' => serialize(
+      tpps_submission_interface_convert($form_state)
+    )
+  ];
   db_update('tpps_submission')
-    ->fields($options)
-    ->condition('accession', $state['accession'])
+    ->fields($fields)
+    ->condition('accession', $accession)
     ->execute();
 }
 
 /**
- * This function loads a TPPS Submission based on the provided accession number.
+ * Converts $form_state into the Submission Interface.
  *
- * If the state option is set to false, this function will return the full
- * tpps_submission table record for the submission. Otherwise, the function will
- * return only the form_state of the submission. The state option defaults to
- * True.
+ * @param array $form_state
+ *   Drupal Form State array.
+ *
+ * @return array
+ *   Returns array with datastructure prepared for TPPS pipeline
+ *   (submit_all.php script).
+ */
+function tpps_submission_interface_convert(array $form_state) {
+  $interface = $form_state;
+  // @TODO Convert.
+  // Remove useless elements.
+  // Convert versions.
+
+  return $interface;
+}
+
+/**
+ * Gets Submission Interface for given study.
+ *
+ * Note:
+ * Forked tpps_load_submission().
  *
  * @param string $accession
- *   The accession number of the submission.
- * @param bool $state
- *   An option to return only the state of the TPPS Submission. Default to True.
+ *   The accession of the submission in format 'TGDRxxxx'.
  *
- * @global stdClass $user
- *   The user trying to access the submission.
- *
- * @return array|object
- *   The form_state of the TPPS Submission form.
+ * @return array
+ *   Returns Submission Interface with data prepared for pipeline processing.
  */
-function tpps_si_load($accession, $state = TRUE) {
+function tpps_submission_interface_load($accession) {
   $result = db_select('tpps_submission', 's')
     // @TODO exclude 'submission_interface' column.
-    ->fields('s')
+    ->fields('s', ['submission_interface'])
     ->condition('accession', $accession)
     ->range(0, 1)
     ->execute()->fetchObject();
 
   if ($result) {
-    if ($state) {
-      return unserialize($result->submission_state);
-    }
-    return $result;
+    return unserialize($result->submission_interface);
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // @TODO Minor. Check if this code below is really useful.
   // Search for alternative accessions.
   $query = db_select('tpps_submission', 's');
-  $query->join('tpps_submission_dbxref', 's_dbx', 's.tpps_submission_id = s_dbx.tpps_submission_id');
+  $query->join('tpps_submission_dbxref', 's_dbx',
+    's.tpps_submission_id = s_dbx.tpps_submission_id'
+  );
   $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-  $query->fields('s');
+  $query->fields('s', ['submission_interface'])
   $query->condition('dbx.accession', $accession);
   $query->condition('s.status', 'Approved');
   $query->range(0, 1);
-  $query = $query->execute();
-  $result = $query->fetchObject();
+  $result = $query->execute()->fetchObject();
 
-
-  // @Todo Use only interface.
   if ($result) {
-    if ($state) {
-      return unserialize($result->submission_state);
-    }
-    return $result;
-  }
-
-  // Provide legacy support for older TPPS submissions.
-  global $user;
-  $state = variable_get('tpps_incomplete_' . $user->mail . $accession, NULL);
-  if (!empty($state)) {
-    return $state;
-  }
-  else {
-    return variable_get('tpps_complete_' . $user->mail . $accession, NULL);
+    return unserialize($result->submission_interface);
   }
 }
-
