@@ -360,6 +360,7 @@ function tpps_update_old_submissions() {
         'accession' => $accession,
         'dbxref_id' => $dbxref_id,
         'submission_state' => serialize($state),
+        'submission_interface' => tpps_submission_interface_convert($state),
       ))
       ->execute();
     variable_del($result->name);

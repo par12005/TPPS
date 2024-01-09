@@ -19,6 +19,7 @@
  *   Returns rendered list of files.
  */
 function tpps_admin_files_diagnostics_page($accession = NULL) {
+  // @TODO Minor. Exclude 'submission_interface' form results.
   $results = chado_query(
     'SELECT * FROM tpps_submission WHERE accession = :accession',
     [':accession' => $accession]

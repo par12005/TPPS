@@ -144,6 +144,7 @@ function tpps_create_submission(array $state, $uid) {
     'accession' => $state['accession'],
     'dbxref_id' => $state['dbxref_id'],
     'submission_state' => serialize($state),
+    'submission_interface' => tpps_submission_interface_convert($state),
   );
 
   db_insert('tpps_submission')
@@ -197,8 +198,12 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   // tpps_update_submission($state);
 
   $options['status'] = 'Approved';
+  // @TODO Minor. Use REQUEST_TIME to have the same value for all related data.
+  // Need to check if this function called from submit_all.php or other time
+  // consuming script and time() != REQUEST_TIME.
   $state['updated'] = time();
   $options['submission_state'] = serialize($state);
+  $options['submission_interface'] = tpps_submission_interface_convert($state);
 
   db_update('tpps_submission')
     ->fields($options)
@@ -240,6 +245,7 @@ function tpps_update_submission(array $state, array $options = array()) {
   }
   $state['updated'] = time();
   $options['submission_state'] = serialize($state);
+  $options['submission_interface'] = tpps_submission_interface_convert($state);
   db_update('tpps_submission')
     ->fields($options)
     ->condition('accession', $state['accession'])
