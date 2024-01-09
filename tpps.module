@@ -1561,10 +1561,15 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
   // Custom CSS Theme.
   $theme_path = TPPS_MODULE_PATH . '/css/themes/'
     . variable_get('tpps_theme', 'default') . '.css';
+  module_load_include('inc', 'tpps', 'includes/common');
+  $dark_theme_path = TPPS_MODULE_PATH . '/css/dark_theme.css';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // This is regualar page.
   if ($form === NULL || !is_array($form)) {
     drupal_add_css($theme_path);
+    if (variable_get('tpps_dark_theme')) {
+      drupal_add_css($dark_theme_path);
+    }
     if ($page_id == 'main') {
       // Add main files.
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
@@ -1583,6 +1588,9 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // This is form.
     $form['#attached']['css'][] = $theme_path;
+    if (variable_get('tpps_dark_theme')) {
+      $form['#attached']['css'][] = $dark_theme_path;
+    }
     if ($page_id == 'main') {
       // Add main files.
       $form['#attached']['js'][] = [
@@ -1606,17 +1614,6 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
       ];
       $form['#attached']['css'][] = TPPS_MODULE_PATH
         . '/css/tpps_page_' . $page_id . '.css';
-    }
-    else {
-      // Add custom page files. Like 'TPPS Study Export Page' and etc.
-      $form['#attached']['js'][] = [
-        'type' => 'file',
-        'scope' => 'footer',
-        'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . '/js/tpps_' . $page_id . '.js',
-      ];
-      $form['#attached']['css'][] = TPPS_MODULE_PATH
-        . '/css/tpps_' . $page_id . '.css';
     }
   }
 }

@@ -417,10 +417,10 @@ function tpps_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ],
-      'interface' => [
+      'submission_interface' => [
         'description' => 'Data for pipeline processing.',
-        'type' => 'blob',
-        'size' => 'big',
+        'type' => 'text',
+        'size' => 'medium',
         'not null' => TRUE,
       ],
     ),
@@ -2138,11 +2138,15 @@ function tpps_update_7122() {
  * Adds new column to 'tpps_submission' table.
  */
 function tpps_update_7123() {
-  $table_name = 'tpps_submission';
-  $column_name = 'interface';
+  $table_name = 'public.tpps_submission';
+  $column_name = 'submission_interface';
   if (!db_field_exists($table_name, $column_name)) {
     $schema = drupal_get_schema($table_name);
-    db_add_field($table_name, $column_name, $schema['fields'][$column_name]);
+    // db_add_field() not work but maybe because drupal's db user has no
+    // permission to alter tables?
+    //db_add_field($table_name, $column_name, $schema['fields'][$column_name]);
     // Note: no need to create an index for this column.
+    $sql = 'ALTER TABLE tpps_submission ADD COLUMN submission_interface text;';
+    db_query($sql);
   }
 }

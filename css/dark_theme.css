@@ -1,0 +1,39 @@
+/**
+ * @file
+ * Adds dark theme to site.
+ *
+ * WARNING:
+ * '!important' was used only because there is css-injector module which has
+ * a lot of rules which can't be overrriden without this :(
+ */
+body.html {
+  background-color: #212428 !important;
+}
+
+#main .region-sidebar-second div.block.contextual-links-region,
+#main .region-sidebar-second div.block.contextual-links-region form,
+footer#footer,
+form.tpps-form, form.tppsc-form,
+.tpps-form select, .tppsc-form select,
+.tpps-form input.form-text, .tppsc-form input.form-text {
+  background: #373a3c !important;
+}
+form.tppsc-form,
+form.tpps-form,
+form.tpps-form div fieldset.form-wrapper legend span.fieldset-legend,
+form.tppsc-form div fieldset.form-wrapper legend span.fieldset-legend,
+form.tpps-form div fieldset.form-wrapper legend a,
+form.tppsc-form div fieldset.form-wrapper legend a,
+form.tppsc-form div fieldset.form-wrapper legend div.fieldset-title,
+form.tpps-form div fieldset.form-wrapper legend div.fieldset-title {
+  color: white !important;
+}
+form.tppsc-form table thead th,
+form.tpps-form table thead th {
+  color: white;
+  background-color: #777;
+}
+form.tppsc-form tbody tr.even,
+form.tpps-form tbody tr.even {
+  background-color: #777;
+}
