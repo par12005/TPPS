@@ -1,7 +1,5 @@
 <?php
 
-module_load_include('inc', 'tpps', 'includes/submission_file');
-
 /**
  * @file
  * Functions for manipulation of TPPS Submissions.
@@ -10,7 +8,11 @@ module_load_include('inc', 'tpps', 'includes/submission_file');
  * module_load_include('inc', 'tpps', 'includes/submissions');
  *
  * @TODO Minor. Rename functions to use pattern 'tpps_submission_[action]'.
+ * @TODO Move tag-functions to separate file.
  */
+
+module_load_include('inc', 'tpps', 'includes/submission_file');
+module_load_include('inc', 'tpps', 'includes/submission_interface');
 
 /**
  * This function loads a TPPS Submission based on the provided accession number.
@@ -33,6 +35,7 @@ module_load_include('inc', 'tpps', 'includes/submission_file');
  */
 function tpps_load_submission($accession, $state = TRUE) {
   $result = db_select('tpps_submission', 's')
+    // @TODO exclude 'submission_interface' column.
     ->fields('s')
     ->condition('accession', $accession)
     ->range(0, 1)
