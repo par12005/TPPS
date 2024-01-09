@@ -600,6 +600,7 @@ function tpps_form_relocate_field(array $chest) {
  *     // Element 'extra_elements' allow to add any not expected form elements.
  *     'extra_elements' => [],
  *     'use_fid' => FALSE, // Default is FALSE. See below.
+ *     'show_extensions_in_description' => TRUE, // bool. Default is FALSE.
  *   ]);
  *
  *   List of fields which used 'fid'-related code:
@@ -677,7 +678,10 @@ function tpps_form_build_file_field(array $chest) {
     '#upload_location' => $upload_location,
     '#upload_validators' => ['file_validate_extensions' => $extensions],
     '#description' => $description
-    . ($debug_mode ? '<br/>Field name: <strong>' . $field_name . '</strong>' : ''),
+    . ($debug_mode ? '<br/>Field name: <strong>' . $field_name . '</strong>' : '')
+    . (($chest['show_extensions_in_description'] ?? FALSE)
+      ? t('<br/>Allowed file extensions: @list',
+        ['@list' => implode(', ', $extensions)]) : ''),
     '#tree' => TRUE,
     '#states' => $states,
     '#parents' => $parents,

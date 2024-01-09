@@ -374,6 +374,14 @@ function tpps_genotype_subform(array $chest) {
     'use_fid' => TRUE,
     'states' => $states,
   ]));
+  tpps_form_relocate_field([
+    'form' => &$fields,
+    'current_parents' => ['files'],
+    'field_name' => $file_field_name,
+    'new_parents' => ['SNPs'],
+    '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
+    '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+  ]);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 
@@ -406,6 +414,22 @@ function tpps_genotype_subform(array $chest) {
     else {
       tpps_build_disabled_file_field($fields, $file_field_name);
     }
+    tpps_form_relocate_field([
+      'form' => &$fields,
+      'current_parents' => ['files'],
+      'field_name' => $file_field_name,
+      'new_parents' => ['SNPs'],
+      '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
+      '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+    ]);
+    tpps_form_relocate_field([
+      'form' => &$fields,
+      'current_parents' => ['files'],
+      'field_name' => 'assay-citation',
+      'new_parents' => ['SNPs'],
+      '#parents' => [$organism_name, 'genotype', 'files', 'assay-citation'],
+      '#name' => $organism_name . '[genotype][files][' . 'assay-citation' . ']',
+    ]);
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // SNP Association File.
@@ -436,6 +460,14 @@ function tpps_genotype_subform(array $chest) {
           . '(which should match the gene reference) and '
           . 'a SNP Annotation (non synonymous, coding, etc).'),
         '#tree' => TRUE,
+      ]);
+      tpps_form_relocate_field([
+        'form' => &$fields,
+        'current_parents' => ['files'],
+        'field_name' => $file_field_name,
+        'new_parents' => ['SNPs'],
+        '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
+        '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
       ]);
 
 
@@ -539,6 +571,14 @@ function tpps_genotype_subform(array $chest) {
         tpps_build_disabled_file_field($fields, $file_field_name);
       }
     }
+  tpps_form_relocate_field([
+    'form' => &$fields,
+    'current_parents' => ['files'],
+    'field_name' => $file_field_name,
+    'new_parents' => ['SNPs'],
+    '#parents' => [$organism_name, 'genotype', 'files'],
+    '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+  ]);
   //}
 
 
@@ -1102,6 +1142,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     'empty_field_value' => tpps_get_empty_field_value(
       $chest['form_state'], $organism_name, $file_field_name
     ),
+    'show_extensions_in_description' => TRUE,
     'use_fid' => TRUE,
     // Visible when: 'SSRs' or 'Both SSRs and cpSSRs'.
     'states' => [
@@ -1110,6 +1151,34 @@ function tpps_page_4_genotype_ssrs(array $chest) {
         => ['value' => 'cpSSRs'],
       ],
     ],
+
+
+    // no header checkbox.
+
+    //'extra_elements' => [
+    //      'columns' => [
+    //        '#description' => t('Please define which columns hold the '
+    //          . 'required data: SNP ID, Scaffold, Position, Allele, '
+    //          . 'Associated Trait, Confidence Value.'),
+    //      ],
+    //      'columns-options' => [
+    //        '#type' => 'hidden',
+    //        '#value' => [
+    //          'N/A',
+    //          'SNP ID',
+    //          'Scaffold',
+    //          'Position',
+    //          'Allele',
+    //          'Associated Trait',
+    //          'Confidence Value',
+    //          'Gene ID',
+    //          'Annotation',
+    //        ],
+    //        'no-header' => [],
+    //      ],
+    //],
+
+
   ]));
   tpps_form_relocate_field([
     'form' => &$fields,
@@ -1134,6 +1203,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     'empty_field_value' => tpps_get_empty_field_value(
       $chest['form_state'], $organism_name, $file_field_name
     ),
+    'show_extensions_in_description' => TRUE,
     'use_fid' => TRUE,
     // Visible when: 'cpSSRs' or 'Both SSRs and cpSSRs'.
     'states' => [
@@ -1151,4 +1221,22 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
     '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
   ]);
+}
+
+/**
+ * Gets value of the empty field.
+ *
+ * @param array $form_state
+ *   Drupal Form API state.
+ * @param int $id
+ *   Organism Id.
+ * @param string $file_field_name
+ *   Machine file upload field name.
+ *
+ * @return string
+ *   Returns value of empty fields in file. Usually it will be 'NA'.
+ */
+function tpps_get_empty_field_value(array $form_state, $id, $file_field_name) {
+  $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? NULL;
+  return $page4_values["organism-$id"]['genotype']['files'][$file_field_name]['other'] ?? 'NA';
 }
