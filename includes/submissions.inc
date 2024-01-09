@@ -34,9 +34,14 @@ module_load_include('inc', 'tpps', 'includes/submission_interface');
  *   The form_state of the TPPS Submission form.
  */
 function tpps_load_submission($accession, $state = TRUE) {
+  // Exclude 'submission_interface' column. To get it use:
+  // tpps_submission_interface_load($accession);
+  $fields = array_diff(
+    array_keys(drupal_get_schema('tpps_submission')['fields']),
+    ['submission_interface']
+  );
   $result = db_select('tpps_submission', 's')
-    // @TODO Minor. Exclude 'submission_interface' column.
-    ->fields('s')
+    ->fields('s', $fields)
     ->condition('accession', $accession)
     ->range(0, 1)
     ->execute()->fetchObject();
@@ -53,7 +58,9 @@ function tpps_load_submission($accession, $state = TRUE) {
   $query = db_select('tpps_submission', 's');
   $query->join('tpps_submission_dbxref', 's_dbx', 's.tpps_submission_id = s_dbx.tpps_submission_id');
   $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-  $query->fields('s');
+  // Exclude 'submission_interface' column. To get it use:
+  // tpps_submission_interface_load($accession);
+  $query->fields('s', $fields);
   $query->condition('dbx.accession', $accession);
   $query->condition('s.status', 'Approved');
   $query->range(0, 1);
@@ -97,9 +104,13 @@ function tpps_load_submission($accession, $state = TRUE) {
  *   An array of loaded TPPS submissions or their form_states.
  */
 function tpps_load_submission_multiple(array $conditions = array(), $state = TRUE) {
-  $submissions = array();
-  $query = db_select('tpps_submission', 's')
-    ->fields('s');
+  $submissions = [];
+  $query = db_select('tpps_submission', 's');
+  // Exclude 'submission_interface' column.
+  $query->fields('s', array_diff(
+    array_keys(drupal_get_schema('tpps_submission')['fields']),
+    ['submission_interface']
+  ));
 
   if (!empty($conditions)) {
     foreach ($conditions as $key => $cond) {
@@ -177,8 +188,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
 
   $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
   // Update the form state data for the study.
-  $submission = tpps_load_submission($old_accession, FALSE);
-  $state = unserialize($submission->submission_state);
+  $state = tpps_load_submission($old_accession, TRUE);
 
   $job->logMessage('Original submission data for ' . $old_accession);
   $job->logMessage(print_r($state, 1));
@@ -1225,14 +1235,19 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
   $key = serialize($conditions);
   $is_cache_allowed = variable_get('tpps_front_cache_accession_list', FALSE);
   if (!$is_cache_allowed || $reset || empty($cache) || empty($cache->data[$key])) {
-    $query = db_select('tpps_submission', 's')->fields('s');
+    // Exclude 'submission_interface' column.
+    $fields = array_diff(
+      array_keys(drupal_get_schema('tpps_submission')['fields']),
+      ['submission_interface']
+    );
+    $query = db_select('tpps_submission', 's')->fields('s', $fields);
     foreach ($conditions as $item) {
       $query->condition($item[0], $item[1], ($item[2] ?? '='));
     }
     $results = $query->orderBy('tpps_submission_id', 'desc')->execute();
     foreach ($results as $item) {
       if ($state = unserialize($item->submission_state)) {
-        // @TODO Be sure to store 'tpps_type' in $form_state.
+        // @todo Be sure to store 'tpps_type' in $form_state.
         if (($state['tpps_type'] ?? NULL) == 'tppsc') {
           if ($title = ($state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? NULL)) {
             $list[$state['accession']] = $state['accession'] . ' - ' . (
@@ -1247,7 +1262,7 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
           ) {
             // Remove if submission has no Publication Title
             // and this form is shown not after user returned from Page 1.
-            // @TODO Move removement to better place.
+            // @todo Move removement to better place.
             tpps_delete_submission($item->accession);
           }
         }

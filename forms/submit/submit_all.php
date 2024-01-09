@@ -1887,11 +1887,9 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
     echo "[Repeats removed]: $repeats_removed_location_2\n";
   }
 
-
-  // Distinct repeats_removed
+  // Distinct repeats_removed.
   foreach ($unique_pairs as $pair) {
-    //$submission = tpps_load_submission($study_accession, FALSE);
-    //$study_state = unserialize($submission->submission_state);
+    // $study_state = tpps_submission_interface_load($study_accession);
 
     $repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed.csv';
     $repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed.csv';

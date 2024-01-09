@@ -11,8 +11,28 @@
  * a single function but update DB table directly it's safer for now to update
  * Submission Interface Array on each change of Submission State Array.
  *
+ *
+ * Usage tips:
  * To get updated and serialized Submission Interface ready to be stored in DB:
  * 'submission_interface' => tpps_submission_interface_convert($state),
+ *
+ * To exclude only 'submission_interface' from the list of query's fields:
+ *   $query = db_select('tpps_submission', 's')
+ *     // Exclude 'submission_interface' column.
+ *     ->fields('s', array_diff(
+ *       array_keys(drupal_get_schema('tpps_submission')['fields']),
+ *       ['submission_interface']
+ *     ));
+ *
+ * Exclude 'submission_interface' from chado_query().
+ *   // Exclude 'submission_interface' column.
+ *   $fields = implode(', ', array_diff(
+ *     array_keys(drupal_get_schema('tpps_submission')['fields']),
+ *     ['submission_interface']
+ *   ));
+ *   // @todo Use db_select().
+ *   $all_submissions = chado_query("SELECT $fields FROM public.tpps_submission;");
+ *
  *
  * @TODO Idea: Naming: tpps_submission_convert|get|update_interface().
  */

@@ -19,9 +19,13 @@
  *   Returns rendered list of files.
  */
 function tpps_admin_files_diagnostics_page($accession = NULL) {
-  // @TODO Minor. Exclude 'submission_interface' form results.
+  // Exclude 'submission_interface' form results.
+  $fields = implode(', ', array_diff(
+    array_keys(drupal_get_schema('tpps_submission')['fields']),
+    ['submission_interface']
+  ));
   $results = chado_query(
-    'SELECT * FROM tpps_submission WHERE accession = :accession',
+    "SELECT $fields FROM tpps_submission WHERE accession = :accession",
     [':accession' => $accession]
   );
   $serialized_data = "";

@@ -830,14 +830,13 @@ function tpps_admin_panel_top(array &$form) {
   global $base_url;
 
   tpps_admin_panel_reports($form);
-  $submissions = tpps_load_submission_multiple(array(), FALSE);
+  $submissions = tpps_load_submission_multiple([], FALSE);
 
-  $pending = array();
-  $approved = array();
-  $incomplete = array();
-  $unpublished_old = array();
-
-  $submitting_user_cache = array();
+  $pending = [];
+  $approved = [];
+  $incomplete = [];
+  $unpublished_old = [];
+  $submitting_user_cache = [];
   $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
 
   foreach ($submissions as $submission) {
