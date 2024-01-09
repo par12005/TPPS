@@ -30,11 +30,16 @@
  *     array_keys(drupal_get_schema('tpps_submission')['fields']),
  *     ['submission_interface']
  *   ));
- *   // @todo Use db_select().
  *   $all_submissions = chado_query("SELECT $fields FROM public.tpps_submission;");
  *
- *
- * @TODO Idea: Naming: tpps_submission_convert|get|update_interface().
+ * @todo See submit_all.php:75. There 'status' is stored twice:
+ * 1. $form_state['status'].
+ * 2. public.tpps_submission.status.
+ * Check if $form_state['status'] is used anywhere and replace with
+ * public.tpps_submission.status. Then update this code to use
+ * Submission Interface only. Do not use tpps_update_submission() but
+ * update db table directly to avoid $form_state update.
+ * @todo Idea: Naming: tpps_submission_convert|get|update_interface().
  */
 
 /**
@@ -49,10 +54,51 @@
  */
 function tpps_submission_interface_convert(array $form_state = []) {
   $interface = $form_state;
-  // @TODO Convert.
-  // Remove useless elements.
-  // Convert versions.
 
+  // Remove useless elements.
+  $required_items = [
+    // Required by submit_all().
+    'saved_values',
+    'ids',
+    'accession',
+    'tree_info',
+    'data',
+    'revised_files',
+    'tpps_type',
+    'dbxref_id',
+    'status',
+    // Required by tpps_table_display() and sub-functions.
+    // Leave those items to later use only Submission Interface in submit_all.php
+    'status',
+    'stats',
+    // From tpps_form_state_info():
+    // Note: This list is probably outdated.
+    'stage',
+    'accession',
+    'stats',
+    'ids',
+    'file_info',
+    'updated',
+    'created',
+    'approved',
+    'completed',
+    'loaded',
+    'submitting_uid',
+    'job_id',
+    'revised_files',
+    'admin_comments',
+    'alternative_accessions',
+    'data',
+    'phenotypes_edit',
+  ];
+  if (0) {
+    foreach (array_keys($interface) as $key) {
+      if (!in_array($key, $required_keys)) {
+        unset($interface[$key]);
+      }
+    }
+  }
+  // Convert versions.
   return serialize($interface);
 }
 

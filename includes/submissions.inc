@@ -263,6 +263,27 @@ function tpps_update_submission(array $state, array $options = array()) {
 }
 
 /**
+ * Updates status of study.
+ *
+ * @param string $accession
+ *   Study accession in format 'TGDRxxxx'.
+ * @param string $status
+ *   New status.
+ *
+ * @return bool
+ *   Returns TRUE if record was updated and FALSE if record wasn't found.
+ */
+function tpps_submission_update_status($accession, $status) {
+  return db_update('tpps_submission')
+    ->fields([
+      'status' => $status,
+      'updated' => time(),
+    ])
+    ->condition('accession', $accession)
+    ->execute();
+}
+
+/**
  * Deletes a TPPS Submission.
  *
  * Removes records from tables:
@@ -728,6 +749,8 @@ function tpps_get_tag_id($name) {
  *   The accession number of the submission to change file names.
  */
 function tpps_submission_rename_files($accession) {
+
+  // @TODO Use interface instead of $state.
   $state = tpps_load_submission($accession);
   if (!empty($state['file_info'])) {
     $state['files'] = array();

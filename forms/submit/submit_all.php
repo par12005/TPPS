@@ -24,34 +24,38 @@
  */
 function tpps_submit_all($accession, TripalJob $job = NULL) {
   global $tpps_job;
+  global $tpps_job_logger;
+
   $tpps_job = $job;
-  // Get public path
+  // Get public path.
   $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
 
   if (!is_dir($log_path)) {
     mkdir($log_path);
   }
 
-  // Update the global $tpps_job_logger variable
-  global $tpps_job_logger;
+  // Update the global $tpps_job_logger variable.
   $tpps_job_logger = [];
   $tpps_job_logger['job_object'] = $job;
-  $tpps_job_logger['log_file_path'] =  $log_path . $accession . '_' . $tpps_job_logger['job_object']->getJobID() . '.txt';
+  $tpps_job_logger['log_file_path'] = $log_path . $accession . '_'
+    . $tpps_job_logger['job_object']->getJobID() . '.txt';
   $tpps_job_logger['log_file_handle'] = fopen($tpps_job_logger['log_file_path'], "w+");
 
   tpps_log('[INFO] Setting up...');
   $job->setInterval(1);
+  // @TODO Use
+  // $form_state = tpps_submission_interface_load($accession);
+  // Required a lot of changes.
   $form_state = tpps_load_submission($accession);
 
-  // PATCH to check if VCF exists, then remove the assay design
-  // Advised by Meghan 7/6/2023
+  // PATCH to check if VCF exists, then remove the assay design.
+  // Advised by Meghan 7/6/2023.
 
-
-  // Do check for missing files, this is a bit crude but it works
+  // Do check for missing files, this is a bit crude but it works.
   $display_results = strip_tags(tpps_table_display($form_state));
-  // Find 'missing file' string
+  // Find 'missing file' string.
   echo $display_results;
-  if(stripos($display_results, 'file missing') !== FALSE) {
+  if (stripos($display_results, 'file missing') !== FALSE) {
     $display_results_lines = explode("\n", $display_results);
     foreach ($display_results_lines as $line) {
       if (stripos($line, 'file missing') !== FALSE) {
