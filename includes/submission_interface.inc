@@ -11,6 +11,19 @@
  * a single function but update DB table directly it's safer for now to update
  * Submission Interface Array on each change of Submission State Array.
  *
+ * Study statuses previously stored serialized in tpps_submission.submission_state.
+ * So we will store status for now inside Submission Interface Array as well.
+ *
+ * Dates.
+ * There are several dates which also was stored in $submission_interface.
+ *  updated
+ *  created
+ *  approved
+ *  completed
+ *  loaded
+ *  @TODO Better to store them not inside serialized array.
+ *  Create separate table for study statuses:
+ *  Accession | Status Id | Timestamp
  *
  * Usage tips:
  * To get updated and serialized Submission Interface ready to be stored in DB:
@@ -33,31 +46,35 @@
  *   $all_submissions = chado_query("SELECT $fields FROM public.tpps_submission;");
  *
  * @todo See submit_all.php:75. There 'status' is stored twice:
- * 1. $form_state['status'].
+ * 1. $submission_interface['status'].
  * 2. public.tpps_submission.status.
- * Check if $form_state['status'] is used anywhere and replace with
+ * Check if $submission_interface['status'] is used anywhere and replace with
  * public.tpps_submission.status. Then update this code to use
  * Submission Interface only. Do not use tpps_update_submission() but
- * update db table directly to avoid $form_state update.
+ * update db table directly to avoid $submission_interface update.
  * @todo Idea: Naming: tpps_submission_convert|get|update_interface().
+ *
+ *
+ *
  */
 
 /**
- * Converts $form_state into the Submission Interface.
+ * Converts $submission_interface into the Submission Interface.
  *
- * @param array $form_state
+ * @param array $submission_interface
  *   Drupal Form State array.
  *
  * @return array
  *   Returns serialized array with datastructure prepared for TPPS pipeline
  *   (submit_all.php script).
  */
-function tpps_submission_interface_convert(array $form_state = []) {
-  $interface = $form_state;
+function tpps_submission_interface_convert(array $submission_interface = []) {
+  $interface = $submission_interface;
 
-  // Remove useless elements.
-  $required_items = [
+  // Remove useless elemLnts.
+  $required_keys = [
     // Required by submit_all().
+    // Required by tpps_table_display() and sub-functions.
     'saved_values',
     'ids',
     'accession',
@@ -67,16 +84,11 @@ function tpps_submission_interface_convert(array $form_state = []) {
     'tpps_type',
     'dbxref_id',
     'status',
-    // Required by tpps_table_display() and sub-functions.
-    // Leave those items to later use only Submission Interface in submit_all.php
-    'status',
     'stats',
+    // Leave those items to later use only Submission Interface in submit_all.php
     // From tpps_form_state_info():
     // Note: This list is probably outdated.
     'stage',
-    'accession',
-    'stats',
-    'ids',
     'file_info',
     'updated',
     'created',
@@ -91,10 +103,35 @@ function tpps_submission_interface_convert(array $form_state = []) {
     'data',
     'phenotypes_edit',
   ];
-  if (0) {
+
+  // Items removed on Page 1.
+  // build_info
+  // temporary
+  // programmed
+  // programmed_bypass_access_check
+  // cache
+  // rebuild
+  // rebuild_info
+  // redirect
+  // submitted
+  // executed
+  // method
+  // groups
+  // buttons
+  // input
+  // values
+  // complete form
+  // process_input
+  // invalid_token
+  // triggering_element
+  // clicked_button
+
+  if (1) {
     foreach (array_keys($interface) as $key) {
       if (!in_array($key, $required_keys)) {
         unset($interface[$key]);
+        //dpm($key, 'unset key');
+        //dpm($key);
       }
     }
   }
@@ -153,22 +190,31 @@ function tpps_submission_interface_load($accession) {
  * Additional attributes of the submission record can be updated by populating
  * the options parameter.
  *
- * @param array $form_state
+ * @param array $submission_interface
  *   The form_state of the submission.
+ * @param string $status
+ *   Optional. Study processing status.
+ *   This value will be added to the Submission Interface Array and to
+ *   public.tpps_submission.status column.
  */
-function tpps_submission_interface_update(array $form_state) {
-  if (empty($form_state) || empty($form_state['accession'])) {
+function tpps_submission_interface_update(array &$submission_interface, $status = NULL) {
+  if (
+    empty($submission_interface) || empty($submission_interface['accession'])
+  ) {
     return;
   }
-  // @TODO Replace with oneliner in original function tpps_submission_update().
-  $form_state['updated'] = REQUEST_TIME;
-  $accession = $form_state['accession'];
+  $accession = $submission_interface['accession'];
+  // Note: REQUEST_TIME couldn't be used because called from CLI script and
+  // processing could take long time from script call.
+  $submission_interface['updated'] = time();
+  $submission_interface['status']
+    = ($status ? $status : ($submission_interface['status'] ?? ''));
 
-  $fields = [
-    'submission_interface' => tpps_submission_interface_convert($form_state),
-  ];
   db_update('tpps_submission')
-    ->fields($fields)
+    ->fields([
+      'status' => $submission_interface['status'],
+      'submission_interface' => tpps_submission_interface_convert($submission_interface),
+    ])
     ->condition('accession', $accession)
     ->execute();
 }
