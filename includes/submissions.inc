@@ -1220,7 +1220,8 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
     foreach ($results as $item) {
       if ($state = unserialize($item->submission_state)) {
         // @TODO Be sure to store 'tpps_type' in $form_state.
-        if (($state['tpps_type'] ?? NULL) == 'tppsc') {
+        // RISH [1/13/2024] Removed temporarily until [VS] double checks
+        // if (($state['tpps_type'] ?? NULL) == 'tppsc') {
           if ($title = ($state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? NULL)) {
             $list[$state['accession']] = $state['accession'] . ' - ' . (
               (strlen($title) > 97)
@@ -1235,9 +1236,10 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
             // Remove if submission has no Publication Title
             // and this form is shown not after user returned from Page 1.
             // @TODO Move removement to better place.
-            tpps_delete_submission($item->accession);
+            // RISH [1/13/2024] Removed temporarily until [VS] double checks
+            // tpps_delete_submission($item->accession);
           }
-        }
+        // }
       }
     }
     $cache->data[$key] = $list;
