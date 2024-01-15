@@ -624,8 +624,11 @@ function tpps_mail($key, array &$message, array $params) {
       // a brief list of the organisms they submitted.
       // @TODO [VS] Use theme('item_list') to build the HTML list.
       // @TODO Replace site name with variable.
-      $message['body'][] = "Congratulations!<br><br>"
-        . "Your {$type_label} submission has been received and is pending "
+      $message['body'][] = t('Congratulations!');
+      $message['body'][] = '<br />';
+      // @TODO Update!
+      $message['body'][] =
+        t("Your {$type_label} submission has been received and is pending "
         . "approval from a TreeGenes administrator! "
         . "Here's a brief summary of the information you provided:<ul>
       <li>Primary Author: {$params['author']}</li>
@@ -651,12 +654,23 @@ function tpps_mail($key, array &$message, array $params) {
     case 'admin_recieved':
       // When the user completes their submission, notify the admin, and
       // provide them with a link to access the admin panel.
-      $message['body'][] = "Attention:<br><br>"
-        . "User {$params['user_mail']} has completed a {$params['type_label']} "
-        . "Submission, titled {$params['title']}.<br>Click <a "
-        . "href='{$params['base_url']}/tpps-admin-panel/{$params['accession']}' "
-        . "style='text-decoration: underline;'>here</a> to manage or approve "
-        . "this submission.";
+      $message['body'][] = t('Attention:');
+      $message['body'][] = '<br />';
+      $message['body'][] = t('User @user_mail has completed a @type_label '
+        . 'Submission, titled @title.<br>Click !link to manage or approve '
+        . 'this submission.',
+        [
+          '@user_mail' => $params['user_mail'],
+          '@type_label' => $params['type_label'],
+          '@title' => $params['title'],
+          '!link' => l(t('here'), 'tpps-admin-panel/' . $params['accession'],
+            [
+              'absulute' => TRUE,
+              'attributes' => ['style' => 'text-decoration: underline;'],
+            ]
+          ),
+        ]
+      );
       break;
 
     case 'user_rejected':
@@ -664,28 +678,50 @@ function tpps_mail($key, array &$message, array $params) {
       // them with a link to go back and edit their submission. Also
       // provide them with the reason the admin included as to why their
       // submission was rejected.
-      $message['body'][] = "To whom it may concern:<br><br>"
-        . "Unfortunately, your submission to {$params['type_label']} has "
-        . "been rejected. If you would like, you can log into TreeGenes "
-        . "website and edit your submission <a "
-        . "href='{$params['base_url']}/user/{$params['uid']}/tpps'>here</a>"
-        . "<br><br>The administrator who rejected your submission provided "
-        . "the following reason:<br><blockquote>"
-        . $params['reject-reason']
-        . "</blockquote>";
+      $message['body'][] = t('To whom it may concern:');
+      $message['body'][] = '<br />';
+      $message['body'][] = t('Unfortunately, your submission to @type_label '
+        . 'has been rejected. If you would like, you can log into @site_name '
+        . 'website and edit your submission !link.',
+        [
+          '@type_label' => $params['type_label'],
+          '@site_name' => 'TreeGenes',
+          '!link' => l(t('here'), '/user/' . $params['uid'] . '/tpps'),
+        ]
+      );
+      $message['body'][] = '<br />';
+      $message['body'][] = t('The administrator who rejected your '
+        . 'submission provided the following reason:'
+        . '<br><blockquote>@reject_reason</blockquote>',
+        ['@reject_reason' => $params['reject-reason']]
+      );
       break;
 
     case 'user_approved':
       // When the user's submission is approved, notify them and provide
       // them with the link to view the completed submission.
-      $message['body'][] = "Congratulations! Your submission to "
-        . "{$params['type_label']} has been approved!<br><br>"
-        . "You may now refer to your submitted data with accession number "
-        . "{$params['accession']}.<br><br>"
-        . "You can still view your submission from your <a "
-        . "href=\"{$params['base_url']}/completed-submission/{$params['accession']}\">TPPS "
-        . "Completed Submissions</a> tab.<br>";
+      $message['body'][] = t('Congratulations! Your submission to '
+        . '@site_name has been approved!', ['@site_name' => 'TreeGenes']
+      );
+      $message['body'][] = '<br />';
+      $message['body'][] = t('You may now refer to your submitted data with '
+        . 'accession number @accession.', ['@accession' => $params['accession']]
+      );
+      $message['body'][] = '<br />';
+      $message['body'][] = t('You can still view your submission from !link.',
+        [
+          '!link' => l(
+            t(
+              'your @type_label Completed Submissions tab',
+              ['@type_label' => $params['type_label']]
+            ),
+            'completed-submission/' . $params['accession'],
+          )
+        ]
+      );
+      $message['body'][] = '<br />';
 
+      // @TODO Update!
       if ($params['type_label'] == t('TPPS')) {
         $message['body'][] = "Your submission should be public on the <a "
           . "href=\"{$params['base_url']}/tpps/details\">TPPS/TGDR Landing "
