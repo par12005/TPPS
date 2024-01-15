@@ -993,14 +993,17 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   // [VS].
   // @todo Minor.Check if this setting must be added always and move to the
   // beginning of function if possible.
-  $form['#attached']['js'][] = [
-    'data' => ['tpps' => ['stage' => $form_state['stage']]],
-    'type' => 'setting',
-  ];
   $form['accession'] = [
     '#type' => 'hidden',
     '#value' => $form_state['accession'],
   ];
+  $js_data = [
+    'tpps' => [
+      'accession' => $form_state['accession'] ?? NULL,
+      'stage' => $form_state['stage'],
+    ],
+  ];
+  $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
   // [/VS].
   if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
     tpps_init_project($form_state);
@@ -1320,18 +1323,22 @@ function tpps_block_view_alter(&$data, $block) {
               $button_id = "{$fid}_map_button";
               $val_str .= "<div id=\"$wrapper_id\"></div>"
                 . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\"></input>";
+              ];
+              $form['#attached']['js'][] = [
+                'type' => 'setting',
+                'data' => [
+                  'tpps' => [
+                    'map_buttons' => [
+                      $fid => [
+                        'wrapper' => $wrapper_id,
+                        'button' => $button_id,
+                        'fid' => $fid,
+                      ],
+                    ],
+                  ],
+                ],
+              ];
 
-              drupal_add_js(array(
-                'tpps' => array(
-                  'map_buttons' => array(
-                    $fid => array(
-                      'wrapper' => $wrapper_id,
-                      'button' => $button_id,
-                      'fid' => $fid,
-                    ),
-                  ),
-                ),
-              ), 'setting');
             }
           }
           elseif (preg_match('/species photo/', $item) and (file_load($val)) and ($file_name = file_load($val)->filename)) {

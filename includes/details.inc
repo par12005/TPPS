@@ -116,7 +116,8 @@ function tpps_details($accession = NULL) {
           );
         }
       }
-      drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');
+      $js_data = ['tpps' => ['tree_info' => $tree_info]];
+      $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
     }
     $output .= $map_api_tools;
     // [VS].

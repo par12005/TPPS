@@ -95,16 +95,13 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   $saved_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
   $values = $form_state['values'];
 
-  $form['#attached']['js'][] = [
-    'type' => 'setting',
-    'data' => [
-      'tpps' => [
-        'ajaxUrl' => TPPS_AJAX_URL,
-        'cache' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
-      ]
+  $js_data = [
+    'tpps' => [
+      'ajaxUrl' => TPPS_AJAX_URL,
+      'cache' => variable_get('tpps_page_1_cache_ajax_responses', TRUE),
     ],
-    'scope' => 'footer',
   ];
+  $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
 
   $doi = tpps_get_ajax_value($form_state, ['doi'], '');
   $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']) ?? 1;
