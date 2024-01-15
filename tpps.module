@@ -966,16 +966,28 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   }
   else {
     // Not first access.
-    if (!isset($form_state['saved_values']['frontpage']['accession']) or (isset($form_state['saved_values']['frontpage']['accession']) and $form_state['saved_values']['frontpage']['accession'] === 'new')) {
+    if (
+      !isset($form_state['saved_values']['frontpage']['accession'])
+      or (
+        isset($form_state['saved_values']['frontpage']['accession'])
+        and $form_state['saved_values']['frontpage']['accession'] === 'new'
+      )
+    ) {
       // No submissions, or selected to create new submission.
-      if (tpps_access('administer tpps module') and !empty($form_state['saved_values']['frontpage']['custom_accession_check'])) {
+      if (
+        tpps_access('administer tpps module')
+        and !empty($form_state['saved_values']['frontpage']['custom_accession_check'])
+      ) {
         $accession = $form_state['saved_values']['frontpage']['custom_accession'];
       }
       tpps_init_project($form_state, $accession);
       tpps_create_submission($form_state, $user->uid);
     }
+    // Restore previously submitted values.
     $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
-    tpps_form_state_info($form_state, $old_form_state);
+    if (!empty($old_form_state)) {
+      tpps_form_state_info($form_state, $old_form_state);
+    }
   }
 
   // [VS].
@@ -1121,44 +1133,35 @@ function tpps_main_validate(&$form, &$form_state) {
  * when existing TGDR reused.
  */
 function tpps_main_submit($form, &$form_state) {
+  $saved_values = &$form_state['saved_values'] ?? NULL;
+  $values = &$form_state['values'] ?? NULL;
   module_load_include('inc', 'tpps', 'includes/submission_file');
   // We need to label all study files as temporary to avoid problems with
   // page navigation when 'Back' button was used.
   if (
     $form_state['stage'] == 'frontpage'
-    && strpos(($form_state['values']['accession'] ?? NULL), 'TGDR') !== FALSE
-    // @TODO Minor. Check case when old TGDR reused it well be overwritten.
+    && strpos(($values['accession'] ?? NULL), 'TGDR') !== FALSE
+  ) {
+    // @TODO Minor. Check case when old TGDR reused it will be overwritten.
     // Could we skip file status changing?
     // && !$form_state['values']['use_old_tgdr']
-  ) {
-    $state = tpps_submission_get_state($form_state['values']['accession']);
+    $state = tpps_submission_get_state($values['accession']);
     tpps_submission_file_set_status($state, 0);
   }
-
-  // dpm("ON SUBMIT");
-  // dpm(array_keys($form_state));
-  // dpm('saved_values key contains:');
-  // dpm($form_state['saved_values']);
-  // dpm('values key contains:');
-  // dpm($form_state['values']);
-  $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
+  $saved_values[$form_state['stage']] = $values;
   $persist = TRUE;
 
   // This happens when the user clicks Save, notice this if clause will do a return.
   // This means after saving, the form will be rebuilt based on the rebuild key = TRUE.
   if ($form_state['triggering_element']['#value'] == 'Save') {
     drupal_set_message(t('Your information has been saved!'), 'status');
-    // dpm($form_state['saved_values']);
-    if (isset($form_state['saved_values']['form_build_id'])) {
-      $form_state['values']['form_build_id'] = $form_state['saved_values']['form_build_id'];
+    if (isset($saved_values['form_build_id'])) {
+      $values['form_build_id'] = $saved_values['form_build_id'];
     }
-    $form_state['saved_values']['form_build_id'] = $form_state['values']['form_build_id'];
+    $saved_values['form_build_id'] = $values['form_build_id'];
     $form_state['rebuild'] = TRUE;
-    // dpm('ON SAVE');
-    // dpm('Form state saved_values:');
-    // dpm($form_state['saved_values']);
-
     tpps_update_submission($form_state);
+    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
     return;
   }
 
@@ -1242,15 +1245,21 @@ function tpps_main_submit($form, &$form_state) {
 
   // It'll then come here and also perform a save most likely
   // which I think will cater for NEXT button.
-  if (isset($form_state['saved_values']['form_build_id'])) {
-    $form_state['values']['form_build_id'] = $form_state['saved_values']['form_build_id'];
+  if (isset($saved_values['form_build_id'])) {
+    $values['form_build_id'] = $saved_values['form_build_id'];
   }
-  $form_state['saved_values']['form_build_id'] = $form_state['values']['form_build_id'];
+  $saved_values['form_build_id'] = $values['form_build_id'];
   $form_state['rebuild'] = TRUE;
 
   if ($persist) {
     // dpm('PERSIST END');
     tpps_update_submission($form_state);
+  }
+  if ($form_state['stage'] == TPPS_PAGE_1) {
+    // When non-empty (after Page1 submit) study was added we need to
+    // reset cached lists of accessions.
+    // Note: We must clear cache when submission already stored to DB.
+    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
   }
 }
 
