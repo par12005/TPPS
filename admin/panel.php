@@ -1267,8 +1267,6 @@ function tpps_admin_panel_validate($form, &$form_state) {
  */
 function tpps_admin_panel_submit($form, &$form_state) {
   global $base_url;
-  $type = $form_state['tpps_type'] ?? 'tpps';
-  $type_label = ($type == 'tpps') ? 'TPPS' : 'TPPSC';
 
   $accession = $form_state['values']['accession'];
   $submission = tpps_load_submission($accession, FALSE);
@@ -1276,19 +1274,25 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $to = $owner->mail;
   $state = unserialize($submission->submission_state);
   $state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
-  $params = array();
-
   $from = variable_get('site_mail', '');
+
+  // @TODO Minor. We could try find type using '#form_id' under $state['values'].
+  $type = $state['tpps_type'] ?? 'tpps';
+  $type_label = ($type == 'tpps') ? t('TPPS') : t('TPPSC');
+
+  $params = [];
   $params['subject'] = "$type_label Submission Rejected: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
   $params['uid'] = $owner->uid;
   $params['reject-reason'] = $form_state['values']['reject-reason'] ?? NULL;
   $params['base_url'] = $base_url;
   $params['title'] = $state['saved_values'][TPPS_PAGE_1]['publication']['title'];
   $params['body'] = '';
-
+  $params['tpps_label'] = $type_label;
   $params['headers'][] = 'MIME-Version: 1.0';
   $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
 
+  // @TODO Check why this variables are set because I didn't found them in
+  // database but each variable is an extra DB query.
   if (isset($form_state['values']['params'])) {
     foreach ($form_state['values']['params'] as $param_id => $type) {
       variable_set("tpps_param_{$param_id}_type", $type);
