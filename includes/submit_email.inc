@@ -64,26 +64,3 @@ function tpps_submit_email(array &$form_state) {
   // Since this email couldn't belong to any Drupal User we use default language.
   drupal_mail('tpps', 'admin_recieved', $admin_email, language_default(), $params, $from, $send);
 }
-
-/**
- * Get study type list or one item.
- *
- * @param int $key
- *   Key in the list of options. This value used in form submitters.
- *
- * @return mixed
- *   Returns whole array with options when $key is NULL or not exists in the
- *   list of options.
- *   Returns translated string with title of option when $key not empty and exists.
- */
-function tpps_form_get_study_type($key = NULL) {
-  $options = [
-    0 => t('- Select -'),
-    1 => t('Natural Population (Landscape)'),
-    2 => t('Growth Chamber'),
-    3 => t('Greenhouse'),
-    4 => t('Experimental/Common Garden'),
-    5 => t('Plantation'),
-  ];
-  return $options[$key] ?? $options;
-}

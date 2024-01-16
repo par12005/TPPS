@@ -57,18 +57,12 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#prefix' => '<legend><span class="fieldset-legend"><div class="fieldset-title">Study Design</div></span></legend>',
   );
 
-  $form['study_type'] = array(
+  module_load_include('inc', 'tpps', 'includes/form');
+  $form['study_type'] = [
     '#type' => 'select',
     '#title' => t('Study Type: *'),
-    '#options' => array(
-      0 => t('- Select -'),
-      1 => t('Natural Population (Landscape)'),
-      2 => t('Growth Chamber'),
-      3 => t('Greenhouse'),
-      4 => t('Experimental/Common Garden'),
-      5 => t('Plantation'),
-    ),
-  );
+    '#options' => tpps_form_get_study_type(),
+  ];
   if (!$is_tppsc) {
     $form['study_type']['#ajax'] = [
       'wrapper' => 'study_info',
