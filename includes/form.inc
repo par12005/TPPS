@@ -306,3 +306,16 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
   }
   return $result;
 }
+
+/**
+ * Checks if current form is TPPSc form.
+ *
+ * @param array $form_state
+ *   Drupal Form State array.
+ *
+ * @return bool
+ *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
+ */
+function tpps_form_is_tppsc(array $form_state) {
+  return (bool) (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
+}
