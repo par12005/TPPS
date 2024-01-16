@@ -1295,8 +1295,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $params['body'] = '';
   $params['type'] = $type;
   $params['type_label'] = $type_label;
-  $params['headers'][] = 'MIME-Version: 1.0';
-  $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
 
   // @TODO Check why this variables are set because I didn't found them in
   // database but each variable is an extra DB query.

@@ -63,9 +63,6 @@ function tpps_submit_email(array &$form_state) {
     $params['base_url'] = $base_url;
     $params['body'] = '';
 
-    $params['headers'][] = 'MIME-Version: 1.0';
-    $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
-
     drupal_mail('tpps', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
 
     $params['user_mail'] = $user->mail;
@@ -98,9 +95,6 @@ function tpps_submit_email(array &$form_state) {
     $params['accession'] = $form_state['accession'];
     $params['base_url'] = $base_url;
     $params['body'] = '';
-
-    $params['headers'][] = 'MIME-Version: 1.0';
-    $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
 
     drupal_mail('tpps', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
 

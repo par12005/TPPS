@@ -626,9 +626,7 @@ function tpps_mail($key, array &$message, array $params) {
     $message['body'][] = $params['body'];
   }
   // @TODO Minor. Use array_merge().
-  if (isset($params['headers']) && is_array($params['headers'])) {
-    $message['headers'] += $params['headers'];
-  }
+  $message['headers'] = array_merge($message['headers'], ($params['headers'] ?? []));
   // Prepare data for email messages.
   $type_label = $params['type_label'] ?? t('TPPS');
   $link_params = [
@@ -636,8 +634,9 @@ function tpps_mail($key, array &$message, array $params) {
     'attributes' => ['style' => 'text-decoration: underline;'],
   ];
   $site_name = variable_get('site_name', 'TreeGenes');
-  $accession = check_plain($params['accession']);
+  $accession = check_plain($params['accession'] ?? NULL);
 
+  //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($key) {
     case 'user_recieved':
       // When the user completes their submission, just provide them with
@@ -693,6 +692,7 @@ function tpps_mail($key, array &$message, array $params) {
       );
       break;
 
+    //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'admin_recieved':
       // When the user completes their submission, notify the admin, and
       // provide them with a link to access the admin panel.
@@ -712,6 +712,7 @@ function tpps_mail($key, array &$message, array $params) {
       );
       break;
 
+    //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'user_rejected':
       // When the user's submission is rejected, notify them, and provide
       // them with a link to go back and edit their submission. Also
