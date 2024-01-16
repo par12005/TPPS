@@ -102,11 +102,11 @@ function tpps_submit_email(array &$form_state) {
     $params['headers'][] = 'MIME-Version: 1.0';
     $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
 
-    drupal_mail('tppsc', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
+    drupal_mail('tpps', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
 
     $params['user_mail'] = $user->mail;
 
-    drupal_mail('tppsc', 'admin_recieved', $admin, user_preferred_language($user), $params, $from, TRUE);
+    drupal_mail('tpps', 'admin_recieved', $admin, user_preferred_language($user), $params, $from, TRUE);
 
   }
 }

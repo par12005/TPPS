@@ -602,53 +602,95 @@ function tpps_cronapi() {
  *
  * @param mixed $key
  *   The type of message to send.
- * @param mixed $message
+ * @param array $message
  *   The skeleton of the message to be sent.
- * @param mixed $params
+ * @param array $params
  *   The parameters for the message.
- *
- *   @TODO Make all texts translatable.
  */
 function tpps_mail($key, array &$message, array $params) {
-  $message['subject'] = $params['subject'] ?? NULL;
-  $message['body'][] = $params['body'] ?? NULL;
+  $message['subject'] = $params['subject'] ?? $message['subject'] ?? NULL;
+  if (empty($message['subject'])) {
+    watchdog('tpps',
+      'Email "@key" subject is empty.<pre>@message</pre><pre>@params</pre>',
+      [
+        '@key' => $key,
+        '@message' => print_r($message, 1),
+        '@params' => print_r($params, 1),
+      ],
+      WATCHDOG_ERROR
+    );
+    return;
+  }
+  if (!empty($params['body'])) {
+    // Note: $params['body'] appends (not replaces).
+    $message['body'][] = $params['body'];
+  }
   // @TODO Minor. Use array_merge().
   if (isset($params['headers']) && is_array($params['headers'])) {
     $message['headers'] += $params['headers'];
   }
+  // Prepare data for email messages.
   $type_label = $params['type_label'] ?? t('TPPS');
+  $link_params = [
+    'absulute' => TRUE,
+    'attributes' => ['style' => 'text-decoration: underline;'],
+  ];
+  $site_name = variable_get('site_name', 'TreeGenes');
+  $accession = check_plain($params['accession']);
 
   switch ($key) {
     case 'user_recieved':
       // When the user completes their submission, just provide them with
       // a brief list of the organisms they submitted.
-      // @TODO [VS] Use theme('item_list') to build the HTML list.
-      // @TODO Replace site name with variable.
       $message['body'][] = t('Congratulations!');
+      // @TODO Minor. Probably using new array's element and HTML tag BR will
+      // give 2 empty lines instead of just one but some of templates had
+      // exactly 2 empty lines. This could be improved later.
       $message['body'][] = '<br />';
-      // @TODO Update!
-      $message['body'][] =
-        t("Your {$type_label} submission has been received and is pending "
-        . "approval from a TreeGenes administrator! "
-        . "Here's a brief summary of the information you provided:<ul>
-      <li>Primary Author: {$params['author']}</li>
-      <li>Publication title: {$params['title']}</li>
-      <li>Journal: {$params['journal']}</li>
-      <li>Organisms: {$params['organisms']['number']}</li>");
+      $message['body'][] = t('Your @type_label submission has been received '
+        . 'and is pending approval from a TreeGenes administrator! '
+        . "Here's a brief summary of the information you provided:",
+        ['@type_label' => $params['type_label']]
+      );
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Build list of organism names.
       for ($i = 1; $i <= $params['organisms']['number']; $i++) {
-        $message['body'][] =
-          // @TODO Check if other then name information must be used?
-          "   <li>Organism $i: " . check_plain($params['organisms'][$i]['name']) . "</li>";
+        // @TODO Check if other then name information must be used?
+        $organism_list[] = t('Organism @number: @name',
+          [
+            '@number' => $i,
+            '@name' => $params['organisms'][$i]['name']
+          ]
+        );
       }
-
-      $message['body'][] ="<li>Study Type: {$params['study_type']}</li>"
-        . "<li>Data Type: {$params['data_type']}</li></ul>"
-        . " You can view your submission <a "
-        . "href='{$params['base_url']}/completed-submission/{$params['accession']}' "
-        . "style='text-decoration: underline;'>here.</a><br>"
-        . "If you have any questions about your submission, please feel "
-        . "free to contact us <a href='{$params['base_url']}/contactform'>here"
-        . "</a>.<br><br>";
+      $item_list = [
+        t('Primary Author: @author', ['@author' => $params['author'] ?? NULL]),
+        t('Publication title: @title', ['@title' => $params['title'] ?? NULL]),
+        t('Journal: @journal', ['@journal' => $params['journal'] ?? NULL]),
+        t('Organisms: @organism_number',
+          ['@oganism_number' => $params['organisms']['number']] ?? NULL
+        ),
+        t('Organisms: !list',
+          ['!list' => theme('item_list', ['items' => $organism_list ?? []])]
+        ),
+        t('Study Type: @study_type',
+          ['@study_type' => $params['study_type'] ?? NULL]
+        ),
+        t('Data Type: @data_type', ['@data_type' => $params['data_type'] ?? NULL]),
+      ];
+      $message['body'][] = theme('item_list', ['items' => $item_list]);
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $message['body'][] = t('You can view your submission !link.',
+        [
+          '!link' => l(t('here'), 'completed-submission/' . $accession,
+            $link_params
+          ),
+        ]
+      );
+      $message['body'][] = t('If you have any questions about your submission, '
+        . 'please feel free to contact us !link.',
+        ['!link' => l(t('here'), 'contactform', $link_params)]
+      );
       break;
 
     case 'admin_recieved':
@@ -663,11 +705,8 @@ function tpps_mail($key, array &$message, array $params) {
           '@user_mail' => $params['user_mail'],
           '@type_label' => $params['type_label'],
           '@title' => $params['title'],
-          '!link' => l(t('here'), 'tpps-admin-panel/' . $params['accession'],
-            [
-              'absulute' => TRUE,
-              'attributes' => ['style' => 'text-decoration: underline;'],
-            ]
+          '!link' => l(t('here'), 'tpps-admin-panel/' . $accession,
+            $link_params
           ),
         ]
       );
@@ -685,27 +724,31 @@ function tpps_mail($key, array &$message, array $params) {
         . 'website and edit your submission !link.',
         [
           '@type_label' => $params['type_label'],
-          '@site_name' => 'TreeGenes',
-          '!link' => l(t('here'), '/user/' . $params['uid'] . '/tpps'),
+          '@site_name' => t($site_name),
+          '!link' => l(t('here'),
+            '/user/' . check_plain($params['uid']) . '/tpps',
+            $link_params
+          ),
         ]
       );
       $message['body'][] = '<br />';
       $message['body'][] = t('The administrator who rejected your '
-        . 'submission provided the following reason:'
-        . '<br><blockquote>@reject_reason</blockquote>',
-        ['@reject_reason' => $params['reject-reason']]
-      );
+        . 'submission provided the following reason:');
+      // Note: We can't translate reason's text because it's a typed-in text
+      // which could be used only once.
+      $message['body'][] = '<blockquote>'
+        . check_plain($params['reject-reason']) . '</blockquote>';
       break;
 
     case 'user_approved':
       // When the user's submission is approved, notify them and provide
       // them with the link to view the completed submission.
       $message['body'][] = t('Congratulations! Your submission to '
-        . '@site_name has been approved!', ['@site_name' => 'TreeGenes']
+        . '@site_name has been approved!', ['@site_name' => t($site_name)]
       );
       $message['body'][] = '<br />';
       $message['body'][] = t('You may now refer to your submitted data with '
-        . 'accession number @accession.', ['@accession' => $params['accession']]
+        . 'accession number @accession.', ['@accession' => $accession]
       );
       $message['body'][] = '<br />';
       $message['body'][] = t('You can still view your submission from !link.',
@@ -715,24 +758,31 @@ function tpps_mail($key, array &$message, array $params) {
               'your @type_label Completed Submissions tab',
               ['@type_label' => $params['type_label']]
             ),
-            'completed-submission/' . $params['accession']
+            'completed-submission/' . $accession,
+            $link_params
           ),
         ]
       );
       $message['body'][] = '<br />';
-
-      // @TODO Update!
-      if ($params['type_label'] == t('TPPS')) {
-        $message['body'][] = "Your submission should be public on the <a "
-          . "href=\"{$params['base_url']}/tpps/details\">TPPS/TGDR Landing "
-          . "Page</a> within the next 24 hours.<br>"
-          . "To generate a DOI for your submission, please click <a "
-          . "href=\"{$params['base_url']}/tpps/doi/{$params['accession']}\">here</a>.";
-      }
-      else {
-        $message['body'][] = "Your submission should be public on the <a "
-          . "href=\"{$params['base_url']}/tpps_details/main\">TPPSC/TGDR "
-          . "Landing Page</a> within the next 24 hours.";
+      $message['body'][] = t('Your submission should be public on the !link '
+        . 'within the next 24 hours.',
+        [
+          '!link' => l(
+            t('@type_label/TGDR Landing Page',
+              ['@type_label' => $params['type_label']]
+            ),
+            // @TODO Minor. Check if both links exist.
+            (($params['type'] == 'tpps') ? 'tpps_details/main' : 'tpps/details'),
+            $link_params
+          ),
+        ]
+      );
+      if ($params['type'] == 'tpps') {
+        $message['body'][] = '<br />';
+        $message['body'][] = t('To generate a DOI for your submission, '
+          . 'please click !link.',
+          ['!link' => l(t('here'), 'tpps/doi/' . $accession, $link_params)]
+        );
       }
       break;
 

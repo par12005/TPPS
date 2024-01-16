@@ -1274,6 +1274,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $to = $owner->mail;
   $state = unserialize($submission->submission_state);
   $state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
+  $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $from = variable_get('site_mail', '');
 
   // @TODO Minor. We could try find type using '#form_id' under $state['values'].
@@ -1281,13 +1282,19 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $type_label = ($type == 'tpps') ? t('TPPS') : t('TPPSC');
 
   $params = [];
-  $params['subject'] = "$type_label Submission Rejected: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+  $params['subject'] = t('@type_label Submission Rejected: @title',
+    [
+      '@type_label' => $type_label,
+      '@title' => $page1_values['publication']['title'] ?? NULL,
+    ]
+  );
   $params['uid'] = $owner->uid;
   $params['reject-reason'] = $form_state['values']['reject-reason'] ?? NULL;
   $params['base_url'] = $base_url;
-  $params['title'] = $state['saved_values'][TPPS_PAGE_1]['publication']['title'];
+  $params['title'] = $page1_values['publication']['title'] ?? NULL;
   $params['body'] = '';
-  $params['tpps_label'] = $type_label;
+  $params['type'] = $type;
+  $params['type_label'] = $type_label;
   $params['headers'][] = 'MIME-Version: 1.0';
   $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
 
@@ -1553,7 +1560,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
       break;
 
     case 'Reject':
-      drupal_mail($type, 'user_rejected', $to, user_preferred_language($owner), $params, $from, TRUE);
+      $lang = user_preferred_language($owner);
+      drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
       $state['status'] = 'Incomplete';
       tpps_update_submission($state);
       drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
@@ -1589,15 +1597,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
         . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
       $params['accession'] = $state['accession'];
       drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
-      drupal_mail(
-        $type,
-        'user_approved',
-        $to,
-        user_preferred_language(user_load_by_name($to)),
-        $params,
-        $from,
-        TRUE
-      );
+      $lang = user_preferred_language(user_load_by_name($to));
+      drupal_mail('tpps', 'user_approved', $to, $lang, $params, $from, TRUE);
       $state['revised_files'] = $state['revised_files'] ?? array();
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
