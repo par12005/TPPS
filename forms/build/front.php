@@ -27,6 +27,7 @@
 function tpps_front_create_form(array &$form, array $form_state) {
   global $base_url;
   global $user;
+  module_load_include('inc', 'tpps', 'includes/form');
   $is_tppsc = tpps_form_is_tppsc($form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($is_tppsc) {

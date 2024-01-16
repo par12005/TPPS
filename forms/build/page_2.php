@@ -23,6 +23,7 @@ require_once 'page_2_helper.php';
  *   The completed Study Design form.
  */
 function tpps_page_2_create_form(array &$form, array $form_state) {
+  module_load_include('inc', 'tpps', 'includes/form');
   $is_tppsc = tpps_form_is_tppsc($form_state);
   if (!$is_tppsc) {
     tpps_study_date('Starting', $form, $form_state);

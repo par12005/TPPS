@@ -634,7 +634,7 @@ function tpps_mail($key, array &$message, array $params) {
       <li>Primary Author: {$params['author']}</li>
       <li>Publication title: {$params['title']}</li>
       <li>Journal: {$params['journal']}</li>
-      <li>Organisms: {$params['organisms']['number']}</li>";
+      <li>Organisms: {$params['organisms']['number']}</li>");
       for ($i = 1; $i <= $params['organisms']['number']; $i++) {
         $message['body'][] =
           // @TODO Check if other then name information must be used?
@@ -715,8 +715,8 @@ function tpps_mail($key, array &$message, array $params) {
               'your @type_label Completed Submissions tab',
               ['@type_label' => $params['type_label']]
             ),
-            'completed-submission/' . $params['accession'],
-          )
+            'completed-submission/' . $params['accession']
+          ),
         ]
       );
       $message['body'][] = '<br />';
@@ -772,7 +772,7 @@ function tpps_element_info_alter(&$type) {
  */
 function tpps_managed_file_process(array $element, array &$form_state, array $form) {
   $form_id = $form_state['build_info']['form_id'] ?? NULL;
-  if (!in_array($form_id, ['tpps_main', 'tppsc_main']) {
+  if (!in_array($form_id, ['tpps_main', 'tppsc_main'])) {
     return $element;
   }
   if (isset($element['columns'])) {
@@ -1699,7 +1699,6 @@ function tpps_block_view_alter(&$data, $block) {
               $button_id = "{$fid}_map_button";
               $val_str .= "<div id=\"$wrapper_id\"></div>"
                 . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\"></input>";
-              ];
               $form['#attached']['js'][] = [
                 'type' => 'setting',
                 'data' => [
@@ -1714,7 +1713,6 @@ function tpps_block_view_alter(&$data, $block) {
                   ],
                 ],
               ];
-
             }
           }
           elseif (preg_match('/species photo/', $item) and (file_load($val)) and ($file_name = file_load($val)->filename)) {

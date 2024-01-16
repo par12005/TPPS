@@ -3,6 +3,9 @@
 /**
  * @file
  * Helper functions use at any step of TPPS form.
+ *
+ * To use:
+ * module_load_include('inc', 'tpps', 'includes/form');
  */
 
 /**

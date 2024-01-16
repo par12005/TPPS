@@ -14,6 +14,7 @@
  *   The state of the form that is being validated.
  */
 function tpps_page_2_validate_form(array &$form, array &$form_state) {
+  module_load_include('inc', 'tpps', 'includes/form');
   $is_tppsc = tpps_form_is_tppsc($form_state);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
