@@ -27,7 +27,7 @@
 function tpps_front_create_form(array &$form, array $form_state) {
   global $base_url;
   global $user;
-  $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
+  $is_tppsc = tpps_form_is_tppsc($form_state);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if ($is_tppsc) {
     if (user_is_logged_in()) {

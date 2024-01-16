@@ -1001,11 +1001,11 @@ function tpps_leaves(array &$elements, array $vals, array $saved_vals) {
  */
 function tpps_page_build(&$page) {
   $form_id = $page['content']['system_main']['#form_id'] ?? NULL;
-  if (empty($form_id) || !in_array($form_id, ['tpps_main', 'tppsc_main'])) {
+  if (!in_array($form_id, ['tpps_main', 'tppsc_main'])) {
     return $page;
   }
   // Check step (or page).
-  $js_settings = drupal_static('drupal_add_js', [] )['settings']['data'] ?? [];
+  $js_settings = drupal_static('drupal_add_js', [])['settings']['data'] ?? [];
   $step = NULL;
   foreach ($js_settings as $info) {
     if (array_key_exists('tpps', $info)) {
@@ -1153,27 +1153,27 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 
   switch ($form_state['stage']) {
     case TPPS_PAGE_1:
-      require_once 'forms/build/page_1.php';
+      module_load_include('php', 'tpps', 'forms/build/page_1');
       tpps_page_1_create_form($form, $form_state);
       break;
 
     case TPPS_PAGE_2:
-      require_once 'forms/build/page_2.php';
+      module_load_include('php', 'tpps', 'forms/build/page_2');
       tpps_page_2_create_form($form, $form_state);
       break;
 
     case TPPS_PAGE_3:
-      require_once 'forms/build/page_3.php';
+      module_load_include('php', 'tpps', 'forms/build/page_3');
       tpps_page_3_create_form($form, $form_state);
       break;
 
     case TPPS_PAGE_4:
-      require_once 'forms/build/page_4.php';
+      module_load_include('php', 'tpps', 'forms/build/page_4');
       tpps_page_4_create_form($form, $form_state);
       break;
 
     case 'summarypage':
-      require_once 'forms/build/summary.php';
+      module_load_include('php', 'tpps', 'forms/build/summary');
       tpps_summary_create_form($form, $form_state);
       break;
 
@@ -1485,9 +1485,8 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
       break;
 
     case TPPS_PAGE_2:
-      require_once 'forms/build/page_2.php';
-      // @WARNING: 'tppsC'.
-      tppsc_page_2_create_form($form, $form_state);
+      module_load_include('php', 'tpps', 'forms/build/page_2');
+      tpps_page_2_create_form($form, $form_state);
       break;
 
     case TPPS_PAGE_3:
@@ -1501,15 +1500,14 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
       break;
 
     case 'summarypage':
-      require_once 'forms/build/summary.php';
-      tppsc_summary_create_form($form, $form_state);
+      module_load_include('php', 'tpps', 'forms/build/summary');
+      tpps_summary_create_form($form, $form_state);
       break;
 
     default:
       drupal_set_message(t('Invalid form stage.'), 'error');
       break;
   }
-
   return $form;
 }
 
