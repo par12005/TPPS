@@ -625,7 +625,6 @@ function tpps_mail($key, array &$message, array $params) {
     // Note: $params['body'] appends (not replaces).
     $message['body'][] = $params['body'];
   }
-  // @TODO Minor. Use array_merge().
   $message['headers'] = array_merge($message['headers'], ($params['headers'] ?? []));
   // Prepare data for email messages.
   $type_label = $params['type_label'] ?? t('TPPS');
@@ -636,15 +635,17 @@ function tpps_mail($key, array &$message, array $params) {
   $site_name = variable_get('site_name', 'TreeGenes');
   $accession = check_plain($params['accession'] ?? NULL);
 
-  //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   switch ($key) {
     case 'user_recieved':
       // When the user completes their submission, just provide them with
       // a brief list of the organisms they submitted.
+      // See function tpps_submit_email().
       $message['body'][] = t('Congratulations!');
       // @TODO Minor. Probably using new array's element and HTML tag BR will
       // give 2 empty lines instead of just one but some of templates had
       // exactly 2 empty lines. This could be improved later.
+      $message['body'][] = '<br />';
       $message['body'][] = '<br />';
       $message['body'][] = t('Your @type_label submission has been received '
         . 'and is pending approval from a TreeGenes administrator! '
@@ -653,12 +654,12 @@ function tpps_mail($key, array &$message, array $params) {
       );
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Build list of organism names.
-      for ($i = 1; $i <= $params['organisms']['number']; $i++) {
+      for ($i = 1; $i <= $params['organism_number']; $i++) {
         // @TODO Check if other then name information must be used?
         $organism_list[] = t('Organism @number: @name',
           [
             '@number' => $i,
-            '@name' => $params['organisms'][$i]['name']
+            '@name' => $params['organism_list'][$i]
           ]
         );
       }
@@ -666,8 +667,8 @@ function tpps_mail($key, array &$message, array $params) {
         t('Primary Author: @author', ['@author' => $params['author'] ?? NULL]),
         t('Publication title: @title', ['@title' => $params['title'] ?? NULL]),
         t('Journal: @journal', ['@journal' => $params['journal'] ?? NULL]),
-        t('Organisms: @organism_number',
-          ['@oganism_number' => $params['organisms']['number']] ?? NULL
+        t('Number of organisms: @organism_number',
+          ['@organism_number' => $params['organism_number']] ?? NULL
         ),
         t('Organisms: !list',
           ['!list' => theme('item_list', ['items' => $organism_list ?? []])]
@@ -692,11 +693,13 @@ function tpps_mail($key, array &$message, array $params) {
       );
       break;
 
-    //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'admin_recieved':
       // When the user completes their submission, notify the admin, and
       // provide them with a link to access the admin panel.
+      // See function tpps_submit_email().
       $message['body'][] = t('Attention:');
+      $message['body'][] = '<br />';
       $message['body'][] = '<br />';
       $message['body'][] = t('User @user_mail has completed a @type_label '
         . 'Submission, titled @title.<br>Click !link to manage or approve '
@@ -712,13 +715,14 @@ function tpps_mail($key, array &$message, array $params) {
       );
       break;
 
-    //:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'user_rejected':
       // When the user's submission is rejected, notify them, and provide
       // them with a link to go back and edit their submission. Also
       // provide them with the reason the admin included as to why their
       // submission was rejected.
       $message['body'][] = t('To whom it may concern:');
+      $message['body'][] = '<br />';
       $message['body'][] = '<br />';
       $message['body'][] = t('Unfortunately, your submission to @type_label '
         . 'has been rejected. If you would like, you can log into @site_name '
@@ -747,6 +751,7 @@ function tpps_mail($key, array &$message, array $params) {
       $message['body'][] = t('Congratulations! Your submission to '
         . '@site_name has been approved!', ['@site_name' => t($site_name)]
       );
+      $message['body'][] = '<br />';
       $message['body'][] = '<br />';
       $message['body'][] = t('You may now refer to your submitted data with '
         . 'accession number @accession.', ['@accession' => $accession]
