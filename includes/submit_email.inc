@@ -30,10 +30,12 @@ function tpps_submit_email(array &$form_state) {
   $from = variable_get('site_mail', '');
 
   $params = [];
+  $params['type'] = ($is_tppsc) ? 'tppsc' : 'tpps';
+  $params['type_label'] = ($is_tppsc) ? t('TPPSc') : t('TPPS');
   $params['subject'] = t('@type_label Submission Received: @title',
     [
       '@title' => $page1_values['publication']['title'],
-      '@type_label' => ($is_tppsc) ? t('TPPSc') : t('TPPS'),
+      '@type_label' => $params['type_label'],
     ]
   );
   // Get human readable title of study type.

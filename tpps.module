@@ -627,7 +627,7 @@ function tpps_mail($key, array &$message, array $params) {
   }
   $message['headers'] = array_merge($message['headers'], ($params['headers'] ?? []));
   // Prepare data for email messages.
-  $type_label = $params['type_label'] ?? t('TPPS');
+  $params['type_label'] = $params['type_label'] ?? t('TPPS');
   $link_params = [
     'absulute' => TRUE,
     'attributes' => ['style' => 'text-decoration: underline;'],
@@ -702,8 +702,9 @@ function tpps_mail($key, array &$message, array $params) {
       $message['body'][] = '<br />';
       $message['body'][] = '<br />';
       $message['body'][] = t('User @user_mail has completed a @type_label '
-        . 'Submission, titled @title.<br>Click !link to manage or approve '
-        . 'this submission.',
+        . 'Submission, titled "@title".'
+        . '<br /><br />'
+        . 'Click !link to manage or approve this submission.',
         [
           '@user_mail' => $params['user_mail'],
           '@type_label' => $params['type_label'],
