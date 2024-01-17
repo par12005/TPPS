@@ -31,7 +31,7 @@ function tpps_front_page_validate_form(array &$form, array &$form_state) {
   if (!preg_match('/^TGDR\d{3,}$/', $values['custom_accession'])) {
     form_set_error('custom_accession',
       t('The accession number @accession is invalid. '
-        . 'Must have more then 3 digits.'
+        . 'Must have more then 3 digits.',
         ['@accession' => $values['custom_accession']]
       )
     );

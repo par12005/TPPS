@@ -3,6 +3,9 @@
 /**
  * @file
  * Helper functions use at any step of TPPS form.
+ *
+ * To use:
+ * module_load_include('inc', 'tpps', 'includes/form');
  */
 
 /**
@@ -305,4 +308,45 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
     }
   }
   return $result;
+}
+
+/**
+ * Checks if current form is TPPSc form.
+ *
+ * @param array $form_state
+ *   Drupal Form State array.
+ *
+ * @return bool
+ *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
+ */
+function tpps_form_is_tppsc(array $form_state) {
+  return (bool) (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
+}
+
+/**
+ * Get study type list or one item.
+ *
+ * Usage example:
+ * module_load_include('inc', 'tpps', 'includes/form');
+ * $study_type_options = tpps_form_get_study_type($key);
+ *
+ * @param int $key
+ *   Key in the list of options. This value used in form submitters.
+ *
+ * @return mixed
+ *   Returns:
+ *   1. $key was specified and index $key exists: translated option label
+ *   2. $key was specified but index $key not exists: NULL
+ *   3. $key wasn't specified (NULL): whole list of study types/
+ */
+function tpps_form_get_study_type($key = NULL) {
+  $options = [
+    0 => t('- Select -'),
+    1 => t('Natural Population (Landscape)'),
+    2 => t('Growth Chamber'),
+    3 => t('Greenhouse'),
+    4 => t('Experimental/Common Garden'),
+    5 => t('Plantation'),
+  ];
+  return is_null($key) ? $options : ($options[$key] ?? NULL);
 }

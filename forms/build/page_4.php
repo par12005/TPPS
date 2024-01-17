@@ -232,16 +232,14 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     in_array('administrator', $user->roles)
     || in_array('Curation', $user->roles)
   ) {
-    $form['#attached']['js'][] = [
-      'type' => 'setting',
-      'data' => [
-        'tpps' => [
-          'accession' => $form_state['accession'],
-          'curationDiagnosticResultsElementId' => '#diagnostic-curation-results',
-          'organismNumber' => $meta['organism_number'],
-        ],
+    $js_data = [
+      'tpps' => [
+        'accession' => $form_state['accession'],
+        'curationDiagnosticResultsElementId' => '#diagnostic-curation-results',
+        'organismNumber' => $meta['organism_number'],
       ],
     ];
+    $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
     tpps_add_css_js(TPPS_PAGE_4, $form);
     tpps_add_curation_tool($form);
   }
