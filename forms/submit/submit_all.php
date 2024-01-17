@@ -484,20 +484,12 @@ function tpps_submit_page_2(array &$form_state, TripalJob &$job = NULL) {
     'value' => $secondpage['data_type'],
   ));
 
-  $studytype_options = array(
-    0 => '- Select -',
-    1 => 'Natural Population (Landscape)',
-    2 => 'Growth Chamber',
-    3 => 'Greenhouse',
-    4 => 'Experimental/Common Garden',
-    5 => 'Plantation',
-  );
-
-  tpps_chado_insert_record('projectprop', array(
+  module_load_include('inc', 'tpps', 'includes/form');
+  tpps_chado_insert_record('projectprop', [
     'project_id' => $form_state['ids']['project_id'],
     'type_id' => tpps_load_cvterm('study_type')->cvterm_id,
-    'value' => $studytype_options[$secondpage['study_type']],
-  ));
+    'value' => tpps_form_get_study_type($secondpage['study_type']),
+  ]);
 
   if (!empty($secondpage['study_info']['season'])) {
     $seasons = implode($secondpage['study_info']['season']);
@@ -1722,9 +1714,9 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
   // GOAL: Look for similar studies that contain similar variant_ids
   global $study_accessions_with_potential_overlaps;
   $study_accessions_with_potential_overlaps = [];
-  $accession_results = chado_query("select distinct accession from 
-    (select accession, unnest(markers) as marker from chado.studies_with_markers)x 
-    where marker in 
+  $accession_results = chado_query("select distinct accession from
+    (select accession, unnest(markers) as marker from chado.studies_with_markers)x
+    where marker in
     (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
   foreach ($accession_results as $row) {
     if ($row->accession != strtoupper($accession)) {
@@ -1739,7 +1731,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
   foreach ($study_accessions_with_potential_overlaps as $study_accession) {
     $submission = tpps_load_submission($study_accession, FALSE);
     $study_state = unserialize($submission->submission_state);
-    
+
     $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     echo "Study organism number for $study_accession is $study_organism_number\n";
     // Check if each study has overlap files
@@ -1774,16 +1766,16 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
   // exit;
 
   // Go through all studies and generate sorted list of the csv files
-  $accession_results = chado_query("select distinct accession from 
-    (select accession, unnest(markers) as marker from chado.studies_with_markers)x 
-    where marker in 
-    (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");  
+  $accession_results = chado_query("select distinct accession from
+    (select accession, unnest(markers) as marker from chado.studies_with_markers)x
+    where marker in
+    (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
   foreach ($accession_results as $row) {
     $study_accession = $row->accession;
 
     $submission = tpps_load_submission($study_accession, FALSE);
     $study_state = unserialize($submission->submission_state);
-    
+
     $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     for ($i = 1; $i <= $study_organism_number; $i++) {
       $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
@@ -1793,20 +1785,20 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
         exec("cat $snps_flat_file_location | sort > $snps_sorted");
         $time_end = time();
         $time_elapsed = $time_end - $time_start;
-        echo "[$time_elapsed s] File generated: $snps_sorted\n"; 
+        echo "[$time_elapsed s] File generated: $snps_sorted\n";
       }
       else {
-        
+
       }
       echo "[SORTED LIST]: ". $snps_flat_file_location . "\n";
     }
   }
 
   $all_studies_array = [];
-  $accession_results = chado_query("select distinct accession from 
-  (select accession, unnest(markers) as marker from chado.studies_with_markers)x 
-  where marker in 
-  (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");  
+  $accession_results = chado_query("select distinct accession from
+  (select accession, unnest(markers) as marker from chado.studies_with_markers)x
+  where marker in
+  (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
   foreach ($accession_results as $row) {
     $all_studies_array[] = $row->accession;
   }
@@ -1815,33 +1807,33 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
   // // Code modified from https://r.je/php-find-every-combination
 
 
-  // $words = array('red', 'blue', 'green'); 
+  // $words = array('red', 'blue', 'green');
   $all_combinations = [];
-  $combination = []; 
-  $num = count($all_studies_array); 
-  //The total number of possible combinations 
+  $combination = [];
+  $num = count($all_studies_array);
+  //The total number of possible combinations
   $total = pow(2, $num);
-  //Loop through each possible combination  
-  for ($i = 0; $i < $total; $i++) {  
-  
-      //For each combination check if each bit is set 
-  
-      for ($j = 0; $j < $num; $j++) { 
-  
-         //Is bit $j set in $i? 
-  
+  //Loop through each possible combination
+  for ($i = 0; $i < $total; $i++) {
+
+      //For each combination check if each bit is set
+
+      for ($j = 0; $j < $num; $j++) {
+
+         //Is bit $j set in $i?
+
           if (pow(2, $j) & $i) {
             //echo $all_studies_array[$j] . ' ';
             $combination[] = $all_studies_array[$j];
-          }    
-  
-      } 
-  
+          }
+
+      }
+
       $all_combinations[] = json_decode(json_encode($combination));
       $combination = [];
-      //echo '<br />'; 
-  
-  }  
+      //echo '<br />';
+
+  }
 
   // Remove every combo that isnt 2
   $count_combinations = count($all_combinations);
@@ -1869,17 +1861,17 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
       // echo "Repeats Location: $repeats_location\n";
     }
     else {
-      
+
     }
-    
+
     echo "[Repeats Location]: $repeats_location\n";
   }
-  
+
   // Remove repeats from corresponding studies
   foreach ($unique_pairs as $pair) {
     //$submission = tpps_load_submission($study_accession, FALSE);
     //$study_state = unserialize($submission->submission_state);
-  
+
     $snps_flat_file_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-sorted.csv';
     $snps_flat_file_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-sorted.csv';
     $repeats_location = $dest_folder . '/' . $pair[0] ."-" . $pair[1] . "-repeats.csv";
@@ -1898,7 +1890,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
       // exec("grep -v -x -f $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
       exec("awk 'NR==FNR{a[$0]=1;next}!a[$0]' $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
     }
-    echo "[Repeats removed]: $repeats_removed_location_2\n";    
+    echo "[Repeats removed]: $repeats_removed_location_2\n";
   }
 
 
@@ -1906,13 +1898,13 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
   foreach ($unique_pairs as $pair) {
     //$submission = tpps_load_submission($study_accession, FALSE);
     //$study_state = unserialize($submission->submission_state);
-  
+
     $repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed.csv';
     $repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed.csv';
 
     $distinct_repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed-distinct-snps.csv';
     $distinct_repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed-distinct-snps.csv';
-  
+
     // unlink($distinct_repeats_removed_location_1);
     // unlink($distinct_repeats_removed_location_2);
 
@@ -1924,7 +1916,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
     if (!is_file($distinct_repeats_removed_location_2) || $regenerate_all == true) {
       exec("awk -F',' '{print $2}' $repeats_removed_location_2 | sort | uniq > $distinct_repeats_removed_location_2");
     }
-    echo "[Distinct repeats removed snps]: $distinct_repeats_removed_location_2\n";    
+    echo "[Distinct repeats removed snps]: $distinct_repeats_removed_location_2\n";
   }
 
   // Check for repeats between distinct_snps
@@ -1958,19 +1950,19 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
     echo "SNPs count $snps_count between " . $pair[0] . " and " . $pair[1] . "\n";
     // print_r($snps);
     // print_r(implode(',', $snps));
-    
+
     if ($snps_count > 0) {
       // Check if this data exists, if it doesn't insert, else update
-      $results = chado_query("SELECT count(*) as c1 FROM chado.studies_marker_overlaps 
-        WHERE '" . $pair[0] . "'= ANY(accession) 
+      $results = chado_query("SELECT count(*) as c1 FROM chado.studies_marker_overlaps
+        WHERE '" . $pair[0] . "'= ANY(accession)
         AND '" . $pair[1] . "'= ANY(accession)");
       $count = $results->fetchObject()->c1;
       // Row exists, delete it before inserting new row
       if ($count == 0) {
-        chado_query("DELETE FROM chado.studies_marker_overlaps 
-        WHERE '" . $pair[0] . "'= ANY(accession) 
-        AND '" . $pair[1] . "'= ANY(accession)");      
-      } 
+        chado_query("DELETE FROM chado.studies_marker_overlaps
+        WHERE '" . $pair[0] . "'= ANY(accession)
+        AND '" . $pair[1] . "'= ANY(accession)");
+      }
       chado_query('INSERT INTO chado.studies_marker_overlaps (accession,overlap) VALUES (' .
         'ARRAY[\'' . $pair[0] . '\',\'' . $pair[1] . '\'], ARRAY[' . implode(',', $snps) . ']' .
       ')');
@@ -2113,7 +2105,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
       }
       echo "VCF location: $location\n";
 
-      // [RISH] [12/14/2023] [STEP 1] Perform one liner related code for flat files and db insertions 
+      // [RISH] [12/14/2023] [STEP 1] Perform one liner related code for flat files and db insertions
       // [STEP 1 A - Run a check for duplicate sample names]
       $cmd_output = [];
       $found_duplicate_sample_ids = false;
@@ -2143,7 +2135,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
         echo "Sample Rename Location: $sample_rename_location\n";
         // Get renamed sample list
         $cmd = '
-          awk \'                   
+          awk \'
           BEGIN { OFS="\t" }  # Set output field separator to tab
           /^#CHROM/ {
               for (i = 10; i <= NF; i++) {
@@ -2159,7 +2151,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
         // echo $cmd . "\n";
         $cmd_output = []; // reset
         exec($cmd, $cmd_output);
-        
+
 
         // Regenerate the VCF with the corrected samples
         $vcf_fixed_location = $pathinfo['dirname'] . '/' . $pathinfo['filename'] . '-fixed-header.vcf';
@@ -2168,7 +2160,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
         $cmd_output = []; // reset
         exec($cmd, $cmd_output);
       }
-      
+
 
       // STEP 1 C - GZIP THE VCF IF IT IS NOT ALREADY GZIPPED
       $valid_vcf = NULL;
@@ -2180,10 +2172,10 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
         $valid_vcf = $location;
       }
       echo "Valid VCF location: $valid_vcf\n";
-      
+
 
       $pathinfo_valid_vcf = pathinfo($valid_vcf);
-      
+
       $cmd_output = [];
       if (strtolower($pathinfo_valid_vcf['extension']) != 'gz') {
         $valid_vcf_gz = $pathinfo_valid_vcf['dirname'] . '/' . $pathinfo_valid_vcf['basename'] . '.gz';
@@ -2198,7 +2190,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
 
       // STEP 1 D - GET ALL TREES AND MARKERS
       $pathinfo = pathinfo($location);
-      $trees_markers_location = $pathinfo['dirname'] . '/' . $pathinfo['filename'] . '-trees-markers.txt'; 
+      $trees_markers_location = $pathinfo['dirname'] . '/' . $pathinfo['filename'] . '-trees-markers.txt';
       // $cmd = "bcftools query -f '[%ID\t%SAMPLE\t%GT ]\\n' " . $valid_vcf_gz . " | tr ' ' '\\n' | awk -F '\\t' '{if ($3 != \"./.\") print $1,$2}' > " . $trees_markers_location;
       $cmd = "bcftools query -f '[%ID\\t%SAMPLE\\t%GT ]\\n' " . $valid_vcf_gz . " | tr ' ' '\\n' | awk -F '\\t' '{if ($3 != \"./.\") print " . '$1,$2' . "}' > $trees_markers_location";
       // echo $cmd . "\n";
@@ -2228,7 +2220,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
           exec($cmd2, $cmd2_output);
           // print_r($cmd2_output);
           // print_r("\n");
-          
+
           $markers_array = [];
           $markers_array_count = 0;
           foreach ($cmd2_output as $line) {
@@ -2250,9 +2242,9 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
             print_r($ex);
           }
           $markers_array = []; // reset
-        } 
+        }
       }
-      
+
 
       // [RISH] [Original code] [STEP 2] - Continue with processing VCF files
       $vcf_content = gzopen($location, 'r');
@@ -2269,7 +2261,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
       @mkdir($dest_folder);
       $snps_flat_file_location = $dest_folder . '/' . $accession . '-' . $i . '-snps.csv';
       echo '[FILE_LOCATION][SNPs FLAT FILE CSV] ' . $dest_folder . '/' . $accession . '-' . $i . '-snps.csv' . "\n";
-      $fhandle = fopen($snps_flat_file_location, 'w');      
+      $fhandle = fopen($snps_flat_file_location, 'w');
 
 
       // Override the above code done by Rish to use organism_id from page 4
@@ -2944,7 +2936,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
       // Clean up memory
       unset($unique_variant_ids_string);
 
-      
+
 
       // Generating unique treeids flat file
       //echo "Generate distinct Tree IDs flat file\n";
@@ -2984,7 +2976,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
     @mkdir($dest_folder);
     $snps_flat_file_location = $dest_folder . '/' . $accession . '-' . $i . '-snps.csv';
     // echo '[FILE_LOCATION][SNPs FLAT FILE CSV] ' . $dest_folder . '/' . $accession . '-' . $i . '-snps.csv' . "\n";
-    $fhandle = fopen($snps_flat_file_location, 'w'); 
+    $fhandle = fopen($snps_flat_file_location, 'w');
     $options['fhandle'] = $fhandle;
 
     $snp_fid = $genotype['files']['snps-assay'];
@@ -3071,7 +3063,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
         chado_query("insert into chado.studies_with_markers (accession, markers) values ('" . $accession . "', ARRAY[" . $unique_variant_ids_string . "]);");
       }
       // Clean up memory
-      unset($unique_variant_ids_string);      
+      unset($unique_variant_ids_string);
 
 
     } catch (Exception $ex) {
@@ -3159,7 +3151,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       continue;
     }
     $genotype_count++;
-    
+
     echo "Stock ID: $stock_id, Current ID: $current_id, Genotype_count: $genotype_count\n";
 
 
@@ -3357,7 +3349,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
         ':uniquename' => $variant_name,
         ':organism_id' => $organism_id
     ]);
-    
+
     // echo "variant_name: $variant_name\n";
     $variant_name_id = NULL;
     foreach ($results as $row) {
@@ -3366,7 +3358,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
 
 
     // this will at the end of everything be used to insert / update studies_with_markers
-    $options['all_variant_ids'][$variant_name_id] = 1;    
+    $options['all_variant_ids'][$variant_name_id] = 1;
 
 
     if (!empty($associations) and !empty($associations[$variant_name])) {
@@ -3457,7 +3449,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       ]);
       ob_end_clean();
       // echo "name: $genotype_name_without_call, uniquename: $genotype_name, $val, $type_cvterm\n";
-      
+
 
       $results = chado_query('SELECT genotype_id FROM chado.genotype WHERE uniquename = :uniquename', [
         ':uniquename' => $genotype_name
@@ -3489,11 +3481,11 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
         'cvterm_id' => $type_cvterm,
       ]);
       // echo "feature_id: $variant_name_id, genotype_id: $genotype_id\n";
-      ob_end_clean();      
+      ob_end_clean();
 
       fwrite($options['fhandle'], "$tree_id,$variant_name\n");
-      
- 
+
+
       // echo "Genotype_call key: $stock_id-$genotype_name\n";
       // if (isset($records2['genotype_call']["$stock_id-$genotype_name"])) {
       //   echo "This genotype_call key is already set (so uniqueness is maybe broken?\n";
@@ -3546,7 +3538,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
       $genotype_count = 0;
     }
   }
-  
+
   $accession = $options['accession'];
   $markers_array_count = count($markers_array);
   echo "Found $markers_array_count markers for $tree_id\n";
@@ -7278,7 +7270,7 @@ function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
     $tpps_job->logMessage($message, $variables, $severity);
   }
   catch (Exception $ex) {
-    
+
   }
   catch (Error $err) {
 

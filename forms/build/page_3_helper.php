@@ -126,11 +126,18 @@ function tpps_study_location(array &$form, array &$form_state) {
 
     if (!empty($coords) and $valid_coords) {
       $map_api_key = variable_get('tpps_maps_api_key', NULL);
+      // @TODO Minor. Replace with '#attached' and 'type' => 'external'
+      // Be sure to set 'async' and 'defer' HTML attributes.
       $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
       async defer></script>"
       . "<div id=\"_map_wrapper\"></div>";
-      drupal_add_js(array('tpps' => array('tree_info' => $coords)), 'setting');
-      drupal_add_js(array('tpps' => array('study_locations' => TRUE)), 'setting');
+      $js_data = [
+        'tpps' => [
+          'tree_info' => $coords,
+          'study_locations' => TRUE,
+        ],
+      ];
+      $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
 
       $form['study_location']['map-button']['#suffix'] = $map_api_tools;
     }
