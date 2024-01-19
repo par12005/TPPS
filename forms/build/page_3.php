@@ -195,32 +195,27 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
           }
         }
       }
-
-      drupal_add_js(array(
-        'tpps' => array(
-          'accession_files' => array(
-            $fid => array(
+      $js_data = [
+        'tpps' => [
+          'accession_files' => [
+            $fid => [
               'no_header' => $no_header,
               'id_col' => $id_col,
               'lat_col' => $lat_col,
               'long_col' => $long_col,
               'fid' => $fid,
-            ),
-          ),
-        ),
-      ), 'setting');
-
-      drupal_add_js(array(
-        'tpps' => array(
-          'map_buttons' => array(
-            $fid => array(
+            ],
+          ],
+          'map_buttons' => [
+            $fid => [
               'wrapper' => $wrapper_id,
               'button' => $button_id,
               'fid' => $fid,
-            ),
-          ),
-        ),
-      ), 'setting');
+            ],
+          ],
+        ],
+      ];
+      $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
     }
 
     $form['tree-accession']["species-$i"]['pop-group'] = array(

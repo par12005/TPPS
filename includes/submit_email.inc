@@ -20,93 +20,49 @@
  *   The base URL of the site.
  */
 function tpps_submit_email(array &$form_state) {
-
   global $user;
-  global $base_url;
 
-  // @TODO Minor. Combine 2 versions to remove duplicated code.
+  module_load_include('inc', 'tpps', 'includes/form');
+  $is_tppsc = tpps_form_is_tppsc($form_state);
 
-  if (($form_state['tpps_type'] ?? NULL) == 'tpps') {
+  $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? NULL;
+  $page2_values = $form_state['saved_values'][TPPS_PAGE_2] ?? NULL;
+  $from = variable_get('site_mail', '');
 
-    $admin = variable_get('tpps_admin_email', '');
+  $params = [];
+  $params['type'] = ($is_tppsc) ? 'tppsc' : 'tpps';
+  $params['type_label'] = ($is_tppsc) ? t('TPPSc') : t('TPPS');
+  $params['subject'] = t('@type_label Submission Received: @title',
+    [
+      '@title' => $page1_values['publication']['title'],
+      '@type_label' => $params['type_label'],
+    ]
+  );
+  // Get human readable title of study type.
+  $params['study_type'] = tpps_form_get_study_type($page2_values['study_type']);
 
-    if ($admin == '') {
-      return FALSE;
-    }
-    $params = array();
-
-    $to = $user->mail;
-    $from = variable_get('site_mail', '');
-    $params['subject'] = "TPPS Submission Received: {$form_state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-
-    $study_options = array(
-      0 => '- Select -',
-      1 => 'Natural Population (Landscape)',
-      2 => 'Growth Chamber',
-      3 => 'Greenhouse',
-      4 => 'Experimental/Common Garden',
-      5 => 'Plantation',
-    );
-
-    $names = array();
-    for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-      $names[$i] = $form_state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
-    }
-    $names['number'] = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
-    $params['author'] = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'];
-    $params['title'] = $form_state['saved_values'][TPPS_PAGE_1]['publication']['title'];
-    $params['journal'] = $form_state['saved_values'][TPPS_PAGE_1]['publication']['journal'];
-    $params['organisms'] = $names;
-    $params['study_type'] = $study_options[$form_state['saved_values'][TPPS_PAGE_2]['study_type']];
-    $params['data_type'] = $form_state['saved_values'][TPPS_PAGE_2]['data_type'];
-    $params['accession'] = $form_state['accession'];
-    $params['base_url'] = $base_url;
-    $params['body'] = '';
-
-    $params['headers'][] = 'MIME-Version: 1.0';
-    $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
-
-    drupal_mail('tpps', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
-
-    $params['user_mail'] = $user->mail;
-
-    drupal_mail('tpps', 'admin_recieved', $admin, user_preferred_language($user), $params, $from, TRUE);
+  // List of organism names.
+  $params['organism_list'] = [];
+  for ($i = 1; $i <= $page1_values['organism']['number']; $i++) {
+    $params['organism_list'][$i] = $page1_values['organism'][$i]['name'];
   }
-  else {
-    $admin = variable_get('tpps_admin_email', "treegenesdb@gmail.com");
+  $params['organism_number'] = $page1_values['organism']['number'];
+  $params['author'] = $page1_values['primaryAuthor'];
+  $params['title'] = $page1_values['publication']['title'];
+  $params['journal'] = $page1_values['publication']['journal'];
+  $params['data_type'] = $page2_values['data_type'];
+  $params['accession'] = $form_state['accession'];
+  $params['body'] = '';
+  $send = TRUE;
 
-    $params = array();
+  // To user.
+  $user_lang = user_preferred_language($user);
+  drupal_mail('tpps', 'user_recieved', $user->mail, $user_lang, $params, $from, $send);
 
-    $to = $user->mail;
-    $from = variable_get('site_mail', '');
-    $params['subject'] = "TPPSC Submission Received: {$form_state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-
-    $study_options = array(
-      0 => '- Select -',
-      1 => 'Natural Population (Landscape)',
-      2 => 'Growth Chamber',
-      3 => 'Greenhouse',
-      4 => 'Experimental/Common Garden',
-      5 => 'Plantation',
-    );
-
-    $params['author'] = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'];
-    $params['title'] = $form_state['saved_values'][TPPS_PAGE_1]['publication']['title'];
-    $params['organisms'] = $form_state['saved_values'][TPPS_PAGE_1]['organism'];
-    $params['study_type'] = $study_options[$form_state['saved_values'][TPPS_PAGE_2]['study_type']];
-    $params['data_type'] = $form_state['saved_values'][TPPS_PAGE_2]['data_type'];
-    $params['accession'] = $form_state['accession'];
-    $params['base_url'] = $base_url;
-    $params['body'] = '';
-
-    $params['headers'][] = 'MIME-Version: 1.0';
-    $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
-
-    drupal_mail('tppsc', 'user_recieved', $to, user_preferred_language($user), $params, $from, TRUE);
-
-    $params['user_mail'] = $user->mail;
-
-    drupal_mail('tppsc', 'admin_recieved', $admin, user_preferred_language($user), $params, $from, TRUE);
-
-  }
+  // To admin.
+  // Note: admin will get a short email without study details.
+  $admin_email = variable_get('tpps_admin_email', "treegenesdb@gmail.com");
+  $params['user_mail'] = $user->mail;
+  // Since this email couldn't belong to any Drupal User we use default language.
+  drupal_mail('tpps', 'admin_recieved', $admin_email, language_default(), $params, $from, $send);
 }

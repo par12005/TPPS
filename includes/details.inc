@@ -116,7 +116,8 @@ function tpps_details($accession = NULL) {
           );
         }
       }
-      drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');
+      $js_data = ['tpps' => ['tree_info' => $tree_info]];
+      $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
     }
     $output .= $map_api_tools;
     // [VS].
@@ -756,16 +757,7 @@ function tpps_details_study(array &$state) {
     $species_name = $state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
     $species[] = tpps_entity_link($id, $species_name, 'Organism');
   }
-
-  $study_types = array(
-    1 => 'Natural Population (Landscape)',
-    2 => 'Growth Chamber',
-    3 => 'Greenhouse',
-    4 => 'Experimental/Common Garden',
-    5 => 'Plantation',
-  );
-
-  $files = array();
+  $files = [];
   $study_file_ids = tpps_details_get_study_file_ids($state);
   // foreach ($state['files'] as $fid) {
   foreach ($study_file_ids as $fid) {
@@ -778,6 +770,7 @@ function tpps_details_study(array &$state) {
 
     }
   }
+  $page2_values = $state['saved_values'][TPPS_PAGE_2]['study_type'] ?? NULL;
 
   $pub_link = $state['title'];
   $pub_id = db_select('chado.project_pub', 'p')
@@ -793,11 +786,9 @@ function tpps_details_study(array &$state) {
   $rows[] = array('Title', $pub_link);
   $rows[] = array('Authors', implode(', ', $state['authors']));
   $rows[] = array('Species', implode('<br>', $species));
-  $rows[] = array('Data Type', $state['saved_values'][TPPS_PAGE_2]['data_type']);
-  $rows[] = array(
-    'Study Type',
-    $study_types[$state['saved_values'][TPPS_PAGE_2]['study_type']],
-  );
+  $rows[] = array('Data Type', $page2_values['data_type']);
+  module_load_include('inc', 'tpps', 'includes/form');
+  $rows[] = ['Study Type', tpps_form_get_study_type($page2_values['study_type'])];
   $rows[] = array('File Downloads', implode('<br>', $files));
   $rows[] = array('Population Size', $state['stats']['tree_count']);
   if (!empty($state['stats']['phenotype_count'])) {

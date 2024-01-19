@@ -491,20 +491,12 @@ function tpps_submit_page_2(array &$form_state, TripalJob &$job = NULL) {
     'value' => $page2_values['data_type'],
   ));
 
-  $studytype_options = [
-    0 => '- Select -',
-    1 => 'Natural Population (Landscape)',
-    2 => 'Growth Chamber',
-    3 => 'Greenhouse',
-    4 => 'Experimental/Common Garden',
-    5 => 'Plantation',
-  ];
-
-  tpps_chado_insert_record('projectprop', array(
+  module_load_include('inc', 'tpps', 'includes/form');
+  tpps_chado_insert_record('projectprop', [
     'project_id' => $form_state['ids']['project_id'],
     'type_id' => tpps_load_cvterm('study_type')->cvterm_id,
-    'value' => $studytype_options[$page2_values['study_type']],
-  ));
+    'value' => tpps_form_get_study_type($page2_values['study_type']),
+  ]);
 
   if (!empty($page2_values['study_info']['season'])) {
     $seasons = implode($page2_values['study_info']['season']);
@@ -1741,7 +1733,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
 
 
 
-  // Go through each additional study and run genotypes to flat file
+  // Go through each additional study and run genotypes to flat file.
   foreach ($study_accessions_with_potential_overlaps as $study_accession) {
     $study_state = tpps_submission_interface_load($study_accession);
 
@@ -1786,7 +1778,6 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
   foreach ($accession_results as $row) {
     $study_accession = $row->accession;
     $study_state = tpps_submission_interface_load($study_accession);
-
     $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     for ($i = 1; $i <= $study_organism_number; $i++) {
       $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
@@ -1839,7 +1830,7 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
     // echo '<br />';
   }
 
-  // Remove every combo that isnt 2.
+  // Remove every combo that isn't 2.
   $count_combinations = count($all_combinations);
   $unique_pairs = [];
   for ($i = 0; $i < $count_combinations; $i++) {
@@ -1870,23 +1861,23 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
     echo "[Repeats Location]: $repeats_location\n";
   }
 
-  // Remove repeats from corresponding studies
+  // Remove repeats from corresponding studies.
   foreach ($unique_pairs as $pair) {
     // $study_state = tpps_submission_interface_load($study_accession);
     $snps_flat_file_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-sorted.csv';
     $snps_flat_file_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-sorted.csv';
-    $repeats_location = $dest_folder . '/' . $pair[0] ."-" . $pair[1] . "-repeats.csv";
+    $repeats_location = $dest_folder . '/' . $pair[0] . "-" . $pair[1] . "-repeats.csv";
 
     $repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed.csv';
     $repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed.csv';
 
-    if (!is_file($repeats_removed_location_1) || $regenerate_all == true) {
+    if (!is_file($repeats_removed_location_1) || $regenerate_all == TRUE) {
       // exec("grep -v -x -f $repeats_location $snps_flat_file_location_1 > $repeats_removed_location_1");
       exec("awk 'NR==FNR{a[$0]=1;next}!a[$0]' $repeats_location $snps_flat_file_location_1 > $repeats_removed_location_1");
     }
     echo "[Repeats removed]: $repeats_removed_location_1\n";
 
-    if (!is_file($repeats_removed_location_2) || $regenerate_all == true) {
+    if (!is_file($repeats_removed_location_2) || $regenerate_all == TRUE) {
       // exec("grep -v -x -f $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
       exec("awk 'NR==FNR{a[$0]=1;next}!a[$0]' $repeats_location $snps_flat_file_location_2 > $repeats_removed_location_2");
     }
@@ -1929,18 +1920,18 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
     echo "[OVERLAPPING SNPS LOCATION]: $overlapping_snps_location\n";
   }
 
-  // Now we need to add this data to the database
+  // Now we need to add this data to the database.
   foreach ($unique_pairs as $pair) {
     $overlapping_snps_location = $dest_folder . '/' . $pair[0] . '-' . $pair[1] . '-1-snps-overlapping.txt';
-    // Try to do this efficiently
+    // Try to do this efficiently.
     $snps = [];
     $handle = fopen($overlapping_snps_location, "r");
     if ($handle) {
-      while (($line = fgets($handle)) !== false) {
-          // process the line read.
-          if (trim($line) != '' || trim($line) == ' ') {
-            $snps[] = "'" . trim($line) . "'";
-          }
+      while (($line = fgets($handle)) !== FALSE) {
+        // Process the line read.
+        if (trim($line) != '' || trim($line) == ' ') {
+          $snps[] = "'" . trim($line) . "'";
+        }
       }
     }
     fclose($handle);
@@ -1950,12 +1941,12 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
     // print_r(implode(',', $snps));
 
     if ($snps_count > 0) {
-      // Check if this data exists, if it doesn't insert, else update
+      // Check if this data exists, if it doesn't insert, else update.
       $results = chado_query("SELECT count(*) as c1 FROM chado.studies_marker_overlaps
         WHERE '" . $pair[0] . "'= ANY(accession)
         AND '" . $pair[1] . "'= ANY(accession)");
       $count = $results->fetchObject()->c1;
-      // Row exists, delete it before inserting new row
+      // Row exists, delete it before inserting new row.
       if ($count == 0) {
         chado_query("DELETE FROM chado.studies_marker_overlaps
         WHERE '" . $pair[0] . "'= ANY(accession)
@@ -1966,12 +1957,11 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
       ')');
     }
     else {
-      echo "No SNPs overlaps found between " . $pair[0] .  " and " .$pair[1] . "\n";
+      echo "No SNPs overlaps found between " . $pair[0] . " and " . $pair[1] . "\n";
     }
   }
   echo "ALL COMPLETED!\n";
 }
-
 
 /**
  * Tpps genotype_vcf_to_flat_file (CSV).

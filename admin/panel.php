@@ -1266,8 +1266,6 @@ function tpps_admin_panel_validate($form, &$form_state) {
  */
 function tpps_admin_panel_submit($form, &$form_state) {
   global $base_url;
-  $type = $form_state['tpps_type'] ?? 'tpps';
-  $type_label = ($type == 'tpps') ? 'TPPS' : 'TPPSC';
 
   $accession = $form_state['values']['accession'];
   $submission = tpps_load_submission($accession, FALSE);
@@ -1275,19 +1273,30 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $to = $owner->mail;
   $state = unserialize($submission->submission_state);
   $state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
-  $params = array();
-
+  $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $from = variable_get('site_mail', '');
-  $params['subject'] = "$type_label Submission Rejected: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+
+  // @TODO Minor. We could try find type using '#form_id' under $state['values'].
+  $type = $state['tpps_type'] ?? 'tpps';
+  $type_label = ($type == 'tpps') ? t('TPPS') : t('TPPSC');
+
+  $params = [];
+  $params['subject'] = t('@type_label Submission Rejected: @title',
+    [
+      '@type_label' => $type_label,
+      '@title' => $page1_values['publication']['title'] ?? NULL,
+    ]
+  );
   $params['uid'] = $owner->uid;
   $params['reject-reason'] = $form_state['values']['reject-reason'] ?? NULL;
   $params['base_url'] = $base_url;
-  $params['title'] = $state['saved_values'][TPPS_PAGE_1]['publication']['title'];
+  $params['title'] = $page1_values['publication']['title'] ?? NULL;
   $params['body'] = '';
+  $params['type'] = $type;
+  $params['type_label'] = $type_label;
 
-  $params['headers'][] = 'MIME-Version: 1.0';
-  $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
-
+  // @TODO Check why this variables are set because I didn't found them in
+  // database but each variable is an extra DB query.
   if (isset($form_state['values']['params'])) {
     foreach ($form_state['values']['params'] as $param_id => $type) {
       variable_set("tpps_param_{$param_id}_type", $type);
@@ -1548,7 +1557,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
       break;
 
     case 'Reject':
-      drupal_mail($type, 'user_rejected', $to, user_preferred_language($owner), $params, $from, TRUE);
+      $lang = user_preferred_language($owner);
+      drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
       $state['status'] = 'Incomplete';
       tpps_update_submission($state);
       drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
@@ -1584,15 +1594,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
         . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
       $params['accession'] = $state['accession'];
       drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
-      drupal_mail(
-        $type,
-        'user_approved',
-        $to,
-        user_preferred_language(user_load_by_name($to)),
-        $params,
-        $from,
-        TRUE
-      );
+      $lang = user_preferred_language(user_load_by_name($to));
+      drupal_mail('tpps', 'user_approved', $to, $lang, $params, $from, TRUE);
       $state['revised_files'] = $state['revised_files'] ?? array();
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {

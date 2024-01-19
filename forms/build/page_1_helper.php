@@ -264,6 +264,9 @@ function tpps_secondary_authors(array &$form, array $values, array $form_state) 
  *
  * @return array
  *   The populated form.
+ *
+ *
+ * @TODO Doublecheck and remove. Currently function not used.
  */
 function tppsc_organism(array &$form, array &$form_state) {
   // TPPSc Form.
