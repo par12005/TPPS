@@ -155,7 +155,7 @@ function tpps_create_submission(array $state, $uid) {
     'accession' => $state['accession'],
     'dbxref_id' => $state['dbxref_id'],
     'submission_state' => serialize($state),
-    'submission_interface' => tpps_submission_interface_convert($state),
+    'submission_interface' => serialize(tpps_submission_interface_create($state)),
   );
 
   db_insert('tpps_submission')
@@ -200,23 +200,24 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   $job->logMessage('New submission data for ' . $new_accession);
   $job->logMessage(print_r($state, 1));
 
-  // This function will not work here because it tries to update
-  // a non existing TGDR (the new one has not been created as yet)
-  // The update SQL after this, will make it exist because
-  // it renames the old tgdr number to the new tgdr number
+  // The call of tpps_update_submission() below will not work here
+  // because it tries to update a non-existing TGDR (the new one has
+  // not been created as yet). The update SQL after this, will make
+  // it exist because it renames the old tgdr number to the new tgdr number
   // So instead of this function tpps_update_submission, manually do it
   // tpps_update_submission($state);
 
-  $options['status'] = 'Approved';
-  // @TODO Minor. Use REQUEST_TIME to have the same value for all related data.
-  // Need to check if this function called from submit_all.php or other time
-  // consuming script and time() != REQUEST_TIME.
   $state['updated'] = time();
-  $options['submission_state'] = serialize($state);
-  $options['submission_interface'] = tpps_submission_interface_convert($state);
-
   db_update('tpps_submission')
-    ->fields($options)
+    ->fields([
+      'status' => 'Approved',
+      // Note: REQUEST_TIME couldn't be used because this function also
+      // called from submit_all.php and time() != REQUEST_TIME.
+      'submission_state' => serialize($state),
+      'submission_interface' => serialize(
+        tpps_submission_interface_create($state)
+      ),
+    ])
     ->condition('accession', $old_accession)
     ->execute();
 
@@ -244,24 +245,31 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
  * Additional attributes of the submission record can be updated by populating
  * the options parameter.
  *
- * @param array $state
- *   The form_state of the submission.
+ * @param array $form_state
+ *   The Submission's Form State.
  * @param array $options
  *   Additional submission attributes to update.
  */
-function tpps_update_submission(array $state, array $options = array()) {
-  if (empty($options['status']) and !empty($state['status'])) {
-    $options['status'] = $state['status'];
+function tpps_update_submission(array &$form_state, array $options = []) {
+  if (empty($accession = $form_state['accession'] ?? NULL)) {
+    watchdog('tpps', "Submission Form State wan't updated because "
+      . "of empty 'accession' field.", [], WATCHDOG_ERROR
+    );
+    return;
   }
-  $state['updated'] = time();
-  $options['submission_state'] = serialize($state);
-  $options['submission_interface'] = tpps_submission_interface_convert($state);
+  if (empty($options['status']) and !empty($form_state['status'])) {
+    $options['status'] = $form_state['status'];
+  }
+  $form_state['updated'] = time();
+  $options['submission_state'] = serialize($form_state);
+  $options['submission_interface'] = serialize(
+    tpps_submission_interface_create($form_state)
+  );
   db_update('tpps_submission')
     ->fields($options)
-    ->condition('accession', $state['accession'])
+    ->condition('accession', $accession)
     ->execute();
 }
-
 
 /**
  * Deletes a TPPS Submission.
