@@ -278,83 +278,6 @@ function tpps_submission_interface_update(array &$form_state, $status = NULL) {
 }
 
 /**
- * Gets list of changes for specified version or for all versions.
- *
- * @param int $version
- *   Version of the Submission Form State.
- *   This version will be used to create Submission Interface.
- *
- * @return mixed
- *   Returns list of changes for particular version or NULL if there is no
- *   changes for given version number.
- *   Returns all version's changes.
- */
-function tpps_submission_interface_get_change_list($version = NULL) {
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Remove useless elemLnts to reduce size.
-  $change_list = [
-    '1' => [
-      // We unset not used items instead of copy required items from
-      // $form_state because if new elements will be found they will be
-      // left for sure. It's safer.
-      'unset' => [
-        // List of path to the items in $interface at the top (1st) level.
-        'build_info',
-        'temporary',
-        'programmed',
-        'programmed_bypass_access_check',
-        'cache',
-        'rebuild',
-        'rebuild_info',
-        'redirect',
-        'submitted',
-        'executed',
-        'method',
-        'groups',
-        'buttons',
-        'input',
-        'values',
-        'complete form',
-        'process_input',
-        'invalid_token',
-        'triggering_element',
-        'clicked_button',
-        // List of the fields which must be left.
-        // Required by submit_all() and tpps_table_display() and sub-functions.
-        // 'stage',
-        // 'saved_values',
-        // 'dbxref_id',
-        // 'created',
-        // 'accession',
-        // 'status',
-        // 'stats',
-        // 'ids',
-        // 'tpps_type',
-        // 'file_info',
-        // 'updated',
-        // 'approved',
-        // 'completed',
-        // 'loaded',
-        // 'submitting_uid',
-        // 'job_id',
-        // 'revised_files',
-        // 'admin_comments',
-        // 'alternative_accessions',
-        // 'data',
-        // 'tree_info',
-        //  Probably could be unset:
-        // 'phenotypes_edit'.
-      ],
-    ],
-    // #86ayw8a7k Genotype Logic changes.
-    '2' => [],
-  ];
-
-  return ($version ? ($change_list[$version] ?? NULL) : $change_list);
-}
-
-/**
  * Submission Interface Action 'unset'.
  *
  * Given list of fields will be removed/unset in Submission Interface.
@@ -424,4 +347,82 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
       = $source['parent_element'][$source['field_name']];
     unset($source['parent_element'][$source['field_name']]);
   }
+}
+
+/**
+ * Gets list of changes for specified version or for all versions.
+ *
+ * @param int $version
+ *   Version of the Submission Form State.
+ *   This version will be used to create Submission Interface.
+ *
+ * @return mixed
+ *   Returns list of changes for particular version or NULL if there is no
+ *   changes for given version number.
+ *   Returns all version's changes.
+ */
+function tpps_submission_interface_get_change_list($version = NULL) {
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Remove useless elemLnts to reduce size.
+  $change_list = [
+    '1' => [
+      // We unset not used items instead of copy required items from
+      // $form_state because if new elements will be found they will be
+      // left for sure. It's safer.
+      'unset' => [
+        // List of path to the items in $interface at the top (1st) level.
+        'build_info',
+        'temporary',
+        'programmed',
+        'programmed_bypass_access_check',
+        'cache',
+        'rebuild',
+        'rebuild_info',
+        'redirect',
+        'submitted',
+        'executed',
+        'method',
+        'groups',
+        'buttons',
+        'input',
+        'values',
+        'complete form',
+        'process_input',
+        'invalid_token',
+        'triggering_element',
+        'clicked_button',
+        // List of the fields which must be left.
+        // Required by submit_all() and tpps_table_display() and sub-functions.
+        // 'saved_values',
+        // 'dbxref_id',
+        // 'created',
+        // 'accession',
+        // 'status',
+        // 'stats',
+        // 'ids',
+        // 'tpps_type',
+        // 'file_info',
+        // 'updated',
+        // 'approved',
+        // 'completed',
+        // 'loaded',
+        // 'submitting_uid',
+        // 'job_id',
+        // 'revised_files',
+        // 'admin_comments',
+        // 'alternative_accessions',
+        // 'data',
+        // 'tree_info'.
+        //
+        //  Probably could be unset:
+        // 'stage',
+        // 'phenotypes_edit'.
+      ],
+    ],
+    // #86ayw8a7k Genotype Logic changes.
+    '2' => [],
+  ];
+
+  return ($version ? ($change_list[$version] ?? NULL) : $change_list);
 }
