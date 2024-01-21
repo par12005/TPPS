@@ -103,16 +103,21 @@ define('TPPS_SUBMISSION_INTERFACE_INIT_VERSION', 1);
  * @param array $form_state
  *   Drupal Form State array.
  *
- * @return array
+ * @return mixed
  *   Returns array with datastructure prepared for TPPS pipeline
  *   (submit_all.php script).
  *   Returns empty array if $form_state is empty too.
  */
 function tpps_submission_interface_create(array $form_state = []) {
+  $debug_mode = FALSE;
   if (empty($form_state)) {
     watchdog('tpps', 'Empty Submission Form State.', [], WATCHDOG_WARNING);
-    return [];
+    return;
   }
+
+  // Initialize Submission Interface.
+  // Do NOT change $form_state but update $interface instead.
+  $interface = $form_state;
 
   // Form State Version.
   // We do not use 'semantic versioning' because there is no sence to have it
@@ -120,10 +125,11 @@ function tpps_submission_interface_create(array $form_state = []) {
   // be applied first. Using simple integers will allow to easily detect
   // which version must be applied.
   $current_version = tpps_submission_interface_get_version($interface);
+// @TODO Remove debug code.
+  if ($debug_mode) {
+    dpm($current_version);
+  }
 
-  // Initialize Submission Interface.
-  // Do NOT change $form_state but update $interface instead.
-  $interface = $form_state;
   $change_list = tpps_submission_interface_get_change_list();
   // We need to apply changes from 1st to $current version to have
   // incremental changes.
@@ -147,8 +153,29 @@ function tpps_submission_interface_create(array $form_state = []) {
       }
       // Call function.
       // Note: $action_data also couldn't be empty here.
-      call_user_func_array($function, $interface, $action_data);
+      // Action-functions are (for search):
+      // tpps_submission_interface_action_unset();
+      // tpps_submission_interface_action_move().
+// @TODO Remove debug code.
+      if ($debug_mode) {
+        dpm(print_r(array_keys($interface), 1),
+          'Before call function ' . $function . '(). Version: ' . $i . ', action: ' . $action
+        );
+      }
+
+      call_user_func_array($function, [&$interface, $action_data]);
+// @TODO Remove debug code.
+      if ($debug_mode) {
+        dpm(print_r(array_keys($interface), 1),
+          'After call function ' . $function . '(). Version: ' . $i . ', action: ' . $action
+        );
+      }
     }
+  }
+// @TODO Remove debug code.
+  if ($debug_mode) {
+    dpm(print_r($interface, 1), 'Final version of $interface');
+    dpm(print_r($form_state, 1), 'Final version of $form_state');
   }
   return $interface;
 }
@@ -163,7 +190,7 @@ function tpps_submission_interface_create(array $form_state = []) {
  *   Returns Submission's From State version.
  */
 function tpps_submission_interface_get_version(array $form_state) {
-  return $interface[TPPS_SUBMISSION_INTERFACE_VERSION] ?? 1;
+  return $form_state[TPPS_SUBMISSION_INTERFACE_VERSION] ?? 1;
 }
 
 /**
@@ -224,12 +251,13 @@ function tpps_submission_interface_load($accession) {
  *   This value will be added to the Submission Interface Array and to
  *   public.tpps_submission.status column.
  *
- * @return array
+ * @return mixed
  *   Returns Submission Interface.
+ *   Returns NULL if $form_state or Study accession is empty.
  */
 function tpps_submission_interface_update(array &$form_state, $status = NULL) {
   if (empty($form_state) || empty($form_state['accession'])) {
-    return;
+    return NULL;
   }
 
   $accession = $form_state['accession'];
@@ -252,7 +280,7 @@ function tpps_submission_interface_update(array &$form_state, $status = NULL) {
 /**
  * Gets list of changes for specified version or for all versions.
  *
- * @param int $verions
+ * @param int $version
  *   Version of the Submission Form State.
  *   This version will be used to create Submission Interface.
  *
@@ -261,14 +289,15 @@ function tpps_submission_interface_update(array &$form_state, $status = NULL) {
  *   changes for given version number.
  *   Returns all version's changes.
  */
-function tpps_submission_interface_get_change_list($verions = NULL) {
+function tpps_submission_interface_get_change_list($version = NULL) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove useless elemLnts to reduce size.
   $change_list = [
     '1' => [
-      // It's safer to unset unused items then copy only required because if
-      // new elements will be found they will be left for sure.
+      // We unset not used items instead of copy required items from
+      // $form_state because if new elements will be found they will be
+      // left for sure. It's safer.
       'unset' => [
         // List of path to the items in $interface at the top (1st) level.
         'build_info',
@@ -291,37 +320,31 @@ function tpps_submission_interface_get_change_list($verions = NULL) {
         'invalid_token',
         'triggering_element',
         'clicked_button',
-      ],
-      // @TODO Major. Check and remove this list.
-      'leave' => [
+        // List of the fields which must be left.
         // Required by submit_all() and tpps_table_display() and sub-functions.
-        'saved_values',
-        'ids',
-        'accession',
-        'tree_info',
-        'data',
-        'revised_files',
-        'tpps_type',
-        'dbxref_id',
-        'status',
-        'stats',
-        // Leave those items to later use only $interface in submit_all.php.
-        // From tpps_form_state_info():
-        // Note: This list is probably outdated.
-        'stage',
-        'file_info',
-        'updated',
-        'created',
-        'approved',
-        'completed',
-        'loaded',
-        'submitting_uid',
-        'job_id',
-        'revised_files',
-        'admin_comments',
-        'alternative_accessions',
-        'data',
-        'phenotypes_edit',
+        // 'stage',
+        // 'saved_values',
+        // 'dbxref_id',
+        // 'created',
+        // 'accession',
+        // 'status',
+        // 'stats',
+        // 'ids',
+        // 'tpps_type',
+        // 'file_info',
+        // 'updated',
+        // 'approved',
+        // 'completed',
+        // 'loaded',
+        // 'submitting_uid',
+        // 'job_id',
+        // 'revised_files',
+        // 'admin_comments',
+        // 'alternative_accessions',
+        // 'data',
+        // 'tree_info',
+        //  Probably could be unset:
+        // 'phenotypes_edit'.
       ],
     ],
     // #86ayw8a7k Genotype Logic changes.
@@ -351,7 +374,7 @@ function tpps_submission_interface_action_unset(array &$interface, array $action
       continue;
     }
     $target = &tpps_form_get_path($interface, $item);
-    if (empty($item['parent_element']) || empty($item['field_name'])) {
+    if (empty($target['parent_element']) || empty($target['field_name'])) {
       watchdog('tpps', 'Submission Interface Action "unset" #@key failed.'
         . '<br />Value: <pre>@item</pre>.',
         ['@key' => $key, '@item' => print_r($item)], WATCHDOG_ERROR
@@ -398,7 +421,7 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
     }
     // Note:$item['parent_element'] is a reference to the element inside $interface.
     $target['parent_element'][$target['field_name']]
-      = $source['parent_element'][$source['field_name']);
+      = $source['parent_element'][$source['field_name']];
     unset($source['parent_element'][$source['field_name']]);
   }
 }
