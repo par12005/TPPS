@@ -45,6 +45,8 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 
   tpps_log('[INFO] Setting up...');
   $job->setInterval(1);
+  // @TODO Minor. Rename $form_state because it's now not a Drupal Form State
+  // but Submission Interface Array. Maybe 'study_state'?
   $form_state = tpps_submission_interface_load($accession);
 
   // PATCH to check if VCF exists, then remove the assay design.
@@ -141,6 +143,8 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   }
   catch (Exception $e) {
     $transaction->rollback();
+    // @TODO Minor. Rename $form_state because it's now not a Drupal Form State
+    // but Submission Interface Array.
     $form_state = tpps_submission_interface_load($accession);
     tpps_submission_interface_update($form_state, TPPS_STATUS_PENDING_APPROVAL);
 

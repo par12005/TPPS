@@ -70,6 +70,9 @@
  *   $all_submissions = chado_query("SELECT $fields FROM public.tpps_submission;");
  *
  * ----------------------------------------------------------------------------
+ * @todo Use 'study_state' or even 'study' instead of 'Submission Interface'
+ * because 'Submission Interface' is a name of the feature but not name of
+ * the array with data.
  * @todo See submit_all.php:75. There 'status' is stored twice:
  * 1. $submission_interface['status'].
  * 2. public.tpps_submission.status.
