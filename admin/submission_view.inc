@@ -101,17 +101,31 @@ function tpps_submission_view_form(array $form, array $form_state) {
     '#value' => t('Compare'),
     '#submit' => ['tpps_submission_view_form_submit'],
   ];
-  $parsed = tpps_array_dump($state);
-  foreach ($parsed as $key => $item) {
-    $form[$key . '_container'] = [
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Show data.
+  $data = [
+    'form_state' => tpps_array_dump($state),
+    'interface' => tpps_array_dump(tpps_submission_interface_load($accession)),
+  ];
+  foreach ($data as $data_type => $array) {
+    $form[$data_type . '_container'] = [
       '#type' => 'fieldset',
-      '#title' => ($item['title'] ?? $key)
-        . ($item['count'] ? ' (' . $item['count'] . ')' : ''),
+      '#title' => $data_type,
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
-      'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
     ];
+    foreach ($array as $key => $item) {
+      $form[$data_type . '_container'][$key . '_container'] = [
+        '#type' => 'fieldset',
+        '#title' => ($item['title'] ?? $key)
+          . ($item['count'] ? ' (' . $item['count'] . ')' : ''),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+        'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
+      ];
+    }
   }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $form['footer_back'] = [
     '#type' => 'submit',
     '#value' => t('Back'),
