@@ -392,6 +392,8 @@ function tpps_submission_interface_get_change_list($version = NULL) {
         'invalid_token',
         'triggering_element',
         'clicked_button',
+        ['saved_values', 'form_build_id'],
+
         // List of the fields which must be left.
         // Required by submit_all() and tpps_table_display() and sub-functions.
         // 'saved_values',
@@ -418,11 +420,38 @@ function tpps_submission_interface_get_change_list($version = NULL) {
         //  Probably could be unset:
         // 'stage',
         // 'phenotypes_edit'.
+        //
+        //
       ],
     ],
     // #86ayw8a7k Genotype Logic changes.
     '2' => [],
   ];
+
+  // Remove Drupal's internal fields used for form building.
+  // Note: Those fields are stored in column tpps_submission.submission_state.
+  $page_list = [
+    'frontpage', TPPS_PAGE_1, TPPS_PAGE_2, TPPS_PAGE_3, TPPS_PAGE_4, 'summarypage',
+  ];
+  $drupal_internal_fields = [
+    // Note: Page 1 has not 'Back' button.
+    'Back',
+    'Save',
+    'Next',
+    'form_build_id',
+    'form_token',
+    'form_id',
+    'op',
+    '#cleared',
+    // Only for Page 4.
+    'submit',
+    'diagnostics-curation',
+  ];
+  foreach ($page_list as $page) {
+    foreach ($drupal_internal_fields as $field) {
+      $change_list['1']['unset'][] = ['saved_values', $page, $field];
+    }
+  }
 
   return ($version ? ($change_list[$version] ?? NULL) : $change_list);
 }

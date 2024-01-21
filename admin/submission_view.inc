@@ -104,8 +104,8 @@ function tpps_submission_view_form(array $form, array $form_state) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show data.
   $data = [
-    'form_state' => tpps_array_dump($state),
     'interface' => tpps_array_dump(tpps_submission_interface_load($accession)),
+    'form_state' => tpps_array_dump($state),
   ];
   foreach ($data as $data_type => $array) {
     $form[$data_type . '_container'] = [
