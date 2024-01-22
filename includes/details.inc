@@ -105,7 +105,7 @@ function tpps_details($accession = NULL) {
     $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
       async defer></script>"
       . "<div id=\"_map_wrapper\"></div>";
-    $tree_info = array();
+    $tree_info = [];
     if (!empty($state['tree_info'])) {
       foreach ($state['tree_info'] as $name => $info) {
         if (!empty($info['lat']) and !empty($info['lng'])) {
@@ -116,8 +116,7 @@ function tpps_details($accession = NULL) {
           );
         }
       }
-      $js_data = ['tpps' => ['tree_info' => $tree_info]];
-      $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
+      drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');
     }
     $output .= $map_api_tools;
     // [VS].
