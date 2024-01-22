@@ -273,22 +273,25 @@ function tpps_submission_interface_load($accession) {
  * Should only $form_state be updated? I think those temp data must be stored
  * outside of those datasets.
  */
-function tpps_submission_interface_update(array &$form_state, $status = NULL) {
-  if (empty($form_state) || empty($form_state['accession'])) {
+function tpps_submission_interface_update(array &$interface, $status = NULL) {
+  if (empty($interface) || empty($interface['accession'])) {
     return NULL;
   }
 
-  $accession = $form_state['accession'];
+  $accession = $interface['accession'];
+  //$form_state = tpps_load_submission($accession);
+  //$interface = tpps_submission_interface_create($form_state) ?? [];
   // Note: REQUEST_TIME couldn't be used because called from CLI script and
   // processing could take long time from script call.
-  $form_state['updated'] = time();
-  $form_state['status'] = ($status ? $status : ($form_state['status'] ?? ''));
-
-  $interface = tpps_submission_interface_create($form_state) ?? [];
+  $interface['updated'] = time();
+  $interface['status'] = ($status ? $status : ($interface['status'] ?? ''));
+  // @TODO Could we only update $interface?
+  //$form_state['status'] = $interface['status'];
+  //$form_state['updated'] = $interface['updated'];
   db_update('tpps_submission')
     ->fields([
       'status' => $form_state['status'],
-      'submission_state' => serialize($form_state),
+      //'submission_state' => serialize($form_state),
       'submission_interface' => serialize($interface),
     ])
     ->condition('accession', $accession)

@@ -47,13 +47,13 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   $job->setInterval(1);
   // @TODO Minor. Rename $form_state because it's now not a Drupal Form State
   // but Submission Interface Array. Maybe 'study_state'?
-  $form_state = tpps_submission_interface_load($accession);
+  $interface = tpps_submission_interface_load($accession);
 
   // PATCH to check if VCF exists, then remove the assay design.
   // Advised by Meghan 7/6/2023.
 
   // Do check for missing files, this is a bit crude but it works.
-  $display_results = strip_tags(tpps_table_display($form_state));
+  $display_results = strip_tags(tpps_table_display($interface));
   // Find 'missing file' string.
   echo $display_results;
   if (stripos($display_results, 'file missing') !== FALSE) {
@@ -68,32 +68,32 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     throw new Exception($message);
   }
 
-  tpps_submission_interface_update($form_state, 'Submission Job Running');
+  tpps_submission_interface_update($interface, 'Submission Job Running');
   $transaction = db_transaction();
   try {
 
     // RISH 7/18/2023 - Run some checks before going through most of the genotype
     // processing (this will error out if an issue is found to avoid long failing loads)
-    $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
-    $page4_values = $form_state['saved_values'][TPPS_PAGE_4];
+    $page1_values = $interface['saved_values'][TPPS_PAGE_1];
+    $page4_values = $interface['saved_values'][TPPS_PAGE_4];
     $organism_number = $page1_values['organism']['number'];
     for ($i = 1; $i <= $organism_number; $i++) {
-      tpps_genotype_initial_checks($form_state, $i, $job);
+      tpps_genotype_initial_checks($interface, $i, $job);
     }
 
     tpps_log('[INFO] Clearing Database...');
     tpps_submission_clear_db($accession);
     tpps_log('[INFO] Database Cleared');
-    $project_id = $form_state['ids']['project_id'] ?? NULL;
+    $project_id = $interface['ids']['project_id'] ?? NULL;
 
 
     tpps_submission_clear_default_tags($accession);
-    $form_state['file_rank'] = 0;
-    $form_state['ids'] = [];
+    $interface['file_rank'] = 0;
+    $interface['ids'] = [];
 
     tpps_log('[INFO] Creating project record...');
-    $form_state['title'] = $page1_values['publication']['title'];
-    $form_state['abstract'] = $page1_values['publication']['abstract'];
+    $interface['title'] = $page1_values['publication']['title'];
+    $interface['abstract'] = $page1_values['publication']['abstract'];
     $project_record = array(
       'name' => $page1_values['publication']['title'],
       'description' => $page1_values['publication']['abstract'],
@@ -101,32 +101,35 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     if (!empty($project_id)) {
       $project_record['project_id'] = $project_id;
     }
-    $form_state['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
-    tpps_log("[INFO] Project record created. project_id: @pid\n", array('@pid' => $form_state['ids']['project_id']));
+    $interface['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
+    tpps_log(
+      '[INFO] Project record created. project_id: @pid\n',
+      ['@pid' => $interface['ids']['project_id']]
+    );
 
-    tpps_tripal_entity_publish('Project', array(
+    tpps_tripal_entity_publish('Project', [
       $page1_values['publication']['title'],
-      $form_state['ids']['project_id'],
-    ));
+      $interface['ids']['project_id'],
+    ]);
 
     tpps_log("[INFO] Submitting Publication/Species information...");
-    tpps_submit_page_1($form_state, $job);
+    tpps_submit_page_1($interface, $job);
     tpps_log("[INFO] Publication/Species information submitted!\n");
 
     tpps_log("[INFO] Submitting Study Details...");
-    tpps_submit_page_2($form_state, $job);
+    tpps_submit_page_2($interface, $job);
     tpps_log("[INFO] Study Details sumbitted!\n");
 
     tpps_log("[INFO] Submitting Accession information...");
-    tpps_submit_page_3($form_state, $job);
+    tpps_submit_page_3($interface, $job);
     tpps_log("[INFO] Accession information submitted!\n");
 
     tpps_log("[INFO] Submitting Raw data...");
-    tpps_submit_page_4($form_state, $job);
+    tpps_submit_page_4($interface, $job);
     tpps_log("[INFO] Raw data submitted!\n");
 
     tpps_log("[INFO] Submitting Summary information...");
-    tpps_submit_summary($form_state);
+    tpps_submit_summary($interface);
     tpps_log("[INFO] Summary information submitted!\n");
 
     tpps_log("[INFO] Renaming files...");
@@ -134,8 +137,8 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_log("[INFO] Files renamed!\n");
 
     tpps_log("[INFO] Finishing up...");
-    $form_state['loaded'] = time();
-    tpps_submission_interface_update($form_state, TPPS_STATUS_PENDING_APPROVED);
+    $interface['loaded'] = time();
+    tpps_submission_interface_update($interface, TPPS_STATUS_PENDING_APPROVED);
     tpps_log("[INFO] Complete!");
 
     fclose($tpps_job_logger['log_file_handle']);
@@ -143,10 +146,9 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   }
   catch (Exception $e) {
     $transaction->rollback();
-    // @TODO Minor. Rename $form_state because it's now not a Drupal Form State
-    // but Submission Interface Array.
-    $form_state = tpps_submission_interface_load($accession);
-    tpps_submission_interface_update($form_state, TPPS_STATUS_PENDING_APPROVAL);
+    // Restore status of study because processing failed.
+    $interface = tpps_submission_interface_load($accession);
+    tpps_submission_interface_update($interface, TPPS_STATUS_PENDING_APPROVAL);
 
     tpps_log('[ERROR] Job failed', [], TRIPAL_ERROR);
     tpps_log('[ERROR] Error message: @msg', ['@msg' => $e->getMessage()], TRIPAL_ERROR);
@@ -159,10 +161,12 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 }
 
 /**
- * Writes data to the tpps_job_logger_handle
+ * Writes data to the tpps_job_logger_handle.
  *
  * @param string $string
- *   Write string to the job log file using the tpps_job_logger object
+ *   Write string to the job log file using the tpps_job_logger object.
+ * @param mixed $replacements
+ *   List of tokens to be replaced.
  */
 function tpps_job_logger_write($string, $replacements = []) {
   global $tpps_job_logger;
@@ -171,13 +175,13 @@ function tpps_job_logger_write($string, $replacements = []) {
       $string = str_replace($key_string, $replace_string, $string);
     }
 
-    // Add timestamp
+    // Add timestamp.
     $time_now = time();
     $timestamp_now = date('m/d/y g:i:s A', $time_now);
 
     $string = "\n" . $timestamp_now . " " . $string;
 
-    @fwrite($tpps_job_logger['log_file_handle'],$string);
+    @fwrite($tpps_job_logger['log_file_handle'], $string);
     @fflush($tpps_job_logger['log_file_handle']);
   }
   catch (Exception $e) {
