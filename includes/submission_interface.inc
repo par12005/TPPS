@@ -197,45 +197,59 @@ function tpps_submission_interface_get_version(array $form_state) {
  * Gets Submission Interface for given study.
  *
  * Note:
- * Forked tpps_load_submission().
+ * Forked tpps_load_submission(). Code was improved.
  *
  * @param string $accession
  *   The accession of the submission in format 'TGDRxxxx'.
  *
- * @return mixed
+ * @return array
  *   Returns array with Submission Interface data prepared for pipeline processing.
- *   Returns FALSE if Submission wan't found.
+ *   Returns empty array if Submission wan't found.
  */
 function tpps_submission_interface_load($accession) {
   $result = db_select('tpps_submission', 's')
-    // @TODO exclude 'submission_interface' column.
     ->fields('s', ['submission_interface'])
     ->condition('accession', $accession)
     ->range(0, 1)
     ->execute()->fetchObject();
 
-  if ($result) {
-    return unserialize($result->submission_interface);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  if (!$result) {
+    // Try to find study by 'accession' in 'tpps_submission_dbxref' table.
+    $query = db_select('tpps_submission', 's');
+    $query->join(
+      'tpps_submission_dbxref',
+      's_dbx',
+      's.tpps_submission_id = s_dbx.tpps_submission_id'
+    );
+    $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
+    $query->fields('s', ['submission_interface'])
+      ->condition('dbx.accession', $accession)
+      ->condition('s.status', 'Approved')
+      ->range(0, 1);
+    $result = $query->execute()->fetchObject();
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // @TODO Minor. Check if this code below is really useful.
-  // Search for alternative accessions.
-  $query = db_select('tpps_submission', 's');
-  $query->join('tpps_submission_dbxref', 's_dbx',
-    's.tpps_submission_id = s_dbx.tpps_submission_id'
-  );
-  $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-  $query->fields('s', ['submission_interface']);
-  $query->condition('dbx.accession', $accession);
-  $query->condition('s.status', 'Approved');
-  $query->range(0, 1);
-  $result = $query->execute()->fetchObject();
-
+  // Process results.
   if ($result) {
-    return unserialize($result->submission_interface);
+    if (!empty($result->submission_interface)) {
+      return unserialize($result->submission_interface);
+    }
+    else {
+      // Update Submission Interface array.
+      $interface = tpps_submission_interface_update(
+        tpps_load_submission($accession)
+      );
+      if (!empty($interface)) {
+        return $interface;
+      }
+    }
   }
-  return FALSE;
+  else {
+    // Calling code expects an array.
+    return [];
+  }
 }
 
 /**
@@ -254,6 +268,10 @@ function tpps_submission_interface_load($accession) {
  * @return mixed
  *   Returns Submission Interface.
  *   Returns NULL if $form_state or Study accession is empty.
+ *
+ * @todo Decide if SIA must be updated with status/dates and so on.
+ * Should only $form_state be updated? I think those temp data must be stored
+ * outside of those datasets.
  */
 function tpps_submission_interface_update(array &$form_state, $status = NULL) {
   if (empty($form_state) || empty($form_state['accession'])) {
@@ -270,6 +288,7 @@ function tpps_submission_interface_update(array &$form_state, $status = NULL) {
   db_update('tpps_submission')
     ->fields([
       'status' => $form_state['status'],
+      'submission_state' => serialize($form_state),
       'submission_interface' => serialize($interface),
     ])
     ->condition('accession', $accession)
@@ -300,7 +319,7 @@ function tpps_submission_interface_action_unset(array &$interface, array $action
     if (empty($target['parent_element']) || empty($target['field_name'])) {
       watchdog('tpps', 'Submission Interface Action "unset" #@key failed.'
         . '<br />Value: <pre>@item</pre>.',
-        ['@key' => $key, '@item' => print_r($item)], WATCHDOG_ERROR
+        ['@key' => $key, '@item' => print_r($item, 1)], WATCHDOG_ERROR
       );
       continue;
     }
@@ -338,7 +357,7 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
     ) {
       watchdog('tpps', 'Submission Interface Action "move" #@key failed.'
         . '<br />Value: <pre>@item</pre>.',
-        ['@key' => $key, '@item' => print_r($item)], WATCHDOG_ERROR
+        ['@key' => $key, '@item' => print_r($item, 1)], WATCHDOG_ERROR
       );
       continue;
     }
@@ -394,6 +413,7 @@ function tpps_submission_interface_get_change_list($version = NULL) {
         'clicked_button',
         ['saved_values', 'form_build_id'],
 
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // List of the fields which must be left.
         // Required by submit_all() and tpps_table_display() and sub-functions.
         // 'saved_values',
@@ -428,6 +448,9 @@ function tpps_submission_interface_get_change_list($version = NULL) {
     '2' => [],
   ];
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Dynamic changes for version 1.
+  //
   // Remove Drupal's internal fields used for form building.
   // Note: Those fields are stored in column tpps_submission.submission_state.
   $page_list = [
