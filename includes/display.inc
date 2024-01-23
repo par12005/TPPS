@@ -97,17 +97,9 @@ function tpps_flatten(array $state) {
     $data['Data Type'] = $page_2['data_type'];
   }
 
-  if (isset($page_2['study_type']) and $page_2['study_type']) {
-    $study_type_options = array(
-      1 => 'Natural Population (Landscape)',
-      2 => 'Growth Chamber',
-      3 => 'Greenhouse',
-      4 => 'Experimental/Common Garden',
-      5 => 'Plantation',
-    );
-    if (isset($study_type_options[$page_2['study_type']])) {
-      $data['Study Type'] = $study_type_options[$page_2['study_type']];
-    }
+  if (!empty($page_2['study_type'])) {
+    module_load_include('inc', 'tpps', 'includes/form');
+    $data['Study Type'] = tpps_form_get_study_type($page_2['study_type']);
 
     if (!empty($page_2['study_info']['season'])) {
       $data['Seasons Assessed'] = implode($page_2['study_info']['season']);
@@ -117,8 +109,8 @@ function tpps_flatten(array $state) {
       $data['Average number of assessions'] = $page_2['study_info']['assessions'];
     }
 
-    $data['Average High Temperature'] = isset($page_2['study_info']['temp']['high']) ? $page_2['study_info']['temp']['high'] : NULL;
-    $data['Average Low Temperature'] = isset($page_2['study_info']['temp']['low']) ? $page_2['study_info']['temp']['low'] : NULL;
+    $data['Average High Temperature'] = $page_2['study_info']['temp']['high'] ?? NULL;
+    $data['Average Low Temperature'] = $page_2['study_info']['temp']['low'] ?? NULL;
 
     $types = array(
       'co2' => 'CO2',
