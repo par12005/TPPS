@@ -56,8 +56,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#options' => $options,
     '#prefix' => '<legend><span class="fieldset-legend"><div class="fieldset-title">Study Design</div></span></legend>',
   );
-
-  module_load_include('inc', 'tpps', 'includes/form');
+  tpps_form_autofocus($form, 'data_type');
   $form['study_type'] = [
     '#type' => 'select',
     '#title' => t('Study Type: *'),

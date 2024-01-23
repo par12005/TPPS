@@ -31,6 +31,13 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
       . 'Navigation bar has no icons but allows to go back to completed steps.'
     ),
   ];
+  $form['tpps_dark_theme'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Use Dark Theme'),
+    '#default_value' => variable_get('tpps_dark_theme', FALSE),
+    '#description' => t('Dark theme only changes backgraund color of the TPPS '
+      . 'forms. Enabled by default at dev-server.'),
+  ];
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);
 }
@@ -39,10 +46,14 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
  * Custom form submitter for 'tpps_page_1_settings_form' form.
  */
 function tpps_form_main_settings_form_submit(array $form, array &$form_state) {
-  // Clear cache on change only.
+  // Clear cache on change only but not on each form submission.
   if (
+    // CSS theme was changed.
     ($form_state['values']['tpps_theme'] ?? NULL)
     != variable_get('tpps_theme', 'default')
+    // Enabled dark theme.
+    || ($form_state['values']['tpps_dark_theme'] ?? NULL)
+    != variable_get('tpps_dark_theme', FALSE)
   ) {
     cache_clear_all();
   }

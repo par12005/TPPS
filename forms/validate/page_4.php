@@ -53,8 +53,10 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
           }
         }
         if (!empty($organism[$item])) {
-          $function = 'tpps_validate_' . $item;
-          call_user_func($function, $organism[$item], $i, $form, $form_state);
+          call_user_func_array(
+            'tpps_validate_' . $item,
+            [&$organism[$item], $i, $form, &$form_state]
+          );
         }
       }
     }
@@ -487,7 +489,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
  * @param array $form_state
  *   The state of the form being validated.
  */
-function tpps_validate_genotype(array $genotype, $org_num, array $form, array &$form_state) {
+function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &$form_state) {
   $id = "organism-$org_num";
   $snps = $genotype['SNPs'] ?? NULL;
   $ref_genome = $genotype['ref-genome'] ?? NULL;

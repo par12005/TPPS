@@ -173,13 +173,13 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       $wrapper_id = "{$fid}_map_wrapper";
       $button_id = "{$fid}_map_button";
       $form['tree-accession']["species-$i"]['coord-format']['#suffix'] = "<div id=\"$wrapper_id\"></div>"
-      . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\" class=\"btn btn-primary map-button\"></input>";
-      $no_header = tpps_get_ajax_value($form_state, array(
+      . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\" class=\"btn btn-primary map-button form-button\"></input>";
+      $no_header = tpps_get_ajax_value($form_state, [
         'tree-accession',
         "species-$i",
         'file',
         'no_header',
-      ), NULL, 'file');
+      ], NULL, 'file');
 
       $id_col = $lat_col = $long_col = NULL;
       foreach ($cols as $key => $col) {
@@ -342,6 +342,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       }
     </style>';
   }
+  tpps_form_autofocus($form, 'tree-accession_species-1_file', ['files']);
   tpps_add_buttons($form, 'page_3');
   return $form;
 }
