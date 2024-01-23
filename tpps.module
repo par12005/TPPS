@@ -234,6 +234,9 @@ function tpps_menu() {
     'type' => MENU_LOCAL_TASK,
   );
   // @TODO Change URL to 'tpps/submission/%/delete' to be more REST API.
+  // @TODO Major. Very dangerous because allows to remove without confirmation.
+  // So XSS could be used to remove any study by sending link to someone who
+  // has 'tpps delete submission' permission.
   $items['tpps-submission/%/delete'] = [
     'title' => 'TPPS Delete Submission',
     'type' => MENU_CALLBACK,
@@ -1324,6 +1327,11 @@ function tpps_main_submit($form, &$form_state) {
     $state = tpps_submission_get_state($values['accession']);
     tpps_submission_file_set_status($state, 0);
   }
+  // We need to change status of files when user clicked 'Back' or 'Next'
+  // buttons to avoid errors and allow to edit study.
+  if (in_array($form_state['triggering_element']['#value'], ['Back', 'Next'])) {
+    tpps_submission_file_set_status($form_state, 0);
+  }
   $saved_values[$form_state['stage']] = $values;
   $persist = TRUE;
 
@@ -1337,6 +1345,7 @@ function tpps_main_submit($form, &$form_state) {
     $saved_values['form_build_id'] = $values['form_build_id'];
     $form_state['rebuild'] = TRUE;
     tpps_update_submission($form_state);
+    tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
     cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
     return;
   }
@@ -1969,38 +1978,35 @@ function tpps_flush_caches() {
 /**
  * Adds CSS and JS files to page.
  *
- * We add both CSS and JS even if only one is required because it's better
- * for caching system to have less unique pages and more pages with the
- * same set of attached files.
- *
- * How to use?
- *
- * To add only TPPS Page main CSS/JS files:
- *   tpps_add_css_js('main', $form);
- *
- * To add only TPPS Page specific CSS/JS files:
- *   tpps_add_css_js($page_number, $form);
- *
- * To add both (main and page specific) CSS/JS files:
- *   tpps_add_css_js('main', $form);
- *   tpps_add_css_js($page_number, $form);
- *
- * To add CSS and JS using drupal_add_css/js():
- *   tpps_add_css_js('main');
- *
- * To force using Form API instead of use drupal_add_css/js():
- *   $form = $form ?? [];
- *   tpps_add_css_js('main', $form);
- *   This could be useful if $form not yet defined at the beginning of the
- *   form generation callback.
+ * 1. Theme styles will be loaded in any case.
+ * 2. We add both CSS and JS even if only one is required because it's better
+ *    for caching system to have less unique pages and more pages with the
+ *    same set of attached files.
  *
  * @param mixed $page_id
- *   TPPS Form Page number. Constants like TPPS_PAGE_1 and etc could be
- *   used to improve code readablility.
+ *   When string it could be a 'theme', 'main' or a page name.
+ *   When integer it's TPPS Form Page Id.
+ *
+ *   What is $page_id?
+ *                      | $page_id     | CSS       | JS        | File                          |
+ *   -------------------+--------------+-----------+-----------+-------------------------------+
+ *   Theme              | 'theme'      | Yes       | No        | /css/theme/<name>.css         |
+ *   TPPS main CSS/JS   | 'main'       | Yes       | Yes       | /css/tpps.css                 |
+ *   Specific Page Id   | $page_number | If exists | If exists | /css/tpps_page_${page_id}.css |
+ *   Specific Page Name | $page_name   | If exists | If exists | /css/tpps_${page_name}.css    |
+ *
+ *   Constants like TPPS_PAGE_1 and etc could be used to improve code readablility.
  *   Custom Page Id like 'study_export' for 'TPPS Study Export Page'.
+ *
  * @param array $form
  *   Drupal Form API form array.
  *   When NULL then CSS/JS will be added as it's a regular page.
+ *
+ *   To force using Form API instead of use drupal_add_css/js():
+ *     $form = $form ?? [];
+ *     tpps_add_css_js('main', $form);
+ *   This could be useful if $form not yet defined at the beginning of the
+ *   form generation callback.
  *
  * @TODO Minor. Get Form Id from the $form and use as a file name.
  */
@@ -2008,10 +2014,19 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
   // Custom CSS Theme.
   $theme_path = TPPS_MODULE_PATH . '/css/themes/'
     . variable_get('tpps_theme', 'default') . '.css';
+  module_load_include('inc', 'tpps', 'includes/common');
+  $dark_theme_path = TPPS_MODULE_PATH . '/css/dark_theme.css';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // This is regualar page.
   if ($form === NULL || !is_array($form)) {
     drupal_add_css($theme_path);
+    if (variable_get('tpps_dark_theme')) {
+      drupal_add_css($dark_theme_path);
+    }
+    if ($page_id == 'theme') {
+      // We only add theme.
+      return;
+    }
     if ($page_id == 'main') {
       // Add main files.
       drupal_add_css(TPPS_MODULE_PATH . TPPS_CSS_PATH);
@@ -2030,6 +2045,13 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // This is form.
     $form['#attached']['css'][] = $theme_path;
+    if (variable_get('tpps_dark_theme')) {
+      $form['#attached']['css'][] = $dark_theme_path;
+    }
+    if ($page_id == 'theme') {
+      // We only add theme.
+      return;
+    }
     if ($page_id == 'main') {
       // Add main files.
       $form['#attached']['js'][] = [
@@ -2289,114 +2311,100 @@ function tpps_menu_add_report_pages(array &$items = []) {
  */
 function tpps_menu_add_submission_pages(array &$items = []) {
   $items = $items ?? [];
-  $items['admin/config/tpps/submission'] = [
+  // List of all submissions and action-buttons.
+  $items['tpps/submission'] = [
     'title' => 'Submission',
     'description' => 'TPPS Submission Migraiton',
-    'page callback' => 'tpps_submission_overview_page',
-    'access arguments' => ['administer tpps module'],
-  ];
-  $items['admin/config/tpps/submission/export'] = [
-    'title' => 'Export',
-    'description' => 'Export of TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_export_form'],
+    'page arguments' => ['tpps_submission_list_form'],
     'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_export.inc',
-    'type' => MENU_LOCAL_TASK,
+    'file' => 'pages/submission/list.inc',
   ];
-  $items['admin/config/tpps/submission/import'] = [
-    'title' => 'Import',
-    'description' => 'Import of TPPS Submission',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_import_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'admin/submission_import.inc',
-  ];
-  $items['admin/config/tpps/submission/manual_export'] = [
-    'title' => 'Manual Export',
-    'description' => 'Manual Export of TPPS Submission',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_manual_export_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_manual_export.inc',
-    'type' => MENU_LOCAL_TASK,
-  ];
-  // Compare
-  $items['admin/config/tpps/submission/compare'] = [
-    'title' => 'Compare',
-    'description' => 'Select TPPS Submissions to compare',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_compare_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_compare.inc',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 100,
-  ];
-  $items['admin/config/tpps/submission/compare/%/%'] = [
+  $items['tpps/submission/%'] = [
     'title callback' => 'tpps_submission_title',
-    'title arguments' => [4, 5, 6],
-    'description' => 'Compare two TPPS Submissions',
+    'title arguments' => [2],
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_compare', 5, 6],
+    'page arguments' => ['tpps_submission_list_form', 2],
     'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_compare.inc',
-    'type' => MENU_CALLBACK,
+    'file' => 'pages/submission/list.inc',
   ];
   // View.
-  $items['admin/config/tpps/submission/view'] = [
-    'title' => 'View',
-    'description' => 'View Submissions',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_view_select_form'],
-    'access arguments' => ['administer tpps module'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_view.inc',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 200,
-  ];
-  $items['admin/config/tpps/submission/view/%'] = [
+  $items['tpps/submission/%/view'] = [
     'title callback' => 'tpps_submission_title',
-    'title arguments' => [4, 5],
+    'title arguments' => [2, 3],
     'description' => 'View TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_view_form'],
+    'page arguments' => ['tpps_submission_view_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file' => 'pages/submission/view.inc',
+  ];
+  // Export.
+  $items['tpps/submission/%/export'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'Export of TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_export_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file' => 'pages/submission/export.inc',
+  ];
+  $items['tpps/submission/%/import'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'Import of TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_import_form', 2],
     'access arguments' => ['administer tpps module'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_view.inc',
-    'type' => MENU_CALLBACK,
+    'file' => 'pages/submission/import.inc',
   ];
-  $items['admin/config/tpps/submission/purge'] = [
-    'title' => 'Purge',
-    'description' => 'Purge TPPS Submission',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_purge_form'],
-    'access arguments' => ['tpps delete submission'],
-    'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_purge.inc',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 250,
-  ];
-  $items['admin/config/tpps/submission/purge/%'] = [
+  // Manual Export.
+  $items['tpps/submission/%/manual_export'] = [
     'title callback' => 'tpps_submission_title',
-    'title arguments' => [4, 5, 6],
+    'title arguments' => [2, 3],
+    'description' => 'Manual Export of TPPS Submission',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_manual_export_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/manual_export.inc',
+  ];
+  // Compare.
+  $items['tpps/submission/%/compare'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
+    'description' => 'Compare two TPPS Submissions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_compare_form', 2],
+    'access arguments' => ['administer tpps module'],
+    'file' => 'pages/submission/compare.inc',
+  ];
+  $items['tpps/submission/%/compare/%'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3, 4],
+    'description' => 'Comparison of two TPPS Submissions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_compare', 2, 4],
+    'access arguments' => ['administer tpps module'],
+    'file' => 'pages/submission/compare.inc',
+  ];
+
+  $items['tpps/submission/%/purge'] = [
+    'title callback' => 'tpps_submission_title',
+    'title arguments' => [2, 3],
     'description' => 'Purge TPPS Submission',
     'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_submission_purge_form', 5],
+    'page arguments' => ['tpps_submission_purge_form', 2],
     'access arguments' => ['tpps delete submission'],
     'file path' => TPPS_MODULE_PATH,
-    'file' => 'admin/submission_purge.inc',
-    'type' => MENU_CALLBACK,
+    'file' => 'pages/submission/purge.inc',
   ];
 }
 
 /**
  * Menu callback. Shows list of Submission operations.
+ *
+ * Used by tpps_details_tab($accession, $type);
  */
 function tpps_submission_overview_page() {
   return theme('item_list', [
@@ -2415,21 +2423,21 @@ function tpps_submission_overview_page() {
 /**
  * Dynamyc menu item titles for TPPS Submisssion pages.
  *
- * @param string $op
- *   Operation.
  * @param string $accession
  *   Study Accession.
+ * @param string $op
+ *   Operation.
  * @param string $extra
  *   Extra data.
  *
  * @return string
  *   Returns menu item title.
  */
-function tpps_submission_title($op, $accession, $extra = '') {
-  return t('@op Submission @accession @extra',
+function tpps_submission_title($accession = '', $op = '', $extra = '') {
+  return t('Submission @accession @op @extra',
     [
-      '@op' => ucfirst($op),
-      '@accession' => $accession,
+      '@op' => ucfirst($op ?? NULL),
+      '@accession' => $accession ?? NULL,
       '@extra' => ($extra ? 'with ' . $extra : ''),
     ]
   );

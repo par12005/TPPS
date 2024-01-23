@@ -592,9 +592,11 @@ function tpps_table_display(array &$state, array $options = array()) {
           $file_name = $revised_file->filename;
           $val_str = "<a href='$file_url' target='blank'>$file_name</a> ( Revised from $val_str )";
         }
-        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button\" type=\"button\" value=\"Preview file\"></input>";
+
+        // @TODO [VS] Use Drupal Form API instead of HTML in PHP.
+        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button btn form-button form-submit\" type=\"button\" value=\"Preview file\"></input>";
         if (tpps_access('administer tpps module')) {
-          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button\" type=\"button\" value=\"Show full file\"></input>";
+          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button btn form-button form-submit\" type=\"button\" value=\"Show full file\"></input>";
         }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if (!$flat['#skip_loc']) {
@@ -602,7 +604,8 @@ function tpps_table_display(array &$state, array $options = array()) {
             $wrapper_id = "{$fid}_map_wrapper";
             $button_id = "{$fid}_map_button";
             $val_str .= "<div id=\"$wrapper_id\"></div>"
-              . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\"></input>";
+              . "<input id=\"$button_id\" type=\"button\" class=\"btn form-button form-submit\" "
+              . "value=\"Click here to view plants on map!\"></input>";
 
             drupal_add_js(array(
               'tpps' => array(
@@ -816,6 +819,7 @@ function tpps_tab_create($uid) {
       $name = isset($page_1['publication']['title']) ? ' titled ' . $page_1['publication']['title'] : '';
       $name = str_replace("'", "", $name); // remove single quotes
       $name = str_replace('"', "", $name); // remove double quotes
+      // @TODO It's not safe to use only JS confirmation.
       $accession_cell .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$name}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/tpps-submission/{$state['accession']}/delete\"}";
       $accession_cell .= "' name='op' class='form-button' value='Delete'>";
     }
