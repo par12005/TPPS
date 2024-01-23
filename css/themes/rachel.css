@@ -45,6 +45,7 @@ form.tppsc-form      select {
   background: white;
   max-width: 100%;
   height: auto;
+  min-width: 100px;
   font-size: 16px
 }
 
@@ -133,10 +134,8 @@ form.tppsc-form      fieldset legend span.fieldset-legend {
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Huge Rounded Buttons */
-form.tpps-submission .btn.form-submit,
-form.tppsc-form      .btn.form-submit,
-form.tpps-submission .btn.form-button,
-form.tppsc-form      .btn.form-button {
+form.tpps-submission .form-submit,
+form.tppsc-form      .form-submit {
   height: 60px;
   background: #5a7736;
   color: white;
@@ -153,15 +152,25 @@ form.tppsc-form      .btn.form-button {
   border: none;
 }
 /* Rectangular Buttons */
-form#tpps-admin-panel .btn.form-submit {
-  height: 32px;
+body.page-completed-submission .form-button,
+form.tpps-submission  .form-button,
+form.tppsc-form       .form-button,
+form#tpps-admin-panel .form-submit {
+  min-height: 32px;
+  height: 40px;
   padding: 10px;
   font-size: 13px;
   font-weight: normal;
-  margin: 2px 20px 2px 0;;
+  margin: 5px 10px 5px 0;;
+  background: #5a7736;
+  color: white;
+  min-width: 200px;
   -webkit-border-radius: 0;
   -moz-border-radius: 0;
   border-radius: 0;
+  border: none;
+  text-transform: uppercase;
+  text-align: center;
 }
 
 form.tpps-submission a.btn.form-submit,

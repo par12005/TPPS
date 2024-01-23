@@ -33,44 +33,44 @@ function tpps_summary_create_form(array &$form, array $form_state) {
     '#prefix' => tpps_table_display($form_state),
   );
 
-  $form['files'] = array(
+  // Files.
+  $form['files'] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
-    '#title' => t('<div class="fieldset-title">Additional Files</div>'),
-    '#description' => t('If there are any additional files you would like to include with your submission, please upload up to 10 files here.'),
+    '#title' => t('Additional Files'),
+    '#description' => t('If there are any additional files you would like '
+      . 'to include with your submission, please upload up to 10 files here.'),
     '#collapsible' => TRUE,
-  );
-
-  $form['files']['add'] = array(
+  ];
+  $form['files']['add'] = [
     '#type' => 'button',
     '#title' => t('Add File'),
     '#button_type' => 'button',
     '#value' => t('Add File'),
-  );
-
-  $form['files']['remove'] = array(
+  ];
+  $form['files']['remove'] = [
     '#type' => 'button',
     '#title' => t('Remove File'),
     '#button_type' => 'button',
     '#value' => t('Remove File'),
-  );
-
-  $form['files']['number'] = array(
+  ];
+  $form['files']['number'] = [
     '#type' => 'hidden',
-    '#default_value' => isset($form_state['saved_values']['summarypage']['files']['number']) ? $form_state['saved_values']['summarypage']['files']['number'] : '0',
-  );
-
+    '#default_value' => $form_state['saved_values']['summarypage']['files']['number'] ?? '0',
+  ];
   for ($i = 1; $i <= 10; $i++) {
-
-    $form['files']["$i"] = array(
+    $form['files']["$i"] = [
       '#type' => 'managed_file',
-      '#title' => t("Supplemental File @i", array('@i' => $i)),
-      '#upload_validators' => array(
+      '#title' => t('Supplemental File @i', ['@i' => $i]),
+      '#upload_validators' => [
       // These were all the relevant file types I could think of.
-        'file_validate_extensions' => array('csv tsv xlsx txt pdf vcf doc docx xls ppt pptx fa fasta img png jpeg jpg zip gz fsa_nt html flat fsa ai '),
-      ),
+        'file_validate_extensions' => ['csv tsv xlsx txt pdf vcf '
+          . 'doc docx xls ppt pptx fa fasta '
+          . 'img png jpeg jpg zip gz fsa_nt html flat fsa ai '
+        ],
+      ],
       '#upload_location' => "$supplemental_upload_location",
-    );
+    ];
   }
 
   $form['release'] = array(

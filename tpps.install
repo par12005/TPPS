@@ -26,6 +26,7 @@ function tpps_install() {
   // Main settings.
   variable_set('tpps_theme', 'default');
   variable_set('tpps_top_bar', 'status');
+  variable_set('tpps_dark_theme', FALSE);
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
   variable_set('tpps_front_show_pending_status_mine', FALSE);
@@ -326,6 +327,7 @@ function tpps_uninstall() {
   // Main settings.
   variable_del('tpps_theme');
   variable_del('tpps_top_bar');
+  variable_del('tpps_dark_theme');
   // Front page.
   variable_del('tpps_front_cache_accession_list');
   variable_del('tpps_front_show_pending_status_mine');

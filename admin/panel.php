@@ -265,6 +265,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#title' => 'Remove the following selected tag',
     '#description' => 'This will delete a tag that has been already <br />added to this study',
     '#options' => $current_tags_options,
+    '#attributes' => ['style' => 'width: 100%'],
     '#default_value' => '',
   );
   $form['TAG_REMOVE_CONTAINER']['TAG_REMOVE_OPTION_DO'] = array(
@@ -296,6 +297,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     // '#suffix' => '</div>',
     '#description' => 'This will add a tag that isn\'t already <br />added to this study',
     '#options' => $all_add_tags_options,
+    '#attributes' => ['style' => 'width: 100%'],
     '#default_value' => '',
   );
   $form['TAG_ADD_CONTAINER']['TAG_ADD_OPTION_DO'] = array(

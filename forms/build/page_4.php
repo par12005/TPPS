@@ -315,7 +315,7 @@ function tpps_add_curation_tool_button(array &$form, $key, $name) {
   $form['diagnostics-curation'][$key] = [
     '#type' => 'button',
     '#value' => t($name),
-    '#attributes' => ['class' => [$key]],
+    '#attributes' => ['class' => [$key, 'form-button']],
   ];
 }
 // [/VS].
