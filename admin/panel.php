@@ -175,18 +175,22 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     }
   }
 
-  $form['accession'] = array(
+  $form['accession'] = [
     '#type' => 'hidden',
     '#value' => $accession,
-  );
-
-  $form['form_table'] = array(
+  ];
+  $form['form_table'] = [
     '#markup' => $display,
-  );
-
-  $form['file_diagnostics'] = array(
-    '#markup' => '<a class="btn btn-primary" target="_blank" href="file-diagnostics/' . $accession . '">Files diagnostics</a><br /><br />',
-  );
+  ];
+  $form['file_diagnostics'] = [
+    '#markup' => l(t('Files diagnostics'), 'file-diagnostics/' . $accession,
+      [
+        'attributes' => [
+          'class' => ['btn', 'btn-primary', 'form-submit'],
+          'target' => '_blank',
+        ],
+      ]) . '<br /><br />',
+  ];
 
   $submission_tags = tpps_submission_get_tags($submission_state['accession']);
   // dpm($submission_tags);
@@ -1005,53 +1009,52 @@ function tpps_admin_panel_top(array &$form) {
   );
 
 
-  $vars = array(
-    'attributes' => array(
-      'class' => array('view', 'tpps_table'),
-    ),
+  $vars = [
+    'attributes' => ['class' => ['view', 'tpps_table']],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  );
+  ];
 
-  $vars['header'] = array(
-    'Accession Number',
-    'Approval date',
-    'Publication Status',
-    'Submission Owner',
-  );
+  $vars['header'] = [
+    t('Accession Number'),
+    t('Approval date'),
+    t('Publication Status'),
+    t('Submission Owner'),
+    t('Actions'),
+  ];
   $vars['rows'] = $unpublished_old;
   $unpublished_table = theme('table', $vars);
 
-  $vars['header'] = array(
-    'Accession Number',
-    'Submitting User',
-    'Title',
-    'Date Submitted',
-    'Tags',
-  );
+  $vars['header'] = [
+    t('Accession Number'),
+    t('Submitting User'),
+    t('Title'),
+    t('Date Submitted'),
+    t('Tags'),
+  ];
   $vars['rows'] = $pending;
   $pending_table = theme('table', $vars);
 
-  $vars['header'] = array(
-    'Accession Number',
-    'Submitting User',
-    'Title',
-    'Status',
-    'Tags',
-  );
+  $vars['header'] = [
+    t('Accession Number'),
+    t('Submitting User'),
+    t('Title'),
+    t('Status'),
+    t('Tags'),
+  ];
   $vars['rows'] = $approved;
   $approved_table = theme('table', $vars);
 
-  $vars['header'] = array(
-    'Accession Number',
-    'Submitting User',
-    'Title',
-    'Stage',
-    'Last Updated',
-    'Tags',
-  );
+  $vars['header'] = [
+    t('Accession Number'),
+    t('Submitting User'),
+    t('Title'),
+    t('Stage'),
+    t('Last Updated'),
+    t('Tags'),
+  ];
   $vars['rows'] = $incomplete;
   $incomplete_table = theme('table', $vars);
 
@@ -1067,14 +1070,12 @@ function tpps_admin_panel_top(array &$form) {
   }
 
   if (!empty($pending)) {
-    $form['pending'] = array(
+    $form['pending'] = [
       '#type' => 'fieldset',
       '#title' => t('Pending TPPS submissions'),
       '#collapsible' => TRUE,
-      'table' => array(
-        '#markup' => $pending_table,
-      ),
-    );
+      'table' => ['#markup' => $pending_table],
+    ];
   }
 
   if (!empty($approved)) {
@@ -1156,23 +1157,33 @@ function tpps_admin_panel_top(array &$form) {
       );
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // New Species table.
     if (!empty($rows)) {
-      $headers = array();
-
-      $vars = array(
-        'header' => $headers,
+      $vars = [
+        'header' => [],
         'rows' => $rows,
-        'attributes' => array(
-          'class' => array('view', 'tpps_table'),
+        'attributes' => [
+          'class' => ['view', 'tpps_table'],
           'id' => 'new_species',
-        ),
+        ],
         'caption' => '',
         'colgroups' => NULL,
         'sticky' => FALSE,
         'empty' => '',
-      );
+      ];
 
-      $form['new_species']['#markup'] = "<div class='tpps_table'><label for='new_species'>New Species: the species listed below likely need to be updated, because they do not have NCBI Taxonomy identifiers in the database.</label>" . theme('table', $vars) . "</div>";
+      $form['new_species'] = [
+        '#type' => 'fieldset',
+        '#title' => t('New Species'),
+        '#description' => t('The species listed below likely need to be '
+          . 'updated, because they do not have NCBI Taxonomy identifiers '
+          . 'in the database.'),
+        '#collapsible' => TRUE,
+        'table' => [
+          '#markup' => theme('table', $vars),
+        ],
+      ];
     }
     variable_set('tpps_new_organisms', $tpps_new_orgs);
   }

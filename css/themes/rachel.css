@@ -132,7 +132,7 @@ form.tppsc-form      fieldset legend span.fieldset-legend {
 }
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
-/* Buttons */
+/* Huge Rounded Buttons */
 form.tpps-submission .btn.form-submit,
 form.tppsc-form      .btn.form-submit,
 form.tpps-submission .btn.form-button,
@@ -152,6 +152,18 @@ form.tppsc-form      .btn.form-button {
   border-radius: 10px;
   border: none;
 }
+/* Rectangular Buttons */
+form#tpps-admin-panel .btn.form-submit {
+  height: 32px;
+  padding: 10px;
+  font-size: 13px;
+  font-weight: normal;
+  margin: 2px 20px 2px 0;;
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+}
+
 form.tpps-submission a.btn.form-submit,
 form.tppsc-form      a.btn.form-submit,
 form.tpps-submission a.btn.form-button,
