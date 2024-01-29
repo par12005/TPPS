@@ -20,6 +20,8 @@
 function tpps_generate_doi($accession) {
   global $base_url;
   $state = tpps_load_submission($accession);
+  $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
+  $page2_values = $state['saved_values'][TPPS_PAGE_2] ?? NULL;
 
   $id = tpps_doi_create();
   $creators = array(
@@ -37,20 +39,13 @@ function tpps_generate_doi($accession) {
     );
   }
 
-  $keywords = array();
-  for ($i = 1; $i <= $state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-    $keywords[] = $state['saved_values'][TPPS_PAGE_1]['organism'][$i]['name'];
+  $keywords = [];
+  for ($i = 1; $i <= $page1_values['organism']['number']; $i++) {
+    $keywords[] = $page1_values['organism'][$i]['name'];
   }
 
-  $study_type_options = array(
-    1 => 'Natural Population (Landscape)',
-    2 => 'Growth Chamber',
-    3 => 'Greenhouse',
-    4 => 'Experimental/Common Garden',
-    5 => 'Plantation',
-  );
-
-  $keywords[] = $study_type_options[$state['saved_values'][TPPS_PAGE_2]['study_type']];
+  module_load_include('inc', 'tpps', 'includes/form');
+  $keywords[] = tpps_form_get_study_type($page2_values['study_type']);
 
   $metadata = (object) array(
     'title' => $state['saved_values'][TPPS_PAGE_1]['publication']['title'],

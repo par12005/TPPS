@@ -307,6 +307,7 @@ function tpps_form_state_info(array &$new, array &$old) {
   $new['tpps_type'] = $old['tpps_type'] ?? NULL;
   $new['file_info'] = $old['file_info'] ?? NULL;
   $new['status'] = $old['status'] ?? NULL;
+  // Note: REQUEST_TIME couldn't be used because used from CLI (submit_all.php).
   $new['updated'] = $old['updated'] ?? time();
   $new['created'] = $old['created'] ?? NULL;
   $new['approved'] = $old['approved'] ?? NULL;

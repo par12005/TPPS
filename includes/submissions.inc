@@ -297,7 +297,7 @@ function tpps_submission_purge($accession, $force = FALSE) {
     return;
   }
   // Remove usage of files first.
-  $fid_list = tpps_submission_file_get_id_list($state, FALSE);
+  $fid_list = tpps_submission_file_get_id_list($state);
   foreach ($fid_list as $fid) {
     if ($file = file_load($fid)) {
       // Remove file usage record (not file itself).
@@ -1184,9 +1184,9 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
  *   List of condtions for Drupal DB API contions.
  *   For example: ['uid', $user->uid, '=']
  *   Possible fields: 'uid', 'accession', 'status' and etc. See table's schema.
- * @param bool $allow_remove
- *   Flag which defines if orphan studies must be removed or not.
- *   Default is TRUE (remove orphan studies which has empty publication title).
+ * @param bool $remove_empty
+ *   Flag which defines if "empty" studies (has empty publication title)
+ *   must be removed or not. Default is TRUE.
  * @param bool $reset
  *   Flag which defined if cached data must be updated or not.
  *   Default is FALSE (do not update cached data).
@@ -1201,10 +1201,10 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
  *   Returns list of accession to be used in form.
  *   Key is an accession and value is a human readable title.
  */
-function tpps_submission_get_accession_list(array $conditions = [], $allow_remove = TRUE, $reset = FALSE) {
+function tpps_submission_get_accession_list(array $conditions = [], $remove_empty = TRUE, $reset = FALSE) {
   // We use built-in Drupal Cache System because there is a problem with using
   // 'LIKE' operator for 'tpps_submission' table and processing serialized
-  // data it time consuming.
+  // data takes a lot of time.
   // Caching increases function execution time in 1000 times.
   $cid = __FUNCTION__;
   $cache_bin = TPPS_CACHE_BIN ?? 'cache';
@@ -1219,24 +1219,25 @@ function tpps_submission_get_accession_list(array $conditions = [], $allow_remov
     $results = $query->orderBy('tpps_submission_id', 'desc')->execute();
     foreach ($results as $item) {
       if ($state = unserialize($item->submission_state)) {
-        // @TODO Be sure to store 'tpps_type' in $form_state.
-        if (($state['tpps_type'] ?? NULL) == 'tppsc') {
-          if ($title = ($state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? NULL)) {
-            $list[$state['accession']] = $state['accession'] . ' - ' . (
-              (strlen($title) > 97)
-              ? substr($title, 0, 97) . '...'
-              : (!empty($title) ? $title : t('No Title'))
-            );
-          }
-          elseif (
-            $allow_remove
-            && !isset($state['saved_values'][TPPS_PAGE_1])
-          ) {
-            // Remove if submission has no Publication Title
-            // and this form is shown not after user returned from Page 1.
-            // @TODO Move removement to better place.
-            tpps_delete_submission($item->accession);
-          }
+        $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
+        if ($title = ($page1_values['publication']['title'] ?? NULL)) {
+          $list[$state['accession']] = $state['accession'] . ' - ' . (
+            (strlen($title) > 97)
+            ? substr($title, 0, 97) . '...'
+            : (!empty($title) ? $title : t('No Title'))
+          );
+        }
+        elseif (empty($page1_values) && $remove_empty) {
+          // Study is treated as orphan (or empty) and will be removed when:
+          // 1. It has no publication title.
+          // 2. Page 1 wasn't submitted or saved yet.
+          // 3. Removement is allowed (default is allow removement).
+          // Note: Empty study will be created when user goes to Page 1 from
+          // 'Welcome' page. Empty studies often created during developement
+          // but users could also create empty studies. Not sure if accession
+          // number of those studies could be reused but it's better to avoid
+          // useless records in DB.
+          tpps_delete_submission($item->accession);
         }
       }
     }
