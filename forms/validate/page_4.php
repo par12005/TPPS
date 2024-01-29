@@ -394,17 +394,20 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Check if phenotype name matches column names in Phenotype File.
-        if ($file_header && !in_array(($name ?? NULL), $file_header)) {
-          $message = t('Phenotype @phenotype_id Name: Name '
-            . '"<strong>@phenotype_name</strong>" do not match any column name '
-            . 'in Phenotype File.<br />Columns in file are: @column_list.',
-            [
-              '@phenotype_id' => $i,
-              '@phenotype_name' => $name,
-              '@column_list' => implode(', ', $file_header),
-            ]
-          );
-          form_set_error("$id][phenotype][phenotypes-meta][$i][name", $message);
+        if (!form_get_errors() && !empty($phenotype_file)) {
+          $file_header = tpps_file_get_header($phenotype_file);
+          if (!empty($file_header) && !in_array(($name ?? NULL), $file_header)) {
+            $message = t('Phenotype @phenotype_id Name: Name '
+              . '"<strong>@phenotype_name</strong>" do not match any column name '
+              . 'in Phenotype File.<br />Columns in file are: @column_list.',
+              [
+                '@phenotype_id' => $i,
+                '@phenotype_name' => $name,
+                '@column_list' => implode(', ', $file_header),
+              ]
+            );
+            form_set_error("$id][phenotype][phenotypes-meta][$i][name", $message);
+          }
         }
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Validate 'Attribute'.
