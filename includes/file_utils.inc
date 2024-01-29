@@ -1414,7 +1414,7 @@ function tpps_file_get_header($data, array &$options = []) {
       'max_rows' => 1,
     ];
     tpps_file_iterator($data, 'tpps_file_get_header', $options);
-    return $options['header'];
+    return $options['header'] ?? NULL;
   }
   else {
     // Function was called as file iterator callback it $data is $row.
