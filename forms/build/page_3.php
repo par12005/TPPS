@@ -62,19 +62,34 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     );
   }
 
-  $file_description = "Please upload a spreadsheet file containing plant population data. When your file is uploaded, you will be shown a table with your column header names, several drop-downs, and the first few rows of your file. You will be asked to define the data type for each column, using the drop-downs provided to you. If a column data type does not fit any of the options in the drop-down menu, you may omit that drop-down menu. Your file must contain columns with information about at least the Plant Identifier and the Location of the plant (either gps coordinates or country/state).";
-  $file_upload_location = 'public://' . variable_get('tpps_accession_files_dir', 'tpps_accession');
+  $file_description = 'Please upload a spreadsheet file containing plant '
+    . 'population data. When your file is uploaded, you will be shown a '
+    . 'table with your column header names, several drop-downs, and '
+    . 'the first few rows of your file. You will be asked to define the '
+    . 'data type for each column, using the drop-downs provided to you. '
+    . 'If a column data type does not fit any of the options in the '
+    . 'drop-down menu, you may omit that drop-down menu. Your file must '
+    . 'contain columns with information about at least the Plant Identifier '
+    . 'and the Location of the plant (either gps coordinates or country/state).';
 
   if ($form_state['saved_values'][TPPS_PAGE_2]['study_type'] == '4') {
-    $file_description .= ' Location columns should describe the location of the source plant for the Common Garden.';
+    $file_description .= ' Location columns should describe the location '
+      . 'of the source plant for the Common Garden.';
   }
 
   if ($species_number > 1) {
-    $file_description .= " If you are uploading a single file with multiple species, your file must also specify the genus and species of each plant.";
+    $file_description .= ' If you are uploading a single file with '
+      . 'multiple species, your file must also specify the genus and '
+      . 'species of each plant.';
   }
-  $file_description .= 'Please find an example of an accession file below.'
-    . '<figure><img src="/' . TPPS_IMAGES_PATH . 'accession_example.png">'
-    . '<figcaption>Example Accession File</figcaption></figure>';
+  $file_description .= ' Please find an example of an accession file below.'
+    . '<figure style="text-align:center;">'
+      . '<img src="/' . TPPS_IMAGES_PATH . 'accession_example.png">'
+      . '<figcaption>Example Accession File</figcaption>'
+      . '</figure>';
+
+  $file_upload_location = 'public://'
+    . variable_get('tpps_accession_files_dir', 'tpps_accession');
 
   $check = tpps_get_ajax_value($form_state, ['tree-accession', 'check'], NULL);
 
@@ -94,10 +109,9 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
       TPPS_COLUMN_CLONE_NUMBER => t('Clone Number'),
     ];
 
-    $title = t('@name Accession File: *', ['@name' => $name])
-      . '<br />' . $file_description;
-    if ($species_number > 1 and !$check) {
-      $title = t('Plant Accession File: *') . "<br>$file_description";
+    $title = t('@name Accession File: *', ['@name' => $name]);
+    if ($species_number > 1 && !$check) {
+      $title = t('Plant Accession File: *');
       $column_options[TPPS_COLUMN_GENUS] = t('Genus');
       $column_options[TPPS_COLUMN_SPECIES] = t('Species');
       $column_options[TPPS_COLUMN_GENUS_AND_SPECIES] = t('Genus + Species');
@@ -119,41 +133,47 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
     ];
 
     // @TODO Move styles to CSS files.
-    $form['tree-accession']["species-$i"]['file'] = array(
+    $form['tree-accession']["species-$i"]['file'] = [
       '#type' => 'managed_file',
       '#title' => $title,
       '#upload_location' => $file_upload_location,
       '#upload_validators' => [
         'file_validate_extensions' => ['txt csv'],
       ],
-      '#field_prefix' => '<span style="width: 100%;display: block;text-align: right;padding-right: 2%;">Allowed file extensions: txt csv</span>',
-      '#suffix' => '<style>figure {}</style>',
+      '#field_prefix' => '<br />' . t($file_description)
+        . '<span style="width: 100%; display: block; text-align: right; '
+        . 'padding-right: 2%;">Allowed file extensions: txt csv</span>',
       'empty' => [
         '#default_value' => $values['tree-accession']["species-$i"]['file']['empty'] ?? 'NA',
       ],
       'columns' => [
-        '#description' => t('Please define which columns hold the required data: Plant Identifier and Location. If your plants are located based on a population group, you can provide the population group column and a mapping of population group to location below.'),
+        '#description' => t('Please define which columns hold the required '
+          . 'data: Plant Identifier and Location. If your plants are located '
+          . 'based on a population group, you can provide the population '
+          . 'group column and a mapping of population group to location below.'
+        ),
       ],
       'no-header' => [],
       'columns-options' => [
         '#type' => 'hidden',
         '#value' => $column_options,
       ],
-    );
+    ];
 
-    $form['tree-accession']["species-$i"]['coord-format'] = array(
+    $form['tree-accession']["species-$i"]['coord-format'] = [
       '#type' => 'select',
       '#title' => t('Coordinate Projection'),
-      '#options' => array(
+      '#options' => [
         'WGS 84',
         'NAD 83',
         'ETRS 89',
         'Other Coordinate Projection',
         'My file does not use coordinates for plant locations',
-      ),
+      ],
       '#states' => $form['tree-accession']["species-$i"]['#states'] ?? NULL,
+      // @TODO Should closing div be here?
       '#prefix' => "<div id=\"population-mapping-species-$i\">",
-    );
+    ];
 
     $cols = tpps_get_ajax_value($form_state, array(
       'tree-accession',
