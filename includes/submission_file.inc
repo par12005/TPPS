@@ -77,8 +77,12 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
     }
     if (!empty($state['saved_values'])) {
       foreach (tpps_submission_file_get_parents($organism_number) as $parents) {
-        $step = ($parents[0] == 'tree-accession') ? 3 : 4;
+        $step = ($parents[0] == 'tree-accession') ? TPPS_PAGE_3 : TPPS_PAGE_4;
         if (!empty($state['saved_values'][$step])) {
+          // When form became outdated (6+ hours) and cron removed temporary
+          // files then resubmitting form cause errors at site. Probably
+          // correct solution is to redirect to submittion edit page
+          // Note: Redirect using GET request not yet implemented. Only POST.
           $fid_list[] = drupal_array_get_nested_value(
             $state['saved_values'][$step],
             $parents
@@ -134,7 +138,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
 function tpps_submission_file_set_status(array $form_state, $status = FILE_STATUS_PERMANENT) {
   $fid_list = tpps_submission_file_get_id_list($form_state);
   foreach ($fid_list as $fid) {
-    $file = file_load($fid);
+    $file = file_load($fid ?? '');
     if ($file && $file->status != $status) {
       $file->status = $status;
       file_save($file);

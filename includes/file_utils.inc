@@ -225,7 +225,7 @@ function tpps_increment_hex($hex) {
       $add = 0;
     }
     $new = base_convert($num, 10, 16) . $new;
-    if ($i == 0 and $add) {
+    if ($i == 0 && $add) {
       $new = '41' . $new;
     }
   }
@@ -440,8 +440,22 @@ function tpps_compare_files($fid_1, $fid_2, $file_1_id_name, $file_2_id_name, $f
  *   The groups and the column option types that the file was valid for.
  */
 function tpps_file_validate_columns(array &$form_state, array $required_groups, array $file_element) {
-  $cols = $file_element['#value']['columns'];
 
+  $title_parts = explode(':', $file_element['#title']);
+  $error_prompt = $title_parts[0];
+
+  // Check if file has zero length (empty).
+  if (!($file_element['#file']->filesize ?? NULL)) {
+    // We highlight an empty value field because file field not visible
+    // when file was uploaded.
+    form_set_error($file_element['#name'] . '[empty]',
+      $error_prompt . ': File is empty.'
+    );
+    // No need to validate empty file.
+    return [];
+  }
+
+  $cols = $file_element['#value']['columns'] ?? NULL;
   $parents = $file_element['#parents'];
   $new_end_columns = end($parents) . "-columns";
   $new_end_no_header = end($parents) . "-no-header";
@@ -449,20 +463,17 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   $group_path = array_pop($parents) . "-groups";
   $values = drupal_array_get_nested_value($form_state['values'], $parents);
   // Initialize form column values in form state.
-  $values[$new_end_columns] = array();
+  $values[$new_end_columns] = [];
   // Hold onto the location of the columns in form state.
   $state_column_values = &$values[$new_end_columns];
-  $values[$new_end_no_header] = isset($file_element['#value']['no-header']) ? $file_element['#value']['no-header'] : NULL;
-  $values[$new_end_empty] = isset($file_element['#value']['empty']) ? $file_element['#value']['empty'] : NULL;
+  $values[$new_end_no_header] = $file_element['#value']['no-header'] ?? NULL;
+  $values[$new_end_empty] = $file_element['#value']['empty'] ?? NULL;
 
-  $title_parts = explode(':', $file_element['#title']);
-  $error_prompt = $title_parts[0];
-
-  $groups = array();
-  $required_groups_flat = array();
+  $groups = [];
+  $required_groups_flat = [];
   foreach ($required_groups as $group => $combinations) {
     $groups[$group] = array();
-    $required_groups_flat[$group] = array();
+    $required_groups_flat[$group] = [];
     foreach ($combinations as $name => $combination) {
       $required_groups_flat[$group] = array_merge($required_groups_flat[$group], $combination);
     }
@@ -485,7 +496,7 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
   // dpm($required_groups);
   foreach ($required_groups as $group => $combinations) {
     $group_valid = FALSE;
-    $groups[$group]['#type'] = array();
+    $groups[$group]['#type'] = [];
     foreach ($combinations as $name => $combination) {
       $combination_valid = TRUE;
       foreach ($combination as $type) {
@@ -501,7 +512,15 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
 
     if (!$group_valid) {
-      form_set_error($file_element['#name'] . "[columns][$group", "$error_prompt: Please specify a column or columns that hold $group.");
+      form_set_error(
+        $file_element['#name'] . "[columns][$group",
+        t('@field_name: Please specify a column or columns that hold @group.',
+          [
+            '@field_name' => $error_prompt,
+            '@group' => $group,
+          ]
+        )
+      );
     }
   }
 
@@ -515,7 +534,6 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
 
   $values[$group_path] = $groups;
   drupal_array_set_nested_value($form_state['values'], $parents, $values);
-
   return $groups;
 }
 
@@ -529,13 +547,18 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
  *   The form being validated.
  * @param array $form_state
  *   The state of the form being validated.
+ *
+ * @TODO Avoid code duplication.
  */
 function tpps_save_file_columns(array &$form, array &$form_state) {
-
+  $accession = substr($form_state['accession'], 4);
   if ($form_state['stage'] == TPPS_PAGE_3) {
     for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
-      if (($file = file_load($form_state['values']['tree-accession']["species-$i"]['file'])) and $form_state['values']['tree-accession']["species-$i"]['file'] != 0) {
-        file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+      if (
+        ($file = file_load($form_state['values']['tree-accession']["species-$i"]['file']))
+        && $form_state['values']['tree-accession']["species-$i"]['file'] != 0
+      ) {
+        file_usage_add($file, 'tpps', 'tpps_project', $accession);
       }
 
       $form_state['values']['tree-accession']["species-$i"]['file-columns'] = array();
@@ -543,7 +566,8 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       if (isset($form['tree-accession']["species-$i"]['file']['#value']['columns'])) {
         foreach ($form['tree-accession']["species-$i"]['file']['#value']['columns'] as $col => $val) {
           if ($col[0] != '#') {
-            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col] = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$col];
+            $form_state['values']['tree-accession']["species-$i"]['file-columns'][$col]
+              = $form['tree-accession']["species-$i"]['file']['#value']['columns'][$col];
           }
         }
       }
@@ -556,30 +580,33 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
   elseif ($form_state['stage'] == TPPS_PAGE_4) {
     if (isset($form['organism-1']['genotype'])) {
       for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
+        $file = file_load($form_state['values']["organism-$i"]['genotype']['files']['snps-assay'] ?? '');
+        if ($file) {
+          file_usage_add($file, 'tpps', 'tpps_project', $accession);
 
-        if (!empty($form_state['values']["organism-$i"]['genotype']['files']['snps-assay']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['snps-assay']))) {
-          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
-
-          $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'] = array();
+          $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'] = [];
 
           if (isset($form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'])) {
             foreach ($form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'] as $col => $val) {
               if ($col[0] != '#') {
-                $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'][$col] = $form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'][$col];
+                $form_state['values']["organism-$i"]['genotype']['files']['snps-assay-columns'][$col]
+                  = $form["organism-$i"]['genotype']['files']['snps-assay']['#value']['columns'][$col];
               }
             }
           }
         }
 
-        if (!empty($form_state['values']["organism-$i"]['genotype']['files']['other']) and ($file = file_load($form_state['values']["organism-$i"]['genotype']['files']['other']))) {
-          file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+        $file = file_load($form_state['values']["organism-$i"]['genotype']['files']['other'] ?? '');
+        if ($file) {
+          file_usage_add($file, 'tpps', 'tpps_project', $accession);
 
-          $form_state['values']["organism-$i"]['genotype']['files']['other-columns'] = array();
+          $form_state['values']["organism-$i"]['genotype']['files']['other-columns'] = [];
 
           if (isset($form["organism-$i"]['genotype']['files']['other']['#value']['columns'])) {
             foreach ($form["organism-$i"]['genotype']['files']['other']['#value']['columns'] as $col => $val) {
               if ($col[0] != '#') {
-                $form_state['values']["organism-$i"]['genotype']['files']['other-columns'][$col] = $form["organism-$i"]['genotype']['files']['other']['#value']['columns'][$col];
+                $form_state['values']["organism-$i"]['genotype']['files']['other-columns'][$col]
+                  = $form["organism-$i"]['genotype']['files']['other']['#value']['columns'][$col];
               }
             }
           }
@@ -590,31 +617,39 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
     if (isset($form['organism-1']['phenotype'])) {
       for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
         if (!empty($form_state['values']["organism-$i"]['phenotype']['normal-check'])) {
-          if (($file = file_load($form_state['values']["organism-$i"]['phenotype']['file'])) and $form_state['values']["organism-$i"]['phenotype']['file'] != 0) {
-            file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+          if (
+            ($file = file_load($form_state['values']["organism-$i"]['phenotype']['file'] ?? ''))
+            && $form_state['values']["organism-$i"]['phenotype']['file'] != 0
+          ) {
+            file_usage_add($file, 'tpps', 'tpps_project', $accession);
           }
 
-          $form_state['values']["organism-$i"]['phenotype']['file-columns'] = array();
+          $form_state['values']["organism-$i"]['phenotype']['file-columns'] = [];
 
           if (isset($form["organism-$i"]['phenotype']['file']['#value']['columns'])) {
             foreach ($form["organism-$i"]['phenotype']['file']['#value']['columns'] as $col => $val) {
               if ($col[0] != '#') {
-                $form_state['values']["organism-$i"]['phenotype']['file-columns'][$col] = $form["organism-$i"]['phenotype']['file']['#value']['columns'][$col];
+                $form_state['values']["organism-$i"]['phenotype']['file-columns'][$col]
+                  = $form["organism-$i"]['phenotype']['file']['#value']['columns'][$col];
               }
             }
           }
 
           if ($form_state['values']["organism-$i"]['phenotype']['check'] != '0') {
-            if (($file = file_load($form_state['values']["organism-$i"]['phenotype']['metadata'])) and $form_state['values']["organism-$i"]['phenotype']['metadata'] != 0) {
-              file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
+            if (
+              ($file = file_load($form_state['values']["organism-$i"]['phenotype']['metadata'] ?? ''))
+              && $form_state['values']["organism-$i"]['phenotype']['metadata'] != 0
+            ) {
+              file_usage_add($file, 'tpps', 'tpps_project', $accession);
             }
 
-            $form_state['values']["organism-$i"]['phenotype']['metadata-columns'] = array();
+            $form_state['values']["organism-$i"]['phenotype']['metadata-columns'] = [];
 
             if (isset($form["organism-$i"]['phenotype']['metadata']['#value']['columns'])) {
               foreach ($form["organism-$i"]['phenotype']['metadata']['#value']['columns'] as $col => $val) {
                 if ($col[0] != '#') {
-                  $form_state['values']["organism-$i"]['phenotype']['metadata-columns'][$col] = $form["organism-$i"]['phenotype']['metadata']['#value']['columns'][$col];
+                  $form_state['values']["organism-$i"]['phenotype']['metadata-columns'][$col]
+                    = $form["organism-$i"]['phenotype']['metadata']['#value']['columns'][$col];
                 }
               }
             }
@@ -1002,6 +1037,9 @@ function tpps_file_headers($fid, $no_header = FALSE) {
  *   The Drupal managed file id of the file.
  * @param string $function
  *   The funciton to be applied to each item returned by the generator.
+ *   Callback function must be defined like this:
+ *   $function(array $row, array $options = []);
+ *   See tpps_unit_validate_metafile().
  * @param array $options
  *   Options that will be passed to both $function and the generator.
  *
@@ -1243,6 +1281,10 @@ function tpps_xlsx_generator($location, array $options = array()) {
  *   The location of the file on the server.
  * @param array $options
  *   Additional options detailing how to parse the file.
+ *   Keys are:
+ *     'no_header' - bool Should header be skipped or not.
+ *     'columns' - array List of columns to process. ['A', 'B', 'C'].
+ *     'max_rows' - int How many rows must be returned.
  *
  * @return Generator|array
  *   Yields each row of the file (or columns of a row, if applicable).
@@ -1340,5 +1382,42 @@ function tpps_file_add_usage($file, $accession) {
   $file_id = str_replace('TGDR', '', $accession);
   if (empty($file_usage['tpps']['tpps_project'][$file_id] ?? NULL)) {
     file_usage_add($file, 'tpps', 'tpps_project', $file_id);
+  }
+}
+
+/**
+ * Gets list of column names in file (header).
+ *
+ * Note: We use the same function as a file iterator callback because it's
+ * very simple and there is no need to have a separate function just to return
+ * received parameter.
+ *
+ * Difference from tpps_file_headers():
+ * 1. Not used special keys for columns like 'A', 'B' and etc.
+ * 2. Not used extra function as File Iterrator callback.
+ * 3. Returns simple (not indexed) array (not array of arrays).
+ *
+ * @param mixed $data
+ *   When called 1st time $data will be File Id.
+ *   When called as a file iterator it will be an array $row.
+ * @param array $options
+ *   Options for File Iteraror function.
+ *
+ * @return array
+ *   Returns list of column name in file.
+ */
+function tpps_file_get_header($data, array &$options = []) {
+  if (empty($options) && !is_array($data)) {
+    // This is 1st call and $data is a File Id.
+    $options = [
+      'no_header' => TRUE,
+      'max_rows' => 1,
+    ];
+    tpps_file_iterator($data, 'tpps_file_get_header', $options);
+    return $options['header'] ?? NULL;
+  }
+  else {
+    // Function was called as file iterator callback it $data is $row.
+    $options['header'] = $data;
   }
 }

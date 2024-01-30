@@ -759,7 +759,7 @@ function tpps_get_taxon($org_name, $rank) {
  * @TODO [VS] Here we have 2 almost the same pieces of code.
  */
 function tpps_add_project_file(array &$state, &$fid) {
-  $file = file_load($fid) ?? NULL;
+  $file = file_load($fid ?? '');
   if ($file) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $state['ids']['project_id'],
@@ -768,16 +768,17 @@ function tpps_add_project_file(array &$state, &$fid) {
       'rank' => $state['file_rank'],
     ));
     db_insert('tpps_project_file_managed')
-    ->fields(array(
-      'project_id' => $state['ids']['project_id'],
-      'fid' => $fid,
-    ))
-    ->execute();
-  $state['file_rank']++;
+      ->fields([
+        'project_id' => $state['ids']['project_id'],
+       'fid' => $fid,
+      ])
+      ->execute();
+    $state['file_rank']++;
   }
 
-  if (!empty($state['revised_files'][$fid]) and ($file = file_load($state['revised_files'][$fid]))) {
-    $fid = $state['revised_files'][$fid];
+  $fid = $state['revised_files'][$fid] ?? '';
+  $file = file_load($fid);
+  if ($file && $file->filesize) {
     tpps_chado_insert_record('projectprop', array(
       'project_id' => $state['ids']['project_id'],
       'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
@@ -785,11 +786,11 @@ function tpps_add_project_file(array &$state, &$fid) {
       'rank' => $state['file_rank'],
     ));
     db_insert('tpps_project_file_managed')
-    ->fields(array(
-      'project_id' => $state['ids']['project_id'],
-      'fid' => $fid,
-    ))
-    ->execute();
-  $state['file_rank']++;
+      ->fields([
+        'project_id' => $state['ids']['project_id'],
+        'fid' => $fid,
+      ])
+      ->execute();
+    $state['file_rank']++;
   }
 }
