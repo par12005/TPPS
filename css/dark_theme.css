@@ -5,12 +5,28 @@
  * WARNING:
  * '!important' was used only because there is css-injector module which has
  * a lot of rules which can't be overrriden without this :(
+ *
+ * Colors:
+ * #b5e0ba - Light green.
+ *   https://www.color-hex.com/color/b5e0ba
+ *
+ * #212428 - Dark gray.
+ *   https://www.color-hex.com/color/212428
+ * #373a3c - Light Dark Gray.
+ *   https://www.color-hex.com/color/373a3c
+ *
+ * #777 - Light Gray.
+ *   https://www.color-hex.com/color/777777
+ * #bebebe - Light Light Gray.
+ *   https://www.color-hex.com/color/bebebe
+ * #dedede - Lighter then #bebebe (almost white). #eee is too brightj.
+ *   https://www.color-hex.com/color/dedede
  */
 body.html {
   background-color: #212428 !important;
 }
 
-/* body.page-tpps-admin-panel div#block-system-main, */
+/*body.html div#block-system-main,*/
 #main .region-sidebar-second div.block.contextual-links-region,
 #main .region-sidebar-second div.block.contextual-links-region form,
 footer#footer,
@@ -28,6 +44,9 @@ form.tppsc-form,
 .tppsc-form input.form-text {
   background: #373a3c !important;
 }
+
+
+body.page-completed-submission,
 form.tpps-submission,
 form.tppsc-form,
 form.tpps-form,
@@ -45,28 +64,32 @@ form.tppsc-form div fieldset.form-wrapper legend div.fieldset-title,
 form.tpps-form div fieldset.form-wrapper legend div.fieldset-title {
   color: white !important;
 }
+table#tpps_table_display thead th,
 form.tpps-submission table thead th,
 form.tppsc-form table thead th,
 form.tpps-form table thead th {
   color: black;
   background-color: #777;
 }
-form.tpps-submission table thead th select,
-form.tppsc-form table thead th select,
-form.tpps-form table thead th select{
-  color: white;
-}
-form.tpps-submission tbody tr.even,
-form.tppsc-form tbody tr.even,
-form.tpps-form tbody tr.even {
-  background-color: lightgray;
-  color: black;
-}
+table#tpps_table_display tbody tr.odd,
 form.tpps-submission tbody tr.odd,
 form.tppsc-form tbody tr.odd,
 form.tpps-form tbody tr.odd {
   color: black;
-  background-color: silver;
+  background-color: #bebebe;
+}
+table#tpps_table_display tbody tr.even,
+form.tpps-submission tbody tr.even,
+form.tppsc-form tbody tr.even,
+form.tpps-form tbody tr.even {
+  background-color: #dedede;
+  color: black;
+}
+table#tpps_table_display thead th select,
+form.tpps-submission table thead th select,
+form.tppsc-form table thead th select,
+form.tpps-form table thead th select{
+  color: white;
 }
 /* TPPS Submission */
 form.tpps-submission .btn.form-submit:hover,
@@ -93,7 +116,7 @@ form.tppsc-form .tag-text {
 form.tpps-submission textarea,
 form.tpps-form textarea,
 form.tppsc-form textarea {
-  background: silver;
+  background: #dedede;
   border: 2px solid white;
   color: black;
 }

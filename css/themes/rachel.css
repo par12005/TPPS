@@ -12,7 +12,8 @@
  *
  * Normal button: #5a7736 // Green
  * Active button: #3b413b // Dark Gray.
- * Field's border: #bebebe  // Light grey
+ * Field's border: #bebebe  // Lightest grey (very like "silver").
+ *   https://www.color-hex.com/color/bebebe
  */
 
 /**
@@ -231,16 +232,16 @@ table {
   width: 100%;
 }
 table thead tr th {
-  border: 1px solid #dedede;
+  border: 1px solid #bebebe;
   background: #c9c9c9;
   padding: 10px;
 }
 /* Fix missing colors for odd/even rows */
 tr.even {
-  border: 1px solid #dedede;
+  border: 1px solid #bebebe;
   background: #f3f4ee;
 }
 tr.odd {
-  border: 1px solid #dedede;
+  border: 1px solid #bebebe;
   background: #fff;
 }
