@@ -131,6 +131,9 @@ function tpps_study_location(array &$form, array &$form_state) {
       $map_api_tools = "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
       async defer></script>"
       . "<div id=\"_map_wrapper\"></div>";
+      // WARNING: Using $form['#attached']['js'][] causes missing Google Map
+      // widget at page. Probably it's caused by using AJAX-requests to get
+      // this form elements...
       drupal_add_js(
         ['tpps' => ['tree_info' => $coords, 'study_locations' => TRUE]],
         'setting'
