@@ -46,7 +46,7 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
  * Custom form submitter for 'tpps_page_1_settings_form' form.
  */
 function tpps_form_main_settings_form_submit(array $form, array &$form_state) {
-  // Clear cache on change only.
+  // Clear cache on change only but not on each form submission.
   if (
     // CSS theme was changed.
     ($form_state['values']['tpps_theme'] ?? NULL)

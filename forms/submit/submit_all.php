@@ -7260,11 +7260,18 @@ function tpps_get_code_parts($part) {
  *      TRIPAL_NOTICE: Normal but significant conditions.
  *      TRIPAL_INFO: (default) Informational messages.
  *      TRIPAL_DEBUG: Debug-level messages.
+ *
+ * @TODO Move substrings like [INFO] into separate param.
  */
 function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
   global $tpps_job;
   // Writes to file and will be shown at site.
   tpps_job_logger_write($message, $variables);
+  // Add time to CLI output. Tripal logs will be unchanged.
+  if (variable_get('tpps_submit_all_log_cli_show_time', FALSE)) {
+    $time = format_date(time(), 'custom', "Y/m/d H:i:s O");
+    $message = $time . ' ' . $message;
+  }
   // Command line messages.
   try {
     $tpps_job->logMessage($message, $variables, $severity);

@@ -329,7 +329,7 @@ function tpps_submission_purge($accession, $force = FALSE) {
     return;
   }
   // Remove usage of files first.
-  $fid_list = tpps_submission_file_get_id_list($state, FALSE);
+  $fid_list = tpps_submission_file_get_id_list($state);
   foreach ($fid_list as $fid) {
     if ($file = file_load($fid)) {
       // Remove file usage record (not file itself).

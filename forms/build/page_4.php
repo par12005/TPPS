@@ -82,7 +82,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
             'callback' => 'tpps_phenotype_file_format_callback',
             'wrapper' => "edit-organism-$i-phenotype-file-ajax-wrapper",
           ),
-          '#default_value' => (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'])) ? $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] : 0,
+          '#default_value' => $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['format'] ?? 0,
           '#description' => t('Please select a file format type from the listed options. Below please see examples of each format type.'),
           '#states' => array(
             'invisible' => array(
@@ -115,20 +115,22 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           ),
         );
 
-        $form["organism-$i"]['phenotype']['file']['empty'] = array(
-          '#default_value' => isset($values["organism-$i"]['phenotype']['file']['empty']) ? $values["organism-$i"]['phenotype']['file']['empty'] : 'NA',
-        );
+        $form["organism-$i"]['phenotype']['file']['empty'] = [
+          '#default_value' => $values["organism-$i"]['phenotype']['file']['empty'] ?? t('NA'),
+        ];
 
-        $form["organism-$i"]['phenotype']['file']['columns'] = array(
-          '#description' => t('Please define which columns hold the required data: Plant Identifier, Phenotype name, and Value(s)'),
-        );
+        $form["organism-$i"]['phenotype']['file']['columns'] = [
+          '#description' => t('Please define which columns hold the required '
+            . 'data: Plant Identifier, Phenotype name, and Value(s)'
+          ),
+        ];
 
 
-        $format = tpps_get_ajax_value($form_state, array(
+        $format = tpps_get_ajax_value($form_state, [
           "organism-$i",
           'phenotype',
           'format',
-        ), 0);
+        ], 0);
 
         if ($format == 0) {
           $column_options = array(
@@ -148,19 +150,25 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
             'Timepoint',
             'Clone Number',
           );
-          $form["organism-$i"]['phenotype']['file']['#title'] = t('Phenotype file: Please upload a file containing columns for Plant Identifier, Phenotype Name, and value for all of your phenotypic data: *');
+          $form["organism-$i"]['phenotype']['file']['#title'] =
+            t('Phenotype file: Please upload a file containing columns '
+              . 'for Plant Identifier, Phenotype Name, and value for all '
+              . 'of your phenotypic data: *'
+            );
         }
 
-        $form["organism-$i"]['phenotype']['file']['columns-options'] = array(
+        $form["organism-$i"]['phenotype']['file']['columns-options'] = [
           '#type' => 'hidden',
           '#value' => $column_options,
-        );
-
-        $form["organism-$i"]['phenotype']['file']['no-header'] = array();
+        ];
+        // Ability to use file without header was disabled to make validation
+        // simplier and to avoid problems with processing those files.
+        // File without header will not pass validation.
+        //$form["organism-$i"]['phenotype']['file']['no-header'] = [];
       }
 
       // This will check if there are Time Phenotypes saved from the saved values
-      // and use this to re-check the checkboxes on the form
+      // and use this to re-check the checkboxes on the form.
       if (isset($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['time']['time_phenotypes'])) {
         $count_time_phenotypes = count($form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['phenotype']['time']['time_phenotypes']);
         // dpm('TIME PHENOTYPES DETECTED: ' . $count_time_phenotypes);
@@ -249,7 +257,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
 /**
  * Generates a Curation Diagnostic Tool form.
  *
- * Form has 7 buttons.
+ * Note: Form has 7 buttons.
  *
  * @param array $form
  *   Drupal Form API array.
@@ -263,59 +271,28 @@ function tpps_add_curation_tool(array &$form) {
     // Must be below navigation buttons Back/Next which has weight 100.
     '#weight' => 200,
   ];
-
-  // 1st row of buttons.
-  tpps_add_curation_tool_button(
-    $form,
-    'button-check-accession-file-tree-ids',
-    'Check Accession File Tree Ids'
-  );
-  tpps_add_curation_tool_button(
-    $form, 'button-check-vcf-tree-ids', 'Check VCF Tree IDs'
-  );
-  tpps_add_curation_tool_button(
-    $form,
-    'button-compare-accession-tree-ids-vs-vcf-tree-ids',
-    'Compare Accession and VCF Tree IDs'
-  );
-  // 2nd row of buttons.
-  tpps_add_curation_tool_button(
-    $form, 'button-check-vcf-markers', 'Check VCF Markers'
-  );
-  tpps_add_curation_tool_button(
-    $form, 'button-check-snps-assay-markers', 'Check SNPs Assay Markers'
-  );
-  tpps_add_curation_tool_button(
-    $form, 'button-check-snps-design-markers', 'Check SNPs Design Markers'
-  );
-  // 3rd row of buttons.
-  tpps_add_curation_tool_button(
-    $form,
-    'button-compare-vcf-makers-vs-snps-assay-markers',
-    'Compare VCF and SNPs Assay markers'
-  );
-
+  $list = [
+    // 1st row of buttons.
+    'button-check-accession-file-tree-ids' => 'Check Accession File Tree Ids',
+    'button-check-vcf-tree-ids' => 'Check VCF Tree IDs',
+    'button-compare-accession-tree-ids-vs-vcf-tree-ids' => 'Compare Accession and VCF Tree IDs',
+    // 2nd row of buttons.
+    'button-check-vcf-markers' => 'Check VCF Markers',
+    'button-check-snps-assay-markers' => 'Check SNPs Assay Markers',
+    'button-check-snps-design-markers' => 'Check SNPs Design Markers',
+    // 3rd row of buttons.
+    'button-compare-vcf-makers-vs-snps-assay-markers' => 'Compare VCF and SNPs Assay markers',
+  ];
+  // Add an action buttons.
+  foreach ($list as $key => $title) {
+    $form['diagnostics-curation'][$key] = [
+      '#type' => 'button',
+      '#value' => t($title),
+      '#attributes' => ['class' => [$key, 'form-button']],
+    ];
+  }
   $form['diagnostics-curation']['diagnostic-curation-results'] = [
     '#type' => 'container',
     '#attributes' => ['id' => 'diagnostic-curation-results'],
   ];
 }
-
-/**
- * Generates an action button for Curation Diagnostic Tool.
- *
- * @param array $form
- *   Drupal Form API array.
- * @param string $key
- *   Unique button key.
- * @param string $name
- *   Human readable name of button.
- */
-function tpps_add_curation_tool_button(array &$form, $key, $name) {
-  $form['diagnostics-curation'][$key] = [
-    '#type' => 'button',
-    '#value' => t($name),
-    '#attributes' => ['class' => [$key]],
-  ];
-}
-// [/VS].

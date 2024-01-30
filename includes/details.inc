@@ -760,13 +760,12 @@ function tpps_details_study(array &$state) {
   $study_file_ids = tpps_details_get_study_file_ids($state);
   // foreach ($state['files'] as $fid) {
   foreach ($study_file_ids as $fid) {
-    $file = file_load($fid);
-    if ($file) {
+    $file = file_load($fid ?? '');
+    if ($file && $file->filesize) {
       $file_url = check_plain(file_create_url($file->uri));
-      if(stripos($file_url, 'core/labs') === FALSE) {
+      if (stripos($file_url, 'core/labs') === FALSE) {
         $files[] = "<a href='$file_url' target='blank'>$file->filename</a>";
       }
-
     }
   }
   $page2_values = $state['saved_values'][TPPS_PAGE_2]['study_type'] ?? NULL;
@@ -914,28 +913,25 @@ function tpps_details_trees(array &$state) {
     $rows[] = $row;
   }
 
-  $header = array(
-    'TreeGenes Identifier',
-    'Identifier',
-    'Species',
-  );
+  $header = [
+    t('TreeGenes Identifier'),
+    t('Identifier'),
+    t('Species'),
+  ];
   //if (!$skip) {
-    $header[] = 'Latitude';
-    $header[] = 'Longitude';
+    $header[] = t('Latitude');
+    $header[] = t('Longitude');
   //}
 
-  $vars = array(
+  $vars = [
     'header' => $header,
     'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
-      'id' => 'tpps_table_display',
-    ),
+    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  );
+  ];
   $table = theme('table', $vars);
   $pager = theme('pager', array('quantity', count($state['tree_info'])));
   return $pager . $table;
@@ -1020,26 +1016,22 @@ function tpps_details_phenotype(array &$state) {
     );
   }
 
-  $vars = array(
-    'header' => array(
-      'Plant',
-      'Name',
-      'Attribute',
-      'Entity',
-      'Value',
-    ),
+  $table = theme('table', [
+    'header' => [
+      t('Plant'),
+      t('Name'),
+      t('Attribute'),
+      t('Entity'),
+      t('Value'),
+    ],
     'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
-      'id' => 'tpps_table_display',
-    ),
+    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  );
-  $table = theme('table', $vars);
-  $pager = theme('pager', array('quantity', $total));
+  ]);
+  $pager = theme('pager', ['quantity', $total]);
   return $pager . $table;
 }
 
@@ -1162,25 +1154,21 @@ function tpps_details_genotype(array &$state) {
     );
   }
 
-  $vars = array(
-    'header' => array(
-      'Plant',
-      'Name',
-      'Description',
-      'Marker Type',
-    ),
+  $table = theme('table', [
+    'header' => [
+      t('Plant'),
+      t('Name'),
+      t('Description'),
+      t('Marker Type'),
+    ],
     'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
-      'id' => 'tpps_table_display',
-    ),
+    'attributes' => ['class' => ['view'], 'id' => 'tpps_table_display'],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  );
-  $table = theme('table', $vars);
-  $pager = theme('pager', array('quantity', $total));
+  ]);
+  $pager = theme('pager', ['quantity', $total]);
   return $pager . $table;
 }
 

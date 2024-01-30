@@ -10,30 +10,90 @@ body.html {
   background-color: #212428 !important;
 }
 
+/* body.page-tpps-admin-panel div#block-system-main, */
 #main .region-sidebar-second div.block.contextual-links-region,
 #main .region-sidebar-second div.block.contextual-links-region form,
 footer#footer,
-form.tpps-form, form.tppsc-form,
-.tpps-form select, .tppsc-form select,
-.tpps-form input.form-text, .tppsc-form input.form-text {
+
+form.tpps-submission,
+form.tpps-form,
+form.tppsc-form,
+
+.tpps-submission select,
+.tpps-form select,
+.tppsc-form select,
+
+.tpps-submission input.form-text,
+.tpps-form input.form-text,
+.tppsc-form input.form-text {
   background: #373a3c !important;
 }
+form.tpps-submission,
 form.tppsc-form,
 form.tpps-form,
+
+form.tpps-submission div fieldset.form-wrapper legend span.fieldset-legend,
 form.tpps-form div fieldset.form-wrapper legend span.fieldset-legend,
 form.tppsc-form div fieldset.form-wrapper legend span.fieldset-legend,
+
+form.tpps-submission div fieldset.form-wrapper legend a,
 form.tpps-form div fieldset.form-wrapper legend a,
 form.tppsc-form div fieldset.form-wrapper legend a,
+
+form.tpps-submission div fieldset.form-wrapper legend div.fieldset-title,
 form.tppsc-form div fieldset.form-wrapper legend div.fieldset-title,
 form.tpps-form div fieldset.form-wrapper legend div.fieldset-title {
   color: white !important;
 }
+form.tpps-submission table thead th,
 form.tppsc-form table thead th,
 form.tpps-form table thead th {
-  color: white;
+  color: black;
   background-color: #777;
 }
+form.tpps-submission table thead th select,
+form.tppsc-form table thead th select,
+form.tpps-form table thead th select{
+  color: white;
+}
+form.tpps-submission tbody tr.even,
 form.tppsc-form tbody tr.even,
 form.tpps-form tbody tr.even {
-  background-color: #777;
+  background-color: lightgray;
+  color: black;
+}
+form.tpps-submission tbody tr.odd,
+form.tppsc-form tbody tr.odd,
+form.tpps-form tbody tr.odd {
+  color: black;
+  background-color: silver;
+}
+/* TPPS Submission */
+form.tpps-submission .btn.form-submit:hover,
+form.tpps-submission .btn.form-button:hover,
+form.tpps-submission .btn.form-submit:focus,
+form.tpps-submission .btn.form-button:focus,
+/* TPPSc Form */
+form.tppsc-form .btn.form-submit:hover,
+form.tppsc-form .btn.form-button:hover,
+form.tppsc-form .btn.form-submit:focus,
+form.tppsc-form .btn.form-button:focus {
+  border: 2px solid #b5e0ba;
+}
+
+form.tpps-submission .tag-text,
+form.tpps-form .tag-text,
+form.tppsc-form .tag-text {
+  color: black;
+}
+
+/*form.tpps-submission input,*/
+/*form.tpps-form input,*/
+/*form.tppsc-form input,*/
+form.tpps-submission textarea,
+form.tpps-form textarea,
+form.tppsc-form textarea {
+  background: silver;
+  border: 2px solid white;
+  color: black;
 }
