@@ -755,42 +755,44 @@ function tpps_get_taxon($org_name, $rank) {
  *   The TPPS submission associated with the file.
  * @param int $fid
  *   The managed file id number.
- *
- * @TODO [VS] Here we have 2 almost the same pieces of code.
  */
 function tpps_add_project_file(array &$state, &$fid) {
-  $file = file_load($fid ?? '');
-  if ($file) {
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $state['ids']['project_id'],
-      'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
-      'value' => file_create_url($file->uri),
-      'rank' => $state['file_rank'],
-    ));
-    db_insert('tpps_project_file_managed')
-      ->fields([
+  if (!empty($fid)) {
+    $file = file_load($fid);
+    if ($file && $file->filesize) {
+      tpps_chado_insert_record('projectprop', array(
         'project_id' => $state['ids']['project_id'],
-       'fid' => $fid,
-      ])
-      ->execute();
-    $state['file_rank']++;
+        'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
+        'value' => file_create_url($file->uri),
+        'rank' => $state['file_rank'],
+      ));
+      db_insert('tpps_project_file_managed')
+        ->fields([
+          'project_id' => $state['ids']['project_id'],
+          'fid' => $fid,
+        ])
+        ->execute();
+      $state['file_rank']++;
+    }
   }
-
-  $fid = $state['revised_files'][$fid] ?? '';
-  $file = file_load($fid);
-  if ($file && $file->filesize) {
-    tpps_chado_insert_record('projectprop', array(
-      'project_id' => $state['ids']['project_id'],
-      'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
-      'value' => file_create_url($file->uri),
-      'rank' => $state['file_rank'],
-    ));
-    db_insert('tpps_project_file_managed')
-      ->fields([
+  elseif (!empty($state['revised_files'][$fid])) {
+    // Note: $fid is a reference and will be used in a caller function.
+    $fid = $state['revised_files'][$fid];
+    $file = file_load($fid);
+    if ($file && $file->filesize) {
+      tpps_chado_insert_record('projectprop', array(
         'project_id' => $state['ids']['project_id'],
-        'fid' => $fid,
-      ])
-      ->execute();
-    $state['file_rank']++;
+        'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
+        'value' => file_create_url($file->uri),
+        'rank' => $state['file_rank'],
+      ));
+      db_insert('tpps_project_file_managed')
+        ->fields([
+          'project_id' => $state['ids']['project_id'],
+          'fid' => $fid,
+        ])
+        ->execute();
+      $state['file_rank']++;
+    }
   }
 }
