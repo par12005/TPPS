@@ -738,8 +738,9 @@ function tpps_get_tag_id($name) {
  */
 function tpps_submission_rename_files($accession) {
 
-  // @TODO Use interface instead of $state.
-  $state = tpps_load_submission($accession);
+  // @TODO Rename $state into $interface.
+  // @TODO Get $interface as a param instead of loading it again.
+  $state = tpps_submission_interface_load($accession);
   if (!empty($state['file_info'])) {
     $state['files'] = array();
     foreach ($state['file_info'] as $page_files) {
@@ -791,7 +792,7 @@ function tpps_submission_rename_files($accession) {
         }
       }
     }
-    tpps_update_submission($state);
+    tpps_submission_interface_update($state);
   }
 }
 
@@ -940,9 +941,8 @@ function tpps_submission_full_clear_db($project_id) {
  *   Returns TRUE if submission successfully cleared.
  */
 function tpps_submission_clear_db($accession) {
-  $state = tpps_load_submission($accession);
-  // print_r(array_keys($state['saved_values'][1]['organism']));
-
+  // @TODO Minor. Rename $state with $submission_interface.
+  $state = tpps_submission_interface_load($accession);
   $state['file_rank'] = 0;
   $project_id = $state['ids']['project_id'] ?? NULL;
   if (empty($project_id)) {
@@ -958,7 +958,7 @@ function tpps_submission_clear_db($accession) {
   // from TGDR665 and 674 6/29/2023)
   // tpps_submission_full_clear_db($project_id);
 
-
+  // @TODO Execute $stocks_sql and use plain list of ids instead of query.
   $stocks_sql = "SELECT stock_id FROM chado.project_stock WHERE project_id = $project_id";
   echo $stocks_sql . "\n";
   chado_query("UPDATE chado.project_dbxref SET is_current = FALSE WHERE project_id = $project_id");
@@ -985,22 +985,22 @@ function tpps_submission_clear_db($accession) {
   echo "DELETE chado.stock values for project...\n";
   chado_query("DELETE FROM chado.stock WHERE stock_id IN ($stocks_sql)");
   echo "DELETE chado.phenotype values for project...\n";
-  chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession ."-%';");
+  chado_query("DELETE FROM chado.phenotype WHERE uniquename LIKE '" . $accession . "-%';");
 
   echo "FINISHED DB CLEAR DELETES\n";
   $time_end = time();
   echo "Time taken to delete records: " . ($time_end - $time_start) . "\n";
 
-  // Force delete stock just in case by study accession name
-  // Make sure to ensure $accession is properly populated before doing this
-  if(strpos($accession,'TGDR') !== FALSE && strlen($accession) >= 7) {
+  // Force delete stock just in case by study accession name.
+  // Make sure to ensure $accession is properly populated before doing this.
+  if (strpos($accession, 'TGDR') !== FALSE && strlen($accession) >= 7) {
     chado_query("DELETE FROM chado.stock WHERE uniquename LIKE :accession", [
       ':accession' => $accession . '-%'
     ]);
   }
 
-  $state['ids'] = array('project_id' => $project_id);
-  tpps_update_submission($state);
+  $state['ids'] = ['project_id' => $project_id];
+  tpps_submission_interface_update($state);
   return TRUE;
 }
 

@@ -313,6 +313,7 @@ function tpps_menu() {
   );
 
   // @TODO Minor. Rename menu item. It's a report but not diagnostics.
+  // Page shows study's files.
   $items['tpps-admin-panel/file-diagnostics/%'] = [
     'title' => 'Study File Diagnostics',
     'page callback' => 'tpps_admin_files_diagnostics_page',

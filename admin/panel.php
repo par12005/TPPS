@@ -68,6 +68,9 @@ function tpps_manage_generate_all_materialized_views(array $form, array &$form_s
 /**
  * Build form to manage TPPS submissions from admin panel.
  *
+ * Shows huge form which allows to manage submission.
+ * Menu path: /tpps-admin-panel/TGDRxxxxx.
+ *
  * This includes options to change the status or release date of the
  * submission, as well as options to upload revised versions of files.
  *

@@ -15,6 +15,12 @@
  * will be stored in public.tpps_submissions database table.
  *
  * ----------------------------------------------------------------------------
+ * Migration.
+ *
+ * |  tpps_load_submission()    |  tpps_submission_interface_load()    |
+ * |  tpps_update_submission()  |  tpps_submission_interface_update()  |
+ *
+ * ----------------------------------------------------------------------------
  * Usage.
  *
  * To use:
@@ -253,20 +259,18 @@ function tpps_submission_interface_load($accession) {
 }
 
 /**
- * This function updates the form_state of a submission.
+ * Updates Submission Interface using given array.
  *
- * Additional attributes of the submission record can be updated by populating
- * the options parameter.
- *
- * @param array $form_state
- *   The Submission Form State array.
+ * @param array $interface
+ *   The Submission Interface Array.
  * @param string $status
  *   Optional. Study processing status.
  *   This value will be added to the Submission Interface Array and to
  *   public.tpps_submission.status column.
  *
  * @return mixed
- *   Returns Submission Interface.
+ *   Returns Submission Interface Array which will have updated 'status' and
+ *   'updated' fields.
  *   Returns NULL if $form_state or Study accession is empty.
  *
  * @todo Decide if SIA must be updated with status/dates and so on.
@@ -279,21 +283,19 @@ function tpps_submission_interface_update(array &$interface, $status = NULL) {
   }
 
   $accession = $interface['accession'];
-  //$form_state = tpps_load_submission($accession);
-  //$interface = tpps_submission_interface_create($form_state) ?? [];
   // Note: REQUEST_TIME couldn't be used because called from CLI script and
   // processing could take long time from script call.
   $interface['updated'] = time();
-  $interface['status'] = ($status ? $status : ($interface['status'] ?? ''));
-  // @TODO Could we only update $interface?
-  //$form_state['status'] = $interface['status'];
-  //$form_state['updated'] = $interface['updated'];
+
+  // Prepare data for query.
+  $fields = [];
+  if ($status) {
+    $fields['status'] = $interface['status'] = $status;
+  }
+  $fields['submission_interface'] = serialize($interface);
+
   db_update('tpps_submission')
-    ->fields([
-      'status' => $form_state['status'],
-      //'submission_state' => serialize($form_state),
-      'submission_interface' => serialize($interface),
-    ])
+    ->fields($fields)
     ->condition('accession', $accession)
     ->execute();
   return $interface;
