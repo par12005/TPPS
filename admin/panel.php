@@ -825,9 +825,9 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
  *   The updated form element.
  */
 function tpps_save_admin_comments(array $form, array $form_state) {
-  $state = tpps_load_submission($form_state['values']['accession']);
+  $state = tpps_submission_interface($form_state['values']['accession']);
   $state['admin_comments'] = $form_state['values']['admin-comments'];
-  tpps_update_submission($state);
+  tpps_submission_interface_update($state);
   drupal_set_message(t('Comments saved successfully'), 'status');
   return $form['admin-comments'];
 }
@@ -844,23 +844,21 @@ function tpps_admin_panel_top(array &$form) {
   tpps_admin_panel_reports($form);
   $submissions = tpps_load_submission_multiple([], FALSE);
 
-  $pending = [];
-  $approved = [];
-  $incomplete = [];
-  $unpublished_old = [];
-  $submitting_user_cache = [];
+  $pending = array();
+  $approved = array();
+  $incomplete = array();
+  $unpublished_old = array();
+
+  $submitting_user_cache = array();
   $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
 
   foreach ($submissions as $submission) {
     $state = unserialize($submission->submission_state);
-    $status = $submission->status;
-    if (empty($state['status'])) {
-      $state['status'] = $status;
-      tpps_update_submission($state);
-    }
+    $accession = $state['accession'] ?? NULL;
+    $submission_info = tpps_load_submission_info($accession);
 
-    if (empty($submitting_user_cache[$submission->uid])) {
-      $mail = user_load($submission->uid)->mail;
+    if (empty($submitting_user_cache[$submission_info['uid']])) {
+      $mail = user_load($submission_info['uid'])->mail;
       $query = db_select('chado.contact', 'c');
       $query->join('chado.contactprop', 'cp', 'cp.contact_id = c.contact_id');
       $query->condition('cp.value', $mail);
@@ -870,37 +868,51 @@ function tpps_admin_panel_top(array &$form) {
       $query = $query->execute();
       $name = $query->fetchObject()->name ?? NULL;
 
-      $submitting_user_cache[$submission->uid] = $name ?? $mail;
+      $submitting_user_cache[$submission_info['uid']] = $name ?? $mail;
     }
-    $submitting_user = $submitting_user_cache[$submission->uid] ?? NULL;
+    $submitting_user = $submitting_user_cache[$submission_info['uid']] ?? NULL;
 
     if (!empty($state)) {
-      switch ($state['status']) {
+      switch ($submission_info['status']) {
         case 'Pending Approval':
           $row = array(
-            l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
+            l($accession, 'tpps-admin-panel/' . $accession),
             $submitting_user,
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             !empty($state['completed']) ? date("F j, Y, g:i a", $state['completed']) : "Unknown",
-            tpps_show_tags(tpps_submission_get_tags($state['accession'])),
+            tpps_show_tags(tpps_submission_get_tags($accession)),
           );
-          $pending[(int) substr($state['accession'], 4)] = $row;
+          $pending[(int) substr($accession, 4)] = $row;
           break;
 
         case 'Approved':
-          $status_label = !empty($state['loaded']) ? "Approved - load completed on " . date("F j, Y, \a\\t g:i a", $state['loaded']) : "Approved";
+          $status_label = !empty($state['loaded'])
+            ? "Approved - load completed on " . date("F j, Y, \a\\t g:i a", $state['loaded'])
+            : "Approved";
           if (!empty($state['loaded'])) {
             $days_since_load = (time() - $state['loaded']) / (60 * 60 * 24);
             $unpublished_threshold = variable_get('tpps_unpublished_days_threshold', 180);
             $pub_status = $state['saved_values'][TPPS_PAGE_1]['publication']['status'] ?? NULL;
-            if (!empty($pub_status) and $pub_status != 'Published' and $days_since_load >= $unpublished_threshold) {
+            if (
+              !empty($pub_status)
+              and $pub_status != 'Published'
+              and $days_since_load >= $unpublished_threshold
+            ) {
               $owner = $submitting_user;
-              $contact_bundle = tripal_load_bundle_entity(array('label' => 'Tripal Contact Profile'));
+              $contact_bundle = tripal_load_bundle_entity(
+                ['label' => 'Tripal Contact Profile']
+              );
+              $owner_mail = db_select('users', 'u')
+                ->fields('u', ['mail'])
+                ->condition('uid', $submission_info['uid'])
+                ->range(0, 1)
+                ->execute()
+                ->fetchField();
+              $owner = "$submitting_user ($owner_mail)";
 
               // If Tripal Contact Profile is available, we want to link to the
               // profile of the owner instead of just displaying the name.
               if ($contact_bundle) {
-                $owner_mail = user_load($submission->uid)->mail;
                 $query = new EntityFieldQuery();
                 $results = $query->entityCondition('entity_type', 'TripalEntity')
                   ->entityCondition('bundle', $contact_bundle->name)
@@ -908,51 +920,65 @@ function tpps_admin_panel_top(array &$form) {
                   ->range(0, 1)
                   ->execute();
                 // [VS]
-                $owner = '';
                 if (!empty($results['TripalEntity'])) {
-                  $entity = current(array_reverse(entity_load('TripalEntity', array_keys($results['TripalEntity']))));
-                  $owner = "<a href=\"$base_url/TripalContactProfile/{$entity->id}\">$submitting_user</a>";
+                  // Commented out because there is a lot of warning messages
+                  // shown at page.
+                  //
+                  //  $entity = current(
+                  //    array_reverse(
+                  //      entity_load(
+                  //        'TripalEntity',
+                  //        array_keys($results['TripalEntity'])
+                  //      )
+                  //    )
+                  //  );
+                  //  $owner = "<a href=\"$base_url/TripalContactProfile/"
+                  //    . "{$entity->id}\">$submitting_user</a>";
                 }
                 // [/VS]
               }
-              else {
-                $owner_mail = user_load($submission->uid)->mail;
-                if ($owner_mail != $owner) {
-                  $owner = "$submitting_user ($owner_mail)";
-                }
-              }
-              $row = array(
-                l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
-                date("F j, Y", $state['loaded']) . " (" . round($days_since_load) . " days ago)",
+              $row = [
+                l($accession, 'tpps-admin-panel/' . $accession),
+                date("F j, Y", $state['loaded'])
+                  . " (" . round($days_since_load) . " days ago)",
                 $pub_status,
                 $owner,
-              );
-              if (tpps_access('view own tpps submission', $state['accession'])) {
-                $row[] = l(t('Edit publication information'), "tpps/{$state['accession']}/edit-publication");
+              ];
+              if (tpps_access('view own tpps submission', $accession)) {
+                $row[] = l(t('Edit publication information'),
+                  'tpps/' . $accession . '/edit-publication'
+                );
               }
-              $unpublished_old[(int) substr($state['accession'], 4)] = $row;
+              $unpublished_old[(int) substr($accession, 4)] = $row;
             }
           }
+
         case 'Submission Job Running':
-          $status_label = $status_label ?? (!empty($state['approved']) ? ("Submission Job Running - job started on " . date("F j, Y, \a\t g:i a", $state['approved'])) : "Submission Job Running");
+          $status_label = $status_label ?? (
+            !empty($state['approved'])
+            ? ("Submission Job Running - job started on "
+              . date("F j, Y, \a\t g:i a", $state['approved']))
+            : "Submission Job Running"
+          );
+
         case 'Approved - Delayed Submission Release':
           if (empty($status_label)) {
             $release = $state['saved_values']['summarypage']['release-date'] ?? NULL;
             $release = strtotime("{$release['day']}-{$release['month']}-{$release['year']}");
             $status_label = "Approved - Delayed Submission Release on " . date("F j, Y", $release);
           }
-          $row = array(
-            l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
+          $row = [
+            l($accession, 'tpps-admin-panel/' . $accession),
             $submitting_user,
             $state['saved_values'][TPPS_PAGE_1]['publication']['title'],
             $status_label,
-            tpps_show_tags(tpps_submission_get_tags($state['accession'])),
-          );
-          $approved[(int) substr($state['accession'], 4)] = $row;
+            tpps_show_tags(tpps_submission_get_tags($accession)),
+          ];
+          $approved[(int) substr($accession, 4)] = $row;
           break;
 
         default:
-          switch ($state['stage']) {
+          switch ($state['stage'] ?? NULL) {
             case TPPS_PAGE_1:
               $stage = "Author and Species Information";
               break;
