@@ -83,9 +83,9 @@ function tpps_manage_generate_all_materialized_views(array $form, array &$form_s
  */
 function tpps_manage_submission_form(array &$form, array &$form_state, $accession = NULL) {
   global $base_url;
-  $submission_info = tpps_load_submission_info($accession);
+  $submission_info = tpps_load_submission_info($accession, 1);
   // @TODO Rename $submission_interface with $submission_interface.
-  $submission_interface = tpps_submission_interface_load($accession);
+  $submission_interface = tpps_submission_interface_load($accession, 1);
 
   $page1_values = &$submission_interface['saved_values'][TPPS_PAGE_1] ?? NULL;
   $page2_values = &$submission_interface['saved_values'][TPPS_PAGE_2] ?? NULL;
@@ -96,7 +96,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     $submission_interface['status'] = $submission_info['status'];
     tpps_submission_interface_update($submission_interface, $submission_info['status']);
   }
-  $options = array();
+  $options = [];
   $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
 
   // Check for log file
@@ -866,7 +866,7 @@ function tpps_admin_panel_top(array &$form) {
   foreach ($submissions as $submission) {
     $state = unserialize($submission->submission_state);
     $accession = $state['accession'] ?? NULL;
-    $submission_info = tpps_load_submission_info($accession);
+    $submission_info = tpps_load_submission_info($accession, $reset = TRUE);
 
     if (empty($submitting_user_cache[$submission_info['uid']])) {
       $mail = user_load($submission_info['uid'])->mail;
@@ -1259,7 +1259,8 @@ function tpps_admin_panel_validate($form, &$form_state) {
 
     if ($form_state['triggering_element']['#name'] == 'approve') {
       $accession = $form_state['values']['accession'];
-      $state = tpps_load_submission($accession);
+      $state = tpps_load_submission_state($accession);
+      dpm($accession);
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
           if (
@@ -1437,7 +1438,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'save_vcf_import_mode':
-      // dpm($form_state['values']);
       if ($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
         $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
       }
@@ -1448,6 +1448,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_set_message(t('VCF disable import setting saved'));
       break;
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'save_vcf_import_mode':
       $mode = $form_state['values']['VCF_IMPORT_MODE'] ?? 'hybrid';
       $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = $mode;
@@ -1655,6 +1656,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
       $state['status'] = 'Incomplete';
       tpps_submission_interface_update($state);
+      tpps_update_submission_info($accession, ['status' => $state['status']]);
       drupal_set_message(t('Submission Rejected. Message has been sent to user.'));
       drupal_goto('<front>');
       break;
@@ -1683,6 +1685,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       global $user;
       $uid = $user->uid;
       $state['submitting_uid'] = $user->uid;
+      $state['status'] = 'Approved';
 
       $params['subject'] = "$type_label Submission Approved: "
         . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
@@ -1736,6 +1739,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
         }
       }
       tpps_submission_interface_update($state);
+      tpps_update_submission_info($accession, ['status' => $state['status']]);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1748,6 +1752,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'change_state_status':
       $state['status'] = $form_state['values']['state-status'];
       tpps_submission_interface_update($state);
+      tpps_update_submission_info($accession, ['status' => $state['status']]);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

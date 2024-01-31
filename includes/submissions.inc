@@ -313,6 +313,8 @@ function tpps_update_submission_info($accession, array $options = []) {
     ->fields($options)
     ->condition('accession', $accession)
     ->execute();
+  // Reset cache.
+  tpps_load_submission_info($accession, 1);
 }
 
 /**
@@ -330,11 +332,11 @@ function tpps_update_submission_state(array &$form_state) {
   }
   $form_state['updated'] = time();
   db_update('tpps_submission')
-    ->fields([
-      'submission_state' => serialize($form_state),
-    ])
+    ->fields(['submission_state' => serialize($form_state)])
     ->condition('accession', $accession)
     ->execute();
+  // Reset cache.
+  tpps_load_submission_state($accession, 1);
 }
 
 /**
