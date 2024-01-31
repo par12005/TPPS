@@ -737,7 +737,7 @@ function tpps_completed_display($accession = NULL) {
   $display = "";
   $link = "$base_url/tpps/details/$accession";
 
-  $old_form_state = tpps_load_submission($accession);
+  $old_form_state = tpps_load_submission_state($accession);
   $values = $old_form_state['saved_values'];
 
   // @TODO Move CSS to /css/tpps.css. Check if scope must be 'header'.
@@ -752,7 +752,11 @@ function tpps_completed_display($accession = NULL) {
   drupal_add_css($css, 'inline');
 
   $display .= "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
-  if ($values[TPPS_PAGE_1]['publication']['status'] != 'Published' and $user->uid == tpps_load_submission($accession, FALSE)->uid) {
+  $submission_info = tpps_load_submission_info($accession);
+  if (
+    $values[TPPS_PAGE_1]['publication']['status'] != 'Published'
+    && $user->uid == $submission_info['uid']
+  ) {
     $display .= "<a href=\"$base_url/tpps/$accession/edit-publication\">Edit publication information</a>";
   }
 

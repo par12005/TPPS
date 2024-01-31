@@ -22,7 +22,7 @@
 function tpps_manage_doi($accession) {
   $output = "";
 
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission_state($accession);
 
   $token = variable_get('tpps_zenodo_api_key', NULL);
   if (!empty($token) and empty($form_state['zenodo_id'])) {

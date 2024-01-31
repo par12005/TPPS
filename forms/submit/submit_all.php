@@ -4325,7 +4325,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
   // If study accession value exists, use this to look up the form_state.
   $form_state = NULL;
   if (isset($options['study_accession'])) {
-    $form_state = tpps_load_submission($options['study_accession']);
+    $form_state = tpps_load_submission_state($options['study_accession']);
   }
   elseif (isset($options['form_state'])) {
     $form_state = $options['form_state'];
@@ -6107,8 +6107,8 @@ function tpps_generate_all_genotype_materialized_views() {
   foreach ($results as $row) {
     $current_count = $current_count + 1;
     echo "Processing genotype materialized view: $current_count of $total\n";
-    // Get the submission state.
-    $state = tpps_load_submission($row->accession);
+    // Get the submission Interface.
+    $state = tpps_submission_interface_load($row->accession);
     // Check if there's a project_id in the submission state.
     $project_id = $state['ids']['project_id'] ?? NULL;
     // Once the project_id is not NULL, we're good.

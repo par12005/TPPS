@@ -508,12 +508,16 @@ function tpps_access() {
       $path = $params['q'];
       preg_match('/^([^\/]+)\/?.*$/', $path, $matches);
       $form_type = $matches[1] ?? NULL;
-      $full_state = tpps_load_submission($accession);
+      $full_state = tpps_load_submission_state($accession);
       $submission_type = $full_state['tpps_type'] ?? 'tpps';
 
-      if (($state = tpps_load_submission($accession, FALSE))) {
+      if (($submission_info = tpps_load_submission_info($accession))) {
         $type_pass = ($submission_type == $form_type) || preg_match('/^tpps\/TGDR[0-9]+\/.+$/', $path);
-        if ($state->status == "Incomplete" && $state->uid == $user->uid && $type_pass) {
+        if (
+          $submission_info['status'] == "Incomplete"
+          && $submission_info['uid'] == $user->uid
+          && $type_pass
+        ) {
           return TRUE;
         }
       }
@@ -530,8 +534,11 @@ function tpps_access() {
         return TRUE;
       }
       // Check if user submitted this study.
-      if (($state = tpps_load_submission($accession, FALSE))) {
-        if ($state->status != "Incomplete" && $state->uid == $user->uid) {
+      if (($submission_info = tpps_load_submission_info($accession))) {
+        if (
+          $submission_info['status'] != "Incomplete"
+          && $submission_info['uid'] == $user->uid
+        ) {
           return TRUE;
         }
       }
@@ -539,8 +546,11 @@ function tpps_access() {
 
     case 'tpps delete submission':
       $accession = $args[1] ?? NULL;
-      if (($state = tpps_load_submission($accession, FALSE))) {
-        if ($state->status == "Incomplete" and $user->uid == $state->uid) {
+      if (($submission_info = tpps_load_submission_info($accession))) {
+        if (
+          $submission_info['status'] == "Incomplete"
+          and $user->uid == $submission_info['uid']
+        ) {
           return TRUE;
         }
       }
@@ -1160,7 +1170,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
     }
     else {
       // First access, and with accession in link.
-      $old_form_state = tpps_load_submission($accession);
+      $old_form_state = tpps_load_submission_state($accession);
       if (empty($old_form_state)) {
         drupal_goto('tpps');
       }
@@ -1187,7 +1197,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       tpps_create_submission($form_state, $user->uid);
     }
     // Restore previously submitted values.
-    $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
+    $old_form_state = tpps_load_submission_state($form_state['saved_values']['frontpage']['accession']);
     if (!empty($old_form_state)) {
       tpps_form_state_info($form_state, $old_form_state);
     }
@@ -1520,7 +1530,7 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   }
   // User logged in, trying to load form from existing accession.
   elseif (isset($accession) and !isset($form_state['stage'])) {
-    $old_form_state = tpps_load_submission($accession);
+    $old_form_state = tpps_load_submission_state($accession);
     tpps_form_state_info($form_state, $old_form_state);
   }
   // User logged in, no accession provided.
@@ -1545,7 +1555,7 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
         tpps_init_project($form_state);
         tpps_create_submission($form_state, $user->uid);
       }
-      $old_form_state = tpps_load_submission($form_state['saved_values']['frontpage']['accession']);
+      $old_form_state = tpps_load_submission_state($form_state['saved_values']['frontpage']['accession']);
       tpps_form_state_info($form_state, $old_form_state);
     }
   }
@@ -1762,11 +1772,11 @@ function tpps_block_view_alter(&$data, $block) {
       $params = drupal_get_query_parameters(NULL, array());
       if (preg_match('/tppsc?\/(TGDR.*)/', $params['q'], $matches)) {
         $accession = $matches[1];
-        $form_state = tpps_load_submission($accession);
+        $form_state = tpps_load_submission_state($accession);
       }
       elseif (isset($_REQUEST['accession'])) {
         $accession = $_REQUEST['accession'];
-        $form_state = tpps_load_submission($accession);
+        $form_state = tpps_load_submission_state($accession);
       }
       else {
         $content .= '</div>';

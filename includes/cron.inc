@@ -76,7 +76,7 @@ function tpps_latest_job_status_slack_updates() {
           $message .= "Found new TPPS job $job_id [" . $row->job_name . "] from " . $user_tmp->name . " to monitor with status " . strtoupper($row->status) . ". Monitoring for status change.\n";
         }
         $old_status[$job_id] = $row->status;
-      } 
+      }
     }
     else {
       // ignore since we only wanted TPPS jobs
@@ -91,7 +91,7 @@ function tpps_latest_job_status_slack_updates() {
     // $message .= "I didn't find any new TPPS jobs to monitor. I'll check back periodically.\n";
   }
   foreach ($diff as $vals) {
-    unset($old_status[$vals]); 
+    unset($old_status[$vals]);
   }
 
 
@@ -112,7 +112,7 @@ function tpps_latest_job_status_slack_updates() {
     curl_close($ch);
   }
 
-  
+
 }
 
 
@@ -131,11 +131,11 @@ function tpps_refresh_plusgeno_view() {
 function tpps_delayed_submissions() {
   $submissions = variable_get('tpps_delayed_submissions', array());
   foreach ($submissions as $accession) {
-    $state = tpps_load_submission($accession);
+    $state = tpps_load_submission_state($accession);
     $date = $state['saved_values']['summarypage']['release-date'];
     $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
     if (time() > $time) {
-      $state = tpps_load_submission($accession);
+      $state = tpps_load_submission_state($accession);
       $includes = array();
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');

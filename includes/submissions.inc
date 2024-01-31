@@ -28,7 +28,7 @@ module_load_include('inc', 'tpps', 'includes/submission_interface');
  * Static Cache: 0.003 msec.
  *
  * Replacement:
- * tpps_load_submission($accession, TRUE) -> tpps_load_submission_state($accession);
+ * tpps_load_submission($accession) -> tpps_load_submission_state($accession);
  * tpps_load_submission($accession, FALSE) -> tpps_load_submission_info($accession);
  *
  * @param string $accession
@@ -152,10 +152,6 @@ function tpps_load_submission_state($accession, $reset = FALSE) {
 /**
  * This function loads multiple TPPS submissions based on conditions.
  *
- * Collects accessions based on conditions, then makes multiple calls to
- * tpps_load_submission() to load all of the submissions that meet the
- * conditions.
- *
  * @param array $conditions
  *   The conditions that each TPPS submission must meet.
  * @param bool $state
@@ -249,7 +245,8 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
 
   $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
   // Update the form state data for the study.
-  $state = tpps_load_submission($old_accession, TRUE);
+  $state = tpps_load_submission_state($old_accession);
+  $interface = tpps_submission_interface_load($old_accession);
 
   $job->logMessage('Original submission data for ' . $old_accession);
   $job->logMessage(print_r($state, 1));
@@ -257,6 +254,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   // Update the TGDR with the new_accession.
   module_load_include('inc', 'tpps', 'includes/common');
   $state = tpps_array_replace($state, $old_accession, $new_accession);
+  $interface = tpps_array_replace($interface, $old_accession, $new_accession);
 
   $job->logMessage('New submission data for ' . $new_accession);
   $job->logMessage(print_r($state, 1));
@@ -275,9 +273,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
       // Note: REQUEST_TIME couldn't be used because this function also
       // called from submit_all.php and time() != REQUEST_TIME.
       'submission_state' => serialize($state),
-      'submission_interface' => serialize(
-        tpps_submission_interface_create($state)
-      ),
+      'submission_interface' => serialize($interface),
     ])
     ->condition('accession', $old_accession)
     ->execute();
@@ -350,9 +346,9 @@ function tpps_update_submission_state(array &$form_state) {
  *   The accession of the submission. Format: TGDR12345.
  */
 function tpps_delete_submission($accession) {
-  $submission = tpps_load_submission($accession, FALSE);
-  $dbxref_id = $submission->dbxref_id;
-  $state = unserialize($submission->submission_state);
+  $submission_info = tpps_load_submission_info($accession);
+  $dbxref_id = $submission_info['dbxref_id'];
+  $state = unserialize($submission_info['submission_state']);
   db_delete('tpps_submission')
     ->condition('accession', $accession)
     ->execute();
@@ -431,7 +427,8 @@ function tpps_submission_add_alternative_accession(array $state, $alt_accession)
     $alt_accession = array($alt_accession);
   }
 
-  $state_id = tpps_load_submission($state['accession'], FALSE)->tpps_submission_id;
+  $submission_info = tpps_load_submission_info($state['accession']);
+  $state_id = $submission_info['tpps_submission_id'];
 
   // Remove the existing alternative accessions.
   db_delete('tpps_submission_dbxref')
@@ -746,9 +743,10 @@ function tpps_submission_add_tag($accession, $tag) {
 
   $tags = tpps_submission_get_tags($accession);
   if (!array_key_exists($tag, $tags)) {
+    $submission_info = tpps_load_submission_info($accession);
     db_insert('tpps_submission_tag')
       ->fields(array(
-        'tpps_submission_id' => tpps_load_submission($accession, FALSE)->tpps_submission_id,
+        'tpps_submission_id' => $submission_info['tpps_submission_id'],
         'tpps_tag_id' => $tag,
       ))
       ->execute();
@@ -770,8 +768,9 @@ function tpps_submission_remove_tag($accession, $tag) {
       $tag = $id;
     }
   }
+  $submission_info = tpps_load_submission_info($accession);
   db_delete('tpps_submission_tag')
-    ->condition('tpps_submission_id', tpps_load_submission($accession, FALSE)->tpps_submission_id)
+    ->condition('tpps_submission_id', $submission_info['tpps_submission_id'])
     ->condition('tpps_tag_id', $tag)
     ->execute();
 }
@@ -1180,12 +1179,12 @@ function tpps_submission_update_stats(array &$form_state) {
  */
 function tpps_submission_edit_publication(array $form, array &$form_state, $accession = NULL) {
   global $base_url;
-  $state = tpps_load_submission($accession);
+  $state = tpps_load_submission_state($accession);
 
-  $form['accession'] = array(
+  $form['accession'] = [
     '#type' => 'hidden',
     '#value' => $accession,
-  );
+  ];
 
   $form['status'] = array(
     '#type' => 'select',
@@ -1248,7 +1247,7 @@ function tpps_submission_edit_publication_validate(&$form, &$form_state) {
  */
 function tpps_submission_edit_publication_submit($form, &$form_state) {
   $accession = $form_state['values']['accession'];
-  $state = tpps_load_submission($accession);
+  $state = tpps_load_submission_state($accession);
   $submit_job = FALSE;
 
   if ($state['saved_values'][TPPS_PAGE_1]['publication']['status'] != $form_state['values']['status']) {
