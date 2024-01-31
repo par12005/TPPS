@@ -4410,7 +4410,7 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         echo "Real managed real path: " . drupal_realpath($file->uri) . "\n";
         // We could store this in the submit_state - TODO if we need this
         // $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
-        // tpps_update_submission($form_state);
+        // tpps_update_submission_state($form_state);
         // print_r($sample_list_data);
       } // end else
     } // end for

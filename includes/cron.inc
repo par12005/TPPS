@@ -131,18 +131,18 @@ function tpps_refresh_plusgeno_view() {
 function tpps_delayed_submissions() {
   $submissions = variable_get('tpps_delayed_submissions', array());
   foreach ($submissions as $accession) {
-    $state = tpps_load_submission_state($accession);
+    $state = tpps_load_submission_state($accession, 1);
     $date = $state['saved_values']['summarypage']['release-date'];
     $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
     if (time() > $time) {
-      $state = tpps_load_submission_state($accession);
+      $state = tpps_load_submission_state($accession, 1);
       $includes = array();
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = array($accession);
       $jid = tripal_add_job("TPPS Record Submission - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
       $state['job_id'] = $jid;
-      tpps_update_submission($state);
+      tpps_update_submission_state($state);
       unset($submissions[$accession]);
     }
   }

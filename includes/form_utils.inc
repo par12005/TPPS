@@ -409,7 +409,7 @@ function tpps_pre_validate_init($accession = NULL) {
 
   $state['vcf_val_errors'] = array();
   $state['vcf_validated'] = FALSE;
-  tpps_update_submission($state);
+  tpps_update_submission_state($state);
 
   $jobs = array();
   foreach ($vcfs as $org_num => $fid) {
@@ -827,7 +827,7 @@ function tpps_pre_validate_status($accession = NULL, $jid = NULL) {
     $job->val_errors = $state['vcf_val_errors'] ?? array();
     if (empty($job->val_errors)) {
       $state['vcf_validated'] = TRUE;
-      tpps_update_submission($state);
+      tpps_update_submission_state($state);
     }
   }
 
@@ -912,7 +912,7 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   }
   else {
     $state['vcf_val_errors'] = $state_errors;
-    tpps_update_submission($state);
+    tpps_update_submission_state($state);
   }
 }
 

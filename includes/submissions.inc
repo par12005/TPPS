@@ -1249,19 +1249,20 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
   $accession = $form_state['values']['accession'];
   $state = tpps_load_submission_state($accession);
   $submit_job = FALSE;
+  $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
 
-  if ($state['saved_values'][TPPS_PAGE_1]['publication']['status'] != $form_state['values']['status']) {
-    $state['saved_values'][TPPS_PAGE_1]['publication']['status'] = $form_state['values']['status'];
+  if ($page1_values['publication']['status'] != $form_state['values']['status']) {
+    $page1_values['publication']['status'] = $form_state['values']['status'];
     $submit_job = TRUE;
   }
 
-  if ($state['saved_values'][TPPS_PAGE_1]['publication']['year'] != $form_state['values']['year']) {
-    $state['saved_values'][TPPS_PAGE_1]['publication']['year'] = $form_state['values']['year'];
+  if ($page1_values['publication']['year'] != $form_state['values']['year']) {
+    $page1_values['publication']['year'] = $form_state['values']['year'];
     $submit_job = TRUE;
   }
 
-  if ($state['saved_values'][TPPS_PAGE_1]['publication']['journal'] != $form_state['values']['journal']) {
-    $state['saved_values'][TPPS_PAGE_1]['publication']['journal'] = $form_state['values']['journal'];
+  if ($page1_values['publication']['journal'] != $form_state['values']['journal']) {
+    $page1_values['publication']['journal'] = $form_state['values']['journal'];
     $submit_job = TRUE;
   }
 
@@ -1272,9 +1273,12 @@ function tpps_submission_edit_publication_submit($form, &$form_state) {
     $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
     $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
     $args = array($accession);
-    $jid = tripal_add_job("Update Publication Information - $accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+    $jid = tripal_add_job("Update Publication Information - $accession",
+      'tpps', 'tpps_submit_all',
+      $args, $state['submitting_uid'], 10, $includes, TRUE
+    );
     $state['job_id'] = $jid;
-    tpps_update_submission($state);
+    tpps_update_submission_state($state);
   }
 }
 

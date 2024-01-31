@@ -28,7 +28,7 @@ function tpps_manage_doi($accession) {
   if (!empty($token) and empty($form_state['zenodo_id'])) {
     $form_state['zenodo_id'] = tpps_generate_doi($accession)->id;
     $doi_object = tpps_doi_publish($form_state['zenodo_id']);
-    tpps_update_submission($form_state);
+    tpps_update_submission_state($form_state);
     $output .= "<h4>DOI successfully published!</h4>";
   }
   elseif (!empty($token) and !empty($form_state['zenodo_id'])) {

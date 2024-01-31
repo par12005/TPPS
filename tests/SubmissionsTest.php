@@ -107,21 +107,21 @@ class SubmissionsTest extends TripalTestCase {
     $new_state['saved_values'][TPPS_PAGE_1]['publication'] = array(
       'title' => 'TPPS test title',
     );
-    tpps_update_submission($new_state);
+    tpps_update_submission_state($new_state);
     $result = tpps_load_submission($accession);
     $this->assertNotEmpty($result['updated']);
     $this->assertNotEmpty($result['saved_values'][TPPS_PAGE_1]['publication']);
     $this->assertEquals($new_state['saved_values'][TPPS_PAGE_1]['publication'], $result['saved_values'][TPPS_PAGE_1]['publication']);
     $updated = $result['updated'];
     sleep(1);
-    tpps_update_submission($result);
-    $result = tpps_load_submission($accession);
+    tpps_update_submission_state($result);
+    $result = tpps_load_submission_state($accession);
     $this->assertGreaterThan($updated, $result['updated']);
 
     $new_state['status'] = 'Approved';
-    tpps_update_submission($new_state);
-    $result = tpps_load_submission($accession, FALSE);
-    $this->assertEquals('Approved', $result->status);
+    tpps_update_submission_info($accession, $new_state);
+    $result = tpps_load_submission_info($accession);
+    $this->assertEquals('Approved', $result['status']);
   }
 
   /**

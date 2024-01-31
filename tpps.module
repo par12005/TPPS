@@ -1381,7 +1381,7 @@ function tpps_main_submit($form, &$form_state) {
     }
     $saved_values['form_build_id'] = $values['form_build_id'];
     $form_state['rebuild'] = TRUE;
-    tpps_update_submission($form_state);
+    tpps_update_submission_state($form_state);
     // File status must not be changed here because we need to have termporary
     // status of file until study completely submitted. See 'summarypage'
     // processing.
@@ -1456,7 +1456,11 @@ function tpps_main_submit($form, &$form_state) {
         $form_state['status'] = 'Pending Approval';
         $form_state['completed'] = time();
         tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
-        tpps_update_submission($form_state);
+        tpps_update_submission_state($form_state);
+        tpps_submission_interface_create($form_state);
+        tpps_update_submission_info($form_state['accession'],
+          ['status' => $form_state['status']]
+        );
         tpps_submit_email($form_state);
         drupal_goto("completed-submission/{$form_state['accession']}");
         return;
@@ -1478,7 +1482,7 @@ function tpps_main_submit($form, &$form_state) {
 
   if ($persist) {
     // dpm('PERSIST END');
-    tpps_update_submission($form_state);
+    tpps_update_submission_state($form_state);
   }
   if ($form_state['stage'] == TPPS_PAGE_1) {
     // When non-empty (after Page1 submit) study was added we need to
@@ -1487,6 +1491,7 @@ function tpps_main_submit($form, &$form_state) {
     cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
   }
 }
+
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 /**
@@ -1575,7 +1580,7 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   }
 
   $form_state['tpps_type'] = 'tppsc';
-  tpps_update_submission($form_state);
+  tpps_update_submission_state($form_state);
   if (variable_get('tpps_top_bar', 'status') == 'status') {
     module_load_include('inc', 'tpps', 'includes/status_bar');
     tpps_status_bar($form, $form_state);
@@ -1709,7 +1714,10 @@ function tppsc_main_submit($form, &$form_state) {
     tpps_create_submission($form_state, $user->uid);
     tpps_submission_file_set_status($form_state, 0);
     tpps_main_submit($form, $form_state);
-    tpps_update_submission($form_state);
+    tpps_update_submission_state($form_state);
+    tpps_update_submission_info($form_state['accession'],
+      ['status' => $form_state['status']]
+    );
     return;
   }
 
@@ -1727,7 +1735,11 @@ function tppsc_main_submit($form, &$form_state) {
       $form_state['status'] = 'Pending Approval';
       $form_state['completed'] = time();
       tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
-      tpps_update_submission($form_state);
+      tpps_update_submission_state($form_state);
+      tpps_submission_interface_create($form_state);
+      tpps_update_submission_info($form_state['accession'],
+        ['status' => $form_state['status']]
+      );
       tpps_submit_email($form_state);
       drupal_goto("completed-submission/{$form_state['accession']}");
       return;
@@ -1740,14 +1752,13 @@ function tppsc_main_submit($form, &$form_state) {
     $form_state['rebuild'] = TRUE;
 
     if ($persist) {
-      tpps_update_submission($form_state);
+      tpps_update_submission_state($form_state);
     }
   }
 }
 
-
-
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
 /**
  * Implements hook_block_view_alter().
  *
