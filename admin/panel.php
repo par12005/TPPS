@@ -83,20 +83,26 @@ function tpps_manage_generate_all_materialized_views(array $form, array &$form_s
  */
 function tpps_manage_submission_form(array &$form, array &$form_state, $accession = NULL) {
   global $base_url;
-  $submission = tpps_load_submission($accession, FALSE);
-  // dpm($submission);
-  $status = $submission->status;
-  $submission_state = unserialize($submission->submission_state);
-  if (empty($submission_state['status'])) {
-    $submission_state['status'] = $status;
-    tpps_update_submission($submission_state);
+  $submission_info = tpps_load_submission_info($accession);
+  // @TODO Rename $submission_interface with $submission_interface.
+  $submission_interface = tpps_submission_interface_load($accession);
+
+  $page1_values = &$submission_interface['saved_values'][TPPS_PAGE_1] ?? NULL;
+  $page2_values = &$submission_interface['saved_values'][TPPS_PAGE_2] ?? NULL;
+  $page3_values = &$submission_interface['saved_values'][TPPS_PAGE_3] ?? NULL;
+  $page4_values = &$submission_interface['saved_values'][TPPS_PAGE_4] ?? NULL;
+
+  if (empty($submission_interface['status'])) {
+    $submission_interface['status'] = $submission_info['status'];
+    tpps_submission_interface_update($submission_interface, $submission_info['status']);
   }
   $options = array();
   $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
 
   // Check for log file
   // Step 1 - Look for the last tripal job that has the accession.
-  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE 'TPPS Record Submission - $accession' ORDER BY submit_date DESC LIMIT 1;");
+  $results = db_query("SELECT * FROM public.tripal_jobs WHERE job_name LIKE "
+    . "'TPPS Record Submission - $accession' ORDER BY submit_date DESC LIMIT 1;");
   $job_id = -1;
   while ($row_array = $results->fetchObject()) {
     // dpm($row_array);
@@ -104,26 +110,32 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     $job_id = $row_array->job_id;
   }
   if ($job_id == -1) {
-    $display .= "<div style='padding: 10px;'>No log file exists for this study (resubmit this study to generate a log file if necessary)</div>";
+    $display .= "<div style='padding: 10px;'>No log file exists for this "
+      . "study (resubmit this study to generate a log file if necessary)</div>";
   }
   else {
     $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
     // dpm($log_path . $accession . "_" . $job_id . ".txt");
     if (file_exists($log_path . $accession . "_" . $job_id . ".txt")) {
-      $display .= "<div style='padding: 10px;background: #e9f9ef;border: 1px solid #90bea9;font-size: 18px;'><a target='_blank' href='../tpps-admin-panel-logs/" . $accession . "_" . $job_id . "'>Latest job log file ($accession - $job_id)</a></div>";
+      $display .= "<div style='padding: 10px;background: #e9f9ef;border: "
+        . "1px solid #90bea9;font-size: 18px;'><a target='_blank' "
+        . "href='../tpps-admin-panel-logs/" . $accession . "_" . $job_id
+        . "'>Latest job log file ($accession - $job_id)</a></div>";
     }
     else {
-      $display .= "<div style='padding: 10px;'>Could not find job log file (this can happen if the log file was deleted - resubmit study if necessary to regenerate log file)</div>";
+      $display .= "<div style='padding: 10px;'>Could not find job log file "
+        . "(this can happen if the log file was deleted - resubmit study "
+        . "if necessary to regenerate log file)</div>";
     }
   }
 
-  if ($status == "Pending Approval") {
-    $options['files'] = array(
+  if ($submission_info['status'] == "Pending Approval") {
+    $options['files'] = [
       'revision_destination' => TRUE,
-    );
+    ];
     $options['skip_phenotypes'] = TRUE;
 
-    foreach ($submission_state['file_info'] as $files) {
+    foreach ($submission_interface['file_info'] as $files) {
       foreach ($files as $fid => $file_type) {
         if (!empty($file = file_load($fid))) {
           $form["edit_file_{$fid}_check"] = [
@@ -147,12 +159,15 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       }
     }
   }
-  $display .= tpps_table_display($submission_state, $options);
+  $display .= tpps_table_display($submission_interface, $options);
 
-  if ($status == 'Pending Approval' and preg_match('/P/', $submission_state['saved_values'][TPPS_PAGE_2]['data_type'])) {
+  if (
+    $submission_info['status'] == 'Pending Approval'
+    && preg_match('/P/', $submission_interface['saved_values'][TPPS_PAGE_2]['data_type'])
+  ) {
     $new_cvterms = array();
-    $page4 = &$submission_state['saved_values'][TPPS_PAGE_4];
-    for ($i = 1; $i <= $submission_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
+    $page4 = &$submission_interface['saved_values'][TPPS_PAGE_4];
+    for ($i = 1; $i <= $submission_interface['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
       // @TODO Could we just skip when it's checked?
       $phenotype = (!empty($page4["organism-$i"]['phenotype-repeat-check']))
         ? $page4["organism-1"]['phenotype'] : $page4["organism-$i"]['phenotype'];
@@ -170,7 +185,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     }
     // @todo get new/custom units from metadata file.
     if (count($new_cvterms) > 0) {
-      $message = 'This submission will create the following new local cvterms: ' . implode(', ', array_unique($new_cvterms));
+      $message = 'This submission will create the following new local cvterms: '
+        . implode(', ', array_unique($new_cvterms));
       $display .= "<div class=\"alert alert-block alert-dismissible alert-warning messages warning\">
         <a class=\"close\" data-dismiss=\"alert\" href=\"#\">×</a>
         <h4 class=\"element-invisible\">Warning message</h4>
@@ -178,13 +194,11 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     }
   }
 
-  $form['accession'] = [
-    '#type' => 'hidden',
-    '#value' => $accession,
-  ];
-  $form['form_table'] = [
-    '#markup' => $display,
-  ];
+  $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
+  $form['form_table'] = ['#markup' => $display];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // File Diagnostics.
   $form['file_diagnostics'] = [
     '#markup' => l(t('Files diagnostics'), 'file-diagnostics/' . $accession,
       [
@@ -195,9 +209,13 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       ]) . '<br /><br />',
   ];
 
-  $submission_tags = tpps_submission_get_tags($submission_state['accession']);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Tags.
+  $submission_tags = tpps_submission_get_tags($submission_interface['accession']);
   // dpm($submission_tags);
-  $tags_markup = "<div style='margin-bottom: 10px; font-weight: bold; text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
+  $tags_markup = "<div style='margin-bottom: 10px; font-weight: bold; "
+    . "text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">"
+    . "Manage Global TPPS Submission Tags</a></div>";
   // Show current tags.
   $tags_markup .= "<label class=\"control-label\">Current Tags:</label><br>";
   $image_path = TPPS_IMAGES_PATH;
@@ -209,9 +227,12 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     $style = !array_key_exists($result->tpps_tag_id, $submission_tags) ? "display: none" : "";
     // $tooltip = $result->static ? "This tag cannot be removed" : "";
     $tooltip = '';
-    $tags_markup .= "<span title=\"$tooltip\" class=\"tag\" style=\"background-color:$color; $style\"><span class=\"tag-text\">{$result->name}</span>";
+    $tags_markup .= "<span title=\"$tooltip\" class=\"tag\" "
+      . "style=\"background-color:$color; $style\"><span "
+      . "class=\"tag-text\">{$result->name}</span>";
     if (!$result->static) {
-      $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-remove\" class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
+      $tags_markup .= "<span id=\"{$submission_interface['accession']}-tag-{$result->tpps_tag_id}-remove\" "
+        . "class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
     }
     $tags_markup .= "</span>";
   }
@@ -232,68 +253,70 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   //   if (array_key_exists($result->tpps_tag_id, $submission_tags)) {
   //     $style = 'display: none';
   //   }
-  //   $tags_markup .= "<span id=\"{$submission_state['accession']}-tag-{$result->tpps_tag_id}-add\" class=\"tag add-tag\" style=\"background-color:{$color}; $style\"><span class=\"tag-text\">{$result->name}</span></span>";
+  //   $tags_markup .= "<span id=\"{$submission_interface['accession']}-tag-{$result->tpps_tag_id}-add\" class=\"tag add-tag\" style=\"background-color:{$color}; $style\"><span class=\"tag-text\">{$result->name}</span></span>";
   // }
   // $tags_markup .= "</div>";
   // $tags_markup .= "<div style='margin-top: 10px;'><a href=\"/tpps-tag\">Manage Global TPPS Submission Tags</a></div>";
-  $form['tags'] = array(
-    '#markup' => "<div id=\"tags\">$tags_markup</div>",
-  );
+  $form['tags'] = ['#markup' => "<div id=\"tags\">$tags_markup</div>"];
 
-
-
-  $form['TAG_REMOVE_CONTAINER'] = array(
-    '#prefix' => '<div class="tag-admin-container" style="display: inline-block; vertical-align: top; text-align: left; padding: 25px;">',
+  $form['TAG_REMOVE_CONTAINER'] = [
+    '#prefix' => '<div class="tag-admin-container" style="display: '
+      . 'inline-block; vertical-align: top; text-align: left; padding: 25px;">',
     '#suffix' => '</div>',
-  );
+  ];
 
   $submission_tags_ids = [];
   foreach ($submission_tags as $submission_tag) {
     $submission_tags_ids = $submission_tag['id'];
   }
 
-  // This code will generate the tag options that we can delete
+  // This code will generate the tag options that we can delete.
   $current_tags_options = [];
   $current_tags_results = chado_query('SELECT * FROM tpps_submission_tag tsg
     LEFT JOIN tpps_tag tg ON (tsg.tpps_tag_id = tg.tpps_tag_id)
     WHERE tpps_submission_id = :tpps_submission_id
-    AND tsg.tpps_tag_id > 2', [':tpps_submission_id' => $submission->tpps_submission_id]);
+    AND tsg.tpps_tag_id > 2',
+    [':tpps_submission_id' => $submission_info['tpps_submission_id']]
+  );
   foreach ($current_tags_results as $row) {
     $current_tags_options[$row->tpps_tag_id] = $row->name;
   }
 
-
-  $form['TAG_REMOVE_CONTAINER']['TAG_REMOVE_OPTION'] = array(
+  $form['TAG_REMOVE_CONTAINER']['TAG_REMOVE_OPTION'] = [
     '#type' => 'select',
     '#title' => 'Remove the following selected tag',
     '#description' => 'This will delete a tag that has been already <br />added to this study',
     '#options' => $current_tags_options,
     '#attributes' => ['style' => 'width: 100%'],
     '#default_value' => '',
-  );
-  $form['TAG_REMOVE_CONTAINER']['TAG_REMOVE_OPTION_DO'] = array(
+  ];
+  $form['TAG_REMOVE_CONTAINER']['TAG_REMOVE_OPTION_DO'] = [
     '#type' => 'submit',
+    '#name' => 'remove_tag',
     '#value' => t('Remove tag from this study'),
     '#suffix' => '<div style="margin-bottom: 30px;"></div>'
-  );
+  ];
 
-  $form['TAG_ADD_CONTAINER'] = array(
-    '#prefix' => '<div class="tag-admin-container" style="display: inline-block; vertical-align: top; text-align: left; padding: 25px;">',
+  $form['TAG_ADD_CONTAINER'] = [
+    '#prefix' => '<div class="tag-admin-container" style="display: '
+      . 'inline-block; vertical-align: top; text-align: left; padding: 25px;">',
     '#suffix' => '</div>',
-  );
+  ];
 
   // This code will generate all tag options that we can add
   $all_add_tags_options = [];
   $all_add_tags_results = chado_query('SELECT * FROM tpps_tag
-    WHERE tpps_tag_id NOT IN (SELECT tpps_tag_id FROM tpps_submission_tag
-      WHERE tpps_submission_id = :tpps_submission_id) AND tpps_tag_id > 2', [
-        ':tpps_submission_id' => $submission->tpps_submission_id
-      ]);
+    WHERE tpps_tag_id NOT IN (
+      SELECT tpps_tag_id FROM tpps_submission_tag
+      WHERE tpps_submission_id = :tpps_submission_id
+    ) AND tpps_tag_id > 2',
+    [':tpps_submission_id' => $submission_info['tpps_submission_id']]
+  );
   foreach ($all_add_tags_results as $row) {
     $all_add_tags_options[$row->tpps_tag_id] = $row->name;
   }
 
-  $form['TAG_ADD_CONTAINER']['TAG_ADD_OPTION'] = array(
+  $form['TAG_ADD_CONTAINER']['TAG_ADD_OPTION'] = [
     '#type' => 'select',
     '#title' => 'Add the following selected tag',
     // '#prefix' => '<div style="display: inline-block; width: 45%;">',
@@ -302,25 +325,31 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#options' => $all_add_tags_options,
     '#attributes' => ['style' => 'width: 100%'],
     '#default_value' => '',
-  );
-  $form['TAG_ADD_CONTAINER']['TAG_ADD_OPTION_DO'] = array(
+  ];
+  $form['TAG_ADD_CONTAINER']['TAG_ADD_OPTION_DO'] = [
     '#type' => 'submit',
     '#value' => t('Add tag to this study'),
+    '#name' => 'add_tag',
     '#suffix' => '<div style="margin-bottom: 30px;"></div>'
-  );
+  ];
 
-  if ($status == "Pending Approval") {
 
-    if ($submission_state['saved_values'][TPPS_PAGE_2]['study_type'] != 1) {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Reject/Approve and comments.
+  if ($submission_info['status'] == "Pending Approval") {
+
+    if ($page2_values['study_type'] != 1) {
       module_load_include('php', 'tpps', 'forms/build/page_3_helper');
       module_load_include('php', 'tpps', 'forms/build/page_3_ajax');
-      $submission_state['values'] = $form_state['values'] ?? $submission_state['values'];
-      $submission_state['complete form'] = $form_state['complete form'] ?? $submission_state['complete form'];
-      tpps_study_location($form, $submission_state);
-      $study_location = $submission_state['saved_values'][TPPS_PAGE_3]['study_location'];
+      $submission_interface['values'] = $form_state['values'] ?? $submission_interface['values'];
+      $submission_interface['complete form'] = $form_state['complete form']
+        ?? $submission_interface['complete form'];
+      tpps_study_location($form, $submission_interface);
+      $study_location = $page3_values['study_location'];
       $form['study_location']['type']['#default_value'] = $study_location['type'] ?? NULL;
       for ($i = 1; $i <= $study_location['locations']['number']; $i++) {
-        $form['study_location']['locations'][$i]['#default_value'] = $study_location['locations'][$i];
+        $form['study_location']['locations'][$i]['#default_value']
+          = $study_location['locations'][$i];
       }
       unset($form['study_location']['locations']['add']);
       unset($form['study_location']['locations']['remove']);
@@ -328,39 +357,39 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       $form['study_location']['#collapsed'] = TRUE;
     }
 
-    $form['params'] = array(
+    $form['params'] = [
       '#type' => 'fieldset',
       '#title' => 'Select Environmental parameter types:',
       '#tree' => TRUE,
       '#description' => '',
-    );
+    ];
 
-    $orgamism_num = $submission_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
+    $orgamism_num = $page1_values['organism']['number'];
     $show_layers = FALSE;
     for ($i = 1; $i <= $orgamism_num; $i++) {
-      if (!empty($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment'])) {
-        foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_layers'] as $layer => $layer_id) {
+      if (!empty($page4_values["organism-$i"]['environment'])) {
+        foreach ($page4_values["organism-$i"]['environment']['env_layers'] as $layer => $layer_id) {
           if (!empty($layer_id)) {
-            foreach ($submission_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['environment']['env_params'][$layer] as $param_id) {
+            foreach ($page4_values["organism-$i"]['environment']['env_params'][$layer] as $param_id) {
               if (!empty($param_id)) {
                 $type = variable_get("tpps_param_{$param_id}_type", NULL);
                 if (empty($type)) {
                   $query = db_select('cartogratree_fields', 'f')
-                    ->fields('f', array('display_name'))
+                    ->fields('f', ['display_name'])
                     ->condition('field_id', $param_id)
                     ->execute();
                   $result = $query->fetchObject();
                   $name = $result->display_name;
 
-                  $form['params'][$param_id] = array(
+                  $form['params'][$param_id] = [
                     '#type' => 'radios',
                     '#title' => "Select Type for environmental layer parameter \"$name\":",
-                    '#options' => array(
-                      'attr_id' => t('@attr_id', array('@attr_id' => 'attr_id')),
-                      'cvterm' => t('@cvterm', array('@cvterm' => 'cvterm')),
-                    ),
+                    '#options' => [
+                      'attr_id' => t('@attr_id', ['@attr_id' => 'attr_id']),
+                      'cvterm' => t('@cvterm', ['@cvterm' => 'cvterm']),
+                    ],
                     '#required' => TRUE,
-                  );
+                  ];
                   $show_layers = TRUE;
                 }
               }
@@ -374,294 +403,274 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       unset($form['params']);
     }
 
-    if (preg_match('/P/', $submission_state['saved_values'][TPPS_PAGE_2]['data_type'])) {
-      tpps_phenotype_editor($form, $form_state, $submission_state);
+    if (preg_match('/P/', $page2_values['data_type'])) {
+      tpps_phenotype_editor($form, $form_state, $submission_interface);
     }
 
 
-    $form['approve-check'] = array(
+    $form['approve-check'] = [
       '#type' => 'checkbox',
       '#title' => t('This submission has been reviewed and approved.'),
-    );
-
-    $form['reject-reason'] = array(
+    ];
+    $form['reject-reason'] = [
       '#type' => 'textarea',
       '#title' => t('Reason for rejection:'),
-      '#states' => array(
-        'invisible' => array(
-          ':input[name="approve-check"]' => array('checked' => TRUE),
-        ),
-      ),
-    );
-
-    $form['REJECT'] = array(
+      '#states' => [
+        'invisible' => [
+          ':input[name="approve-check"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+    $form['REJECT'] = [
       '#type' => 'submit',
       '#value' => t('Reject'),
-      '#states' => array(
-        'invisible' => array(
-          ':input[name="approve-check"]' => array('checked' => TRUE),
-        ),
-      ),
-    );
+      '#name' => 'reject',
+      '#states' => [
+        'invisible' => [
+          ':input[name="approve-check"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
   }
-
-
-  $form['admin-comments'] = array(
+  $form['admin-comments'] = [
     '#type' => 'textarea',
     '#title' => t('Additional comments (administrator):'),
-    '#default_value' => $submission_state['admin_comments'] ?? NULL,
+    '#default_value' => $submission_interface['admin_comments'] ?? NULL,
     '#prefix' => '<div id="tpps-admin-comments">',
     '#suffix' => '</div>',
-  );
-
-  if ($status == "Pending Approval") {
-    $form['APPROVE'] = array(
+  ];
+  if ($submission_info['status'] == "Pending Approval") {
+    $form['APPROVE'] = [
       '#type' => 'submit',
       '#value' => t('Approve'),
-      '#states' => array(
-        'visible' => array(
-          ':input[name="approve-check"]' => array('checked' => TRUE),
-        ),
-      ),
-    );
+      '#name' => 'approve',
+      '#states' => [
+        'visible' => [
+          ':input[name="approve-check"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
   }
 
-  if ($status != "Pending Approval") {
-    $form['SAVE_COMMENTS'] = array(
+  if ($submission_info['status'] != "Pending Approval") {
+    $form['SAVE_COMMENTS'] = [
       '#type' => 'button',
       '#value' => t('Save Comments'),
-      '#ajax' => array(
+      '#name' => 'save_comments',
+      '#ajax' => [
         'callback' => 'tpps_save_admin_comments',
         'wrapper' => 'tpps-admin-comments',
-      ),
-    );
+      ],
+    ];
   }
 
-  $date = $submission_state['saved_values']['summarypage']['release-date'] ?? NULL;
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'change_date',
+    'title' => t('Change Date'),
+  ];
+  $date = $submission_interface['saved_values']['summarypage']['release-date'] ?? NULL;
   if (!empty($date)) {
     $datestr = "{$date['day']}-{$date['month']}-{$date['year']}";
-    if ($status != 'Approved' or strtotime($datestr) > time()) {
-      $form['date'] = array(
+    if ($submission_info['status'] != 'Approved' || strtotime($datestr) > time()) {
+      tpps_admin_panel_add_section($form, $section);
+      $form[$section['key']]['date'] = [
         '#type' => 'date',
         '#title' => t('Change release date'),
-        '#description' => t('You can use this field and the button below to change the release date of a submission.'),
+        '#description' => t('You can use this field and the button below '
+          . 'to change the release date of a submission.'),
         '#default_value' => $date,
-      );
-
-      $form['CHANGE_DATE'] = array(
-        '#type' => 'submit',
-        '#value' => t('Change Date'),
-        '#states' => array(
-          'invisible' => array(
-            ':input[name="date[day]"]' => array('value' => $date['day']),
-            ':input[name="date[month]"]' => array('value' => $date['month']),
-            ':input[name="date[year]"]' => array('value' => $date['year']),
-          ),
-        ),
-      );
+      ];
     }
   }
 
-  if ($status == "Approved") {
-    $alt_acc = $submission_state['alternative_accessions'] ?? '';
-
-    $form['alternative_accessions'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'save_alternative_accessions',
+    'title' => t('Save Alternative Accessions'),
+  ];
+  if ($submission_info['status'] == "Approved") {
+    tpps_admin_panel_add_section($form, $section);
+    $form[$section['key']]['alternative_accessions'] = [
       '#type' => 'textfield',
       '#title' => t('Alternative accessions'),
-      '#default_value' => $alt_acc,
-      '#description' => t('Please provide a comma-delimited list of alternative accessions you would like to assign to this submission.'),
-    );
-
-    $form['SAVE_ALTERNATIVE_ACCESSIONS'] = array(
-      '#type' => 'submit',
-      '#value' => t('Save Alternative Accessions'),
-    );
-
+      '#default_value' => $submission_interface['alternative_accessions'] ?? '',
+      '#description' => t('Please provide a comma-delimited list of '
+        . 'alternative accessions you would like to assign to this submission.'
+      ),
+    ];
   }
 
-  $disable_vcf_import = 1;
-  if(!isset($submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'])) {
-    $disable_vcf_import = 0;
-  }
-  else {
-    $disable_vcf_import = $submission_state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'];
-  }
-
-  $form['DISABLE_VCF_IMPORT'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'save_vcf_import_setting',
+    'title' => t('Save VCF Import Setting'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $form[$section['key']]['DISABLE_VCF_IMPORT'] = [
     '#type' => 'checkbox',
-    '#prefix' => '<h2 style="margin-top: 30px;">Disable VCF import</h2>',
-    '#title' => 'Disable VCF Import in Tripal Job Submission',
-    '#default_value' => $disable_vcf_import,
-  );
+    '#title' => t('Disable VCF Import in Tripal Job Submission'),
+    '#default_value' => $page1_values['disable_vcf_import'] ?? 0,
+  ];
 
-  $form['DISABLE_VCF_IMPORT_SAVE'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save VCF Import Setting'),
-    '#suffix' => '<div style="margin-bottom: 30px;"></div>'
-  );
-
-  $options = [];
-  $options['hybrid'] = 'hybrid';
-  $options['inserts'] = 'inserts';
-  $form['VCF_IMPORT_MODE'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'save_vcf_import_mode',
+    'title' => t('Save VCF Import Mode'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $form[$section['key']]['VCF_IMPORT_MODE'] = [
     '#type' => 'select',
     '#title' => 'VCF Import mode',
-    '#prefix' => '<h2 style="margin-top: 30px;">VCF Import Mode</h2>',
-    '#description' => 'Hybrid mode is the new method using the COPY command for some of the import.
-      This requires the database user to have SUPERUSER rights. Inserts mode is the original
-      code that used inserts only (which is much slower but tested and works for most cases).',
-    '#options' => $options,
+    '#description' => t('Hybrid mode is the new method using the COPY command '
+      . 'for some of the import. This requires the database user to have '
+      . 'SUPERUSER rights. Inserts mode is the original code that used inserts '
+      . 'only (which is much slower but tested and works for most cases).'
+    ),
+    '#options' => ['hybrid' => t('hybrid'), 'inserts' => t('inserts')],
     '#default_value' => 'hybrid',
-  );
+  ];
 
-  $form['VCF_IMPORT_MODE_SAVE'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save VCF Import Mode'),
-    '#suffix' => '<div style="margin-bottom: 30px;"></div>'
-  );
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'run_vcf_snps_to_flat_file',
+    'title' => t('Run VCF SNPS to Flat File'),
+    'description' => t('Converts VCF SNPS into FLAT files including Tree IDs.'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
 
-
-
-  $form['VCF_SNPS_TO_FLAT_FILE_SAVE'] = array(
-    '#type' => 'submit',
-    '#prefix' => '<h2 style="margin-top: 30px;">VCF SNPS TO FLAT FILE</h2>',
-    '#description' => 'Converts VCF SNPS into FLAT files including Tree IDs',
-    '#value' => t('Run VCF SNPS to Flat File'),
-    '#suffix' => '<div style="margin-bottom: 30px;"></div>'
-  );
-
-
-  $submitting_user = user_load($submission_state['submitting_uid']);
-  $form['change_owner'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'change_submission_owner',
+    'title' => t('Change Submission Owner'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $submitting_user = user_load($submission_interface['submitting_uid']);
+  $form[$section['key']]['new_owner'] = [
     '#type' => 'textfield',
-    '#prefix' => '<h2 style="margin-top: 30px;">Change owner</h2>',
     '#title' => t('Choose a new owner for the submission'),
     '#default_value' => $submitting_user->mail ?? '',
     '#autocomplete_path' => 'tpps/autocomplete/user',
-  );
+  ];
 
-  $form['CHANGE_OWNER'] = array(
-    '#type' => 'submit',
-    '#value' => t('Change Submission Owner'),
-  );
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'sync_publication_data',
+    'title' => t('Synchronize publication data'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $form[$section['key']]['SYNC_PUBLICATION_DATA'] = [
+    '#markup' => '<p>' . t('This will attempt to pull publication data from '
+      . 'the publication content type and update the study info.') . '</p>',
+  ];
 
-  $form['SYNC_PUBLICATION_DATA'] = array(
-    '#title' => 'Synchronize publication data',
-    '#prefix' => '<h2 style="margin-top: 30px;">Synchronize publication data</h2>This will attempt to pull publication data from the publication content type and update the study info<br />',
-    '#type' => 'submit',
-    '#value' => t('Sync Publication'),
-  );
-
-  $study_role_view = NULL;
-  if(isset($submission_state['study_view_role'])) {
-    $study_role_view = $submission_state['study_view_role'];
-  }
-  else {
-    $study_role_view = 0;
-  }
-
-  $options = user_roles(true);
-  $options[0] = 'All users';
-  $form['CHANGE_STUDY_VIEW_ROLE'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'change_study_view_role',
+    'title' => t('Change Study View Role'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $options = user_roles(TRUE);
+  $options[0] = t('All users');
+  $form[$section['key']]['CHANGE_STUDY_VIEW_ROLE'] = [
     '#type' => 'select',
-    '#title' => 'Set this study view role',
-    '#prefix' => '<h2 style="margin-top: 30px;">Change study role view</h2>',
-    '#description' => 'This will change the user role that is allowed to view this study',
+    '#title' => t('Set this study view role'),
+    '#description' => t('This will change the user role that is allowed '
+      . 'to view this study'),
     '#options' => $options,
-    '#default_value' => $study_role_view,
-  );
+    '#default_value' => $submission_interface['study_view_role'] ?? 0,
+  ];
 
-  $form['CHANGE_STUDY_VIEW_ROLE_SAVE'] = array(
-    '#type' => 'submit',
-    '#value' => t('Change Study View Role'),
-  );
-
-  $current_tpps_type = '';
-  if($submission_state['tpps_type'] == 'tppsc') {
-    $current_tpps_type = 'tppsc';
-  }
-  else {
-    $current_tpps_type = 'tpps';
-  }
-  $form['CHANGE_TPPS_TYPE'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'change_tpps_type',
+    'title' => t('Change TPPS type'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $form[$section['key']]['CHANGE_TPPS_TYPE'] = [
     '#type' => 'select',
-    '#title' => 'Change this study\'s TPPS type',
-    '#prefix' => '<h2 style="margin-top: 30px;">Change TPPS type</h2>',
-    '#description' => 'This will change the submission state type and also the submission tag to the type you select',
-    '#options' => array(
+    '#title' => t("Change this study's TPPS type"),
+    '#description' => t('This will change the submission state type and '
+      . 'also the submission tag to the type you select'),
+    '#options' => [
       'tppsc' => t('TPPSc'),
       'tpps' => t('TPPS'),
-    ),
-    '#default_value' => $current_tpps_type,
-  );
+    ],
+    '#default_value' => ($submission_interface['tpps_type'] == 'tppsc'
+      ? 'tppsc' : 'tpps'),
+  ];
 
-  $form['CHANGE_TPPS_TYPE_SAVE'] = array(
-    '#type' => 'submit',
-    '#value' => t('Change TPPS Type'),
-  );
-
-  $form['state-status'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'change_state_status',
+    'title' => t('Change Status'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $form[$section['key']]['state-status'] = [
     '#type' => 'select',
-    '#prefix' => '<h2 style="margin-top: 30px;">Change state</h2>',
-    '#title' => t('Change state status'),
-    '#description' => t('Warning: This feature is experimental and may cause unforseen issues. Please do not change the status of this submission unless you are willing to risk the loss of existing data. The current status of the submission is @status.', array('@status' => $status)),
-    '#options' => array(
+    '#title' => $section['title'],
+    // @TODO Convert statuses into constants and use function to get list.
+    '#options' => [
       'Incomplete' => t('Incomplete'),
       'Pending Approval' => t('Pending Approval'),
       'Approved' => t('Approved'),
       'Submission Job Running' => t('Submission Job Running'),
+    ],
+    '#default_value' => $submission_info['status'],
+    '#description' => t('Warning: This feature is experimental and may '
+      . 'cause unforseen issues. Please do not change the status of this '
+      . 'submission unless you are willing to risk the loss of existing data. '
+      . '<br /><strong>The current status of the submission is @status</strong>.',
+      ['@status' => $submission_info['status']]
     ),
-    '#default_value' => $status,
-  );
+  ];
 
-  $form['CHANGE_STATUS'] = array(
-    '#type' => 'submit',
-    '#value' => t('Change Status'),
-    '#states' => array(
-      'invisible' => array(
-        ':input[name="state-status"]' => array('value' => $status),
-      ),
-    ),
-  );
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'generate_popstruct_from_vcf',
+    'title' => t("Generate PopStruct FROM VCF"),
+  ];
+  tpps_admin_panel_add_section($form, $section);
 
-  // GENERATE_POPSTRUCT_FROM_VCF
-  $form['GENERATE_POPSTRUCT_FROM_VCF'] = array(
-    '#type' => 'submit',
-    '#prefix' => '<h2 style="margin-top: 30px;">Generate PopStruct FROM VCF</h2>',
-    '#value' => t("Generate PopStruct FROM VCF"),
-  );
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'refresh_tpps_cvterms_cache',
+    'title' => t('Refresh TPPS cvterms cache'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
 
-  // REFRESH TPPS CVTERMS CACHE
-  $form['REFRESH_TPPS_CVTERMS_CACHE'] = array(
-    '#type' => 'submit',
-    '#prefix' => '<h2 style="margin-top: 30px;">Refresh TPPS CVTERMS CACHE</h2>',
-    '#value' => t("Refresh TPPS cvterms cache"),
-  );
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'regenerate_genotype_materialized_view',
+    'title' => t('Regenerate genotype materialized view'),
+    'description' => t('This regenerates the genotype view for the tpps details page.<br />'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
 
-  $form['REGENERATE_GENOTYPE_MATERIALIZED_VIEW'] = array(
-    '#type' => 'submit',
-    '#prefix' => '<h2 style="margin-top: 30px;">REGENERATE GENOTYPE MATERIALIZED VIEW</h2>This regenerates the genotype view for the tpps details page.<br />',
-    '#value' => t("Regenerate genotype materialized view"),
-  );
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'remove_study_markers_and_genotypes',
+    'title' => t("Remove this study's markers and genotypes"),
+    'description' => t('Warning: This will clear all markers and genotypes '
+      . 'for this study. You will need to resubmit the study '
+      . 'to import back this data.<br />'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
 
-  // Remove this study's markers and genotypes
-  $form['REMOVE_STUDY_MARKERS_GENOTYPES'] = array(
-    '#type' => 'submit',
-    '#prefix' => '<h2 style="margin-top: 30px;">Clear markers and genotypes</h2>Warning: This will clear all markers and genotypes for this study. You will need to resubmit the study to import back this data.',
-    '#value' => t("Remove this study's markers and genotypes"),
-  );
-
-  $form['CHANGE_TGDR_NUMBER'] = array(
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $section = [
+    'key' => 'change_tgdr_number',
+    'title' => t('Change TGDR Number'),
+    'description' => t('Warning: This will clear all data from the '
+      . 'database and reimport as a new study.'),
+  ];
+  tpps_admin_panel_add_section($form, $section);
+  $form[$section['key']]['CHANGE_TGDR_NUMBER'] = [
     '#type' => 'textfield',
-    '#prefix' => '<h2 style="margin-top: 30px;">Change TGDR number</h2>Warning: This will clear all data from the database and reimport as a new study.',
     '#title' => t('Specify the new TGDR number only (do not include TGDR)'),
-    '#default_value' => '',
-  );
-
-  $form['CHANGE_TGDR_NUMBER_SUBMIT'] = array(
-    '#type' => 'submit',
-    '#value' => t("Change TGDR number"),
-  );
+    // '#field_prefix' => 'TGDR',
+    '#description' => t('WARNING: do not include TGDR.'),
+  ];
 }
 
 /**
@@ -792,8 +801,8 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
         '#autocomplete_path' => 'tpps/autocomplete/unit',
         '#states' => [
           'visible' => [
-            ':input[name="phenotypes_edit[' . $num . '][unit]"]'
-              => ['value' => 'other'],
+            ':input[name="phenotypes_edit[' . $num
+            . '][unit]"]' => ['value' => 'other'],
           ],
         ],
         '#default_value' => $submission['phenotypes_edit'][$num]['unit-other']
@@ -804,10 +813,12 @@ function tpps_phenotype_editor(array &$form, array &$form_state, array &$submiss
 
   $form['phenotypes_edit']['phenotype_update'] = [
     '#type' => 'submit',
+    '#name' => 'save_phenotype_changes',
     '#value' => t('Save phenotype changes'),
   ];
   $form['phenotypes_edit']['phenotype_clear'] = [
     '#type' => 'submit',
+    '#name' => 'clear_phenotype_changes',
     '#value' => t('Clear phenotype changes'),
   ];
   // [/VS] #8669rmrw5.
@@ -1004,15 +1015,15 @@ function tpps_admin_panel_top(array &$form) {
               break;
           }
 
-          $row = array(
-            l($state['accession'], "$base_url/tpps-admin-panel/{$state['accession']}"),
+          $row = [
+            l($accession, '/tpps-admin-panel/' . $accession),
             $submitting_user,
-            $state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? 'Title not provided yet',
+            $state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? t('Title not provided yet'),
             $stage,
-            !empty($state['updated']) ? date("F j, Y, g:i a", $state['updated']) : "Unknown",
-            tpps_show_tags(tpps_submission_get_tags($state['accession'])),
-          );
-          $incomplete[(int) substr($state['accession'], 4)] = $row;
+            !empty($state['updated']) ? date("F j, Y, g:i a", $state['updated']) : t('Unknown'),
+            tpps_show_tags(tpps_submission_get_tags($accession)),
+          ];
+          $incomplete[(int) substr($accession, 4)] = $row;
           break;
       }
     }
@@ -1022,22 +1033,17 @@ function tpps_admin_panel_top(array &$form) {
   krsort($approved);
   krsort($incomplete);
 
-
-  $form['general_tasks'] = array(
+  $form['general_tasks'] = [
     '#type' => 'fieldset',
     '#title' => t('General tasks'),
     '#collapsible' => TRUE,
-  );
-
-  $markup_genotype_views = '';
-  $markup_genotype_views .= '<a target="_blank" href="/tpps-admin-panel/refresh-genotypes-materialized-views">Refresh all genotype
-    materialized views</a><br />';
-  $markup_genotype_views .= '<br />';
-  $form['general_tasks']['genotype_views'] = array(
+  ];
+  $form['general_tasks']['genotype_views'] = [
     '#type' => 'markup',
-    '#markup' => $markup_genotype_views
-  );
-
+    '#markup' => '<a target="_blank" '
+      . 'href="/tpps-admin-panel/refresh-genotypes-materialized-views">'
+      . 'Refresh all genotype materialized views</a><br /><br />',
+  ];
 
   $vars = [
     'attributes' => ['class' => ['view', 'tpps_table']],
@@ -1141,30 +1147,27 @@ function tpps_admin_panel_top(array &$form) {
   $query = $query->execute();
   $to_resubmit = array();
   while (($result = $query->fetchObject())) {
-    $to_resubmit[] = array($result->accession);
+    $to_resubmit[] = [$result->accession];
   }
   if (!empty($to_resubmit)) {
-    $vars['header'] = array(
-      'Accession',
-    );
+    $vars['header'] = ['Accession'];
     $vars['rows'] = $to_resubmit;
     $to_resubmit_table = theme('table', $vars);
-    $form['resubmit'] = array(
+    $form['resubmit'] = [
       '#type' => 'fieldset',
-      '#title' => "<img src='$base_url/misc/message-16-warning.png'> " . t('Old TGDR Submissions to be resubmitted'),
+      '#title' => "<img src='$base_url/misc/message-16-warning.png'> "
+        . t('Old TGDR Submissions to be resubmitted'),
       '#collapsible' => TRUE,
-      'table' => array(
-        '#markup' => $to_resubmit_table,
-      ),
-    );
+      'table' => ['#markup' => $to_resubmit_table],
+    ];
   }
 
   $tpps_new_orgs = variable_get('tpps_new_organisms', NULL);
-  $db = chado_get_db(array('name' => 'NCBI Taxonomy'));
+  $db = chado_get_db(['name' => 'NCBI Taxonomy']);
   if (!empty($db)) {
     $rows = array();
     $query = db_select('chado.organism', 'o');
-    $query->fields('o', array('organism_id', 'genus', 'species'));
+    $query->fields('o', ['organism_id', 'genus', 'species']);
 
     $query_e = db_select('chado.organism_dbxref', 'odb');
     $query_e->join('chado.dbxref', 'd', 'd.dbxref_id = odb.dbxref_id');
@@ -1177,14 +1180,13 @@ function tpps_admin_panel_top(array &$form) {
     while (($org = $query->fetchObject())) {
       $id = chado_get_record_entity_by_bundle($org_bundle, $org->organism_id);
       if (!empty($id)) {
-        $rows[] = array(
-          "<a href=\"$base_url/bio_data/{$id}/edit\" target=\"_blank\">$org->genus $org->species</a>",
-        );
+        $rows[] = [
+          "<a href=\"$base_url/bio_data/{$id}/edit\" target=\"_blank\">"
+          . "$org->genus $org->species</a>",
+        ];
         continue;
       }
-      $rows[] = array(
-        "$org->genus $org->species",
-      );
+      $rows[] = ["$org->genus $org->species"];
     }
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1210,9 +1212,7 @@ function tpps_admin_panel_top(array &$form) {
           . 'updated, because they do not have NCBI Taxonomy identifiers '
           . 'in the database.'),
         '#collapsible' => TRUE,
-        'table' => [
-          '#markup' => theme('table', $vars),
-        ],
+        'table' => ['#markup' => theme('table', $vars)],
       ];
     }
     variable_set('tpps_new_organisms', $tpps_new_orgs);
@@ -1227,14 +1227,20 @@ function tpps_admin_panel_top(array &$form) {
  */
 function tpps_admin_panel_validate($form, &$form_state) {
   if ($form_state['submitted'] == '1') {
-    if (isset($form_state['values']['reject-reason']) and $form_state['values']['reject-reason'] == '' and $form_state['triggering_element']['#value'] == 'Reject') {
-      form_set_error('reject-reason', t('Please explain why the submission was rejected.'));
+    if (
+      isset($form_state['values']['reject-reason'])
+      && $form_state['values']['reject-reason'] == ''
+      && $form_state['triggering_element']['#name'] == 'reject'
+    ) {
+      form_set_error('reject-reason',
+        t('Please explain why the submission was rejected.')
+      );
     }
 
     // [VS]
     // Custom Units are not allowed and must be manually reviewed/added
     // by admin before study could be processed.
-    if ($form_state['triggering_element']['#value'] == 'Save phenotype changes') {
+    if ($form_state['triggering_element']['#name'] == 'save_phenotype_changes') {
       foreach ($form_state['values']['phenotypes_edit'] as $key => $phenotype_meta) {
         if (!is_array($phenotype_meta)) {
           // There is a button [phenotype_update] => Save phenotype changes
@@ -1251,13 +1257,18 @@ function tpps_admin_panel_validate($form, &$form_state) {
     }
     // [/VS]
 
-    if ($form_state['triggering_element']['#value'] == 'Approve') {
+    if ($form_state['triggering_element']['#name'] == 'approve') {
       $accession = $form_state['values']['accession'];
       $state = tpps_load_submission($accession);
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
-          if (!empty($form_state['values']["edit_file_{$fid}_check"]) and empty($form_state['values']["edit_file_{$fid}_file"])) {
-            form_set_error("edit_file_{$fid}_file", t('Please upload a revised version fo the user-provided file.'));
+          if (
+            !empty($form_state['values']["edit_file_{$fid}_check"])
+            and empty($form_state['values']["edit_file_{$fid}_file"])
+          ) {
+            form_set_error("edit_file_{$fid}_file",
+              t('Please upload a revised version fo the user-provided file.')
+            );
           }
           if (!empty($form_state['values']["edit_file_{$fid}_file"])) {
             $file = file_load($form_state['values']["edit_file_{$fid}_file"]);
@@ -1269,17 +1280,21 @@ function tpps_admin_panel_validate($form, &$form_state) {
       if (!empty($form_state['values']['study_location'])) {
         for ($i = 1; $i <= $form_state['values']['study_location']['locations']['number']; $i++) {
           if (empty($form_state['values']['study_location']['locations'][$i])) {
-            form_set_error("study_location][locations][$i", "Study location $i: field is required.");
+            form_set_error("study_location][locations][$i",
+              t("Study location $i: field is required.")
+            );
           }
         }
       }
     }
 
-    if ($form_state['triggering_element']['#value'] == 'Save Alternative Accessions') {
+    if ($form_state['triggering_element']['#name'] == 'save_alternative_accessions') {
       $alt_acc = explode(',', $form_state['values']['alternative_accessions']);
       foreach ($alt_acc as $acc) {
         if (!preg_match('/^TGDR\d{3,}$/', $acc)) {
-          form_set_error('alternative_accessions', "The accession, $acc is not a valid TGDR### accession number.");
+          form_set_error('alternative_accessions',
+            t("The accession, $acc is not a valid TGDR### accession number.")
+          );
           continue;
         }
         $result = db_select('tpps_submission', 's')
@@ -1288,12 +1303,14 @@ function tpps_admin_panel_validate($form, &$form_state) {
           ->range(0, 1)
           ->execute()->fetchObject();
         if (!empty($result)) {
-          form_set_error('alternative_accessions', "The accession, $acc is already in use.");
+          form_set_error('alternative_accessions',
+            t("The accession, $acc is already in use.")
+          );
         }
       }
     }
 
-    if ($form_state['triggering_element']['#value'] == 'Change Submission Owner') {
+    if ($form_state['triggering_element']['#name'] == 'change_submission_owner') {
       $new_user = user_load_by_mail($form_state['values']['change_owner']);
       if (empty($new_user)) {
         form_set_error('change_owner', t('Invalid user account'));
@@ -1313,10 +1330,12 @@ function tpps_admin_panel_submit($form, &$form_state) {
   global $base_url;
 
   $accession = $form_state['values']['accession'];
-  $submission = tpps_load_submission($accession, FALSE);
-  $owner = user_load($submission->uid);
+  $submission_info = tpps_load_submission_info($accession);
+  $tpps_submission_id = $submission_info['tpps_submission_id'];
+  $owner = user_load($submission_info['uid']);
   $to = $owner->mail;
-  $state = unserialize($submission->submission_state);
+
+  $state = tpps_submission_interface_load($accession);
   $state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
   $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $from = variable_get('site_mail', '');
@@ -1348,25 +1367,24 @@ function tpps_admin_panel_submit($form, &$form_state) {
     }
   }
 
-  switch ($form_state['triggering_element']['#value']) {
-    case 'Add tag to this study':
+  switch ($form_state['triggering_element']['#name']) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'add_tag':
       $tpps_tag_id = $form_state['values']['TAG_ADD_OPTION'];
-      $tpps_submission_id = $submission->tpps_submission_id;
       // Insert tag for this tpps_submission_id.
       chado_query('INSERT INTO tpps_submission_tag
         (tpps_submission_id, tpps_tag_id)
         VALUES (:tpps_submission_id, :tpps_tag_id)',
         [
           ':tpps_submission_id' => $tpps_submission_id,
-          ':tpps_tag_id' => $tpps_tag_id
+          ':tpps_tag_id' => $tpps_tag_id,
         ]
       );
       // Get the tag name for the message alert.
       $tag_name = "";
-      $tag_name_results = chado_query('SELECT * FROM tpps_tag
-        WHERE tpps_tag_id = :tpps_tag_id', [
-          ':tpps_tag_id' => $tpps_tag_id
-        ]
+      $tag_name_results = chado_query(
+        'SELECT * FROM tpps_tag WHERE tpps_tag_id = :tpps_tag_id',
+        [':tpps_tag_id' => $tpps_tag_id]
       );
       foreach ($tag_name_results as $row) {
         $tag_name = $row->name;
@@ -1374,15 +1392,14 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_set_message($tag_name . " has been added to the study");
       break;
 
-    case 'Remove tag from this study':
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'remove_tag':
       $tpps_tag_id = $form_state['values']['TAG_REMOVE_OPTION'];
-      $tpps_submission_id = $submission->tpps_submission_id;
       // Get the tag name for the message alert.
       $tag_name = "";
-      $tag_name_results = chado_query('SELECT * FROM tpps_tag
-        WHERE tpps_tag_id = :tpps_tag_id', [
-          ':tpps_tag_id' => $tpps_tag_id
-        ]
+      $tag_name_results = chado_query(
+        'SELECT * FROM tpps_tag WHERE tpps_tag_id = :tpps_tag_id',
+        [':tpps_tag_id' => $tpps_tag_id]
       );
       foreach ($tag_name_results as $row) {
         $tag_name = $row->name;
@@ -1401,17 +1418,25 @@ function tpps_admin_panel_submit($form, &$form_state) {
         drupal_set_message($tag_name . " cannot be removed from study.","error");
       }
       break;
-    case 'Run VCF SNPS to Flat File':
-      // TODO Flat files functions and Tripal job
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'run_vcf_snps_to_flat_file':
+      // TODO Flat files functions and Tripal job.
       global $user;
       $project_id = $state['ids']['project_id'] ?? NULL;
       $includes = array();
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = array($state);
-      $jid = tripal_add_job("Generate VCF to SNPs Flat file - $accession (project_id=$project_id)", 'tpps', 'tpps_genotypes_to_flat_files_and_find_studies_overlaps', $args, $user->uid, 10, $includes, TRUE);
+      $jid = tripal_add_job("Generate VCF to SNPs Flat file - $accession "
+        . "(project_id=$project_id)", 'tpps',
+        'tpps_genotypes_to_flat_files_and_find_studies_overlaps',
+        $args, $user->uid, 10, $includes, TRUE
+      );
       break;
-    case 'Save VCF Import Setting':
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'save_vcf_import_mode':
       // dpm($form_state['values']);
       if ($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
         $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
@@ -1419,154 +1444,180 @@ function tpps_admin_panel_submit($form, &$form_state) {
       else {
         $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
       }
-      tpps_update_submission($state);
-      drupal_set_message(t('VCF disable import setting saved'), 'status');
+      tpps_submission_interface_update($state);
+      drupal_set_message(t('VCF disable import setting saved'));
       break;
 
-    case 'Save VCF Import Mode':
-      $vcf_import_mode = $form_state['values']['VCF_IMPORT_MODE'];
-      if ($form_state['values']['VCF_IMPORT_MODE'] == 'hybrid') {
-        $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = 'hybrid';
-      }
-      elseif ($form_state['values']['VCF_IMPORT_MODE'] == 'inserts') {
-        $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = 'inserts';
-      }
-      else {
-        $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = 'hybrid';
-      }
-      tpps_update_submission($state);
-      drupal_set_message(t("VCF import mode saved as '$vcf_import_mode'."), 'status');
+    case 'save_vcf_import_mode':
+      $mode = $form_state['values']['VCF_IMPORT_MODE'] ?? 'hybrid';
+      $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = $mode;
+      tpps_submission_interface_update($state);
+      drupal_set_message(
+        t('VCF import mode saved as @mode".', ['@mode' => $mode])
+      );
       break;
 
-    case "Regenerate genotype materialized view":
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'regenerate_genotype_materialized_view':
       global $user;
       $project_id = $state['ids']['project_id'] ?? NULL;
-      $includes = array();
+      $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-      $args = array($project_id);
-      $jid = tripal_add_job("Generate materialized view for $accession (project_id=$project_id)", 'tpps', 'tpps_generate_genotype_materialized_view', $args, $user->uid, 10, $includes, TRUE);
+      $args = [$project_id];
+      $jid = tripal_add_job("Generate materialized view for $accession "
+        . "(project_id=$project_id)",
+        'tpps', 'tpps_generate_genotype_materialized_view',
+        $args, $user->uid, 10, $includes, TRUE
+      );
       break;
 
-    case "Remove this study's markers and genotypes":
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'remove_study_markers_and_genotypes':
       global $user;
-      $includes = array();
+      $includes = [];
       // $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/markers_genotypes_utils');
-      $args = array($accession);
-      $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession", 'tpps', 'tpps_remove_all_markers_genotypes', $args, $user->uid, 10, $includes, TRUE);
-      // drupal_set_message(t('Tripal Job created to remove all study markers and genotypes from ' . $accession), 'status');
+      $args = [$accession];
+      $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession",
+        'tpps', 'tpps_remove_all_markers_genotypes',
+        $args, $user->uid, 10, $includes, TRUE
+      );
+      // drupal_set_message(t('Tripal Job created to remove all study '
+      // . 'markers and genotypes from @accession.', ['@accession' => $accession]
+      // ));
       break;
 
-    case "Change TGDR number":
-      // dpm($form_state['values']);
-
-      // Check if a valid tgdr number was supplied
-      if (!is_numeric($form_state['values']['CHANGE_TGDR_NUMBER'])) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'change_tgdr_number':
+      // Check if a valid tgdr number was supplied.
+      if (!is_numeric($form_state['values']['CHANGE_TGDR_NUMBER'] ?? NULL)) {
         drupal_set_message(t('You did not enter a valid number. Operation aborted.'));
         break;
       }
 
       $new_accession = 'TGDR' . $form_state['values']['CHANGE_TGDR_NUMBER'];
       // Check if the new tgdr number does not exist in the database
-      // if it exists, abort the mission
-      $results = chado_query('SELECT count(*) as c1 FROM public.tpps_submission WHERE accession = :new_accession', array(
-        ':new_accession' => $new_accession
-      ));
+      // if it exists, abort the mission.
+      $results = chado_query('SELECT count(*) as c1 FROM public.tpps_submission '
+        . 'WHERE accession = :new_accession',
+        [':new_accession' => $new_accession]
+      );
       $result_object = $results->fetchObject();
       // dpm($result_object);
       $result_count = $result_object->c1;
       if ($result_count > 0) {
-        drupal_set_message(t('It seems the TGDR number you wanted to change to is already in use. Operation aborted due to safety concerns.'));
+        drupal_set_message(t('It seems the TGDR number you wanted to change '
+          . 'to is already in use. Operation aborted due to safety concerns.'
+        ));
         break;
       }
       global $user;
-      $includes = array();
+      $includes = [];
       // $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/markers_genotypes_utils');
       $includes[] = module_load_include('inc', 'tpps', 'includes/submissions');
       $args = [$accession];
       // Job to remove genotype information and features.
-      $jid = tripal_add_job("TPPS REMOVE all study markers and genotypes - $accession", 'tpps', 'tpps_remove_all_markers_genotypes', $args, $user->uid, 10, $includes, TRUE);
+      $jid = tripal_add_job(
+        "TPPS REMOVE all study markers and genotypes - $accession",
+        'tpps', 'tpps_remove_all_markers_genotypes',
+        $args, $user->uid, 10, $includes, TRUE
+      );
 
       // Job to change the TGDR number to the new TGDR number.
       $args = [$accession, $new_accession];
-      $jid = tripal_add_job("TPPS rename $accession to $new_accession", 'tpps', 'tpps_change_tgdr_number', $args, $user->uid, 10, $includes, TRUE);
-
+      $jid = tripal_add_job("TPPS rename $accession to $new_accession",
+        'tpps', 'tpps_change_tgdr_number',
+        $args, $user->uid, 10, $includes, TRUE
+      );
 
       // Now run the new import for the new accession TGDR number.
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = array($new_accession);
-      $jid = tripal_add_job("TPPS Record Submission - $new_accession", 'tpps', 'tpps_submit_all', $args, $state['submitting_uid'], 10, $includes, TRUE);
+      $jid = tripal_add_job("TPPS Record Submission - $new_accession",
+        'tpps', 'tpps_submit_all',
+        $args, $state['submitting_uid'], 10, $includes, TRUE
+      );
       $state['job_id'] = $jid;
-      tpps_update_submission($state);
+      tpps_submission_interface_update($state);
       break;
 
-    case "Generate PopStruct FROM VCF":
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'generate_popstruct_from_vcf':
       global $user;
-      $includes = array();
+      $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
+      $page4_values = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
 
       // dpm($state['saved_values'][4]['organism-1']['genotype']['files']['vcf']);
-      if (!empty($state['saved_values'][4]['organism-1']['genotype']['files']['vcf'])) {
-        $vcf_fid = $state['saved_values'][4]['organism-1']['genotype']['files']['vcf'];
+      if (!empty($page4_values['organism-1']['genotype']['files']['vcf'])) {
+        $vcf_fid = $page4_values['organism-1']['genotype']['files']['vcf'];
         $vcf_file = file_load($vcf_fid);
         $location = tpps_get_location($vcf_file->uri);
         $args = array($accession, $location);
         // dpm($args);
-        $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession", 'tpps', 'tpps_generate_popstruct', $args, $user->uid, 10, $includes, TRUE);
+        $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession",
+          'tpps', 'tpps_generate_popstruct',
+          $args, $user->uid, 10, $includes, TRUE
+        );
       }
-      else if (!empty($state['saved_values'][4]['organism-1']['genotype']['files']['local_vcf'])) {
-        $location = strip_tags($state['saved_values'][4]['organism-1']['genotype']['files']['local_vcf']);
+      elseif (!empty($page4_values['organism-1']['genotype']['files']['local_vcf'])) {
+        $location = strip_tags($page4_values['organism-1']['genotype']['files']['local_vcf']);
         $args = array($accession, $location);
-        $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession", 'tpps', 'tpps_generate_popstruct', $args, $user->uid, 10, $includes, TRUE);
+        $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession",
+          'tpps', 'tpps_generate_popstruct',
+          $args, $user->uid, 10, $includes, TRUE
+        );
       }
       else {
-        // dpm($state['saved_values'][4]);
-        drupal_set_message("Could not find a VCF tied to organism-1, are you sure you linked a VCF file?");
+        drupal_set_message(t("Could not find a VCF tied to organism-1, "
+          . "are you sure you linked a VCF file?"
+        ));
       }
       break;
 
-    case "Refresh TPPS cvterms cache":
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'refresh_tpps_cvterms_cache':
       global $user;
-      $includes = array();
+      $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/cvterm_utils');
-      $args = array();
-      $jid = tripal_add_job("TPPS REFRESH CVTERMS CACHE", 'tpps', 'tpps_cvterms_clear_cache', $args, $user->uid, 10, $includes, TRUE);
-      // drupal_set_message(t('Tripal Job created to remove all study markers and genotypes from ' . $accession), 'status');
+      $args = [];
+      $jid = tripal_add_job('TPPS REFRESH CVTERMS CACHE', 'tpps',
+        'tpps_cvterms_clear_cache', $args, $user->uid, 10, $includes, TRUE
+      );
+      // drupal_set_message(t('Tripal Job created to remove all study '
+      //   . 'markers and genotypes from @accession.',
+      //   ['@accession' => $accession]
+      // ));
       break;
 
-    case 'Change TPPS Type':
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'change_tpps_type':
       // dpm($form_state['values']);
 
-      // Get the tpps_submission_id from the public.tpps_submission table
-      $results = chado_query('SELECT * FROM public.tpps_submission WHERE accession = :accession LIMIT 1', [
-        ':accession' => $accession
-      ]);
+      // Get the tpps_submission_id from the public.tpps_submission table.
+      $results = chado_query('SELECT * FROM public.tpps_submission
+        WHERE accession = :accession LIMIT 1',
+        [':accession' => $accession]
+      );
       $tpps_submission_id = NULL;
       foreach ($results as $row) {
         $tpps_submission_id = $row->tpps_submission_id;
       }
       // dpm('tpps_submission_id = ' . $tpps_submission_id);
       if ($tpps_submission_id == NULL) {
-        drupal_set_message(t('Could not find a TPPS SUBMISSION ID for this accession, contact administration'), 'error');
+        drupal_set_message(t('Could not find a TPPS SUBMISSION ID for this '
+          . 'accession, contact administration'), 'error');
         break;
       }
 
       if($form_state['values']['CHANGE_TPPS_TYPE'] == 'tppsc') {
         // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
-
-        // Set the state tpps_type to tppsc
+        // Set the state tpps_type to tppsc.
         $state['tpps_type'] = 'tppsc';
-
-        // Deprecated changing the user id since we adjusted TPPSc
-        // to allow curators to see all studies (3/6/2023)
-        // global $user;
-        // tpps_update_submission($state, array(
-        //   'uid' => $user->uid,
-        // ));
 
         // Update the submission tag table which in term will get rippled
         // into the ct_trees_all_view materialized view that filters internal and external submissions
@@ -1578,11 +1629,9 @@ function tpps_admin_panel_submit($form, &$form_state) {
             ':tpps_submission_id' => $tpps_submission_id
           ]
         );
-
       }
       else {
         // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
-
         // Set the state tpps_type to tpps
         $state['tpps_type'] = 'tpps';
 
@@ -1597,28 +1646,28 @@ function tpps_admin_panel_submit($form, &$form_state) {
           ]
         );
       }
-      tpps_update_submission($state);
-      drupal_set_message(t('Updated study TPPS type: ') . $state['tpps_type'], 'status');
+      tpps_submission_interface_update($state);
+      drupal_set_message(t('Updated study TPPS type: ') . $state['tpps_type']);
       break;
 
-    case 'Reject':
+    case 'reject':
       $lang = user_preferred_language($owner);
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
       $state['status'] = 'Incomplete';
-      tpps_update_submission($state);
-      drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
+      tpps_submission_interface_update($state);
+      drupal_set_message(t('Submission Rejected. Message has been sent to user.'));
       drupal_goto('<front>');
       break;
 
-    case 'Clear phenotype changes':
+    case 'clear_phenotype_changes':
       drupal_set_message('Cleared phenotype changes.');
       unset($state['phenotypes_edit']);
       unset($form_state['values']['phenotypes_edit']);
       unset($form_state['values']['phenotype_update']);
-      tpps_update_submission($state);
+      tpps_submission_interface_update($state);
       break;
 
-    case 'Save phenotype changes':
+    case 'save_phenotype_changes':
       drupal_set_message('Saved phenotype changes.');
       if (!empty($form_state['values']['phenotypes_edit'])) {
         $state['phenotypes_edit'] = $form_state['values']['phenotypes_edit'];
@@ -1626,10 +1675,10 @@ function tpps_admin_panel_submit($form, &$form_state) {
         unset($form_state['values']['phenotype_update']);
         unset($form_state['values']['phenotypes_edit']);
       }
-      tpps_update_submission($state);
+      tpps_submission_interface_update($state);
       break;
 
-    case 'Approve':
+    case 'approve':
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
       $uid = $user->uid;
@@ -1638,10 +1687,10 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $params['subject'] = "$type_label Submission Approved: "
         . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
       $params['accession'] = $state['accession'];
-      drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
+      drupal_set_message(t('Submission Approved! Message has been sent to user.'));
       $lang = user_preferred_language(user_load_by_name($to));
       drupal_mail('tpps', 'user_approved', $to, $lang, $params, $from, TRUE);
-      $state['revised_files'] = $state['revised_files'] ?? array();
+      $state['revised_files'] = $state['revised_files'] ?? [];
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
           if (!empty($form_state['values']["edit_file_{$fid}_check"])) {
@@ -1658,19 +1707,14 @@ function tpps_admin_panel_submit($form, &$form_state) {
         }
       }
 
-      $includes = array();
+      $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-      $args = array($accession);
+      $args = [$accession];
       if ($state['saved_values']['summarypage']['release']) {
-        $jid = tripal_add_job(
-          "$type_label Record Submission - $accession",
+        $jid = tripal_add_job("$type_label Record Submission - $accession",
           'tpps', 'tpps_submit_all',
-          $args,
-          $state['submitting_uid'],
-          10,
-          $includes,
-          TRUE
+          $args, $state['submitting_uid'], 10, $includes, TRUE
         );
         $state['job_id'] = $jid;
       }
@@ -1678,72 +1722,72 @@ function tpps_admin_panel_submit($form, &$form_state) {
         $date = $state['saved_values']['summarypage']['release-date'];
         $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
         if (time() > $time) {
-          $jid = tripal_add_job(
-            "$type_label Record Submission - $accession",
-            'tpps',
-            'tpps_submit_all',
-            $args,
-            $state['submitting_uid'],
-            10,
-            $includes,
-            TRUE
+          $jid = tripal_add_job("$type_label Record Submission - $accession",
+            'tpps', 'tpps_submit_all',
+            $args, $state['submitting_uid'], 10, $includes, TRUE
           );
           $state['job_id'] = $jid;
         }
         else {
-          $delayed_submissions = variable_get('tpps_delayed_submissions', array());
+          $delayed_submissions = variable_get('tpps_delayed_submissions', []);
           $delayed_submissions[$accession] = $accession;
           variable_set('tpps_delayed_submissions', $delayed_submissions);
           $state['status'] = 'Approved - Delayed Submission Release';
         }
       }
-      tpps_update_submission($state);
+      tpps_submission_interface_update($state);
       break;
 
-    case 'Change Date':
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'change_date':
       $state['saved_values']['summarypage']['release-date'] = $form_state['values']['date'];
-      tpps_update_submission($state);
+      tpps_submission_interface_update($state);
       break;
 
-    case 'Change Status':
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'change_state_status':
       $state['status'] = $form_state['values']['state-status'];
-      tpps_update_submission($state);
+      tpps_submission_interface_update($state);
       break;
 
-    case 'Change Study View Role':
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'change_study_view_role':
       $view_role = $form_state['values']['CHANGE_STUDY_VIEW_ROLE'];
       if ($view_role > 0) {
         $state['study_view_role'] = $view_role;
-        drupal_set_message('Study view role has been set to ' . user_roles(true)[$view_role]);
+        drupal_set_message(t(
+          'Study view role has been set to @role',
+          ['@role' => user_roles(true)[$view_role]]
+        ));
       }
       else {
         unset($state['study_view_role']);
-        drupal_set_message('Study view role set to public all users');
+        drupal_set_message(t('Study view role set to public all users'));
       }
-      tpps_update_submission($state);
-
+      tpps_submission_interface_update($state);
       break;
 
-    case 'Save Alternative Accessions':
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'save_alternative_accessions':
       $old_alt_acc = $state['alternative_accessions'] ?? '';
       $new_alt_acc = $form_state['values']['alternative_accessions'];
       if ($old_alt_acc != $new_alt_acc) {
         tpps_submission_add_alternative_accession($state, explode(',', $new_alt_acc));
-
         $state['alternative_accessions'] = $new_alt_acc;
-        tpps_update_submission($state);
+        tpps_submission_interface_update($state);
       }
       break;
 
-    case 'Change Submission Owner':
-      $new_user = user_load_by_mail($form_state['values']['change_owner']);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'change_submission_owner':
+      $new_user = user_load_by_mail($form_state['values']['new_owner']);
       $state['submitting_uid'] = $new_user->uid;
-      tpps_update_submission($state, array(
-        'uid' => $new_user->uid,
-      ));
+      tpps_update_submission_info($accession, ['uid' => $new_user->uid]);
+      tpps_submission_interface_update($state);
       break;
 
-    case 'Sync Publication':
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    case 'sync_publication_data':
       // dpm('State title:');
       // dpm($state['title']);
       // dpm('Project ID:');
@@ -1755,12 +1799,13 @@ function tpps_admin_panel_submit($form, &$form_state) {
       // dpm($state['pyear']);
 
       $pub_id = db_select('chado.project_pub', 'p')
-      ->fields('p', array('pub_id'))
-      ->condition('project_id', $state['ids']['project_id'])
-      ->execute()->fetchObject()->pub_id;
+        ->fields('p', ['pub_id'])
+        ->condition('project_id', $project_id)
+        ->execute()
+        ->fetchObject()
+        ->pub_id;
       if (!empty($pub_id)) {
-        $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
-
+        $bundle = tripal_load_bundle_entity(['label' => 'Publication']);
 
         $pub_entity_id = NULL;
         try {
@@ -1824,18 +1869,23 @@ function tpps_admin_panel_submit($form, &$form_state) {
                 // dpm($filtered_matches);
                 if (count($filtered_matches) > 0) {
                   $state['authors'] = $filtered_matches;
-                  drupal_set_message('Found valid publication authors, synced with study.');
+                  drupal_set_message(t('Found valid publication authors, '
+                    . 'synced with study.')
+                  );
                 }
               }
             }
           }
-          // Save the submission state
-          tpps_update_submission($state);
-          drupal_set_message('Done.');
+          // Update Submision Interface.
+          tpps_submission_interface_update($state);
+          drupal_set_message(t('Done.'));
         }
       }
       else {
-        drupal_set_message('Could not find a valid pub_id for this study. Edit via TPPSc and make sure you have connected this study to a valid paper');
+        drupal_set_message(t('Could not find a valid pub_id for this study. '
+          . 'Edit via TPPSc and make sure you have connected this '
+          . 'study to a valid paper'
+        ));
       }
       break;
 
@@ -1876,5 +1926,33 @@ function tpps_admin_panel_reports(array &$form) {
     '#collapsible' => TRUE,
     '#collapsed' => FALSE,
     'table' => ['#markup' => theme('item_list', ['items' => $items])],
+  ];
+}
+
+/**
+ * Builds fieldset with single submit button.
+ *
+ * @param array $form
+ *   Admin Panel Form.
+ * @param array $data
+ *   Section's data. Keys are:
+ *   'key' string
+ *      Unique Section Key. Will be used for fieldset and submit button '#name'.
+ *   'title' string
+ *     Localized title for Fieldset and action button.
+ *   'description' string
+ *      Optional. Localized description of section.
+ */
+function tpps_admin_panel_add_section(array &$form, array $data) {
+  $form[$data['key']] = [
+    '#type' => 'fieldset',
+    '#title' => $data['title'] ?? $data['key'] ?? '',
+    '#description' => $data['description'] ?? '',
+    'submit' => [
+      '#type' => 'submit',
+      '#value' => $data['title'],
+      '#name' => $data['key'],
+      '#weight' => 100,
+    ],
   ];
 }

@@ -131,7 +131,8 @@ function tpps_submission_interface_create(array $form_state = []) {
   // be applied first. Using simple integers will allow to easily detect
   // which version must be applied.
   $current_version = tpps_submission_interface_get_version($interface);
-// @TODO Remove debug code.
+
+  // @TODO Remove debug code.
   if ($debug_mode) {
     dpm($current_version);
   }
@@ -211,13 +212,16 @@ function tpps_submission_interface_get_version(array $form_state) {
  * @return array
  *   Returns array with Submission Interface data prepared for pipeline processing.
  *   Returns empty array if Submission wan't found.
+ *
+ *
+ *   @TODO Add caching see tpps_load_submission_state().
  */
 function tpps_submission_interface_load($accession) {
   $result = db_select('tpps_submission', 's')
     ->fields('s', ['submission_interface'])
     ->condition('accession', $accession)
     ->range(0, 1)
-    ->execute()->fetchObject();
+    ->execute()->fetchAssoc();
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (!$result) {
@@ -233,23 +237,23 @@ function tpps_submission_interface_load($accession) {
       ->condition('dbx.accession', $accession)
       ->condition('s.status', 'Approved')
       ->range(0, 1);
-    $result = $query->execute()->fetchObject();
+    $result = $query->execute()->fetchAssoc();
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Process results.
   if ($result) {
-    if (!empty($result->submission_interface)) {
-      return unserialize($result->submission_interface);
+    if (!empty($result['submission_interface'])) {
+      return unserialize($result['submission_interface']);
     }
     else {
       // Update Submission Interface array.
-      $interface = tpps_submission_interface_update(
-        tpps_load_submission($accession)
-      );
-      if (!empty($interface)) {
-        return $interface;
-      }
+      //if ($submission_state = tpps_load_submission_state($accession)) {
+      //  $interface = tpps_submission_interface_update($submission_state);
+      //  if (!empty($interface)) {
+      //    return $interface;
+      //  }
+      //}
     }
   }
   else {

@@ -15,77 +15,138 @@ module_load_include('inc', 'tpps', 'includes/submission_file');
 module_load_include('inc', 'tpps', 'includes/submission_interface');
 
 /**
- * This function loads a TPPS Submission based on the provided accession number.
+ * Loads a TPPS Submission Info.
  *
- * If the state option is set to false, this function will return the full
- * tpps_submission table record for the submission. Otherwise, the function will
- * return only the form_state of the submission. The state option defaults to
- * True.
+ * Columns 'submission_state' and 'submission_interface' will be excluded
+ * to reduce size of data and speed-up processing. To get:
+ * - 'state': tpps_load_submission_state($accession);
+ * - 'interface': tpps_submission_interface_load($accession);
+ *
+ * Caching:
+ * Disabled (or cold cache): 11 msec
+ * Drupal Cache Bin (warm cache): 3 msec.
+ * Static Cache: 0.003 msec.
+ *
+ * Replacement:
+ * tpps_load_submission($accession, TRUE) -> tpps_load_submission_state($accession);
+ * tpps_load_submission($accession, FALSE) -> tpps_load_submission_info($accession);
+ *
+ * @param string $accession
+ *   The Submission Accession Number like 'TGDRxxxx'.
+ * @param bool $reset
+ *   Flag is cache must be resetted. Default if FALSE.
+ *
+ * @return mixed
+ *   Returns an array with Submission's Info from DB table 'tpps_submission'.
+ *   Returns NULL if study wasn't found.
+ */
+function tpps_load_submission_info($accession, $reset = FALSE) {
+  $key = $accession;
+  $static_cache = &drupal_static(__FUNCTION__);
+  if ($reset || !isset($static_cache[$key])) {
+    $cid = __FUNCTION__;
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($cid, $cache_bin);
+    if ($reset || empty($cache) || !isset($cache->data[$key])) {
+      $cache->data[$key] = NULL;
+      // Get new data.
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Exclude 'submission_interface' and 'submission_state' columns.
+      // To get them use:
+      // 'interface': tpps_submission_interface_load($accession);
+      // 'state': tpps_load_submission_state($accession);
+      $fields = array_diff(
+        array_keys(drupal_get_schema('tpps_submission')['fields']),
+        ['submission_interface', 'submission_state']
+      );
+      $result = db_select('tpps_submission', 's')
+        ->fields('s', $fields)
+        ->condition('accession', $accession)
+        ->range(0, 1)
+        ->execute()
+        ->fetchAssoc();
+
+      if (!$result) {
+        // Search for alternative accessions.
+        $query = db_select('tpps_submission', 's');
+        $query->join('tpps_submission_dbxref', 's_dbx',
+          's.tpps_submission_id = s_dbx.tpps_submission_id');
+        $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
+        $query->fields('s', $fields);
+        $query->condition('dbx.accession', $accession);
+        $query->condition('s.status', 'Approved');
+        $query->range(0, 1);
+        $query = $query->execute();
+        $result = $query->fetchAssoc();
+      }
+      if ($result) {
+        $cache->data[$key] = $result;
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      cache_set($cid, $cache->data, $cache_bin);
+    }
+    $static_cache[$key] = $cache->data[$key] ?? NULL;
+  }
+  return $static_cache[$key] ?? NULL;
+}
+
+/**
+ * Loads a TPPS Submission Form State Array.
+ *
+ * Caching:
+ * Disabled (or cold cache): 15 msec
+ * Drupal Cache Bin (warm cache): 7 msec.
+ * Static Cache: 0.004 msec.
  *
  * @param string $accession
  *   The accession number of the submission.
- * @param bool $state
- *   An option to return only the state of the TPPS Submission. Default to True.
+ * @param bool $reset
+ *   Flag is cache must be resetted. Default if FALSE.
  *
- * @global stdClass $user
- *   The user trying to access the submission.
- *
- * @return array|object
- *   The form_state of the TPPS Submission form.
+ * @return mixed
+ *   Returns Submission From State array or NULL if not found.
  */
-function tpps_load_submission($accession, $state = TRUE) {
-  // Exclude 'submission_interface' column. To get it use:
-  // tpps_submission_interface_load($accession);
-  $fields = array_diff(
-    array_keys(drupal_get_schema('tpps_submission')['fields']),
-    ['submission_interface']
-  );
-  $result = db_select('tpps_submission', 's')
-    ->fields('s', $fields)
-    ->condition('accession', $accession)
-    ->range(0, 1)
-    ->execute()->fetchObject();
-
-  if ($result) {
-    if ($state) {
-      return unserialize($result->submission_state);
+function tpps_load_submission_state($accession, $reset = FALSE) {
+  $key = $accession;
+  $static_cache = &drupal_static(__FUNCTION__);
+  if ($reset || !isset($static_cache[$key])) {
+    // Get value.
+    $cid = __FUNCTION__;
+    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
+    $cache = cache_get($cid, $cache_bin);
+    if ($reset || empty($cache) || !isset($cache->data[$key])) {
+      $cache->data[$key] = NULL;
+      // Get new data.
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      $result = db_select('tpps_submission', 's')
+        ->fields('s', ['submission_state'])
+        ->condition('accession', $accession)
+        ->range(0, 1)
+        ->execute()
+        ->fetchAssoc();
+      if (!$result) {
+        // Search for alternative accessions.
+        $query = db_select('tpps_submission', 's');
+        $query->join('tpps_submission_dbxref', 's_dbx',
+          's.tpps_submission_id = s_dbx.tpps_submission_id'
+        );
+        $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
+        $query->fields('s', ['submission_state']);
+        $query->condition('dbx.accession', $accession);
+        $query->condition('s.status', 'Approved');
+        $query->range(0, 1);
+        $query = $query->execute();
+        $result = $query->fetchAssoc();
+      }
+      if ($result) {
+        $cache->data[$key] = unserialize($result['submission_state']);
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      cache_set($cid, $cache->data, $cache_bin);
     }
-    return $result;
+    $static_cache[$key] = $cache->data[$key] ?? NULL;
   }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Search for alternative accessions.
-  $query = db_select('tpps_submission', 's');
-  $query->join('tpps_submission_dbxref', 's_dbx', 's.tpps_submission_id = s_dbx.tpps_submission_id');
-  $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-  // Exclude 'submission_interface' column. To get it use:
-  // tpps_submission_interface_load($accession);
-  $query->fields('s', $fields);
-  $query->condition('dbx.accession', $accession);
-  $query->condition('s.status', 'Approved');
-  $query->range(0, 1);
-  $query = $query->execute();
-  $result = $query->fetchObject();
-
-  if ($result) {
-    if ($state) {
-      return unserialize($result->submission_state);
-    }
-    return $result;
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Provide legacy support for older TPPS submissions.
-  // @TODO Both dev- and live-sites stil have studies stored in variables.
-  // They must be removed to improve performance of site.
-  global $user;
-  $state = variable_get('tpps_incomplete_' . $user->mail . $accession, NULL);
-  if (!empty($state)) {
-    return $state;
-  }
-  else {
-    return variable_get('tpps_complete_' . $user->mail . $accession, NULL);
-  }
+  return $static_cache[$key] ?? NULL;
 }
 
 /**
@@ -240,33 +301,38 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
 }
 
 /**
- * This function updates the form_state of a submission.
+ * Updates Submission Information in DB table 'tpps_submission'.
  *
- * Additional attributes of the submission record can be updated by populating
- * the options parameter.
+ * @param string $accession
+ *   The Study accession.
+ * @param array $options
+ *   Values for existing columns in DB table 'tpps_submission'.
+ */
+function tpps_update_submission_info($accession, array $options = []) {
+  db_update('tpps_submission')
+    ->fields($options)
+    ->condition('accession', $accession)
+    ->execute();
+}
+
+/**
+ * Updates Submission State in DB table 'tpps_submission'.
  *
  * @param array $form_state
  *   The Submission's Form State.
- * @param array $options
- *   Additional submission attributes to update.
  */
-function tpps_update_submission(array &$form_state, array $options = []) {
+function tpps_update_submission_state(array &$form_state) {
   if (empty($accession = $form_state['accession'] ?? NULL)) {
     watchdog('tpps', "Submission Form State wan't updated because "
       . "of empty 'accession' field.", [], WATCHDOG_ERROR
     );
     return;
   }
-  if (empty($options['status']) and !empty($form_state['status'])) {
-    $options['status'] = $form_state['status'];
-  }
   $form_state['updated'] = time();
-  $options['submission_state'] = serialize($form_state);
-  $options['submission_interface'] = serialize(
-    tpps_submission_interface_create($form_state)
-  );
   db_update('tpps_submission')
-    ->fields($options)
+    ->fields([
+      'submission_state' => serialize($form_state),
+    ])
     ->condition('accession', $accession)
     ->execute();
 }
