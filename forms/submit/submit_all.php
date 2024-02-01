@@ -1074,7 +1074,6 @@ function tpps_submit_phenotype(array &$interface, $i, TripalJob &$job = NULL) {
     $phenotypes_meta = [];
     $data_fid = $phenotype['file'];
     // Get all phenotype data provided by admin to override submitted data.
-    $phenos_edit = $interface['phenotypes_edit'] ?? NULL;
     tpps_add_project_file($interface, $data_fid);
     $env_phenotypes = FALSE;
     // Populate $phenotypes_meta with manually entered metadata.
@@ -1082,10 +1081,6 @@ function tpps_submit_phenotype(array &$interface, $i, TripalJob &$job = NULL) {
       $name = strtolower($phenotype['phenotypes-meta'][$j]['name']);
       $phenotypes_meta[$name] = [];
       $phenotypes_meta[$name]['desc'] = $phenotype['phenotypes-meta'][$j]['description'];
-      // Override phenotype metadata submitted by user with admin's data.
-      if (!empty($phenos_edit[$j])) {
-        $phenotype['phenotypes-meta'][$j] = $phenos_edit[$j] + $phenotype['phenotypes-meta'][$j];
-      }
       $phenotypes_meta[$name]['attr'] = $phenotype['phenotypes-meta'][$j]['attribute'];
       if ($phenotype['phenotypes-meta'][$j]['attribute'] == 'other') {
         $phenotypes_meta[$name]['attr-other'] = $phenotype['phenotypes-meta'][$j]['attr-other'];

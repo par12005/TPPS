@@ -8,6 +8,8 @@
  * submissions.
  */
 
+module_load_include('inc', 'tpps', 'includes/common');
+
 /**
  * Creates the administrative panel form.
  *
@@ -402,10 +404,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       unset($form['params']);
     }
 
-    if (preg_match('/P/', $page2_values['data_type'])) {
-      tpps_phenotype_editor($form, $form_state, $submission_interface);
-    }
-
     $form['approve-check'] = [
       '#type' => 'checkbox',
       '#title' => t('This submission has been reviewed and approved.'),
@@ -668,157 +666,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     // '#field_prefix' => 'TGDR',
     '#description' => t('WARNING: do not include TGDR.'),
   ];
-}
-
-/**
- * Build form for administrators to edit phenotypes.
- *
- * @param array $form
- *   The form element to be populated.
- * @param array $form_state
- *   The state of the form element to be populated.
- * @param array $submission
- *   The submission being managed.
- *
- * @TODO Remove this code. It's not used.
- */
-function tpps_phenotype_editor(array &$form, array &$form_state, array &$submission) {
-  // [VS] #8669rmrw5
-  $page4 = &$submission['saved_values'][TPPS_PAGE_4];
-  $form['phenotypes_edit'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Admin Phenotype Editor'),
-    '#tree' => TRUE,
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    '#description' => t('Note: The phenotype editor does not have any '
-      . 'validation measures in place. This means that fields in this '
-      . 'section that are left blank will be accepted by TPPS, and they '
-      . 'will override any user selections. Please be careful when editing '
-      . 'information in this section.'),
-  );
-
-  $phenotypes = [];
-  $unit_list = tpps_unit_get_list('all', ['debug' => FALSE], TRUE);
-
-  for ($i = 1; $i <= $submission['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
-    // @TODO Could we just skip when it's checked?
-    $phenotype = (!empty($page4["organism-$i"]['phenotype-repeat-check']))
-      ? $page4["organism-1"]['phenotype'] : $page4["organism-$i"]['phenotype'];
-    for ($j = 1; $j <= $phenotype['phenotypes-meta']['number']; $j++) {
-      $phenotypes[$j] = $phenotype['phenotypes-meta'][$j];
-      // Add units from submission.
-      $unit_list[$phenotypes[$j]['unit']]
-        = tpps_unit_get_name($phenotypes[$j]['unit'])
-        ?? $phenotypes[$j]['unit'];
-    }
-  }
-
-  // @todo get phenotypes from metadata file.
-  $attr_options = tpps_synonym_get_term_list('attribute_id');
-  $attr_options['other'] = 'My attribute term is not in this list';
-
-  $struct_options = tpps_synonym_get_term_list('structure_id');
-  $struct_options['other'] = 'My structure term is not in this list';
-  // [/VS].
-
-  foreach ($phenotypes as $num => $info) {
-    $form['phenotypes_edit'][$num] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Phenotype @num (@name):', array(
-        '@num' => $num,
-        '@name' => $info['name'],
-      )),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      'name' => array(
-        '#type' => 'textfield',
-        '#title' => t('Name'),
-        '#value' => $info['name'],
-        '#disabled' => TRUE,
-      ),
-      // [VS] #8669rmrw5.
-      'description' => array(
-        '#type' => 'textfield',
-        '#title' => t('Description'),
-        '#default_value' => $submission['phenotypes_edit'][$num]['description']
-          ?? $info['description'],
-      ),
-      'attribute' => array(
-        '#type' => 'select',
-        '#title' => t('Attribute'),
-        '#options' => $attr_options,
-        '#default_value' => $submission['phenotypes_edit'][$num]['attribute']
-          ?? $info['attribute'],
-      ),
-      'attr-other' => array(
-        '#type' => 'textfield',
-        '#title' => t('Other Attribute'),
-        '#autocomplete_path' => 'tpps/autocomplete/attribute',
-        '#states' => array(
-          'visible' => array(
-            ':input[name="phenotypes_edit[' . $num . '][attribute]"]'
-            => array('value' => 'other'),
-          ),
-        ),
-        '#default_value' => $submission['phenotypes_edit'][$num]['attr-other']
-          ?? $info['attr-other'],
-      ),
-      'structure' => array(
-        '#type' => 'select',
-        '#title' => t('Structure'),
-        '#options' => $struct_options,
-        '#default_value' => $submission['phenotypes_edit'][$num]['structure']
-          ?? $info['structure'],
-      ),
-      'struct-other' => array(
-        '#type' => 'textfield',
-        '#title' => t('Other Structure'),
-        '#autocomplete_path' => 'tpps/autocomplete/structure',
-        '#states' => array(
-          'visible' => array(
-            ':input[name="phenotypes_edit[' . $num . '][structure]"]'
-            => array('value' => 'other'),
-          ),
-        ),
-        '#default_value' => $submission['phenotypes_edit'][$num]['struct-other']
-          ?? $info['struct-other'],
-      ),
-
-      'unit' => [
-        '#type' => 'select',
-        '#title' => t('Unit'),
-        '#options' => $unit_list,
-        '#default_value' => $submission['phenotypes_edit'][$num]['unit']
-          ?? $info['unit'],
-      ],
-      'unit-other' => [
-        '#type' => 'textfield',
-        '#title' => t('Custom Unit'),
-        '#autocomplete_path' => 'tpps/autocomplete/unit',
-        '#states' => [
-          'visible' => [
-            ':input[name="phenotypes_edit[' . $num
-            . '][unit]"]' => ['value' => 'other'],
-          ],
-        ],
-        '#default_value' => $submission['phenotypes_edit'][$num]['unit-other']
-          ?? $info['unit-other'],
-      ],
-    );
-  }
-
-  $form['phenotypes_edit']['phenotype_update'] = [
-    '#type' => 'submit',
-    '#name' => 'save_phenotype_changes',
-    '#value' => t('Save phenotype changes'),
-  ];
-  $form['phenotypes_edit']['phenotype_clear'] = [
-    '#type' => 'submit',
-    '#name' => 'clear_phenotype_changes',
-    '#value' => t('Clear phenotype changes'),
-  ];
-  // [/VS] #8669rmrw5.
 }
 
 /**
@@ -1229,26 +1076,6 @@ function tpps_admin_panel_validate($form, &$form_state) {
       );
     }
 
-    // [VS]
-    // Custom Units are not allowed and must be manually reviewed/added
-    // by admin before study could be processed.
-    if ($form_state['triggering_element']['#name'] == 'save_phenotype_changes') {
-      foreach ($form_state['values']['phenotypes_edit'] as $key => $phenotype_meta) {
-        if (!is_array($phenotype_meta)) {
-          // There is a button [phenotype_update] => Save phenotype changes
-          // and later could be added other form elements.
-          continue;
-        }
-        if ($phenotype_meta['unit'] == 'other') {
-          form_set_error("phenotypes_edit][$key][unit-other",
-            "Phenotype $key is using Custom Unit. "
-            . "Please review, add new or use existing unit."
-          );
-        }
-      }
-    }
-    // [/VS]
-
     if ($form_state['triggering_element']['#name'] == 'approve') {
       $accession = $form_state['values']['accession'];
       $state = tpps_load_submission_state($accession);
@@ -1598,17 +1425,19 @@ function tpps_admin_panel_submit($form, &$form_state) {
       // dpm('tpps_submission_id = ' . $tpps_submission_id);
       if ($tpps_submission_id == NULL) {
         drupal_set_message(t('Could not find a TPPS SUBMISSION ID for this '
-          . 'accession, contact administration'), 'error');
+          . 'accession, contact administration'), 'error'
+        );
         break;
       }
 
-      if($form_state['values']['CHANGE_TPPS_TYPE'] == 'tppsc') {
+      if ($form_state['values']['CHANGE_TPPS_TYPE'] == 'tppsc') {
         // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
         // Set the state tpps_type to tppsc.
         $state['tpps_type'] = 'tppsc';
 
         // Update the submission tag table which in term will get rippled
-        // into the ct_trees_all_view materialized view that filters internal and external submissions
+        // into the ct_trees_all_view materialized view that filters
+        // internal and external submissions.
         chado_query('UPDATE public.tpps_submission_tag
           SET tpps_tag_id = 2
           WHERE tpps_submission_id = :tpps_submission_id
@@ -1624,7 +1453,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
         $state['tpps_type'] = 'tpps';
 
         // Update the submission tag table which in term will get rippled
-        // into the ct_trees_all_view materialized view that filters internal and external submissions
+        // into the ct_trees_all_view materialized view that filters
+        // internal and external submissions.
         chado_query('UPDATE public.tpps_submission_tag
           SET tpps_tag_id = 1
           WHERE tpps_submission_id = :tpps_submission_id
@@ -1638,6 +1468,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_set_message(t('Updated study TPPS type: ') . $state['tpps_type']);
       break;
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'reject':
       $lang = user_preferred_language($owner);
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
@@ -1648,25 +1479,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       drupal_goto('<front>');
       break;
 
-    case 'clear_phenotype_changes':
-      drupal_set_message('Cleared phenotype changes.');
-      unset($state['phenotypes_edit']);
-      unset($form_state['values']['phenotypes_edit']);
-      unset($form_state['values']['phenotype_update']);
-      tpps_submission_interface_update($state);
-      break;
-
-    case 'save_phenotype_changes':
-      drupal_set_message('Saved phenotype changes.');
-      if (!empty($form_state['values']['phenotypes_edit'])) {
-        $state['phenotypes_edit'] = $form_state['values']['phenotypes_edit'];
-        // Remove helper button.
-        unset($form_state['values']['phenotype_update']);
-        unset($form_state['values']['phenotypes_edit']);
-      }
-      tpps_submission_interface_update($state);
-      break;
-
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'approve':
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;

@@ -319,7 +319,6 @@ function tpps_form_state_info(array &$new, array &$old) {
   $new['admin_comments'] = $old['admin_comments'] ?? NULL;
   $new['alternative_accessions'] = $old['alternative_accessions'] ?? NULL;
   $new['data'] = $old['data'] ?? NULL;
-  $new['phenotypes_edit'] = $old['phenotypes_edit'] ?? NULL;
 }
 
 /**

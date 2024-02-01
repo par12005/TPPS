@@ -7,12 +7,14 @@
 
 define("TPPS_MAJOR_VERSION", 1);
 define("TPPS_MINOR_VERSION", 2);
-define("TPPS_JS_PATH", '/js/tpps.js');
-define("TPPS_CSS_PATH", '/css/tpps.css');
-define("TPPS_PAGE_1", 1);
-define("TPPS_PAGE_2", 2);
-define("TPPS_PAGE_3", 3);
-define("TPPS_PAGE_4", 4);
+define('TPPS_JS_PATH', '/js/tpps.js');
+define('TPPS_CSS_PATH', '/css/tpps.css');
+define('TPPS_PAGE_1', 1);
+define('TPPS_PAGE_2', 2);
+define('TPPS_PAGE_3', 3);
+define('TPPS_PAGE_4', 4);
+define('RESET_CACHE', TRUE);
+
 define("TPPS_TEMP_XLSX", "temporary://tpps_xlsx");
 define("TPPS_TEMP_ZIP", "temporary://tpps_zip");
 define("TPPS_OLS_BASE", "http://www.ebi.ac.uk/ols/api/");

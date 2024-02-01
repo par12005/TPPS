@@ -465,9 +465,6 @@ function tpps_submission_interface_get_change_list($version = NULL) {
         //
         //  Probably could be unset:
         // 'stage',
-        // 'phenotypes_edit'.
-        //
-        //
       ],
     ],
     // #86ayw8a7k Genotype Logic changes.
