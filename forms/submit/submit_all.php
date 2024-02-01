@@ -896,12 +896,19 @@ function tpps_submit_page_4(array &$interface, TripalJob &$job = NULL) {
 
   for ($i = 1; $i <= $organism_number; $i++) {
     // Get species codes.
-    $species_codes[$interface['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
-      'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
-      'organism_id' => $interface['ids']['organism_ids'][$i],
-    ), array(
-      'limit' => 1,
-    )))->value;
+    $species_codes[$interface['ids']['organism_ids'][$i]] = current(
+      chado_select_record(
+        'organismprop',
+        ['value'],
+        [
+          'type_id' => tpps_load_cvterm('organism 4 letter code')->cvterm_id,
+          'organism_id' => $interface['ids']['organism_ids'][$i],
+        ],
+        [
+          'limit' => 1,
+        ]
+      )
+    )->value;
 
     // Submit importer jobs.
     if (isset($page4_values["organism-$i"]['genotype'])) {

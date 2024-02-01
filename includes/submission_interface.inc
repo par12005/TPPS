@@ -135,7 +135,7 @@ function tpps_submission_interface_generate(array $form_state = []) {
   $debug_mode = FALSE;
   if (empty($form_state)) {
     watchdog('tpps', 'Empty Submission Form State.', [], WATCHDOG_WARNING);
-    return;
+    return [];
   }
 
   // Initialize Submission Interface.
@@ -148,11 +148,6 @@ function tpps_submission_interface_generate(array $form_state = []) {
   // be applied first. Using simple integers will allow to easily detect
   // which version must be applied.
   $current_version = tpps_submission_interface_get_version($interface);
-
-  // @TODO Remove debug code.
-  if ($debug_mode) {
-    dpm($current_version);
-  }
 
   $change_list = tpps_submission_interface_get_change_list();
   // We need to apply changes from 1st to $current version to have
@@ -180,26 +175,8 @@ function tpps_submission_interface_generate(array $form_state = []) {
       // Action-functions are (for search):
       // tpps_submission_interface_action_unset();
       // tpps_submission_interface_action_move().
-// @TODO Remove debug code.
-      if ($debug_mode) {
-        dpm(print_r(array_keys($interface), 1),
-          'Before call function ' . $function . '(). Version: ' . $i . ', action: ' . $action
-        );
-      }
-
       call_user_func_array($function, [&$interface, $action_data]);
-// @TODO Remove debug code.
-      if ($debug_mode) {
-        dpm(print_r(array_keys($interface), 1),
-          'After call function ' . $function . '(). Version: ' . $i . ', action: ' . $action
-        );
-      }
     }
-  }
-// @TODO Remove debug code.
-  if ($debug_mode) {
-    dpm(print_r($interface, 1), 'Final version of $interface');
-    dpm(print_r($form_state, 1), 'Final version of $form_state');
   }
   return $interface;
 }
@@ -269,13 +246,25 @@ function tpps_submission_interface_load($accession) {
     }
   }
   else {
-    // Calling code expects an array.
+    // We should return empty array to not break other code which expects array.
     return [];
   }
 }
 
 /**
  * Updates Submission Interface using given array.
+ *
+ * By default given array will overwrite SIA stored in DB but it could contain
+ * extra data if processing was completed and to store those data we could
+ * merge existing SIA with new values. To do this set variable:
+ *  variable_set('tpps_submission_interface_merge_on_update', TRUE);
+ * or use admin/config/tpps/form/main
+ * to check parameter 'Merge Submission Interface on update'.
+ *
+ * To update submission's status:
+ *   tpps_update_submission_info($accession, $data);
+ * To update submission's Form State:
+ *   tpps_update_submission_state($form_state);
  *
  * @param array $interface
  *   The Submission Interface Array.
@@ -288,10 +277,6 @@ function tpps_submission_interface_load($accession) {
  *   Returns Submission Interface Array which will have updated 'status' and
  *   'updated' fields.
  *   Returns NULL if $form_state or Study accession is empty.
- *
- * @todo Decide if SIA must be updated with status/dates and so on.
- * Should only $form_state be updated? I think those temp data must be stored
- * outside of those datasets.
  */
 function tpps_submission_interface_update(array &$interface, $status = NULL) {
   if (empty($interface) || empty($interface['accession'])) {
@@ -299,6 +284,13 @@ function tpps_submission_interface_update(array &$interface, $status = NULL) {
   }
 
   $accession = $interface['accession'];
+  // Merge or overwrite?
+  if (variable_get('tpps_submission_interface_merge_on_update', FALSE)) {
+    $interface = array_merge(
+      tpps_submission_interface_load($accession, RESET_CACHE),
+      $interface
+    );
+  }
   // Note: REQUEST_TIME couldn't be used because called from CLI script and
   // processing could take long time from script call.
   $interface['updated'] = time();
