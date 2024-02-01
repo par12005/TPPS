@@ -566,7 +566,7 @@ function tpps_table_display(array &$state, array $options = array()) {
   $flat = tpps_flatten($state);
   $map_api_key = variable_get('tpps_maps_api_key', NULL);
 
-  $rows = array();
+  $rows = [];
   $content = "";
   foreach ($flat as $key => $val) {
     if ($key[0] != '#') {
@@ -575,8 +575,12 @@ function tpps_table_display(array &$state, array $options = array()) {
       $key_str = filter_xss(check_plain($key)) . ' ';
       $val_str = filter_xss(check_plain($val));
 
-      if (preg_match('/File/', $key) and ($file = file_load($val) === FALSE) and stripos($key_str, 'VCF File (cluster)') === FALSE) {
-        // FILE NOT FOUND
+      if (
+        preg_match('/File/', $key)
+        && ($file = file_load($val) === FALSE)
+        && stripos($key_str, 'VCF File (cluster)') === FALSE
+      ) {
+        // FILE NOT FOUND.
         $val_str .= ' <span style="font-size: 32px;">🆘</span><span>(File missing)</span>';
       }
       if (preg_match('/File/', $key) and ($file = file_load($val))) {
@@ -586,7 +590,10 @@ function tpps_table_display(array &$state, array $options = array()) {
 
         $file_url = check_plain(file_create_url($file->uri));
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
-        if (!empty($state['revised_files'][$val]) and ($revised_file = file_load($state['revised_files'][$val]))) {
+        if (
+          !empty($state['revised_files'][$val])
+          && ($revised_file = file_load($state['revised_files'][$val]))
+        ) {
           $val = $state['revised_files'][$val];
           $file_url = check_plain(file_create_url($revised_file->uri));
           $file_name = $revised_file->filename;
@@ -594,9 +601,13 @@ function tpps_table_display(array &$state, array $options = array()) {
         }
 
         // @TODO [VS] Use Drupal Form API instead of HTML in PHP.
-        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button btn form-button form-submit\" type=\"button\" value=\"Preview file\"></input>";
+        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button btn "
+          . "form-button form-submit\" type=\"button\" value=\""
+          . t('Preview file') . "\"></input>";
         if (tpps_access('administer tpps module')) {
-          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button btn form-button form-submit\" type=\"button\" value=\"Show full file\"></input>";
+          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button "
+            . "btn form-button form-submit\" type=\"button\" value=\""
+            . t('Show full file') . "\"></input>";
         }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if (!$flat['#skip_loc']) {
@@ -604,23 +615,26 @@ function tpps_table_display(array &$state, array $options = array()) {
             $wrapper_id = "{$fid}_map_wrapper";
             $button_id = "{$fid}_map_button";
             $val_str .= "<div id=\"$wrapper_id\"></div>"
-              . "<input id=\"$button_id\" type=\"button\" class=\"btn form-button form-submit\" "
-              . "value=\"Click here to view plants on map!\"></input>";
+              . "<input id=\"$button_id\" type=\"button\" class=\"btn "
+              . "form-button form-submit\" value=\""
+              . t('Click here to view plants on map!') . "\"></input>";
 
-            drupal_add_js(array(
-              'tpps' => array(
-                'map_buttons' => array(
-                  $fid => array(
+            drupal_add_js([
+              'tpps' => [
+                'map_buttons' => [
+                  $fid => [
                     'wrapper' => $wrapper_id,
                     'button' => $button_id,
                     'fid' => $fid,
-                  ),
-                ),
-              ),
-            ), 'setting');
+                  ],
+                ],
+              ],
+            ], 'setting');
           }
           else {
-            $val_str .= "<br>This submission was submitted without validating location information. As a result, we did not import location information for these plants.";
+            $val_str .= "<br>This submission was submitted without "
+              . "validating location information. As a result, we did not "
+              . "import location information for these plants.";
           }
         }
 
@@ -628,7 +642,11 @@ function tpps_table_display(array &$state, array $options = array()) {
           $val_str .= "<div id=\"file_{$file->fid}_options_dest\"></div>";
         }
       }
-      elseif (preg_match('/species photo/', $key) and (file_load($val)) and ($file_name = file_load($val)->filename)) {
+      elseif (
+        preg_match('/species photo/', $key)
+        && (file_load($val))
+        && ($file_name = file_load($val)->filename)
+      ) {
         $file_url = check_plain(file_create_url(file_load($val)->uri));
         $val_str = "<img src='$file_url' width='100%'>";
         $val_str .= "<br><a href='$file_url' target='blank'>$file_name</a>";
@@ -647,7 +665,12 @@ function tpps_table_display(array &$state, array $options = array()) {
           continue;
         }
       }
-      elseif (preg_match('/Study Location/', $key) and isset($flat['#location_type']) and $flat['#location_type']) {
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      elseif (
+        preg_match('/Study Location/', $key)
+        && isset($flat['#location_type'])
+        && $flat['#location_type']
+      ) {
         // Add map capability to location.
         if ($flat['#location_type'] == '2') {
           $query = $val_str;
@@ -657,11 +680,15 @@ function tpps_table_display(array &$state, array $options = array()) {
         }
         $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
         if (isset($query)) {
-          $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" allowfullscreen> </iframe></div>";
+          $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;"
+            . "height:100%\\\" src=\\\"https://www.google.com/maps?q=$query"
+            . "&output=embed&key=AIzaSyDkeQ6KN6HEBxrIoiSCrCHFhIbipycqouY&z=5\\\" "
+            . "allowfullscreen> </iframe></div>";
           $js = "jQuery(document).ready(function ($) {
             jQuery(\"#sidebar_map\").click(function() {
               jQuery(\"#sidebar_map_wrapper\").remove();
-              jQuery(\"#sidebar_map\").after( \"<br><div id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
+              jQuery(\"#sidebar_map\").after( \"<br><div
+                id=\\\"sidebar_map_wrapper\\\">$map</div>\" );
             });
           });";
           drupal_add_js($js, 'inline');
@@ -688,36 +715,31 @@ function tpps_table_display(array &$state, array $options = array()) {
     }
   }
   if (!empty($map_api_key)) {
-    $content .= "<script src=\"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/markerclusterer.js\"></script><script src=\"https://maps.googleapis.com/maps/api/js?key=$map_api_key&callback=initMap\"
-    async defer></script>";
+    $content .= "<script src=\"https://developers.google.com/maps/"
+      . "documentation/javascript/examples/markerclusterer/markerclusterer.js\">"
+      . "</script><script src=\"https://maps.googleapis.com/maps/api/js"
+      . "?key=$map_api_key&callback=initMap\" async defer></script>";
   }
 
-  $headers = array(
-    'Field',
-    'Value',
-  );
-
-  $vars = array(
+  $headers = ['Field', 'Value'];
+  $vars = [
     'header' => $headers,
     'rows' => $rows,
-    'attributes' => array(
-      'class' => array('view'),
+    'attributes' => [
+      'class' => ['view'],
       'id' => 'tpps_table_display',
-    ),
+    ],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  );
-
-  $photo = "";
+  ];
   if (!empty($flat['#study_photo'])) {
     $url = check_plain(file_create_url(file_load($flat['#study_photo'])->uri));
-    $photo = "<img src=\"$url\" style=\"display: block; margin-left: auto; margin-right: auto;\"></img>";
+    $photo = "<img src=\"$url\" style=\"display: block; margin-left: "
+      . "auto; margin-right: auto;\"></img>";
   }
-
-  $display = $photo . theme('table', $vars) . $content;
-
+  $display = ($photo ?? '') . theme('table', $vars) . $content;
   return $display;
 }
 

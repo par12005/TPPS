@@ -1453,16 +1453,21 @@ function tpps_main_submit($form, &$form_state) {
         $form_state['stage'] = TPPS_PAGE_4;
       }
       else {
+        $accession = $form_state['accession'];
         $form_state['status'] = 'Pending Approval';
         $form_state['completed'] = time();
         tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
         tpps_update_submission_state($form_state);
-        tpps_submission_interface_create($form_state);
-        tpps_update_submission_info($form_state['accession'],
-          ['status' => $form_state['status']]
+        // Save Submission Info.
+        tpps_update_submission_info(
+          $accession, ['status' => $form_state['status']]
         );
+        // Save Submission Interface Array.
+        $interface = tpps_submission_interface_generate($form_state);
+        tpps_submission_interface_update($interface);
+
         tpps_submit_email($form_state);
-        drupal_goto("completed-submission/{$form_state['accession']}");
+        drupal_goto('completed-submission/' . $accession);
         return;
       }
       break;
@@ -1725,6 +1730,7 @@ function tppsc_main_submit($form, &$form_state) {
     tpps_main_submit($form, $form_state);
   }
   else {
+    $accession = $form_state['accession'];
     $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
     $persist = TRUE;
 
@@ -1736,12 +1742,15 @@ function tppsc_main_submit($form, &$form_state) {
       $form_state['completed'] = time();
       tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
       tpps_update_submission_state($form_state);
-      tpps_submission_interface_create($form_state);
-      tpps_update_submission_info($form_state['accession'],
-        ['status' => $form_state['status']]
+      // Update Submission Info.
+      tpps_update_submission_info(
+        $accession, ['status' => $form_state['status']]
       );
+      // Save Submission Interface Array.
+      $interface = tpps_submission_interface_generate($form_state);
+      tpps_submission_interface_update($interface);
       tpps_submit_email($form_state);
-      drupal_goto("completed-submission/{$form_state['accession']}");
+      drupal_goto('completed-submission/' . $accession);
       return;
     }
 
@@ -1815,7 +1824,8 @@ function tpps_block_view_alter(&$data, $block) {
               $wrapper_id = "{$fid}_map_wrapper";
               $button_id = "{$fid}_map_button";
               $val_str .= "<div id=\"$wrapper_id\"></div>"
-                . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\"></input>";
+                . "<input id=\"$button_id\" type=\"button\" value=\"Click "
+                . "here to view plants on map!\"></input>";
               $form['#attached']['js'][] = [
                 'type' => 'setting',
                 'data' => [

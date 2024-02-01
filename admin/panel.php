@@ -105,7 +105,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     . "'TPPS Record Submission - $accession' ORDER BY submit_date DESC LIMIT 1;");
   $job_id = -1;
   while ($row_array = $results->fetchObject()) {
-    // dpm($row_array);
     // $display .= print_r($row_array, true);
     $job_id = $row_array->job_id;
   }
@@ -212,7 +211,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Tags.
   $submission_tags = tpps_submission_get_tags($submission_interface['accession']);
-  // dpm($submission_tags);
   $tags_markup = "<div style='margin-bottom: 10px; font-weight: bold; "
     . "text-decoration: underline;'><a target=\"_blank\" href=\"/tpps-tag\">"
     . "Manage Global TPPS Submission Tags</a></div>";
@@ -231,7 +229,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
       . "style=\"background-color:$color; $style\"><span "
       . "class=\"tag-text\">{$result->name}</span>";
     if (!$result->static) {
-      $tags_markup .= "<span id=\"{$submission_interface['accession']}-tag-{$result->tpps_tag_id}-remove\" "
+      $tags_markup .= "<span id=\"{$submission_interface['accession']}-tag-"
+        . "{$result->tpps_tag_id}-remove\" "
         . "class=\"tag-close\"><img src=\"/{$image_path}remove.png\"></span>";
     }
     $tags_markup .= "</span>";
@@ -284,8 +283,9 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   $form['TAG_REMOVE_CONTAINER']['TAG_REMOVE_OPTION'] = [
     '#type' => 'select',
-    '#title' => 'Remove the following selected tag',
-    '#description' => 'This will delete a tag that has been already <br />added to this study',
+    '#title' => t('Remove the following selected tag'),
+    '#description' => t('This will delete a tag that has been already '
+      . '<br />added to this study'),
     '#options' => $current_tags_options,
     '#attributes' => ['style' => 'width: 100%'],
     '#default_value' => '',
@@ -303,7 +303,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#suffix' => '</div>',
   ];
 
-  // This code will generate all tag options that we can add
+  // This code will generate all tag options that we can add.
   $all_add_tags_options = [];
   $all_add_tags_results = chado_query('SELECT * FROM tpps_tag
     WHERE tpps_tag_id NOT IN (
@@ -332,7 +332,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#name' => 'add_tag',
     '#suffix' => '<div style="margin-bottom: 30px;"></div>'
   ];
-
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Reject/Approve and comments.
@@ -406,7 +405,6 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     if (preg_match('/P/', $page2_values['data_type'])) {
       tpps_phenotype_editor($form, $form_state, $submission_interface);
     }
-
 
     $form['approve-check'] = [
       '#type' => 'checkbox',
@@ -545,11 +543,10 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     'title' => t('Change Submission Owner'),
   ];
   tpps_admin_panel_add_section($form, $section);
-  $submitting_user = user_load($submission_interface['submitting_uid']);
   $form[$section['key']]['new_owner'] = [
     '#type' => 'textfield',
     '#title' => t('Choose a new owner for the submission'),
-    '#default_value' => $submitting_user->mail ?? '',
+    '#default_value' => tpps_get_user_email($submission_info['uid']),
     '#autocomplete_path' => 'tpps/autocomplete/user',
   ];
 
@@ -869,7 +866,7 @@ function tpps_admin_panel_top(array &$form) {
     $submission_info = tpps_load_submission_info($accession, $reset = TRUE);
 
     if (empty($submitting_user_cache[$submission_info['uid']])) {
-      $mail = user_load($submission_info['uid'])->mail;
+      $mail = tpps_get_user_email($submission_info['uid']);
       $query = db_select('chado.contact', 'c');
       $query->join('chado.contactprop', 'cp', 'cp.contact_id = c.contact_id');
       $query->condition('cp.value', $mail);
@@ -913,12 +910,7 @@ function tpps_admin_panel_top(array &$form) {
               $contact_bundle = tripal_load_bundle_entity(
                 ['label' => 'Tripal Contact Profile']
               );
-              $owner_mail = db_select('users', 'u')
-                ->fields('u', ['mail'])
-                ->condition('uid', $submission_info['uid'])
-                ->range(0, 1)
-                ->execute()
-                ->fetchField();
+              $owner_mail = tpps_get_user_email($submission_info['uid']);
               $owner = "$submitting_user ($owner_mail)";
 
               // If Tripal Contact Profile is available, we want to link to the
@@ -1260,7 +1252,6 @@ function tpps_admin_panel_validate($form, &$form_state) {
     if ($form_state['triggering_element']['#name'] == 'approve') {
       $accession = $form_state['values']['accession'];
       $state = tpps_load_submission_state($accession);
-      dpm($accession);
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
           if (
@@ -1505,7 +1496,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
         [':new_accession' => $new_accession]
       );
       $result_object = $results->fetchObject();
-      // dpm($result_object);
       $result_count = $result_object->c1;
       if ($result_count > 0) {
         drupal_set_message(t('It seems the TGDR number you wanted to change '
@@ -1552,13 +1542,11 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $page4_values = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
 
-      // dpm($state['saved_values'][4]['organism-1']['genotype']['files']['vcf']);
       if (!empty($page4_values['organism-1']['genotype']['files']['vcf'])) {
         $vcf_fid = $page4_values['organism-1']['genotype']['files']['vcf'];
         $vcf_file = file_load($vcf_fid);
         $location = tpps_get_location($vcf_file->uri);
         $args = array($accession, $location);
-        // dpm($args);
         $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession",
           'tpps', 'tpps_generate_popstruct',
           $args, $user->uid, 10, $includes, TRUE
@@ -1597,7 +1585,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'change_tpps_type':
-      // dpm($form_state['values']);
 
       // Get the tpps_submission_id from the public.tpps_submission table.
       $results = chado_query('SELECT * FROM public.tpps_submission
@@ -1793,16 +1780,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'sync_publication_data':
-      // dpm('State title:');
-      // dpm($state['title']);
-      // dpm('Project ID:');
       $project_id = $state['ids']['project_id'] ?? NULL;
-      // dpm($project_id);
-      // dpm($state['publication']);
-      // dpm(array_keys($state));
-      // dpm($state['authors']);
-      // dpm($state['pyear']);
-
       $pub_id = db_select('chado.project_pub', 'p')
         ->fields('p', ['pub_id'])
         ->condition('project_id', $project_id)
@@ -1817,24 +1795,23 @@ function tpps_admin_panel_submit($form, &$form_state) {
           $pub_entity_id = chado_get_record_entity_by_bundle($bundle, $pub_id);
         }
         catch (Exception $ex) {
-          // couldn't find a publication entity
+          // Couldn't find a publication entity.
         }
 
         if (!isset($pub_entity_id)) {
           drupal_set_message('Could not find a matching publication safely. Will not synchronize data.');
         }
         else {
-          drupal_set_message("Publication entity id found ($pub_entity_id), retrieving publication data...");
-          // dpm('pub_entity_id:'. $pub_entity_id);
-          // This will return results as an array
-          $publication_entity_results = tripal_load_entity('TripalEntity', array($pub_entity_id));
-          // Get the entity
+          drupal_set_message("Publication entity id found ($pub_entity_id), "
+            . "retrieving publication data...");
+          // This will return results as an array.
+          $publication_entity_results = tripal_load_entity('TripalEntity',
+            [$pub_entity_id]
+          );
+          // Get the entity.
           $publication_entity = $publication_entity_results[$pub_entity_id];
-          // dpm($publication_entity);
-          // dpm($publication_entity->title);
           if (isset($publication_entity->title)) {
             $pub_title = $publication_entity->title;
-            // dpm('pub_title:' . $pub_title);
             if ($pub_title != "") {
               drupal_set_message('Found a valid publication title, syncing with study.');
               $state['title'] = $pub_title;
@@ -1842,7 +1819,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
           }
           if (isset($publication_entity->tpub__year['und'][0]['safe_value'])) {
             $pub_year = $publication_entity->tpub__year['und'][0]['safe_value'];
-            // dpm('pub_year:' . $pub_year);
             if ($pub_year != "") {
               drupal_set_message('Found a valid publication year, synced with study.');
               $state['pyear'] = $pub_year;
@@ -1850,7 +1826,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
           }
           if (isset($publication_entity->tpub__abstract['und'][0]['value'])) {
             $pub_abstract = $publication_entity->tpub__abstract['und'][0]['value'];
-            // dpm('pub_abstract:' . $pub_abstract);
             if ($pub_abstract != "") {
               drupal_set_message('Found a valid publication abstract, synced with study.');
               $state['abstract'] = $pub_abstract;
@@ -1858,20 +1833,16 @@ function tpps_admin_panel_submit($form, &$form_state) {
           }
           if (isset($publication_entity->tpub__authors['und'][0]['value'])) {
             $pub_authors = $publication_entity->tpub__authors['und'][0]['value'];
-            // dpm('pub_authors:' . $pub_authors);
             if ($pub_authors != "") {
               preg_match_all('/.[^,]+,*/', $pub_authors, $matches);
-              // dpm($matches);
               if (count($matches) > 0) {
                 $actual_matches = $matches[0];
-                // dpm($actual_matches);
                 $filtered_matches = array();
                 foreach ($actual_matches as $match) {
                   $match = str_replace(',','',$match);
                   $match = trim($match);
                   array_push($filtered_matches, $match);
                 }
-                // dpm($filtered_matches);
                 if (count($filtered_matches) > 0) {
                   $state['authors'] = $filtered_matches;
                   drupal_set_message(t('Found valid publication authors, '

@@ -10,7 +10,7 @@
  * Submission interface initially is a copy of the Submission Form State
  * modified for Submission Pipeline to always have the same structure and
  * data format (type). For this each Submission Form State has version
- * (default version is '1') and function tpps_submission_interface_create()
+ * (default version is '1') and function tpps_submission_interface_generate()
  * will convert existing $form_state to the $submission_interface which
  * will be stored in public.tpps_submissions database table.
  *
@@ -57,7 +57,7 @@
  * Usage tips.
  *
  * To get updated and serialized Submission Interface ready to be stored in DB:
- * 'submission_interface' => serialize(tpps_submission_interface_create($state)),
+ * 'submission_interface' => serialize(tpps_submission_interface_generate($state)),
  *
  * To exclude only 'submission_interface' from the list of query's fields:
  *   $query = db_select('tpps_submission', 's')
@@ -104,6 +104,23 @@ define('TPPS_SUBMISSION_INTERFACE_VERSION', 'submission_interface_version');
 define('TPPS_SUBMISSION_INTERFACE_INIT_VERSION', 1);
 
 /**
+ * Generates new Submission Interface by Submission Accession.
+ *
+ * @param string $accession
+ *   Study Accession.
+ *
+ * @return mixed
+ *   Returns array with datastructure prepared for TPPS pipeline
+ *   (submit_all.php script).
+ *   Returns empty array if $form_state is empty too.
+ */
+function tpps_submission_interface_new($accession) {
+  $form_state = tpps_load_submission_state($accession, 1);
+  $interface = tpps_submission_interface_generate($form_state);
+  return tpps_submission_interface_update($interface);
+}
+
+/**
  * Creates Submission Interface from $form_state array.
  *
  * @param array $form_state
@@ -114,7 +131,7 @@ define('TPPS_SUBMISSION_INTERFACE_INIT_VERSION', 1);
  *   (submit_all.php script).
  *   Returns empty array if $form_state is empty too.
  */
-function tpps_submission_interface_create(array $form_state = []) {
+function tpps_submission_interface_generate(array $form_state = []) {
   $debug_mode = FALSE;
   if (empty($form_state)) {
     watchdog('tpps', 'Empty Submission Form State.', [], WATCHDOG_WARNING);

@@ -366,7 +366,7 @@ function tpps_update_old_submissions() {
         'dbxref_id' => $dbxref_id,
         'submission_state' => serialize($state),
         'submission_interface' => serialize(
-          tpps_submission_interface_create($state)
+          tpps_submission_interface_generate($state)
         ),
       ))
       ->execute();

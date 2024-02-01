@@ -212,7 +212,7 @@ function tpps_create_submission(array $state, $uid) {
     'accession' => $state['accession'],
     'dbxref_id' => $state['dbxref_id'],
     'submission_state' => serialize($state),
-    'submission_interface' => serialize(tpps_submission_interface_create($state)),
+    'submission_interface' => serialize(tpps_submission_interface_generate($state)),
   );
 
   db_insert('tpps_submission')
