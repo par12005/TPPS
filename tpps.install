@@ -2137,7 +2137,7 @@ function tpps_update_7122() {
 }
 
 /**
- * Adds new column to 'tpps_submission' table.
+ * Adds new column 'submission_interface' to 'tpps_submission' table.
  */
 function tpps_update_7123() {
   $table_name = 'public.tpps_submission';
