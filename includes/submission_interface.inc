@@ -264,13 +264,8 @@ function tpps_submission_interface_load($accession) {
       return unserialize($result['submission_interface']);
     }
     else {
-      // Update Submission Interface array.
-      //if ($submission_state = tpps_load_submission_state($accession)) {
-      //  $interface = tpps_submission_interface_update($submission_state);
-      //  if (!empty($interface)) {
-      //    return $interface;
-      //  }
-      //}
+      // Create new Submission Interface and return it.
+      return tpps_submission_interface_new($accession);
     }
   }
   else {
