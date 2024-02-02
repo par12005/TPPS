@@ -905,7 +905,7 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
         $db_id = $fasta['db']['db_id'];
 
         $run_args = array(
-          k'importer_class' => $class,
+          'importer_class' => $class,
           'file_remote' => $file_remote,
           'analysis_id' => $analysis_id,
           'seqtype' => $seqtype,
