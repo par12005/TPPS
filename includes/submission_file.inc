@@ -8,21 +8,21 @@
  * module_load_include('inc', 'tpps', 'includes/submission_file');
  */
 
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
 /**
  * Gets form submission state, prepares files for import.
  *
  * @param array $state
  *   TPPS Submission State.
- * @param bool $show_report
- *   When TRUE report will be shown using drupal_set_message().
+ * @param array $form
+ *   If not empty then report fieldset will be added to form.
  *
  * @return array
  *   Returns list of File IDs or empty array.
  */
-function tpps_submission_file_get_id_list(array $state, $show_report = FALSE) {
+function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   $result = [];
+  $form['#attributes']['class'][] = 'tpps-submission';
+  tpps_add_css_js('theme', $form);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Complete Form.
   $method_name = 'complete form';
@@ -79,6 +79,10 @@ function tpps_submission_file_get_id_list(array $state, $show_report = FALSE) {
       foreach (tpps_submission_file_get_parents($organism_number) as $parents) {
         $step = ($parents[0] == 'tree-accession') ? TPPS_PAGE_3 : TPPS_PAGE_4;
         if (!empty($state['saved_values'][$step])) {
+          // When form became outdated (6+ hours) and cron removed temporary
+          // files then resubmitting form cause errors at site. Probably
+          // correct solution is to redirect to submittion edit page
+          // Note: Redirect using GET request not yet implemented. Only POST.
           $fid_list[] = drupal_array_get_nested_value(
             $state['saved_values'][$step],
             $parents
@@ -94,22 +98,28 @@ function tpps_submission_file_get_id_list(array $state, $show_report = FALSE) {
     $result = array_merge($result, $fid_list);
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Show Report.
-  if ($show_report) {
-    drupal_set_message(t("Submisssion's Files detection report"));
-    foreach ($report as $method => $list) {
-      $count = count($list);
-      drupal_set_message(t('Method "@method": @status. @list',
-        [
-          '@method' => $method,
-          '@status' => ((bool) $count
-            ? t('Found @count', ['@count' => $count])
-            : t('Not found')),
-          '@list' => ($count ? 'List: ' . implode(', ', $list) . '.' : ''),
-        ]
-      ));
-    }
+  // Report.
+  $rows = [];
+  foreach ($report as $method => $list) {
+    $count = count($list);
+    $rows[] = [
+      check_plain($method),
+      ($count ? check_plain($count) : t('Not found')),
+      check_plain(implode(', ', $list)),
+    ];
   }
+  if ($rows) {
+    tpps_form_add_report($form, [
+      'files_detection_methods' => [
+        'title' => t('Files Detection Methods'),
+        'data' => theme('table', [
+          'header' => [t('Method'), t('Status'), t('List')],
+          'rows' => $rows,
+        ]),
+      ],
+    ]);
+  }
+
   $result = array_unique($result);
   return $result;
 }
@@ -126,9 +136,9 @@ function tpps_submission_file_get_id_list(array $state, $show_report = FALSE) {
  *   0 - temporary. Will be removed by cron in 6h.
  */
 function tpps_submission_file_set_status(array $form_state, $status = FILE_STATUS_PERMANENT) {
-  $fid_list = tpps_submission_file_get_id_list($form_state, FALSE);
+  $fid_list = tpps_submission_file_get_id_list($form_state);
   foreach ($fid_list as $fid) {
-    $file = file_load($fid);
+    $file = file_load($fid ?? '');
     if ($file && $file->status != $status) {
       $file->status = $status;
       file_save($file);

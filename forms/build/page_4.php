@@ -75,7 +75,6 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           ],
         ];
         $phenotype_dir = variable_get('tpps_phenotype_files_dir', 'tpps_phenotype');
-
         $form["organism-$i"]['phenotype']['format'][0]['#prefix'] =
           '<figure><img src="/' . TPPS_IMAGES_PATH . 'phenotype_format_1.png">'
           . '<figcaption></figcaption></figure>';
@@ -140,7 +139,10 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
           '#type' => 'hidden',
           '#value' => $column_options,
         ];
-        $form["organism-$i"]['phenotype']['file']['no-header'] = [];
+        // Ability to use file without header was disabled to make validation
+        // simplier and to avoid problems with processing those files.
+        // File without header will not pass validation.
+        //$form["organism-$i"]['phenotype']['file']['no-header'] = [];
       }
 
       // This will check if there are Time Phenotypes saved from the
@@ -184,7 +186,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
 /**
  * Generates a Curation Diagnostic Tool form.
  *
- * Form has 7 buttons.
+ * Note: Form has 7 buttons.
  *
  * @param array $chest
  *   Container for a data. Keys are:
@@ -194,7 +196,7 @@ function tpps_add_curation_tool(array $chest) {
   global $user;
   // Only for curation team and admins.
   if (!in_array('administrator', $user->roles) && !in_array('Curation', $user->roles)) {
-    //return;
+    return;
   }
   $form = &$chest['form'];
   $form_state = $chest['form_state'];
@@ -217,61 +219,31 @@ function tpps_add_curation_tool(array $chest) {
     // Must be below navigation buttons Back/Next which has weight 1000 in footer.
     '#weight' => 1100,
   ];
-
-  // 1st row of buttons.
-  tpps_add_curation_tool_button(
-    $form,
-    'button-check-accession-file-tree-ids',
-    'Check Accession File Tree Ids'
-  );
-  tpps_add_curation_tool_button(
-    $form, 'button-check-vcf-tree-ids', 'Check VCF Tree IDs'
-  );
-  tpps_add_curation_tool_button(
-    $form,
-    'button-compare-accession-tree-ids-vs-vcf-tree-ids',
-    'Compare Accession and VCF Tree IDs'
-  );
-  // 2nd row of buttons.
-  tpps_add_curation_tool_button(
-    $form, 'button-check-vcf-markers', 'Check VCF Markers'
-  );
-  tpps_add_curation_tool_button(
-    $form, 'button-check-snps-assay-markers', 'Check SNPs Assay Markers'
-  );
-  tpps_add_curation_tool_button(
-    $form, 'button-check-snps-design-markers', 'Check SNPs Design Markers'
-  );
-  // 3rd row of buttons.
-  tpps_add_curation_tool_button(
-    $form,
-    'button-compare-vcf-makers-vs-snps-assay-markers',
-    'Compare VCF and SNPs Assay markers'
-  );
-
+  $list = [
+    // 1st row of buttons.
+    'button-check-accession-file-tree-ids' => 'Check Accession File Tree Ids',
+    'button-check-vcf-tree-ids' => 'Check VCF Tree IDs',
+    'button-compare-accession-tree-ids-vs-vcf-tree-ids' => 'Compare Accession and VCF Tree IDs',
+    // 2nd row of buttons.
+    'button-check-vcf-markers' => 'Check VCF Markers',
+    'button-check-snps-assay-markers' => 'Check SNPs Assay Markers',
+    'button-check-snps-design-markers' => 'Check SNPs Design Markers',
+    // 3rd row of buttons.
+    'button-compare-vcf-makers-vs-snps-assay-markers' => 'Compare VCF and SNPs Assay markers',
+  ];
+  // Add an action buttons.
+  foreach ($list as $key => $title) {
+    $form['diagnostics-curation'][$key] = [
+      '#type' => 'button',
+      '#value' => t($title),
+      '#attributes' => ['class' => [$key, 'form-button']],
+    ];
+  }
   $form['diagnostics-curation']['diagnostic-curation-results'] = [
     '#type' => 'container',
     '#attributes' => ['id' => 'diagnostic-curation-results'],
   ];
   tpps_add_css_js('page_4_curation_tool', $form);
-}
-
-/**
- * Generates an action button for Curation Diagnostic Tool.
- *
- * @param array $form
- *   Drupal Form API array.
- * @param string $key
- *   Unique button key.
- * @param string $name
- *   Human readable name of button.
- */
-function tpps_add_curation_tool_button(array &$form, $key, $name) {
-  $form['diagnostics-curation'][$key] = [
-    '#type' => 'button',
-    '#value' => t($name),
-    '#attributes' => ['class' => [$key]],
-  ];
 }
 
 /**

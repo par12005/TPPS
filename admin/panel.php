@@ -34,6 +34,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   else {
     tpps_manage_submission_form($form, $form_state, $accession);
   }
+  $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('main', $form);
   return $form;
 }
@@ -174,18 +175,22 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     }
   }
 
-  $form['accession'] = array(
+  $form['accession'] = [
     '#type' => 'hidden',
     '#value' => $accession,
-  );
-
-  $form['form_table'] = array(
+  ];
+  $form['form_table'] = [
     '#markup' => $display,
-  );
-
-  $form['file_diagnostics'] = array(
-    '#markup' => '<a class="btn btn-primary" target="_blank" href="file-diagnostics/' . $accession . '">Files diagnostics</a><br /><br />',
-  );
+  ];
+  $form['file_diagnostics'] = [
+    '#markup' => l(t('Files diagnostics'), 'file-diagnostics/' . $accession,
+      [
+        'attributes' => [
+          'class' => ['btn', 'btn-primary', 'form-submit'],
+          'target' => '_blank',
+        ],
+      ]) . '<br /><br />',
+  ];
 
   $submission_tags = tpps_submission_get_tags($submission_state['accession']);
   // dpm($submission_tags);
@@ -260,6 +265,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     '#title' => 'Remove the following selected tag',
     '#description' => 'This will delete a tag that has been already <br />added to this study',
     '#options' => $current_tags_options,
+    '#attributes' => ['style' => 'width: 100%'],
     '#default_value' => '',
   );
   $form['TAG_REMOVE_CONTAINER']['TAG_REMOVE_OPTION_DO'] = array(
@@ -291,6 +297,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
     // '#suffix' => '</div>',
     '#description' => 'This will add a tag that isn\'t already <br />added to this study',
     '#options' => $all_add_tags_options,
+    '#attributes' => ['style' => 'width: 100%'],
     '#default_value' => '',
   );
   $form['TAG_ADD_CONTAINER']['TAG_ADD_OPTION_DO'] = array(
@@ -663,6 +670,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
  *   The state of the form element to be populated.
  * @param array $submission
  *   The submission being managed.
+ *
+ * @TODO Remove this code. It's not used.
  */
 function tpps_phenotype_editor(array &$form, array &$form_state, array &$submission) {
   // [VS] #8669rmrw5
@@ -1002,53 +1011,52 @@ function tpps_admin_panel_top(array &$form) {
   );
 
 
-  $vars = array(
-    'attributes' => array(
-      'class' => array('view', 'tpps_table'),
-    ),
+  $vars = [
+    'attributes' => ['class' => ['view', 'tpps_table']],
     'caption' => '',
     'colgroups' => NULL,
     'sticky' => FALSE,
     'empty' => '',
-  );
+  ];
 
-  $vars['header'] = array(
-    'Accession Number',
-    'Approval date',
-    'Publication Status',
-    'Submission Owner',
-  );
+  $vars['header'] = [
+    t('Accession Number'),
+    t('Approval date'),
+    t('Publication Status'),
+    t('Submission Owner'),
+    t('Actions'),
+  ];
   $vars['rows'] = $unpublished_old;
   $unpublished_table = theme('table', $vars);
 
-  $vars['header'] = array(
-    'Accession Number',
-    'Submitting User',
-    'Title',
-    'Date Submitted',
-    'Tags',
-  );
+  $vars['header'] = [
+    t('Accession Number'),
+    t('Submitting User'),
+    t('Title'),
+    t('Date Submitted'),
+    t('Tags'),
+  ];
   $vars['rows'] = $pending;
   $pending_table = theme('table', $vars);
 
-  $vars['header'] = array(
-    'Accession Number',
-    'Submitting User',
-    'Title',
-    'Status',
-    'Tags',
-  );
+  $vars['header'] = [
+    t('Accession Number'),
+    t('Submitting User'),
+    t('Title'),
+    t('Status'),
+    t('Tags'),
+  ];
   $vars['rows'] = $approved;
   $approved_table = theme('table', $vars);
 
-  $vars['header'] = array(
-    'Accession Number',
-    'Submitting User',
-    'Title',
-    'Stage',
-    'Last Updated',
-    'Tags',
-  );
+  $vars['header'] = [
+    t('Accession Number'),
+    t('Submitting User'),
+    t('Title'),
+    t('Stage'),
+    t('Last Updated'),
+    t('Tags'),
+  ];
   $vars['rows'] = $incomplete;
   $incomplete_table = theme('table', $vars);
 
@@ -1064,14 +1072,12 @@ function tpps_admin_panel_top(array &$form) {
   }
 
   if (!empty($pending)) {
-    $form['pending'] = array(
+    $form['pending'] = [
       '#type' => 'fieldset',
       '#title' => t('Pending TPPS submissions'),
       '#collapsible' => TRUE,
-      'table' => array(
-        '#markup' => $pending_table,
-      ),
-    );
+      'table' => ['#markup' => $pending_table],
+    ];
   }
 
   if (!empty($approved)) {
@@ -1153,23 +1159,33 @@ function tpps_admin_panel_top(array &$form) {
       );
     }
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // New Species table.
     if (!empty($rows)) {
-      $headers = array();
-
-      $vars = array(
-        'header' => $headers,
+      $vars = [
+        'header' => [],
         'rows' => $rows,
-        'attributes' => array(
-          'class' => array('view', 'tpps_table'),
+        'attributes' => [
+          'class' => ['view', 'tpps_table'],
           'id' => 'new_species',
-        ),
+        ],
         'caption' => '',
         'colgroups' => NULL,
         'sticky' => FALSE,
         'empty' => '',
-      );
+      ];
 
-      $form['new_species']['#markup'] = "<div class='tpps_table'><label for='new_species'>New Species: the species listed below likely need to be updated, because they do not have NCBI Taxonomy identifiers in the database.</label>" . theme('table', $vars) . "</div>";
+      $form['new_species'] = [
+        '#type' => 'fieldset',
+        '#title' => t('New Species'),
+        '#description' => t('The species listed below likely need to be '
+          . 'updated, because they do not have NCBI Taxonomy identifiers '
+          . 'in the database.'),
+        '#collapsible' => TRUE,
+        'table' => [
+          '#markup' => theme('table', $vars),
+        ],
+      ];
     }
     variable_set('tpps_new_organisms', $tpps_new_orgs);
   }
@@ -1267,8 +1283,6 @@ function tpps_admin_panel_validate($form, &$form_state) {
  */
 function tpps_admin_panel_submit($form, &$form_state) {
   global $base_url;
-  $type = $form_state['tpps_type'] ?? 'tpps';
-  $type_label = ($type == 'tpps') ? 'TPPS' : 'TPPSC';
 
   $accession = $form_state['values']['accession'];
   $submission = tpps_load_submission($accession, FALSE);
@@ -1276,19 +1290,30 @@ function tpps_admin_panel_submit($form, &$form_state) {
   $to = $owner->mail;
   $state = unserialize($submission->submission_state);
   $state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
-  $params = array();
-
+  $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $from = variable_get('site_mail', '');
-  $params['subject'] = "$type_label Submission Rejected: {$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+
+  // @TODO Minor. We could try find type using '#form_id' under $state['values'].
+  $type = $state['tpps_type'] ?? 'tpps';
+  $type_label = ($type == 'tpps') ? t('TPPS') : t('TPPSC');
+
+  $params = [];
+  $params['subject'] = t('@type_label Submission Rejected: @title',
+    [
+      '@type_label' => $type_label,
+      '@title' => $page1_values['publication']['title'] ?? NULL,
+    ]
+  );
   $params['uid'] = $owner->uid;
   $params['reject-reason'] = $form_state['values']['reject-reason'] ?? NULL;
   $params['base_url'] = $base_url;
-  $params['title'] = $state['saved_values'][TPPS_PAGE_1]['publication']['title'];
+  $params['title'] = $page1_values['publication']['title'] ?? NULL;
   $params['body'] = '';
+  $params['type'] = $type;
+  $params['type_label'] = $type_label;
 
-  $params['headers'][] = 'MIME-Version: 1.0';
-  $params['headers'][] = 'Content-type: text/html; charset=iso-8859-1';
-
+  // @TODO Check why this variables are set because I didn't found them in
+  // database but each variable is an extra DB query.
   if (isset($form_state['values']['params'])) {
     foreach ($form_state['values']['params'] as $param_id => $type) {
       variable_set("tpps_param_{$param_id}_type", $type);
@@ -1549,7 +1574,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
       break;
 
     case 'Reject':
-      drupal_mail($type, 'user_rejected', $to, user_preferred_language($owner), $params, $from, TRUE);
+      $lang = user_preferred_language($owner);
+      drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
       $state['status'] = 'Incomplete';
       tpps_update_submission($state);
       drupal_set_message(t('Submission Rejected. Message has been sent to user.'), 'status');
@@ -1585,15 +1611,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
         . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
       $params['accession'] = $state['accession'];
       drupal_set_message(t('Submission Approved! Message has been sent to user.'), 'status');
-      drupal_mail(
-        $type,
-        'user_approved',
-        $to,
-        user_preferred_language(user_load_by_name($to)),
-        $params,
-        $from,
-        TRUE
-      );
+      $lang = user_preferred_language(user_load_by_name($to));
+      drupal_mail('tpps', 'user_approved', $to, $lang, $params, $from, TRUE);
       $state['revised_files'] = $state['revised_files'] ?? array();
       foreach ($state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {

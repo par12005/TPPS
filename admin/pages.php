@@ -79,7 +79,8 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
   foreach ($file_lists as $title => $fid_list) {
     $sublist = [];
     foreach ($fid_list as $fid) {
-      if ($file = file_load($fid)) {
+      $file = file_load($fid ?? '');
+      if ($file && $file->filesize) {
         $sublist[] = '<strong>' . $fid . '</strong> - '
           . l($file->filename, file_create_url($file->uri), $options);
       }

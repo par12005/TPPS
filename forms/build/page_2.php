@@ -23,9 +23,12 @@ require_once 'page_2_helper.php';
  *   The completed Study Design form.
  */
 function tpps_page_2_create_form(array &$form, array $form_state) {
-  tpps_study_date('Starting', $form, $form_state);
-
-  tpps_study_date('Ending', $form, $form_state);
+  module_load_include('inc', 'tpps', 'includes/form');
+  $is_tppsc = tpps_form_is_tppsc($form_state);
+  if (!$is_tppsc) {
+    tpps_study_date('Starting', $form, $form_state);
+    tpps_study_date('Ending', $form, $form_state);
+  }
 
   $options = array(
     0 => '- Select -',
@@ -53,61 +56,54 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#options' => $options,
     '#prefix' => '<legend><span class="fieldset-legend"><div class="fieldset-title">Study Design</div></span></legend>',
   );
-
-  $form['study_type'] = array(
+  tpps_form_autofocus($form, 'data_type');
+  $form['study_type'] = [
     '#type' => 'select',
     '#title' => t('Study Type: *'),
-    '#options' => array(
-      0 => t('- Select -'),
-      1 => t('Natural Population (Landscape)'),
-      2 => t('Growth Chamber'),
-      3 => t('Greenhouse'),
-      4 => t('Experimental/Common Garden'),
-      5 => t('Plantation'),
-    ),
-    '#ajax' => array(
+    '#options' => tpps_form_get_study_type(),
+  ];
+  if (!$is_tppsc) {
+    $form['study_type']['#ajax'] = [
       'wrapper' => 'study_info',
       'callback' => 'tpps_study_type_callback',
-    ),
-  );
+    ];
+    $form['study_info'] = array(
+      '#type' => 'fieldset',
+      '#tree' => TRUE,
+      '#collapsible' => TRUE,
+      '#prefix' => '<div id="study_info">',
+      '#suffix' => '</div>',
+    );
+    $type = tpps_get_ajax_value($form_state, array('study_type'), 0);
 
-  $form['study_info'] = array(
-    '#type' => 'fieldset',
-    '#tree' => TRUE,
-    '#collapsible' => TRUE,
-    '#prefix' => '<div id="study_info">',
-    '#suffix' => '</div>',
-  );
+    switch ($type) {
+      case '1':
+        tpps_natural_population($form['study_info']);
+        break;
 
-  $type = tpps_get_ajax_value($form_state, array('study_type'), 0);
+      case '2':
+        tpps_growth_chamber($form['study_info']);
+        break;
 
-  switch ($type) {
-    case '1':
-      tpps_natural_population($form['study_info']);
-      break;
+      case '3':
+        tpps_greenhouse($form['study_info']);
+        unset($form['study_info']['humidity']['uncontrolled']);
+        unset($form['study_info']['light']['uncontrolled']);
+        unset($form['study_info']['rooting']['ph']['uncontrolled']);
+        break;
 
-    case '2':
-      tpps_growth_chamber($form['study_info']);
-      break;
+      case '4':
+        tpps_common_garden($form['study_info']);
+        break;
 
-    case '3':
-      tpps_greenhouse($form['study_info']);
-      unset($form['study_info']['humidity']['uncontrolled']);
-      unset($form['study_info']['light']['uncontrolled']);
-      unset($form['study_info']['rooting']['ph']['uncontrolled']);
-      break;
+      case '5':
+        tpps_plantation($form['study_info']);
+        break;
 
-    case '4':
-      tpps_common_garden($form['study_info']);
-      break;
-
-    case '5':
-      tpps_plantation($form['study_info']);
-      break;
-
-    default:
-      $form['study_info']['#prefix'] = '<div id="study_info" style="display:none;">';
-      break;
+      default:
+        $form['study_info']['#prefix'] = '<div id="study_info" style="display:none;">';
+        break;
+    }
   }
   tpps_form_add_buttons(['form' => &$form, 'page' => 'page_2']);
   return $form;

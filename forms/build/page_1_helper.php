@@ -61,7 +61,7 @@ function tpps_publication(array &$form, array $values, array $form_state) {
 
   tpps_secondary_authors($form, $values, $form_state);
 
-  $form['publication']['status'] = array(
+  $form['publication']['status'] = [
     '#type' => 'select',
     '#title' => t('Publication Status: *'),
     '#options' => array(
@@ -70,11 +70,11 @@ function tpps_publication(array &$form, array $values, array $form_state) {
       'In Press' => t('In Press'),
       'Published' => t('Published'),
     ),
-    '#ajax' => array(
+    '#ajax' => [
       'callback' => 'tpps_pub_status',
       'wrapper' => 'pubyear',
-    ),
-  );
+    ],
+  ];
 
   tpps_year($form, $values, $form_state);
 
@@ -264,6 +264,9 @@ function tpps_secondary_authors(array &$form, array $values, array $form_state) 
  *
  * @return array
  *   The populated form.
+ *
+ *
+ * @TODO Doublecheck and remove. Currently function not used.
  */
 function tppsc_organism(array &$form, array &$form_state) {
   // TPPSc Form.

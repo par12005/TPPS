@@ -97,17 +97,9 @@ function tpps_flatten(array $state) {
     $data['Data Type'] = $page_2['data_type'];
   }
 
-  if (isset($page_2['study_type']) and $page_2['study_type']) {
-    $study_type_options = array(
-      1 => 'Natural Population (Landscape)',
-      2 => 'Growth Chamber',
-      3 => 'Greenhouse',
-      4 => 'Experimental/Common Garden',
-      5 => 'Plantation',
-    );
-    if (isset($study_type_options[$page_2['study_type']])) {
-      $data['Study Type'] = $study_type_options[$page_2['study_type']];
-    }
+  if (!empty($page_2['study_type'])) {
+    module_load_include('inc', 'tpps', 'includes/form');
+    $data['Study Type'] = tpps_form_get_study_type($page_2['study_type']);
 
     if (!empty($page_2['study_info']['season'])) {
       $data['Seasons Assessed'] = implode($page_2['study_info']['season']);
@@ -117,8 +109,8 @@ function tpps_flatten(array $state) {
       $data['Average number of assessions'] = $page_2['study_info']['assessions'];
     }
 
-    $data['Average High Temperature'] = isset($page_2['study_info']['temp']['high']) ? $page_2['study_info']['temp']['high'] : NULL;
-    $data['Average Low Temperature'] = isset($page_2['study_info']['temp']['low']) ? $page_2['study_info']['temp']['low'] : NULL;
+    $data['Average High Temperature'] = $page_2['study_info']['temp']['high'] ?? NULL;
+    $data['Average Low Temperature'] = $page_2['study_info']['temp']['low'] ?? NULL;
 
     $types = array(
       'co2' => 'CO2',
@@ -600,9 +592,11 @@ function tpps_table_display(array &$state, array $options = array()) {
           $file_name = $revised_file->filename;
           $val_str = "<a href='$file_url' target='blank'>$file_name</a> ( Revised from $val_str )";
         }
-        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button\" type=\"button\" value=\"Preview file\"></input>";
+
+        // @TODO [VS] Use Drupal Form API instead of HTML in PHP.
+        $val_str .= "<br><input id=\"fid_$val\" class=\"preview_button btn form-button form-submit\" type=\"button\" value=\"Preview file\"></input>";
         if (tpps_access('administer tpps module')) {
-          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button\" type=\"button\" value=\"Show full file\"></input>";
+          $val_str .= "<br><input id=\"fid_$val\" class=\"preview_full_button btn form-button form-submit\" type=\"button\" value=\"Show full file\"></input>";
         }
         if (preg_match('/^(.*)Accession File/', $key, $matches)) {
           if (!$flat['#skip_loc']) {
@@ -610,7 +604,8 @@ function tpps_table_display(array &$state, array $options = array()) {
             $wrapper_id = "{$fid}_map_wrapper";
             $button_id = "{$fid}_map_button";
             $val_str .= "<div id=\"$wrapper_id\"></div>"
-              . "<input id=\"$button_id\" type=\"button\" value=\"Click here to view plants on map!\"></input>";
+              . "<input id=\"$button_id\" type=\"button\" class=\"btn form-button form-submit\" "
+              . "value=\"Click here to view plants on map!\"></input>";
 
             drupal_add_js(array(
               'tpps' => array(
@@ -824,6 +819,7 @@ function tpps_tab_create($uid) {
       $name = isset($page_1['publication']['title']) ? ' titled ' . $page_1['publication']['title'] : '';
       $name = str_replace("'", "", $name); // remove single quotes
       $name = str_replace('"', "", $name); // remove double quotes
+      // @TODO It's not safe to use only JS confirmation.
       $accession_cell .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$name}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/tpps-submission/{$state['accession']}/delete\"}";
       $accession_cell .= "' name='op' class='form-button' value='Delete'>";
     }
