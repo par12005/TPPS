@@ -1002,7 +1002,7 @@ function tpps_submit_page_4(array &$interface, TripalJob &$job = NULL) {
 
   // Submit raw data.
   for ($i = 1; $i <= $organism_number; $i++) {
-    tpps_submit_phenotype($form_state, $i, $job);
+    tpps_submit_phenotype($interface, $i, $job);
 
     // Since $i is an organism order number and $species_codes are using
     // species id (cvterm id) they are not matches and this code assumes
