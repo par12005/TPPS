@@ -22,13 +22,13 @@
 function tpps_manage_doi($accession) {
   $output = "";
 
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission_state($accession);
 
   $token = variable_get('tpps_zenodo_api_key', NULL);
   if (!empty($token) and empty($form_state['zenodo_id'])) {
     $form_state['zenodo_id'] = tpps_generate_doi($accession)->id;
     $doi_object = tpps_doi_publish($form_state['zenodo_id']);
-    tpps_update_submission($form_state);
+    tpps_update_submission_state($form_state);
     $output .= "<h4>DOI successfully published!</h4>";
   }
   elseif (!empty($token) and !empty($form_state['zenodo_id'])) {
@@ -86,10 +86,10 @@ function tpps_doi_get_accession($doi, $reset = FALSE) {
   $cache = cache_get($cid, $cache_bin);
   $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
   if ($reset || !$is_cache_allowed || empty($cache)) {
-    $all_submissions = chado_query("SELECT * FROM public.tpps_submission;");
+    $all_submissions = chado_query("SELECT submission_interface FROM public.tpps_submission;");
     foreach ($all_submissions as $item) {
-      $form_state = unserialize($item->submission_state);
-      $submission_doi = strtolower($form_state['saved_values']['1']['doi'] ?? NULL);
+      $submission_interface = unserialize($item->submission_interface);
+      $submission_doi = strtolower($submission_interface['saved_values'][TPPS_PAGE_1]['doi'] ?? NULL);
       if ($submission_doi) {
         $cache->data[$submission_doi] = $item->accession ?? NULL;
       }

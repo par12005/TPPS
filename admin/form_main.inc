@@ -38,6 +38,17 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
     '#description' => t('Dark theme only changes backgraund color of the TPPS '
       . 'forms. Enabled by default at dev-server.'),
   ];
+  $form['tpps_submission_interface_merge_on_update'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Merge Submission Interface on update'),
+    '#default_value' => variable_get(
+      'tpps_submission_interface_merge_on_update', FALSE
+    ),
+    '#description' => t('By default Submission Interface Array (SIA) will '
+      . 'overwrite SIA stored in DB but it could contain extra data if '
+      . 'processing was completed and to store those data we could merge '
+      . 'existing SIA with new values.'),
+  ];
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);
 }

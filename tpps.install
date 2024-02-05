@@ -27,6 +27,7 @@ function tpps_install() {
   variable_set('tpps_theme', 'default');
   variable_set('tpps_top_bar', 'status');
   variable_set('tpps_dark_theme', FALSE);
+  variable_set('tpps_submission_interface_merge_on_update', TRUE);
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
   variable_set('tpps_front_show_pending_status_mine', FALSE);
@@ -329,6 +330,7 @@ function tpps_uninstall() {
   variable_del('tpps_theme');
   variable_del('tpps_top_bar');
   variable_del('tpps_dark_theme');
+  variable_del('tpps_submission_interface_merge_on_update');
   // Front page.
   variable_del('tpps_front_cache_accession_list');
   variable_del('tpps_front_show_pending_status_mine');
@@ -413,12 +415,18 @@ function tpps_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ),
-      'submission_state' => array(
+      'submission_state' => [
         'description' => 'The form_state of the submission.',
         'type' => 'blob',
         'size' => 'big',
         'not null' => TRUE,
-      ),
+      ],
+      'submission_interface' => [
+        'description' => 'Data for pipeline processing.',
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ],
     ),
     'foreign keys' => array(
       'uid' => array(
@@ -2128,4 +2136,24 @@ function tpps_update_7122() {
   variable_set('tpps_page_4_cache_unit_list', FALSE);
   // Front page.
   variable_set('tpps_front_cache_accession_list', TRUE);
+}
+
+/**
+ * Adds new column 'submission_interface' to 'tpps_submission' table.
+ */
+function tpps_update_7123() {
+  $table_name = 'public.tpps_submission';
+  $column_name = 'submission_interface';
+  if (!db_field_exists($table_name, $column_name)) {
+    $schema = drupal_get_schema($table_name);
+    // @TODO Test this update.
+    // db_add_field() not work but maybe because drupal's db user has no
+    // permission to alter tables?
+    // But executed in pgmyadmin query worked:
+    //   ALTER TABLE tpps_submission ADD COLUMN submission_interface text;
+    //
+    //db_add_field($table_name, $column_name, $schema['fields'][$column_name]);
+    $sql = 'ALTER TABLE tpps_submission ADD COLUMN submission_interface text;';
+    db_query($sql);
+  }
 }

@@ -42,7 +42,7 @@ function tpps_api_paths() {
     'access arguments' => array('access content'),
     'delivery callback' => 'drupal_json_output',
     'type' => MENU_CALLBACK,
-  );  
+  );
 
   // tpps/api/check_accession calls tpps_api_check_accession on a provided
   // accession number. It will return TRUE for accessions with a valid
@@ -62,8 +62,8 @@ function tpps_api_paths() {
   // form_state of the submission.
   $items['tpps/api/submission/%'] = array(
     'title' => 'TPPS Raw Submissions',
-    'page callback' => 'tpps_load_submission',
-    'page arguments' => array(3),
+    'page callback' => 'tpps_load_submission_state',
+    'page arguments' => [3],
     'access callback' => 'tpps_access',
     'access arguments' => array('access content'),
     'delivery callback' => 'drupal_json_output',
@@ -162,7 +162,7 @@ function tpps_api_check_accession($accession = NULL) {
     return FALSE;
   }
 
-  return tpps_load_submission($accession) ? TRUE : FALSE;
+  return tpps_load_submission_state($accession) ? TRUE : FALSE;
 }
 
 /**
@@ -172,7 +172,7 @@ function tpps_api_check_accession($accession = NULL) {
  *   The accession number of the submission with the associated files.
  */
 function tpps_api_compress_files($accession = NULL) {
-  $state = tpps_load_submission($accession);
+  $state = tpps_load_submission_state($accession);
   if (empty($state)) {
     throw new Exception('Invalid state accession number');
   }
@@ -205,7 +205,12 @@ function tpps_api_compress_files($accession = NULL) {
   exit;
 }
 
-
+/**
+ * Refreshes materialized views.
+ *
+ * @return bool
+ *   Returns TRUE.
+ */
 function tpps_api_refresh_views() {
   db_query('refresh materialized view chado.tpps_search_genotype_name;');
   db_query('refresh materialized view chado.tpps_search_genotype_marker;');

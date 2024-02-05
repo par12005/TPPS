@@ -1024,3 +1024,59 @@ function tpps_form_get_study_type($key = NULL) {
   ];
   return is_null($key) ? $options : ($options[$key] ?? NULL);
 }
+
+/**
+ * Gets parent element and field name from the given path.
+ *
+ * Drupal allows to get/set nested field's values using function
+ * drupal_array_get_nested_value() but to unset (or relocate) you need
+ * to have parent element by reference. This function get's parent element
+ * and suggests to store field name in the end of the list of parents.
+ * Used in includes/submission_interface.inc.
+ *
+ * @param array $array
+ *   Array where field will be searched.
+ * @param mixed $path
+ *   Path to the field format:
+ *   1. Field name (string). E.g., 'values' for $array['values'].
+ *   2. Field name as path (array). E.g., ['values'] for $array['values'].
+ *   3. Path including field name (array). E.g., ['values', 'field_name']
+ *      for $array['values']['field_name'].
+ *
+ * @return mixed
+ *   Associative array with keys:
+ *   - 'parent_element' - reference to the parent element.
+ *   - 'field_name' - name of the field under the 'parent_element'.
+ */
+function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
+  if (empty($array) || empty($path)) {
+    watchdog('tpps', 'Function @function received empty arguments. '
+      . '<hr />Path: <pre>@path</pre>.'
+      . '<hr />Array: <pre>@array</pre>',
+      [
+        '@function' => __FUNCTION__,
+        '@array' => print_r($array, 1),
+        '@path' => print_r($path, 1),
+      ],
+      WATCHDOG_ERROR
+    );
+    return NULL;
+  }
+  // Suppose that $path is a string with field name at the 1st level
+  // of $interface array.
+  $result = [
+    'parent_element' => &$array,
+    'field_name' => $path,
+  ];
+  // Check if $path is an array with field's parents.
+  if (is_array($path)) {
+    // Last element is always a field name.
+    $result['field_name'] = end($path);
+    array_pop($path);
+    // Check if there is a list of parents.
+    if (count($path) >= 1) {
+      $result['parent_element'] = &drupal_array_get_nested_value($array, $path);
+    }
+  }
+  return $result;
+}

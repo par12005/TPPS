@@ -321,7 +321,6 @@ function tpps_form_state_info(array &$new, array &$old) {
   $new['admin_comments'] = $old['admin_comments'] ?? NULL;
   $new['alternative_accessions'] = $old['alternative_accessions'] ?? NULL;
   $new['data'] = $old['data'] ?? NULL;
-  $new['phenotypes_edit'] = $old['phenotypes_edit'] ?? NULL;
 }
 
 /**
@@ -360,7 +359,7 @@ function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $pr
  *   The accession of the submission to pre-validate.
  */
 function tpps_pre_validate_init($accession = NULL) {
-  $state = tpps_load_submission($accession);
+  $state = tpps_load_submission_state($accession);
   if (empty($accession) or empty($state)) {
     drupal_json_output("Submission could not be loaded from accession");
     return;
@@ -411,7 +410,7 @@ function tpps_pre_validate_init($accession = NULL) {
 
   $state['vcf_val_errors'] = array();
   $state['vcf_validated'] = FALSE;
-  tpps_update_submission($state);
+  tpps_update_submission_state($state);
 
   $jobs = array();
   foreach ($vcfs as $org_num => $fid) {
@@ -427,12 +426,11 @@ function tpps_pre_validate_init($accession = NULL) {
 }
 
 /**
- * This function will show the diff between accession file tree ids
- * and vcf tree ids
+ * Shows the diff between accession file tree ids and vcf tree ids.
  */
 function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i = 1) {
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
-  $form_state = tpps_load_submission($accession); // get the form state
+  $form_state = tpps_load_submission_state($accession);
   $results_accession_file_tree_ids = tpps_accession_get_accession_file_tree_ids($form_state, $i);
 
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
@@ -465,7 +463,7 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
 function tpps_accession_file_tree_ids($accession = NULL, $i = 1) {
   // @TODO [VS] Check if this include really required. Seems it's not used.
   require_once __DIR__ . '/../forms/submit/submit_all.php';
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission_state($accession);
   drupal_json_output(tpps_accession_get_accession_file_tree_ids($form_state, $i));
 }
 
@@ -538,7 +536,7 @@ function tpps_accession_file_tree_ids_iterate_line($row, &$options, $job = NULL)
 function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
   require_once __DIR__ . '/../forms/submit/submit_all.php';
 
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission_state($accession);
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   // Returns array['status','location'].
@@ -558,7 +556,7 @@ function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
 function tpps_vcf_markers($accession = NULL, $i = 1) {
   require_once __DIR__ . '/../forms/submit/submit_all.php';
 
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission_state($accession);
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
@@ -571,7 +569,7 @@ function tpps_vcf_markers($accession = NULL, $i = 1) {
 
 function tpps_snps_assay_markers($accession = NULL, $i = 1) {
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission_state($accession);
   $snps_assay_location = tpps_snps_assay_location($form_state, $i); // returns array['status', 'location'];
   // print_r($snps_assay_location);
   $result = [];
@@ -583,7 +581,7 @@ function tpps_snps_assay_markers($accession = NULL, $i = 1) {
 
 // function tpps_assay_design_markers($accession = NULL, $i = 1) {
 //   require_once(__DIR__ . '/../forms/submit/submit_all.php');
-//   $form_state = tpps_load_submission($accession);
+//   $form_state = tpps_load_submission_state($accession);
 //   $assay_design_location = tpps_assay_design_location($form_state, $i); // returns array['status', 'location'];
 //   // print_r($snps_assay_location);
 //   $result = [];
@@ -595,7 +593,7 @@ function tpps_snps_assay_markers($accession = NULL, $i = 1) {
 
 function tpps_assay_design_markers($accession = NULL, $i = 1) {
   require_once __DIR__ . '/../forms/submit/submit_all.php';
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission_state($accession);
   drupal_json_output(tpps_get_assay_design_file_markers($form_state, $i));
 }
 
@@ -686,7 +684,7 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
   require_once(__DIR__ . '/../forms/submit/submit_all.php');
 
   // VCF markers
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission_state($accession);
   $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
   $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
   $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
@@ -698,7 +696,7 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
   }
 
   // SNPS Assay Markers
-  $form_state = tpps_load_submission($accession);
+  $form_state = tpps_load_submission_state($accession);
   $snps_assay_location = tpps_snps_assay_location($form_state, $i); // returns array['status', 'location'];
   // print_r($snps_assay_location);
   $results_snps_assay_markers = [
@@ -725,7 +723,7 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
  * what is missing from the accession file.
  */
 function tpps_vcf_tree_validation($accession = NULL) {
-  $state = tpps_load_submission($accession);
+  $state = tpps_load_submission_state($accession);
   $firstpage = $state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $state['saved_values'][TPPS_PAGE_3];
   $fourthpage = $state['saved_values'][TPPS_PAGE_4];
@@ -826,11 +824,11 @@ function tpps_pre_validate_status($accession = NULL, $jid = NULL) {
   $job = tripal_get_job($jid);
 
   if ($job->status == 'Completed') {
-    $state = tpps_load_submission($accession);
+    $state = tpps_load_submission_state($accession);
     $job->val_errors = $state['vcf_val_errors'] ?? array();
     if (empty($job->val_errors)) {
       $state['vcf_validated'] = TRUE;
-      tpps_update_submission($state);
+      tpps_update_submission_state($state);
     }
   }
 
@@ -863,7 +861,7 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   }
   $job->logMessage("[INFO] VCF File Location: {$vcf_file->uri}");
 
-  $state = tpps_load_submission($accession);
+  $state = tpps_load_submission_state($accession);
   if (empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
     $species_index = 'species-1';
   }
@@ -915,7 +913,7 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   }
   else {
     $state['vcf_val_errors'] = $state_errors;
-    tpps_update_submission($state);
+    tpps_update_submission_state($state);
   }
 }
 

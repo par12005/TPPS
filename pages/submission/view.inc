@@ -73,24 +73,30 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show the data!
-  $parsed = tpps_array_dump($state);
-  $form['submission'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Submission'),
-    '#collapsed' => FALSE,
-    '#collapsible' => FALSE,
+  $interface = tpps_submission_interface_load($accession, RESET_CACHE) ?? [];
+  $dumps = [
+    'Submission Interface' => tpps_array_dump($interface),
+    'Form State' => tpps_array_dump($state),
   ];
-
-  foreach ($parsed as $key => $item) {
-    $form['submission'][$key . '_container'] = [
+  foreach ($dumps as $type => $data) {
+    $form[$type] = [
       '#type' => 'fieldset',
-      '#title' => ($item['title'] ?? $key)
-        . ($item['count'] ? ' (' . $item['count'] . ')' : ''),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
+      '#title' => t(ucfirst($type)),
+      '#collapsed' => FALSE,
+      '#collapsible' => FALSE,
     ];
+    foreach ($data as $key => $item) {
+      $form[$type][$key . '_container'] = [
+        '#type' => 'fieldset',
+        '#title' => ($item['title'] ?? $key)
+          . ($item['count'] ? ' (' . $item['count'] . ')' : ''),
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+        'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
+      ];
+    }
   }
+
   //tpps_submission_list_add_buttons($form);
   tpps_form_autofocus($form, 'tpps_submission_accession_2');
   $form['#attributes']['class'][] = 'tpps-submission';

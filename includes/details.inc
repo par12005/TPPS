@@ -64,7 +64,7 @@ function tpps_details($accession = NULL) {
   }
 
   $output = l(t('Return to TPPS Details'), $base_url . '/tpps/details');
-  $state = tpps_load_submission($accession);
+  $state = tpps_submission_interface_load($accession);
   if (!empty($state)) {
     if (isset($state['study_view_role'])) {
       // If more than 0, then a view role was set by curation team
@@ -172,9 +172,10 @@ function tpps_details($accession = NULL) {
     }
 
     // @TODO We already loaded $state. Try to reuse it instead of loading it again.
+    $submission_info = tpps_load_submission_info($accession);
     if (
       $state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published'
-      && $user->uid == (tpps_load_submission($accession, FALSE)->uid ?? NULL)
+      && $user->uid == $submission_info['uid']
     ) {
       $items[] = l(t('Edit publication information'), 'tpps/' . $accession . '/edit-publication');
     }
@@ -277,7 +278,7 @@ function tpps_details_tab($accession, $type) {
   }
   else {
     $function = "tpps_details_$type";
-    $state = tpps_load_submission($accession);
+    $state = tpps_submission_interface_load($accession);
     print($function($state));
   }
 }
@@ -445,7 +446,7 @@ function tpps_details_top() {
     }
 
     $warning = "";
-    if (empty(tpps_load_submission($sub->accession))) {
+    if (empty(tpps_load_submission_state($sub->accession))) {
       $warning = "<img src='$base_url/misc/message-16-warning.png' title='This study has not yet been resubmitted through the new TPPS pipeline'> ";
     }
 

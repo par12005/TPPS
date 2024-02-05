@@ -11,6 +11,9 @@
  * This function will check study submission state from database
  * find the file ids and also check the managed tables to see what is
  * missing. This will thus detect old files.
+ * Menu path:
+ * /tpps-admin-panel/file-diagnostics/TGDR%%%
+
  *
  * @param string $accession
  *   Study accession in format 'TGDRxxxx'.
@@ -19,18 +22,21 @@
  *   Returns rendered list of files.
  */
 function tpps_admin_files_diagnostics_page($accession = NULL) {
+  if (empty($accession)) {
+    drupal_set_message(t('Empty accession.'), 'error');
+    return '';
+  }
   $results = chado_query(
-    'SELECT * FROM tpps_submission WHERE accession = :accession',
+    "SELECT submission_interface FROM tpps_submission WHERE accession = :accession",
     [':accession' => $accession]
   );
-  $serialized_data = "";
   foreach ($results as $row) {
-    $serialized_data = unserialize($row->submission_state);
+    $submission_interface = unserialize($row->submission_interface);
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $project_file_ids = [];
   // Get file_ids from project_id.
-  $project_id = $serialized_data['ids']['project_id'];
+  $project_id = $submission_interface['ids']['project_id'];
   $results = chado_query(
     'SELECT * FROM tpps_project_file_managed WHERE project_id = :project_id',
     [':project_id' => $project_id]
@@ -39,7 +45,7 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
     array_push($project_file_ids, $row->fid);
   }
   sort($project_file_ids);
-  $saved_values = $serialized_data['saved_values'];
+  $saved_values = $submission_interface['saved_values'];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $file_ids = [];
   $organism_count = $saved_values['1']['organism']['number'];
@@ -66,7 +72,7 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
   sort($file_ids);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // History/State files.
-  $overall_file_ids = $serialized_data['files'] ?? [];
+  $overall_file_ids = $submission_interface['files'] ?? [];
   sort($overall_file_ids);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output report.

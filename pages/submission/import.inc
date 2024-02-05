@@ -122,7 +122,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     tpps_submission_import_process_files($state, $new_accession, $form);
     if ($dry_run) {
       // Remove submission and files.
-      // We can't use tpps_update_submission() because it doesn't manage files
+      // We can't use tpps_update_submission_state() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
       // redord in chado.dbxref will be left unchanged.
       tpps_submission_purge($new_accession, $force = TRUE);

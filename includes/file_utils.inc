@@ -332,12 +332,12 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
  *   An array of values found in the parsed column.
  */
 function tpps_parse_file_column($fid, $column, $no_header = FALSE) {
-  $content = array();
-  $options = array(
+  $content = [];
+  $options = [
     'no_header' => $no_header,
-    'columns' => array($column),
+    'columns' => [$column],
     'content' => &$content,
-  );
+  ];
   tpps_file_iterator($fid, 'tpps_parse_file_column_helper', $options);
   return $content;
 }
@@ -479,21 +479,28 @@ function tpps_file_validate_columns(array &$form_state, array $required_groups, 
     }
   }
 
-  foreach ($cols as $name => $type) {
-    $state_column_values[$name] = $type;
-    foreach ($required_groups_flat as $group => $types) {
-      if (in_array($type, $types)) {
-        if (!isset($groups[$group][$type])) {
-          $groups[$group][$type] = array($name);
+  if ($cols) {
+    // Note: $cols will be empty when user just added file (not clicked 'Upload'
+    // button and submitted form (clicked 'Next' button).
+    // Probably columns could be detected automatically because they are shown
+    // at page and so we could use default values here.
+    // @TODO Get default set of columns.
+    foreach ($cols as $name => $type) {
+      $state_column_values[$name] = $type;
+      foreach ($required_groups_flat as $group => $types) {
+        if (in_array($type, $types)) {
+          if (!isset($groups[$group][$type])) {
+            $groups[$group][$type] = array($name);
+          }
+          else {
+            $groups[$group][$type][] = $name;
+          }
+          break;
         }
-        else {
-          $groups[$group][$type][] = $name;
-        }
-        break;
       }
     }
   }
-  // dpm($required_groups);
+
   foreach ($required_groups as $group => $combinations) {
     $group_valid = FALSE;
     $groups[$group]['#type'] = [];

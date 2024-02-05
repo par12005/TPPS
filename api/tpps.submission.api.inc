@@ -98,6 +98,8 @@ function tpps_api_submission_query() {
  *   status
  *   dbxref_id
  *   submission_state
+ *   submission_interface
+ *
  * The function will also unset items in the conditions array that have already
  * been used, so that the tpps_api_submission_query function knows whether to
  * perform additional query filtering.
