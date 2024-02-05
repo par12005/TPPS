@@ -1221,7 +1221,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       tpps_init_project($form_state, $accession);
       tpps_create_submission($form_state, $user->uid);
     }
-    $old_form_state = tpps_load_submission($frontpage_values['accession']);
+    $old_form_state = tpps_load_submission_state($frontpage_values['accession']);
     if (!empty($old_form_state)) {
       tpps_form_state_info($form_state, $old_form_state);
     }
