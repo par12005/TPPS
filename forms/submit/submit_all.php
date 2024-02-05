@@ -2343,7 +2343,7 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
         }
 
         // If an analysis_id still was not found, it's possibly from the db data source
-        // instead of the genome directory. The genome directory code is in page_4_helper.php
+        // instead of the genome directory. The genome directory code is in page_4*.php
         // New code to cater for new analysis checks via db - query given by Emily Grau (6/6/2023)
         if ($analysis_id == NULL) {
           $genome_query_results = chado_query("select * from chado.tpps_ref_genomes WHERE name LIKE :ref_genome;", [
@@ -3768,7 +3768,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
         }
 
         // If an analysis_id still was not found, it's possibly from the db data source
-        // instead of the genome directory. The genome directory code is in page_4_helper.php
+        // instead of the genome directory. The genome directory code is in page_4*.php
         // New code to cater for new analysis checks via db - query given by Emily Grau (6/6/2023)
         if ($analysis_id == NULL) {
           $genome_query_results = chado_query("select * from chado.tpps_ref_genomes WHERE name LIKE :ref_genome;", [
@@ -6821,7 +6821,7 @@ function tpps_get_analysis_id_from_ref_genome($ref_genome) {
 
 
       // If an analysis_id still was not found, it's possibly from the db data source
-      // instead of the genome directory. The genome directory code is in page_4_helper.php
+      // instead of the genome directory. The genome directory code is in page_4*.php
       // New code to cater for new analysis checks via db - query given by Emily Grau (6/6/2023)
       if ($analysis_id == NULL) {
         $genome_query_results = chado_query("select * from chado.tpps_ref_genomes WHERE name LIKE :ref_genome;", [
