@@ -134,7 +134,7 @@ function tpps_submission_interface_generate(array $form_state = []) {
   // and each version will be incremental change so all previous changes must
   // be applied first. Using simple integers will allow to easily detect
   // which version must be applied.
-  $current_version = tpps_submission_interface_version_get($form_state);
+  $current_version = tpps_submission_form_version_get($form_state);
 
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
   $change_list = tpps_submission_form_get_change_list();

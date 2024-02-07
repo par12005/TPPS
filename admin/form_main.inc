@@ -49,6 +49,16 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
       . 'processing was completed and to store those data we could merge '
       . 'existing SIA with new values.'),
   ];
+  // @TODO Minor. Move to the common module settings page because it's not
+  // only form related.
+  $form['tpps_debug_mode'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Debug Mode'),
+    '#default_value' => variable_get('tpps_debug_mode', FALSE),
+    '#description' => t('Default is unchecked. Must be disabled at live site. '
+      . 'When checked then all error messages will be sent to browser and '
+      . 'some extra debug messages could be shown.'),
+  ];
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);
 }

@@ -46,7 +46,8 @@ define('TPPS_COLUMN_CLONE_NUMBER', 13);
 require_once 'includes/common.inc';
 module_load_include('inc', 'tpps', 'includes/common');
 // Must be called after common.inc was loaded.
-if (!is_live_site()) {
+// Always enabled on dev-server and could be enabled on live-site.
+if (!is_live_site() || variable_get('tpps_debug_mode', FALSE)) {
   ini_set('display_errors', 1);
   ini_set('display_startup_errors', 1);
   error_reporting(E_ALL);
