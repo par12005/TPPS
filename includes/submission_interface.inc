@@ -425,6 +425,7 @@ function tpps_submission_interface_get_change_list($version = NULL) {
         'triggering_element',
         'clicked_button',
         ['saved_values', 'form_build_id'],
+        'tpps_submission_export_files',
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // List of the fields which must be left.

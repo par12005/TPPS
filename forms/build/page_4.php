@@ -32,6 +32,9 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     if (isset($form_state['saved_values'][$i])) {
       $chest['page' . $i . '_values'] = &$form_state['saved_values'][$i];
     }
+    else {
+      $chest['page' . $i . '_values'] = [];
+    }
   }
   $form['#tree'] = TRUE;
   for ($i = 1; $i <= tpps_chest_get($chest, 'organism_count'); $i++) {
