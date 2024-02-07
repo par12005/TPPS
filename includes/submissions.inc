@@ -680,17 +680,7 @@ function tpps_submission_get_tags($accession) {
   $query->join('tpps_tag', 't', 't.tpps_tag_id = st.tpps_tag_id');
   $query->fields('t');
   $query->condition('s.accession', $accession);
-  $query = $query->execute();
-  $results = array();
-  while (($result = $query->fetchObject())) {
-    $results[$result->tpps_tag_id] = array(
-      'id' => $result->tpps_tag_id,
-      'name' => $result->name,
-      'color' => $result->color,
-      'static' => $result->static,
-    );
-  }
-  return $results;
+  return $query->execute()->fetchAllAssoc('tpps_tag_id', PDO::FETCH_ASSOC);
 }
 
 /**
@@ -756,13 +746,13 @@ function tpps_submission_add_tag($accession, $tag) {
   }
 
   $tags = tpps_submission_get_tags($accession);
-  if (!array_key_exists($tag, $tags)) {
+  if ($tags && !array_key_exists($tag, $tags)) {
     $submission_info = tpps_load_submission_info($accession);
     db_insert('tpps_submission_tag')
-      ->fields(array(
+      ->fields([
         'tpps_submission_id' => $submission_info['tpps_submission_id'],
         'tpps_tag_id' => $tag,
-      ))
+      ])
       ->execute();
   }
 }
