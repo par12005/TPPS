@@ -362,7 +362,7 @@ function tpps_update_submission_state(array &$form_state) {
 function tpps_delete_submission($accession) {
   $submission_info = tpps_load_submission_info($accession);
   $dbxref_id = $submission_info['dbxref_id'];
-  $state = unserialize($submission_info['submission_state']);
+  $state = tpps_load_submission_state($accession);
   db_delete('tpps_submission')
     ->condition('accession', $accession)
     ->execute();
