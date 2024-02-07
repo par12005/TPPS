@@ -137,7 +137,7 @@ function tpps_submission_interface_generate(array $form_state = []) {
   $current_version = tpps_submission_form_version_get($form_state);
 
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $change_list = tpps_submission_form_get_change_list();
+  $change_list = tpps_submission_form_get_change_list($form_state);
   // We need to apply changes from 1st to $current version to have
   // incremental changes.
   $i = TPPS_SUBMISSION_FORM_START_VERSION;

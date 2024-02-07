@@ -77,6 +77,11 @@ function tpps_submission_form_version_set(array &$form_state) {
     = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
 }
 
+
+
+
+
+
 /**
  * Gets specific version or all version's changes.
  *
@@ -89,7 +94,7 @@ function tpps_submission_form_version_set(array &$form_state) {
  *   changes for given version number.
  *   Returns all version's changes.
  */
-function tpps_submission_form_get_change_list($version = NULL) {
+function tpps_submission_form_get_change_list(array $form_state, $version = NULL) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove useless elemLnts to reduce size.
@@ -155,7 +160,8 @@ function tpps_submission_form_get_change_list($version = NULL) {
       ],
     ],
     // #86ayw8a7k Genotype Logic changes.
-    '2' => [],
+    '2' => [
+    ],
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -183,6 +189,59 @@ function tpps_submission_form_get_change_list($version = NULL) {
   foreach ($page_list as $page) {
     foreach ($drupal_internal_fields as $field) {
       $change_list['1']['unset'][] = ['saved_values', $page, $field];
+    }
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Version 2. Dynamyc changes.
+  // #86ayw8a7k Relocate genotype fields.
+  if (!empty($form_state['saved_values'][TPPS_PAGE_1])) {
+    $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
+    $organism_number = $page1_values['organism']['number'];
+    // List of relocated genotype fields from 'files' to 'SNPs' fieldset.
+    $files_to_snps_fields = [
+      'genotyping-type',
+      'file-type',
+      'vcf',
+      'snps-assay',
+      'assay-design',
+      'snps-association',
+      'snps-pop-struct',
+      'snps-kinship',
+      'assay-citation',
+    ];
+    $to_ssr_fieldset = [
+      // Dropdown menu.
+      ['SSRs/cpSSRs'],
+      // Managed files.
+      ['files', 'ploidy'],
+      ['files', 'ssrs'],
+      ['files', 'ssrs_extra'],
+    ];
+    for ($i = 1; $i <= $organism_number; $i++) {
+      $genotype_parents = [
+        'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
+      ];
+      // 'ref-genome' field.
+      $field_name = 'ref-genome';
+      $change_list['2']['move'][] = [
+        'source' => array_merge($genotype_parents, [$field_name]),
+        'target' => array_merge($genotype_parents, ['SNPs', $field_name]),
+      ];
+      // 'files' to 'SNPs' fields.
+      foreach ($files_to_snps_fields as $field_name) {
+        $change_list['2']['move'][] = [
+          'source' => array_merge($genotype_parents, ['files', $field_name]),
+          'target' => array_merge($genotype_parents, ['SNPs', $field_name]),
+        ];
+      }
+      // Move to fieldset 'SSRs/cpSSRs Information'.
+      foreach ($to_ssr_fieldset as $item) {
+        $change_list['2']['move'][] = [
+          'source' => array_merge($genotype_parents, $item),
+          'target' => array_merge($genotype_parents, ['ssrs_cpssrs', end($item)]),
+        ];
+      }
     }
   }
 

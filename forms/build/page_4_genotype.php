@@ -224,7 +224,7 @@ function tpps_genotype_subform(array $chest) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Genotyping Type.
   // Field was relocated (v.2).
-  // $fields['files'] -> $fields['SNPs'].
+  // ['files'] -> ['SNPs'].
   $fields['SNPs']['genotyping-type'] = [
     '#type' => 'select',
     '#title' => t('Genotyping Type: *'),
@@ -237,7 +237,7 @@ function tpps_genotype_subform(array $chest) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Genotype File Type.
   // Field was relocated (v.2).
-  // $fields['files'] -> $fields['SNPs'].
+  // ['files'] -> ['SNPs'].
   $fields['SNPs']['file-type'] = [
     '#type' => 'select',
     '#title' => t('Genotyping file type: *'),
@@ -273,8 +273,7 @@ function tpps_genotype_subform(array $chest) {
   // VCF File.
   $title = t('VCF File');
   $file_field_name = 'vcf';
-  // Field was relocated (v.2).
-  // $fields['files'] -> $fields['SNPs'].
+  // Field was relocated (v.2). ['files'] -> ['SNPs'].
   tpps_form_build_file_field(array_merge($chest, [
     'parents' => [$organism_name, 'genotype', 'SNPs'],
     'field_name' => $file_field_name,
@@ -324,8 +323,7 @@ function tpps_genotype_subform(array $chest) {
   ];
 
   // File upload field.
-  // Field was relocated (v.2).
-  // $fields['files'] -> $fields['SNPs'].
+  // Field was relocated (v.2). ['files'] -> ['SNPs'].
   tpps_form_build_file_field(array_merge($chest, [
     'parents' => [$organism_name, 'genotype', 'SNPs'],
     'field_name' => $file_field_name,
@@ -359,8 +357,7 @@ function tpps_genotype_subform(array $chest) {
   );
   if ($condition) {
     // Add file upload field.
-    // Field was relocated (v.2).
-    // $fields['files'] -> $fields['SNPs'].
+    // Field was relocated (v.2). ['files'] -> ['SNPs'].
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
@@ -373,8 +370,7 @@ function tpps_genotype_subform(array $chest) {
         '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
       ],
     ]);
-    // Field was relocated (v.2).
-    // $fields['files'] -> $fields['SNPs'].
+    // Field was relocated (v.2). ['files'] -> ['SNPs'].
     $fields['SNPs']['assay-citation'] = [
       '#type' => 'textfield',
       '#title' => t('Assay Design Citation (Optional):'),
@@ -392,8 +388,7 @@ function tpps_genotype_subform(array $chest) {
   if ($upload_snp_association == 'Yes') {
     $file_field_name = 'snps-association';
     $title = t('SNP Association File');
-    // Field was relocated (v.2).
-    // $fields['files'] -> $fields['SNPs'].
+    // Field was relocated (v.2). ['files'] -> ['SNPs'].
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
@@ -495,8 +490,7 @@ function tpps_genotype_subform(array $chest) {
     // SNPs Population Structure File.
     $file_field_name = 'snps-pop-struct';
     $title = t('SNPs Population Structure File');
-    // Field was relocated (v.2).
-    // $fields['files'] -> $fields['SNPs'].
+    // Field was relocated (v.2). ['files'] -> ['SNPs'].
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
@@ -515,8 +509,7 @@ function tpps_genotype_subform(array $chest) {
     // SNPs Kinship File.
     $file_field_name = 'snps-kinship';
     $title = t('SNPs Kinship File');
-    // Field was relocated (v.2).
-    // $fields['files'] -> $fields['SNPs'].
+    // Field was relocated (v.2). ['files'] -> ['SNPs'].
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
@@ -777,6 +770,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     "manual2" => 'I can upload my own reference transcriptome file',
     "none" => 'I am unable to provide a reference assembly',
   ]);
+
   // Field was relocated (v.2).
   // 'source' => [$id, 'genotype', 'ref-genome'],
   // 'target' => [$id, 'genotype', 'SNPs', 'ref-genome'],
@@ -936,7 +930,8 @@ function tpps_add_dropdown_file_selector(array $chest) {
     '@hostname' => tpps_get_hostname(),
   ];
   // Field was relocated (v.2).
-  // $fields['files'] -> $fields['SNPs'].
+  // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'files'] =>
+  // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs'].
   $form['SNPs'][$file_field_name . '_file-location'] = [
     '#type' => 'select',
     '#title' => t('@file_name location', $params),
@@ -954,7 +949,8 @@ function tpps_add_dropdown_file_selector(array $chest) {
     '#name' => $organism_name . '[genotype][files][' . $file_field_name . '_file-location]',
   ];
   // Field was relocated (v.2).
-  // $fields['files'] -> $fields['SNPs'].
+  // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'files'] =>
+  // ['saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype', 'SNPs'].
   $form['SNPs']['local_' . $file_field_name] = [
     '#type' => 'textfield',
     '#title' => t('Path to @file_name at @hostname: *', $params),
@@ -999,8 +995,8 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   $ssr_type_select = 'SSRs/cpSSRs';
 
   // Field was relocated (v.2).
-  // 'source' => [$organism_name, 'genotype', $ssr_type_select],
-  // 'target' => [$ssr_fieldset, $ssr_type_select],
+  // ['saved_values', 4, "organism-$i", 'genotype', 'SSRs/cpSSRs'] =>
+  // ['saved_values', 4, "organism-$i", 'genotype', 'ssrs_cpssrs', 'SSRs/cpSSRs'];
   $fields[$ssr_fieldset][$ssr_type_select] = [
     '#type' => 'select',
     '#title' => t('Define SSRs/cpSSRs Type: *'),
@@ -1023,8 +1019,8 @@ function tpps_page_4_genotype_ssrs(array $chest) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Field was relocated (v.2).
-  //'source' => [$organism_name, 'genotype', 'files', 'ploidy'],
-  //'target' => [$ssr_fieldset, 'ploidy'],
+  // ['saved_values', 4, "organism-$i", 'genotype', 'files', 'ploidy'] =>
+  // ['saved_values', 4, "organism-$i", 'genotype', 'ssrs_cpssrs', 'ploidy'];
   $fields[$ssr_fieldset]['ploidy'] = [
     '#type' => 'select',
     '#title' => t('SSR Ploidy: *'),
@@ -1133,8 +1129,8 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   $title = t('cpSSRs Spreadsheet');
   $file_field_name = 'ssrs_extra';
   // Field was relocated (v.2).
-  //'source' => [$organism_name, 'genotype', 'files', 'ssrs_extra'];
-  //'target' => [$ssr_fieldset, 'ssrs_extra'];
+  // ['saved_values', 4, "organism-$i", 'genotype', 'files', 'ssrs_extra'] =>
+  // ['saved_values', 4, "organism-$i", 'genotype', 'ssrs_cpssrs', 'ssrs_extra'];
   tpps_form_build_file_field(array_merge($chest, [
     'parents' => [$organism_name, 'genotype', 'files'],
     'field_name' => $file_field_name,
