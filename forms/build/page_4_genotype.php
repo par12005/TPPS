@@ -223,25 +223,22 @@ function tpps_genotype_subform(array $chest) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Genotyping Type.
-  $fields['files']['genotyping-type'] = [
+  // Field was relocated (v.2).
+  // $fields['files'] -> $fields['SNPs'].
+  $fields['SNPs']['genotyping-type'] = [
     '#type' => 'select',
     '#title' => t('Genotyping Type: *'),
     '#options' => [
       'Genotyping Assay' => t('Genotyping Assay'),
       'Genotyping' => t('Genotyping'),
     ],
-  ];
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => ['files'],
-    'field_name' => 'genotyping-type',
-    'new_parents' => ['SNPs'],
-    '#parents' => [$organism_name, 'genotype', 'files'],
     '#name' => $organism_name . '[genotype][files][genotyping-type]',
-  ]);
+  ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Genotype File Type.
-  $fields['files']['file-type'] = [
+  // Field was relocated (v.2).
+  // $fields['files'] -> $fields['SNPs'].
+  $fields['SNPs']['file-type'] = [
     '#type' => 'select',
     '#title' => t('Genotyping file type: *'),
     '#options' => [
@@ -250,19 +247,12 @@ function tpps_genotype_subform(array $chest) {
     ],
     '#states' => [
       'visible' => [
-        ':input[name="' . $organism_name . '[genotype][files][genotyping-type]"]'
-          => ['value' => 'Genotyping'],
+        ':input[name="' . $organism_name
+          . '[genotype][files][genotyping-type]"]' => ['value' => 'Genotyping'],
       ],
     ],
-  ];
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => ['files'],
-    'field_name' => 'file-type',
-    'new_parents' => ['SNPs'],
-    '#parents' => [$organism_name, 'genotype', 'files'],
     '#name' => $organism_name . '[genotype][files][file-type]',
-  ]);
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // VCF Location.
@@ -277,36 +267,25 @@ function tpps_genotype_subform(array $chest) {
       'file_name' => t('VCF'),
       'organism_name' => $organism_name,
     ]));
-    tpps_form_relocate_field([
-      'form' => &$fields,
-      'current_parents' => ['files'],
-      'field_name' => $file_field_name . '_file-location',
-      'new_parents' => ['SNPs'],
-      '#parents' => [$organism_name, 'genotype', 'files'],
-      '#name' => $organism_name . '[genotype][files][' . $file_field_name . '_file-location]',
-    ]);
-    tpps_form_relocate_field([
-      'form' => &$fields,
-      'current_parents' => ['files'],
-      'field_name' => 'local_' . $file_field_name,
-      'new_parents' => ['SNPs'],
-      '#parents' => [$organism_name, 'genotype', 'files'],
-      '#name' => $organism_name . '[genotype][files][local_' . $file_field_name . ']',
-    ]);
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // VCF File.
   $title = t('VCF File');
   $file_field_name = 'vcf';
+  // Field was relocated (v.2).
+  // $fields['files'] -> $fields['SNPs'].
   tpps_form_build_file_field(array_merge($chest, [
-    'parents' => [$organism_name, 'genotype', 'files'],
+    'parents' => [$organism_name, 'genotype', 'SNPs'],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
     'type' => $chest['type'],
     'description' => '',
     'extensions' => ['gz tar zip'],
+    'extra_elements' => [
+      '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+    ],
   ]));
   if ($is_tppsc) {
     tpps_array_set_value(
@@ -322,17 +301,6 @@ function tpps_genotype_subform(array $chest) {
       ]
     );
   }
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => ['files'],
-    'field_name' => $file_field_name,
-    'new_parents' => ['SNPs'],
-    '#parents' => [$organism_name, 'genotype', 'files'],
-    '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
-  ]);
-
-
-
 
   // @TODO.
 
@@ -356,8 +324,10 @@ function tpps_genotype_subform(array $chest) {
   ];
 
   // File upload field.
+  // Field was relocated (v.2).
+  // $fields['files'] -> $fields['SNPs'].
   tpps_form_build_file_field(array_merge($chest, [
-    'parents' => [$organism_name, 'genotype', 'files'],
+    'parents' => [$organism_name, 'genotype', 'SNPs'],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
@@ -373,293 +343,271 @@ function tpps_genotype_subform(array $chest) {
       . 'columns should contain SNP data.'),
     'use_fid' => TRUE,
     'states' => $states,
-  ]));
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => ['files'],
-    'field_name' => $file_field_name,
-    'new_parents' => ['SNPs'],
-    '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
-    '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
-  ]);
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Assay Design File.
-    $title = t('Assay Design File');
-    $file_field_name = 'assay-design';
-    $condition = (
-      $genotyping_type_check == "Genotyping Assay"
-      || $file_type_value == 'SNP Assay file and Assay design file'
-    );
-    if ($condition) {
-      // Add file upload field.
-      tpps_form_build_file_field([
-        'form' => &$form,
-        'form_state' => $form_state,
-        'parents' => [$organism_name, 'genotype', 'files'],
-        'field_name' => $file_field_name,
-        'title' => $title,
-        'organism_name' => $organism_name,
-        'type' => $chest['type'],
-      ]);
-      $fields['files']['assay-citation'] = [
-        '#type' => 'textfield',
-        '#title' => t('Assay Design Citation (Optional):'),
-        '#description' => t('If your assay design file is from a different '
-          . 'paper, please include the citation for that paper here.'),
-      ];
-    }
-    else {
-      tpps_build_disabled_file_field($fields, $file_field_name);
-    }
-    tpps_form_relocate_field([
-      'form' => &$fields,
-      'current_parents' => ['files'],
-      'field_name' => $file_field_name,
-      'new_parents' => ['SNPs'],
-      '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
+    'extra_elements' => [
       '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
-    ]);
-    tpps_form_relocate_field([
-      'form' => &$fields,
-      'current_parents' => ['files'],
-      'field_name' => 'assay-citation',
-      'new_parents' => ['SNPs'],
-      '#parents' => [$organism_name, 'genotype', 'files', 'assay-citation'],
-      '#name' => $organism_name . '[genotype][files][' . 'assay-citation' . ']',
-    ]);
-
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // SNP Association File.
-    if ($upload_snp_association == 'Yes') {
-    //if ($genotyping_type_check == "Genotyping Assay") {
-      $file_field_name = 'snps-association';
-      $title = t('SNP Association File');
-      tpps_form_build_file_field([
-        'form' => &$form,
-        'form_state' => $form_state,
-        'parents' => [$organism_name, 'genotype', 'files'],
-        'field_name' => $file_field_name,
-        'title' => $title,
-        'organism_name' => $organism_name,
-        'type' => $chest['type'],
-        'description' => t('Please upload a spreadsheet file containing '
-          . 'SNPs Association data. When your file is uploaded, you will '
-          . 'be shown a table with your column header names, several '
-          . 'drop-downs, and the first few rows of your file. You will be '
-          . 'asked to define the data type for each column, using the '
-          . 'drop-downs provided to you. If a column data type does not '
-          . 'fit any of the options in the drop-down menu, you may set that '
-          . 'drop-down menu to "N/A". Your file must contain columns with '
-          . 'the SNP ID, Scaffold, Position (formatted like "start:stop"), '
-          . 'Allele (formatted like "major:minor"), Associated Trait Name '
-          . '(must match a phenotype from the above section), and '
-          . 'Confidence Value. Optionally, you can also specify a Gene ID '
-          . '(which should match the gene reference) and '
-          . 'a SNP Annotation (non synonymous, coding, etc).'),
-        '#tree' => TRUE,
-      ]);
-      tpps_form_relocate_field([
-        'form' => &$fields,
-        'current_parents' => ['files'],
-        'field_name' => $file_field_name,
-        'new_parents' => ['SNPs'],
-        '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
-        '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
-      ]);
-
-
-      //dpm(
-      //  tpps_array_get_value(
-      //    $chest,
-      //    ['page4_values', $organism_name, 'genotype', 'files', $file_field_name, 'empty'])
-      //    ?? 'NA',
-      //);
-      return;
-
-
-      $fields['files'][$file_field_name] = array_merge(
-        $fields['files'][$file_field_name],
-        [
-          'empty' => [
-            '#default_value' => tpps_array_get_value(
-              $chest['page4_values'],
-              [$organism_name, 'genotype', 'files', $file_field_name, 'empty'])
-              ?? 'NA',
-          ],
-          'columns' => [
-            '#description' => t('Please define which columns hold the '
-              . 'required data: SNP ID, Scaffold, Position, Allele, '
-              . 'Associated Trait, Confidence Value.'),
-          ],
-          'columns-options' => [
-            '#type' => 'hidden',
-            '#value' => [
-              'N/A',
-              'SNP ID',
-              'Scaffold',
-              'Position',
-              'Allele',
-              'Associated Trait',
-              'Confidence Value',
-              'Gene ID',
-              'Annotation',
-            ],
-            'no-header' => [],
-          ],
-        ]
-      );
-
-      $fields['files']['snps-association-type'] = [
-        '#type' => 'select',
-        '#title' => t('Confidence Value Type: *'),
-        '#options' => [
-          0 => t('- Select -'),
-          'P value' => t('P value'),
-          'Genomic Inflation Factor (GIF)' => t('Genomic Inflation Factor (GIF)'),
-          'P-adjusted (FDR) / Q value' => t('P-adjusted (FDR) / Q value'),
-          'P-adjusted (FWE)' => t('P-adjusted (FWE)'),
-          'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
-        ],
-      ];
-
-      $fields['files']['snps-association-tool'] = [
-        '#type' => 'select',
-        '#title' => t('Association Analysis Tool: *'),
-        '#options' => [
-          0 => t('- Select -'),
-          'GEMMA' => t('GEMMA'),
-          'EMMAX' => t('EMMAX'),
-          'Plink' => t('Plink'),
-          'Tassel' => t('Tassel'),
-          'Sambada' => t('Sambada'),
-          'Bayenv' => t('Bayenv'),
-          'BayeScan' => t('BayeScan'),
-          'LFMM' => t('LFMM'),
-        ],
-      ];
-
-      // SNPs Population Structure File.
-      tpps_form_build_file_field([
-        'form' => &$form,
-        'form_state' => $form_state,
-        'parents' => [$organism_name, 'genotype', 'files'],
-        'organism_name' => $organism_name,
-        'type' => $chest['type'],
-        'field_name' => 'snps-pop-struct',
-        // @todo [VS] Replace with 'required' with default value 'TRUE'.
-        'optional' => TRUE,
-        'title' => t('SNPs Population Structure File'),
-      ]);
-      // SNPs Kinship File.
-      tpps_form_build_file_field([
-        'form' => &$form,
-        'form_state' => $form_state,
-        'parents' => [$organism_name, 'genotype', 'files'],
-        'organism_name' => $organism_name,
-        'type' => $chest['type'],
-        'field_name' => 'snps-kinship',
-        'optional' => TRUE,
-        'title' => t('SNPs Kinship File'),
-      ]);
-    }
-    else {
-      $file_field_list = ['snps-association', 'snps-pop-struct', 'snps-kinship'];
-      foreach ($file_field_list as $file_field_name) {
-        tpps_build_disabled_file_field($fields, $file_field_name);
-      }
-    }
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => ['files'],
-    'field_name' => $file_field_name,
-    'new_parents' => ['SNPs'],
-    '#parents' => [$organism_name, 'genotype', 'files'],
-    '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
-  ]);
-  //}
-
+    ],
+  ]));
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  //if (in_array('Other', $genotype_marker_type)) {
-    $fields['other-marker'] = [
-      '#type' => 'textfield',
-      '#title' => t('Other marker type: *'),
-    ];
-    $title = t('Other spreadsheet: '
-      . '<br />please provide a spreadsheet with columns for the Plant ID '
-      . 'of genotypes used in this study');
-    $file_field_name = 'other';
-    $description = t('Please upload a spreadsheet file containing '
-      . 'Genotype data. When your file is uploaded, you will be shown '
-      . 'a table with your column header names, several drop-downs, '
-      . 'and the first few rows of your file. You will be asked to define '
-      . 'the data type for each column, using the drop-downs provided to you. '
-      . 'If a column data type does not fit any of the options in the '
-      . 'drop-down menu, you may set that drop-down menu to "N/A". '
-      . 'Your file must contain one column with the Plant Identifier.');
+  // Assay Design File.
+  $title = t('Assay Design File');
+  $file_field_name = 'assay-design';
+  $condition = (
+    $genotyping_type_check == "Genotyping Assay"
+    || $file_type_value == 'SNP Assay file and Assay design file'
+  );
+  if ($condition) {
+    // Add file upload field.
+    // Field was relocated (v.2).
+    // $fields['files'] -> $fields['SNPs'].
     tpps_form_build_file_field([
       'form' => &$form,
       'form_state' => $form_state,
-      'parents' => [$organism_name, 'genotype', 'files'],
+      'parents' => [$organism_name, 'genotype', 'SNPs'],
       'field_name' => $file_field_name,
       'title' => $title,
       'organism_name' => $organism_name,
       'type' => $chest['type'],
-      'description' => $description,
-      'empty_field_value' => tpps_get_empty_field_value(
-        $form_state, $organism_name, $file_field_name
-      ),
+      'extra_elements' => [
+        '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+      ],
+    ]);
+    // Field was relocated (v.2).
+    // $fields['files'] -> $fields['SNPs'].
+    $fields['SNPs']['assay-citation'] = [
+      '#type' => 'textfield',
+      '#title' => t('Assay Design Citation (Optional):'),
+      '#description' => t('If your assay design file is from a different '
+        . 'paper, please include the citation for that paper here.'),
+      '#name' => $organism_name . '[genotype][files][assay-citation]',
+    ];
+  }
+  else {
+    tpps_build_disabled_file_field($fields, $file_field_name);
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // SNP Association File.
+  if ($upload_snp_association == 'Yes') {
+    $file_field_name = 'snps-association';
+    $title = t('SNP Association File');
+    // Field was relocated (v.2).
+    // $fields['files'] -> $fields['SNPs'].
+    tpps_form_build_file_field([
+      'form' => &$form,
+      'form_state' => $form_state,
+      'parents' => [$organism_name, 'genotype', 'SNPs'],
+      'field_name' => $file_field_name,
+      'title' => $title,
+      'organism_name' => $organism_name,
+      'type' => $chest['type'],
+      'description' => t('Please upload a spreadsheet file containing '
+        . 'SNPs Association data. When your file is uploaded, you will '
+        . 'be shown a table with your column header names, several '
+        . 'drop-downs, and the first few rows of your file. You will be '
+        . 'asked to define the data type for each column, using the '
+        . 'drop-downs provided to you. If a column data type does not '
+        . 'fit any of the options in the drop-down menu, you may set that '
+        . 'drop-down menu to "N/A". Your file must contain columns with '
+        . 'the SNP ID, Scaffold, Position (formatted like "start:stop"), '
+        . 'Allele (formatted like "major:minor"), Associated Trait Name '
+        . '(must match a phenotype from the above section), and '
+        . 'Confidence Value. Optionally, you can also specify a Gene ID '
+        . '(which should match the gene reference) and '
+        . 'a SNP Annotation (non synonymous, coding, etc).'),
+      '#tree' => TRUE,
+      'extra_elements' => [
+        '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+      ],
     ]);
 
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Other Columns.
-    $default_dynamic = !empty($page4_values[$organism_name]['genotype']['files']['other-columns']);
-    $fields['files']['other']['dynamic'] = [
-      '#type' => 'checkbox',
-      '#title' => t('This file needs dynamic dropdown options for column data type specification'),
-      '#ajax' => [
-        'wrapper' => "edit-$organism_name-genotype-files-other-ajax-wrapper",
-        'callback' => 'tpps_page_4_file_dynamic',
-        'effect' => 'slide',
-      ],
-      '#default_value' => $default_dynamic,
-    ];
-    $dynamic = tpps_get_ajax_value($form_state,
-      [$organism_name, 'genotype', 'files', 'other', 'dynamic'],
-      $default_dynamic,
-      'other'
+    $fields['files'][$file_field_name] = array_merge(
+      $fields['files'][$file_field_name],
+      [
+        'empty' => [
+          '#default_value' => tpps_array_get_value(
+            $chest['page4_values'],
+            [$organism_name, 'genotype', 'SNPs', $file_field_name, 'empty'])
+            ?? 'NA',
+        ],
+        'columns' => [
+          '#description' => t('Please define which columns hold the '
+            . 'required data: SNP ID, Scaffold, Position, Allele, '
+            . 'Associated Trait, Confidence Value.'),
+        ],
+        'columns-options' => [
+          '#type' => 'hidden',
+          '#value' => [
+            'N/A',
+            'SNP ID',
+            'Scaffold',
+            'Position',
+            'Allele',
+            'Associated Trait',
+            'Confidence Value',
+            'Gene ID',
+            'Annotation',
+          ],
+          'no-header' => [],
+        ],
+      ]
     );
 
-    if ($dynamic) {
-      $fields['files']['other']['columns'] = [
-        '#description' => t('Please define which columns hold the required data: '
-          . '<br />Plant Identifier, Genotype Data'
-        ),
-      ];
-      $fields['files']['other']['columns-options'] = [
-        '#type' => 'hidden',
-        '#value' => ['Genotype Data', 'Plant Identifier', 'N/A'],
-      ];
+
+
+
+// @TODO Check if fields below must be relocated.
+
+
+
+
+    $fields['files']['snps-association-type'] = [
+      '#type' => 'select',
+      '#title' => t('Confidence Value Type: *'),
+      '#options' => [
+        0 => t('- Select -'),
+        'P value' => t('P value'),
+        'Genomic Inflation Factor (GIF)' => t('Genomic Inflation Factor (GIF)'),
+        'P-adjusted (FDR) / Q value' => t('P-adjusted (FDR) / Q value'),
+        'P-adjusted (FWE)' => t('P-adjusted (FWE)'),
+        'P-adjusted (Bonferroni)' => t('P-adjusted (Bonferroni)'),
+      ],
+    ];
+
+    $fields['files']['snps-association-tool'] = [
+      '#type' => 'select',
+      '#title' => t('Association Analysis Tool: *'),
+      '#options' => [
+        0 => t('- Select -'),
+        'GEMMA' => t('GEMMA'),
+        'EMMAX' => t('EMMAX'),
+        'Plink' => t('Plink'),
+        'Tassel' => t('Tassel'),
+        'Sambada' => t('Sambada'),
+        'Bayenv' => t('Bayenv'),
+        'BayeScan' => t('BayeScan'),
+        'LFMM' => t('LFMM'),
+      ],
+    ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // SNPs Population Structure File.
+    $file_field_name = 'snps-pop-struct';
+    $title = t('SNPs Population Structure File');
+    // Field was relocated (v.2).
+    // $fields['files'] -> $fields['SNPs'].
+    tpps_form_build_file_field([
+      'form' => &$form,
+      'form_state' => $form_state,
+      'parents' => [$organism_name, 'genotype', 'SNPs'],
+      'organism_name' => $organism_name,
+      'type' => $chest['type'],
+      'field_name' => $file_field_name,
+      'title' => $title,
+      // @todo [VS] Replace with 'required' with default value 'TRUE'.
+      'optional' => TRUE,
+      'extra_elements' => [
+        '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+      ],
+    ]);
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // SNPs Kinship File.
+    $file_field_name = 'snps-kinship';
+    $title = t('SNPs Kinship File');
+    // Field was relocated (v.2).
+    // $fields['files'] -> $fields['SNPs'].
+    tpps_form_build_file_field([
+      'form' => &$form,
+      'form_state' => $form_state,
+      'parents' => [$organism_name, 'genotype', 'SNPs'],
+      'organism_name' => $organism_name,
+      'type' => $chest['type'],
+      'field_name' => $file_field_name,
+      'title' => $title,
+      'optional' => TRUE,
+      'extra_elements' => [
+        '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+      ],
+    ]);
+  }
+  else {
+    $file_field_list = ['snps-association', 'snps-pop-struct', 'snps-kinship'];
+    foreach ($file_field_list as $file_field_name) {
+      tpps_build_disabled_file_field($fields, $file_field_name);
     }
-    $fields['files']['other']['no-header'] = [];
-
-    // @TODO Move disabled fields.
-  //}
-  //else {
-  //  tpps_build_disabled_file_field($fields, 'other');
-  //}
+  }
 
 
-  //
-  //
-  // @TODO Move upper.
-  //}
-  //else {
-  //  tpps_build_disabled_file_field($fields, $file_field_name);
-  //}
+
+
+// @TODO Check if fields below must be relocated.
+
+
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $fields['other-marker'] = [
+    '#type' => 'textfield',
+    '#title' => t('Other marker type: *'),
+  ];
+  $title = t('Other spreadsheet: '
+    . '<br />please provide a spreadsheet with columns for the Plant ID '
+    . 'of genotypes used in this study');
+  $file_field_name = 'other';
+  $description = t('Please upload a spreadsheet file containing '
+    . 'Genotype data. When your file is uploaded, you will be shown '
+    . 'a table with your column header names, several drop-downs, '
+    . 'and the first few rows of your file. You will be asked to define '
+    . 'the data type for each column, using the drop-downs provided to you. '
+    . 'If a column data type does not fit any of the options in the '
+    . 'drop-down menu, you may set that drop-down menu to "N/A". '
+    . 'Your file must contain one column with the Plant Identifier.');
+
+  tpps_form_build_file_field([
+    'form' => &$form,
+    'form_state' => $form_state,
+    'parents' => [$organism_name, 'genotype', 'files'],
+    'field_name' => $file_field_name,
+    'title' => $title,
+    'organism_name' => $organism_name,
+    'type' => $chest['type'],
+    'description' => $description,
+    'empty_field_value' => tpps_get_empty_field_value(
+      $form_state, $organism_name, $file_field_name
+    ),
+  ]);
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Other Columns.
+  $default_dynamic = !empty($page4_values[$organism_name]['genotype']['files']['other-columns']);
+  $fields['files']['other']['dynamic'] = [
+    '#type' => 'checkbox',
+    '#title' => t('This file needs dynamic dropdown options for column data type specification'),
+    '#ajax' => [
+      'wrapper' => "edit-$organism_name-genotype-files-other-ajax-wrapper",
+      'callback' => 'tpps_page_4_file_dynamic',
+      'effect' => 'slide',
+    ],
+    '#default_value' => $default_dynamic,
+  ];
+  $dynamic = tpps_get_ajax_value($form_state,
+    [$organism_name, 'genotype', 'files', 'other', 'dynamic'],
+    $default_dynamic,
+    'other'
+  );
+
+  if ($dynamic) {
+    $fields['files']['other']['columns'] = [
+      '#description' => t('Please define which columns hold the required data: '
+        . '<br />Plant Identifier, Genotype Data'
+      ),
+    ];
+    $fields['files']['other']['columns-options'] = [
+      '#type' => 'hidden',
+      '#value' => ['Genotype Data', 'Plant Identifier', 'N/A'],
+    ];
+  }
+  $fields['files']['other']['no-header'] = [];
 
   return $fields;
 }
@@ -829,20 +777,17 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     "manual2" => 'I can upload my own reference transcriptome file',
     "none" => 'I am unable to provide a reference assembly',
   ]);
-  $fields['ref-genome'] = [
+  // Field was relocated (v.2).
+  // 'source' => [$id, 'genotype', 'ref-genome'],
+  // 'target' => [$id, 'genotype', 'SNPs', 'ref-genome'],
+  $fields['SNPs']['ref-genome'] = [
     '#type' => 'select',
     '#title' => t('Reference Assembly used: *'),
     '#options' => $ref_genome_arr,
   ];
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => [],
-    'field_name' => 'ref-genome',
-    'new_parents' => ['SNPs'],
-    '#parents' => [$id, 'genotype'],
-  ]);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
+  //require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
+  module_load_include('inc', 'tripal', '/includes/tripal.importer');
   $class = 'EutilsImporter';
   tripal_load_include_importer_class($class);
   $eutils = tripal_get_importer_form(array(), $form_state, $class);
@@ -850,7 +795,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $eutils['#title'] = 'Tripal Eutils BioProject Loader';
   $eutils['#states'] = [
     'visible' => [
-      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'bio'],
+      ':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'bio'],
     ],
   ];
   $eutils['accession']['#description'] = t('Valid examples: 12384, 394253, 66853, PRJNA185471');
@@ -907,11 +852,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fasta['#states'] = array(
     'visible' => array(
     array(
-      [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url']],
+      [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'url']],
       'or',
-      [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
+      [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'manual']],
       'or',
-      [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
+      [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'manual2']],
     ),
     ),
   );
@@ -948,15 +893,15 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     = $fasta['file']['file_upload_existing']['#states'] = [
       'visible' => [
         [
-          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
+          [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'manual']],
           'or',
-          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
+          [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'manual2']],
         ],
       ],
     ];
   $fasta['file']['file_remote']['#states'] = [
     'visible' => [
-      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url'],
+      ':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'url'],
     ],
   ];
 
@@ -990,7 +935,9 @@ function tpps_add_dropdown_file_selector(array $chest) {
     '@file_name' => $file_name,
     '@hostname' => tpps_get_hostname(),
   ];
-  $form['files'][$file_field_name . '_file-location'] = [
+  // Field was relocated (v.2).
+  // $fields['files'] -> $fields['SNPs'].
+  $form['SNPs'][$file_field_name . '_file-location'] = [
     '#type' => 'select',
     '#title' => t('@file_name location', $params),
     '#options' => [
@@ -1004,9 +951,11 @@ function tpps_add_dropdown_file_selector(array $chest) {
         => ['value' => 'VCF'],
       ],
     ],
+    '#name' => $organism_name . '[genotype][files][' . $file_field_name . '_file-location]',
   ];
-
-  $form['files']['local_' . $file_field_name] = [
+  // Field was relocated (v.2).
+  // $fields['files'] -> $fields['SNPs'].
+  $form['SNPs']['local_' . $file_field_name] = [
     '#type' => 'textfield',
     '#title' => t('Path to @file_name at @hostname: *', $params),
     '#states' => [
@@ -1017,6 +966,7 @@ function tpps_add_dropdown_file_selector(array $chest) {
     ],
     '#description' => t('Please provide the full path to your @file_name file '
       . 'stored on @hostname', $params),
+    '#name' => $organism_name . '[genotype][files][local_' . $file_field_name . ']',
   ];
 }
 
@@ -1047,7 +997,11 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   // @TODO Minor. Better to rename field to avoid '/' in name
   // and make it more meaningful.
   $ssr_type_select = 'SSRs/cpSSRs';
-  $fields[$ssr_type_select] = [
+
+  // Field was relocated (v.2).
+  // 'source' => [$organism_name, 'genotype', $ssr_type_select],
+  // 'target' => [$ssr_fieldset, $ssr_type_select],
+  $fields[$ssr_fieldset][$ssr_type_select] = [
     '#type' => 'select',
     '#title' => t('Define SSRs/cpSSRs Type: *'),
     '#options' => [
@@ -1064,18 +1018,14 @@ function tpps_page_4_genotype_ssrs(array $chest) {
         . '[does_study_include_ssr_cpssr_data]"]' => ['value' => 'yes'],
       ],
     ],
-  ];
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => [],
-    'field_name' => $ssr_type_select,
-    'new_parents' => [$ssr_fieldset],
-    '#parents' => [$organism_name, 'genotype'],
     '#name' => $organism_name . '[genotype][' . $ssr_type_select . ']',
-  ]);
+  ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $fields['files']['ploidy'] = [
+  // Field was relocated (v.2).
+  //'source' => [$organism_name, 'genotype', 'files', 'ploidy'],
+  //'target' => [$ssr_fieldset, 'ploidy'],
+  $fields[$ssr_fieldset]['ploidy'] = [
     '#type' => 'select',
     '#title' => t('SSR Ploidy: *'),
     '#options' => [
@@ -1086,15 +1036,8 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     '#default_value' => tpps_get_ajax_value(
       $chest['form_state'], [$organism_name, 'genotype', 'files', 'ploidy'], 'Haploid'
     ),
-  ];
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => ['files'],
-    'field_name' => 'ploidy',
-    'new_parents' => [$ssr_fieldset],
-    '#parents' => [$organism_name, 'genotype', 'files'],
     '#name' => $organism_name . '[genotype][files][ploidy]',
-  ]);
+  ];
   if (variable_get('tpps_page_4_update_ploidy_description', TRUE)) {
     // Allow 'Ploidy' field desctiptio be update on the fly.
     $ploidy_description = [
@@ -1123,6 +1066,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   // SSRs field.
   //
   $file_field_name = 'ssrs';
+  $title = t('SSRs Spreadsheet');
   // Note: Description differs only single word '@type'.
   $ssr_field_description = 'Please upload a spreadsheet containing your '
     . '@type data. The format of this file is very important! TPPS will '
@@ -1130,7 +1074,10 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     . 'For any ploidy, TPPS will assume that the first column of your '
     . 'file is the column that holds the Plant Identifier that matches '
     . 'your accession file.';
-  $title = t('SSRs Spreadsheet');
+
+  // Field was relocated (v.2).
+  //'source' => [$organism_name, 'genotype', 'files', 'ssrs'];
+  //'target' => [$ssr_fieldset, 'ssrs'];
   tpps_form_build_file_field(array_merge($chest, [
     'parents' => [$organism_name, 'genotype', 'files'],
     'field_name' => $file_field_name,
@@ -1151,7 +1098,9 @@ function tpps_page_4_genotype_ssrs(array $chest) {
         => ['value' => 'cpSSRs'],
       ],
     ],
-
+    'extra_elements' => [
+      '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+    ],
 
     // no header checkbox.
 
@@ -1178,20 +1127,14 @@ function tpps_page_4_genotype_ssrs(array $chest) {
     //      ],
     //],
 
-
   ]));
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => ['files'],
-    'field_name' => $file_field_name,
-    'new_parents' => [$ssr_fieldset],
-    '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
-    '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
-  ]);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // csSSR Field.
   $title = t('cpSSRs Spreadsheet');
   $file_field_name = 'ssrs_extra';
+  // Field was relocated (v.2).
+  //'source' => [$organism_name, 'genotype', 'files', 'ssrs_extra'];
+  //'target' => [$ssr_fieldset, 'ssrs_extra'];
   tpps_form_build_file_field(array_merge($chest, [
     'parents' => [$organism_name, 'genotype', 'files'],
     'field_name' => $file_field_name,
@@ -1212,15 +1155,10 @@ function tpps_page_4_genotype_ssrs(array $chest) {
         => ['value' => 'SSRs'],
       ],
     ],
+    'extra_elements' => [
+      '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+    ],
   ]));
-  tpps_form_relocate_field([
-    'form' => &$fields,
-    'current_parents' => ['files'],
-    'field_name' => $file_field_name,
-    'new_parents' => [$ssr_fieldset],
-    '#parents' => [$organism_name, 'genotype', 'files', $file_field_name],
-    '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
-  ]);
 }
 
 /**

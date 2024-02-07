@@ -358,6 +358,7 @@ function tpps_flatten(array $state) {
 
         if (isset($org['genotype'])) {
           $geno = &$org['genotype'];
+          $snp = $geno['SNPs'];
 
           $marker_types = array();
           foreach ($geno['marker-type'] as $key => $val) {
@@ -368,7 +369,6 @@ function tpps_flatten(array $state) {
           $data["$org_name Genotype Marker Types"] = isset($marker_types) ? implode(', ', $marker_types) : NULL;
 
           if (isset($geno['marker-type']['SNPs']) and $geno['marker-type']['SNPs']) {
-            $snp = $geno['SNPs'];
             if (isset($snp['genotyping-design']) and $snp['genotyping-design']) {
               $geno_design_options = array(
                 1 => 'GBS',
@@ -420,7 +420,9 @@ function tpps_flatten(array $state) {
             $data["$org_name Other Marker Type"] = $geno['other-marker'];
           }
 
-          if (isset($geno['ref-genome']) and $geno['ref-genome'] === 'bio' and isset($geno['BioProject-id']) and $geno['BioProject-id'] != '') {
+          if (isset($snps['ref-genome']) && $snps['ref-genome'] === 'bio'
+            && isset($geno['BioProject-id']) && $geno['BioProject-id'] != ''
+          ) {
             $data["$org_name BioProject Id"] = $geno['BioProject-id'];
 
             if (isset($geno['assembly-auto']) and gettype($geno['assembly-auto']) === 'array') {
@@ -433,7 +435,19 @@ function tpps_flatten(array $state) {
               }
             }
           }
-          elseif (isset($geno['ref-genome']) and ($geno['ref-genome'] === 'manual' or $geno['ref-genome'] === 'manual2') and isset($geno['tripal_fasta']['file']['file_upload']) and isset($geno['tripal_fasta']['file']['file_upload_existing']) and ($geno['tripal_fasta']['file']['file_upload'] or $geno['tripal_fasta']['file']['file_upload_existing'])) {
+          elseif (
+            isset($spns['ref-genome'])
+            && (
+              $snps['ref-genome'] === 'manual'
+              || $snps['ref-genome'] === 'manual2'
+            )
+            && isset($geno['tripal_fasta']['file']['file_upload'])
+            and isset($geno['tripal_fasta']['file']['file_upload_existing'])
+            and (
+              $geno['tripal_fasta']['file']['file_upload']
+              || $geno['tripal_fasta']['file']['file_upload_existing']
+            )
+          ) {
             if ($geno['tripal_fasta']['file']['file_upload']) {
               $data["$org_name Uploaded Reference File"] = $geno['tripal_fasta']['file']['file_upload'];
             }
@@ -441,11 +455,16 @@ function tpps_flatten(array $state) {
               $data["$org_name Reference File"] = $geno['tripal_fasta']['file']['file_upload_existing'];
             }
           }
-          elseif (isset($geno['ref-genome']) and $geno['ref-genome'] === 'url' and isset($geno['tripal_fasta']['file']['file_remote']) and $geno['tripal_fasta']['file']['file_remote']) {
+          elseif (
+            isset($snps['ref-genome'])
+            && $snps['ref-genome'] === 'url'
+            && isset($geno['tripal_fasta']['file']['file_remote'])
+            && $geno['tripal_fasta']['file']['file_remote']
+          ) {
             $data["$org_name Website of reference file"] = $geno['tripal_fasta']['file']['file_remote'];
           }
-          elseif (isset($geno['ref-genome']) and $geno['ref-genome']) {
-            $data["$org_name Reference Genome"] = $geno['ref-genome'];
+          elseif (isset($snps['ref-genome']) and $snps['ref-genome']) {
+            $data["$org_name Reference Genome"] = $snps['ref-genome'];
           }
 
           if (!empty($geno['files']['snps-assay'])) {

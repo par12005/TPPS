@@ -389,6 +389,9 @@ function tpps_form_add_yesno_field(array $chest) {
 /**
  * Moves form field to the new place and saves structure in $form_state.
  *
+ * WARNING: Works fine for simple fields and doesn't work for complex fields
+ * like 'managed_file' type fields.
+ *
  * Relocated field will have the same parents (the same structure)
  * in non-flat list under $form_state['values']. It means only UI changes.
  *
@@ -786,12 +789,11 @@ function tpps_form_build_file_field(array $chest) {
         . "you provided in your plant accession file, and all of the "
         . "remaining columns should contain SNP data."),
 
+// @TODO Update relocated fields #names.
 
-      // @TODO UPdate states.
-      //
       '#states' => [
         'visible' => [
-          ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
+          ':input[name="' . $organism_name . '[genotype][files][genotyping-type]"]'
             => ['!value' => 'Genotyping Assay'],
           // &&
           ':input[name="' . $organism_name . '[genotype][files][file-type]"]'
