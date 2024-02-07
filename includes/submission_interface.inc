@@ -49,6 +49,7 @@
  *  approved
  *  completed
  *  loaded
+ *
  *  @todo Better to store them not inside serialized array.
  *  Create separate table for study statuses:
  *  Accession | Status Id | Timestamp
@@ -79,6 +80,7 @@
  * @todo Use 'study_state' or even 'study' instead of 'Submission Interface'
  * because 'Submission Interface' is a name of the feature but not name of
  * the array with data.
+ *
  * @todo See submit_all.php:75. There 'status' is stored twice:
  * 1. $submission_interface['status'].
  * 2. public.tpps_submission.status.
@@ -86,22 +88,7 @@
  * public.tpps_submission.status. Then update this code to use
  * Submission Interface only. Do not use tpps_update_submission() but
  * update db table directly to avoid $submission_interface update.
- * @todo Idea: Naming: tpps_submission_create|get|update_interface().
- *
- * @todo We could use $form_state['updated'] date for versioning instead of
- * new field. But in this case we need to map dates and versions.
- *
- * @todo If number of versions will be big enough and there is no old versions
- * left we could remove those versions from processing to speed-up interface
- * creation.
  */
-
-// Key in $form_state which used to store Submission Interface version.
-define('TPPS_SUBMISSION_INTERFACE_VERSION', 'submission_interface_version');
-
-// Number of the initial version of Form State Array.
-// This value will be used to apply incremental changes (patches).
-define('TPPS_SUBMISSION_INTERFACE_INIT_VERSION', 1);
 
 /**
  * Generates new Submission Interface by Submission Accession.
@@ -147,12 +134,13 @@ function tpps_submission_interface_generate(array $form_state = []) {
   // and each version will be incremental change so all previous changes must
   // be applied first. Using simple integers will allow to easily detect
   // which version must be applied.
-  $current_version = tpps_submission_interface_get_version($interface);
+  $current_version = tpps_submission_interface_version_get($form_state);
 
-  $change_list = tpps_submission_interface_get_change_list();
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  $change_list = tpps_submission_form_get_change_list();
   // We need to apply changes from 1st to $current version to have
   // incremental changes.
-  $i = TPPS_SUBMISSION_INTERFACE_INIT_VERSION;
+  $i = TPPS_SUBMISSION_FORM_START_VERSION;
   for (; $i <= $current_version; $i++) {
     foreach ($change_list[$i] as $action => $action_data) {
       $function = 'tpps_submission_interface_action_' . $action;
@@ -182,19 +170,6 @@ function tpps_submission_interface_generate(array $form_state = []) {
 }
 
 /**
- * Gets Submission Interface version.
- *
- * @param array $form_state
- *   Submission's Form State array.
- *
- * @return int
- *   Returns Submission's From State version.
- */
-function tpps_submission_interface_get_version(array $form_state) {
-  return $form_state[TPPS_SUBMISSION_INTERFACE_VERSION] ?? 1;
-}
-
-/**
  * Gets Submission Interface for given study.
  *
  * Note:
@@ -204,11 +179,11 @@ function tpps_submission_interface_get_version(array $form_state) {
  *   The accession of the submission in format 'TGDRxxxx'.
  *
  * @return array
- *   Returns array with Submission Interface data prepared for pipeline processing.
+ *   Returns Submission Interface Array which is ready for pipeline processing.
  *   Returns empty array if Submission wan't found.
  *
- *
- *   @TODO Add caching see tpps_load_submission_state().
+ * @todo Think about caching. See tpps_load_submission_state().
+ * But probably it could cause problems.
  */
 function tpps_submission_interface_load($accession) {
   $result = db_select('tpps_submission', 's')
@@ -318,7 +293,7 @@ function tpps_submission_interface_update(array &$interface, $status = NULL) {
  *   Submission Interface passed by reference so no need to return it.
  * @param array $action_data
  *   Data required for this action.
- *   See tpps_submission_interface_get_change_list().
+ *   See tpps_submission_form_get_change_list().
  *   Each item is path to the single field.
  *   For more details about format see: tpps_submission_interface_action_path().
  */
@@ -336,7 +311,8 @@ function tpps_submission_interface_action_unset(array &$interface, array $action
       );
       continue;
     }
-    // Note:$item['parent_element'] is a reference to the element inside $interface.
+    // Note:
+    // $target['parent_element'] is a reference to the element inside $interface.
     unset($target['parent_element'][$target['field_name']]);
   }
 }
@@ -351,7 +327,7 @@ function tpps_submission_interface_action_unset(array &$interface, array $action
  *   Submission Interface passed by reference so no need to return it.
  * @param array $action_data
  *   Data required for this action.
- *   See tpps_submission_interface_get_change_list().
+ *   See tpps_submission_form_get_change_list().
  *   Each item contains information for a single field relocation and
  *   represented by list of parents (including field name) with 2 keys:
  *   'source' and 'target'.
@@ -374,118 +350,10 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
       );
       continue;
     }
-    // Note:$item['parent_element'] is a reference to the element inside $interface.
+    // Note: $source['parent_element'] and $target['parent_element']
+    // are a references to the elements inside $interface.
     $target['parent_element'][$target['field_name']]
       = $source['parent_element'][$source['field_name']];
     unset($source['parent_element'][$source['field_name']]);
   }
-}
-
-/**
- * Gets list of changes for specified version or for all versions.
- *
- * @param int $version
- *   Version of the Submission Form State.
- *   This version will be used to create Submission Interface.
- *
- * @return mixed
- *   Returns list of changes for particular version or NULL if there is no
- *   changes for given version number.
- *   Returns all version's changes.
- */
-function tpps_submission_interface_get_change_list($version = NULL) {
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Remove useless elemLnts to reduce size.
-  $change_list = [
-    '1' => [
-      // We unset not used items instead of copy required items from
-      // $form_state because if new elements will be found they will be
-      // left for sure. It's safer.
-      'unset' => [
-        // List of path to the items in $interface at the top (1st) level.
-        'build_info',
-        'temporary',
-        'programmed',
-        'programmed_bypass_access_check',
-        'cache',
-        'rebuild',
-        'rebuild_info',
-        'redirect',
-        'submitted',
-        'executed',
-        'method',
-        'groups',
-        'buttons',
-        'input',
-        'values',
-        'complete form',
-        'process_input',
-        'invalid_token',
-        'triggering_element',
-        'clicked_button',
-        ['saved_values', 'form_build_id'],
-        'tpps_submission_export_files',
-
-        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // List of the fields which must be left.
-        // Required by submit_all() and tpps_table_display() and sub-functions.
-        // 'saved_values',
-        // 'dbxref_id',
-        // 'created',
-        // 'accession',
-        // 'status',
-        // 'stats',
-        // 'ids',
-        // 'tpps_type',
-        // 'file_info',
-        // 'updated',
-        // 'approved',
-        // 'completed',
-        // 'loaded',
-        // 'submitting_uid',
-        // 'job_id',
-        // 'revised_files',
-        // 'admin_comments',
-        // 'alternative_accessions',
-        // 'data',
-        // 'tree_info'.
-        //
-        //  Probably could be unset:
-        // 'stage',
-      ],
-    ],
-    // #86ayw8a7k Genotype Logic changes.
-    '2' => [],
-  ];
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Dynamic changes for version 1.
-  //
-  // Remove Drupal's internal fields used for form building.
-  // Note: Those fields are stored in column tpps_submission.submission_state.
-  $page_list = [
-    'frontpage', TPPS_PAGE_1, TPPS_PAGE_2, TPPS_PAGE_3, TPPS_PAGE_4, 'summarypage',
-  ];
-  $drupal_internal_fields = [
-    // Note: Page 1 has not 'Back' button.
-    'Back',
-    'Save',
-    'Next',
-    'form_build_id',
-    'form_token',
-    'form_id',
-    'op',
-    '#cleared',
-    // Only for Page 4.
-    'submit',
-    'diagnostics-curation',
-  ];
-  foreach ($page_list as $page) {
-    foreach ($drupal_internal_fields as $field) {
-      $change_list['1']['unset'][] = ['saved_values', $page, $field];
-    }
-  }
-
-  return ($version ? ($change_list[$version] ?? NULL) : $change_list);
 }

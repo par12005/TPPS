@@ -13,6 +13,7 @@
 
 module_load_include('inc', 'tpps', 'includes/submission_file');
 module_load_include('inc', 'tpps', 'includes/submission_interface');
+module_load_include('inc', 'tpps', 'includes/submission_form_version');
 
 /**
  * Loads a TPPS Submission Info.

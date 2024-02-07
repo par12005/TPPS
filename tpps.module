@@ -44,6 +44,13 @@ define('TPPS_COLUMN_CLONE_NUMBER', 13);
 
 
 require_once 'includes/common.inc';
+module_load_include('inc', 'tpps', 'includes/common');
+// Must be called after common.inc was loaded.
+if (!is_live_site()) {
+  ini_set('display_errors', 1);
+  ini_set('display_startup_errors', 1);
+  error_reporting(E_ALL);
+}
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';

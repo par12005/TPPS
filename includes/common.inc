@@ -27,7 +27,7 @@ function tpps_get_hostname() {
  */
 function is_live_site() {
   // @TODO Minor. Move value of the live domain to the settings page.
-  $live_domian = 'treegenesdb.org';
+  $live_domain = 'treegenesdb.org';
   return (bool) (tpps_get_hostname() == $live_domain);
 }
 
