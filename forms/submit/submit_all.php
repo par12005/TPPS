@@ -69,7 +69,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   }
 
   // Update 'updated' field with current time and 'status' field.
-  tpps_submission_interface_update($interface, 'Submission Job Running');
+  tpps_submission_interface_save($interface, 'Submission Job Running');
   $transaction = db_transaction();
   try {
 
@@ -141,7 +141,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     // Functions starting from tpps_submit_page_1() update $interface array
     // with new data so now we are going to update db record.
     $interface['loaded'] = time();
-    tpps_submission_interface_update($interface, TPPS_STATUS_PENDING_APPROVED);
+    tpps_submission_interface_save($interface, TPPS_STATUS_PENDING_APPROVED);
     tpps_log("[INFO] Complete!");
 
     fclose($tpps_job_logger['log_file_handle']);
@@ -151,7 +151,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $transaction->rollback();
     // Restore status of study because processing failed.
     $interface = tpps_submission_interface_load($accession);
-    tpps_submission_interface_update($interface, TPPS_STATUS_PENDING_APPROVAL);
+    tpps_submission_interface_save($interface, TPPS_STATUS_PENDING_APPROVAL);
 
     tpps_log('[ERROR] Job failed', [], TRIPAL_ERROR);
     tpps_log('[ERROR] Error message: @msg', ['@msg' => $e->getMessage()], TRIPAL_ERROR);

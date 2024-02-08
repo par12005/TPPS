@@ -15,30 +15,29 @@
  * will be stored in public.tpps_submissions database table.
  *
  * ----------------------------------------------------------------------------
- * Migration.
+ * Storage.
  *
- * |  tpps_load_submission()    |  tpps_submission_interface_load()    |
- * |  tpps_update_submission()  |  tpps_submission_interface_update()  |
+ * 1. Serialized SIA is stored in DB (tpps_submission.submission_interface).
+ * 2. PHP code always uses unserialized version if SIA.
+ *
+ * ----------------------------------------------------------------------------
+ * API:
+ *   *_load() - Loads Submission Interface Array from DB. Uses cache.
+ *   *_save() - Saves given Submission Interface Array to DB.
+ *   *_generate() - Creates SIA and returns it (DB won't be updated).
+ *   *_new() - Creates SIA, saves to DB and returns it.
+ * Note: functions has prefix 'tpps_submission_interface' (represented by '*').
  *
  * ----------------------------------------------------------------------------
  * Usage.
- *
- * To use:
  *   module_load_include('inc', 'tpps', 'includes/submission_interface');
  *
  * Since submission data could be updated from admin's pages and they not use
  * a single function but update DB table directly it's safer for now to update
  * Submission Interface Array on each change of Submission State Array.
  *
- * Study statuses previously stored serialized in colum
- * tpps_submission.submission_state.
+ * Study statuses previously stored serialized in column tpps_submission.submission_state.
  * So we will store status for now inside Submission Interface Array as well.
- *
- * ----------------------------------------------------------------------------
- * Serialization.
- *
- * Submission Interface Array stored in database as serialized array but
- * in code we use normal PHP-array (unserialized).
  *
  * ----------------------------------------------------------------------------
  * Dates.
@@ -56,9 +55,6 @@
  *
  * ----------------------------------------------------------------------------
  * Usage tips.
- *
- * To get updated and serialized Submission Interface ready to be stored in DB:
- * 'submission_interface' => serialize(tpps_submission_interface_generate($state)),
  *
  * To exclude only 'submission_interface' from the list of query's fields:
  *   $query = db_select('tpps_submission', 's')
@@ -104,7 +100,7 @@
 function tpps_submission_interface_new($accession) {
   $form_state = tpps_load_submission_state($accession, 1);
   $interface = tpps_submission_interface_generate($form_state);
-  return tpps_submission_interface_update($interface);
+  return tpps_submission_interface_save($interface);
 }
 
 /**
@@ -124,6 +120,7 @@ function tpps_submission_interface_generate(array $form_state = []) {
     watchdog('tpps', 'Empty Submission Form State.', [], WATCHDOG_WARNING);
     return [];
   }
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
 
   // Initialize Submission Interface.
   // Do NOT change $form_state but update $interface instead.
@@ -136,8 +133,8 @@ function tpps_submission_interface_generate(array $form_state = []) {
   // which version must be applied.
   $current_version = tpps_submission_form_version_get($form_state);
 
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $change_list = tpps_submission_form_get_change_list($form_state);
+  $change_list = tpps_submission_form_version_changes($form_state);
+  //dpm($change_list);
   // We need to apply changes from 1st to $current version to have
   // incremental changes.
   $i = TPPS_SUBMISSION_FORM_START_VERSION;
@@ -163,6 +160,9 @@ function tpps_submission_interface_generate(array $form_state = []) {
       // Action-functions are (for search):
       // tpps_submission_interface_action_unset();
       // tpps_submission_interface_action_move().
+      if (variable_get('tpps_debug_mode', FALSE)) {
+        dpm($action_data, $function);
+      }
       call_user_func_array($function, [&$interface, $action_data]);
     }
   }
@@ -181,9 +181,6 @@ function tpps_submission_interface_generate(array $form_state = []) {
  * @return array
  *   Returns Submission Interface Array which is ready for pipeline processing.
  *   Returns empty array if Submission wan't found.
- *
- * @todo Think about caching. See tpps_load_submission_state().
- * But probably it could cause problems.
  */
 function tpps_submission_interface_load($accession) {
   $result = db_select('tpps_submission', 's')
@@ -191,8 +188,6 @@ function tpps_submission_interface_load($accession) {
     ->condition('accession', $accession)
     ->range(0, 1)
     ->execute()->fetchAssoc();
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (!$result) {
     // Try to find study by 'accession' in 'tpps_submission_dbxref' table.
     $query = db_select('tpps_submission', 's');
@@ -208,8 +203,6 @@ function tpps_submission_interface_load($accession) {
       ->range(0, 1);
     $result = $query->execute()->fetchAssoc();
   }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Process results.
   if ($result) {
     if (!empty($result['submission_interface'])) {
@@ -253,7 +246,7 @@ function tpps_submission_interface_load($accession) {
  *   'updated' fields.
  *   Returns NULL if $form_state or Study accession is empty.
  */
-function tpps_submission_interface_update(array &$interface, $status = NULL) {
+function tpps_submission_interface_save(array &$interface, $status = NULL) {
   if (empty($interface) || empty($interface['accession'])) {
     return NULL;
   }
@@ -282,78 +275,4 @@ function tpps_submission_interface_update(array &$interface, $status = NULL) {
     ->condition('accession', $accession)
     ->execute();
   return $interface;
-}
-
-/**
- * Submission Interface Action 'unset'.
- *
- * Given list of fields will be removed/unset in Submission Interface.
- *
- * @param array $interface
- *   Submission Interface passed by reference so no need to return it.
- * @param array $action_data
- *   Data required for this action.
- *   See tpps_submission_form_get_change_list().
- *   Each item is path to the single field.
- *   For more details about format see: tpps_submission_interface_action_path().
- */
-function tpps_submission_interface_action_unset(array &$interface, array $action_data) {
-  module_load_include('inc', 'tpps', 'includes/form');
-  foreach ($action_data as $key => $item) {
-    if (empty($item)) {
-      continue;
-    }
-    $target = &tpps_form_get_path($interface, $item);
-    if (empty($target['parent_element']) || empty($target['field_name'])) {
-      watchdog('tpps', 'Submission Interface Action "unset" #@key failed.'
-        . '<br />Value: <pre>@item</pre>.',
-        ['@key' => $key, '@item' => print_r($item, 1)], WATCHDOG_ERROR
-      );
-      continue;
-    }
-    // Note:
-    // $target['parent_element'] is a reference to the element inside $interface.
-    unset($target['parent_element'][$target['field_name']]);
-  }
-}
-
-/**
- * Submission Interface Action 'move'.
- *
- * Given list of fields will be moved/relocate to the new location inside
- * Submission Interface Array.
- *
- * @param array $interface
- *   Submission Interface passed by reference so no need to return it.
- * @param array $action_data
- *   Data required for this action.
- *   See tpps_submission_form_get_change_list().
- *   Each item contains information for a single field relocation and
- *   represented by list of parents (including field name) with 2 keys:
- *   'source' and 'target'.
- */
-function tpps_submission_interface_action_move(array &$interface, array $action_data) {
-  module_load_include('inc', 'tpps', 'includes/form');
-  foreach ($action_data as $key => $item) {
-    if (empty($item['source']) || empty($item['target'])) {
-      continue;
-    }
-    $source = &tpps_form_get_path($interface, $item['source']);
-    $target = &tpps_form_get_path($interface, $item['target']);
-    if (
-      empty($source['parent_element']) || empty($source['field_name'])
-      || empty($target['parent_element']) || empty($target['field_name'])
-    ) {
-      watchdog('tpps', 'Submission Interface Action "move" #@key failed.'
-        . '<br />Value: <pre>@item</pre>.',
-        ['@key' => $key, '@item' => print_r($item, 1)], WATCHDOG_ERROR
-      );
-      continue;
-    }
-    // Note: $source['parent_element'] and $target['parent_element']
-    // are a references to the elements inside $interface.
-    $target['parent_element'][$target['field_name']]
-      = $source['parent_element'][$source['field_name']];
-    unset($source['parent_element'][$source['field_name']]);
-  }
 }

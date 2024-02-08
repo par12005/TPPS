@@ -104,7 +104,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   ];
   $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
 
-  $doi = tpps_get_ajax_value($form_state, ['doi'], '');
+  $doi = tpps_get_ajax_value($form_state, ['publication', 'doi'], '');
   $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']) ?? 1;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -138,7 +138,10 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
   // Accession will be stored in 'old_tgdr' field.
   // @TODO Minor. Rename field to 'publication_doi'.
-  $form['doi'] = [
+  // $form['doi'] = [
+  //
+  // Field was relocated (v.2). [] -> ['publication'];
+  $form['publication']['doi'] = [
     '#type' => 'textfield',
     '#title' => t('Publication DOI:')
       . tpps_page_1_required_by_status($form_state),
@@ -153,13 +156,8 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       ],
     ],
   ];
-  tpps_form_relocate_field([
-    'form' => &$form,
-    'current_parents' => [],
-    'field_name' => 'doi',
-    'new_parents' => ['publication'],
-  ]);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Field was relocated (v.2). [] -> ['publication'];
   $form['dataset_doi'] = [
     '#type' => 'textfield',
     '#title' => t('Dataset DOI:'),
@@ -173,13 +171,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
       ],
     ],
   ];
-  tpps_form_relocate_field([
-    'form' => &$form,
-    'current_parents' => [],
-    'field_name' => 'dataset_doi',
-    'new_parents' => ['publication'],
-  ]);
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Primary Author.
   // Element '#parents' doesn't work but '#tree' => FALSE works.
@@ -196,23 +187,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#description' => t('Note: please format in ‘Last, First’ format.'),
     '#default_value' => tpps_get_ajax_value($form_state, ['primaryAuthor'], NULL),
   ];
-  // @todo Remove debug code.
-  // Set to 1 to check if field's relocation works.
-  if (0) {
-    $form['publication']['test'] = [
-      '#type' => 'fieldset',
-      '#title' => t('TEST'),
-      '#collapsible' => FALSE,
-    ];
-    tpps_form_relocate_field([
-      'form' => &$form['publication'],
-      'current_parents' => [],
-      'field_name' => 'primaryAuthor',
-      'new_parents' => ['test'],
-      '#parents' => ['publication', 'test'],
-    ]);
-  }
-  // Update field's value.
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show publication extra fields.

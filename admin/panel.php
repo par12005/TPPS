@@ -96,7 +96,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   if (empty($submission_interface['status'])) {
     $submission_interface['status'] = $submission_info['status'];
-    tpps_submission_interface_update($submission_interface, $submission_info['status']);
+    tpps_submission_interface_save($submission_interface, $submission_info['status']);
   }
   $options = [];
   $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
@@ -682,7 +682,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 function tpps_save_admin_comments(array $form, array $form_state) {
   $state = tpps_submission_interface($form_state['values']['accession']);
   $state['admin_comments'] = $form_state['values']['admin-comments'];
-  tpps_submission_interface_update($state);
+  tpps_submission_interface_save($state);
   drupal_set_message(t('Comments saved successfully'), 'status');
   return $form['admin-comments'];
 }
@@ -1262,7 +1262,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       else {
         $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
       }
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       drupal_set_message(t('VCF disable import setting saved'));
       break;
 
@@ -1270,7 +1270,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'save_vcf_import_mode':
       $mode = $form_state['values']['VCF_IMPORT_MODE'] ?? 'hybrid';
       $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = $mode;
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       drupal_set_message(
         t('VCF import mode saved as @mode".', ['@mode' => $mode])
       );
@@ -1359,7 +1359,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
         $args, $state['submitting_uid'], 10, $includes, TRUE
       );
       $state['job_id'] = $jid;
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1464,7 +1464,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
           ]
         );
       }
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       drupal_set_message(t('Updated study TPPS type: ') . $state['tpps_type']);
       break;
 
@@ -1473,7 +1473,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $lang = user_preferred_language($owner);
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
       $state['status'] = 'Incomplete';
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       tpps_update_submission_info($accession, ['status' => $state['status']]);
       drupal_set_message(t('Submission Rejected. Message has been sent to user.'));
       drupal_goto('<front>');
@@ -1538,20 +1538,20 @@ function tpps_admin_panel_submit($form, &$form_state) {
           $state['status'] = 'Approved - Delayed Submission Release';
         }
       }
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       tpps_update_submission_info($accession, ['status' => $state['status']]);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'change_date':
       $state['saved_values']['summarypage']['release-date'] = $form_state['values']['date'];
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'change_state_status':
       $state['status'] = $form_state['values']['state-status'];
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       tpps_update_submission_info($accession, ['status' => $state['status']]);
       break;
 
@@ -1569,7 +1569,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
         unset($state['study_view_role']);
         drupal_set_message(t('Study view role set to public all users'));
       }
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1579,7 +1579,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       if ($old_alt_acc != $new_alt_acc) {
         tpps_submission_add_alternative_accession($state, explode(',', $new_alt_acc));
         $state['alternative_accessions'] = $new_alt_acc;
-        tpps_submission_interface_update($state);
+        tpps_submission_interface_save($state);
       }
       break;
 
@@ -1588,7 +1588,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $new_user = user_load_by_mail($form_state['values']['new_owner']);
       $state['submitting_uid'] = $new_user->uid;
       tpps_update_submission_info($accession, ['uid' => $new_user->uid]);
-      tpps_submission_interface_update($state);
+      tpps_submission_interface_save($state);
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1666,7 +1666,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
             }
           }
           // Update Submision Interface.
-          tpps_submission_interface_update($state);
+          tpps_submission_interface_save($state);
           drupal_set_message(t('Done.'));
         }
       }

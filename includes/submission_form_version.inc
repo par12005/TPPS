@@ -3,8 +3,9 @@
 /**
  * @file
  * Manages Submission Form Version.
- *
- * ----------------------------------------------------------------------------
+ */
+
+/**
  * Overview.
  *
  * We need to have version of the Submission's Form to be able to convert
@@ -67,18 +68,102 @@ function tpps_submission_form_version_get(array $form_state) {
 /**
  * Sets Submission Form Version.
  *
- * @param array $form_state
- *   Submission's Form State array.
+ * @param array $form
+ *   Submission's Form array.
+ *
+ *   @todo Replace with *_add_fiedl().
+ *   @todo See tpps_main_submit() to create new function.
  */
-function tpps_submission_form_version_set(array &$form_state) {
+function tpps_submission_form_version_set(array &$form) {
   // We use $form_state['saved_values'] as parent because it will be restored
   // and saved on each load/submit of multistep form.
-  $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
-    = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
+  $form[TPPS_SUBMISSION_FORM_VERSION_KEY] = [
+    '#type' => 'hidden',
+    '#value' => TPPS_SUBMISSION_FORM_CURRENT_VERSION,
+  ];
 }
 
 
+/**
+ * Submission Interface Action 'unset'.
+ *
+ * Given list of fields will be removed/unset in Submission Interface.
+ *
+ * @param array $interface
+ *   Submission Interface passed by reference so no need to return it.
+ * @param array $action_data
+ *   Data required for this action.
+ *   See tpps_submission_form_get_change_list().
+ *   Each item is path to the single field.
+ *   For more details about format see: tpps_submission_interface_action_path().
+ */
+function tpps_submission_interface_action_unset(array &$interface, array $action_data) {
+  module_load_include('inc', 'tpps', 'includes/form');
+  foreach ($action_data as $key => $item) {
+    if (empty($item)) {
+      continue;
+    }
+    $target = &tpps_form_get_path($interface, $item);
+    if (empty($target['parent_element']) || empty($target['field_name'])) {
+      watchdog('tpps', 'Submission Interface Action "unset" #@key failed.'
+        . '<br />Value: <pre>@item</pre>.',
+        ['@key' => $key, '@item' => print_r($item, 1)], WATCHDOG_ERROR
+      );
+      continue;
+    }
+    // Note:
+    // $target['parent_element'] is a reference to the element inside $interface.
+    unset($target['parent_element'][$target['field_name']]);
+  }
+}
 
+/**
+ * Submission Interface Action 'move'.
+ *
+ * Given list of fields will be moved/relocate to the new location inside
+ * Submission Interface Array.
+ *
+ * @param array $interface
+ *   Submission Interface passed by reference so no need to return it.
+ * @param array $action_data
+ *   Data required for this action.
+ *   See tpps_submission_form_get_change_list().
+ *   Each item contains information for a single field relocation and
+ *   represented by list of parents (including field name) with 2 keys:
+ *   'source' and 'target'.
+ *   'source' is a real element path. 'target' is a new (but actually it's
+ *   location in verion 1).
+ */
+function tpps_submission_interface_action_move(array &$interface, array $action_data) {
+  module_load_include('inc', 'tpps', 'includes/form');
+  foreach ($action_data as $key => $item) {
+    if (empty($item['source']) || empty($item['target'])) {
+      continue;
+    }
+    $source = &tpps_form_get_path($interface, $item['source']);
+    $target = &tpps_form_get_path($interface, $item['target']);
+    if (
+      empty($source['parent_element']) || empty($source['field_name'])
+      || empty($target['parent_element']) || empty($target['field_name'])
+    ) {
+      watchdog('tpps', 'Submission Interface Action "move" #@key failed.'
+        . '<br />Value: <pre>@item</pre>.',
+        ['@key' => $key, '@item' => print_r($item, 1)], WATCHDOG_ERROR
+      );
+      continue;
+    }
+    // Note: $source['parent_element'] and $target['parent_element']
+    // are a references to the elements inside $interface.
+    if ($target['field_name'] == 'doi') {
+      dpm($source, 'source');
+      dpm($target, 'target');
+    }
+
+    $target['parent_element'][$target['field_name']]
+      = $source['parent_element'][$source['field_name']];
+    unset($source['parent_element'][$source['field_name']]);
+  }
+}
 
 
 
@@ -94,7 +179,7 @@ function tpps_submission_form_version_set(array &$form_state) {
  *   changes for given version number.
  *   Returns all version's changes.
  */
-function tpps_submission_form_get_change_list(array $form_state, $version = NULL) {
+function tpps_submission_form_version_changes(array $form_state, $version = NULL) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Remove useless elemLnts to reduce size.
@@ -129,7 +214,7 @@ function tpps_submission_form_get_change_list(array $form_state, $version = NULL
         'tpps_submission_export_files',
         // @TODO Submission Form Version is useless for pipeline processing
         // but could be useful for debugging.
-        ['saved_values', TPPS_SUBMISSION_FORM_VERSION_KEY],
+        //['saved_values', TPPS_SUBMISSION_FORM_VERSION_KEY],
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // List of the fields which must be left.
@@ -161,6 +246,21 @@ function tpps_submission_form_get_change_list(array $form_state, $version = NULL
     ],
     // #86ayw8a7k Genotype Logic changes.
     '2' => [
+      'move' => [
+        // Page 1. 'DOI' field.
+        'doi' => [
+          // Form State.
+          'source' => ['saved_values', TPPS_PAGE_1, 'publication', 'doi'],
+          // Interface.
+          'target' => ['saved_values', TPPS_PAGE_1, 'doi'],
+        ],
+        'dataset_doi' => [
+          'source' => [
+            'saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi'
+          ],
+          'target' => ['saved_values', TPPS_PAGE_1, 'dataset_doi'],
+        ],
+      ],
     ],
   ];
 
@@ -225,21 +325,21 @@ function tpps_submission_form_get_change_list(array $form_state, $version = NULL
       // 'ref-genome' field.
       $field_name = 'ref-genome';
       $change_list['2']['move'][] = [
-        'source' => array_merge($genotype_parents, [$field_name]),
-        'target' => array_merge($genotype_parents, ['SNPs', $field_name]),
+        'target' => array_merge($genotype_parents, [$field_name]),
+        'source' => array_merge($genotype_parents, ['SNPs', $field_name]),
       ];
       // 'files' to 'SNPs' fields.
       foreach ($files_to_snps_fields as $field_name) {
         $change_list['2']['move'][] = [
-          'source' => array_merge($genotype_parents, ['files', $field_name]),
-          'target' => array_merge($genotype_parents, ['SNPs', $field_name]),
+          'target' => array_merge($genotype_parents, ['files', $field_name]),
+          'source' => array_merge($genotype_parents, ['SNPs', $field_name]),
         ];
       }
       // Move to fieldset 'SSRs/cpSSRs Information'.
       foreach ($to_ssr_fieldset as $item) {
         $change_list['2']['move'][] = [
-          'source' => array_merge($genotype_parents, $item),
-          'target' => array_merge($genotype_parents, ['ssrs_cpssrs', end($item)]),
+          'target' => array_merge($genotype_parents, $item),
+          'source' => array_merge($genotype_parents, ['ssrs_cpssrs', end($item)]),
         ];
       }
     }

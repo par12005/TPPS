@@ -24,7 +24,8 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       $form_values = $form_state['values'];
       //$old_tgdr = $form_state['saved_values']['frontpage']['old_tgdr'] ?? NULL;
       // DOI.
-      $doi = $form_values['doi'] ?? NULL;
+      //$doi = $form_values['doi'] ?? NULL;
+      $doi = $form_values['publication']['doi'] ?? NULL;
       $dataset_doi = $form_values['dataset_doi'] ?? NULL;
       // Publication.
       $primary_author = $form_values['primaryAuthor'] ?? NULL;
@@ -92,7 +93,10 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
           $form_state['saved_values']['publication'][$name] = NULL;
         }
         // Clear DOI fields.
-        $form_state['values']['doi'] = NULL;
+        //$form_state['values']['doi'] = NULL;
+        $form_state['values']['publication']['doi'] = NULL;
+        $form_state['saved_values']['publication']['doi'] = NULL;
+        $form_state['values']['dataset_doi'] = NULL;
         $form_state['saved_values']['dataset_doi'] = NULL;
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

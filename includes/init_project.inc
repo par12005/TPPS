@@ -48,9 +48,6 @@ function tpps_init_project(array &$form_state, $accession = NULL) {
   $form_state['created'] = time();
   $form_state['accession'] = $accession;
   $form_state['saved_values']['frontpage']['accession'] = $accession;
-  // Set version for 'Submission Interface' feature.
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  tpps_submission_form_version_set($form_state);
   $form_state['status'] = 'Incomplete';
   return $form_state['dbxref_id'];
 }

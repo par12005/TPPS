@@ -213,7 +213,8 @@ function tpps_create_submission(array $state, $uid) {
     'accession' => $state['accession'],
     'dbxref_id' => $state['dbxref_id'],
     'submission_state' => serialize($state),
-    'submission_interface' => serialize(tpps_submission_interface_generate($state)),
+    //'submission_interface' => serialize(tpps_submission_interface_generate($state)),
+    'submission_interface' => serialize([]),
   );
 
   db_insert('tpps_submission')
@@ -328,24 +329,14 @@ function tpps_update_submission_state(array &$form_state) {
     return;
   }
   $form_state['updated'] = time();
-  // Note:
-  // We shouldn't generate new Submission Interface Array (SIA) each time
-  // Form State Array is saved (or updated) because if study was processed
-  // already then SIA could contain extra data (like ids and etc.) added
-  // during processing by submit_all.php script.
-  // That's why we need to merge changes from $form_state with existing SIA.
-  $submission_interface = array_merge(
-    tpps_submission_interface_load($accession, RESET_CACHE),
-    tpps_submission_interface_generate($form_state)
-  );
   db_update('tpps_submission')
     ->fields([
       'submission_state' => serialize($form_state),
-      'submission_interface' => serialize($submission_interface),
+      'submission_interface' => serialize([]),
     ])
     ->condition('accession', $accession)
     ->execute();
-  // Reset cache.
+  // Reset cached version of submission state array.
   tpps_load_submission_state($accession, 1);
 }
 
@@ -863,7 +854,7 @@ function tpps_submission_rename_files($accession) {
         }
       }
     }
-    tpps_submission_interface_update($state);
+    tpps_submission_interface_save($state);
   }
 }
 
@@ -1071,7 +1062,7 @@ function tpps_submission_clear_db($accession) {
   }
 
   $state['ids'] = ['project_id' => $project_id];
-  tpps_submission_interface_update($state);
+  tpps_submission_interface_save($state);
   return TRUE;
 }
 

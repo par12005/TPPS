@@ -1195,6 +1195,16 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] = 'tpps-form';
 
+
+
+// @TODO We need to convert previous version to latest one here.
+// Maybe SIA could be used here as a source of default values.
+
+
+  // Set version for 'Submission Interface' feature.
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  tpps_submission_form_version_set($form);
+
   // Stage/Page.
   if (!isset($form_state['stage'])) {
     if (!isset($accession)) {
@@ -1247,7 +1257,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
       'tpps' => [
         'stage' => $form_state['stage'] ?? NULL,
         'accession' => $accession,
-      ]
+      ],
     ],
     'type' => 'setting',
   ];
@@ -1385,6 +1395,14 @@ function tpps_main_submit($form, &$form_state) {
   $saved_values = &$form_state['saved_values'] ?? NULL;
   $values = &$form_state['values'] ?? NULL;
   module_load_include('inc', 'tpps', 'includes/submission_file');
+
+  // Set Submission Form Version.
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] =
+    $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+    ?? $form_state['values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  unset($form_state['values'][TPPS_SUBMISSION_FORM_VERSION_KEY]);
+
   // We need to label all study files as temporary to avoid problems with
   // page navigation when 'Back' button was used.
   if (
@@ -1496,8 +1514,12 @@ function tpps_main_submit($form, &$form_state) {
           $accession, ['status' => $form_state['status']]
         );
         // Save Submission Interface Array.
+        // Note:
+        // We don't use tpps_submission_interface_new($accession)
+        // because $form_state has most recent changes and we could
+        // avoid extra DB query here.
         $interface = tpps_submission_interface_generate($form_state);
-        tpps_submission_interface_update($interface);
+        tpps_submission_interface_save($interface);
 
         tpps_submit_email($form_state);
         drupal_goto('completed-submission/' . $accession);
@@ -1554,7 +1576,17 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] = 'tppsc-form';
-  // [/VS].
+
+
+
+// @TODO Major. We need to convert previous version to latest one here.
+// Maybe SIA could be used here as a source of default values.
+
+
+
+  // Set version for 'Submission Interface' feature.
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  tpps_submission_form_version_set($form);
 
   // User not logged in, trying to access front page.
   if (!isset($user->mail) and !isset($form_state['stage'])) {
@@ -1607,10 +1639,10 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   // use reference and not return $form array.
   // @TODO [VS] Use common function which called from subfunctions to add
   // common elements instead of pass $form by reference.
-  $form['accession'] = array(
+  $form['accession'] = [
     '#type' => 'hidden',
     '#value' => $form_state['accession'],
-  );
+  ];
 
   if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
     tpps_init_project($form, $form_state);
@@ -1740,6 +1772,13 @@ function tppsc_main_validate(array &$form, array &$form_state) {
 function tppsc_main_submit($form, &$form_state) {
   global $user;
   module_load_include('inc', 'tpps', 'includes/submission_file');
+  $form_state['status'] = 'Incomplete';
+
+  // Set Submission Form Version.
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] =
+    $form_state['values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  unset($form_state['values'][TPPS_SUBMISSION_FORM_VERSION_KEY]);
 
   if ($form_state['stage'] == 'frontpage' and $form_state['values']['use_old_tgdr']) {
     $form_state['dbxref_id'] = $form_state['values']['old_tgdr'];
@@ -1779,8 +1818,13 @@ function tppsc_main_submit($form, &$form_state) {
         $accession, ['status' => $form_state['status']]
       );
       // Save Submission Interface Array.
+      // Note:
+      // We don't use tpps_submission_interface_new($accession)
+      // because $form_state has most recent changes and we could
+      // avoid extra DB query here.
       $interface = tpps_submission_interface_generate($form_state);
-      tpps_submission_interface_update($interface);
+      tpps_submission_interface_save($interface);
+
       tpps_submit_email($form_state);
       drupal_goto('completed-submission/' . $accession);
       return;
@@ -1795,6 +1839,31 @@ function tppsc_main_submit($form, &$form_state) {
     if ($persist) {
       tpps_update_submission_state($form_state);
     }
+
+
+
+// @TODO Add to TPPS also.
+
+
+
+  // Note:
+  // We shouldn't generate new Submission Interface Array (SIA) each time
+  // Form State Array is saved (or updated) because if study was processed
+  // already then SIA could contain extra data (like ids and etc.) added
+  // during processing by submit_all.php script.
+  // That's why we need to merge changes from $form_state with existing SIA.
+  $submission_interface = array_merge(
+    tpps_submission_interface_load($accession, RESET_CACHE),
+    tpps_submission_interface_generate($form_state)
+  );
+  db_update('tpps_submission')
+    ->fields([
+      'submission_state' => serialize($form_state),
+      'submission_interface' => serialize([]),
+    ])
+    ->condition('accession', $accession)
+    ->execute();
+  // Reset cache.
   }
 }
 

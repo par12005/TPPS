@@ -4,7 +4,7 @@
  * TPPS Page 1 form specific JS-code.
  */
 (function($, Drupal) {
-  var doiSelector = 'input[name="doi"]';
+  var doiSelector = 'input[name="publication[doi]"]';
   var doiMessageBox = '#doi-message';
   // Create namespaces.
   Drupal.tpps = Drupal.tpps || {};
