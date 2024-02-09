@@ -32,7 +32,13 @@
  * 2. To set version:
  *    tpps_submission_interface_version_set($form_state);
  *
+ * ----------------------------------------------------------------------------
+ * Version change actions:
+ * 1. 'unset'
+ * 2. 'move'
+ * 3. 'rename' = move where target has new field name (last element).
  *
+ * ----------------------------------------------------------------------------
  * @todo If number of versions will be big enough and there is no old versions
  * left we could remove those versions from processing to speed-up interface
  * creation.
@@ -50,6 +56,22 @@ define('TPPS_SUBMISSION_FORM_VERSION_KEY', 'submission_form_version');
 // Version 1: Only removed data which is useless for processing study.
 // Version 2: #86ayw8a7k Page 4 Genotype Logic Adjustments.
 define('TPPS_SUBMISSION_FORM_CURRENT_VERSION', 2);
+
+/**
+ * Checks if 'Submission Interface Debug Mode' is enabled.
+ *
+ * 'Submission Interface Debug Mode' allows to get debug messages in browser
+ * and is always enabled on dev-server (not live site) and could be enabled
+ * on live site at admin settings page (admin/config/tpps/form/main).
+ *
+ * @return bool
+ *   Returns TRUE if 'Submission Interface Debug Mode' is enabled.
+ *   Returns FALSe otherwise.
+ */
+function tpps_is_si_debug_mode() {
+  module_load_include('inc', 'tpps', 'includes/common');
+  return !is_live_site() || variable_get('tpps_si_debug_mode', FALSE);
+}
 
 /**
  * Gets Submission Form Version.
@@ -83,7 +105,6 @@ function tpps_submission_form_version_set(array &$form) {
   ];
 }
 
-
 /**
  * Submission Interface Action 'unset'.
  *
@@ -102,17 +123,26 @@ function tpps_submission_interface_action_unset(array &$interface, array $action
   foreach ($action_data as $key => $item) {
     if (empty($item)) {
       continue;
+      $message = 'SI Action "unset" #@key failed. One of the required '
+        . 'fields is empty.<br />Value: <pre>@item</pre>.';
+      $params = ['@key' => $key, '@item' => print_r($item, 1)];
+      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+      if (tpps_is_si_debug_mode()) {
+        dpm(t($message, $params));
+      }
+      continue;
     }
     $target = &tpps_form_get_path($interface, $item);
     if (empty($target['parent_element']) || empty($target['field_name'])) {
-      watchdog('tpps', 'Submission Interface Action "unset" #@key failed.'
-        . '<br />Value: <pre>@item</pre>.',
-        ['@key' => $key, '@item' => print_r($item, 1)], WATCHDOG_ERROR
-      );
+      $message = "SIA Action 'unset' can't find element for #@key."
+        . '<br />Value: <pre>@item</pre>. ';
+      $params = ['@key' => $key, '@item' => print_r($item, 1)];
+      watchdog('tpps', $message, $params, WATCHDOG_INFO);
       continue;
     }
     // Note:
     // $target['parent_element'] is a reference to the element inside $interface.
+    // Action!
     unset($target['parent_element'][$target['field_name']]);
   }
 }
@@ -146,26 +176,39 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
       empty($source['parent_element']) || empty($source['field_name'])
       || empty($target['parent_element']) || empty($target['field_name'])
     ) {
-      watchdog('tpps', 'Submission Interface Action "move" #@key failed.'
-        . '<br />Value: <pre>@item</pre>.',
-        ['@key' => $key, '@item' => print_r($item, 1)], WATCHDOG_ERROR
-      );
+      $message = 'SIA Action "move" #@key failed. One of the required '
+        . 'fields is empty.<br />Value: <pre>@item</pre>.';
+      $params = ['@key' => $key, '@item' => print_r($item, 1)];
+      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+      if (tpps_is_si_debug_mode()) {
+        dpm(t($message, $params));
+      }
       continue;
     }
     // Note: $source['parent_element'] and $target['parent_element']
     // are a references to the elements inside $interface.
-    if ($target['field_name'] == 'doi') {
-      dpm($source, 'source');
-      dpm($target, 'target');
+    if (tpps_is_si_debug_mode()) {
+      if ($target['field_name'] == 'doi') {
+        dpm($source, 'source');
+        dpm($target, 'target');
+      }
     }
-
+    if (!isset($source['parent_element'][$source['field_name']])) {
+      $message = 'SIA Action "move" #@key failed. Source field not found.'
+        . '<br />Value: <pre>@item</pre>.';
+      $params = ['@key' => $key, '@item' => print_r($item, 1)];
+      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
+      if (tpps_is_si_debug_mode()) {
+        dpm(t($message, $params));
+      }
+      continue;
+    }
+    // Action!
     $target['parent_element'][$target['field_name']]
       = $source['parent_element'][$source['field_name']];
     unset($source['parent_element'][$source['field_name']]);
   }
 }
-
-
 
 /**
  * Gets specific version or all version's changes.
