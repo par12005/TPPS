@@ -1082,3 +1082,23 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
   }
   return $result;
 }
+
+/**
+ * Gets Study Accession from TPPS Form State array.
+ *
+ * @param array $form_state
+ *   Drupal Form State Array.
+ * @param bool $only_number
+ *   When TRUE only digits will be returns (E.g., '1234'). When FALSE (default)
+ *   then whole accession will be returned (e.g., 'TGDR1234').
+ *
+ * @return string
+ *   Returns full accession (default), only accession number or
+ *   empty string if accession wasn't found in given Form State Array.
+ */
+function tpps_form_get_accession(array $form_state, $only_number = FALSE) {
+  $accession = $form_state['accession'] ?? '';
+  return (string) (
+    ($only_number) ? str_replace('TGDR', '', $accession) : $accession
+  );
+}

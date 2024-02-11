@@ -21,6 +21,7 @@ module_load_include('inc', 'tpps', 'includes/form');
  * TPPS Study Export Form.
  */
 function tpps_submission_export_form(array $form, array &$form_state, $accession = '') {
+  global $base_url;
   tpps_submission_list_validate_accession($accession);
 
   $accession_list = tpps_submission_get_accession_list();
@@ -44,7 +45,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   $files = tpps_submission_export_get_files_info($fid_list);
   tpps_submission_export_file_report($fid_list, $files, $form);
   $state['tpps_submission_export_files'] = $files;
-
+  $state['tpps_submission_export_site'] = $base_url;
 
   $form['tpps_submission_export_state'] = [
     '#type' => 'textarea',

@@ -24,7 +24,6 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     drupal_goto('tpps/submission');
   }
 
-
   $form['tpps_submission_current_accession'] = [
     '#markup' => '<h3>' . t('Current Accession: @accession',
     ['@accession' => $accession]) . '</h3>',
@@ -35,27 +34,21 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Import data.
-  $import_meta = $state['saved_values']['tpps_submission_import'] ?? NULL;
-  if ($import_meta) {
-    $items = [
-      t(
-        // @TODO Use link.
-        'Original Accession: @accession',
-        ['@accession' => ($import_meta['original_accession'] ?? NULL)]
-      ),
-      t(
-        'Import Date: @date.',
-        ['@date' => ($import_meta['imported_date'] ?? NULL)]
-      ),
-      t(
-        'Import Timestamp: @timestamp.',
-        ['@timestamp' => ($import_meta['imported'] ?? NULL)]
-      ),
-    ];
+  module_load_include('inc', 'tpps', 'includes/submissions');
+  $import_meta = tpps_submission_get_import_meta($state);
+  if (!empty($import_meta)) {
     tpps_form_add_report($form, [
       'import_metadata' => [
         'title' => t('Import Metadata'),
-        'data' => theme('item_list', ['items' => $items]),
+        'data' => theme('item_list', [
+          'items' => [
+            t('Remote Accession: !url', ['!url' => $import_meta['accession_link']]),
+            t('Import Date: @date.', ['@date' => $import_meta['full_date']]),
+            t('Site !site.',
+              ['!site' => l($import_meta['site'], $import_meta['site'])]
+            ),
+          ],
+        ]),
       ],
     ]);
   }

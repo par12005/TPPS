@@ -358,6 +358,7 @@ function tpps_uninstall() {
   variable_del('tpps_submit_all_log_cli_show_time');
   // Theme Settings.
   variable_del('tpps_theme_fix_pager');
+  variable_del('tpps_imported_studies_list');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.

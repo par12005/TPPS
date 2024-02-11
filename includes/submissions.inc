@@ -364,6 +364,10 @@ function tpps_delete_submission($accession) {
       ->condition('dbxref_id', $dbxref_id)
       ->execute();
   }
+  // If this study was imported we need to remove it from the list.
+  // @TODO Check if study was imported.
+  module_load_include('inc', 'tpps', 'includes/imported_studies_list');
+  tpps_imported_studies_list_remove_item($accession);
 }
 
 /**
@@ -418,6 +422,10 @@ function tpps_submission_purge($accession, $force = FALSE) {
   db_delete('chado.dbxref')
     ->condition('accession', $accession)
     ->execute();
+  // If this study was imported we need to remove it from the list.
+  // @TODO Check if study was imported.
+  module_load_include('inc', 'tpps', 'includes/imported_studies_list');
+  tpps_imported_studies_list_remove_item($accession);
 }
 
 /**
@@ -1395,4 +1403,64 @@ function tpps_submission_get_state($accession) {
     ->fetchField();
   $state = unserialize(html_entity_decode($result));
   return $state;
+}
+
+/**
+ * Gets Import Metadata.
+ *
+ * Imported Studies has some extra information about export/import process.
+ *
+ * @param array $form_state
+ *   TPPS Form State Array.
+ * @param string $accession
+ *   Study accession. E.g., 'TGDR1234'.
+ *
+ * @return array
+ *   Returns Submission Import Meta with some useful extra items.
+ */
+function tpps_submission_get_import_meta(array $form_state = [], $accession = NULL) {
+  $output = [];
+  if (empty($form_state) && empty($accession)) {
+    watchdog('tpps', "Couldn't get Submission Import Metadata because Form "
+      . "State Array and Study Accession are empty.", [], WATCHDOG_ERROR);
+    return $output;
+  }
+
+  $state = $form_state;
+  if (empty($state)) {
+    $state = tpps_load_submission_state($accession);
+  }
+
+  $import_meta = $state['saved_values']['tpps_submission_import'] ?? NULL;
+  if (empty($import_meta)) {
+    return $output;
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Sanitize data.
+  foreach ($import_meta as $key => $value) {
+    if ($safe_key = check_plain(($key ?? '')) != $key) {
+      watchdog('tpps', "Submission Import Metadata value had not allowed "
+        . "symbols which was sanitized.", [], WATCHDOG_NOTICE);
+      unset($import_meta[$key]);
+    }
+    if ($safe_value = check_plain(($value ?? '')) != $value) {
+      watchdog('tpps', "Submission Import Metadata value had not allowed "
+        . "symbols which was sanitized.", [], WATCHDOG_NOTICE);
+      unset($import_meta[$key]);
+      $import_meta[$safe_key] = $safe_value;
+    }
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Add some useful items and default values.
+  $import_meta['site'] = $import_meta['site'] ?? 'https://treegenesdb.org';
+  $import_meta['accession_link'] = ($import_meta['site'])
+    ? l($import_meta['original_accession'], $import_meta['site']
+      . '/tpps/submission/' . $import_meta['original_accession'] . '/view')
+      : $import_meta['original_accession'];
+  // Full data: Human readable and timestamp.
+  $import_meta['full_date'] = $import_meta['imported_date']
+    . (empty($import_meta['imported']) ? ''
+      : ' [' . $import_meta['imported'] . ']');
+
+  return $import_meta;
 }
