@@ -83,7 +83,7 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
       '#type' => 'fieldset',
       '#title' => t(ucfirst($type)),
       '#collapsed' => FALSE,
-      '#collapsible' => FALSE,
+      '#collapsible' => TRUE,
     ];
     foreach ($data as $key => $item) {
       $form[$type][$key . '_container'] = [

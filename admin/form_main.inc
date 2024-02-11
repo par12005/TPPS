@@ -67,6 +67,15 @@ function tpps_form_main_settings_form(array $form, array &$form_state) {
       . 'When checked then Submission Interface debug messages will be shown ' .
       'in browser. When unchecked no messages will be shown (only watchdog).'),
   ];
+  $form['tpps_cache_submissions'] = [
+    '#type' => 'checkbox',
+    '#title' => t("Cache Submission's Info and State"),
+    '#default_value' => variable_get('tpps_cache_submissions', FALSE),
+    '#description' => t('Default is unchecked. '
+      . 'When checked then Submission State and Info (meta-data) will be '
+      . 'statically (per page request) and permanently (using "tpps" cache bin) '
+      . "cached. When unchecked no Submission's data won't be cached at all."),
+  ];
   $form['#submit'][] = 'tpps_form_main_settings_form_submit';
   return system_settings_form($form);
 }

@@ -44,11 +44,12 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version');
 function tpps_load_submission_info($accession, $reset = FALSE) {
   $key = $accession;
   $static_cache = &drupal_static(__FUNCTION__);
-  if ($reset || !isset($static_cache[$key])) {
+  $cache_submissions = variable_get('tpps_cache_submissions', FALSE);
+  if (!$cache_submissions || $reset || !isset($static_cache[$key])) {
     $cid = __FUNCTION__;
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
     $cache = cache_get($cid, $cache_bin);
-    if ($reset || empty($cache) || !isset($cache->data[$key])) {
+    if (!$cache_submissions || $reset || empty($cache) || !isset($cache->data[$key])) {
       $cache->data[$key] = NULL;
       // Get new data.
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -110,12 +111,13 @@ function tpps_load_submission_info($accession, $reset = FALSE) {
 function tpps_load_submission_state($accession, $reset = FALSE) {
   $key = $accession;
   $static_cache = &drupal_static(__FUNCTION__);
-  if ($reset || !isset($static_cache[$key])) {
+  $cache_submissions = variable_get('tpps_cache_submissions', FALSE);
+  if (!$cache_submissions || $reset || !isset($static_cache[$key])) {
     // Get value.
     $cid = __FUNCTION__;
     $cache_bin = TPPS_CACHE_BIN ?? 'cache';
     $cache = cache_get($cid, $cache_bin);
-    if ($reset || empty($cache) || !isset($cache->data[$key])) {
+    if (!$cache_submissions || $reset || empty($cache) || !isset($cache->data[$key])) {
       $cache->data[$key] = NULL;
       // Get new data.
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
