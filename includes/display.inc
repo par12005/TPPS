@@ -592,8 +592,30 @@ function tpps_table_display(array &$state, array $options = array()) {
       // [VS] Added extra space which must not be visible at site but
       // will divide key and it's value in CLI.
       $key_str = filter_xss(check_plain($key)) . ' ';
-      $val_str = filter_xss(check_plain($val));
-
+      // Some items are arrays and this cause a lot of warnings about using
+      // check_plain() for arrays. Other way is to skip array processing at all
+      // or use empty string for arrays.
+      $val_str = filter_xss(check_plain(
+        (is_array($val) ? var_export($val, 1) : $val)
+      ));
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      if ($key == 'tpps_submission_import') {
+        $key_str = t('Submission Import Metadata');
+        $import_meta = tpps_submission_get_import_meta($state);
+        $val_str = theme('item_list', [
+          'items' => [
+            t('Remote Accession: !url', ['!url' => $import_meta['accession_link']]),
+            t('Import Date: @date.', ['@date' => $import_meta['full_date']]),
+            t('Site !site.',
+              ['!site' => l($import_meta['site'], $import_meta['site'])]
+            ),
+          ],
+        ]);
+      }
+      if ($key == 'submission_form_version') {
+        $key_str = t('Submission Form Version');
+      }
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       if (
         preg_match('/File/', $key)
         && ($file = file_load($val) === FALSE)
@@ -724,7 +746,7 @@ function tpps_table_display(array &$state, array $options = array()) {
         continue;
       }
 
-      $rows[] = array($key_str, $val_str);
+      $rows[] = [$key_str, $val_str];
     }
     elseif (preg_match('/^#(.*)accession_(.*)/', $key, $matches)) {
       $val_str = filter_xss(check_plain($val));

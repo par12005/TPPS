@@ -272,14 +272,14 @@ function tpps_menu() {
     'access arguments' => ['tpps delete submission', 1],
   ];
 
-  $items['completed-submission/%'] = array(
+  $items['completed-submission/%'] = [
     'title' => 'TPPS Completed Submission',
     'page callback' => 'tpps_completed_display',
     'page arguments' => [1],
     'access callback' => 'tpps_access',
     'access arguments' => ['view own tpps submission', 1],
     'type' => MENU_NORMAL_ITEM,
-  );
+  ];
 
   $items['tpps-admin-panel'] = array(
     'title' => 'TPPS Admin Panel',
