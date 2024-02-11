@@ -201,7 +201,8 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // File Diagnostics.
   $form['file_diagnostics'] = [
-    '#markup' => l(t('Files diagnostics'), 'file-diagnostics/' . $accession,
+    '#markup' => l(t('Files diagnostics'),
+      'tpps-admin-panel/file-diagnostics/' . $accession,
       [
         'attributes' => [
           'class' => ['btn', 'btn-primary', 'form-submit'],

@@ -210,6 +210,10 @@ function tpps_submission_interface_load($accession) {
     }
     else {
       // Create new Submission Interface and return it.
+      $message = 'Submission Interface was created for @accession.';
+      $params = ['@accession' => $accession];
+      watchdog('tpps', $message, $params);
+      drupal_set_message(t($message, $params));
       return tpps_submission_interface_new($accession);
     }
   }
