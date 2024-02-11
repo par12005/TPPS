@@ -112,8 +112,8 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
       return;
     }
-
-
+    // Now $state has an imported Form State Array and
+    // $form_state has Submission Import Form State.
     $new_accession = $form_state['values']['tpps_submission_import_accession'];
     if ($new_accession == 'new') {
       $new_accession = tpps_init_project_get_next_accession();
@@ -123,7 +123,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // @TODO Update code to use only 'xxx' format.
     $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
     // Update a list of imported studies.
-    tpps_imported_studies_list_add(
+    tpps_imported_studies_list_add_item(
       $new_accession, tpps_form_get_accession($state)
     );
     // Files.
@@ -271,6 +271,7 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   // Update accession value in $form_state.
   $old_accession = $state['saved_values']['frontpage']['accession'];
   $state = tpps_array_replace($state, $old_accession, $new_accession);
+
   // Store original accession.
   // @TODO Minor. Remove 'saved_values' but be sure to restore those values
   // when submission reopened using '/tppsc' form.
@@ -278,6 +279,14 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   $state['saved_values']['tpps_submission_import']['imported'] = REQUEST_TIME;
   $state['saved_values']['tpps_submission_import']['imported_date']
     = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O');
+  $state['saved_values']['tpps_submission_import']['site']
+    = $state['tpps_submission_export_site'] ?? 'https://treegenesdb.org';
+
+  // Set Submission Form Version.
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+    = $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // From tpps_init_project().
   $state['saved_values']['dbxref_id']
