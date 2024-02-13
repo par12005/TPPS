@@ -1119,7 +1119,16 @@ function tpps_form_get_accession(array $form_state, $only_number = FALSE) {
 function tpps_form_build_main(array $form, array &$form_state, $accession = NULL) {
   global $user;
 
-  $is_tppsc = (bool) ($_GET['q'] == 'tppsc');
+  // Check if this is TPPS or TPPSC Form using Url.
+  // $form_state could have no necessary data yet when loaded first step of
+  // the multistep form.
+  if (isset($form_state['tpps_type'])) {
+    $is_tppsc = ($form_state['tpps_type'] == 'tppsc');
+  }
+  else {
+    $is_tppsc = (strpos($_GET['q'], 'tppsc') === 0);
+  }
+
   if (!$is_tppsc) {
     module_load_include('php', 'tpps', 'forms/build/front');
   }
@@ -1247,10 +1256,10 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
     tpps_init_project($form_state);
   }
+
   if ($is_tppsc) {
     $form_state['tpps_type'] = 'tppsc';
   }
-
   if (!$is_tppsc) {
     // Accession.
     // Must be after tpps_init_project() which sets accession for new studies.
@@ -1273,10 +1282,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     tpps_status_bar($form, $form_state);
 
     $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
-    if (
-      !isset($page1_values['primaryAuthor'])
-      && ($form_state['tpps_type'] ?? NULL) != 'tppsc'
-    ) {
+    if (!isset($page1_values['primaryAuthor'])) {
       $contact_bundle = tripal_load_bundle_entity(['label' => 'Tripal Contact Profile']);
       if ($contact_bundle) {
         $query = new EntityFieldQuery();
