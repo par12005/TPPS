@@ -1102,3 +1102,238 @@ function tpps_form_get_accession(array $form_state, $only_number = FALSE) {
     ($only_number) ? str_replace('TGDR', '', $accession) : $accession
   );
 }
+
+/**
+ * Creates the main TPPS/TPPSc form.
+ *
+ * Provides the form based on which step the user is on.
+ *
+ * @param array $form
+ *   The form to be created.
+ * @param array $form_state
+ *   The state of the form to be created.
+ *
+ * @return array
+ *   Returns the completed form.
+ */
+function tpps_form_build_main(array $form, array &$form_state, $accession = NULL) {
+  global $user;
+
+  $is_tppsc = (bool) ($_GET['q'] == 'tppsc');
+  if (!$is_tppsc) {
+    module_load_include('php', 'tpps', 'forms/build/front');
+  }
+  module_load_include('inc', 'tpps', 'includes/form');
+  $form = $form ?? [];
+  $frontpage_values = $form_state['saved_values']['frontpage'] ?? NULL;
+  // JS and CSS.
+  tpps_add_css_js('main', $form);
+  // Add class to apply CSS rules differntly for TPPS and TPPSc Forms
+  // CSS form id is changing because of AJAX requests so we use form's class
+  // in CSS rules instead of form's id with regex.
+  $form['#attributes']['class'][] =  ($is_tppsc) ? 'tppsc-form' : 'tpps-form';
+
+
+// @TODO We need to convert previous version to latest one here.
+// Maybe SIA could be used here as a source of default values.
+
+
+  // Set version for 'Submission Interface' feature.
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  tpps_submission_form_version_set($form);
+
+  if ($is_tppsc) {
+    // User not logged in, trying to access front page.
+    if (!isset($user->mail) and !isset($form_state['stage'])) {
+      $form_state['stage'] = 'frontpage';
+
+      // Create front page.
+      module_load_include('php', 'tpps', 'forms/build/front');
+      tpps_front_create_form($form, $form_state);
+      return $form;
+    }
+    // User not logged in, trying to access non-front page.
+    elseif (!isset($user->mail)) {
+      $destination = drupal_get_destination();
+      drupal_goto('user/login', array('query' => $destination));
+    }
+    // User logged in, trying to load form from existing accession.
+    elseif (isset($accession) and !isset($form_state['stage'])) {
+      $old_form_state = tpps_load_submission_state($accession);
+      tpps_form_state_info($form_state, $old_form_state);
+    }
+    // User logged in, no accession provided.
+    else {
+      if (!isset($form_state['stage'])) {
+        $form_state['stage'] = 'frontpage';
+
+        // Create the front page.
+        module_load_include('php', 'tpps', 'forms/build/front');
+        tpps_front_create_form($form, $form_state);
+        return $form;
+      }
+      else {
+        if (
+          !isset($form_state['saved_values']['frontpage']['accession'])
+          or (
+            isset($form_state['saved_values']['frontpage']['accession'])
+            and $form_state['saved_values']['frontpage']['accession'] === 'new'
+          )
+        ) {
+          // Initialize project.
+          tpps_init_project($form_state);
+          tpps_create_submission($form_state, $user->uid);
+        }
+        $old_form_state = tpps_load_submission_state($form_state['saved_values']['frontpage']['accession']);
+        tpps_form_state_info($form_state, $old_form_state);
+      }
+    }
+
+    // Hidden form accession element.
+    // Note: Adding this elements to $form heare require all sub-functions to
+    // use reference and not return $form array.
+    // @TODO [VS] Use common function which called from subfunctions to add
+    // common elements instead of pass $form by reference.
+    $form['accession'] = [
+      '#type' => 'hidden',
+      '#value' => $form_state['accession'],
+    ];
+  }
+  elseif (!$is_tppsc) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // TPPS.
+    // Stage/Page.
+    if (!isset($form_state['stage'])) {
+      if (!isset($accession)) {
+        // First access, no accession in link.
+        $form_state['stage'] = 'frontpage';
+
+        tpps_front_create_form($form, $form_state);
+        return $form;
+      }
+      else {
+        // First access, and with accession in link.
+        $old_form_state = tpps_load_submission_state($accession);
+        if (empty($old_form_state)) {
+          drupal_goto('tpps');
+        }
+        tpps_form_state_info($form_state, $old_form_state);
+      }
+    }
+    else {
+      // Not first access.
+      if (
+        !isset($frontpage_values['accession'])
+        || ($frontpage_values['accession'] ?? NULL) === 'new'
+      ) {
+        // No submissions, or selected to create new submission.
+        if (
+          tpps_access('administer tpps module')
+          && !empty($frontpage_values['custom_accession_check'])
+        ) {
+          $accession = $frontpage_values['custom_accession'];
+        }
+        tpps_init_project($form_state, $accession);
+        tpps_create_submission($form_state, $user->uid);
+      }
+      $old_form_state = tpps_load_submission_state($frontpage_values['accession']);
+      if (!empty($old_form_state)) {
+        tpps_form_state_info($form_state, $old_form_state);
+      }
+    }
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  if (!isset($form_state['dbxref_id']) or !isset($form_state['accession'])) {
+    tpps_init_project($form_state);
+  }
+  if ($is_tppsc) {
+    $form_state['tpps_type'] = 'tppsc';
+  }
+
+  if (!$is_tppsc) {
+    // Accession.
+    // Must be after tpps_init_project() which sets accession for new studies.
+    $accession = $form_state['accession'] ?? $frontpage_values['accession'] ?? NULL;
+    $form['#attached']['js'][] = [
+      'data' => [
+        'tpps' => [
+          'stage' => $form_state['stage'] ?? NULL,
+          'accession' => $accession,
+        ],
+      ],
+      'type' => 'setting',
+    ];
+    // Hidden form accession element.
+    // Note: Adding this elements to $form heare require all sub-functions to
+    // use reference and not return $form array.
+    $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
+
+    module_load_include('inc', 'tpps', 'includes/status_bar');
+    tpps_status_bar($form, $form_state);
+
+    $page1_values = $form_state['saved_values'][TPPS_PAGE_1] ?? [];
+    if (
+      !isset($page1_values['primaryAuthor'])
+      && ($form_state['tpps_type'] ?? NULL) != 'tppsc'
+    ) {
+      $contact_bundle = tripal_load_bundle_entity(['label' => 'Tripal Contact Profile']);
+      if ($contact_bundle) {
+        $query = new EntityFieldQuery();
+        $results = $query->entityCondition('entity_type', 'TripalEntity')
+          ->entityCondition('bundle', $contact_bundle->name)
+          ->fieldCondition('local__email', 'value', $user->mail)
+          ->range(0, 1)
+          ->execute();
+        if (!empty($results['TripalEntity'])) {
+          $entity = current(array_reverse(entity_load('TripalEntity',
+            array_keys($results['TripalEntity']))));
+          $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor']
+            = $form_state['saved_values'][TPPS_PAGE_1]['primaryAuthor'] ?? $entity->title;
+        }
+      }
+    }
+  }
+  elseif ($is_tppsc) {
+    tpps_update_submission_state($form_state);
+    if (variable_get('tpps_top_bar', 'status') == 'status') {
+      module_load_include('inc', 'tpps', 'includes/status_bar');
+      tpps_status_bar($form, $form_state);
+    }
+    else {
+      tpps_form_navigation_bar($form, $form_state);
+    }
+  }
+
+  switch ($form_state['stage']) {
+    case TPPS_PAGE_1:
+      module_load_include('php', 'tpps', 'forms/build/page_1');
+      tpps_page_1_create_form($form, $form_state);
+      break;
+
+    case TPPS_PAGE_2:
+      module_load_include('php', 'tpps', 'forms/build/page_2');
+      tpps_page_2_create_form($form, $form_state);
+      break;
+
+    case TPPS_PAGE_3:
+      module_load_include('php', 'tpps', 'forms/build/page_3');
+      tpps_page_3_create_form($form, $form_state);
+      break;
+
+    case TPPS_PAGE_4:
+      module_load_include('php', 'tpps', 'forms/build/page_4');
+      tpps_page_4_create_form($form, $form_state);
+      break;
+
+    case 'summarypage':
+      module_load_include('php', 'tpps', 'forms/build/summary');
+      tpps_summary_create_form($form, $form_state);
+      break;
+
+    default:
+      drupal_set_message(t('Invalid form stage.'), 'error');
+      break;
+  }
+  return $form;
+}
