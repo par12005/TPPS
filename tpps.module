@@ -95,8 +95,7 @@ function tpps_menu() {
     'title' => 'Internal TPPS pipeline',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tppsc_main', 1],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['access tpps form', 1],
+    'access arguments' => ['access tpps form', 'administer tpps module'],
   ];
 
   $items['admin/config/content/tppsc'] = [
@@ -1179,6 +1178,8 @@ function tpps_page_build(&$page) {
  *   The created form.
  */
 function tpps_main(array $form, array &$form_state, $accession = NULL) {
+  // @TODO Minor.Use the same function to build form but set form_id manually.
+  module_load_include('inc', 'tpps', 'includes/form');
   return tpps_form_build_main($form, $form_state, $accession);
 }
 
@@ -1423,6 +1424,8 @@ function tpps_main_submit($form, &$form_state) {
  *   Returns the completed form.
  */
 function tppsc_main(array $form, array &$form_state, $accession = NULL) {
+  // @TODO Minor.Use the same function to build form but set form_id manually.
+  module_load_include('inc', 'tpps', 'includes/form');
   return tpps_form_build_main($form, $form_state, $accession);
 }
 
