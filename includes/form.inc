@@ -1141,7 +1141,8 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] =  ($is_tppsc) ? 'tppsc-form' : 'tpps-form';
-
+  // Use the same validator-function for both TPPS/TPPSc forms.
+  $form['#validate'][] = 'tpps_main_validate';
 
 // @TODO We need to convert previous version to latest one here.
 // Maybe SIA could be used here as a source of default values.

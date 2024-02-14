@@ -1184,26 +1184,40 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
 }
 
 /**
- * Implements hook_form_validate().
+ * Form validator for forms with id 'tppsc_main' and 'tpps_main'.
  *
- * Validates input to form. Also saves file column information so it is not lost
- * if the input is not valid.
+ * Calls different validation functions based on the stage of the form. Also
+ * saves file column data and add attributes to be used by the status bar where
+ * appropriate.
  */
 function tpps_main_validate(&$form, &$form_state) {
   global $user;
-
-  if (
-    $form_state['triggering_element']['#value'] == 'Back'
-    or $form_state['triggering_element']['#value'] == 'Save'
-  ) {
+  // If the user is going backwards or simply saving their data in the form,
+  // make sure to save the column data for the managed_file elements. The rest
+  // of the validation function does not need to be completed.
+  if (in_array($form_state['triggering_element']['#value'], ['Back', 'Save'])) {
     tpps_save_file_columns($form, $form_state);
     return;
   }
 
+  $is_tppsc = (($form_state['tpps_type'] ?? NULL) == 'tppsc');
+
   switch ($form_state['stage']) {
     case 'frontpage':
-      require_once 'forms/validate/front.php';
-      tpps_front_page_validate_form($form, $form_state);
+      if ($is_tppsc) {
+        if (
+          $form_state['values']['use_old_tgdr']
+          and !$form_state['values']['old_tgdr']
+        ) {
+          form_set_error('old_tgdr',
+            t('Existing TGDR number: field is required.')
+          );
+        }
+      }
+      elseif (!$is_tppsc) {
+        require_once 'forms/validate/front.php';
+        tpps_front_page_validate_form($form, $form_state);
+      }
       break;
 
     case TPPS_PAGE_1:
@@ -1230,12 +1244,18 @@ function tpps_main_validate(&$form, &$form_state) {
       break;
   }
 
-  if ($user->uid !== 0 and !form_get_errors()) {
+  $module_path = drupal_get_path('module', 'tpps');
+  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
+
+  // If there were no errors in validating the input, then let the form status
+  // bar know that those fields are cleared to be shown.
+  if (!form_get_errors()) {
     $form_state['values']['#cleared'] = TRUE;
     if ($form_state['submitted'] == '1') {
       tpps_submission_update_stats($form_state);
     }
   }
+  // Otherwise, do not show the values for this page.
   else {
     $form_state['values']['#cleared'] = FALSE;
   }
@@ -1429,69 +1449,6 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   return tpps_form_build_main($form, $form_state, $accession);
 }
 
-/**
- * Form validator for 'tppsc_main' form.
- *
- * Calls different validation functions based on the stage of the form. Also
- * saves file column data and add attributes to be used by the status bar where
- * appropriate.
- */
-function tppsc_main_validate(array &$form, array &$form_state) {
-  // If the user is going backwards or simply saving their data in the form,
-  // make sure to save the column data for the managed_file elements. The rest
-  // of the validation function does not need to be completed.
-  if (in_array($form_state['triggering_element']['#value'], ['Back', 'Save'])) {
-    tpps_save_file_columns($form, $form_state);
-    return;
-  }
-  // Call the appropriate validation function based on the form stage.
-  switch ($form_state['stage']) {
-    case 'frontpage':
-      if ($form_state['values']['use_old_tgdr'] and !$form_state['values']['old_tgdr']) {
-        form_set_error('old_tgdr', 'Existing TGDR number: field is required.');
-      }
-      break;
-
-    case TPPS_PAGE_1:
-      module_load_include('php', 'tpps', 'forms/validate/page_1');
-      tpps_page_1_validate_form($form, $form_state);
-      break;
-
-    case TPPS_PAGE_2:
-      module_load_include('php', 'tpps', 'forms/validate/page_2');
-      tpps_page_2_validate_form($form, $form_state);
-      break;
-
-    case TPPS_PAGE_3:
-      module_load_include('php', 'tpps', 'forms/validate/page_3');
-      tpps_page_3_validate_form($form, $form_state);
-      break;
-
-    case TPPS_PAGE_4:
-      module_load_include('php', 'tpps', 'forms/validate/page_4');
-      tpps_page_4_validate_form($form, $form_state);
-      break;
-
-    default:
-      break;
-  }
-  // [VS].
-  $module_path = drupal_get_path('module', 'tpps');
-  $form['#attached']['js'][] = $module_path . TPPS_JS_PATH;
-  // [/VS].
-  // If there were no errors in validating the input, then let the form status
-  // bar know that those fields are cleared to be shown.
-  if (!form_get_errors()) {
-    $form_state['values']['#cleared'] = TRUE;
-    if ($form_state['submitted'] == '1') {
-      tpps_submission_update_stats($form_state);
-    }
-  }
-  // Otherwise, do not show the values for this page.
-  else {
-    $form_state['values']['#cleared'] = FALSE;
-  }
-}
 
 /**
  * Implements hook_FORM_ID_submit().
