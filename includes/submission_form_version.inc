@@ -218,18 +218,29 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
 }
 
 /**
- * Upgrades Submission Interface to given single version.
+ * Upgrades or downgrades Submission to given single version.
  *
- * Must be used in a loop.
+ * Usage example:
+ * In a loop.
  * $i = TPPS_SUBMISSION_FORM_START_VERSION;
  * for (; $i <= $current_version; $i++) {
  *   tpps_submission_form_version_upgrade($form_state, $i, $interface);
  * }
  *
- * @TODO Update description.
  * @TODO Probably it's 'downgrade' or 'restoring'
+ *
+ * @param array $form_state
+ *   Submission Form State. Used to build dynamic mapping.
+ * @param int $version
+ *   Desired version.
+ * @param array $result
+ *   Resulting array. It could be a Submission Interface if $revert = FALSE
+ *   and Form State array when $revert = TRUE (update old version of the form
+ *   to latest).
+ * @param bool $revert
+ *   When TRUE action will be reverted.
  */
-function tpps_submission_form_version_upgrade(array $form_state, $version, array &$result = NULL) {
+function tpps_submission_form_version_upgrade(array $form_state, $version, array &$result = NULL, $revert = FALSE) {
   if (is_null($result)) {
     $result = &$form_state;
   }
@@ -237,7 +248,7 @@ function tpps_submission_form_version_upgrade(array $form_state, $version, array
   $change_list = tpps_submission_form_version_changes($form_state, $version);
   foreach ($change_list as $action => $action_data) {
     // Note: $action_data is a list of all actions (not just single one).
-    if ($action == 'unset') {
+    if ($revert && $action == 'unset') {
       continue;
     }
     $function = 'tpps_submission_interface_action_' . $action;
@@ -258,25 +269,28 @@ function tpps_submission_form_version_upgrade(array $form_state, $version, array
       tpps_message($message, $params, 'error');
       continue;
     }
-    if ($action == 'move') {
-      foreach ($action_data as $key => $item) {
-        $reverted_action_data[$key] = [
-          'source' => $item['target'],
-          'target' => $item['source'],
-        ];
+    if ($revert) {
+      if ($action == 'move') {
+        foreach ($action_data as $key => $item) {
+          $reverted_action_data[$key] = [
+            'source' => $item['target'],
+            'target' => $item['source'],
+          ];
+        }
+        $action_data = $reverted_action_data;
       }
-    }
-    else {
-      $message = 'Reverted action data is required for @action.'
-      . '<br />Function name: @function_name. <br />Version: @version.';
-      tpps_message($message, $params, 'error');
-      continue;
+      else {
+        $message = 'Reverted action data is required for @action.'
+        . '<br />Function name: @function_name. <br />Version: @version.';
+        tpps_message($message, $params, 'error');
+        continue;
+      }
     }
     // Call an action-function.
     // 1. tpps_submission_interface_action_unset();
     // 2. tpps_submission_interface_action_move().
     // Note: $action_data also couldn't be empty here.
-    call_user_func_array($function, [&$result, $reverted_action_data]);
+    call_user_func_array($function, [&$result, $action_data]);
   }
   $result['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
 }

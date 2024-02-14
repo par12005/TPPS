@@ -1273,8 +1273,9 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     // Clone existing $form_state.
     $new_form_state = $form_state;
     for (; $version <= $latest_version; $version++) {
-
-      tpps_submission_form_version_upgrade($form_state, $version, $new_form_state);
+      tpps_submission_form_version_upgrade(
+        $form_state, $version, $new_form_state, $revert = TRUE
+      );
       $new_form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
     }
     // Update only if version was really upgraded.
