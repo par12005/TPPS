@@ -210,6 +210,14 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
       }
       continue;
     }
+    if (isset($target['parent_element'][$target['field_name']])) {
+      if (tpps_is_debug_mode()) {
+        $message = 'SIA Action "move": target field exists.'
+          . '<br />Value: <pre>@item</pre>.';
+        $params = ['@key' => $key, '@item' => print_r($item, 1)];
+        tpps_message($message, $params, 'warning');
+      }
+    }
     // Action!
     $target['parent_element'][$target['field_name']]
       = $source['parent_element'][$source['field_name']];
