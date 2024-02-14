@@ -132,39 +132,15 @@ function tpps_submission_interface_generate(array $form_state = []) {
   // be applied first. Using simple integers will allow to easily detect
   // which version must be applied.
   $current_version = tpps_submission_form_version_get($form_state);
+  if (tpps_is_si_debug_mode()) {
+    dpm($current_version, 'Submission Form Version');
+  }
 
-  $change_list = tpps_submission_form_version_changes($form_state);
-  //dpm($change_list);
   // We need to apply changes from 1st to $current version to have
   // incremental changes.
   $i = TPPS_SUBMISSION_FORM_START_VERSION;
   for (; $i <= $current_version; $i++) {
-    foreach ($change_list[$i] as $action => $action_data) {
-      $function = 'tpps_submission_interface_action_' . $action;
-      if (!function_exists($function)) {
-        watchdog('tpps', 'Submission Interface Action Function not exists. '
-          . '<br />Function name: @function_name. <br />Version: @version.',
-          ['@function_name' => $function, '@version' => $i], WATCHDOG_ERROR
-        );
-        continue;
-      }
-      if (empty($action_data)) {
-        watchdog('tpps', 'There is no data for Submission Interface Action. '
-          . '<br />Function name: @function_name. <br />Version: @version.',
-          ['@function_name' => $function, '@version' => $i], WATCHDOG_ERROR
-        );
-        continue;
-      }
-      // Call function.
-      // Note: $action_data also couldn't be empty here.
-      // Action-functions are (for search):
-      // tpps_submission_interface_action_unset();
-      // tpps_submission_interface_action_move().
-      if (variable_get('tpps_debug_mode', FALSE)) {
-        dpm($action_data, $function);
-      }
-      call_user_func_array($function, [&$interface, $action_data]);
-    }
+    tpps_submission_form_version_upgrade($form_state, $i, $interface);
   }
   return $interface;
 }

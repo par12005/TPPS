@@ -188,3 +188,27 @@ function tpps_get_user_email($uid, $reset = FALSE) {
   }
   return $static_cache[$key];
 }
+
+/**
+ * Puts message using watchdog() and drupal_set_message().
+ *
+ * Not for CLI. For UI only.
+ *
+ * @param string $message
+ *   Not localized message text.
+ * @param array $params
+ *   List of the tokens which will be replaces in $message.
+ * @param string $type
+ *   Predefined message type. Possible values are:
+ *   'error', 'notice', 'info', 'warning'.
+ */
+function tpps_message($message, array $params = [], $type = 'notice') {
+  $types = [
+    'error' => WATCHDOG_ERROR,
+    'notice' => WATCHDOG_NOTICE,
+    'info' => WATCHDOG_INFO,
+    'warning' => WATCHDOG_WARNING,
+  ];
+  watchdog('tpps', $message, $params, ($types[$type] ?? WATCHDOG_NOTICE));
+  drupal_set_message(t($message, $params), $type);
+}

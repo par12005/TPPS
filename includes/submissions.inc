@@ -104,6 +104,7 @@ function tpps_load_submission_info($accession, $reset = FALSE) {
  *   The accession number of the submission.
  * @param bool $reset
  *   Flag is cache must be resetted. Default if FALSE.
+ *   RESET_CACHE could be used.
  *
  * @return mixed
  *   Returns Submission From State array or NULL if not found.
@@ -332,10 +333,7 @@ function tpps_update_submission_state(array &$form_state) {
   }
   $form_state['updated'] = time();
   db_update('tpps_submission')
-    ->fields([
-      'submission_state' => serialize($form_state),
-      'submission_interface' => serialize([]),
-    ])
+    ->fields(['submission_state' => serialize($form_state)])
     ->condition('accession', $accession)
     ->execute();
   // Reset cached version of submission state array.
@@ -1460,7 +1458,11 @@ function tpps_submission_get_import_meta(array $form_state = [], $accession = NU
   // Full data: Human readable and timestamp.
   $import_meta['full_date'] = $import_meta['imported_date']
     . (empty($import_meta['imported']) ? ''
-      : ' [' . $import_meta['imported'] . ']');
+    : ' [' . $import_meta['imported'] . ']');
+  // Submission Form Version.
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY]
+    = tpps_submission_form_version_get($state);
 
   return $import_meta;
 }

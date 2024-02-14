@@ -1140,17 +1140,15 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   // Add class to apply CSS rules differntly for TPPS and TPPSc Forms
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
-  $form['#attributes']['class'][] =  ($is_tppsc) ? 'tppsc-form' : 'tpps-form';
+  $form['#attributes']['class'][] = ($is_tppsc) ? 'tppsc-form' : 'tpps-form';
   // Use the same validator-function for both TPPS/TPPSc forms.
   $form['#validate'][] = 'tpps_main_validate';
 
-// @TODO We need to convert previous version to latest one here.
-// Maybe SIA could be used here as a source of default values.
-
 
   // Set version for 'Submission Interface' feature.
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  tpps_submission_form_version_set($form);
+  //module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  //tpps_submission_form_version_set($form, $form_state);
+
 
   if ($is_tppsc) {
     // User not logged in, trying to access front page.
@@ -1258,11 +1256,43 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     tpps_init_project($form_state);
   }
 
-  if ($is_tppsc) {
-    $form_state['tpps_type'] = 'tppsc';
+
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submission Form Versions.
+  // Set version for 'Submission Interface' feature.
+  // Note: We need to set version before 'update' version.
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
+  tpps_submission_form_version_set($form, $form_state);
+
+  // Upgrade to latest Submission Form Version.
+  // We skip 1st version because it's for creation of Submission Interface.
+  $version = TPPS_SUBMISSION_FORM_START_VERSION + 1;
+  $latest_version = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
+  if ($version < $latest_version) {
+    // Clone existing $form_state.
+    $new_form_state = $form_state;
+    for (; $version <= $latest_version; $version++) {
+
+      tpps_submission_form_version_upgrade($form_state, $version, $new_form_state);
+      $new_form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
+    }
+    // Update only if version was really upgraded.
+    tpps_update_submission_state($new_form_state);
+
+    $message = 'Submission Form Version was upgraded from @version to @latest_version.';
+    $params = [
+      '@version' => TPPS_SUBMISSION_FORM_START_VERSION + 1,
+      '@latest_version' => $latest_version,
+    ];
+    tpps_message($message, $params, 'notice');
+    // Restore $form_state.
+    $form_state = $new_form_state;
   }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (!$is_tppsc) {
-    // Accession.
+    $form_state['tpps_type'] = 'tpps';
     // Must be after tpps_init_project() which sets accession for new studies.
     $accession = $form_state['accession'] ?? $frontpage_values['accession'] ?? NULL;
     $form['#attached']['js'][] = [
@@ -1302,6 +1332,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     }
   }
   elseif ($is_tppsc) {
+    $form_state['tpps_type'] = 'tppsc';
     tpps_update_submission_state($form_state);
     if (variable_get('tpps_top_bar', 'status') == 'status') {
       module_load_include('inc', 'tpps', 'includes/status_bar');

@@ -55,6 +55,7 @@ define('TPPS_SUBMISSION_FORM_VERSION_KEY', 'submission_form_version');
 // See tpps_submission_form_get_change_list() for changes per version.
 // Version 1: Only removed data which is useless for processing study.
 // Version 2: #86ayw8a7k Page 4 Genotype Logic Adjustments.
+// @TODO Minor. Rename to 'latest_version'?
 define('TPPS_SUBMISSION_FORM_CURRENT_VERSION', 2);
 
 /**
@@ -72,6 +73,18 @@ function tpps_is_si_debug_mode() {
   module_load_include('inc', 'tpps', 'includes/common');
   return !is_live_site() || variable_get('tpps_si_debug_mode', FALSE);
 }
+
+/**
+ * Checks if Debug Mode is enabled.
+ *
+ * @return bool
+ *   Returns TRUE if 'Submission Interface Debug Mode' is enabled.
+ *   Returns FALSe otherwise.
+ */
+function tpps_is_debug_mode() {
+  return variable_get('tpps_debug_mode', FALSE);
+}
+
 
 /**
  * Gets Submission Form Version.
@@ -96,12 +109,14 @@ function tpps_submission_form_version_get(array $form_state) {
  *   @todo Replace with *_add_fiedl().
  *   @todo See tpps_main_submit() to create new function.
  */
-function tpps_submission_form_version_set(array &$form) {
+function tpps_submission_form_version_set(array &$form, array $form_state) {
+  $version = $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+    ?? TPPS_SUBMISSION_FORM_START_VERSION;
   // We use $form_state['saved_values'] as parent because it will be restored
   // and saved on each load/submit of multistep form.
   $form[TPPS_SUBMISSION_FORM_VERSION_KEY] = [
     '#type' => 'hidden',
-    '#value' => TPPS_SUBMISSION_FORM_CURRENT_VERSION,
+    '#value' => $version,
   ];
 }
 
@@ -122,22 +137,22 @@ function tpps_submission_interface_action_unset(array &$interface, array $action
   module_load_include('inc', 'tpps', 'includes/form');
   foreach ($action_data as $key => $item) {
     if (empty($item)) {
-      continue;
-      $message = 'SI Action "unset" #@key failed. One of the required '
-        . 'fields is empty.<br />Value: <pre>@item</pre>.';
-      $params = ['@key' => $key, '@item' => print_r($item, 1)];
-      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
       if (tpps_is_si_debug_mode()) {
-        dpm(t($message, $params));
+        $message = 'SI Action "unset" #@key failed. One of the required '
+          . 'fields is empty.<br />Value: <pre>@item</pre>.';
+        $params = ['@key' => $key, '@item' => print_r($item, 1)];
+        tpps_message($message, $params, 'error');
       }
       continue;
     }
     $target = &tpps_form_get_path($interface, $item);
     if (empty($target['parent_element']) || empty($target['field_name'])) {
-      $message = "SIA Action 'unset' can't find element for #@key."
-        . '<br />Value: <pre>@item</pre>. ';
-      $params = ['@key' => $key, '@item' => print_r($item, 1)];
-      watchdog('tpps', $message, $params, WATCHDOG_INFO);
+      if (tpps_is_si_debug_mode()) {
+        $message = "SIA Action 'unset' can't find element for #@key."
+          . '<br />Value: <pre>@item</pre>. ';
+        $params = ['@key' => $key, '@item' => print_r($item, 1)];
+        tpps_message($message, $params, 'info');
+      }
       continue;
     }
     // Note:
@@ -176,30 +191,22 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
       empty($source['parent_element']) || empty($source['field_name'])
       || empty($target['parent_element']) || empty($target['field_name'])
     ) {
-      $message = 'SIA Action "move" #@key failed. One of the required '
-        . 'fields is empty.<br />Value: <pre>@item</pre>.';
-      $params = ['@key' => $key, '@item' => print_r($item, 1)];
-      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
-      if (tpps_is_si_debug_mode()) {
-        dpm(t($message, $params));
+      if (tpps_is_debug_mode()) {
+        $message = 'SIA Action "move" #@key failed. One of the required '
+          . 'fields is empty.<br />Value: <pre>@item</pre>.';
+        $params = ['@key' => $key, '@item' => print_r($item, 1)];
+        tpps_message($message, $params, 'notice');
       }
       continue;
     }
     // Note: $source['parent_element'] and $target['parent_element']
     // are a references to the elements inside $interface.
-    if (tpps_is_si_debug_mode()) {
-      if ($target['field_name'] == 'doi') {
-        dpm($source, 'source');
-        dpm($target, 'target');
-      }
-    }
     if (!isset($source['parent_element'][$source['field_name']])) {
-      $message = 'SIA Action "move" #@key failed. Source field not found.'
-        . '<br />Value: <pre>@item</pre>.';
-      $params = ['@key' => $key, '@item' => print_r($item, 1)];
-      watchdog('tpps', $message, $params, WATCHDOG_ERROR);
-      if (tpps_is_si_debug_mode()) {
-        dpm(t($message, $params));
+      if (tpps_is_debug_mode()) {
+        $message = 'SIA Action "move" #@key failed. Source field not found.'
+          . '<br />Value: <pre>@item</pre>.';
+        $params = ['@key' => $key, '@item' => print_r($item, 1)];
+        tpps_message($message, $params, 'notice');
       }
       continue;
     }
@@ -211,7 +218,77 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
 }
 
 /**
+ * Upgrades Submission Interface to given single version.
+ *
+ * Must be used in a loop.
+ * $i = TPPS_SUBMISSION_FORM_START_VERSION;
+ * for (; $i <= $current_version; $i++) {
+ *   tpps_submission_form_version_upgrade($form_state, $i, $interface);
+ * }
+ *
+ * @TODO Update description.
+ * @TODO Probably it's 'downgrade' or 'restoring'
+ */
+function tpps_submission_form_version_upgrade(array $form_state, $version, array &$result = NULL) {
+  if (is_null($result)) {
+    $result = &$form_state;
+  }
+
+  $change_list = tpps_submission_form_version_changes($form_state, $version);
+  foreach ($change_list as $action => $action_data) {
+    // Note: $action_data is a list of all actions (not just single one).
+    if ($action == 'unset') {
+      continue;
+    }
+    $function = 'tpps_submission_interface_action_' . $action;
+    $params = [
+      '@function_name' => $function,
+      '@version' => $version,
+      '@action' => $action,
+    ];
+    if (!function_exists($function)) {
+      $message = 'Submission Interface Action Function not exists. '
+        . '<br />Function name: @function_name. <br />Version: @version.';
+      tpps_message($message, $params, 'error');
+      continue;
+    }
+    if (empty($action_data)) {
+      $message = 'There is no data for Submission Interface Action. '
+        . '<br />Function name: @function_name. <br />Version: @version.';
+      tpps_message($message, $params, 'error');
+      continue;
+    }
+    if ($action == 'move') {
+      foreach ($action_data as $key => $item) {
+        $reverted_action_data[$key] = [
+          'source' => $item['target'],
+          'target' => $item['source'],
+        ];
+      }
+    }
+    else {
+      $message = 'Reverted action data is required for @action.'
+      . '<br />Function name: @function_name. <br />Version: @version.';
+      tpps_message($message, $params, 'error');
+      continue;
+    }
+    // Call an action-function.
+    // 1. tpps_submission_interface_action_unset();
+    // 2. tpps_submission_interface_action_move().
+    // Note: $action_data also couldn't be empty here.
+    call_user_func_array($function, [&$result, $reverted_action_data]);
+  }
+  $result['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
+}
+
+/**
  * Gets specific version or all version's changes.
+ *
+ * Note:
+ * Version 1 just converts $form_state into Submission Interface by
+ * removing elements useless for pipeline processing.
+ * Next versions are about change order of fields at form and could be used
+ * to update old versions of $form_state to latest version.
  *
  * @param int $version
  *   Version of the Submission Form.

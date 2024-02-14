@@ -495,7 +495,7 @@ function tpps_flatten(array $state) {
             $data["$org_name VCF File (cluster)"] = $geno['files']['local_vcf'];
           }
 
-          if ($geno['files']['vcf'] > 0) {
+          if (($geno['files']['vcf'] ?? NULL) > 0) {
             $file = file_load($geno['files']['vcf']);
             $file_url = file_create_url($file->uri);
             $data["$org_name VCF File (uploaded)"] = "<a href='$file_url' target='blank'>$file->filename</a>";
