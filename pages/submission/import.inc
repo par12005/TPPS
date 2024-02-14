@@ -202,7 +202,21 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
  *   Returns Managed File Object.
  */
 function tpps_submission_import_download_file(array $file) {
-  if (empty($content = file_get_contents($file['url']))) {
+  $staging_domain = 'https://tgwebdev.cam.uchc.edu';
+  $username = variable_get('tpps_staging_http_username', '');
+  $password = variable_get('tpps_staging_http_password', '');
+  if (strpos($file['url'], $staging_domain) === 0 && $username && $password) {
+    $auth = base64_encode($username . ':' . $password);
+    $content = file_get_contents($file['url'], FALSE, stream_context_create(
+      ['http' => ['header' => 'Authorization: Basic ' . $auth]])
+    );
+  }
+  else {
+    // No HTTP Basic Auth.
+    $content = file_get_contents($file['url']);
+  }
+
+  if (empty($content)) {
     return NULL;
   }
   // Move file to Drupal.
