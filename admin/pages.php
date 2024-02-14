@@ -26,26 +26,25 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
     drupal_set_message(t('Empty accession.'), 'error');
     return '';
   }
-  $results = chado_query(
-    "SELECT submission_interface FROM tpps_submission WHERE accession = :accession",
-    [':accession' => $accession]
-  );
-  foreach ($results as $row) {
-    $submission_interface = unserialize($row->submission_interface);
-  }
+  $submission_interface = tpps_submission_interface_load($accession);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $project_file_ids = [];
   // Get file_ids from project_id.
-  $project_id = $submission_interface['ids']['project_id'];
+  $project_id = $submission_interface['ids']['project_id'] ?? NULL;
   $results = chado_query(
     'SELECT * FROM tpps_project_file_managed WHERE project_id = :project_id',
     [':project_id' => $project_id]
   );
+  // @TODO Minor. Replace with regular query.
   foreach ($results as $row) {
     array_push($project_file_ids, $row->fid);
   }
   sort($project_file_ids);
-  $saved_values = $submission_interface['saved_values'];
+  $saved_values = $submission_interface['saved_values'] ?? NULL;
+  if (empty($saved_values)) {
+    drupal_set_message(t('Empty "saved_values" in Submission Interface.'));
+    return ' ';
+  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $file_ids = [];
   $organism_count = $saved_values['1']['organism']['number'];
