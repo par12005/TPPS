@@ -185,6 +185,9 @@ a.fieldset-title {
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Highlight active button when using TAB key to switch. */
+.form-submit:focus:focus-visible,
+.form-primary:focus:focus-visible,
+.form-button:focus:focus-visible,
 .btn:focus:focus-visible {
   outline: black solid 2px;
 }

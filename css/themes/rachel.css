@@ -31,14 +31,14 @@
   border: 1px solid #bebebe;
   color: black;
 }
-form.tpps-submission .form-item,
+form#tpps-admin-panel .form-item,
 form.tppsc-form      .form-item {
   text-align: left;
 }
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Fields */
-form.tpps-submission select,
+form#tpps-admin-panel select,
 form.tppsc-form      select {
   border-radius: 10px;
   padding: 12px 20px;
@@ -51,8 +51,8 @@ form.tppsc-form      select {
 }
 
 /* TPPS Submission Forms */
-form.tpps-submission input,
-form.tpps-submission textarea,
+form#tpps-admin-panel input,
+form#tpps-admin-panel textarea,
 /* TPPSc Form */
 form.tppsc-form input,
 form.tppsc-form textarea {
@@ -64,29 +64,29 @@ form.tppsc-form textarea {
   font-size: 16px;
   height: auto;
 }
-form.tpps-submission .form-item label,
+form#tpps-admin-panel .form-item label,
 form.tppsc-form      .form-item label {
   font-size: 16px;
 }
-form.tpps-submission div.form-item,
+form#tpps-admin-panel div.form-item,
 form.tppsc-form      div.form-item {
   margin: 30px 0;
 }
 
 /* @todo Remove when CSS Injector rule #18 will be removed. */
-form.tpps-submission .fieldset-wrapper>.form-item,
+form#tpps-admin-panel .fieldset-wrapper>.form-item,
 form.tppsc-form      .fieldset-wrapper>.form-item {
   border-bottom: none;
 }
 /* Hide bar at the bottom of textarea */
-form.tpps-submission .resizable-textarea div.grippie,
+form#tpps-admin-panel .resizable-textarea div.grippie,
 form.tppsc-form      .resizable-textarea div.grippie {
   display: none;
 }
 /* TPPS Submission Forms */
-form.tpps-submission textarea.error,
-form.tpps-submission select.error,
-form.tpps-submission input.error,
+form#tpps-admin-panel textarea.error,
+form#tpps-admin-panel select.error,
+form#tpps-admin-panel input.error,
 /* TPPSc Form */
 .tppsc-form textarea.error,
 .tppsc-form select.error,
@@ -95,27 +95,27 @@ form.tpps-submission input.error,
 }
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Fieldsets */
-form.tpps-submission fieldset.form-wrapper,
+form#tpps-admin-panel fieldset.form-wrapper,
 form.tppsc-form      fieldset.form-wrapper {
   /* Dark grey */
   border-left: 3px solid #6b706b;
   margin: 20px 0 0 20px !important;
   padding: 0 20px;
 }
-form.tpps-submission fieldset.form-wrapper legend,
+form#tpps-admin-panel fieldset.form-wrapper legend,
 form.tppsc-form      fieldset.form-wrapper legend {
   /* !important is required to overwrite css-injector rules */
   border: none !important;
   color: black !important;
   padding: 0 10px !important;
 }
-form.tpps-submission fieldset.form-wrapper legend span,
+form#tpps-admin-panel fieldset.form-wrapper legend span,
 form.tppsc-form      fieldset.form-wrapper legend span {
   padding-left: 10px;
   line-height: normal;
 }
 /* Fixed not collapsible fieldset's label */
-form.tpps-submission fieldset legend span.fieldset-legend,
+form#tpps-admin-panel fieldset legend span.fieldset-legend,
 form.tppsc-form      fieldset legend span.fieldset-legend {
   padding-left: 12px;
   font-size: 16px;
@@ -135,7 +135,7 @@ form.tppsc-form      fieldset legend span.fieldset-legend {
 
 /* ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: */
 /* Huge Rounded Buttons */
-form.tpps-submission .form-submit,
+form#tpps-admin-panel .form-submit,
 form.tppsc-form      .form-submit {
   height: 60px;
   background: #5a7736;
@@ -154,7 +154,7 @@ form.tppsc-form      .form-submit {
 }
 /* Rectangular Buttons */
 body.page-completed-submission .form-button,
-form.tpps-submission  .form-button,
+form#tpps-admin-panel  .form-button,
 form.tppsc-form       .form-button,
 form#tpps-admin-panel .form-submit {
   min-height: 32px;
@@ -174,23 +174,23 @@ form#tpps-admin-panel .form-submit {
   text-align: center;
 }
 
-form.tpps-submission a.btn.form-submit,
-form.tppsc-form      a.btn.form-submit,
-form.tpps-submission a.btn.form-button,
-form.tppsc-form      a.btn.form-button {
+form#tpps-admin-panel a.form-submit,
+form.tppsc-form      a.form-submit,
+form#tpps-admin-panel a.form-button,
+form.tppsc-form      a.form-button {
   display: inline;
   padding: 20px 50px;
 }
 /* TPPS Submission */
-form.tpps-submission .btn.form-submit:hover,
-form.tpps-submission .btn.form-button:hover,
-form.tpps-submission .btn.form-submit:focus,
-form.tpps-submission .btn.form-button:focus,
+form#tpps-admin-panel .form-submit:hover,
+form#tpps-admin-panel .form-button:hover,
+form#tpps-admin-panel .form-submit:focus,
+form#tpps-admin-panel .form-button:focus,
 /* TPPSc Form */
-form.tppsc-form .btn.form-submit:hover,
-form.tppsc-form .btn.form-button:hover,
-form.tppsc-form .btn.form-submit:focus,
-form.tppsc-form .btn.form-button:focus {
+form.tppsc-form .form-submit:hover,
+form.tppsc-form .form-button:hover,
+form.tppsc-form .form-submit:focus,
+form.tppsc-form .form-button:focus {
   background-color: #3b413b;
 }
 
