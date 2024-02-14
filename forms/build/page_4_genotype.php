@@ -417,8 +417,8 @@ function tpps_genotype_subform(array $chest) {
       ],
     ]);
 
-    $fields['files'][$file_field_name] = array_merge(
-      $fields['files'][$file_field_name],
+    $fields['SNPs'][$file_field_name] = array_merge(
+      $fields['SNPs'][$file_field_name],
       [
         'empty' => [
           '#default_value' => tpps_array_get_value(
@@ -448,16 +448,8 @@ function tpps_genotype_subform(array $chest) {
         ],
       ]
     );
-
-
-
-
-// @TODO Check if fields below must be relocated.
-
-
-
-
-    $fields['files']['snps-association-type'] = [
+    // Field was relocated (v.2). ['files'] -> ['SNPs'].
+    $fields['SNPs']['snps-association-type'] = [
       '#type' => 'select',
       '#title' => t('Confidence Value Type: *'),
       '#options' => [
@@ -470,7 +462,8 @@ function tpps_genotype_subform(array $chest) {
       ],
     ];
 
-    $fields['files']['snps-association-tool'] = [
+    // Field was relocated (v.2). ['files'] -> ['SNPs'].
+    $fields['SNPs']['snps-association-tool'] = [
       '#type' => 'select',
       '#title' => t('Association Analysis Tool: *'),
       '#options' => [

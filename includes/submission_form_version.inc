@@ -443,6 +443,8 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'snps-pop-struct',
       'snps-kinship',
       'assay-citation',
+      'snps-association-tool',
+      'snps-association-type',
     ];
     $to_ssr_fieldset = [
       // Dropdown menu.
