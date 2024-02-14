@@ -1256,8 +1256,6 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     tpps_init_project($form_state);
   }
 
-
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission Form Versions.
   // Set version for 'Submission Interface' feature.
@@ -1266,8 +1264,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   tpps_submission_form_version_set($form, $form_state);
 
   // Upgrade to latest Submission Form Version.
-  // We skip 1st version because it's for creation of Submission Interface.
-  $version = TPPS_SUBMISSION_FORM_START_VERSION + 1;
+  $version = tpps_submission_form_version_get($form_state);
   $latest_version = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
   if ($version < $latest_version) {
     // Clone existing $form_state.
@@ -1286,29 +1283,31 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
       '@version' => TPPS_SUBMISSION_FORM_START_VERSION + 1,
       '@latest_version' => $latest_version,
     ];
-    tpps_message($message, $params, 'notice');
+    tpps_message($message, $params, 'status');
     // Restore $form_state.
     $form_state = $new_form_state;
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Must be after tpps_init_project() which sets accession for new studies.
+  $accession = $form_state['accession'] ?? $frontpage_values['accession'] ?? NULL;
+  $form['#attached']['js'][] = [
+    'data' => [
+      'tpps' => [
+        'stage' => $form_state['stage'] ?? NULL,
+        'accession' => $accession,
+      ],
+    ],
+    'type' => 'setting',
+  ];
+  // Hidden form accession element.
+  // Note: Adding this elements to $form heare require all sub-functions to
+  // use reference and not return $form array.
+  $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (!$is_tppsc) {
     $form_state['tpps_type'] = 'tpps';
-    // Must be after tpps_init_project() which sets accession for new studies.
-    $accession = $form_state['accession'] ?? $frontpage_values['accession'] ?? NULL;
-    $form['#attached']['js'][] = [
-      'data' => [
-        'tpps' => [
-          'stage' => $form_state['stage'] ?? NULL,
-          'accession' => $accession,
-        ],
-      ],
-      'type' => 'setting',
-    ];
-    // Hidden form accession element.
-    // Note: Adding this elements to $form heare require all sub-functions to
-    // use reference and not return $form array.
-    $form['accession'] = ['#type' => 'hidden', '#value' => $accession];
 
     module_load_include('inc', 'tpps', 'includes/status_bar');
     tpps_status_bar($form, $form_state);

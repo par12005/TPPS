@@ -202,11 +202,12 @@ function tpps_get_user_email($uid, $reset = FALSE) {
  *   Predefined message type. Possible values are:
  *   'error', 'notice', 'info', 'warning'.
  */
-function tpps_message($message, array $params = [], $type = 'notice') {
+function tpps_message($message, array $params = [], $type = 'status') {
   $types = [
     'error' => WATCHDOG_ERROR,
+    'status' => WATCHDOG_INFO,
+    // @TODO 'notice' require CSS rules to have color.
     'notice' => WATCHDOG_NOTICE,
-    'info' => WATCHDOG_INFO,
     'warning' => WATCHDOG_WARNING,
   ];
   watchdog('tpps', $message, $params, ($types[$type] ?? WATCHDOG_NOTICE));
