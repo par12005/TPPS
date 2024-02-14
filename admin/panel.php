@@ -36,7 +36,7 @@ function tpps_admin_panel(array $form, array &$form_state, $accession = NULL) {
   else {
     tpps_manage_submission_form($form, $form_state, $accession);
   }
-  $form['#attributes']['class'][] = 'tpps-submission';
+  $form['#attributes']['class'][] = 'tpps-admin-panel';
   tpps_add_css_js('main', $form);
   return $form;
 }
