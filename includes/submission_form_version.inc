@@ -448,11 +448,11 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'snps-assay',
       'assay-design',
       'snps-association',
+      'snps-association-tool',
+      'snps-association-type',
       'snps-pop-struct',
       'snps-kinship',
       'assay-citation',
-      'snps-association-tool',
-      'snps-association-type',
     ];
     $to_ssr_fieldset = [
       // Dropdown menu.
@@ -480,6 +480,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
         ];
       }
       // Move to fieldset 'SSRs/cpSSRs Information'.
+      // 'source' new location, 'target' - original location.
       foreach ($to_ssr_fieldset as $item) {
         $change_list['2']['move'][] = [
           'target' => array_merge($genotype_parents, $item),

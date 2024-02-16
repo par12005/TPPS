@@ -2218,6 +2218,15 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/purge.inc',
   ];
+  $items['tpps/submission/purge_multiple'] = [
+    'title callback' => 'Purge Multiple',
+    'description' => 'Purge multple TPPS Submissions',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['tpps_submission_purge_multiple_form'],
+    'access arguments' => ['tpps delete submission'],
+    'file path' => TPPS_MODULE_PATH,
+    'file' => 'pages/submission/purge_multiple.inc',
+  ];
 }
 
 /**

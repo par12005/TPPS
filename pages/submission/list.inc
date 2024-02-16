@@ -110,7 +110,6 @@ function tpps_submission_list_add_buttons(array &$form, $add_action = TRUE) {
  */
 function tpps_submission_list_validate_accession($accession) {
   if (empty($accession)) {
-
     drupal_set_message(t('Empty accession in @function().',
       [
         '@function' => debug_backtrace(
@@ -118,7 +117,6 @@ function tpps_submission_list_validate_accession($accession) {
         )[1]['function'],
       ]
     ), 'warning');
-
     drupal_goto('tpps/submission');
   }
 }

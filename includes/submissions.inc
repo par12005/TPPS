@@ -395,21 +395,19 @@ function tpps_submission_delete_callback($accession) {
  */
 function tpps_submission_purge($accession, $force = FALSE) {
   $state = tpps_submission_get_state($accession);
-  if (empty($state)) {
-    // Submission not exists. Nothing to do.
-    // @TODO Minor. Query DB table 'file_usage' to find if there is orphan
-    // files related to this non-existing submission.
-    return;
-  }
-  // Remove usage of files first.
-  $fid_list = tpps_submission_file_get_id_list($state);
-  foreach ($fid_list as $fid) {
-    if ($file = file_load($fid)) {
-      // Remove file usage record (not file itself).
-      file_usage_delete($file, 'tpps', 'tpps_project', substr($accession, 4), 1);
-      if ($force) {
-        // Remove file from disk.
-        file_delete($file);
+  // @TODO Minor. Query DB table 'file_usage' to find if there is orphan
+  // files related to this non-existing submission.
+  if (!empty($state)) {
+    // Remove usage of files first.
+    $fid_list = tpps_submission_file_get_id_list($state);
+    foreach ($fid_list as $fid) {
+      if ($file = file_load($fid)) {
+        // Remove file usage record (not file itself).
+        file_usage_delete($file, 'tpps', 'tpps_project', substr($accession, 4), 1);
+        if ($force) {
+          // Remove file from disk.
+          file_delete($file);
+        }
       }
     }
   }
@@ -421,7 +419,7 @@ function tpps_submission_purge($accession, $force = FALSE) {
     ->condition('accession', $accession)
     ->execute();
   // If this study was imported we need to remove it from the list.
-  // @TODO Check if study was imported.
+  // @TODO Check if study was imported to avoid extra moves.
   module_load_include('inc', 'tpps', 'includes/imported_studies_list');
   tpps_imported_studies_list_remove_item($accession);
 }
