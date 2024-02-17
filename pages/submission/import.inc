@@ -20,6 +20,7 @@ module_load_include('inc', 'tpps', 'includes/imported_studies_list');
  */
 function tpps_submission_import_form(array $form, array &$form_state, $accession = '') {
   tpps_submission_list_validate_accession($accession);
+  $next_accession = 'TGDR' . tpps_init_project_get_next_accession();
 
   // Show warning about using existing accession.
   if ($accession != 'new') {
@@ -27,20 +28,35 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
       ['@accession' => $accession]), 'warning'
     );
   }
-  // Accession.
-  $accession_list = tpps_submission_get_accession_list();
-  $form['tpps_submission_import_accession'] = [
-    '#type' => 'select',
-    '#title' => t('Accession'),
-    '#options' => array_merge([
-      'new' => t(
-        'New (@next_accession)',
-        ['@next_accession' => 'TGDR' . tpps_init_project_get_next_accession()]
+  elseif ($accession == 'new') {
+    $form['tpps_submission_import_notice'] = [
+      '#markup' => t('New accession will be created: @next_accession.',
+        ['@next_accession' => $next_accession]
       ),
-    ], $accession_list),
-    '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
-    '#required' => TRUE,
-  ];
+    ];
+    $form['tpps_submission_import_accession'] = [
+      '#type' => 'hidden',
+      '#value' => $accession,
+    ];
+  }
+  else {
+    // Accession.
+    $accession_list = tpps_submission_get_accession_list();
+    $form['tpps_submission_import_accession'] = [
+      '#type' => 'select',
+      '#title' => t('Accession'),
+      '#options' => array_merge(
+        [
+          'new' => t('New (@next_accession)',
+            ['@next_accession' => $next_accession]
+          ),
+        ],
+        $accession_list
+      ),
+      '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
+      '#required' => TRUE,
+    ];
+  }
   $form['tpps_submission_import_submission_state'] = [
     '#type' => 'textarea',
     '#title' => t('Submission State'),
@@ -285,23 +301,27 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
   // Update accession value in $form_state.
   $old_accession = $state['saved_values']['frontpage']['accession'];
   $state = tpps_array_replace($state, $old_accession, $new_accession);
+  $saved_values = $state['saved_values'];
 
   // Store original accession.
   // @TODO Minor. Remove 'saved_values' but be sure to restore those values
   // when submission reopened using '/tppsc' form.
-  $state['saved_values']['tpps_submission_import']['original_accession'] = $old_accession;
-  $state['saved_values']['tpps_submission_import']['imported'] = REQUEST_TIME;
-  $state['saved_values']['tpps_submission_import']['imported_date']
+  $saved_values['tpps_submission_import']['original_accession'] = $old_accession;
+  $saved_values['tpps_submission_import']['imported'] = REQUEST_TIME;
+  $saved_values['tpps_submission_import']['imported_date']
     = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O');
-  $state['saved_values']['tpps_submission_import']['site']
+  $saved_values['tpps_submission_import']['site']
     = $state['tpps_submission_export_site'] ?? 'https://treegenesdb.org';
-
-  // Set Submission Form Version.
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Store imported (original) Submission Form Version.
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+  // Set Submission Form Version.
+  $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
     = $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  $saved_values['tpps_submission_import'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+    = $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY];
 
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // From tpps_init_project().
   $state['saved_values']['dbxref_id']
     = $state['dbxref_id']
