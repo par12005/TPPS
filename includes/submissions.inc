@@ -1427,7 +1427,7 @@ function tpps_submission_get_import_meta(array $form_state = [], $accession = NU
     $state = tpps_load_submission_state($accession);
   }
 
-  $import_meta = $state['saved_values']['tpps_submission_import'] ?? NULL;
+  $import_meta = $state['saved_values']['tpps_submission_import'] ?? [];
   if (empty($import_meta)) {
     return $output;
   }
@@ -1457,10 +1457,5 @@ function tpps_submission_get_import_meta(array $form_state = [], $accession = NU
   $import_meta['full_date'] = $import_meta['imported_date']
     . (empty($import_meta['imported']) ? ''
     : ' [' . $import_meta['imported'] . ']');
-  // Submission Form Version.
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY]
-    = tpps_submission_form_version_get($state);
-
   return $import_meta;
 }
