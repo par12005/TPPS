@@ -23,6 +23,7 @@ function tpps_admin_imported_studies_report() {
     $rows[] = [
       l($local, 'tpps/submission/' . $local . '/view'),
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY],
+      $import_meta['current_version'],
       $import_meta['full_date'],
       $import_meta['accession_link'],
       l($import_meta['site'], $import_meta['site']),
@@ -40,15 +41,19 @@ function tpps_admin_imported_studies_report() {
       ]),
     ];
   }
-  return theme('table', [
+  $output = '<h3>'
+    . l(t('Import New Submission'), 'tpps/submission//new/import') . '</h3>';
+  $output .= theme('table', [
     'header' => [
-      t('Local Accession'),
-      t('Version'),
+      t('Local <br /><strong>Accession</strong>'),
+      t('Imported <br/><strong>Version</strong>'),
+      t('Current <br /><strong>Version</strong>'),
       t('Import Date'),
-      t('Remote Accession'),
+      t('Remote <br /><strong>Accession</strong>'),
       t('Remote Site'),
       t('Actions'),
     ],
     'rows' => $rows,
   ]);
+  return $output;
 }

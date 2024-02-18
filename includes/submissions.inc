@@ -1415,6 +1415,7 @@ function tpps_submission_get_state($accession) {
  *   Returns Submission Import Meta with some useful extra items.
  */
 function tpps_submission_get_import_meta(array $form_state = [], $accession = NULL) {
+  // @TODO Minor. Use 'tpps' cache bin.
   $output = [];
   if (empty($form_state) && empty($accession)) {
     watchdog('tpps', "Couldn't get Submission Import Metadata because Form "
@@ -1457,5 +1458,6 @@ function tpps_submission_get_import_meta(array $form_state = [], $accession = NU
   $import_meta['full_date'] = $import_meta['imported_date']
     . (empty($import_meta['imported']) ? ''
     : ' [' . $import_meta['imported'] . ']');
+  $import_meta['current_version'] = $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY];
   return $import_meta;
 }
