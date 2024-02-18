@@ -41,23 +41,28 @@ function tpps_form_add_buttons(array $chest) {
       '#tree' => FALSE,
       '#weight' => $weight,
     ];
-    // @todo [VS] Use Drupal Form API 'required' attribute.
-    $form[$scope]['input_description'] = [
-      '#markup' => '<div class="input-description">* : Required Field</div>',
-      '#weight' => -($weight),
-    ];
+    if ($page != 'summary') {
+      // @todo [VS] Use Drupal Form API 'required' attribute.
+      $form[$scope]['input_description'] = [
+        '#markup' => '<div class="input-description">* : Required Field</div>',
+        '#weight' => -($weight),
+      ];
+    }
     switch ($page) {
       case 'page_2':
       case 'page_3':
+        // Back, Save, Next.
         $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
 
       default:
       case 'page_1':
+        // Save, Next.
         $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
         $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Next')];
         break;
 
       case 'page_4':
+        // Back, Save, Review, Submit, Pre-validate my VCF files.
         $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
         $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
         $form[$scope]['submit'] = [
@@ -84,6 +89,12 @@ function tpps_form_add_buttons(array $chest) {
           ];
           $form[$scope]['Back']['#prefix'] = "<div id=\"pre-validate-message\"></div>";
         }
+        break;
+
+      case 'summary':
+        // Back, Submit.
+        $form[$scope]['Back'] = ['#type' => 'submit', '#value' => t('Back')];
+        $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Submit')];
         break;
     }
   }

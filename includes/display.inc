@@ -576,6 +576,8 @@ function tpps_flatten(array $state) {
  *
  * @param array $state
  *   The form_state of the TPPS Submission form.
+ *   Better use Submission Interface Array because $form_state of old studies
+ *   (Submission Form Version 1) won't have some fields.
  *
  * @return string
  *   The TPPS Submission formatted in an HTML table.
@@ -794,14 +796,12 @@ function tpps_table_display(array &$state, array $options = array()) {
  *   The rendered page.
  */
 function tpps_completed_display($accession = NULL) {
-
   global $base_url;
   global $user;
   $display = "";
-  $link = "$base_url/tpps/details/$accession";
 
-  $old_form_state = tpps_load_submission_state($accession);
-  $values = $old_form_state['saved_values'];
+  $interface = tpps_submission_interface_load($accession);
+  $values = $interface['saved_values'];
 
   // @TODO Move CSS to /css/tpps.css. Check if scope must be 'header'.
   $css = "
@@ -813,17 +813,25 @@ function tpps_completed_display($accession = NULL) {
   }
   ";
   drupal_add_css($css, 'inline');
+  $title = $values[TPPS_PAGE_1]['publication']['title'];
 
-  $display .= "<label for='tpps_$accession'>{$values[TPPS_PAGE_1]['publication']['title']}</label><p>You can view the TPPS Details page with completed and approved TPPS and TGDR data <a href=\"$link\">here</a></p>";
+  $display .= "<label for='tpps_$accession'>{$title}</label><p>"
+    . t('You can view the TPPS Details page with completed and approved TPPS '
+      . 'and TGDR data <a href="@link">here</a>',
+      // @TODO Minor. Do we really need an absolute link here?
+      ['@link' => url('tpps/details/$accession', ['absolute' => TRUE])]
+    ) . '</p>';
   $submission_info = tpps_load_submission_info($accession);
   if (
     $values[TPPS_PAGE_1]['publication']['status'] != 'Published'
     && $user->uid == $submission_info['uid']
   ) {
-    $display .= "<a href=\"$base_url/tpps/$accession/edit-publication\">Edit publication information</a>";
+    // @TODO Minor. Do we really need an absolute link here?
+    $display .= l(t('Edit publication information'),
+      'tpps/' . $accession . '/edit-publication', ['absolute' => TRUE]);
   }
 
-  $display .= tpps_table_display($old_form_state);
+  $display .= tpps_table_display($interface);
   tpps_add_css_js('main');
   return render($display);
 }

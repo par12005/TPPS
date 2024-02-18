@@ -134,7 +134,7 @@ function tpps_submission_interface_generate(array $form_state = []) {
   // which version must be applied.
   $current_version = tpps_submission_form_version_get($form_state);
   if (tpps_is_si_debug_mode()) {
-    dpm($current_version, 'Submission Form Version');
+    dpm($current_version, 'Debug: Submission Form Version');
   }
 
   // We need to apply changes from 1st to $current version to have
