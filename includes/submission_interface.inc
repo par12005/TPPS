@@ -22,11 +22,12 @@
  *
  * ----------------------------------------------------------------------------
  * API:
+ * Note: functions has prefix 'tpps_submission_interface' (represented by '*').
  *   *_load() - Loads Submission Interface Array from DB. Uses cache.
  *   *_save() - Saves given Submission Interface Array to DB.
  *   *_generate() - Creates SIA and returns it (DB won't be updated).
  *   *_new() - Creates SIA, saves to DB and returns it.
- * Note: functions has prefix 'tpps_submission_interface' (represented by '*').
+ *   *_remove($accession) - Removes SIA field in DB.
  *
  * ----------------------------------------------------------------------------
  * Usage.
@@ -182,15 +183,21 @@ function tpps_submission_interface_load($accession) {
   // Process results.
   if ($result) {
     if (!empty($result['submission_interface'])) {
-      return unserialize($result['submission_interface']);
+      $interface = unserialize($result['submission_interface']);
+      // Interface could be an empty array which when serialized
+      // is non-empty string and we need to check after unserialization.
+      if (!empty($interface)) {
+        return $interface;
+      }
     }
-    else {
-      // Create new Submission Interface and return it.
-      $message = 'Submission Interface was created for @accession.';
-      $params = ['@accession' => $accession];
-      watchdog('tpps', $message, $params);
-      drupal_set_message(t($message, $params));
-      return tpps_submission_interface_new($accession);
+    // Create new Submission Interface and return it.
+    $message = 'Submission Interface Array was generated for @accession '
+     . 'because it was empty.';
+    $params = ['@accession' => $accession];
+    tpps_message($message, $params, 'warning');
+    $interface = tpps_submission_interface_new($accession);
+    if (!empty($interface)) {
+      return $interface;
     }
   }
   else {
@@ -213,6 +220,10 @@ function tpps_submission_interface_load($accession) {
  *   tpps_update_submission_info($accession, $data);
  * To update submission's Form State:
  *   tpps_update_submission_state($form_state);
+ *
+ * To remove submission Interface Array:
+ *   tpps_submission_interface_remove($accession);
+ * WARNING: do not use 'phppgadmin' because it can't edit serialized data.
  *
  * @param array $interface
  *   The Submission Interface Array.
@@ -255,4 +266,17 @@ function tpps_submission_interface_save(array &$interface, $status = NULL) {
     ->condition('accession', $accession)
     ->execute();
   return $interface;
+}
+
+/**
+ * Removes Submission Interface Array.
+ *
+ * @param string $accession
+ *   Study Accession. E.g., 'TGDR12345'.
+ */
+function tpps_submission_interface_remove($accession) {
+  db_update('tpps_submission')
+    ->fields(['submission_interface' => 'a:0:{}'])
+    ->condition('accession', $accession)
+    ->execute();
 }
