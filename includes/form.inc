@@ -1083,12 +1083,20 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
   ];
   // Check if $path is an array with field's parents.
   if (is_array($path)) {
+    // When element not exists in this version of array then create it first.
+    // Otherwise we can't move item to non-existing element.
+    if (empty(drupal_array_get_nested_value($array, $path))) {
+      drupal_array_set_nested_value($array, $path, NULL);
+    }
     // Last element is always a field name.
     $result['field_name'] = end($path);
     array_pop($path);
     // Check if there is a list of parents.
     if (count($path) >= 1) {
       $result['parent_element'] = &drupal_array_get_nested_value($array, $path);
+      if (empty($result['parent_element'])) {
+        dpm(print_r($path, 1), 'Empty parent element!');
+      }
     }
   }
   return $result;
@@ -1281,9 +1289,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     // Clone existing $form_state.
     $new_form_state = $form_state;
     for (; $version <= $latest_version; $version++) {
-      tpps_submission_form_version_upgrade(
-        $form_state, $version, $new_form_state, $revert = TRUE
-      );
+      tpps_submission_form_version_upgrade($form_state, $version, $new_form_state);
       $new_form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
     }
     // Update only if version was really upgraded.

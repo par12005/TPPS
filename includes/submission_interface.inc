@@ -138,7 +138,7 @@ function tpps_submission_interface_generate(array $form_state = []) {
   // incremental changes.
   $i = TPPS_SUBMISSION_FORM_START_VERSION;
   for (; $i <= $current_version; $i++) {
-    tpps_submission_form_version_upgrade($form_state, $i, $interface);
+    tpps_submission_form_version_downgrade($form_state, $i, $interface);
   }
   return $interface;
 }

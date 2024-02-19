@@ -12,8 +12,8 @@
  * Form State Array into Submission Interface used by pipeline processing
  * (see form/submit/submit_all.php script).
  *
- * Note: There is no sense to store version in $form as hidden value.
- *
+ * ----------------------------------------------------------------------------
+ * What is Submission Form Version?
  * 1. Versions are integers and start from '1' which is
  *    defined as constant TPPS_SUBMISSION_INTERFACE_START_VERSION.
  * 2. Each version changes must be listed in function
@@ -22,26 +22,44 @@
  *    'saved_values' automatically stored/restored by TPPS module for each step.
  *
  * ----------------------------------------------------------------------------
- * Usage.
- *   module_load_include('inc', 'tpps', 'includes/submission_form_version');
+ * Downgrade or upgrade?
+ * - Submission Interface has NO version. It equals to Submission Form Version 1.
+ * - Submission Form (not $form_state) has ALWAYS latest version
+ *   (TPPS_SUBMISSION_FORM_CURRENT_VERSION).
+ * - Submission Form State of imported (usually old, version 1 or lower then
+ *   latest verstion) studies must be UPgranded.
+ * - To generate Submission Interface from current Submission Form State
+ *   (just submitted, updated after import or updated on edit old study)
+ *   we need to DOWNgrade.
  *
  * ----------------------------------------------------------------------------
- * API:
- * 1. To get version:
+ * API.
+ *
+ * To use API:
+ *   module_load_include('inc', 'tpps', 'includes/submission_form_version');
+ * To get version:
  *    tpps_submission_interface_version_get($form_state);
- * 2. To set version:
+ * To set version:
  *    tpps_submission_interface_version_set($form_state);
  *
  * ----------------------------------------------------------------------------
- * Version change actions:
- * 1. 'unset'
- * 2. 'move'
+ * Predefined actions:
+ * 1. 'unset' - removes item from resulting (not original) array.
+ * 2. 'move' - relocates item (and it's sub-elements) to new place in resulting
+ *             (not original) array.
  * 3. 'rename' = move where target has new field name (last element).
  *
+ * What is changelist?
+ *
+ * Change List for each version is a list of data to perform actions
+ * (unset, move). For 'unset' it will be path to elements (list of parents
+ * including field which must be removed).
+ * For 'move' it will be 'source' (where to get) and 'target' (where to put).
+ *
  * ----------------------------------------------------------------------------
- * @todo If number of versions will be big enough and there is no old versions
- * left we could remove those versions from processing to speed-up interface
- * creation.
+ * @todo Minor. If number of versions will be big enough and there is
+ *       no old versions left we could remove those versions from
+ *       processing to speed-up interface creation.
  */
 
 // Number of the initial version of Form State Array.
@@ -84,7 +102,6 @@ function tpps_is_si_debug_mode() {
 function tpps_is_debug_mode() {
   return variable_get('tpps_debug_mode', FALSE);
 }
-
 
 /**
  * Gets Submission Form Version.
@@ -185,6 +202,9 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
     if (empty($item['source']) || empty($item['target'])) {
       continue;
     }
+    // Note:
+    // 'parent_element' is not a list of parents but a reference to element.
+    // To get value use 'field_name' as key inside 'parent_element'.
     $source = &tpps_form_get_path($interface, $item['source']);
     $target = &tpps_form_get_path($interface, $item['target']);
     if (
@@ -226,29 +246,84 @@ function tpps_submission_interface_action_move(array &$interface, array $action_
 }
 
 /**
- * Upgrades or downgrades Submission to given single version.
+ * Downgrades Form State/Submission Interface to given version.
  *
- * Usage example:
- * In a loop.
+ * @TODO Check if multiple version could be use: 3 to 1. What about direction?
+ *
+ * Note:
+ * - Version of Submission Interface: 1.
+ * - Version of TPPS Form State: 2+.
+ *
+ * Usage example in a loop.
+ * ???
+ *
+ * Note: Direction is always from lower version to higher.
+ *
+ *
+ *
  * $i = TPPS_SUBMISSION_FORM_START_VERSION;
  * for (; $i <= $current_version; $i++) {
- *   tpps_submission_form_version_upgrade($form_state, $i, $interface);
+ *   tpps_submission_form_version_downgrade($form_state, $i, $interface);
  * }
- *
- * @TODO Probably it's 'downgrade' or 'restoring'
  *
  * @param array $form_state
  *   Submission Form State. Used to build dynamic mapping.
  * @param int $version
  *   Desired version.
  * @param array $result
- *   Resulting array. It could be a Submission Interface if $revert = FALSE
- *   and Form State array when $revert = TRUE (update old version of the form
+ *   Resulting array. It could be a Submission Interface if $upgrade = FALSE
+ *   and Form State array when $upgrade = TRUE (update old version of the form
  *   to latest).
- * @param bool $revert
- *   When TRUE action will be reverted.
  */
-function tpps_submission_form_version_upgrade(array $form_state, $version, array &$result = NULL, $revert = FALSE) {
+function tpps_submission_form_version_downgrade(array $form_state, $version, array &$result = NULL) {
+  $upgrade = FALSE;
+  tpps_submission_form_version_migrate($form_state, $version, $result, $upgrade);
+}
+
+/**
+ * Upgrades one step Form State/Submission Interface to given version.
+ *
+ * Note:
+ * - Version of Submission Interface: 1.
+ * - Version of TPPS Form State: 2+.
+ *
+ * Usage example in a loop.
+ * Note: Direction is from lower version to higher.
+ * $i = TPPS_SUBMISSION_FORM_START_VERSION;
+ * for (; $i <= $current_version; $i++) {
+ *   tpps_submission_form_version_upgrade($form_state, $i, $interface);
+ * }
+ *
+ * @param array $form_state
+ *   Submission Form State. Used to build dynamic mapping.
+ * @param int $version
+ *   Desired version.
+ * @param array $result
+ *   Resulting array. It could be a Submission Interface if $upgrade = FALSE
+ *   and Form State array when $upgrade = TRUE (update old version of the form
+ *   to latest).
+ */
+function tpps_submission_form_version_upgrade(array $form_state, $version, array &$result = NULL) {
+  $upgrade = TRUE;
+  tpps_submission_form_version_migrate($form_state, $version, $result, $upgrade);
+}
+
+/**
+ * Changes version of given array $result.
+ *
+ * @param array $form_state
+ *   Submission Form State. Used to build dynamic mapping.
+ * @param int $version
+ *   Desired version.
+ * @param array $result
+ *   Resulting array. It could be a Submission Interface or Form State array.
+ * @param bool $upgrade
+ *   When TRUE 'unset' action will be skipped and 'move' action will be
+ *   reverted ('source' and 'target' will be swapped).
+ *   Use FALSE (default) to get Submission Interface Array.
+ *   Use TRUE to upgrade old version of Form State Array.
+ */
+function tpps_submission_form_version_migrate(array $form_state, $version, array &$result = NULL, $upgrade = FALSE) {
   if (is_null($result)) {
     $result = &$form_state;
   }
@@ -256,7 +331,7 @@ function tpps_submission_form_version_upgrade(array $form_state, $version, array
   $change_list = tpps_submission_form_version_changes($form_state, $version);
   foreach ($change_list as $action => $action_data) {
     // Note: $action_data is a list of all actions (not just single one).
-    if ($revert && $action == 'unset') {
+    if ($upgrade && $action == 'unset') {
       continue;
     }
     $function = 'tpps_submission_interface_action_' . $action;
@@ -277,7 +352,7 @@ function tpps_submission_form_version_upgrade(array $form_state, $version, array
       tpps_message($message, $params, 'error');
       continue;
     }
-    if ($revert) {
+    if ($upgrade) {
       if ($action == 'move') {
         foreach ($action_data as $key => $item) {
           $reverted_action_data[$key] = [
@@ -391,9 +466,9 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'move' => [
         // Page 1. 'DOI' field.
         'doi' => [
-          // Form State.
+          // Form State. Current location.
           'source' => ['saved_values', TPPS_PAGE_1, 'publication', 'doi'],
-          // Interface.
+          // Interface. Original location. v1.
           'target' => ['saved_values', TPPS_PAGE_1, 'doi'],
         ],
         'dataset_doi' => [
@@ -469,22 +544,22 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       // 'ref-genome' field.
       $field_name = 'ref-genome';
       $change_list['2']['move'][] = [
-        'target' => array_merge($genotype_parents, [$field_name]),
         'source' => array_merge($genotype_parents, ['SNPs', $field_name]),
+        'target' => array_merge($genotype_parents, [$field_name]),
       ];
       // 'files' to 'SNPs' fields.
       foreach ($files_to_snps_fields as $field_name) {
         $change_list['2']['move'][] = [
-          'target' => array_merge($genotype_parents, ['files', $field_name]),
           'source' => array_merge($genotype_parents, ['SNPs', $field_name]),
+          'target' => array_merge($genotype_parents, ['files', $field_name]),
         ];
       }
       // Move to fieldset 'SSRs/cpSSRs Information'.
       // 'source' new location, 'target' - original location.
       foreach ($to_ssr_fieldset as $item) {
         $change_list['2']['move'][] = [
-          'target' => array_merge($genotype_parents, $item),
           'source' => array_merge($genotype_parents, ['ssrs_cpssrs', end($item)]),
+          'target' => array_merge($genotype_parents, $item),
         ];
       }
     }
@@ -492,6 +567,10 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
 
   return ($version ? ($change_list[$version] ?? NULL) : $change_list);
 }
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// @TODO Create menu callback for testing:
+// /tpps/test/<function_name>/arg/arg/arg.
 
 /**
  * Debug of tpps_submission_form_version_changes().
@@ -501,8 +580,33 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
  * @param int $version
  *   Submission Form Version.
  */
-function tpps_submission_form_version_changes_debug($accession, $version = 2) {
+function test_tpps_submission_form_version_changes($accession, $version = 2) {
   $state = tpps_load_submission_state($accession);
   $changes = tpps_submission_form_version_changes($state, $version);
   dpm(var_export($changes, 1));
+}
+
+/**
+ * Unit Test for tpps_submission_form_version_action_move().
+ *
+ * @param string $accession
+ *   Submission Accession. E.g., 'TGDR123'.
+ * @param int $version
+ *   Submission Form Version.
+ */
+function test_tpps_submission_form_version_action_move($accession, $version = 2) {
+  module_load_include('inc', 'tpps', 'includes/submission_interface');
+  module_load_include('inc', 'tpps', 'includes/form');
+
+  $state = tpps_load_submission_state($accession);
+  $changes = tpps_submission_form_version_changes($state, $version);
+  $item = $changes['move'][14];
+  dpm(print_r($item, 1), 'item');
+
+  $type_list = ['source', 'target'];
+  foreach ($type_list as $type) {
+    dpm($type);
+    $result = tpps_form_get_path($state, $item[$type]);
+    dpm(print_r($result, 1), 'Result ' . $type);
+  }
 }

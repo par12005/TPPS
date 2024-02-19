@@ -1068,7 +1068,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   //'source' => [$organism_name, 'genotype', 'files', 'ssrs'];
   //'target' => [$ssr_fieldset, 'ssrs'];
   tpps_form_build_file_field(array_merge($chest, [
-    'parents' => [$organism_name, 'genotype', 'files'],
+    'parents' => [$organism_name, 'genotype', $ssr_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
@@ -1088,7 +1088,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
       ],
     ],
     'extra_elements' => [
-      '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+      '#name' => $organism_name . '[genotype][' . $ssr_fieldset . '][' . $file_field_name . ']',
     ],
 
     // no header checkbox.
@@ -1125,7 +1125,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   // ['saved_values', 4, "organism-$i", 'genotype', 'files', 'ssrs_extra'] =>
   // ['saved_values', 4, "organism-$i", 'genotype', 'ssrs_cpssrs', 'ssrs_extra'];
   tpps_form_build_file_field(array_merge($chest, [
-    'parents' => [$organism_name, 'genotype', 'files'],
+    'parents' => [$organism_name, 'genotype', $ssr_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
@@ -1145,7 +1145,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
       ],
     ],
     'extra_elements' => [
-      '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
+      '#name' => $organism_name . '[genotype][' . $ssr_fieldset . '][' . $file_field_name . ']',
     ],
   ]));
 }
