@@ -492,3 +492,17 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
 
   return ($version ? ($change_list[$version] ?? NULL) : $change_list);
 }
+
+/**
+ * Debug of tpps_submission_form_version_changes().
+ *
+ * @param string $accession
+ *   Submission Accession. E.g., 'TGDR12345'.
+ * @param int $version
+ *   Submission Form Version.
+ */
+function tpps_submission_form_version_changes_debug($accession, $version = 2) {
+  $state = tpps_load_submission_state($accession);
+  $changes = tpps_submission_form_version_changes($state, $version);
+  dpm(var_export($changes, 1));
+}
