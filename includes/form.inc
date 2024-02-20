@@ -593,21 +593,24 @@ function tpps_form_relocate_field(array $chest) {
  *   ].
  */
 function tpps_form_add_report(array &$form, array $meta) {
-  $form['report'] = [
-    '#type' => 'fieldset',
-    '#title' => t('Reports'),
-    '#collapsed' => FALSE,
-    '#collapsible' => FALSE,
-    '#weight' => 100,
-    '#attributes' => ['class' => ['tpps-submission-report']],
-  ];
+  if (empty($form['report'])) {
+    $form['report'] = [
+      '#type' => 'fieldset',
+      '#title' => t('Reports'),
+      '#collapsed' => FALSE,
+      '#collapsible' => FALSE,
+      '#weight' => 100,
+      '#attributes' => ['class' => ['tpps-submission-report']],
+    ];
+  }
   foreach ($meta as $key => $report) {
-    $form['report'][($key ?? md5(time))] = [
-      '#title' => $report['title'],
+    $key = (empty($form['report'][$key])) ? $key : md5(microtime());
+    $form['report'][$key] = [
+      '#title' => $report['title'] ?? $key,
       '#type' => 'fieldset',
       '#collapsed' => TRUE,
       '#collapsible' => TRUE,
-      'list' => ['#markup' => $report['data']],
+      'list' => ['#markup' => $report['data'] ?? t('No data')],
     ];
   }
 }

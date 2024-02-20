@@ -43,7 +43,11 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
   // Files.
   $fid_list = tpps_submission_file_get_id_list($state, $form);
   $files = tpps_submission_export_get_files_info($fid_list);
-  tpps_submission_export_file_report($fid_list, $files, $form);
+  if (empty($form_state['input'])) {
+    // This check allows to avoid double processing files when new accession
+    // was selected and button 'Export' clicked to update data.
+    tpps_submission_export_file_report($fid_list, $files, $form);
+  }
   $state['tpps_submission_export_files'] = $files;
   $state['tpps_submission_export_site'] = $base_url;
 
@@ -81,10 +85,20 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
 }
 
 /**
+ * Form submitter. Redirects to export page when user selected other accession.
+ */
+function tpps_submission_export_form_submit(array $form, array $form_state) {
+  $accession = $form_state['values']['tpps_submission_accession'];
+  tpps_submission_list_validate_accession($accession);
+  drupal_goto('tpps/submission/' . $accession . '/export');
+
+}
+
+/**
  * Form submitter. Redirects to manual export page.
  */
 function tpps_submission_export_manual_submit(array $form, array $form_state) {
-  $accession = $form_state['tpps_submission_accession'];
+  $accession = $form_state['values']['tpps_submission_accession'];
   tpps_submission_list_validate_accession($accession);
   drupal_goto('tpps/submission/' . $accession . '/manual_export');
 }
@@ -127,14 +141,12 @@ function tpps_submission_export_get_files_info(array &$fid_list) {
 function tpps_submission_export_file_report(array &$fid_list = [], array &$files = [], array &$form = []) {
   if (!empty($fid_list)) {
     if (empty($files)) {
-      drupal_set_message(
-        t('Study has files but they not found at server.'
-          . '<br/>Probably those files must be uploaded again.'
-          . '<br />List of File IDs: @list',
-          ['@list' => implode(', ', $fid_list)]
-        ),
-        'warning'
+      $message = t('Study has files but they not found at server.'
+        . '<br/>Probably those files must be uploaded again.'
+        . '<br />List of File IDs: @list',
+        ['@list' => implode(', ', $fid_list)]
       );
+      drupal_set_message($message, 'warning');
     }
     else {
       drupal_set_message(t('Files was found and processed. See report below.'));
@@ -147,10 +159,8 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
     }
   }
   else {
-    drupal_set_message(
-      t('No files found in this submission. Please double-check.'),
-      'warning'
-    );
+    $message = t('No files found in this submission. Please double-check.');
+    drupal_set_message($message, 'warning');
   }
 }
 
