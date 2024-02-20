@@ -150,7 +150,7 @@ function tpps_submission_form_version_set(array &$form, array $form_state) {
  *   Each item is path to the single field.
  *   For more details about format see: tpps_submission_interface_action_path().
  */
-function tpps_submission_interface_action_unset(array &$interface, array $action_data) {
+function tpps_submission_form_version_action_unset(array &$interface, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
   foreach ($action_data as $key => $item) {
     if (empty($item)) {
@@ -196,7 +196,7 @@ function tpps_submission_interface_action_unset(array &$interface, array $action
  *   'source' is a real element path. 'target' is a new (but actually it's
  *   location in verion 1).
  */
-function tpps_submission_interface_action_move(array &$interface, array $action_data) {
+function tpps_submission_form_version_action_move(array &$interface, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
   foreach ($action_data as $key => $item) {
     if (empty($item['source']) || empty($item['target'])) {
@@ -334,7 +334,7 @@ function tpps_submission_form_version_migrate(array $form_state, $version, array
     if ($upgrade && $action == 'unset') {
       continue;
     }
-    $function = 'tpps_submission_interface_action_' . $action;
+    $function = 'tpps_submission_form_version_action_' . $action;
     $params = [
       '@function_name' => $function,
       '@version' => $version,
@@ -370,8 +370,8 @@ function tpps_submission_form_version_migrate(array $form_state, $version, array
       }
     }
     // Call an action-function.
-    // 1. tpps_submission_interface_action_unset();
-    // 2. tpps_submission_interface_action_move().
+    // 1. tpps_submission_form_version_action_unset();
+    // 2. tpps_submission_form_version_action_move().
     // Note: $action_data also couldn't be empty here.
     call_user_func_array($function, [&$result, $action_data]);
   }
