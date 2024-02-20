@@ -95,7 +95,8 @@ function tpps_menu() {
     'title' => 'Internal TPPS pipeline',
     'page callback' => 'drupal_get_form',
     'page arguments' => ['tppsc_main', 1],
-    'access arguments' => ['access tpps form', 'administer tpps module'],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access tpps form', 1],
   ];
 
   $items['admin/config/content/tppsc'] = [
@@ -469,13 +470,10 @@ function tpps_permission() {
 }
 
 /**
- * Determine whether the current user has a specific permission.
- *
- * @global stdClass $user
- *   The user in question.
+ * Access-callback. Checks if current user could access requested page.
  *
  * @return bool
- *   Whether or not the user has the permission.
+ *   Returns TRUE when user granted access and FALSE otherwise.
  */
 function tpps_access() {
   global $user;
@@ -497,24 +495,39 @@ function tpps_access() {
   switch ($permission) {
     case 'access tpps form':
       $accession = $args[1] ?? NULL;
-      if (empty($accession) or $accession == 'new') {
+      if (empty($accession) || $accession == 'new') {
         return TRUE;
       }
 
-      // @TODO Check if it was an attempt to get $_GET['q']?
-      $params = drupal_get_query_parameters(NULL, []);
-      $path = $params['q'];
-      preg_match('/^([^\/]+)\/?.*$/', $path, $matches);
+      preg_match('/^([^\/]+)\/?.*$/', $_GET['q'], $matches);
       $form_type = $matches[1] ?? NULL;
       $full_state = tpps_load_submission_state($accession);
+
+      $submission_info = tpps_load_submission_info($accession);
       $submission_type = $full_state['tpps_type'] ?? 'tpps';
 
-      if (($submission_info = tpps_load_submission_info($accession))) {
-        $type_pass = ($submission_type == $form_type) || preg_match('/^tpps\/TGDR[0-9]+\/.+$/', $path);
+      // TPPSc Form.
+      if ($submission_type == 'tppsc') {
         if (
-          $submission_info['status'] == "Incomplete"
+          !empty($submission_info)
+          // @TODO Minor. Probably it's too much checks for this case.
+          && (
+            $submission_type == $form_type
+            || preg_match('/^tppsc\/TGDR[0-9]+$/', $_GET['q'])
+          )
+        ) {
+          return TRUE;
+        }
+      }
+      elseif ($submission_type == 'tpps') {
+        // TPPS Form.
+        if ($submission_info
+          && $submission_info['status'] == "Incomplete"
           && $submission_info['uid'] == $user->uid
-          && $type_pass
+          && (
+            $submission_type == $form_type
+            || preg_match('/^tpps\/TGDR[0-9]+$/', $_GET['q'])
+          )
         ) {
           return TRUE;
         }
@@ -1585,8 +1598,7 @@ function tpps_block_view_alter(&$data, $block) {
 
       $data['subject'] = t('TPPS Status');
       $content = "<div class='tgdr_status_block'>";
-      $params = drupal_get_query_parameters(NULL, array());
-      if (preg_match('/tppsc?\/(TGDR.*)/', $params['q'], $matches)) {
+      if (preg_match('/tppsc?\/(TGDR.*)/', $_GET['q'], $matches)) {
         $accession = $matches[1];
         $form_state = tpps_load_submission_state($accession);
       }
