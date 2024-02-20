@@ -48,8 +48,9 @@ form.tppsc-form,
   background: #373a3c !important;
 }
 
-
+fieldset.tpps-submission-report pre,
 body.page-completed-submission,
+
 form.tpps-admin-panel,
 form.tpps-submission,
 form.tppsc-form,

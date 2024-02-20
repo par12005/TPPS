@@ -599,6 +599,7 @@ function tpps_form_add_report(array &$form, array $meta) {
     '#collapsed' => FALSE,
     '#collapsible' => FALSE,
     '#weight' => 100,
+    '#attributes' => ['class' => ['tpps-submission-report']],
   ];
   foreach ($meta as $key => $report) {
     $form['report'][($key ?? md5(time))] = [
