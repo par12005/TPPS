@@ -24,9 +24,8 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       $form_values = $form_state['values'];
       //$old_tgdr = $form_state['saved_values']['frontpage']['old_tgdr'] ?? NULL;
       // DOI.
-      //$doi = $form_values['doi'] ?? NULL;
-      $doi = $form_values['publication']['doi'] ?? NULL;
-      $dataset_doi = $form_values['dataset_doi'] ?? NULL;
+      $publication_doi = $form_values['publication']['publication_doi'] ?? NULL;
+      $dataset_doi = $form_values['publication']['dataset_doi'] ?? NULL;
       // Publication.
       $primary_author = $form_values['primaryAuthor'] ?? NULL;
       $publication_status = $form_values['publication']['status'] ?? NULL;
@@ -47,9 +46,9 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
 
       if ($publication_status == 'Published') {
         // 'Publication DOI' field is required (even for existing studies).
-        if (!tpps_is_required_field_empty($form_state, ['publication', 'doi'])) {
-          if (!preg_match(tpps_doi_regex(), $doi)) {
-            form_set_error('doi', 'Publication DOI: invalid format. '
+        if (!tpps_is_required_field_empty($form_state, ['publication', 'publication_doi'])) {
+          if (!preg_match(tpps_doi_regex(), $publication_doi)) {
+            form_set_error('publication_doi', 'Publication DOI: invalid format. '
               . 'Example DOI: "10.1111/dryad.111".'
             );
           }
@@ -69,8 +68,8 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
       }
       elseif ($publication_status == 'In Preparation or Submitted') {
         // Both DOI fields are optional so we check only format.
-        if ($doi && !preg_match(tpps_doi_regex(), $doi)) {
-          form_set_error('doi', 'Publication DOI: invalid format. '
+        if ($publication_doi && !preg_match(tpps_doi_regex(), $publication_doi)) {
+          form_set_error('publication_doi', 'Publication DOI: invalid format. '
             . 'Example DOI: "10.1111/dryad.111".'
           );
         }
@@ -87,17 +86,16 @@ function tpps_page_1_validate_form(array &$form, array &$form_state) {
         // status field changed to something different from 'Published'.
         // Note: Authors and Organisms fields do not need those extra step.
         // Clear Publication Extra Fields.
-        foreach (['year', 'title', 'abstract', 'journal'] as $name) {
-          $form_state['values']['publication'][$name] = NULL;
+        $field_list = [
+          // Clear DOI fields.
+          'publication_doi', 'dataset_doi',
           // @TODO [VS] Minor. Check if this is required.
+          'year', 'title', 'abstract', 'journal',
+        ];
+        foreach ($field_list as $name) {
+          $form_state['values']['publication'][$name] = NULL;
           $form_state['saved_values']['publication'][$name] = NULL;
         }
-        // Clear DOI fields.
-        //$form_state['values']['doi'] = NULL;
-        $form_state['values']['publication']['doi'] = NULL;
-        $form_state['saved_values']['publication']['doi'] = NULL;
-        $form_state['values']['dataset_doi'] = NULL;
-        $form_state['saved_values']['dataset_doi'] = NULL;
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Organisms.

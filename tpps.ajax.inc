@@ -46,6 +46,9 @@ function tpps_ajax_callback($callback = '') {
  * called from this AJAX-callback cache their results and results format
  * are different so it's better to check them separately.
  *
+ * @param array $data
+ *   POST data.
+ *
  * @return array
  *   Returns response which will be returned back as JSON. Keys:
  *   'error' bool TRUE means validation failed and FALSE that
@@ -60,6 +63,7 @@ function tpps_ajax_get_doi($data = NULL) {
   }
   module_load_include('inc', 'tpps', 'includes/manage_doi');
   // Validate.
+  // Note: Could be used for 'Publication DOI' and 'Dataset DOI' so key is 'doi'.
   $doi = $data['doi'] ?? NULL;
   if (!preg_match(tpps_doi_regex(), $doi)) {
     $response['errors'][] = t('Invalid DOI format. Example DOI: 10.1111/dryad.111');

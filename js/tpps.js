@@ -645,6 +645,7 @@ jQuery.fn.updateMap = function(locations, fid = "") {
 (function ($, Drupal) {
   // Create namespaces.
   Drupal.tpps = Drupal.tpps || {};
+  // @TODO Minor. Rename 'doi' to 'publication_doi'.
   Drupal.tpps.doi = Drupal.tpps.doi || {};
 
   /**

@@ -45,6 +45,13 @@
  * There is no need to update function tpps_flatten() because it expects
  * Submission Interface Array.
  *
+ * How to update Submission Interface?
+ * 1. Update submit_all.php
+ * 2. Update this file.
+ * 3. tpps_table_display().
+ * 4. tpps_flatten().
+ * 5. Other code which uses Submission Interface.
+ *
  * ----------------------------------------------------------------------------
  * API.
  *
@@ -478,15 +485,17 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     '2' => [
       'move' => [
         // Page 1. 'DOI' field.
-        'doi' => [
-          // Form State. Current location.
-          'source' => ['saved_values', TPPS_PAGE_1, 'publication', 'doi'],
-          // Interface. Original location. v1.
+        'publication_doi' => [
+          // Submission Form State. Current location.
+          'source' => [
+            'saved_values', TPPS_PAGE_1, 'publication', 'publication_doi',
+          ],
+          // Interface = Submission Form State v1.
           'target' => ['saved_values', TPPS_PAGE_1, 'doi'],
         ],
         'dataset_doi' => [
           'source' => [
-            'saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi'
+            'saved_values', TPPS_PAGE_1, 'publication', 'dataset_doi',
           ],
           'target' => ['saved_values', TPPS_PAGE_1, 'dataset_doi'],
         ],

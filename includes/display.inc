@@ -12,7 +12,8 @@
  * a TPPS Submission.
  *
  * @param array $state
- *   The state of the submission form.
+ *   The Submission Interface Array.
+ *   WARNING: Do not use the Submission Form State Array.
  *
  * @return array
  *   The flattened state array.

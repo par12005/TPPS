@@ -104,7 +104,6 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   ];
   $form['#attached']['js'][] = ['type' => 'setting', 'data' => $js_data];
 
-  $doi = tpps_get_ajax_value($form_state, ['publication', 'doi'], '');
   $org_number = tpps_get_ajax_value($form_state, ['organism', 'number']) ?? 1;
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -137,15 +136,15 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Note:
   // Checkbox 'use_old_tgdr' is defined in TPPSc/forms/build/front.php.
   // Accession will be stored in 'old_tgdr' field.
-  // @TODO Minor. Rename field to 'publication_doi'.
-  // $form['doi'] = [
   //
-  // Field was relocated (v.2). [] -> ['publication'];
-  $form['publication']['doi'] = [
+  // Field was relocated (v.2). ['doi'] -> ['publication', 'publication_doi'];
+  $form['publication']['publication_doi'] = [
     '#type' => 'textfield',
     '#title' => t('Publication DOI:')
       . tpps_page_1_required_by_status($form_state),
-    '#default_value' => $doi,
+    '#default_value' => tpps_get_ajax_value(
+      $form_state, ['publication', 'publication_doi'], ''
+    ),
     '#description' => tpps_page_1_get_doi_examples(),
     '#prefix' => '<div id="doi-message"></div>',
     '#states' => [
@@ -158,10 +157,12 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Field was relocated (v.2). [] -> ['publication'];
-  $form['dataset_doi'] = [
+  $form['publication']['dataset_doi'] = [
     '#type' => 'textfield',
     '#title' => t('Dataset DOI:'),
-    '#default_value' => tpps_get_ajax_value($form_state, ['dataset_doi'], ''),
+    '#default_value' => tpps_get_ajax_value(
+      $form_state, ['publication', 'dataset_doi'], ''
+    ),
     '#description' => tpps_page_1_get_doi_examples(),
     '#states' => [
       'visible' => [

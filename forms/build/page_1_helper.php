@@ -306,10 +306,10 @@ function tppsc_organism(array &$form, array &$form_state) {
     ),
   );
 
-  //$doi = tpps_get_ajax_value($form_state, ['doi']);
+  //$publication_doi = tpps_get_ajax_value($form_state, ['publication', 'publication_doi']);
   //$form['organism']['number'] = array(
   //  '#type' => 'hidden',
-  //  '#value' => !empty($doi) ? $org_number : NULL,
+  //  '#value' => !empty($publication_doi) ? $org_number : NULL,
   //);
 
   for ($i = 1; $i <= $org_number; $i++) {

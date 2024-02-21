@@ -4,7 +4,7 @@
  * TPPS Page 1 form specific JS-code.
  */
 (function($, Drupal) {
-  var doiSelector = 'input[name="publication[doi]"]';
+  var doiSelector = 'input[name="publication[publication_doi]"]';
   var doiMessageBox = '#doi-message';
   // Create namespaces.
   Drupal.tpps = Drupal.tpps || {};
@@ -287,7 +287,7 @@
       // Attach event handlers only once.
       $('form[id^=tppsc-main]').once('tpps_page_1', function() {
         if ($('#edit-publication-status').val() == 'In Preparation or Submitted') {
-          var $label = $('input[name="doi"]').parent().find('label');
+          var $label = $('input[name="publication[publication_doi]"]').parent().find('label');
           $label.html($label.html().replace(' *', ''));
           Drupal.tpps.makePublicationFieldsOptional();
         }
@@ -297,13 +297,13 @@
         $('#edit-publication-status').on('change', function(e) {
           if ($(this).val() == 'In Preparation or Submitted') {
             // Remove '*' from 'Publication DOI' field because it's optional.
-            var $label = $('input[name="doi"]').parents('.form-item').find('label');
+            var $label = $('input[name="publication[publication_doi]"]').parents('.form-item').find('label');
             $label.html($label.html().replace(' *', ''));
             Drupal.tpps.makePublicationFieldsOptional();
           }
           else if ($(this).val() == 'Published') {
             // 'Publication DOI' field became required.
-            var $label = $('input[name="doi"]').parents('.form-item').find('label');
+            var $label = $('input[name="publication[publication_doi]"]').parents('.form-item').find('label');
             // To avoid duplication of asterisk for field which was hidden
             // but Drupal Form API States we force removement of existing
             // asterisks (if any). It's better then duplicate Drupal Form
@@ -321,7 +321,7 @@
         // @TODO Minor. Create more common solution to reuse this code
         // for other fields.
         // Strip HTML tags from 'Dataset DOI' field value.
-        $('input[name="dataset-doi"]').blur(function(e) {
+        $('input[name="publication[dataset_doi"]').blur(function(e) {
           $(this).val(Drupal.tpps.stripHtml($(this).val()));
         });
 

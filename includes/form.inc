@@ -167,7 +167,7 @@ function tpps_form_error_required(array $form_state, array $parents) {
  *   which could be different because of using '#parents' and '#tree' options.
  *   For example:
  *   - ['organism-1', 'genotype', 'files', 'file-type'];
- *   - ['publication', 'doi_container', 'doi'];
+ *   - ['publication', 'publication_doi'];
  *   See https://www.drupal.org/docs/7/api/form-api/tree-and-parents
  * @param string $message
  *   Error message text.
