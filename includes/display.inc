@@ -360,8 +360,9 @@ function tpps_flatten(array $state) {
           $geno = &$org['genotype'];
           $snp = $geno['SNPs'];
 
-          $marker_types = array();
-          foreach ($geno['marker-type'] as $key => $val) {
+          $marker_types = [];
+          // Note: $geno['marker-type'] is not set for phenotype studies.
+          foreach (($geno['marker-type'] ?? []) as $key => $val) {
             if ($val) {
               $marker_types[] = $key;
             }
