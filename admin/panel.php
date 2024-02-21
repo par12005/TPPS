@@ -269,7 +269,11 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
   $submission_tags_ids = [];
   foreach ($submission_tags as $submission_tag) {
-    $submission_tags_ids = $submission_tag['id'];
+    // When study has no tags $submission_tags will be empty and cause warnings.
+    // This happens for TPPS Studies which has no tags at all.
+    if (isset($submission_tag['id'])) {
+      $submission_tags_ids = $submission_tag['id'];
+    }
   }
 
   // This code will generate the tag options that we can delete.
