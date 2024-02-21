@@ -25,16 +25,19 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   // @TODO Update top navigation bar.
   $supplemental_upload_location = 'public://'
     . variable_get('tpps_supplemental_files_dir', 'tpps_supplemental');
-
   // When enabled TPPS uses Rachel's theme.
   //$form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
+
+  $accession = tpps_form_get_accession($form_state);
+  $submission_interface = tpps_submission_interface_load($accession);
+  $form['table_display'] = [
+    '#markup' => tpps_table_display($submission_interface),
+  ];
   $form['comments'] = [
     '#type' => 'textarea',
     '#title' => t('If you have any additional comments about this submission '
     . 'you would like to include, please write them here:'),
-    // @TODO Minor. Use a '#markup' element before this textarea.
-    '#prefix' => tpps_table_display($form_state),
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Files.

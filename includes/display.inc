@@ -38,7 +38,6 @@ function tpps_flatten(array $state) {
   }
   $data['Project ID'] = $state['ids']['project_id'] ?? NULL;
   $data['#study_photo'] = $page_1['photo'] ?? NULL;
-  // @todo [VS] Change machine names of DOI fields.
   $data['Publication DOI'] = $page_1['doi'] ?? NULL;
   $data['Dataset DOI'] = $page_1['dataset_doi'] ?? NULL;
 
@@ -68,22 +67,17 @@ function tpps_flatten(array $state) {
   }
   unset($data[TPPS_PAGE_1]);
 
+  // Page 2.
   $page_2 = &$data[TPPS_PAGE_2];
-
-  if (isset($page_2['#cleared']) and $page_2['#cleared']) {
-    $data['#page_2_cleared'] = TRUE;
-  }
-  else {
-    $data['#page_2_cleared'] = FALSE;
-  }
-  $data['Experiment Starting Month'] = !empty($page_2['StartingDate']['month']) ? $page_2['StartingDate']['month'] : NULL;
-  $data['Experiment Starting Year'] = !empty($page_2['StartingDate']['year']) ? $page_2['StartingDate']['year'] : NULL;
-  $data['Experiment Ending Month'] = !empty($page_2['EndingDate']['month']) ? $page_2['EndingDate']['month'] : NULL;
-  $data['Experiment Ending Year'] = !empty($page_2['EndingDate']['year']) ? $page_2['EndingDate']['year'] : NULL;
+  $data['#page_2_cleared'] = $page_2['#cleared'] ?? FALSE;
+  $data['Experiment Starting Month'] = $page_2['StartingDate']['month'] ?? NULL;
+  $data['Experiment Starting Year'] = $page_2['StartingDate']['year'] ?? NULL;
+  $data['Experiment Ending Month'] = $page_2['EndingDate']['month'] ?? NULL;
+  $data['Experiment Ending Year'] = $page_2['EndingDate']['year'] ?? NULL;
   if (!empty($page_2['study_location'])) {
     // Legacy support for old TPPS submissions.
     $legacy_loc = &$page_2['study_location'];
-    $data['#location_type'] = (isset($legacy_loc['type']) and $legacy_loc['type']) ? $legacy_loc['type'] : NULL;
+    $data['#location_type'] = $legacy_loc['type'] ?? NULL;
 
     if ($data['#location_type'] == '2' and isset($legacy_loc['custom'])) {
       $data['Study Location'] = $legacy_loc['custom'];
@@ -179,15 +173,21 @@ function tpps_flatten(array $state) {
       }
     }
 
-    if (!empty($page_2['study_info']['irrigation']) and !empty($page_2['study_info']['irrigation']['option'])) {
+    if (
+      !empty($page_2['study_info']['irrigation'])
+      && !empty($page_2['study_info']['irrigation']['option'])
+    ) {
       $data['Irrigation Type'] = $page_2['study_info']['irrigation']['option'];
-      if ($data['Irrigation Type'] == 'Other' and !empty($page_2['study_info']['irrigation']['other'])) {
+      if (
+        $data['Irrigation Type'] == 'Other'
+        && !empty($page_2['study_info']['irrigation']['other'])
+      ) {
         $data['Custom Irrigation Type'] = $page_2['study_info']['irrigation']['other'];
       }
     }
 
     if (!empty($page_2['study_info']['biotic_env']['option'])) {
-      $biotic_envs = array();
+      $biotic_envs = [];
       foreach ($page_2['study_info']['biotic_env']['option'] as $key => $val) {
         if ($val) {
           $biotic_envs[] = $key;
@@ -196,7 +196,10 @@ function tpps_flatten(array $state) {
 
       if (!empty($biotic_envs)) {
         $data['Biotic Environment'] = implode(', ', $biotic_envs);
-        if (in_array('Other', $biotic_envs) and !empty($page_2['study_info']['biotic_env']['other'])) {
+        if (
+          in_array('Other', $biotic_envs)
+          && !empty($page_2['study_info']['biotic_env']['other'])
+        ) {
           $data['Custom Biotic Environment'] = $page_2['study_info']['biotic_env']['other'];
         }
       }
@@ -235,7 +238,7 @@ function tpps_flatten(array $state) {
 
   $data['#skip_loc'] = FALSE;
   $loc = &$page_3['study_location'];
-  $data['#location_type'] = (isset($loc['type']) and $loc['type']) ? $loc['type'] : NULL;
+  $data['#location_type'] = $loc['type'] ?? NULL;
 
   if ($data['#location_type'] == '2' and isset($loc['custom'])) {
     $data['Study Location'] = $loc['custom'];

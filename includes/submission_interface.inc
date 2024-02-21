@@ -144,10 +144,9 @@ function tpps_submission_interface_generate(array $form_state = []) {
 }
 
 /**
- * Gets Submission Interface for given study.
+ * Gets existing or creates new Submission Interface for given study.
  *
- * Note:
- * Forked tpps_load_submission(). Code was improved.
+ * Note: Forked tpps_load_submission(). Code was improved.
  *
  * @param string $accession
  *   The accession of the submission in format 'TGDRxxxx'.

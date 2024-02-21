@@ -1157,21 +1157,16 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   }
   module_load_include('inc', 'tpps', 'includes/form');
   $form = $form ?? [];
-  $frontpage_values = $form_state['saved_values']['frontpage'] ?? NULL;
+  $frontpage_values = &$form_state['saved_values']['frontpage'] ?? NULL;
   // JS and CSS.
   tpps_add_css_js('main', $form);
   // Add class to apply CSS rules differntly for TPPS and TPPSc Forms
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] = ($is_tppsc) ? 'tppsc-form' : 'tpps-form';
-  // Use the same validator-function for both TPPS/TPPSc forms.
+  // Use the same validator- and submitter-function for both forms (TPPS/TPPSc).
   $form['#validate'][] = 'tpps_main_validate';
-
-
-  // Set version for 'Submission Interface' feature.
-  //module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  //tpps_submission_form_version_set($form, $form_state);
-
+  $form['#submit'][] = 'tpps_main_submit';
 
   if ($is_tppsc) {
     // User not logged in, trying to access front page.
@@ -1189,7 +1184,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
       drupal_goto('user/login', array('query' => $destination));
     }
     // User logged in, trying to load form from existing accession.
-    elseif (isset($accession) and !isset($form_state['stage'])) {
+    elseif (isset($accession) && !isset($form_state['stage'])) {
       $old_form_state = tpps_load_submission_state($accession);
       tpps_form_state_info($form_state, $old_form_state);
     }
@@ -1205,17 +1200,14 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
       }
       else {
         if (
-          !isset($form_state['saved_values']['frontpage']['accession'])
-          or (
-            isset($form_state['saved_values']['frontpage']['accession'])
-            and $form_state['saved_values']['frontpage']['accession'] === 'new'
-          )
+          !isset($frontpage_values['accession'])
+          || ($frontpage_values['accession'] ?? NULL) === 'new'
         ) {
           // Initialize project.
           tpps_init_project($form_state);
           tpps_create_submission($form_state, $user->uid);
         }
-        $old_form_state = tpps_load_submission_state($form_state['saved_values']['frontpage']['accession']);
+        $old_form_state = tpps_load_submission_state($frontpage_values['accession']);
         tpps_form_state_info($form_state, $old_form_state);
       }
     }

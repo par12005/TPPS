@@ -1275,41 +1275,55 @@ function tpps_main_validate(&$form, &$form_state) {
 }
 
 /**
- * Implements hook_form_submit().
+ * Implements hook_FORM_ID_submit().
  *
- * This function handles the multi-step aspect of the form, as well as saving
- * input to persistent variables so they can be reloaded later.
+ * Calls different submission functions based on the stage of the form. Also
+ * copies the form values into the form saved values so they can be seen by the
+ * other pages and the final submit functions. Sets the incomplete form state
+ * variable in the database so that it can be loaded later. If the form was
+ * completed, notifies the user that their submission was received.
  *
  * @TODO Minor. Check if files of old submission are removed
  * when existing TGDR reused.
  */
 function tpps_main_submit($form, &$form_state) {
+  global $user;
   $saved_values = &$form_state['saved_values'] ?? NULL;
   $values = &$form_state['values'] ?? NULL;
+  module_load_include('inc', 'tpps', 'includes/form');
   module_load_include('inc', 'tpps', 'includes/submission_file');
+  module_load_include('inc', 'tpps', 'includes/submission_form_version');
 
   // Set Submission Form Version.
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] =
-    $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
-    ?? $form_state['values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
-  unset($form_state['values'][TPPS_SUBMISSION_FORM_VERSION_KEY]);
+  $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
+    = $values[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  unset($values[TPPS_SUBMISSION_FORM_VERSION_KEY]);
 
-  // We need to label all study files as temporary to avoid problems with
-  // page navigation when 'Back' button was used.
+  $is_tppsc = tpps_form_is_tppsc($form_state);
+  if ($is_tppsc) {
+    $form_state['status'] = 'Incomplete';
+    // Use old TGDR.
+    if ($form_state['stage'] == 'frontpage' && $values['use_old_tgdr']) {
+      $form_state['dbxref_id'] = $form_state['values']['old_tgdr'];
+      $form_state['accession'] = chado_select_record(
+        'dbxref', ['accession'], ['dbxref_id' => $form_state['dbxref_id']]
+      )[0]->accession;
+      $values['accession'] = $form_state['accession'];
+      tpps_create_submission($form_state, $user->uid);
+    }
+  }
+
+  $accession = tpps_form_get_accession($form_state);
+  $triggering_element = $form_state['triggering_element']['#value'] ?? NULL;
   if (
-    $form_state['stage'] == 'frontpage'
-    && strpos(($values['accession'] ?? NULL), 'TGDR') !== FALSE
+    ($form_state['stage'] == 'frontpage' && $accession)
+    // We need to change status of files when user clicked 'Back' or 'Next'
+    // buttons to avoid errors and allow to edit study.
+    || in_array($triggering_element, ['Back', 'Next'])
   ) {
     // @TODO Minor. Check case when old TGDR reused it will be overwritten.
     // Could we skip file status changing?
     // && !$form_state['values']['use_old_tgdr']
-    $state = tpps_submission_get_state($values['accession']);
-    tpps_submission_file_set_status($state, 0);
-  }
-  // We need to change status of files when user clicked 'Back' or 'Next'
-  // buttons to avoid errors and allow to edit study.
-  if (in_array($form_state['triggering_element']['#value'], ['Back', 'Next'])) {
     tpps_submission_file_set_status($form_state, 0);
   }
   $saved_values[$form_state['stage']] = $values;
@@ -1317,7 +1331,7 @@ function tpps_main_submit($form, &$form_state) {
 
   // This happens when the user clicks Save, notice this if clause will do a return.
   // This means after saving, the form will be rebuilt based on the rebuild key = TRUE.
-  if ($form_state['triggering_element']['#value'] == 'Save') {
+  if ($triggering_element == 'Save') {
     drupal_set_message(t('Your information has been saved!'), 'status');
     if (isset($saved_values['form_build_id'])) {
       $values['form_build_id'] = $saved_values['form_build_id'];
@@ -1334,6 +1348,7 @@ function tpps_main_submit($form, &$form_state) {
   }
 
   // ELSE, it will do the below logic, read the comment after this switch statement.
+  $is_back_button = ($triggering_element == 'Back');
   switch ($form_state['stage']) {
     case 'frontpage':
       $persist = FALSE;
@@ -1345,54 +1360,19 @@ function tpps_main_submit($form, &$form_state) {
       break;
 
     case TPPS_PAGE_2:
-      if ($form_state['triggering_element']['#value'] == 'Back') {
-        // [VS]
-        // This is not required but to have always up-to-date form fields
-        // values which could be modified on validation step.
-        $form_state['rebuild'] = TRUE;
-        // [/VS]
-        $form_state['stage'] = TPPS_PAGE_1;
-      }
-      else {
-        $form_state['stage'] = TPPS_PAGE_3;
-      }
+      $form_state['stage'] = $is_back_button ? TPPS_PAGE_1 : TPPS_PAGE_3;
       break;
 
     case TPPS_PAGE_3:
-      if ($form_state['triggering_element']['#value'] == 'Back') {
-        // [VS]
-        // This is not required but to have always up-to-date form fields
-        // values which could be modified on validation step.
-        $form_state['rebuild'] = TRUE;
-        // [/VS]
-        $form_state['stage'] = TPPS_PAGE_2;
-      }
-      else {
-        $form_state['stage'] = TPPS_PAGE_4;
-      }
+      $form_state['stage'] = $is_back_button ? TPPS_PAGE_2 : TPPS_PAGE_4;
       break;
 
     case TPPS_PAGE_4:
-      if ($form_state['triggering_element']['#value'] == 'Back') {
-        // [VS]
-        // This is not required but to have always up-to-date form fields
-        // values which could be modified on validation step.
-        $form_state['rebuild'] = TRUE;
-        // [/VS]
-        $form_state['stage'] = TPPS_PAGE_3;
-      }
-      else {
-        $form_state['stage'] = 'summarypage';
-      }
+      $form_state['stage'] = $is_back_button ? TPPS_PAGE_3 : 'summarypage';
       break;
 
     case 'summarypage':
-      if ($form_state['triggering_element']['#value'] == 'Back') {
-        // [VS]
-        // On validation metadata field or file could be update so
-        // we need to update form.
-        $form_state['rebuild'] = TRUE;
-        // [/VS]
+      if ($is_back_button) {
         $form_state['stage'] = TPPS_PAGE_4;
       }
       else {
@@ -1405,6 +1385,7 @@ function tpps_main_submit($form, &$form_state) {
         tpps_update_submission_info(
           $accession, ['status' => $form_state['status']]
         );
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         // Save Submission Interface Array.
         // Note:
         // We don't use tpps_submission_interface_new($accession)
@@ -1412,10 +1393,9 @@ function tpps_main_submit($form, &$form_state) {
         // avoid extra DB query here.
         $interface = tpps_submission_interface_generate($form_state);
         tpps_submission_interface_save($interface);
-
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         tpps_submit_email($form_state);
         drupal_goto('completed-submission/' . $accession);
-        return;
       }
       break;
 
@@ -1423,6 +1403,7 @@ function tpps_main_submit($form, &$form_state) {
       drupal_set_message(t('Invalid form stage.'), 'error');
       break;
   }
+  $form_state['rebuild'] = TRUE;
 
   // It'll then come here and also perform a save most likely
   // which I think will cater for NEXT button.
@@ -1430,10 +1411,13 @@ function tpps_main_submit($form, &$form_state) {
     $values['form_build_id'] = $saved_values['form_build_id'];
   }
   $saved_values['form_build_id'] = $values['form_build_id'];
-  $form_state['rebuild'] = TRUE;
 
   if ($persist) {
+    // Update for all pages except 'frontpage'.
     tpps_update_submission_state($form_state);
+    tpps_update_submission_info($form_state['accession'],
+      ['status' => $form_state['status']]
+    );
   }
   if ($form_state['stage'] == TPPS_PAGE_1) {
     // When non-empty (after Page1 submit) study was added we need to
@@ -1460,119 +1444,6 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   // @TODO Minor.Use the same function to build form but set form_id manually.
   module_load_include('inc', 'tpps', 'includes/form');
   return tpps_form_build_main($form, $form_state, $accession);
-}
-
-
-/**
- * Implements hook_FORM_ID_submit().
- *
- * Calls different submission functions based on the stage of the form. Also
- * copies the form values into the form saved values so they can be seen by the
- * other pages and the final submit functions. Sets the incomplete form state
- * variable in the database so that it can be loaded later. If the form was
- * completed, notifies the user that their submission was received.
- *
- * @param array $form
- *   The form being submitted.
- * @param array $form_state
- *   The associated state of the form being submitted.
- */
-function tppsc_main_submit($form, &$form_state) {
-  global $user;
-  module_load_include('inc', 'tpps', 'includes/submission_file');
-  $form_state['status'] = 'Incomplete';
-
-  // Set Submission Form Version.
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] =
-    $form_state['values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
-  unset($form_state['values'][TPPS_SUBMISSION_FORM_VERSION_KEY]);
-
-  if ($form_state['stage'] == 'frontpage' and $form_state['values']['use_old_tgdr']) {
-    $form_state['dbxref_id'] = $form_state['values']['old_tgdr'];
-    $form_state['accession'] = chado_select_record('dbxref', array('accession'), array(
-      'dbxref_id' => $form_state['dbxref_id'],
-    ))[0]->accession;
-    $form_state['values']['accession'] = $form_state['accession'];
-    $form_state['status'] = 'Incomplete';
-    tpps_create_submission($form_state, $user->uid);
-    tpps_submission_file_set_status($form_state, 0);
-    tpps_main_submit($form, $form_state);
-    tpps_update_submission_state($form_state);
-    tpps_update_submission_info($form_state['accession'],
-      ['status' => $form_state['status']]
-    );
-    return;
-  }
-
-  if ($form_state['stage'] != 'summarypage') {
-    tpps_main_submit($form, $form_state);
-  }
-  else {
-    $accession = $form_state['accession'];
-    $form_state['saved_values'][$form_state['stage']] = $form_state['values'];
-    $persist = TRUE;
-
-    if ($form_state['triggering_element']['#value'] == 'Back') {
-      $form_state['stage'] = TPPS_PAGE_4;
-    }
-    else {
-      $form_state['status'] = 'Pending Approval';
-      $form_state['completed'] = time();
-      tpps_submission_file_set_status($form_state, FILE_STATUS_PERMANENT);
-      tpps_update_submission_state($form_state);
-      // Update Submission Info.
-      tpps_update_submission_info(
-        $accession, ['status' => $form_state['status']]
-      );
-      // Save Submission Interface Array.
-      // Note:
-      // We don't use tpps_submission_interface_new($accession)
-      // because $form_state has most recent changes and we could
-      // avoid extra DB query here.
-      $interface = tpps_submission_interface_generate($form_state);
-      tpps_submission_interface_save($interface);
-
-      tpps_submit_email($form_state);
-      drupal_goto('completed-submission/' . $accession);
-      return;
-    }
-
-    if (isset($form_state['saved_values']['form_build_id'])) {
-      $form_state['values']['form_build_id'] = $form_state['saved_values']['form_build_id'];
-    }
-    $form_state['saved_values']['form_build_id'] = $form_state['values']['form_build_id'];
-    $form_state['rebuild'] = TRUE;
-
-    if ($persist) {
-      tpps_update_submission_state($form_state);
-    }
-
-
-
-// @TODO Add to TPPS also.
-
-
-
-  // Note:
-  // We shouldn't generate new Submission Interface Array (SIA) each time
-  // Form State Array is saved (or updated) because if study was processed
-  // already then SIA could contain extra data (like ids and etc.) added
-  // during processing by submit_all.php script.
-  // That's why we need to merge changes from $form_state with existing SIA.
-  $submission_interface = array_merge(
-    tpps_submission_interface_load($accession, RESET_CACHE),
-    tpps_submission_interface_generate($form_state)
-  );
-  db_update('tpps_submission')
-    ->fields([
-      'submission_state' => serialize($form_state),
-      'submission_interface' => serialize([]),
-    ])
-    ->condition('accession', $accession)
-    ->execute();
-  // Reset cache.
-  }
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

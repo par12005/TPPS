@@ -23,6 +23,7 @@
  *
  * ----------------------------------------------------------------------------
  * Downgrade or upgrade?
+ *
  * - Submission Interface has NO version. It equals to Submission Form Version 1.
  * - Submission Form (not $form_state) has ALWAYS latest version
  *   (TPPS_SUBMISSION_FORM_CURRENT_VERSION).
@@ -31,6 +32,18 @@
  * - To generate Submission Interface from current Submission Form State
  *   (just submitted, updated after import or updated on edit old study)
  *   we need to DOWNgrade.
+ *
+ * ----------------------------------------------------------------------------
+ * How to relocate field?
+ *
+ * 1. Change form (see /form/build/*)
+ * 2. Update Drupal State conditions.
+ * 3. Update JS to use new 'name' params.
+ * 5. Search module's code for a field name and update if necessary.
+ * 6. Add new items to the Version Change List below.
+ *
+ * There is no need to update function tpps_flatten() because it expects
+ * Submission Interface Array.
  *
  * ----------------------------------------------------------------------------
  * API.
