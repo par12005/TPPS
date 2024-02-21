@@ -538,10 +538,13 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
     $organism_number = $page1_values['organism']['number'];
     // List of relocated genotype fields from 'files' to 'SNPs' fieldset.
+    // ['files'] -> ['SNPs'].
     $files_to_snps_fields = [
       'genotyping-type',
       'file-type',
       'vcf',
+      // @TODO process.
+     // 'vcf_file-location'. 
       'snps-assay',
       'assay-design',
       'snps-association',
@@ -551,6 +554,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'snps-kinship',
       'assay-citation',
     ];
+
     $to_ssr_fieldset = [
       // Dropdown menu.
       ['SSRs/cpSSRs'],

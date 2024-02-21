@@ -74,7 +74,7 @@ function tpps_form_add_buttons(array $chest) {
         if (!empty($chest['data_type']) && preg_match('/G/', $chest['data_type'])) {
           $pre_valid_states = [];
           for ($i = 1; $i <= $chest['organism_number']; $i++) {
-            $pre_valid_states["input[name=\"organism-{$i}[genotype][files][file-type][VCF]\"]"]
+            $pre_valid_states["input[name=\"organism-{$i}[genotype][SNPs][file-type][VCF]\"]"]
               = ['checked' => FALSE];
           }
           $form[$scope]['pre_validate'] = [
@@ -144,7 +144,7 @@ function tpps_is_required_field_empty(array $form_state, array $path) {
  *   Drupal Form API array with submitted values.
  * @param array $parents
  *   Path to field. For example:
- *   ['organism-1', 'genotype', 'files', 'file-type'].
+ *   ['organism-1', 'genotype', 'SNPs', 'file-type'].
  */
 function tpps_form_error_required(array $form_state, array $parents) {
   tpps_form_error($form_state, $parents, 'field is required.');
@@ -166,7 +166,7 @@ function tpps_form_error_required(array $form_state, array $parents) {
  *   WARNING: Not path from $form_state['values'] or $form_state['input']
  *   which could be different because of using '#parents' and '#tree' options.
  *   For example:
- *   - ['organism-1', 'genotype', 'files', 'file-type'];
+ *   - ['organism-1', 'genotype', 'SNPs', 'file-type'];
  *   - ['publication', 'publication_doi'];
  *   See https://www.drupal.org/docs/7/api/form-api/tree-and-parents
  * @param string $message
@@ -627,10 +627,10 @@ function tpps_form_build_file_field(array $chest) {
 
       '#states' => [
         'visible' => [
-          ':input[name="' . $organism_name . '[genotype][files][genotyping-type]"]'
+          ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
             => ['!value' => 'Genotyping Assay'],
           // &&
-          ':input[name="' . $organism_name . '[genotype][files][file-type]"]'
+          ':input[name="' . $organism_name . '[genotype][SNPs][file-type]"]'
             => ['!value' => 'SNP Assay file and Assay design file'],
         ],
       ],
@@ -1110,12 +1110,17 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     // Update only if version was really upgraded.
     tpps_update_submission_state($new_form_state);
 
-    $message = 'Submission Form Version was upgraded from @version to @latest_version.';
-    $params = [
-      '@version' => TPPS_SUBMISSION_FORM_START_VERSION + 1,
-      '@latest_version' => $latest_version,
-    ];
-    tpps_message($message, $params, 'status');
+    if (
+      (TPPS_SUBMISSION_FORM_START_VERSION + 1) != $latest_version
+      && tpps_is_si_debug_mode()
+    ) {
+      $message = 'Submission Form Version was upgraded from @version to @latest_version.';
+      $params = [
+        '@version' => TPPS_SUBMISSION_FORM_START_VERSION + 1,
+        '@latest_version' => $latest_version,
+      ];
+      tpps_message($message, $params, 'status');
+    }
     // Restore $form_state.
     $form_state = $new_form_state;
   }

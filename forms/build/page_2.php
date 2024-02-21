@@ -50,6 +50,8 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     );
   }
 
+  // @TODO Add fieldset and move those fields under this fieldset.
+  // Be sure to update Submission Interface and related code.
   $form['data_type'] = array(
     '#type' => 'select',
     '#title' => t('Data Type: *'),

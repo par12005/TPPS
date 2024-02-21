@@ -193,7 +193,7 @@ function tpps_genotype_subform(array $chest) {
   $genotyping_type_parents = [
     $organism_name, 'genotype', 'SNPs', 'genotyping-type'
   ];
-  $file_type_parents = [$organism_name, 'genotype', 'files', 'file-type'];
+  $file_type_parents = [$organism_name, 'genotype', 'SNPs', 'file-type'];
   // Value is a string because mutiple values not allowed.
   $genotyping_type_check = tpps_get_ajax_value($form_state, $genotyping_type_parents);
   $file_type_value = tpps_get_ajax_value($form_state, $file_type_parents);
@@ -232,7 +232,6 @@ function tpps_genotype_subform(array $chest) {
       'Genotyping Assay' => t('Genotyping Assay'),
       'Genotyping' => t('Genotyping'),
     ],
-    '#name' => $organism_name . '[genotype][files][genotyping-type]',
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Genotype File Type.
@@ -248,10 +247,9 @@ function tpps_genotype_subform(array $chest) {
     '#states' => [
       'visible' => [
         ':input[name="' . $organism_name
-          . '[genotype][files][genotyping-type]"]' => ['value' => 'Genotyping'],
+          . '[genotype][SNPs][genotyping-type]"]' => ['value' => 'Genotyping'],
       ],
     ],
-    '#name' => $organism_name . '[genotype][files][file-type]',
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -289,13 +287,13 @@ function tpps_genotype_subform(array $chest) {
   if ($is_tppsc) {
     tpps_array_set_value(
       $chest['form'],
-      [$organism_name, 'genotype', 'files', $file_field_name, '#states'],
+      [$organism_name, 'genotype', 'SNPs', $file_field_name, '#states'],
       [
         'visible' => [
-          ':input[name="' . $organism_name . '[genotype][files][file-type]"]'
-          => ['value' => 'VCF'],
+          ':input[name="' . $organism_name
+            . '[genotype][SNPs][file-type]"]' => ['value' => 'VCF'],
           ':input[name="' . $organism_name . '[genotype][files]['
-          . $file_field_name . '_file-location]"]' => ['value' => 'local'],
+            . $file_field_name . '_file-location]"]' => ['value' => 'local'],
         ],
       ]
     );
@@ -311,12 +309,12 @@ function tpps_genotype_subform(array $chest) {
   $states = [
     'visible' => [
       [
-        ':input[name="' . $organism_name . '[genotype][genotyping-type]"]'
+        ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
         => ['value' => 'Genotyping Assay'],
       ],
       'or',
       [
-        ':input[name="' . $organism_name . '[genotype][files][file-type]"]'
+        ':input[name="' . $organism_name . '[genotype][SNPs][file-type]"]'
         => ['value' => 'SNP Assay file and Assay design file'],
       ],
     ],
@@ -935,7 +933,7 @@ function tpps_add_dropdown_file_selector(array $chest) {
     '#default_value' => '',
     '#states' => [
       'visible' => [
-        ':input[name="' . $organism_name . '[genotype][files][file-type]"]'
+        ':input[name="' . $organism_name . '[genotype][SNPs][file-type]"]'
         => ['value' => 'VCF'],
       ],
     ],

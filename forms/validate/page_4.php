@@ -131,7 +131,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
     for ($i = 1; $i <= $organism_number; $i++) {
       $genotype = &$form_state['values']["organism-$i"]['genotype'];
       $genotyping_type = $genotype['SNPs']['genotyping-type'] ?? [];
-      $file_type = $genotype['files']['file-type'] ?? NULL;
+      $file_type = $genotype['SNPs']['file-type'] ?? NULL;
       if ($genotyping_type == 'Genotyping' && $file_type == 'VCF') {
         if (tpps_file_remove($genotype['files']['snps-assay'])) {
           $genotype['files']['snps-assay'] = 0;
@@ -644,7 +644,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   // @TODO Check if those values are possible and remove validation if not:
   // ... and 'SNPs Associations'
   // ... and 'Other Marker Genotype Spreadsheet'.
-  $file_type = $genotype['files']['file-type'] ?? NULL;
+  $file_type = $genotype['SNPs']['file-type'] ?? NULL;
   // File fields:
   $vcf = $genotype['files']['vcf'] ?? 0;
   $snps_assay = $genotype['files']['snps-assay'] ?? 0;
