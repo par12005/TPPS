@@ -108,7 +108,6 @@ function tpps_submission_import_review_dump(array $form, array &$form_state) {
  */
 function tpps_submission_import_form_submit(array $form, array &$form_state) {
   global $user;
-  $dry_run = (bool) ($form_state['triggering_element']['#value'] == t('Dry Run'));
 
   module_load_include('inc', 'tpps', 'includes/common');
   // Remove useless data from the submission state.
@@ -128,10 +127,12 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
       return;
     }
-    // Now $state has an imported Form State Array and
-    // $form_state has Submission Import Form State.
+    // Get original (old) accession from $state (Submission Form State Array).
+    $original_accession = tpps_form_get_accession($state);
+    // Get new acession.
     $new_accession = $form_state['values']['tpps_submission_import_accession'];
     if ($new_accession == 'new') {
+      $is_new = TRUE;
       $new_accession = tpps_init_project_get_next_accession();
     }
 
@@ -139,12 +140,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // @TODO Update code to use only 'xxx' format.
     $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
     // Update a list of imported studies.
-    tpps_imported_studies_list_add_item(
-      $new_accession, tpps_form_get_accession($state)
-    );
+    tpps_imported_studies_list_add_item($new_accession, $original_accession);
     // Files.
     tpps_submission_import_process_files($state, $new_accession, $form);
-    if ($dry_run) {
+    if (!$is_new) {
       // Remove submission and files.
       // We can't use tpps_update_submission_state() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
@@ -152,59 +151,35 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
       tpps_submission_purge($new_accession, $force = TRUE);
     }
     tpps_submission_import_state_mods($state, $new_accession);
-    if ($dry_run) {
-      // Report.
-      $state_array = preg_split("/\r\n|\n|\r/", var_export($state, 1));
-      tpps_form_add_report($form, [
-        'submission_state' => [
-          'title' => t('Submission State'),
-          // Show with line numbers.
-          'data' => '<pre>' . print_r($state_array, 1) . '</pre>',
-        ],
-      ]);
-    }
-    else {
-      tpps_create_submission($state, $user->uid);
-      // Clear cached list of studies to have new items at 'frontpage'.
-      // @TODO Minor. Clear only accession list.
-      cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
-      // Recreate Submission.
-      drupal_form_submit(($state['build_info']['form_id'] ?? 'tpps_main'), $state);
-      // This code will not be executed because drupal_form_submit() will
-      // redirect in case of success.
-      if (form_get_errors()) {
-        // Show study info only when there was some validation errors
-        // because if study was submitted successfully user will be
-        // redirected to the study page with the same table of fields.
-        tpps_form_add_report($form, [
-          'study_details' => [
-            'title' => t('Study Details'),
-            'data' => tpps_table_display($state),
-          ],
-        ]);
-      }
-    }
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Add record to DB table.
+    tpps_create_submission($state, $user->uid);
+    // Clear cached list of studies to have new items at 'frontpage'.
+    // @TODO Minor. Clear only accession list.
+    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
+    // Recreate Submission.
+    // Function drupal_form_submit() in case of success will redirect to
+    // the confirmation page (/completed-submission/TGDRxxxx).
+    // Note:
+    // Submission Form Version will be upgraded here!
+    // Function tpps_main_submit() will change version.
+    drupal_form_submit(tpps_form_get_id($state), $state);
   }
 
-  // Useful links.
-  if (!$dry_run) {
-    $url_list = [
-      'tppsc',
-      "tpps-admin-panel/$new_accession",
-      "tpps/details/$new_accession",
-    ];
-    foreach ($url_list as $url) {
-      $items[] = l($url, $url);
-    }
-    tpps_form_add_report($form, [
-      'useful_links' => [
-        'title' => t('Useful links'),
-        'data' => theme('item_list', ['items' => $items]),
-      ],
-    ]);
+  // When import failed we show useful links.
+  // Note: This code will not be executed in case of success.
+  $url_list = [
+    'tppsc',
+    "tpps-admin-panel/$new_accession",
+    "tpps/details/$new_accession",
+  ];
+  foreach ($url_list as $url) {
+    $items[] = l($url, $url);
   }
-
-  $form_state['rebuild'] = 1;
+  drupal_set_message(t('Submission import failed. Useful links: !links',
+    ['!links' => theme('item_list', ['items' => $items])]
+  ));
+  $form_state['rebuild'] = TRUE;
 }
 
 /**
