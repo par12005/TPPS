@@ -160,37 +160,32 @@ function tpps_doi_upload_files($id, array &$state) {
 
     if (isset($state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'])) {
       $genotype = &$state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype'];
-      if ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url') {
-        if ($genotype['tripal_fasta']['file_upload']) {
-          $files[] = $genotype['tripal_fasta']['file_upload'];
-        }
-
-        if ($genotype['tripal_fasta']['file_upload_existing']) {
-          $files[] = $genotype['tripal_fasta']['file_upload_existing'];
-        }
+      if (in_array($genotype['ref-genome'], ['manual', 'manual2', 'url'])) {
+        $files[] = $genotype['tripal_fasta']['file_upload'] ?? NULL;
+        $files[] = $genotype['tripal_fasta']['file_upload_existing'] ?? NULL;
       }
-
+      // @TODO Could we skip all this extra checks and just collect files?
       if (!empty($genotype['files']['file-type']['SNPs Genotype Assay'])) {
-        $files[] = $genotype['files']['snps-assay'];
+        $files[] = $genotype['SNPs']['snps-assay'] ?? NULL;
       }
-
-      if (!empty($genotype['files']['file-type']['Assay Design']) and $genotype['marker-type']['SNPs']) {
-        $files[] = $genotype['files']['assay-design'];
+      if (
+        !empty($genotype['files']['file-type']['Assay Design'])
+        && $genotype['marker-type']['SNPs']
+      ) {
+        $files[] = $genotype['files']['assay-design'] ?? NULL;
       }
-
       if (!empty($genotype['files']['file-type']['SSRs/cpSSRs Genotype Spreadsheet'])) {
-        $files[] = $genotype['files']['ssrs'];
+        $files[] = $genotype['files']['ssrs'] ?? NULL;
       }
-
       if (!empty($genotype['files']['file-type']['Other Marker Genotype Spreadsheet'])) {
-        $files[] = $genotype['files']['other'];
+        $files[] = $genotype['files']['other'] ?? NULL;
       }
-
       if (!empty($genotype['files']['file-type']['VCF'])) {
-        $files[] = $genotype['files']['vcf'];
+        $files[] = $genotype['files']['vcf'] ?? NULL;
       }
     }
   }
+  $files = array_filter($files);
 
   foreach ($files as $file) {
     $file = file_load($file);

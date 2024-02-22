@@ -339,9 +339,6 @@ function tpps_genotype_subform(array $chest) {
       . 'columns should contain SNP data.'),
     'use_fid' => TRUE,
     'states' => $states,
-    'extra_elements' => [
-      '#name' => $organism_name . '[genotype][files][' . $file_field_name . ']',
-    ],
   ]));
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -834,17 +831,17 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fasta = tripal_get_importer_form(array(), $form_state, $class);
   $fasta['#type'] = 'fieldset';
   $fasta['#title'] = 'Tripal FASTA Loader';
-  $fasta['#states'] = array(
-    'visible' => array(
-    array(
-      [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'url']],
-      'or',
-      [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'manual']],
-      'or',
-      [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'manual2']],
-    ),
-    ),
-  );
+  $fasta['#states'] = [
+    'visible' => [
+      [
+        [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'url']],
+        'or',
+        [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'manual']],
+        'or',
+        [':input[name="' . $id . '[genotype][SNPs][ref-genome]"]' => ['value' => 'manual2']],
+      ],
+    ],
+  ];
 
   unset($fasta['file']['file_local']);
   unset($fasta['organism_id']);

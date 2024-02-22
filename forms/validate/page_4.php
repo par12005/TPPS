@@ -96,17 +96,30 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       }
 
       if (isset($form["organism-$i"]['phenotype']['file'])) {
-        $form["organism-$i"]['phenotype']['file']['upload']
-          = $new_form["organism-$i"]['phenotype']['file']['upload'];
-        $form["organism-$i"]['phenotype']['file']['columns']
-          = $new_form["organism-$i"]['phenotype']['file']['columns'];
-        $form["organism-$i"]['phenotype']['file']['upload']['#id']
-          = "edit-organism-$i-phenotype-file-upload";
-        $form["organism-$i"]['phenotype']['file']['columns']['#id']
-          = "edit-organism-$i-phenotype-file-columns";
+        foreach (['upload', 'columns'] as $field) {
+          $form["organism-$i"]['phenotype']['file'][$field]
+            = $new_form["organism-$i"]['phenotype']['file'][$field];
+          $form["organism-$i"]['phenotype']['file'][$field]['#id']
+            = "edit-organism-$i-phenotype-file-$field";
+        }
       }
 
-      foreach (['snps-assay', 'other'] as $type) {
+      foreach (['snps-assay'] as $type) {
+        foreach (['upload', 'columns'] as $field) {
+          if (
+            isset($form["organism-$i"]['genotype']['SNPs'][$type][$field])
+            && isset($new_form["organism-$i"]['genotype']['SNPs'][$type][$field])
+          ) {
+            $form["organism-$i"]['genotype']['SNPs'][$type][$field]
+              = $new_form["organism-$i"]['genotype']['SNPs'][$type][$field];
+            $form["organism-$i"]['genotype']['SNPs'][$type][$field]['#id']
+              = "edit-organism-$i-genotype-snps-{$type}-{$field}";
+          }
+        }
+      }
+
+      // Note: this field will be relocated later.
+      foreach (['other'] as $type) {
         foreach (['upload', 'columns'] as $field) {
           if (
             isset($form["organism-$i"]['genotype']['files'][$type][$field])
@@ -133,8 +146,8 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
       $genotyping_type = $genotype['SNPs']['genotyping-type'] ?? [];
       $file_type = $genotype['SNPs']['file-type'] ?? NULL;
       if ($genotyping_type == 'Genotyping' && $file_type == 'VCF') {
-        if (tpps_file_remove($genotype['files']['snps-assay'])) {
-          $genotype['files']['snps-assay'] = 0;
+        if (tpps_file_remove($genotype['SNPs']['snps-assay'])) {
+          $genotype['SNPs']['snps-assay'] = 0;
         }
         if (tpps_file_remove($genotype['files']['assay-design'])) {
           $genotype['files']['assay-design'] = 0;
@@ -647,7 +660,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   $file_type = $genotype['SNPs']['file-type'] ?? NULL;
   // File fields:
   $vcf = $genotype['files']['vcf'] ?? 0;
-  $snps_assay = $genotype['files']['snps-assay'] ?? 0;
+  $snps_assay = $genotype['SNPs']['snps-assay'] ?? 0;
   $assay_design = $genotype['files']['assay-design'] ?? 0;
   $assoc_file = $genotype['files']['snps-association'] ?? 0;
   $other_file = $genotype['files']['other'] ?? 0;
@@ -774,7 +787,9 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
       tpps_is_required_field_empty($form_state,
         ['organism-' . $org_num, 'genotype', 'SNPs', 'genotyping-type']
       );
-      tpps_is_required_genotype_file_empty($form_state, $org_num, 'snps-assay');
+      tpps_is_required_field_empty($form_state,
+        ['organism-' . $org_num, 'genotype', 'SNPs', 'snps-assay']
+      );
       tpps_is_required_genotype_file_empty($form_state, $org_num, 'assay-design');
     }
 
@@ -1014,7 +1029,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     // )
     // So current check covers all the cases but it's hard to read :( ...
     tpps_form_error_required($form_state,
-      [$id, 'genotype', 'files', 'snps-assay']
+      [$id, 'genotype', 'SNPs', 'snps-assay']
     );
   }
   // @TODO Update because field 'file-type' has only this options:
@@ -1023,7 +1038,9 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     $headers = tpps_file_headers($snps_assay);
     $id_col_name = key($headers);
     while (($k = array_search(NULL, $headers))) {
-      drupal_set_message(t('Following header column is Null which needs to be fixed. %data', array('%data' => $k)), 'error');
+      $message = t('Following header column is Null which needs to be fixed. '
+        . '%data', ['%data' => $k]);
+      drupal_set_message($message, 'error');
       unset($headers[$k]);
     }
     $num_columns = tpps_file_width($snps_assay) - 1;
@@ -1037,7 +1054,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
         'error'
         );
       }
-      form_set_error("$id][genotype][files][snps-assay",
+      form_set_error("$id][genotype][SNPs][snps-assay",
         t("SNPs Assay file: some columns in the file you provided are "
           . "missing or have duplicate header values. Please either enter "
           . "valid header values for those columns or remove those columns, "
@@ -1060,7 +1077,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
         $acc_no_header
       );
       if ($missing_trees !== []) {
-        form_set_error("$id][genotype][files][snps-assay",
+        form_set_error("$id][genotype][SNPs][snps-assay",
           t(
             "SNPs Assay file: We detected Plant Identifiers that were "
             . "not in your Plant Accession file. Please either remove these "

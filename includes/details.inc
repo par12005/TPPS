@@ -813,59 +813,60 @@ function tpps_details_study(array &$state) {
   return theme('table', $vars);
 }
 
+/**
+ * Gets list of study's File Ids.
+ *
+ * @param array $state
+ *   Drupal Form State Array.
+ *
+ * @return array
+ *   Returns list of File Ids.
+ */
 function tpps_details_get_study_file_ids($state) {
   $saved_values = $state['saved_values'];
   // print_r($saved_values);
-  $organism_count = $saved_values['1']['organism']['number'];
+  $organism_count = $saved_values['1']['organism']['number'] ?? NULL;
   $file_ids = [];
-  for($i=1; $i<=4; $i++) {
-    if ($i == 3) {
-      for($j=1; $j<=$organism_count; $j++) {
-        if(isset($saved_values[$i]['tree-accession']['species-' . $j]['file'])) {
-          array_push($file_ids, $saved_values[$i]['tree-accession']['species-' . $j]['file']);
-        }
-      }
-    }
-    if ($i == 4) {
-      // Phenotype files
-      for($j=1; $j<=$organism_count; $j++) {
-        if(isset($saved_values[$i]['organism-' . $j]['phenotype']['file'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['file']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['phenotype']['metadata'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['phenotype']['metadata']);
-        }
-      }
-      for($j=1; $j<=$organism_count; $j++) {
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['snps-assay']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['snps-association'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['snps-association']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['vcf'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['vcf']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs']);
-        }
-        if(isset($saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra'])) {
-          array_push($file_ids, $saved_values[$i]['organism-' . $j]['genotype']['files']['ssrs_extra']);
-        }
-      }
+
+  // @TODO Minor. Use
+  // function tpps_submission_file_get_parents($organism_number = 1);
+  $page4_file_list = [
+    // Phenotype files.
+    ['phenotype', 'file'],
+    ['phenotype', 'metadata'],
+    // Genotype files.
+    ['genotype' , 'SNPs', 'snps-assay'],
+    ['genotype', 'files', 'snps-association'],
+    ['genotype', 'files', 'vcf'],
+    ['genotype', 'files', 'ssrs'],
+    ['genotype', 'files', 'ssrs_extra'],
+  ];
+
+  for ($j = 1; $j <= $organism_count; $j++) {
+    // Page 3.
+    $file_ids[] = $saved_values[3]['tree-accession']['species-' . $j]['file'] ?? NULL;
+    // Page 4.
+    foreach ($page4_file_list as $parents) {
+      $file_ids[] = drupal_array_get_nested_value(
+        $saved_values[4]['organism-' . $j],
+        $parents
+      );
     }
   }
-  // check summarypage for supplemental files
-  if(count($saved_values['summarypage']['files']) > 2) {
+
+  // Check summarypage for supplemental files.
+  // @TODO Minor. Remove this code.
+  if (count($saved_values['summarypage']['files']) > 2) {
     $files = $saved_values['summarypage']['files'];
     foreach ($files as $file_index => $file_id) {
-      if(is_numeric($file_id) && $file_id > 0) {
+      if (is_numeric($file_id) && $file_id > 0) {
         // print_r($file_index);
         // array_push($file_ids, $file_id);
       }
     }
   }
-  return $file_ids;
+  // Remove empty elements.
+  return array_filter($file_ids);
 }
 
 /**

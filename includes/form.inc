@@ -295,7 +295,7 @@ function tpps_form_get_organism_number(array $state) {
  *             (
  *                [0] => organism-1
  *                [1] => genotype
- *                [2] => files
+ *                [2] => SNPs
  *                [3] => snps-assay
  *           )
  *     ....
@@ -830,7 +830,21 @@ function tpps_form_autofocus(array &$form = [], $fieldname = '', array $parents 
  *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
  */
 function tpps_form_is_tppsc(array $form_state) {
-  return (bool) (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
+  return (tpps_form_get_id($form_state) == 'tppsc_main');
+}
+
+/**
+ * Get TPPS Form Id.
+ *
+ * @param array $form_state
+ *   Drupal Form State array.
+ *
+ * @return string
+ *   Returns 'tpps_main' (default) or 'tppsc_main'.
+ */
+function tpps_form_get_id(array $form_state) {
+  return $form_state['saved_values']['front_page']['form_id']
+    ?? $form_state['build_info']['form_id'] ?? 'tpps_main';
 }
 
 /**

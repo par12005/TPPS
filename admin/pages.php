@@ -56,6 +56,7 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
       [TPPS_PAGE_4, 'organism-' . $j, 'phenotype', 'file'],
       [TPPS_PAGE_4, 'organism-' . $j, 'phenotype', 'metadata'],
       // Page 4. Genotype files.
+      // WARNING: Submission Interface - do not update 'files'.
       [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'snps-assay'],
       [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'snps-association'],
       [TPPS_PAGE_4, 'organism-' . $j, 'genotype', 'files', 'vcf'],
