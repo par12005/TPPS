@@ -210,26 +210,18 @@ function tpps_load_submission_multiple(array $conditions = array(), $state = TRU
  *   The id of the user creating the submission.
  */
 function tpps_create_submission(array $state, $uid) {
-  $values = array(
+  $values = [
     'uid' => $uid,
     'status' => 'Incomplete',
     'accession' => $state['accession'],
     'dbxref_id' => $state['dbxref_id'],
     'submission_state' => serialize($state),
-    //'submission_interface' => serialize(tpps_submission_interface_generate($state)),
     'submission_interface' => serialize([]),
-  );
-
-  db_insert('tpps_submission')
-    ->fields($values)
-    ->execute();
-
-  if ((!isset($state['tpps_type']) or $state['tpps_type'] != 'tppsc')) {
-    tpps_submission_add_tag($state['accession'], 'TPPS');
-  }
-  else {
-    tpps_submission_add_tag($state['accession'], 'TPPSc');
-  }
+  ];
+  db_insert('tpps_submission')->fields($values)->execute();
+  // Add default tag.
+  $is_tppsc = tpps_form_is_tppsc($state);
+  tpps_submission_add_tag($state['accession'], ($is_tppsc ? 'TPPSc' : 'TPPS'));
 }
 
 /**
@@ -741,9 +733,8 @@ function tpps_submission_add_tag($accession, $tag) {
       $tag = $id;
     }
   }
-
-  $tags = tpps_submission_get_tags($accession);
-  if ($tags && !array_key_exists($tag, $tags)) {
+  $tags = tpps_submission_get_tags($accession) ?? [];
+  if (!array_key_exists($tag, $tags)) {
     $submission_info = tpps_load_submission_info($accession);
     db_insert('tpps_submission_tag')
       ->fields([
