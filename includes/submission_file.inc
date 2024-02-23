@@ -12,14 +12,25 @@
  * Gets form submission state, prepares files for import.
  *
  * @param array $state
- *   TPPS Submission State.
+ *   TPPS Submission State which will be downgraded to
+ *   Submission Form Version 1 to get File Ids.
  * @param array $form
  *   If not empty then report fieldset will be added to form.
+ *   We need $form here to add File Detection Report.
  *
  * @return array
  *   Returns list of File IDs or empty array.
  */
 function tpps_submission_file_get_id_list(array $state, array &$form = []) {
+  $submission_interface = tpps_submission_interface_generate($state);
+  $complete_form = $submission_interface['complete form'] ?? NULL;
+  $saved_values = $submission_interface['saved_values'] ?? NULL;
+  $values = $submission_interface['values'] ?? NULL;
+  $files = $submission_interface['files'] ?? [];
+  $file_info = $submission_interface['file_info'] ?? NULL;
+
+  module_load_include('inc', 'tpps', 'includes/form');
+  $organism_number = tpps_form_get_organism_number($submission_interface);
   $result = [];
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
@@ -27,11 +38,10 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   // Complete Form.
   $method_name = 'complete form';
   $fid_list = [];
-  if (!empty($state['complete form'])) {
-    module_load_include('inc', 'tpps', 'includes/form');
-    $files = tpps_form_search_field($state['complete form'], 'managed_file');
+  if ($complete_form) {
+    $files = tpps_form_search_field($complete_form, 'managed_file');
     foreach ($files as $parents) {
-      $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
+      $fid_list[] = drupal_array_get_nested_value($values, $parents);
     }
   }
   $fid_list = array_filter($fid_list);
@@ -43,7 +53,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   // Use $form_state['files'] if any.
   $method_name = '$form_state["files"]';
   $fid_list = [];
-  $fid_list = array_filter($state['files'] ?? []);
+  $fid_list = array_filter($files);
   $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
     $result = array_merge($result, $fid_list);
@@ -53,10 +63,10 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   $method_name = '$form_state["file_info"]';
   $fid_list = [];
   $fid_list = array_merge(
-    array_keys($state['file_info'][1] ?? []),
-    array_keys($state['file_info'][2] ?? []),
-    array_keys($state['file_info'][3] ?? []),
-    array_keys($state['file_info'][4] ?? [])
+    array_keys($file_info[1] ?? []),
+    array_keys($file_info[2] ?? []),
+    array_keys($file_info[3] ?? []),
+    array_keys($file_info[4] ?? [])
   );
   $fid_list = array_filter($fid_list);
   $report[$method_name] = $fid_list;
@@ -67,30 +77,26 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   // Last chance. Use hardcoded path to file fields.
   $method_name = 'hardcoded';
   $fid_list = [];
-  if (!empty($state['values']) || !empty($state['saved_values'])) {
-    module_load_include('inc', 'tpps', 'includes/form');
-    $organism_number = tpps_form_get_organism_number($state);
-    if (!empty($state['values'])) {
+  if ($values || $saved_values) {
+    if ($values) {
       foreach (tpps_submission_file_get_parents($organism_number) as $parents) {
-        $fid_list[] = drupal_array_get_nested_value($state['values'], $parents);
+        $fid_list[] = drupal_array_get_nested_value($values, $parents);
       }
     }
-    if (!empty($state['saved_values'])) {
+    if ($saved_values) {
       foreach (tpps_submission_file_get_parents($organism_number) as $parents) {
         $step = ($parents[0] == 'tree-accession') ? TPPS_PAGE_3 : TPPS_PAGE_4;
-        if (!empty($state['saved_values'][$step])) {
+        if (!empty($saved_values[$step])) {
           // When form became outdated (6+ hours) and cron removed temporary
           // files then resubmitting form cause errors at site. Probably
           // correct solution is to redirect to submittion edit page
           // Note: Redirect using GET request not yet implemented. Only POST.
-          $fid_list[] = drupal_array_get_nested_value(
-            $state['saved_values'][$step],
-            $parents
-          );
+          $fid_list[] = drupal_array_get_nested_value($saved_values[$step], $parents);
         }
       }
     }
   }
+
   $fid_list = array_filter($fid_list ?? []);
   $fid_list = array_unique($fid_list);
   $report[$method_name] = $fid_list;
@@ -150,6 +156,9 @@ function tpps_submission_file_set_status(array $form_state, $status = FILE_STATU
 /**
  * Gets hardcoded list of file field parents.
  *
+ * WARNING:
+ * Use Submission Form Version 1 (= Submission Interface).
+ *
  * @param int $organism_number
  *   Number of species in submission.
  *
@@ -171,10 +180,13 @@ function tpps_submission_file_get_parents($organism_number = 1) {
     // @TODO Add environmental files?
     $result = array_merge($result, [
       // Phenotype.
-      [$organism_id, 'phenotype', 'metadata'],
+      [$organism_id, 'phenotype', 'iso'],
       [$organism_id, 'phenotype', 'file'],
+      [$organism_id, 'phenotype', 'metadata'],
       // Genotype.
       [$organism_id, 'genotype', 'tripal_fasta', 'file', 'file_upload'],
+      // @TODO Check this field:
+      //[$organism_id, 'genotype', 'tripal_fasta', 'file_upload_existing'],
       [$organism_id, 'genotype', 'files', 'snps-assay'],
       [$organism_id, 'genotype', 'files', 'assay-design'],
       [$organism_id, 'genotype', 'files', 'snps-association'],
@@ -182,6 +194,7 @@ function tpps_submission_file_get_parents($organism_number = 1) {
       [$organism_id, 'genotype', 'files', 'snps-kinship'],
       [$organism_id, 'genotype', 'files', 'ssrs'],
       [$organism_id, 'genotype', 'files', 'ssrs_extra'],
+      [$organism_id, 'genotype', 'files', 'indels'],
       [$organism_id, 'genotype', 'files', 'other'],
       [$organism_id, 'genotype', 'files', 'vcf'],
     ]);

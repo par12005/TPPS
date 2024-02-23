@@ -268,21 +268,22 @@ function tpps_submission_form_version_action_move(array &$interface, array $acti
 /**
  * Downgrades Form State/Submission Interface to given version.
  *
- * @TODO Check if multiple version could be use: 3 to 1. What about direction?
- *
  * Note:
- * - Version of Submission Interface: 1.
- * - Version of TPPS Form State: 2+.
+ * - Direction is from higher version to lower.
+ * - Submsision Form Version 1 = Submission Interface.
+ * - Current Submission Form Version is >= 2.
  *
- * Usage example in a loop.
- * ???
+ * ----------------------------------------------------------------------------
+ * Usage:
  *
- * Note: Direction is always from lower version to higher.
+ * To downgrade from latest version to version 1:
  *
+ * $interface = tpps_submission_interface_generate($state);
  *
- *
- * $i = TPPS_SUBMISSION_FORM_START_VERSION;
- * for (; $i <= $current_version; $i++) {
+ * To downgrade to specific versions:
+ * $current_version = tpps_submission_form_version_get($form_state);
+ * $desired_version = TPPS_SUBMISSION_FORM_START_VERSION;
+ * for ($i = $current_version; $i >= $desired_version; $i--) {
  *   tpps_submission_form_version_downgrade($form_state, $i, $interface);
  * }
  *
@@ -294,6 +295,8 @@ function tpps_submission_form_version_action_move(array &$interface, array $acti
  *   Resulting array. It could be a Submission Interface if $upgrade = FALSE
  *   and Form State array when $upgrade = TRUE (update old version of the form
  *   to latest).
+ *
+ * @TODO Check if multiple version could be use: 3 to 1. What about direction?
  */
 function tpps_submission_form_version_downgrade(array $form_state, $version, array &$result = NULL) {
   $upgrade = FALSE;
@@ -304,13 +307,18 @@ function tpps_submission_form_version_downgrade(array $form_state, $version, arr
  * Upgrades one step Form State/Submission Interface to given version.
  *
  * Note:
- * - Version of Submission Interface: 1.
- * - Version of TPPS Form State: 2+.
+ * - Direction is from lower version to higher.
+ * - Submsision Form Version 1 = Submission Interface.
+ * - Current Submission Form Version is >= 2.
  *
- * Usage example in a loop.
- * Note: Direction is from lower version to higher.
- * $i = TPPS_SUBMISSION_FORM_START_VERSION;
- * for (; $i <= $current_version; $i++) {
+ * ----------------------------------------------------------------------------
+ * Usage:
+ *
+ * To upgrade to specific versions (from 1 to 2):
+ *
+ * $start_version = TPPS_SUBMISSION_FORM_START_VERSION;
+ * $desired_version = tpps_submission_form_version_get($form_state);
+ * for ($i = $start_version; $i <= $desired_version; $i++) {
  *   tpps_submission_form_version_upgrade($form_state, $i, $interface);
  * }
  *
@@ -544,7 +552,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'file-type',
       'vcf',
       // @TODO process.
-     // 'vcf_file-location'. 
+     // 'vcf_file-location'.
       'snps-assay',
       'assay-design',
       'snps-association',

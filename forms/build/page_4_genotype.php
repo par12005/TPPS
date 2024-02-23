@@ -299,28 +299,10 @@ function tpps_genotype_subform(array $chest) {
     );
   }
 
-  // @TODO.
-
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNP Assay File.
   $title = t('SNP Assay File');
   $file_field_name = 'snps-assay';
-  $states = [
-    'visible' => [
-      [
-        ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
-        => ['value' => 'Genotyping Assay'],
-      ],
-      'or',
-      [
-        ':input[name="' . $organism_name . '[genotype][SNPs][file-type]"]'
-        => ['value' => 'SNP Assay file and Assay design file'],
-      ],
-    ],
-  ];
-
-  // File upload field.
   // Field was relocated (v.2). ['files'] -> ['SNPs'].
   tpps_form_build_file_field(array_merge($chest, [
     'parents' => [$organism_name, 'genotype', 'SNPs'],
@@ -338,7 +320,19 @@ function tpps_genotype_subform(array $chest) {
       . 'in your plant accession file, and all of the remaining '
       . 'columns should contain SNP data.'),
     'use_fid' => TRUE,
-    'states' => $states,
+    'states' => [
+      'visible' => [
+        [
+          ':input[name="' . $organism_name . '[genotype][SNPs][genotyping-type]"]'
+          => ['value' => 'Genotyping Assay'],
+        ],
+        'or',
+        [
+          ':input[name="' . $organism_name . '[genotype][SNPs][file-type]"]'
+          => ['value' => 'SNP Assay file and Assay design file'],
+        ],
+      ],
+    ],
   ]));
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -370,7 +364,12 @@ function tpps_genotype_subform(array $chest) {
       '#type' => 'textfield',
       '#title' => t('Assay Design Citation (Optional):'),
       '#description' => t('If your assay design file is from a different '
-        . 'paper, please include the citation for that paper here.'),
+      . 'paper, please include the citation for that paper here.'),
+
+
+// @TODO Update.
+
+
       '#name' => $organism_name . '[genotype][files][assay-citation]',
     ];
   }
@@ -528,6 +527,8 @@ function tpps_genotype_subform(array $chest) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $fields['other-marker'] = [
+    // @TODO convert to select and relocate.
+    //
     '#type' => 'textfield',
     '#title' => t('Other marker type: *'),
   ];

@@ -747,6 +747,8 @@ function tpps_details_species(array &$state) {
  *
  * @return string
  *   The HTML table of study information of the submission.
+ *
+ * @TODO Seems function not in use, probably outdated and could be removed.
  */
 function tpps_details_study(array &$state) {
   $rows = array();
@@ -817,31 +819,33 @@ function tpps_details_study(array &$state) {
  * Gets list of study's File Ids.
  *
  * @param array $state
- *   Drupal Form State Array.
+ *   Drupal Form State Array of any version.
  *
  * @return array
  *   Returns list of File Ids.
+ *
+ * @todo Minor. Use tpps_submission_file_get_parents().
+ * @todo Remove if possible. Probably not in used.
+ * (Called by orphan function tpps_details_study()).
  */
-function tpps_details_get_study_file_ids($state) {
-  $saved_values = $state['saved_values'];
+function tpps_details_get_study_file_ids(array $state) {
+  // Note: Submission Form Version 1 (= Submission Interface).
+  $submission_interface = tpps_submission_interface_generate($state);
+  $saved_values = $submission_interface['saved_values'];
   // print_r($saved_values);
   $organism_count = $saved_values['1']['organism']['number'] ?? NULL;
   $file_ids = [];
-
-  // @TODO Minor. Use
-  // function tpps_submission_file_get_parents($organism_number = 1);
   $page4_file_list = [
     // Phenotype files.
     ['phenotype', 'file'],
     ['phenotype', 'metadata'],
     // Genotype files.
-    ['genotype' , 'SNPs', 'snps-assay'],
+    ['genotype', 'files', 'snps-assay'],
     ['genotype', 'files', 'snps-association'],
     ['genotype', 'files', 'vcf'],
     ['genotype', 'files', 'ssrs'],
     ['genotype', 'files', 'ssrs_extra'],
   ];
-
   for ($j = 1; $j <= $organism_count; $j++) {
     // Page 3.
     $file_ids[] = $saved_values[3]['tree-accession']['species-' . $j]['file'] ?? NULL;
@@ -853,7 +857,6 @@ function tpps_details_get_study_file_ids($state) {
       );
     }
   }
-
   // Check summarypage for supplemental files.
   // @TODO Minor. Remove this code.
   if (count($saved_values['summarypage']['files']) > 2) {
