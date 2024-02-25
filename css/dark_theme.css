@@ -80,6 +80,7 @@ form.tpps-form        table thead th {
   color: black;
   background-color: #777;
 }
+div.messages.notice,
 table#tpps_table_display tbody tr.odd,
 form.tpps-admin-panel tbody tr.odd,
 form.tpps-submission  tbody tr.odd,
@@ -121,6 +122,7 @@ form.tppsc-form       .btn.form-button:focus {
   border: 2px solid #b5e0ba;
 }
 
+div.messages pre,
 form.tpps-admin-panel .tag-text,
 form.tpps-submission  .tag-text,
 form.tpps-form        .tag-text,
