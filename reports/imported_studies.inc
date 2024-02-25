@@ -42,7 +42,7 @@ function tpps_admin_imported_studies_report() {
     ];
   }
   $output = '<h3>'
-    . l(t('Import New Submission'), 'tpps/submission//new/import') . '</h3>';
+    . l(t('Import New Submission'), 'tpps/submission/new/import') . '</h3>';
   $output .= theme('table', [
     'header' => [
       t('Local <br /><strong>Accession</strong>'),
