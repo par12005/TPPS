@@ -34,7 +34,7 @@ function tpps_form_page_4_settings_form(array $form, array &$form_state) {
     '#default_value' => variable_get('tpps_page_4_update_ploidy_description', TRUE),
     '#description' => t(
       'Default is <strong>checked</strong>.'
-      "<br />When checked description of the 'Ploidy' field will be "
+      . "<br />When checked description of the 'Ploidy' field will be "
       . " updated according to current selection."
     ),
   ];
