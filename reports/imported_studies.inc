@@ -29,10 +29,11 @@ function tpps_admin_imported_studies_report() {
       l($import_meta['site'], $import_meta['site']),
       // Actions:
       implode(' | ', [
+        // @TODO Use CSS class instead of HTML tags.
+        '<strong>' . l(t('View'), 'tpps/submission/' . $local . '/view') . '</strong>',
         l(t('Edit'), 'tppsc/' . $local),
         l(t('Admin Panel'), 'tpps-admin-panel/' . $local),
         l(t('Details (map)'), 'tpps/details/' . $local),
-        l(t('View'), 'tpps/submission/' . $local . '/view'),
         l(t('Export'), 'tpps/submission/' . $local . '/export'),
         l(t('Compare'), 'tpps/submission/' . $local . '/compare'),
         l(t('Purge'), 'tpps/submission/' . $local . '/purge', $params),
@@ -42,7 +43,8 @@ function tpps_admin_imported_studies_report() {
     ];
   }
   $output = '<h3>'
-    . l(t('Import New Submission'), 'tpps/submission/new/import') . '</h3>';
+    . l(t('Import New Submission'), 'tpps/submission/new/import') . ' | '
+    . l(t('Purge Multiple'), 'tpps/submission/purge_multiple') . '</h3>';
   $output .= theme('table', [
     'header' => [
       t('Local <br /><strong>Accession</strong>'),
