@@ -552,7 +552,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'file-type',
       'vcf',
       // @TODO process.
-     // 'vcf_file-location'.
+     // 'vcf_file-location',
       'snps-assay',
       'assay-design',
       'snps-association',

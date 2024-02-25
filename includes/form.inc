@@ -811,9 +811,6 @@ function tpps_form_autofocus(array &$form = [], $fieldname = '', array $parents 
           ],
         ],
       ],
-      'scope' => 'footer',
-      'group' => JS_THEME,
-      'weight' => 5,
     ];
     // @TODO Minor. Field could be not on 1st level.
     unset($field['#attributes']['autofocus']);

@@ -1781,7 +1781,7 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
   }
   else {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // This is form.
+    // Form.
     $form['#attached']['css'][] = $theme_path;
     if (variable_get('tpps_dark_theme')) {
       $form['#attached']['css'][] = $dark_theme_path;
@@ -1803,16 +1803,21 @@ function tpps_add_css_js($page_id = 'main', array &$form = NULL) {
         $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/pager_fix.css';
       }
     }
-    elseif ($page_id && is_numeric($page_id) && $page_id > 0) {
-      // This it TPPS Page. Add page specific files.
+    elseif ($page_id) {
+      // Features like 'autofocus' and etc.
+      $filename = 'tpps_' . $page_id;
+      if (is_numeric($page_id) && $page_id > 0) {
+        // TPPS/TPPSc Form pages.
+        $filename = 'tpps_page_' . $page_id;
+      }
+      // @TODO Minor. Check if JS/CSS file exists.
       $form['#attached']['js'][] = [
         'type' => 'file',
         'scope' => 'footer',
         'group' => JS_THEME,
-        'data' => TPPS_MODULE_PATH . '/js/tpps_page_' . $page_id . '.js',
+        'data' => TPPS_MODULE_PATH . '/js/' . $filename . '.js',
       ];
-      $form['#attached']['css'][] = TPPS_MODULE_PATH
-        . '/css/tpps_page_' . $page_id . '.css';
+      $form['#attached']['css'][] = TPPS_MODULE_PATH . '/css/' . $filename . '.css';
     }
   }
 }
