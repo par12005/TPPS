@@ -62,6 +62,16 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
     '#title' => t('Submission State'),
     '#default_value' => $form_state['input']['tpps_submission_import_submission_state'] ?? '',
   ];
+  $form['tpps_submission_import_do_not_upgrade'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Do not upgrade Submission Form Version on import '),
+    '#default_value' => $form_state['input']['tpps_submission_import_do_not_upgrade'] ?? FALSE,
+    '#description' => t('Default is unchecked.'
+      . '<br /> Whech unchecked submission will be submitted and verion will '
+      . 'be upgraded.<br /> Whech checked submission will NOT be submitted '
+      . 'and verion will NOT be upgraded (left as at origin site).'
+    )
+  ];
   $form['#validate'][] = 'tpps_submission_import_form_validate';
   tpps_form_autofocus($form, 'tpps_submission_import_accession');
   $form['#attributes']['class'][] = 'tpps-submission';
@@ -129,8 +139,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     }
     // Get original (old) accession from $state (Submission Form State Array).
     $original_accession = tpps_form_get_accession($state);
+    $values = $form_state['values'] ?? NULL;
+    $do_not_upgrade = $values['tpps_submission_import_do_not_upgrade'] ?? FALSE;
     // Get new acession.
-    $new_accession = $form_state['values']['tpps_submission_import_accession'];
+    $new_accession = $values['tpps_submission_import_accession'];
     if ($new_accession == 'new') {
       $is_new = TRUE;
       $new_accession = tpps_init_project_get_next_accession();
@@ -163,23 +175,36 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     // Note:
     // Submission Form Version will be upgraded here!
     // Function tpps_main_submit() will change version.
-    drupal_form_submit(tpps_form_get_id($state), $state);
+    if (!$do_not_upgrade) {
+      drupal_form_submit(tpps_form_get_id($state), $state);
+    }
   }
 
-  // When import failed we show useful links.
-  // Note: This code will not be executed in case of success.
-  $url_list = [
-    'tppsc',
-    "tpps-admin-panel/$new_accession",
-    "tpps/details/$new_accession",
-  ];
-  foreach ($url_list as $url) {
-    $items[] = l($url, $url);
+  if ($do_not_upgrade) {
+    // Form submission was skipped.
+    drupal_set_message(
+      t("Submission was imported but not version wasn't upgraded."),
+      'warning'
+    );
+    drupal_goto('completed-submission/' . $new_accession);
   }
-  drupal_set_message(t('Submission import failed. Useful links: !links',
-    ['!links' => theme('item_list', ['items' => $items])]
-  ));
-  $form_state['rebuild'] = TRUE;
+  else {
+    // Form submission failed.
+    // Show useful links.
+    // Note: This code will not be executed in case of success.
+    $url_list = [
+      'tppsc',
+      "tpps-admin-panel/$new_accession",
+      "tpps/details/$new_accession",
+    ];
+    foreach ($url_list as $url) {
+      $items[] = l($url, $url);
+    }
+    drupal_set_message(t('Submission import failed. Useful links: !links',
+      ['!links' => theme('item_list', ['items' => $items])]
+    ));
+    $form_state['rebuild'] = TRUE;
+  }
 }
 
 /**
