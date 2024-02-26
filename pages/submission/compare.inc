@@ -12,8 +12,6 @@
  * reviewed studies files was detected correclty using 'comolete form'.
  */
 
-module_load_include('inc', 'tpps', 'includes/common');
-module_load_include('inc', 'tpps', 'includes/form');
 module_load_include('inc', 'tpps', 'pages/submission/list');
 
 /**

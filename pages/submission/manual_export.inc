@@ -5,6 +5,8 @@
  * Shows code to manually export submission when automatic export can't be used.
  */
 
+module_load_include('inc', 'tpps', 'pages/submission/list');
+
 /**
  * TPPS Submission Manual Export Form.
  */

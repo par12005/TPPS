@@ -5,15 +5,47 @@
  * TPPS Submission View.
  */
 
-module_load_include('inc', 'tpps', 'includes/common');
 module_load_include('inc', 'tpps', 'pages/submission/list');
-module_load_include('inc', 'tpps', 'includes/form');
+
+/**
+ * Gets list of all studies and first and last broken studies.
+ */
+function tpps_submission_purge_multiple_get_range() {
+  $output = [
+    'accession_list' => tpps_submission_get_accession_list(),
+    // Note: without 'TGDR' - only number.
+    'latest_accession' => tpps_init_project_get_next_accession() - 1,
+  ];
+  // Note: without 'TGDR' - only number.
+  $output['last_real_accession'] = str_replace('TGDR', '',
+    array_keys($output['accession_list'])[0]) + 1;
+  return $output;
+}
 
 /**
  * Menu callback. TPPS Study View Form.
  */
 function tpps_submission_purge_multiple_form(array $form, array &$form_state) {
-  $accession_list = tpps_submission_get_accession_list();
+  $data = tpps_submission_purge_multiple_get_range();
+
+  if ($data['latest_accession'] > $data['last_real_accession']) {
+    $accession_list = array_merge(
+      [
+        'all_broken' => t(
+          'All Broken Studies (from TGDR@start to TGDR@end)',
+          [
+            '@start' => $data['latest_accession'],
+            '@end' => $data['last_real_accession'],
+          ]
+        ),
+      ],
+      $data['accession_list']
+    );
+  }
+  else {
+    $accession_list = $data['accession_list'];
+  }
+
   $form['tpps_submission_accession'] = [
     '#type' => 'checkboxes',
     '#title' => t('Accessions'),
@@ -45,12 +77,23 @@ function tpps_submission_purge_multiple_form_submit(array $form, array &$form_st
   );
   if (!empty($accession_list)) {
     foreach ($accession_list as $accession) {
-      tpps_submission_purge($accession, $remove_files = TRUE);
-      drupal_set_message(
-        t("Submission @accession and it's files was removed and cache was cleared.",
-          ['@accession' => $accession]
-        )
-      );
+      if ($accession == 'all_broken') {
+        $data = tpps_submission_purge_multiple_get_range();
+        for ($i = $data['latest_accession']; $i >= $data['last_real_accession']; $i--) {
+          tpps_submission_purge('TGDR' . $i, $remove_files = TRUE);
+          drupal_set_message(t("Submission @accession and it's files was "
+            . "removed and cache was cleared.", ['@accession' => 'TGDR' . $i]
+          ));
+        }
+      }
+      else {
+        tpps_submission_purge($accession, $remove_files = TRUE);
+        drupal_set_message(
+          t("Submission @accession and it's files was removed and cache was cleared.",
+            ['@accession' => $accession]
+          )
+        );
+      }
     }
     cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
   }

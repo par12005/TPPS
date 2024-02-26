@@ -44,26 +44,6 @@ function dpv($dump, $message = '') {
 }
 
 /**
- * Replaces $old with $new in array's values and keys.
- *
- * @param array $array
- *   Array to be updated.
- * @param mixed $old
- *   Old token.
- * @param mixed $new
- *   New token.
- *
- * @return array
- *   Returns updated array.
- */
-function tpps_array_replace(array $array, $old, $new) {
-  // Source: tpps_change_tgdr_number();
-  $state_json = json_encode($array);
-  $state_json = str_replace($old, $new, $state_json);
-  return json_decode($state_json, TRUE);
-}
-
-/**
  * Highlights indents with gray vertical bars.
  *
  * @param string $string
@@ -78,90 +58,6 @@ function tpps_string_format_indent($string) {
   return '<span style="color:silver;">'
     . str_replace(' ', '&#124;&nbsp;&nbsp;&nbsp;&nbsp;', $spaces)
     . '</span>' . $line_clean;
-}
-
-/**
- * Parses huge array to show a well-formatted dump.
- *
- * Good for huge arrays. For small use dpm() or similar.
- *
- * @param array $array
- *   Array to be dumped.
- * @param bool $sticky
- *   Should table has sticky header or not.
- *
- * @return array
- *   Returns array with keys:
- *    'plain_items' and names of sub-array items.
- */
-function tpps_array_dump(array $array, $sticky = TRUE) {
-  $output = [];
-  // Get list of sub-arrays ($part list)
-  foreach (array_keys($array) as $key) {
-    if (is_array($array[$key])) {
-      $part_list[$key] = count($array[$key]);
-    }
-    else {
-      $plain[] = $key;
-    }
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Plain Items.;
-  if (!empty($plain ?? NULL)) {
-    ksort($plain);
-    foreach ($plain as $line => $key) {
-      $plain_rows[] = [
-        [
-          'data' => $line + 1,
-          'style' => 'padding: 0 10px; font-weight: bold;',
-        ],
-        [
-          'data' => check_plain($key),
-          'style' => 'padding: 0 10px; font-weight: bold;',
-        ],
-        [
-          'data' => check_plain(var_export($array[$key], 1)),
-          'style' => 'padding: 0 10px; width:100%;',
-        ],
-      ];
-    }
-    $output['plain_items'] = [
-      'title' => t('Plain Items'),
-      'data' => theme('table', ['rows' => $plain_rows, 'sticky' => $sticky]),
-      'count' => count($plain),
-    ];
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Sub-arrays.
-  if (!empty($part_list ?? NULL)) {
-    ksort($part_list);
-    foreach ($part_list as $key => $count) {
-      $rows = [];
-      $state_part = $array[$key] ?? [];
-      $state_array = preg_split("/\r\n|\n|\r/", var_export($state_part, 1));
-      if ($state_part) {
-        foreach ($state_array as $line => $content) {
-          $rows[] = [
-            [
-              'data' => $line + 1,
-              'style' => 'padding: 0 10px; font-weight: bold;',
-            ],
-            [
-              'data' => tpps_string_format_indent($content),
-              'style' => 'padding: 0 10px; width:100%;',
-            ],
-          ];
-        }
-        $output[$key] = [
-          'title' => $key,
-          'data' => theme('table', ['rows' => $rows, 'sticky' => $sticky]),
-          'count' => count($array[$key]),
-        ];
-      }
-    }
-  }
-  return $output;
 }
 
 /**

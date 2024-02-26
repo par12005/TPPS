@@ -1,0 +1,284 @@
+<?php
+
+/**
+ * @file
+ * Helper functions to manage arrays.
+ *
+ * To use:
+ * module_load_include('inc', 'tpps', 'includes/array');
+ */
+
+/**
+ * Replaces $old with $new in array's values and keys.
+ *
+ * @param array $array
+ *   Array to be updated.
+ * @param mixed $old
+ *   Old token.
+ * @param mixed $new
+ *   New token.
+ *
+ * @return array
+ *   Returns updated array.
+ */
+function tpps_array_replace(array $array, $old, $new) {
+  // Source: tpps_change_tgdr_number();
+  $state_json = json_encode($array);
+  $state_json = str_replace($old, $new, $state_json);
+  return json_decode($state_json, TRUE);
+}
+
+/**
+ * Parses huge array to show a well-formatted dump.
+ *
+ * Good for huge arrays. For small use dpm() or similar.
+ *
+ * @param array $array
+ *   Array to be dumped.
+ * @param bool $sticky
+ *   Should table has sticky header or not.
+ *
+ * @return array
+ *   Returns array with keys:
+ *    'plain_items' and names of sub-array items.
+ */
+function tpps_array_dump(array $array, $sticky = TRUE) {
+  $output = [];
+  // Get list of sub-arrays ($part list)
+  foreach (array_keys($array) as $key) {
+    if (is_array($array[$key])) {
+      $part_list[$key] = count($array[$key]);
+    }
+    else {
+      $plain[] = $key;
+    }
+  }
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Plain Items.;
+  if (!empty($plain ?? NULL)) {
+    ksort($plain);
+    foreach ($plain as $line => $key) {
+      $plain_rows[] = [
+        [
+          'data' => $line + 1,
+          'style' => 'padding: 0 10px; font-weight: bold;',
+        ],
+        [
+          'data' => check_plain($key),
+          'style' => 'padding: 0 10px; font-weight: bold;',
+        ],
+        [
+          'data' => check_plain(var_export($array[$key], 1)),
+          'style' => 'padding: 0 10px; width:100%;',
+        ],
+      ];
+    }
+    $output['plain_items'] = [
+      'title' => t('Plain Items'),
+      'data' => theme('table', ['rows' => $plain_rows, 'sticky' => $sticky]),
+      'count' => count($plain),
+    ];
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Sub-arrays.
+  if (!empty($part_list ?? NULL)) {
+    ksort($part_list);
+    foreach ($part_list as $key => $count) {
+      $rows = [];
+      $state_part = $array[$key] ?? [];
+      $state_array = preg_split("/\r\n|\n|\r/", var_export($state_part, 1));
+      if ($state_part) {
+        foreach ($state_array as $line => $content) {
+          $rows[] = [
+            [
+              'data' => $line + 1,
+              'style' => 'padding: 0 10px; font-weight: bold;',
+            ],
+            [
+              'data' => tpps_string_format_indent($content),
+              'style' => 'padding: 0 10px; width:100%;',
+            ],
+          ];
+        }
+        $output[$key] = [
+          'title' => $key,
+          'data' => theme('table', ['rows' => $rows, 'sticky' => $sticky]),
+          'count' => count($array[$key]),
+        ];
+      }
+    }
+  }
+  return $output;
+}
+
+/**
+ * Applys given list of changes to the array.
+ *
+ * @param array $change_list
+ *   List of changes. Format is:
+ *   <action> => [ <action's data>]
+ *   Where <action> could be 'unset' or 'move'. Example:
+ *   $change_list = [
+ *     'unset' => [
+ *       'build_info',
+ *       'temporary',
+ *       'programmed',
+ *     ],
+ *   ];
+ *   Note: no version numbers here.
+ * @param mixed $result
+ *   Array which must be changed.
+ *   This could be a submission form state array or Submission Interface Array.
+ */
+function tpps_array_apply_changes(array $change_list, &$result) {
+  foreach ($change_list as $action => $action_data) {
+    // Note: $action_data is a list of all actions (not single action).
+    $function = 'tpps_array_' . $action;
+    $params = ['@function_name' => $function, '@action' => $action];
+    if (!function_exists($function)) {
+      $message = "Function @function_name wan't found.";
+      tpps_message($message, $params, 'error');
+      continue;
+    }
+    if (empty($action_data)) {
+      $message = 'No data for array action "@action".'
+        . '<br />Function name: @function_name.';
+      tpps_message($message, $params, 'error');
+      continue;
+    }
+    // Call an action-function.
+    // 1. tpps_array_unset();
+    // 2. tpps_array_move().
+    // Note: $action_data also couldn't be empty here.
+    call_user_func_array($function, [&$result, $action_data]);
+  }
+}
+
+/**
+ * Submission Interface Action 'unset'.
+ *
+ * Given list of fields will be removed/unset in Submission Interface.
+ *
+ * @param array $interface
+ *   Submission Interface passed by reference so no need to return it.
+ * @param array $action_data
+ *   Data required for this action.
+ *   See tpps_submission_form_get_change_list().
+ *   Each item is path to the single field.
+ *   For more details about format see: tpps_submission_interface_action_path().
+ */
+function tpps_array_unset(array &$interface, array $action_data) {
+  module_load_include('inc', 'tpps', 'includes/form');
+  foreach ($action_data as $key => $item) {
+    if (empty($item)) {
+      if (tpps_is_si_debug_mode()) {
+        $message = 'SI Action "unset" #@key failed. One of the required '
+          . 'fields is empty.<br />Value: <pre>@item</pre>.';
+        $params = ['@key' => $key, '@item' => print_r($item, 1)];
+        tpps_message($message, $params, 'error');
+      }
+      continue;
+    }
+    $target = &tpps_form_get_path($interface, $item);
+    if (empty($target['parent_element']) || empty($target['field_name'])) {
+      if (tpps_is_si_debug_mode()) {
+        $message = "SIA Action 'unset' can't find element for #@key."
+          . '<br />Value: <pre>@item</pre>. ';
+        $params = ['@key' => $key, '@item' => print_r($item, 1)];
+        tpps_message($message, $params, 'info');
+      }
+      continue;
+    }
+    // Note:
+    // $target['parent_element'] is a reference to the element inside $interface.
+    // Action!
+    unset($target['parent_element'][$target['field_name']]);
+  }
+}
+
+/**
+ * Submission Interface Action 'move'.
+ *
+ * Given list of fields will be moved/relocate to the new location inside
+ * Submission Interface Array.
+ *
+ * @param array $interface
+ *   Submission Interface passed by reference so no need to return it.
+ * @param array $action_data
+ *   Data required for this action.
+ *   See tpps_submission_form_get_change_list().
+ *   Each item contains information for a single field relocation and
+ *   represented by list of parents (including field name) with 2 keys:
+ *   'source' and 'target'.
+ *   'source' is a real element path. 'target' is a new (but actually it's
+ *   location in verion 1).
+ */
+function tpps_array_move(array &$interface, array $action_data) {
+  module_load_include('inc', 'tpps', 'includes/form');
+  foreach ($action_data as $key => $item) {
+    if (empty($item['source']) || empty($item['target'])) {
+      continue;
+    }
+    // Note:
+    // 'parent_element' is not a list of parents but a reference to element.
+    // To get value use 'field_name' as key inside 'parent_element'.
+    $source = &tpps_form_get_path($interface, $item['source']);
+    $target = &tpps_form_get_path($interface, $item['target']);
+    if (
+      empty($source['parent_element']) || empty($source['field_name'])
+      || empty($target['parent_element']) || empty($target['field_name'])
+    ) {
+      if (tpps_is_debug_mode()) {
+        $message = 'SIA Action "move" #@key failed. One of the required '
+          . 'fields is empty.<br />Value: <pre>@item</pre>.';
+        $params = ['@key' => $key, '@item' => print_r($item, 1)];
+        tpps_message($message, $params, 'notice');
+      }
+      continue;
+    }
+    // Note: $source['parent_element'] and $target['parent_element']
+    // are a references to the elements inside $interface.
+    if (!array_key_exists($source['field_name'], $source['parent_element'])) {
+      if (tpps_is_debug_mode()) {
+        $message = 'SIA Action "move" #@key failed. Source field not found.'
+          . '<br />Value: <pre>@item</pre>.';
+        $params = ['@key' => $key, '@item' => print_r($item, 1)];
+        tpps_message($message, $params, 'notice');
+      }
+      continue;
+    }
+    $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
+    if (!empty($target_field_value)) {
+      if (tpps_is_debug_mode()) {
+        $message = 'SIA Action "move": '
+          . 'target field is not empty and will be overwritten.<br />'
+          . "Is interface: @is_interface. <br />"
+          . "Target's field value: <pre>@field_value</pre>"
+          . "Source's field value: <pre>@source_field_value</pre>"
+          . "Action's meta-data: <pre>@item</pre>"
+          . "Saved Values: <pre>@saved_values</pre>";
+        $params = [
+          '@key' => $key,
+          '@item' => print_r($item, 1),
+          '@field_value' => print_r($target_field_value, 1),
+          '@source_field_value' => print_r(
+            $source['parent_element'][$source['field_name']] ?? NULL, 1
+          ),
+          '@saved_values' => (
+            $target['field_name'] == 'doi'
+            ? print_r($interface ?? NULL, 1)
+            : ''
+          ),
+          '@is_interface' => (tpps_form_is_submission_interface($interface) ? 'yes' : 'no'),
+        ];
+//dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT, 3), 1));
+        tpps_message($message, $params, 'warning');
+      }
+    }
+    // Action!
+    $target['parent_element'][$target['field_name']]
+      = $source['parent_element'][$source['field_name']];
+    unset($source['parent_element'][$source['field_name']]);
+  }
+}

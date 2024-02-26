@@ -43,8 +43,9 @@ define('TPPS_COLUMN_POPULATION_GROUP', 12);
 define('TPPS_COLUMN_CLONE_NUMBER', 13);
 
 
-require_once 'includes/common.inc';
 module_load_include('inc', 'tpps', 'includes/common');
+
+// WARNING:
 // Must be called after common.inc was loaded.
 // Always enabled on dev-server and could be enabled on live-site.
 if (!is_live_site() || variable_get('tpps_debug_mode', FALSE)) {
@@ -52,6 +53,8 @@ if (!is_live_site() || variable_get('tpps_debug_mode', FALSE)) {
   ini_set('display_startup_errors', 1);
   error_reporting(E_ALL);
 }
+
+module_load_include('inc', 'tpps', 'includes/array');
 require_once 'includes/display.inc';
 require_once 'includes/chado_utils.inc';
 require_once 'includes/init_project.inc';
@@ -60,17 +63,17 @@ require_once 'includes/cron.inc';
 require_once 'includes/file_utils.inc';
 require_once 'includes/submit_email.inc';
 require_once 'includes/accession_coordinates.inc';
-require_once 'includes/submissions.inc';
+module_load_include('inc', 'tpps', 'includes/submissions');
 require_once 'includes/zenodo.inc';
 require_once 'includes/match_trees.inc';
 require_once 'includes/ncbi_utils.inc';
 // All steps helper functions.
-require_once 'includes/form.inc';
-require_once 'includes/form_utils.inc';
-require_once 'includes/details.inc';
-require_once 'includes/cvterm_utils.inc';
+module_load_include('inc', 'tpps', 'includes/form');
+module_load_include('inc', 'tpps', 'includes/form_utils');
+module_load_include('inc', 'tpps', 'includes/details');
+module_load_include('inc', 'tpps', 'includes/cvterm_utils');
 // [VS]
-require_once 'includes/submission_file.inc';
+module_load_include('inc', 'tpps', 'includes/submission_file');
 require_once 'includes/phenotype_synonym.inc';
 require_once 'includes/phenotype_unit.inc';
 require_once 'includes/easy_report.inc';

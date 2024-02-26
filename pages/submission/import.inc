@@ -6,13 +6,11 @@
  *
  * @TODO Minor. There is no ability to specify accession. Only next one could
  * be used or existing one overritten.
- * @TODO Minor. Use function to get rid of useless data from $form_state
- * function tpps_form_state_info(array &$new, array &$old);
+ * @TODO Minor. Review function tpps_form_state_info() which could be used
+ * to reduce size of the SIA.
  */
 
-module_load_include('inc', 'tpps', 'includes/common');
 module_load_include('inc', 'tpps', 'pages/submission/list');
-module_load_include('inc', 'tpps', 'includes/form');
 module_load_include('inc', 'tpps', 'includes/imported_studies_list');
 
 /**

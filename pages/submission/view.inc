@@ -5,10 +5,7 @@
  * TPPS Submission View.
  */
 
-module_load_include('inc', 'tpps', 'includes/common');
-module_load_include('inc', 'tpps', 'includes/form');
 module_load_include('inc', 'tpps', 'pages/submission/list');
-module_load_include('inc', 'tpps', 'includes/submissions');
 
 /**
  * Menu callback. Shows a single submission data.

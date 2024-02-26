@@ -12,10 +12,7 @@
  * reviewed studies files was detected correclty using 'comolete form'.
  */
 
-module_load_include('inc', 'tpps', 'includes/common');
 module_load_include('inc', 'tpps', 'pages/submission/list');
-module_load_include('inc', 'tpps', 'includes/submissions');
-module_load_include('inc', 'tpps', 'includes/form');
 
 /**
  * TPPS Study Export Form.
