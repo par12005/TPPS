@@ -22,9 +22,19 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
 
   // Show warning about using existing accession.
   if ($accession != 'new') {
-    drupal_set_message(t('WARNING: <br />Study @accession will be overwriten.',
+    // @TODO Minor. Check if accession already in use.
+    drupal_set_message(t('WARNING: <br />Existing study @accession will be overwriten.',
       ['@accession' => $accession]), 'warning'
     );
+    $form['tpps_submission_import_notice'] = [
+      '#markup' => t('New accession will be created: @next_accession.',
+        ['@next_accession' => $accession]
+      ),
+    ];
+    $form['tpps_submission_import_accession'] = [
+      '#type' => 'hidden',
+      '#value' => $accession,
+    ];
   }
   elseif ($accession == 'new') {
     $form['tpps_submission_import_notice'] = [
@@ -153,7 +163,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     tpps_imported_studies_list_add_item($new_accession, $original_accession);
     // Files.
     tpps_submission_import_process_files($state, $new_accession, $form);
-    if (!$is_new) {
+    if (!($is_new ?? FALSE)) {
       // Remove submission and files.
       // We can't use tpps_update_submission_state() because it doesn't manage files
       // but only overwrites record in chado.tpps_submission table and
