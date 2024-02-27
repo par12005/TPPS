@@ -19,27 +19,16 @@ module_load_include('inc', 'tpps', 'includes/imported_studies_list');
 function tpps_submission_import_form(array $form, array &$form_state, $accession = '') {
   tpps_submission_list_validate_accession($accession);
   $next_accession = 'TGDR' . tpps_init_project_get_next_accession();
+  $accession = ($accession == 'new') ? $next_accession : $accession;
 
-  // Show warning about using existing accession.
-  if ($accession != 'new') {
+  if ($accession) {
     // @TODO Minor. Check if accession already in use.
     drupal_set_message(t('WARNING: <br />Existing study @accession will be overwriten.',
       ['@accession' => $accession]), 'warning'
     );
     $form['tpps_submission_import_notice'] = [
-      '#markup' => t('New accession will be created: @next_accession.',
-        ['@next_accession' => $accession]
-      ),
-    ];
-    $form['tpps_submission_import_accession'] = [
-      '#type' => 'hidden',
-      '#value' => $accession,
-    ];
-  }
-  elseif ($accession == 'new') {
-    $form['tpps_submission_import_notice'] = [
-      '#markup' => t('New accession will be created: @next_accession.',
-        ['@next_accession' => $next_accession]
+      '#markup' => t('New accession will be created: @accession.',
+        ['@accession' => $accession]
       ),
     ];
     $form['tpps_submission_import_accession'] = [
@@ -48,36 +37,33 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
     ];
   }
   else {
-    // Accession.
+    // Select accession.
     $accession_list = tpps_submission_get_accession_list();
+    $new_accession = [
+      'new' => t('New (@accession)', ['@accession' => $next_accession]),
+    ];
     $form['tpps_submission_import_accession'] = [
       '#type' => 'select',
       '#title' => t('Accession'),
-      '#options' => array_merge(
-        [
-          'new' => t('New (@next_accession)',
-            ['@next_accession' => $next_accession]
-          ),
-        ],
-        $accession_list
-      ),
-      '#default_value' => $accession ?? array_key_first($accession_list) ?? '',
+      '#options' => array_merge($new_accession, $accession_list),
+      '#default_value' => $accession ?? '',
       '#required' => TRUE,
     ];
   }
-  $form['tpps_submission_import_submission_state'] = [
+  $form['tpps_submission_import_state'] = [
     '#type' => 'textarea',
     '#title' => t('Submission State'),
-    '#default_value' => $form_state['input']['tpps_submission_import_submission_state'] ?? '',
+    '#default_value' => $form_state['input']['tpps_submission_import_state'] ?? '',
   ];
-  $form['tpps_submission_import_do_not_upgrade'] = [
+  $form['tpps_submission_import_upgrade_version'] = [
     '#type' => 'checkbox',
-    '#title' => t('Do not upgrade Submission Form Version on import '),
-    '#default_value' => $form_state['input']['tpps_submission_import_do_not_upgrade'] ?? FALSE,
-    '#description' => t('Default is unchecked.'
-      . '<br /> Whech unchecked submission will be submitted and verion will '
-      . 'be upgraded.<br /> Whech checked submission will NOT be submitted '
-      . 'and verion will NOT be upgraded (left as at origin site).'
+    // @TODO Minor. Allow to select version.
+    '#title' => t('Upgrade Version of the Submission Form'),
+    '#default_value' => $form_state['input']['tpps_submission_import_upgrade_version'] ?? TRUE,
+    '#description' => t('Default is checked.'
+      . '<br /> Whech checked Submission Form Version will be upgraded to latest.'
+      . '<br /> Whech unchecked Submission Form Version will NOT be upgraded but '
+      . 'Submission will be imported as is (original version will be stored).'
     )
   ];
   $form['#validate'][] = 'tpps_submission_import_form_validate';
@@ -101,118 +87,120 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Validate Submission State.
-  if (empty($form_state['values']['tpps_submission_import_submission_state'])) {
-    form_set_error('tpps_submission_import_submission_state', t('Submission state is empty.'));
+  if (empty(trim($form_state['values']['tpps_submission_import_state'] ?? ''))) {
+    form_set_error('tpps_submission_import_state', t('Submission state is empty.'));
   }
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 /**
- * Form submitter. Shows submision dump with line numbers.
- */
-function tpps_submission_import_review_dump(array $form, array &$form_state) {
-  if ($state = trim($form_state['values']['tpps_submission_import_submission_state'])) {
-    // Note: $state is a string.
-    // Show with line numbers.
-    $state_array = preg_split("/\r\n|\n|\r/", $state);
-    drupal_set_message('<pre>' . print_r($state_array, 1) . '</pre>');
-  }
-  $form_state['rebuild'] = 1;
-}
-
-/**
  * Form submitter. Imports submission from the dump (with files).
  */
 function tpps_submission_import_form_submit(array $form, array &$form_state) {
   global $user;
-
   module_load_include('inc', 'tpps', 'includes/common');
-  // Remove useless data from the submission state.
-  if ($state_raw = trim($form_state['values']['tpps_submission_import_submission_state'])) {
-    // Fix 'stdClass' in the submistion dump createdy by var_export().
-    // We shouldn't do this on export to have unchanged data.
-    // Though var_export() is designed to "outputs or return a parsable
-    // string representation of a variable", the output of stdClass
-    // objects is not "a parsable string".
-    tpps_submission_import_fix_stdclass($state_raw);
 
-    try {
-      eval('$state = ' . $state_raw . ';');
-    }
-    catch (Exception $e) {
-      drupal_set_message($e->errorMessage());
-      drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
-      return;
-    }
-    // Get original (old) accession from $state (Submission Form State Array).
-    $original_accession = tpps_form_get_accession($state);
-    $values = $form_state['values'] ?? NULL;
-    $do_not_upgrade = $values['tpps_submission_import_do_not_upgrade'] ?? FALSE;
-    // Get new acession.
-    $new_accession = $values['tpps_submission_import_accession'];
-    if ($new_accession == 'new') {
-      $is_new = TRUE;
-      $new_accession = tpps_init_project_get_next_accession();
-    }
+  $state_raw = trim($form_state['values']['tpps_submission_import_state']);
 
-    // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
-    // @TODO Update code to use only 'xxx' format.
-    $new_accession = 'TGDR' . str_replace('TGDR', '', $new_accession);
-    // Update a list of imported studies.
-    tpps_imported_studies_list_add_item($new_accession, $original_accession);
-    // Files.
-    tpps_submission_import_process_files($state, $new_accession, $form);
-    if (!($is_new ?? FALSE)) {
-      // Remove submission and files.
-      // We can't use tpps_update_submission_state() because it doesn't manage files
-      // but only overwrites record in chado.tpps_submission table and
-      // redord in chado.dbxref will be left unchanged.
-      tpps_submission_purge($new_accession, $force = TRUE);
-    }
-    tpps_submission_import_state_mods($state, $new_accession);
-    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    // Add record to DB table.
-    tpps_create_submission($state, $user->uid);
-    // Clear cached list of studies to have new items at 'frontpage'.
-    // @TODO Minor. Clear only accession list.
-    cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
-    // Recreate Submission.
-    // Function drupal_form_submit() in case of success will redirect to
-    // the confirmation page (/completed-submission/TGDRxxxx).
-    // Note:
-    // Submission Form Version will be upgraded here!
-    // Function tpps_main_submit() will change version.
-    if (!$do_not_upgrade) {
-      drupal_form_submit(tpps_form_get_id($state), $state);
-    }
+  // Fix 'stdClass' in the submistion dump createdy by var_export().
+  // We shouldn't do this on export to have unchanged data.
+  // Though var_export() is designed to "outputs or return a parsable
+  // string representation of a variable", the output of stdClass
+  // objects is not "a parsable string".
+  tpps_submission_import_fix_stdclass($state_raw);
+
+  try {
+    eval('$state = ' . $state_raw . ';');
+  }
+  catch (Exception $e) {
+    drupal_set_message($e->errorMessage());
+    drupal_set_message('<pre>' . print_r($state, 1) . '</pre>');
+    return;
+  }
+  // Now $state contains submitted submission state array.
+
+  // Get original (old) accession from $state (Submission Form State Array).
+  $original_accession = tpps_form_get_accession($state);
+  $values = $form_state['values'] ?? NULL;
+  $upgrade_version = $values['tpps_submission_import_upgrade_version'] ?? TRUE;
+  // Get new accession.
+  if ($values['tpps_submission_import_accession'] == 'new') {
+    $accession = tpps_init_project_get_next_accession();
+  }
+  else {
+    $accession = $values['tpps_submission_import_accession'];
   }
 
-  if ($do_not_upgrade) {
+  // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
+  // @TODO Update code to use only 'xxx' format.
+  $accession = 'TGDR' . str_replace('TGDR', '', $accession);
+  // Files.
+  tpps_submission_import_process_files($state, $accession, $form);
+  if ($values['tpps_submission_import_accession'] != 'new') {
+    // Remove submission and files.
+    // We can't use tpps_update_submission_state() because it doesn't manage files
+    // but only overwrites record in chado.tpps_submission table and
+    // redord in chado.dbxref will be left unchanged.
+    tpps_submission_purge($accession, $force = TRUE);
+  }
+  tpps_submission_import_state_mods($state, $accession);
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Add record to DB table.
+  tpps_create_submission($state, $user->uid);
+  // Update a list of imported studies.
+  tpps_imported_studies_list_add_item($accession, $original_accession);
+  // Clear cached list of studies to have new items at 'frontpage'.
+  // @TODO Minor. Clear only accession list.
+  cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
+  // Recreate Submission.
+  // Function drupal_form_submit() in case of success will redirect to
+  // the confirmation page (/completed-submission/TGDRxxxx).
+  // Note:
+  // Submission Form Version will be upgraded here!
+  // Function tpps_main_submit() will change version.
+  if ($upgrade_version) {
+    drupal_form_submit(tpps_form_get_id($state), $state);
     // Form submission was skipped.
     drupal_set_message(
       t("Submission was imported but not version wasn't upgraded."),
       'warning'
     );
-    drupal_goto('completed-submission/' . $new_accession);
+    drupal_goto('completed-submission/' . $accession);
   }
   else {
-    // Form submission failed.
+    // Submission was imported but not submitted and version wasn't upgraded.
     // Show useful links.
-    // Note: This code will not be executed in case of success.
     $url_list = [
-      'tppsc',
-      "tpps-admin-panel/$new_accession",
-      "tpps/details/$new_accession",
+      'tppsc/' . $accession => t('Edit'),
+      "tpps-admin-panel/$accession" => t('Admin Panel'),
+      'tpps/submission/' . $accession . '/view' => t('View'),
+      'reports/tpps/imported-studies' => t('Report "Imported Studies"')
     ];
-    foreach ($url_list as $url) {
-      $items[] = l($url, $url);
+    foreach ($url_list as $url => $title) {
+      $items[] = l($title, $url);
     }
     drupal_set_message(t('Submission import failed. Useful links: !links',
       ['!links' => theme('item_list', ['items' => $items])]
     ));
     $form_state['rebuild'] = TRUE;
   }
+}
+
+// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+// Helper functions.
+
+/**
+ * Form submitter. Shows submision dump with line numbers.
+ */
+function tpps_submission_import_review_dump(array $form, array &$form_state) {
+  if ($state = trim($form_state['values']['tpps_submission_import_state'])) {
+    // Note: $state is a string.
+    // Show with line numbers.
+    $state_array = preg_split("/\r\n|\n|\r/", $state);
+    drupal_set_message('<pre>' . print_r($state_array, 1) . '</pre>');
+  }
+  $form_state['rebuild'] = 1;
 }
 
 /**
