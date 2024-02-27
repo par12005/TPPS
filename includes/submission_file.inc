@@ -26,7 +26,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   $complete_form = $submission_interface['complete form'] ?? NULL;
   $saved_values = $submission_interface['saved_values'] ?? NULL;
   $values = $submission_interface['values'] ?? NULL;
-  $files = $submission_interface['files'] ?? [];
+  $interface_files = $submission_interface['files'] ?? [];
   $file_info = $submission_interface['file_info'] ?? NULL;
 
   module_load_include('inc', 'tpps', 'includes/form');
@@ -53,7 +53,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   // Use $form_state['files'] if any.
   $method_name = '$form_state["files"]';
   $fid_list = [];
-  $fid_list = array_filter($files);
+  $fid_list = array_filter($interface_files);
   $report[$method_name] = $fid_list;
   if (!empty($fid_list)) {
     $result = array_merge($result, $fid_list);

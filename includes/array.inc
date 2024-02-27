@@ -130,6 +130,8 @@ function tpps_array_dump(array $array, $sticky = TRUE) {
  * @param mixed $result
  *   Array which must be changed.
  *   This could be a submission form state array or Submission Interface Array.
+ *
+ * @TODO Minor. Return TRUE if all actions applied with success.
  */
 function tpps_array_apply_changes(array $change_list, &$result) {
   foreach ($change_list as $action => $action_data) {
@@ -167,6 +169,10 @@ function tpps_array_apply_changes(array $change_list, &$result) {
  *   See tpps_submission_form_get_change_list().
  *   Each item is path to the single field.
  *   For more details about format see: tpps_submission_interface_action_path().
+ *
+ * @return bool
+ *   Returns TRUE if action was successfully applied.
+ *   Returns FALSE otherwise.
  */
 function tpps_array_unset(array &$interface, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
@@ -195,6 +201,7 @@ function tpps_array_unset(array &$interface, array $action_data) {
     // Action!
     unset($target['parent_element'][$target['field_name']]);
   }
+  return TRUE;
 }
 
 /**
@@ -213,6 +220,10 @@ function tpps_array_unset(array &$interface, array $action_data) {
  *   'source' and 'target'.
  *   'source' is a real element path. 'target' is a new (but actually it's
  *   location in verion 1).
+ *
+ * @return bool
+ *   Returns TRUE if action was successfully applied.
+ *   Returns FALSE otherwise.
  */
 function tpps_array_move(array &$interface, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
@@ -272,7 +283,6 @@ function tpps_array_move(array &$interface, array $action_data) {
           ),
           '@is_interface' => (tpps_form_is_submission_interface($interface) ? 'yes' : 'no'),
         ];
-//dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT, 3), 1));
         tpps_message($message, $params, 'warning');
       }
     }
@@ -281,4 +291,5 @@ function tpps_array_move(array &$interface, array $action_data) {
       = $source['parent_element'][$source['field_name']];
     unset($source['parent_element'][$source['field_name']]);
   }
+  return TRUE;
 }

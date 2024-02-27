@@ -32,6 +32,8 @@
  * - To generate Submission Interface from current Submission Form State
  *   (just submitted, updated after import or updated on edit old study)
  *   we need to DOWNgrade.
+ * - To upgrade use exact version (to get '2' use '2').
+ * - To downgrade use previous upper (higher) version (to get '1' use '2').
  *
  * ----------------------------------------------------------------------------
  * How to relocate field?

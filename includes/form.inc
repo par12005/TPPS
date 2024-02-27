@@ -929,7 +929,9 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
     if (count($path) >= 1) {
       $result['parent_element'] = &drupal_array_get_nested_value($array, $path);
       if (empty($result['parent_element'])) {
-        dpm(print_r($path, 1), 'Empty parent element!');
+        tpps_message(
+          'Empty parent element. @path.', ['@path' => print_r($path, 1)]
+        );
       }
     }
   }
