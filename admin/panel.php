@@ -877,16 +877,18 @@ function tpps_admin_panel_top(array &$form) {
   krsort($approved);
   krsort($incomplete);
 
+  $params = ['attributes' => ['target' => '_blank']];
+  $general_tasks = [
+    l(t('Refresh all genotype materialized views'),
+      'tpps-admin-panel/refresh-genotypes-materialized-views', $params
+    ),
+    l(t('TPPS Submission Tools'), 'tpps/submission', $params),
+  ];
   $form['general_tasks'] = [
     '#type' => 'fieldset',
     '#title' => t('General tasks'),
     '#collapsible' => TRUE,
-  ];
-  $form['general_tasks']['genotype_views'] = [
-    '#type' => 'markup',
-    '#markup' => '<a target="_blank" '
-      . 'href="/tpps-admin-panel/refresh-genotypes-materialized-views">'
-      . 'Refresh all genotype materialized views</a><br /><br />',
+    'table' => ['#markup' => theme('item_list', ['items' => $general_tasks])],
   ];
 
   $vars = [
@@ -1714,6 +1716,7 @@ function tpps_admin_panel_reports(array &$form) {
       $items[] = l(t($title), $panel_url);
     }
   }
+  $items[] = l(t('Imported Studies'), 'admin/reports/tpps/imported-studies');
   $form['report_menu'] = [
     '#type' => 'fieldset',
     '#title' => t('TPPS Reports'),
