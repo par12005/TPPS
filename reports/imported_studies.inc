@@ -19,11 +19,15 @@ function tpps_admin_imported_studies_report() {
   ];
   foreach ($list as $local => $remote) {
     $import_meta = tpps_submission_get_import_meta([], $local);
+    $interface = tpps_submission_interface_load($local) ?? [];
+    $state = tpps_load_submission_state($local) ?? [];
 
     $rows[] = [
       l($local, 'tpps/submission/' . $local . '/view'),
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY],
       $import_meta['current_version'],
+      (isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
+      (isset($interface['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
       $import_meta['full_date'],
       $import_meta['accession_link'],
       l($import_meta['site'], $import_meta['site']),
@@ -32,11 +36,14 @@ function tpps_admin_imported_studies_report() {
         // @TODO Use CSS class instead of HTML tags.
         '<strong>' . l(t('View'), 'tpps/submission/' . $local . '/view') . '</strong>',
         l(t('Edit'), 'tppsc/' . $local),
-        l(t('Admin Panel'), 'tpps-admin-panel/' . $local),
-        l(t('Details (map)'), 'tpps/details/' . $local),
         l(t('Export'), 'tpps/submission/' . $local . '/export'),
         l(t('Compare'), 'tpps/submission/' . $local . '/compare'),
         l(t('Purge'), 'tpps/submission/' . $local . '/purge', $params),
+      ]),
+      // Pages:
+      implode(' | ', [
+        l(t('Admin Panel'), 'tpps-admin-panel/' . $local),
+        l(t('Details (map)'), 'tpps/details/' . $local),
         l(t('Completed Submission'), 'completed-submission/' . $local),
         l(t('Files'), 'tpps-admin-panel/file-diagnostics/' . $local),
       ]),
@@ -52,15 +59,19 @@ function tpps_admin_imported_studies_report() {
       ['attributes' => ['target' => '_blank']]
     )
     . '</h3>';
+  $version_tags = '<br /><strong>' . t('Version') . '</strong>';
   $output .= theme('table', [
     'header' => [
-      t('Local <br /><strong>Accession</strong>'),
-      t('Imported <br/><strong>Version</strong>'),
-      t('Current <br /><strong>Version</strong>'),
+      t('Imported<br /><strong>Accession</strong>'),
+      t('Original') . $version_tags,
+      t('Submitted') . $version_tags,
+      t('State') . $version_tags,
+      t('Interface') . $version_tags,
       t('Import Date'),
-      t('Remote <br /><strong>Accession</strong>'),
-      t('Remote Site'),
+      t('Original <br /><strong>Accession</strong>'),
+      t('Original Site'),
       t('Actions'),
+      t('Pages'),
     ],
     'rows' => $rows,
   ]);
