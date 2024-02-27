@@ -43,13 +43,15 @@ function tpps_admin_imported_studies_report() {
     ];
   }
   $output = '<h3>'
-    . l(t('Import New Submission'),
-      'tpps/submission/new/import',
-      ['attributes' => ['target' => '_blank']]
-    ) . ' | ' . l(t('Purge Multiple'),
+    . l(t('Import New Submission (@next_accession)',
+      ['@next_accession' => 'TGDR' . tpps_init_project_get_next_accession()]),
+      'tpps/submission/new/import', ['attributes' => ['target' => '_blank']]
+    )
+    . ' | ' . l(t('Purge Multiple'),
       'tpps/submission/purge_multiple',
       ['attributes' => ['target' => '_blank']]
-    ) . '</h3>';
+    )
+    . '</h3>';
   $output .= theme('table', [
     'header' => [
       t('Local <br /><strong>Accession</strong>'),
