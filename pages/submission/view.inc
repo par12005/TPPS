@@ -66,6 +66,16 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show the data!
   $interface = tpps_submission_interface_load($accession, RESET_CACHE) ?? [];
+
+  dpm(
+    'Real Interface Version: ' .
+    (isset($interface['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
+  );
+  dpm(
+    'Real State Version: ' .
+    (isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
+  );
+
   $dumps = [
     'Submission Interface' => tpps_array_dump($interface),
     'Form State' => tpps_array_dump($state),
@@ -90,7 +100,8 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   }
 
   //tpps_submission_list_add_buttons($form);
-  tpps_form_autofocus($form, 'tpps_submission_accession_2');
+  // Autofocus disabled because it's more important to scroll then compare.
+  // tpps_form_autofocus($form, 'tpps_submission_accession_2');
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;
