@@ -611,16 +611,21 @@ function tpps_table_display(array &$state, array $options = array()) {
         $import_meta = tpps_submission_get_import_meta($state);
         $val_str = theme('item_list', [
           'items' => [
-            t('Remote Accession: !url', ['!url' => $import_meta['accession_link']]),
+            t('Original Accession: !url', ['!url' => $import_meta['accession_link']]),
             t('Import Date: @date.', ['@date' => $import_meta['full_date']]),
-            t('Site !site.',
+            t('Original site: !site.',
               ['!site' => l($import_meta['site'], $import_meta['site'])]
+            ),
+            t('Original Submision Form Version: @version.',
+              ['@version' => $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY]]
             ),
           ],
         ]);
       }
       if ($key == 'submission_form_version') {
-        $key_str = t('Submission Form Version');
+        // This is not Submission State Array but Submission Interface which
+        // version is always '1'. So we don't need to show this.
+        continue;
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       if (
@@ -803,7 +808,7 @@ function tpps_table_display(array &$state, array $options = array()) {
 function tpps_completed_display($accession = NULL) {
   global $base_url;
   global $user;
-  $display = "";
+  $output = '';
 
   $interface = tpps_submission_interface_load($accession);
   $values = $interface['saved_values'];
@@ -820,7 +825,7 @@ function tpps_completed_display($accession = NULL) {
   drupal_add_css($css, 'inline');
   $title = $values[TPPS_PAGE_1]['publication']['title'];
 
-  $display .= "<label for='tpps_$accession'>{$title}</label><p>"
+  $output .= "<label for='tpps_$accession'>{$title}</label><p>"
     . t('You can view the TPPS Details page with completed and approved TPPS '
       . 'and TGDR data <a href="@link">here</a>',
       // @TODO Minor. Do we really need an absolute link here?
@@ -832,13 +837,13 @@ function tpps_completed_display($accession = NULL) {
     && $user->uid == $submission_info['uid']
   ) {
     // @TODO Minor. Do we really need an absolute link here?
-    $display .= l(t('Edit publication information'),
+    $output .= l(t('Edit publication information'),
       'tpps/' . $accession . '/edit-publication', ['absolute' => TRUE]);
   }
 
-  $display .= tpps_table_display($interface);
+  $output .= tpps_table_display($interface);
   tpps_add_css_js('main');
-  return render($display);
+  return render($output);
 }
 
 /**
