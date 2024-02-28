@@ -22,8 +22,10 @@
  *   Returns list of File IDs or empty array.
  */
 function tpps_submission_file_get_id_list(array $state, array &$form = []) {
+  // We use Submission Form Version 1 to avoid updates on each form change.
   $submission_interface = $state;
   tpps_submission_form_version_downgrade_to_latest($state, $submission_interface);
+
   $complete_form = $submission_interface['complete form'] ?? NULL;
   $saved_values = $submission_interface['saved_values'] ?? NULL;
   $values = $submission_interface['values'] ?? NULL;
@@ -136,20 +138,21 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
  *
  * If file has no usage yet it will be added.
  *
- * @param array $form_state
+ * @param array $state
  *   Drupal Form API State array.
  * @param int $status
  *   File status. 1 = permanent,
  *   0 - temporary. Will be removed by cron in 6h.
  */
-function tpps_submission_file_set_status(array $form_state, $status = FILE_STATUS_PERMANENT) {
-  $fid_list = tpps_submission_file_get_id_list($form_state);
+function tpps_submission_file_set_status(array $state, $status = FILE_STATUS_PERMANENT) {
+  $form_version = tpps_submission_form_version_get($state);
+  $fid_list = tpps_submission_file_get_id_list($state);
   foreach ($fid_list as $fid) {
     $file = file_load($fid ?? '');
     if ($file && $file->status != $status) {
       $file->status = $status;
       file_save($file);
-      tpps_file_add_usage($file, $form_state['accession']);
+      tpps_file_add_usage($file, $state['accession']);
     }
   }
 }
