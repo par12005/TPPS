@@ -1341,6 +1341,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     'seq_var_cvterm' => $seq_var_cvterm,
     'multi_insert' => &$multi_insert_options,
     'job' => &$job,
+    'study_accession' => $form_state['saved_values'][TPPS_PAGE_1]['accession']
   );
 
   if ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url') {
@@ -1485,7 +1486,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       tpps_add_project_file($form_state, $kinship_fid);
     }
     // DROP INDEXES FROM GENOTYPE_CALL TABLE.
-    tpps_drop_genotype_call_indexes($job);
+    // tpps_drop_genotype_call_indexes($job);
     tpps_log('[INFO] - Processing SNP genotype_spreadsheet file data...');
     echo "trace 1\n";
     echo "Species codes:\n";
@@ -1502,7 +1503,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     tpps_log('[INFO] - Done');
 
     // RECREATE INDEXES FROM GENOTYPE_CALL TABLE.
-    tpps_create_genotype_call_indexes();
+    // tpps_create_genotype_call_indexes();
     $options['records'] = $records;
     $genotype_total += $genotype_count;
     tpps_log('[INFO] - Genotype count:' . $genotype_count);
@@ -1616,6 +1617,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
       $options['headers'] = tpps_ssrs_headers($ssr_fid, $genotype['files']['ploidy']);
       $options['ploidy'] = $genotype['files']['ploidy'];
       $options['empty'] = $genotype['files'][$ssr_field_name]['empty'] ?? 'NA';
+      tpps_log('[SSR FID] ' . $ssr_fid);
       tpps_ssr_process(
         $form_state,
         $ssr_fid,
@@ -1642,7 +1644,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     }
 
     // DROP INDEXES FROM GENOTYPE_CALL TABLE
-    tpps_drop_genotype_call_indexes($job);
+    // tpps_drop_genotype_call_indexes($job);
 
     $options['type'] = 'other';
     $options['marker'] = $genotype['other-marker'];
@@ -1661,7 +1663,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     tpps_log('[INFO] - Done.');
 
     // CREATE INDEXES FROM GENOTYPE_CALL TABLE.
-    tpps_create_genotype_call_indexes();
+    // tpps_create_genotype_call_indexes();
 
     $options['records'] = $records;
     $genotype_count = 0;
@@ -1669,7 +1671,7 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
 
   tpps_log('[INFO] - VCF IMPORT MODE is ' . $vcf_import_mode);
   if ($vcf_processing_completed == FALSE) {
-    tpps_genotype_vcf_processing($form_state, $species_codes, $i, $job, $vcf_import_mode);
+    tpps_genotype_vcf_processing($form_state, $species_codes, $i, $job, $vcf_import_mode, $options);
   }
   else {
     tpps_log('[INFO] - VCF was already processed!');
@@ -2270,7 +2272,6 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
       echo '[FILE_LOCATION][SNPs FLAT FILE CSV] ' . $dest_folder . '/' . $accession . '-' . $i . '-snps.csv' . "\n";
       $fhandle = fopen($snps_flat_file_location, 'w');
 
-
       // Override the above code done by Rish to use organism_id from page 4
       // RISH NOTES: This addition uses the organism_id based on the organism order
       // of the fourth page (we likely have to pass the i from previous function here)
@@ -2705,6 +2706,8 @@ function tpps_genotypes_to_flat_file(array &$form_state, array $species_codes, $
                 $csv_line = $tree_ids[$j] . ',' . $variant_name . "\n";
                 // echo $csv_line;
                 fwrite($fhandle, $csv_line);
+
+                // 26/02/2024 So we need to insert genotype reads into table genotype_reads_per_plant
 
                 // RISH: Removed on 12/6/2023 to avoid genotype_call inserts which are slow
                 // print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
@@ -3580,7 +3583,7 @@ function tpps_process_genotype_spreadsheet_flat_file($row, array &$options = arr
  *
  * @return void
  */
-function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL, $insert_mode = 'hybrid') {
+function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, $i, TripalJob &$job = NULL, $insert_mode = 'hybrid', array &$options) {
   $organism_index = $i;
   // Some initial variables previously inherited from the parent function code. So we're reusing it to avoid
   // missing any important variables if we rewrote it.
@@ -3690,6 +3693,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
 
       $vcf_content = gzopen($location, 'r');
       $stocks = array();
+      $tree_ids = array();
       $format = "";
       // This was done by Peter
       $current_id = $form_state['ids']['organism_ids'][$i];
@@ -4105,28 +4109,66 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
               // This gets the name of the current genotype for the tree_id column
               // being checked.
 
-
-              $column_genotype_name = $marker_type . '-' . $marker_name . '-' . tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+              $val_combination = tpps_submit_vcf_render_genotype_combination($vcf_line[$j], $ref, $alt);
+              $column_genotype_name = $marker_type . '-' . $marker_name . '-' . $val_combination;
               // echo 'Column Genotype Name: ' . $column_genotype_name . " Genotype Name: $genotype_name\n";
               if($column_genotype_name == $genotype_name) {
+
+                // [RISH] 02/26/2024
+                // Insert genotype reads into chado.genotype_reads_per_plant
+                // We need plant name, study, marker_name
+                // $options['tree_id'], $options['study_accession'], $marker_name
+                // Check if a record already exists, if not, create initial record
+                
+                $study_accession = $options['study_accession'];
+                $tree_id = $study_accession . '-' . $tree_ids[$j - 9];
+                $per_plant_results = chado_query('
+                  SELECT COUNT(*) as c1 FROM chado.genotype_reads_per_plant 
+                  WHERE tree_acc = :tree_id AND study_accession = :study_accession
+                ', [
+                  ':tree_id' => $tree_id,
+                  ':study_accession' => $study_accession
+                ]);
+                $per_plant_records_count = $per_plant_results->fetchObject()->c1;
+                if ($per_plant_records_count == 0) {
+                  // CREATE AN EMPTY RECORD IN TABLE
+                  chado_query("
+                    INSERT INTO chado.genotype_reads_per_plant 
+                    (tree_acc, study_accession, marker_array, read_array) 
+                    VALUES 
+                    ('$tree_id', '$study_accession', ARRAY[]::text[], ARRAY[]::text[])
+                  ");
+                }
+                // So now we have a record in the table for the plant, so append the new values
+                chado_query("
+                  UPDATE chado.genotype_reads_per_plant 
+                  set marker_array = array_append(marker_array, '$marker_name') 
+                  WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+                ");                 
+                chado_query("
+                  UPDATE chado.genotype_reads_per_plant 
+                  set read_array = array_append(read_array, '$val_combination') 
+                  WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+                ");                
+
                 // Found a match between the tree_id genotype and the genotype_name from records
                 // echo "Found match (and using variant_name $variant_name ($variant_id) to add to genotype call\n";
 
                 // print_r('[genotype_call insert]: ' . "{$stocks[$j - 9]}-$genotype_name" . "\n");
-                $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
-                  'project_id' => $project_id,
-                  'stock_id' => $stocks[$j - 9],
-                  // PETER
-                  // '#fk' => array(
-                  //   'genotype' => $genotype_desc,
-                  //   'variant' => $variant_name,
-                  //   'marker' => $marker_name,
-                  // ),
-                  // RISH
-                  'genotype_id' => $genotype_id,
-                  'variant_id' => $variant_id,
-                  'marker_id' => $marker_id,
-                );
+                // $records['genotype_call']["{$stocks[$j - 9]}-$genotype_name"] = array(
+                //   'project_id' => $project_id,
+                //   'stock_id' => $stocks[$j - 9],
+                //   // PETER
+                //   // '#fk' => array(
+                //   //   'genotype' => $genotype_desc,
+                //   //   'variant' => $variant_name,
+                //   //   'marker' => $marker_name,
+                //   // ),
+                //   // RISH
+                //   'genotype_id' => $genotype_id,
+                //   'variant_id' => $variant_id,
+                //   'marker_id' => $marker_id,
+                // );
 
                 // THIS ABOUT REMOVING THIS - but it is in use for genotype materialized views
                 // which is used for tpps/details page
@@ -4301,6 +4343,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $vcf_line = explode("\t", $vcf_line);
           for ($j = 9; $j < count($vcf_line); $j++) {
             $stocks[] = $form_state['tree_info'][trim($vcf_line[$j])]['stock_id'];
+            $tree_ids[] = trim($vcf_line[$j]);
           }
         }
       }
@@ -4315,7 +4358,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
       }
 
       // Recreate the indexes.
-      tpps_create_genotype_call_indexes();
+      // tpps_create_genotype_call_indexes();
       tpps_log('[INFO] - Done.');
       unset($records);
       $genotype_count = 0;
@@ -5302,6 +5345,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $records = &$options['records'];
   $records2 = &$options['records2']; // hybrid / copy such as genotype_call records
   $headers = $options['headers'];
+  
   $tree_info = &$options['tree_info'];
   $species_codes = $options['species_codes'];
   $genotype_count = &$options['genotype_count'];
@@ -5340,16 +5384,23 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
 
   $keys = array_keys($row);
   $key_index = -1;
+  $tree_id = NULL;
   foreach ($row as $key => $val) {
     $key_index++;
     echo "ROW key:$key, val:$val\n";
+    tpps_log('[INFO] ROW KEY $key and ROW VAL $val');
     if (empty($headers[$key])) {
       continue;
     }
 
     // This $val is different from the $val later on
     // so order is important
+
     if (!isset($stock_id)) {
+      // Set the tree_id
+      $tree_id = trim($val);
+      $study_accession = $options['study_accession'];
+      $tree_id = $study_accession . '-' . $tree_id;
       $stock_id = $tree_info[trim($val)]['stock_id'];
       $current_id = $tree_info[trim($val)]['organism_id'];
       $species_code = $species_codes[$current_id];
@@ -5366,7 +5417,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     if($options['ploidy'] == 'Diploid' && substr($headers[$key], $header_length - 2, 2) == "_A") {
       // Remove the _A from the first diploid header
       // and allow the below code to continue to be processed so the SSR can be imported in
-      $headers[$key] = substr($headers[$key], 0, $header_length - 3);
+      $headers[$key] = substr($headers[$key], 0, $header_length - 2);
       $options['diploid_header'] = $headers[$key];
       $options['diploid_val'] = $val;
       // Save this header for use in a later iteration when _B gets called
@@ -5446,9 +5497,6 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     }
     // End of catering for polyploids
     echo "Processing the insert\n";
-
-
-
 
     if ($type == 'ssrs' and !empty($options['empty']) and $val == $options['empty']) {
       continue;
@@ -5657,13 +5705,50 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
       if (isset($records2['genotype_call']["$stock_id-$genotype_name"])) {
         echo "This genotype_call key is already set (so uniqueness is maybe broken?\n";
       }
-      $records2['genotype_call']["$stock_id-$genotype_name"] = array(
-        'project_id' => $project_id,
-        'stock_id' => $stock_id,
-        'genotype_id' => $genotype_id,
-        'variant_id' => $variant_name_id,
-        'marker_id' => $marker_name_id,
-      );
+
+      // [RISH] Removed on 02/26/2024 in favor of new genotype_reads_per_plant
+      // $records2['genotype_call']["$stock_id-$genotype_name"] = array(
+      //   'project_id' => $project_id,
+      //   'stock_id' => $stock_id,
+      //   'genotype_id' => $genotype_id,
+      //   'variant_id' => $variant_name_id,
+      //   'marker_id' => $marker_name_id,
+      // );
+
+      // [RISH] 02/26/2024
+      // Insert genotype reads into chado.genotype_reads_per_plant
+      // We need plant name, study, marker_name
+      // $options['tree_id'], $options['study_accession'], $marker_name
+      // Check if a record already exists, if not, create initial record
+      $per_plant_results = chado_query('
+      SELECT COUNT(*) as c1 FROM chado.genotype_reads_per_plant 
+      WHERE tree_acc = :tree_id AND study_accession = :study_accession
+      ', [
+      ':tree_id' => $tree_id,
+      ':study_accession' => $study_accession
+      ]);
+      $per_plant_records_count = $per_plant_results->fetchObject()->c1;
+      if ($per_plant_records_count == 0) {
+        // CREATE AN EMPTY RECORD IN TABLE
+        chado_query("
+          INSERT INTO chado.genotype_reads_per_plant 
+          (tree_acc, study_accession, marker_array, read_array) 
+          VALUES 
+          ('$tree_id', '$study_accession', ARRAY[]::text[], ARRAY[]::text[])
+        ");
+      }
+      // So now we have a record in the table for the plant, so append the new value
+      chado_query("
+        UPDATE chado.genotype_reads_per_plant 
+        set marker_array = array_append(marker_array, '$variant_name') 
+        WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+      ");      
+      chado_query("
+        UPDATE chado.genotype_reads_per_plant 
+        set read_array = array_append(read_array, '$val') 
+        WHERE tree_acc = '$tree_id' AND study_accession = '$study_accession'
+      ");
+      
 
       // $records['stock_genotype']["$stock_id-$genotype_name"] = array(
       //   'stock_id' => $stock_id,
@@ -7307,7 +7392,7 @@ function tpps_log($message, array $variables = [], $severity = TRIPAL_INFO) {
  */
 function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array $multi_insert_options) {
   tpps_add_project_file($form_state, $fid);
-  tpps_drop_genotype_call_indexes($job);
+  // tpps_drop_genotype_call_indexes($job);
 
   tpps_log('[INFO] - Processing EXTRA genotype_spreadsheet file data...');
   echo "trace 3\n";
@@ -7321,5 +7406,5 @@ function tpps_ssr_process(array &$form_state, $fid, array &$options, $job, array
   tpps_chado_insert_hybrid($options['records2'], $multi_insert_options);
   tpps_log('[INFO] - Done.');
   // CREATE INDEXES FROM GENOTYPE_CALL TABLE.
-  tpps_create_genotype_call_indexes($job);
+  // tpps_create_genotype_call_indexes($job);
 }
