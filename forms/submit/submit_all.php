@@ -3887,17 +3887,24 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           //   'type_id' => $seq_var_cvterm,
           // );
 
-          // Rish code to test a single insert and get the id
-          try {
-            $results = chado_insert_record('feature', [
-              'name' => $marker_name,
-              'organism_id' => $current_id,
-              'uniquename' => $marker_name,
-              'type_id' => $seq_var_cvterm,
-            ]);
-          }
-          catch (Exception $ex) {
 
+          $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :marker_name',[
+            ':marker_name' => $marker_name
+          ]);
+          $feature_check_count = $feature_check_results->fetchObject()->c1;
+          if ($feature_check_count <= 0) {
+            // Rish code to test a single insert and get the id
+            try {
+              $results = chado_insert_record('feature', [
+                'name' => $marker_name,
+                'organism_id' => $current_id,
+                'uniquename' => $marker_name,
+                'type_id' => $seq_var_cvterm,
+              ]);
+            }
+            catch (Exception $ex) {
+
+            }
           }
           // get the feature_id
           $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
@@ -3913,17 +3920,23 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           //   'type_id' => $seq_var_cvterm,
           // );
 
-          // Rish code to test a single insert and get the id
-          try {
-            $results = chado_insert_record('feature', [
-              'name' => $variant_name,
-              'organism_id' => $current_id,
-              'uniquename' => $variant_name,
-              'type_id' => $seq_var_cvterm,
-            ]);
-          }
-          catch (Exception $ex) {
+          $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :variant_name',[
+            ':variant_name' => $variant_name
+          ]);
+          $feature_check_count = $feature_check_results->fetchObject()->c1;
+          if ($feature_check_count <= 0) {
+            // Rish code to test a single insert and get the id
+            try {
+              $results = chado_insert_record('feature', [
+                'name' => $variant_name,
+                'organism_id' => $current_id,
+                'uniquename' => $variant_name,
+                'type_id' => $seq_var_cvterm,
+              ]);
+            }
+            catch (Exception $ex) {
 
+            }
           }
           // get the feature_id
           $results = chado_query('SELECT feature_id FROM chado.feature WHERE uniquename = :uniquename', [
@@ -3933,7 +3946,7 @@ function tpps_genotype_vcf_processing(array &$form_state, array $species_codes, 
           $variant_id = $row_object->feature_id;
 
           // Lookup whether marker is already inserted into the features table
-          $result = chado_query("SELECT * FROM chado.feature WHERE uniquename = :marker_name AND organism_id = :organism_id", [
+          $result = chado_query("SELECT * FROM chado.feature WHERE uniquename = :marker_name", [
             ':marker_name' => $variant_name, // column 3 of VCF
             ':organism_id' => $current_id
           ]);
@@ -5553,15 +5566,23 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     //   'uniquename' => $marker_name,
     //   'type_id' => $seq_var_cvterm,
     // );
-    chado_insert_record('feature', [
-      'name' => $marker_name,
-      'organism_id' => $organism_id,
-      'uniquename' => $marker_name,
-      'type_id' => $seq_var_cvterm,
+
+    // Check if feature exists, if not insert
+    $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :marker_name',[
+      ':marker_name' => $marker_name
     ]);
+    $feature_check_count = $feature_check_results->fetchObject()->c1;
+    if ($feature_check_count <= 0) { 
+      chado_insert_record('feature', [
+        'name' => $marker_name,
+        'organism_id' => $organism_id,
+        'uniquename' => $marker_name,
+        'type_id' => $seq_var_cvterm,
+      ]);
+    }
     // Lookup the marker_name_id.
     $results = chado_query("SELECT feature_id FROM chado.feature
-      WHERE uniquename = :uniquename AND organism_id = :organism_id", [
+      WHERE uniquename = :uniquename", [
         ':uniquename' => $marker_name,
         ':organism_id' => $organism_id
     ]);
@@ -5578,16 +5599,24 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     //   'type_id' => $seq_var_cvterm,
     // );
 
-    chado_insert_record('feature', [
-      'name' => $variant_name,
-      'organism_id' => $organism_id,
-      'uniquename' => $variant_name,
-      'type_id' => $seq_var_cvterm
+    // Check if feature exists, if not insert
+    $feature_check_results = chado_query('SELECT count(*) as c1 FROM chado.feature WHERE uniquename = :variant_name',[
+      ':variant_name' => $variant_name
     ]);
+    $feature_check_count = $feature_check_results->fetchObject()->c1;
 
-    // Lookup the marker_name_id
+    if ($feature_check_count <= 0) {
+      chado_insert_record('feature', [
+        'name' => $variant_name,
+        'organism_id' => $organism_id,
+        'uniquename' => $variant_name,
+        'type_id' => $seq_var_cvterm
+      ]);
+    }
+
+    // Lookup the variant_name_id
     $results = chado_query("SELECT feature_id FROM chado.feature
-      WHERE uniquename = :uniquename AND organism_id = :organism_id", [
+      WHERE uniquename = :uniquename", [
         ':uniquename' => $variant_name,
         ':organism_id' => $organism_id
     ]);
