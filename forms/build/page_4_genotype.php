@@ -97,7 +97,7 @@ function tpps_genotype_subform(array $chest) {
     // Field HTML name -> Marker Name.
     'does_study_include_snp_data' => 'SNPs',
     'does_study_include_ssr_cpssr_data' => 'SSRs/cpSSRs',
-    'does_study_include_other_data' => 'Other',
+    'does_study_include_other_genotypic_data' => 'Other Genotypic',
   ];
   $form['#attached']['js'][] = [
     'type' => 'setting',
@@ -145,6 +145,9 @@ function tpps_genotype_subform(array $chest) {
       'SSRs/cpSSRs' => t('SSRs/cpSSRs'),
       'Other' => t('Other'),
     ],
+    // This field is hidden but left for backward compatibility.
+    '#prefix' => '<div class="tpps-hidden">',
+    '#suffix' => '</div>',
   ];
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -169,7 +172,8 @@ function tpps_genotype_subform(array $chest) {
     'organism_name' => $organism_name,
   ]));
   // Other.
-  $fields['other'] = [
+  $other_fieldset = 'other';
+  $fields[$other_fieldset] = [
     '#type' => 'fieldset',
     '#title' => t('Other Information:'),
     '#collapsible' => TRUE,
@@ -201,6 +205,9 @@ function tpps_genotype_subform(array $chest) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Note: Marker Type allows multiple values to be selected.
   //if (in_array('SNPs', $genotype_marker_type)) {
+  //
+  //
+  // @TODO Relocated in v2. ['genotype', 'files'] -> ['genotype', 'SNPs'].
   $upload_snp_association = tpps_get_ajax_value(
     $form_state, [$organism_name, 'genotype', 'files', 'upload_snp_association'], 'Yes'
   );
@@ -526,12 +533,15 @@ function tpps_genotype_subform(array $chest) {
 
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $fields['other-marker'] = [
+  $other_fieldset = 'other';
+  // Field was relocated (v.2). [] -> ['other'].
+  $fields[$other_fieldset]['other-marker'] = [
     // @TODO convert to select and relocate.
-    //
     '#type' => 'textfield',
     '#title' => t('Other marker type: *'),
   ];
+
+  // Field was relocated (v.2). ['files'] -> ['other'].
   $title = t('Other spreadsheet: '
     . '<br />please provide a spreadsheet with columns for the Plant ID '
     . 'of genotypes used in this study');
@@ -544,11 +554,10 @@ function tpps_genotype_subform(array $chest) {
     . 'If a column data type does not fit any of the options in the '
     . 'drop-down menu, you may set that drop-down menu to "N/A". '
     . 'Your file must contain one column with the Plant Identifier.');
-
   tpps_form_build_file_field([
     'form' => &$form,
     'form_state' => $form_state,
-    'parents' => [$organism_name, 'genotype', 'files'],
+    'parents' => [$organism_name, 'genotype', $other_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
@@ -561,8 +570,9 @@ function tpps_genotype_subform(array $chest) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Other Columns.
-  $default_dynamic = !empty($page4_values[$organism_name]['genotype']['files']['other-columns']);
-  $fields['files']['other']['dynamic'] = [
+  $default_dynamic = !empty($page4_values[$organism_name]['genotype'][$other_fieldset]['other-columns']);
+  // Field was relocated (v.2). ['files'] -> ['other'].
+  $fields[$other_fieldset]['dynamic'] = [
     '#type' => 'checkbox',
     '#title' => t('This file needs dynamic dropdown options for column data type specification'),
     '#ajax' => [
@@ -573,18 +583,18 @@ function tpps_genotype_subform(array $chest) {
     '#default_value' => $default_dynamic,
   ];
   $dynamic = tpps_get_ajax_value($form_state,
-    [$organism_name, 'genotype', 'files', 'other', 'dynamic'],
+    [$organism_name, 'genotype', $other_fieldset, 'dynamic'],
     $default_dynamic,
     'other'
   );
 
   if ($dynamic) {
-    $fields['files']['other']['columns'] = [
+    $fields[$other_fieldset]['other']['columns'] = [
       '#description' => t('Please define which columns hold the required data: '
         . '<br />Plant Identifier, Genotype Data'
       ),
     ];
-    $fields['files']['other']['columns-options'] = [
+    $fields[$other_fieldset]['other']['columns-options'] = [
       '#type' => 'hidden',
       '#value' => ['Genotype Data', 'Plant Identifier', 'N/A'],
     ];

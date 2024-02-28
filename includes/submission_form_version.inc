@@ -507,6 +507,21 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       'snps-pop-struct',
       'snps-kinship',
       'assay-citation',
+      // Yes/No field.
+      'upload_snp_association',
+    ];
+    $to_other_fieldset = [
+      // Textfield (must be select).
+      ['files', 'other-marker'],
+      ['files', 'other-columns'],
+      // Other file-field subfields.
+      //['files', 'other', 'dynamic'],
+      //['files', 'other', 'columns'],
+      //['files', 'other', 'columns-options'],
+      //['files', 'other', 'columns-options'],
+      //['files', 'other', 'no-header'],
+      // Files.
+      ['files', 'other'],
     ];
 
     $to_ssr_fieldset = [
@@ -517,6 +532,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       ['files', 'ssrs'],
       ['files', 'ssrs_extra'],
     ];
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     for ($i = 1; $i <= $organism_number; $i++) {
       $genotype_parents = [
         'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
@@ -540,6 +556,13 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
         $version_change_list['2']['move'][] = [
           'source' => array_merge($genotype_parents, $item),
           'target' => array_merge($genotype_parents, ['ssrs_cpssrs', end($item)]),
+        ];
+      }
+      // ['genotype'] -> ['genotype', 'other']
+      foreach ($to_other_fieldset as $item) {
+        $version_change_list['2']['move'][] = [
+          'source' => array_merge($genotype_parents, $item),
+          'target' => array_merge($genotype_parents, ['other', end($item)]),
         ];
       }
     }

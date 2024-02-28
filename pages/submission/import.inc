@@ -332,7 +332,11 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
 
   module_load_include('php', 'tpps', 'forms/build/page_1');
   $state['ids']['project_id'] = tpps_get_project_id($state['dbxref_id']);
-  $state['values']['status'] = 'Incomplete';
+  // Having 'Incomplete' status is safe if we then programmatically submit form
+  // but this status requires a lot of extra work to run Tripal job so
+  // better to have 'Pending Approval' status or maybe even 'Approved'
+  //$state['values']['status'] = 'Incomplete';
+  //$state['values']['status'] = 'Pending Approval';
   $state['values'] = $state['saved_values'];
 }
 
