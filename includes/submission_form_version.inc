@@ -136,7 +136,10 @@ function tpps_is_debug_mode() {
  *   Returns 1 (default value) if version wasn't set.
  */
 function tpps_submission_form_version_is_outdated(array $form_state) {
-  $form_version = $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  $form_version = $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+    // Not use current version to assume form is outdated and need to be
+    // upgraded. So it's '1' version.
+    ?? 1;
   return ($form_version != TPPS_SUBMISSION_FORM_CURRENT_VERSION);
 }
 
@@ -163,10 +166,20 @@ function tpps_submission_form_version_get(array $form_state) {
  *   Form State array.
  * @param int $version
  *   Submission Form Version starting from 1.
+ * @param bool $force
+ *   Force setting of given version.
  */
-function tpps_submission_form_version_set(array &$form_state, $version) {
-  $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
-    = $version ?? TPPS_SUBMISSION_FORM_START_VERSION;
+function tpps_submission_form_version_set(array &$form_state, $version, $force = FALSE) {
+  if ($force) {
+    $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
+  }
+  else {
+    $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] =
+      // Do not overwrite if version was set.
+      $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+      ?? $version
+      ?? TPPS_SUBMISSION_FORM_START_VERSION;
+  }
 }
 
 /**
@@ -201,14 +214,14 @@ function tpps_submission_form_version_set(array &$form_state, $version) {
  *   Returns TRUE in case of success and FALSE otherwise.
  */
 function tpps_submission_form_version_downgrade(array $form_state, $version, array &$result) {
-//dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 6), 1));
   if (tpps_submission_form_version_get($result) == 1) {
     return FALSE;
   }
-  $success = tpps_submission_form_version_migrate($form_state, $version, $result, 'downgrade');
+  $direction = 'downgrade';
+  $success = tpps_submission_form_version_migrate($form_state, $version, $result, $direction);
   if (tpps_is_debug_mode()) {
     tpps_message(
-      '@type of @accession was downgraded from @from_version to @to_version '
+      '@type of @accession was @directiond from @from_version to @to_version '
         . 'version: @status',
       [
         '@type' => (tpps_form_is_submission_interface($result)
@@ -216,6 +229,7 @@ function tpps_submission_form_version_downgrade(array $form_state, $version, arr
         // Downgrade to version 1 but use change list for update to version 2.
         '@from_version' => $version,
         '@to_version' => $version - 1,
+        '@direction' => $direction,
         '@accession' => tpps_form_get_accession($result),
         '@status'  => ($success ? 'Success' : 'Failed'),
       ]
@@ -289,22 +303,26 @@ function tpps_submission_form_version_downgrade_to_latest(array $form_state, arr
  *
  * @return bool
  *   Returns TRUE in case of success and FALSE otherwise.
+ *
+ * @TODO Merge with tpps_submission_form_version_downgrade().
  */
 function tpps_submission_form_version_upgrade(array $form_state, $version, array &$result) {
   $form_version = tpps_submission_form_version_get($result);
   if ($form_version == $version) {
     return FALSE;
   }
-  $success = tpps_submission_form_version_migrate($form_state, $version, $result, 'upgrade');
+  $direction = 'upgrade';
+  $success = tpps_submission_form_version_migrate($form_state, $version, $result, $direction);
   if (tpps_is_debug_mode()) {
     tpps_message(
-      '@type of @accession was downgraded from @from_version to @to_version '
+      '@type of @accession was @directiond from @from_version to @to_version '
         . 'version: @status',
       [
         '@type' => (tpps_form_is_submission_interface($result)
           ? t('Interface') : t('State')),
         '@from_version' => $form_version,
         '@to_version' => $version,
+        '@direction' => $direction,
         '@accession' => tpps_form_get_accession($result),
         '@status'  => ($success ? 'Success' : 'Failed'),
       ]
@@ -364,6 +382,13 @@ function tpps_submission_form_version_upgrade_to_latest(array $form_state, array
  *   Returns TRUE in case of success and FALSE otherwise.
  */
 function tpps_submission_form_version_migrate(array $form_state, $version, array &$result, $direction = 'upgrade') {
+  // Downgrade with the same version must be processed. It's a magic of versions.
+  if (
+    $direction == 'upgrade'
+    && $version == tpps_submission_form_version_get($result)
+  ) {
+    return TRUE;
+  }
 
   $change_list = tpps_submission_form_version_changes($form_state, $version);
   if (empty($change_list)) {
@@ -398,7 +423,16 @@ function tpps_submission_form_version_migrate(array $form_state, $version, array
     return FALSE;
   }
   tpps_array_apply_changes($change_list, $result);
-  $result['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
+
+  if ($direction == 'upgrade') {
+    $result['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
+  }
+  elseif ($direction == 'downgrade') {
+    // @TODO Minor. Remove after testing those extra check
+    // cause it's overkill but left to be sure.
+    $result['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+      = (($version > 1) ? ($version - 1) : 1);
+  }
   return TRUE;
 }
 
