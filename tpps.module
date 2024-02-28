@@ -1288,13 +1288,31 @@ function tpps_main_submit($form, &$form_state) {
   global $user;
   $saved_values = &$form_state['saved_values'] ?? NULL;
   $values = &$form_state['values'] ?? NULL;
+  $accession = tpps_form_get_accession($form_state);
   module_load_include('inc', 'tpps', 'includes/form');
   module_load_include('inc', 'tpps', 'includes/submission_file');
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
 
   // Set Submission Form Version.
+  if (tpps_is_debug_mode()) {
+    drupal_set_message(__FUNCTION__ . '()'
+      . '<br />Form State Accession: ' . $accession
+      . '<br />Form: <pre>' . print_r($accession, 1) . '</pre>'
+      . '<br />Saved Values: ' . $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
+      . '<br />Values: ' . $values[TPPS_SUBMISSION_FORM_VERSION_KEY]
+    );
+  }
+
+  // Get Submission Form Version.
   $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-    = $values[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+    = $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
+    ?? $values[TPPS_SUBMISSION_FORM_VERSION_KEY];
+  if (empty($saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY])) {
+    $state = tpps_load_submission_state($accession);
+    $saved_values[tpps_submission_form_version_key]
+      = tpps_submission_form_version_get($state);
+  }
+
   unset($values[TPPS_SUBMISSION_FORM_VERSION_KEY]);
 
   // If this form was submitted after import we need to upgrade version.
@@ -1303,7 +1321,6 @@ function tpps_main_submit($form, &$form_state) {
   tpps_submission_form_version_upgrade_to_latest($form_state, $new_form_state);
   $form_state = $new_form_state;
   tpps_update_submission_state($form_state);
-
   $is_tppsc = tpps_form_is_tppsc($form_state);
   if ($is_tppsc) {
     $form_state['status'] = 'Incomplete';
