@@ -249,7 +249,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   $job->logMessage(print_r($state, 1));
 
   // Update the TGDR with the new_accession.
-  module_load_include('inc', 'tpps', 'includes/common');
+  module_load_include('inc', 'tpps', 'includes/array');
   $state = tpps_array_replace($state, $old_accession, $new_accession);
   $interface = tpps_array_replace($interface, $old_accession, $new_accession);
 
@@ -386,7 +386,7 @@ function tpps_submission_delete_callback($accession) {
  *   But for testing and Study Import file removement should be allowed.
  */
 function tpps_submission_purge($accession, $force = FALSE) {
-  $state = tpps_submission_get_state($accession);
+  $state = tpps_load_submission_state($accession);
   // @TODO Minor. Query DB table 'file_usage' to find if there is orphan
   // files related to this non-existing submission.
   if (!empty($state)) {
@@ -1370,26 +1370,6 @@ function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
     $list = [0 => '- Select -'] + $list;
   }
   return $list;
-}
-
-/**
- * Gets submission state array.
- *
- * @param string $accession
- *   Study submission. Format: 'TGDRxxxx'.
- *
- * @return array
- *   Returns Drupal Form API State array.
- */
-function tpps_submission_get_state($accession) {
-  $result = db_select('tpps_submission', 'ts')
-    ->fields('ts', ['submission_state'])
-    ->condition('accession', $accession)
-    ->range(0, 1)
-    ->execute()
-    ->fetchField();
-  $state = unserialize(html_entity_decode($result));
-  return $state;
 }
 
 /**

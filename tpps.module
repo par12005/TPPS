@@ -1297,6 +1297,13 @@ function tpps_main_submit($form, &$form_state) {
     = $values[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
   unset($values[TPPS_SUBMISSION_FORM_VERSION_KEY]);
 
+  // If this form was submitted after import we need to upgrade version.
+  // Note: If form version is up-to-date then nothing will be done.
+  $new_form_state = $form_state;
+  tpps_submission_form_version_upgrade_to_latest($form_state, $new_form_state);
+  $form_state = $new_form_state;
+  tpps_update_submission_state($form_state);
+
   $is_tppsc = tpps_form_is_tppsc($form_state);
   if ($is_tppsc) {
     $form_state['status'] = 'Incomplete';

@@ -88,6 +88,20 @@
  */
 
 /**
+ * Checks if given array is Submission Interface Array.
+ *
+ * @param array $form_state
+ *   Form State array.
+ *
+ * @return bool
+ *   Returns TRUE if given array is a Submission Interface Array.
+ *   Returns FALSE otherwise.
+ */
+function tpps_form_is_submission_interface(array $form_state) {
+  return (($form_state['is_submission_interface'] ?? NULL) == TRUE);
+}
+
+/**
  * Generates new Submission Interface by Submission Accession.
  *
  * @param string $accession
@@ -105,7 +119,34 @@ function tpps_submission_interface_new($accession) {
 }
 
 /**
+ * Removes Submission Interface Array.
+ *
+ * @param string $accession
+ *   Study Accession. E.g., 'TGDR12345'.
+ */
+function tpps_submission_interface_remove($accession) {
+  db_update('tpps_submission')
+    ->fields(['submission_interface' => 'a:0:{}'])
+    ->condition('accession', $accession)
+    ->execute();
+}
+
+/**
+ * Removes and create from scratch Submission Interface.
+ *
+ * @param string $accession
+ *   Study accession.
+ */
+function tpps_submistion_interface_recreate($accession) {
+  tpps_submission_interface_remove($accession);
+  tpps_submission_interface_new($accession);
+}
+
+/**
  * Creates Submission Interface from $form_state array.
+ *
+ * WARNING:
+ * Use tpps_submission_interface_save() to store interface in DB.
  *
  * @param array $form_state
  *   Drupal Form State array.
@@ -116,9 +157,8 @@ function tpps_submission_interface_new($accession) {
  *   Returns empty array if $form_state is empty too.
  */
 function tpps_submission_interface_generate(array $form_state = []) {
-  $debug_mode = FALSE;
   if (empty($form_state)) {
-    watchdog('tpps', 'Empty Submission Form State.', [], WATCHDOG_WARNING);
+    tpps_message('Empty Submission Form State.', [], 'warning');
     return [];
   }
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
@@ -126,20 +166,13 @@ function tpps_submission_interface_generate(array $form_state = []) {
   // Initialize Submission Interface.
   // Do NOT change $form_state but update $interface instead.
   $interface = $form_state;
-
-  // Form State Version.
-  // We do not use 'semantic versioning' because there is no sence to have it
-  // and each version will be incremental change so all previous changes must
-  // be applied first. Using simple integers will allow to easily detect
-  // which version must be applied.
-  $current_version = tpps_submission_form_version_get($form_state);
+  $interface['is_submission_interface'] = TRUE;
 
   // We need to apply changes from 1st to $current version to have
   // incremental changes.
-  $i = TPPS_SUBMISSION_FORM_START_VERSION;
-  for (; $i <= $current_version; $i++) {
-    tpps_submission_form_version_downgrade($form_state, $i, $interface);
-  }
+  tpps_submission_form_version_downgrade_to_latest($form_state, $interface);
+  tpps_submission_interface_purify($interface);
+
   return $interface;
 }
 
@@ -264,15 +297,107 @@ function tpps_submission_interface_save(array &$interface, $status = NULL) {
   return $interface;
 }
 
+
 /**
- * Removes Submission Interface Array.
+ * Reduce size of the Submission Interface array.
  *
- * @param string $accession
- *   Study Accession. E.g., 'TGDR12345'.
+ * Items not used by pipeline processing script will be removed.
+ *
+ * @param array $interface
+ *   Submission Interface.
  */
-function tpps_submission_interface_remove($accession) {
-  db_update('tpps_submission')
-    ->fields(['submission_interface' => 'a:0:{}'])
-    ->condition('accession', $accession)
-    ->execute();
+function tpps_submission_interface_purify(array &$interface) {
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Remove useless elemLnts to reduce size.
+  $change_list = [
+    // We unset not used items instead of copy required items from
+    // $form_state because if new elements will be found they will be
+    // left for sure. It's safer.
+    'unset' => [
+      // List of path to the items in $interface at the top (1st) level.
+      'build_info',
+      'temporary',
+      'programmed',
+      'programmed_bypass_access_check',
+      'cache',
+      'rebuild',
+      'rebuild_info',
+      'redirect',
+      'submitted',
+      'executed',
+      'method',
+      'groups',
+      'buttons',
+      'input',
+      'values',
+      'complete form',
+      'process_input',
+      'invalid_token',
+      'triggering_element',
+      'clicked_button',
+      ['saved_values', 'form_build_id'],
+      'tpps_submission_export_files',
+      // @TODO Submission Form Version is useless for pipeline processing
+      // but could be useful for debugging.
+      //['saved_values', TPPS_SUBMISSION_FORM_VERSION_KEY],
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // List of the fields which must be left.
+      // Required by submit_all() and tpps_table_display() and sub-functions.
+      // 'saved_values',
+      // 'dbxref_id',
+      // 'created',
+      // 'accession',
+      // 'status',
+      // 'stats',
+      // 'ids',
+      // 'tpps_type',
+      // 'file_info',
+      // 'updated',
+      // 'approved',
+      // 'completed',
+      // 'loaded',
+      // 'submitting_uid',
+      // 'job_id',
+      // 'revised_files',
+      // 'admin_comments',
+      // 'alternative_accessions',
+      // 'data',
+      // 'tree_info'.
+      //
+      //  Probably could be unset:
+      // 'stage',
+    ],
+  ];
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Dynamic (repeated) changes.
+  //
+  // Remove Drupal's internal fields used for form building.
+  // Note: Those fields are stored in column tpps_submission.submission_state.
+  $page_list = [
+    'frontpage', TPPS_PAGE_1, TPPS_PAGE_2, TPPS_PAGE_3, TPPS_PAGE_4, 'summarypage',
+  ];
+  $drupal_internal_fields = [
+    // Note: Page 1 has not 'Back' button.
+    'Back',
+    'Save',
+    'Next',
+    'form_build_id',
+    'form_token',
+    'form_id',
+    'op',
+    '#cleared',
+    // Only for Page 4.
+    'submit',
+    'diagnostics-curation',
+  ];
+  foreach ($page_list as $page) {
+    foreach ($drupal_internal_fields as $field) {
+      $change_list['unset'][] = ['saved_values', $page, $field];
+    }
+  }
+
+  module_load_include('inc', 'tpps', 'includes/array');
+  tpps_array_apply_changes($change_list, $interface);
 }

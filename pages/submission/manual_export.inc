@@ -41,7 +41,8 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
       'tpps_submission_export_file_report',
       'tpps_submission_export_fixes',
       'tpps_submission_file_get_id_list',
-      'tpps_submission_get_state',
+      'tpps_load_submission_state',
+      'tpps_load_submission_info',
       'tpps_submission_file_get_parents',
       // Needed but already in main branch.
       // 'tpps_form_search_field',
@@ -70,7 +71,7 @@ ini_set('display_errors', 1); ini_set('display_startup_errors', 1); error_report
 $function_code
 
 \$cache_reset = REQUEST_TIME;
-\$state = tpps_submission_get_state(\$accession);
+\$state = tpps_load_submission_state(\$accession);
 tpps_submission_export_fixes(\$state);
 // Files.
 \$fid_list = tpps_submission_file_get_id_list(\$state);

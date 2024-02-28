@@ -35,8 +35,9 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     '#required' => TRUE,
   ];
   // Get Submission State.
-  $state = tpps_submission_get_state($accession);
+  $state = tpps_load_submission_state($accession);
   tpps_submission_export_fixes($state);
+
   // Files.
   $fid_list = tpps_submission_file_get_id_list($state, $form);
   $files = tpps_submission_export_get_files_info($fid_list);

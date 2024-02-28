@@ -1107,36 +1107,16 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   // Submission Form Versions.
   // Set version for 'Submission Interface' feature.
   // Note: We need to set version before 'update' version.
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  tpps_submission_form_version_set($form, $form_state);
+  // Create a hidden form field to store  Submission Form Version.
+  $form[TPPS_SUBMISSION_FORM_VERSION_KEY] = [
+    '#type' => 'hidden',
+    '#value' => ($form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
+    ?? TPPS_SUBMISSION_FORM_START_VERSION),
+  ];
 
   // Upgrade to latest Submission Form Version.
-  $version = tpps_submission_form_version_get($form_state);
-  $latest_version = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
-  if ($version < $latest_version) {
-    // Clone existing $form_state.
-    $new_form_state = $form_state;
-    for (; $version <= $latest_version; $version++) {
-      tpps_submission_form_version_upgrade($form_state, $version, $new_form_state);
-      $new_form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] = $version;
-    }
-    // Update only if version was really upgraded.
-    tpps_update_submission_state($new_form_state);
-
-    if (
-      (TPPS_SUBMISSION_FORM_START_VERSION + 1) != $latest_version
-      && tpps_is_si_debug_mode()
-    ) {
-      $message = 'Submission Form Version was upgraded from @version to @latest_version.';
-      $params = [
-        '@version' => TPPS_SUBMISSION_FORM_START_VERSION + 1,
-        '@latest_version' => $latest_version,
-      ];
-      tpps_message($message, $params, 'status');
-    }
-    // Restore $form_state.
-    $form_state = $new_form_state;
-  }
+  tpps_submission_form_version_upgrade_to_latest($form_state, $form_state);
+  tpps_update_submission_state($form_state);
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Must be after tpps_init_project() which sets accession for new studies.

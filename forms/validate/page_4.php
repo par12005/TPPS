@@ -23,7 +23,7 @@ function tpps_page_4_validate_form(array &$form, array &$form_state) {
   if ($debug_mode = 0) {
     // Form submission is blocked in debug mode.
     form_set_error('sdfsdf', 'Debug');
-    dpm(print_r($form_state['values']['organism-1']['genotype'], 1), 'form_state');
+    //dpm(print_r($form_state['values']['organism-1']['genotype'], 1), 'form_state');
     //dpm(print_r($form_state['values']['complete_form'], 1), 'complete_form');
     //dpm(print_r($form['organism-1']['genotype'], 1));
     return;

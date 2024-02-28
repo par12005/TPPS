@@ -123,12 +123,12 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
   ];
   module_load_include('inc', 'tpps', 'includes/submission');
   $form_state_diff_1 = array_diff_assoc_recursive(
-    tpps_submission_get_state($accession_1),
-    tpps_submission_get_state($accession_2)
+    tpps_load_submission_state($accession_1),
+    tpps_load_submission_state($accession_2)
   );
   $form_state_diff_2 = array_diff_assoc_recursive(
-    tpps_submission_get_state($accession_2),
-    tpps_submission_get_state($accession_1)
+    tpps_load_submission_state($accession_2),
+    tpps_load_submission_state($accession_1)
   );
 
   if (empty($form_state_diff_1) && empty($form_state_diff_2)) {

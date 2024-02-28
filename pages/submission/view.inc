@@ -13,7 +13,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
 function tpps_submission_view_form(array $form, array $form_state, $accession = '') {
   tpps_submission_list_validate_accession($accession);
 
-  if (empty($state = tpps_submission_get_state($accession))) {
+  if (empty($state = tpps_load_submission_state($accession))) {
     drupal_set_message(t('Submission "<strong>@accession</strong>" not found. '
       . 'Please choose from the list below.',
       ['@accession' => $accession]), 'error'
@@ -67,12 +67,10 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   // Show the data!
   $interface = tpps_submission_interface_load($accession, RESET_CACHE) ?? [];
 
-  dpm(
-    'Real Interface Version: ' .
+  drupal_set_message('Real Interface Version: ' .
     (isset($interface['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
   );
-  dpm(
-    'Real State Version: ' .
+  drupal_set_message('Real State Version: ' .
     (isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
   );
 

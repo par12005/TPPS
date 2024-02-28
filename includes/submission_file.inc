@@ -22,7 +22,8 @@
  *   Returns list of File IDs or empty array.
  */
 function tpps_submission_file_get_id_list(array $state, array &$form = []) {
-  $submission_interface = tpps_submission_interface_generate($state);
+  $submission_interface = $state;
+  tpps_submission_form_version_downgrade_to_latest($state, $submission_interface);
   $complete_form = $submission_interface['complete form'] ?? NULL;
   $saved_values = $submission_interface['saved_values'] ?? NULL;
   $values = $submission_interface['values'] ?? NULL;

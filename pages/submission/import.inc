@@ -101,7 +101,33 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   global $user;
   module_load_include('inc', 'tpps', 'includes/common');
 
-  $state_raw = trim($form_state['values']['tpps_submission_import_state']);
+  $values = $form_state['values'] ?? NULL;
+  $upgrade_version = $values['tpps_submission_import_upgrade_version'] ?? TRUE;
+  // @TODO Add to import form as a checkbox.
+  $submit_form = $values['tpps_submission_import_submit_form'] ?? FALSE;
+
+  // Get local accession.
+  if ($values['tpps_submission_import_accession'] == 'new') {
+    $accession = tpps_init_project_get_next_accession();
+  }
+  else {
+    $accession = $values['tpps_submission_import_accession'];
+  }
+  // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
+  $accession = 'TGDR' . str_replace('TGDR', '', $accession);
+
+  // Remove existing study (if any).
+  if ($values['tpps_submission_import_accession'] != 'new') {
+    // Remove submission and files.
+    //
+    // Why don't use tpps_update_submission_state()?
+    // Because it doesn't manage files and study's record in table
+    // 'chado.dbxref' will not be removed (left).
+    // It only overwrites record in 'chado.tpps_submission' table.
+    tpps_submission_purge($accession, $force = TRUE);
+  }
+
+  $state_raw = trim($values['tpps_submission_import_state']);
 
   // Fix 'stdClass' in the submistion dump createdy by var_export().
   // We shouldn't do this on export to have unchanged data.
@@ -122,28 +148,9 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
   // Get original (old) accession from $state (Submission Form State Array).
   $original_accession = tpps_form_get_accession($state);
-  $values = $form_state['values'] ?? NULL;
-  $upgrade_version = $values['tpps_submission_import_upgrade_version'] ?? TRUE;
-  // Get new accession.
-  if ($values['tpps_submission_import_accession'] == 'new') {
-    $accession = tpps_init_project_get_next_accession();
-  }
-  else {
-    $accession = $values['tpps_submission_import_accession'];
-  }
 
-  // Since we allow both formats (TGDRxxx and xxx) we need to sync them.
-  // @TODO Update code to use only 'xxx' format.
-  $accession = 'TGDR' . str_replace('TGDR', '', $accession);
   // Files.
   tpps_submission_import_process_files($state, $accession, $form);
-  if ($values['tpps_submission_import_accession'] != 'new') {
-    // Remove submission and files.
-    // We can't use tpps_update_submission_state() because it doesn't manage files
-    // but only overwrites record in chado.tpps_submission table and
-    // redord in chado.dbxref will be left unchanged.
-    tpps_submission_purge($accession, $force = TRUE);
-  }
   tpps_submission_import_state_mods($state, $accession);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Add record to DB table.
@@ -153,38 +160,35 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Clear cached list of studies to have new items at 'frontpage'.
   // @TODO Minor. Clear only accession list.
   cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
-  // Recreate Submission.
-  // Function drupal_form_submit() in case of success will redirect to
-  // the confirmation page (/completed-submission/TGDRxxxx).
-  // Note:
-  // Submission Form Version will be upgraded here!
-  // Function tpps_main_submit() will change version.
+
   if ($upgrade_version) {
+    // Upgrade to latest Submission Form Version.
+    tpps_submission_form_version_upgrade_to_latest($state, $state);
+    tpps_update_submission_state($state);
+    drupal_set_message(t('Submission Form Version was upgraded.'));
+
+    $interface = tpps_submission_interface_generate($form_state);
+    tpps_submission_interface_save($interface);
+  }
+
+  if ($submit_form) {
+    // Recreate Submission.
+    // Function drupal_form_submit() in case of success will redirect to
+    // the confirmation page (/completed-submission/TGDRxxxx).
+    // Note:
+    // Submission Form Version will be upgraded here!
+    // Function tpps_main_submit() will change version.
+
+    // Form submission was disabled because submission version
+    // upgraded and downgraded multiple times.
+    // To submit form Drupal builds it again so tpps_form_build_main()
+    // will be called before tpps_main_submit().
+    // @TODO Check if incompleted submissions processed correctly.
+    drupal_set_message(t('Submission was submitted.'));
     drupal_form_submit(tpps_form_get_id($state), $state);
-    // Form submission was skipped.
-    drupal_set_message(
-      t("Submission was imported but not version wasn't upgraded."),
-      'warning'
-    );
-    drupal_goto('completed-submission/' . $accession);
   }
-  else {
-    // Submission was imported but not submitted and version wasn't upgraded.
-    // Show useful links.
-    $url_list = [
-      'tppsc/' . $accession => t('Edit'),
-      "tpps-admin-panel/$accession" => t('Admin Panel'),
-      'tpps/submission/' . $accession . '/view' => t('View'),
-      'reports/tpps/imported-studies' => t('Report "Imported Studies"')
-    ];
-    foreach ($url_list as $url => $title) {
-      $items[] = l($title, $url);
-    }
-    drupal_set_message(t('Submission import failed. Useful links: !links',
-      ['!links' => theme('item_list', ['items' => $items])]
-    ));
-    $form_state['rebuild'] = TRUE;
-  }
+
+  drupal_goto('completed-submission/' . $accession);
 }
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
