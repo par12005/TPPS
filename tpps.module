@@ -1306,11 +1306,18 @@ function tpps_main_submit($form, &$form_state) {
   // Get Submission Form Version.
   $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
     = $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-    ?? $values[TPPS_SUBMISSION_FORM_VERSION_KEY];
+    ?? ($values[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL);
   if (empty($saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY])) {
-    $state = tpps_load_submission_state($accession);
-    $saved_values[tpps_submission_form_version_key]
-      = tpps_submission_form_version_get($state);
+    if ($accession) {
+      $state = tpps_load_submission_state($accession);
+      $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
+        = tpps_submission_form_version_get($state);
+    }
+    else {
+      $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
+        = TPPS_SUBMISSION_FORM_CURRENT_VERSION;
+
+    }
   }
 
   unset($values[TPPS_SUBMISSION_FORM_VERSION_KEY]);
