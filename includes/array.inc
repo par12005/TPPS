@@ -162,8 +162,8 @@ function tpps_array_apply_changes(array $change_list, &$result) {
  *
  * Given list of fields will be removed/unset in Submission Interface.
  *
- * @param array $interface
- *   Submission Interface passed by reference so no need to return it.
+ * @param array $array
+ *   Array which will be updated passed by reference.
  * @param array $action_data
  *   Data required for this action.
  *   See tpps_submission_form_get_change_list().
@@ -174,7 +174,7 @@ function tpps_array_apply_changes(array $change_list, &$result) {
  *   Returns TRUE if action was successfully applied.
  *   Returns FALSE otherwise.
  */
-function tpps_array_unset(array &$interface, array $action_data) {
+function tpps_array_unset(array &$array, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
   foreach ($action_data as $key => $item) {
     if (empty($item)) {
@@ -186,7 +186,7 @@ function tpps_array_unset(array &$interface, array $action_data) {
       }
       continue;
     }
-    $target = &tpps_form_get_path($interface, $item);
+    $target = &tpps_form_get_path($array, $item);
     if (empty($target['parent_element']) || empty($target['field_name'])) {
       if (tpps_is_si_debug_mode()) {
         $message = "SIA Action 'unset' can't find element for #@key."
@@ -197,7 +197,7 @@ function tpps_array_unset(array &$interface, array $action_data) {
       continue;
     }
     // Note:
-    // $target['parent_element'] is a reference to the element inside $interface.
+    // $target['parent_element'] is a reference to the element in $array.
     // Action!
     unset($target['parent_element'][$target['field_name']]);
   }
@@ -210,7 +210,7 @@ function tpps_array_unset(array &$interface, array $action_data) {
  * Given list of fields will be moved/relocate to the new location inside
  * Submission Interface Array.
  *
- * @param array $interface
+ * @param array $array
  *   Submission Interface passed by reference so no need to return it.
  * @param array $action_data
  *   Data required for this action.
@@ -225,7 +225,7 @@ function tpps_array_unset(array &$interface, array $action_data) {
  *   Returns TRUE if action was successfully applied.
  *   Returns FALSE otherwise.
  */
-function tpps_array_move(array &$interface, array $action_data) {
+function tpps_array_move(array &$array, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
   foreach ($action_data as $key => $item) {
     if (empty($item['source']) || empty($item['target'])) {
@@ -234,13 +234,16 @@ function tpps_array_move(array &$interface, array $action_data) {
     // Note:
     // 'parent_element' is not a list of parents but a reference to element.
     // To get value use 'field_name' as key inside 'parent_element'.
-    $source = &tpps_form_get_path($interface, $item['source']);
-    $target = &tpps_form_get_path($interface, $item['target']);
+    $source = &tpps_form_get_path($array, $item['source']);
+    $target = &tpps_form_get_path($array, $item['target']);
     if (
       empty($source['parent_element']) || empty($source['field_name'])
       || empty($target['parent_element']) || empty($target['field_name'])
     ) {
       if (tpps_is_debug_mode()) {
+
+
+
         $message = 'SIA Action "move" #@key failed. One of the required '
           . 'fields is empty.<br />Value: <pre>@item</pre>.';
         $params = ['@key' => $key, '@item' => print_r($item, 1)];
@@ -249,7 +252,7 @@ function tpps_array_move(array &$interface, array $action_data) {
       continue;
     }
     // Note: $source['parent_element'] and $target['parent_element']
-    // are a references to the elements inside $interface.
+    // are a references to the elements inside $array.
     if (!array_key_exists($source['field_name'], $source['parent_element'])) {
       if (tpps_is_debug_mode()) {
         $message = 'SIA Action "move" #@key failed. Source field not found.'
@@ -259,32 +262,42 @@ function tpps_array_move(array &$interface, array $action_data) {
       }
       continue;
     }
+
     $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
     if (!empty($target_field_value)) {
       if (tpps_is_debug_mode()) {
-        $message = 'SIA Action "move": '
-          . 'target field is not empty and will be overwritten.<br />'
-          . "Is interface: @is_interface. <br />"
-          . "Target's field value: <pre>@field_value</pre>"
-          . "Source's field value: <pre>@source_field_value</pre>"
-          . "Action's meta-data: <pre>@item</pre>"
-          . "Saved Values: <pre>@saved_values</pre>";
-        $params = [
-          '@key' => $key,
-          '@item' => print_r($item, 1),
-          '@field_value' => print_r($target_field_value, 1),
-          '@source_field_value' => print_r(
-            $source['parent_element'][$source['field_name']] ?? NULL, 1
-          ),
-          '@saved_values' => (
-            $target['field_name'] == 'doi'
-            ? print_r($interface ?? NULL, 1)
-            : ''
-          ),
-          '@is_interface' => (tpps_form_is_submission_interface($interface) ? 'yes' : 'no'),
-        ];
-        tpps_message($message, $params, 'warning');
+        if ($target['field_name'] == 'doi' || $source['field_name'] == 'doi') {
+          $message = 'SIA Action "move": '
+            . 'target field is not empty and will be overwritten.<br />'
+            . 'Is interface: @is_interface. <br />'
+            . 'Direction: @direction. <br />'
+            . 'Form Version: @form_version. <br />'
+            . "Target's field value: <pre>@field_value</pre>"
+            . "Source's field value: <pre>@source_field_value</pre>"
+            . "Action's meta-data: <pre>@meta</pre>"
+            . "Saved Values: <pre>@saved_values</pre>";
+          $params = [
+            '@key' => $key,
+            '@meta' => var_export($item, 1),
+            '@field_value' => var_export($target_field_value, 1),
+            '@source_field_value' => var_export(
+              $source['parent_element'][$source['field_name']] ?? NULL, 1
+            ),
+            '@saved_values' => (
+              $target['field_name'] == 'doi'
+              ? var_export($array['saved_values'][1]['publication'] ?? NULL, 1)
+              : ''
+            ),
+            '@is_interface' => (tpps_form_is_submission_interface($array) ? 'yes' : 'no'),
+            '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
+            '@form_version' => $array['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY],
+          ];
+          tpps_message($message, $params, 'warning');
+        }
       }
+      // Skip this because field already exists.
+      // @TODO Minor. Check also value of the target field.
+      continue;
     }
     // Action!
     $target['parent_element'][$target['field_name']]
