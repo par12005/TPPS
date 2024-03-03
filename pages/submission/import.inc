@@ -302,7 +302,10 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
   }
   else {
     foreach ($state['tpps_submission_export_files'] as $fid => $file) {
-      if (empty($file)) {
+      if (empty($file)
+        // This is file which was manually uploaded to remote server and
+        // absolute path specified.
+        || $file['uri'][0] == '/' || strpos($file['url'], 'http') === FALSE) {
         continue;
       }
       $new_file = tpps_submission_import_download_file($file);
