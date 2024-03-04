@@ -46,12 +46,19 @@ function tpps_install() {
   variable_set('tpps_page_4_cache_synonym_list', FALSE);
   variable_set('tpps_page_4_cache_unit_list', FALSE);
   variable_set('tpps_page_4_update_ploidy_description', TRUE);
-  // Study Export.
-  variable_set('tpps_submission_export_show_file_search_report', FALSE);
   // Submit All.
   variable_set('tpps_submit_all_log_cli_show_time', FALSE);
   // Theme Settings.
   variable_set('tpps_theme_fix_pager', FALSE);
+  // Submission Export.
+  // @TODO Add ability to change those variables at settings page.
+  variable_set('tpps_submission_export_show_file_search_report', FALSE);
+  variable_set('tpps_submission_file_check_token', TRUE);
+  variable_set('tpps_submission_file_salt', md5(REQUEST_TIME));
+  // Submission Import.
+  variable_set('tpps_staging_http_username', '');
+  variable_set('tpps_staging_http_password', '');
+
   // [/VS]
   tpps_alter_tpps_submissions();
   tpps_alter_tpps_submission_dbxref();
@@ -352,13 +359,18 @@ function tpps_uninstall() {
   variable_del('tpps_page_4_cache_synonym_list');
   variable_del('tpps_page_4_cache_unit_list');
   variable_del('tpps_page_4_update_ploidy_description');
-  // Study Export.
-  variable_del('tpps_submission_export_show_file_search_report');
   // Submit All.
   variable_del('tpps_submit_all_log_cli_show_time');
   // Theme Settings.
   variable_del('tpps_theme_fix_pager');
   variable_del('tpps_imported_studies_list');
+  // Submission Import/Export.
+  variable_del('tpps_submission_export_show_file_search_report');
+  variable_del('tpps_submission_file_check_token');
+  variable_del('tpps_submission_file_salt');
+  // Submission Import.
+  variable_del('tpps_staging_http_username');
+  variable_del('tpps_staging_http_password');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.

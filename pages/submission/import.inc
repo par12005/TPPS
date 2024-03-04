@@ -149,9 +149,11 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Get original (old) accession from $state (Submission Form State Array).
   $original_accession = tpps_form_get_accession($state);
 
+  // Modify before files processing to have updated import meta data.
+  tpps_submission_import_state_mods($state, $accession);
   // Files.
   tpps_submission_import_process_files($state, $accession, $form);
-  tpps_submission_import_state_mods($state, $accession);
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Add record to DB table.
   tpps_create_submission($state, $user->uid);
@@ -210,6 +212,9 @@ function tpps_submission_import_review_dump(array $form, array &$form_state) {
 /**
  * Downloads remote file and add to Drupal.
  *
+ * @param array $state
+ *   Submission Form State Array.
+ *   Used to get import metadata information.
  * @param array $file
  *   File's metadate.
  *   Required items: 'filename' and 'url'.
@@ -217,21 +222,39 @@ function tpps_submission_import_review_dump(array $form, array &$form_state) {
  * @return object
  *   Returns Managed File Object.
  */
-function tpps_submission_import_download_file(array $file) {
+function tpps_submission_import_download_file(array $state, array $file) {
   $staging_domain = 'https://tgwebdev.cam.uchc.edu';
   $username = variable_get('tpps_staging_http_username', '');
   $password = variable_get('tpps_staging_http_password', '');
-  if (strpos($file['url'], $staging_domain) === 0 && $username && $password) {
+  $url = $file['url'] ?? NULL;
+
+  $use_include_path = FALSE;
+  $context = NULL;
+  // Staging server has Basic HTTP Authorization.
+  if (strpos($url, $staging_domain) === 0 && $username && $password) {
     $auth = base64_encode($username . ':' . $password);
-    $content = file_get_contents($file['url'], FALSE, stream_context_create(
-      ['http' => ['header' => 'Authorization: Basic ' . $auth]])
+    $context = stream_context_create(
+      ['http' => ['header' => 'Authorization: Basic ' . $auth]]
     );
   }
-  else {
-    // No HTTP Basic Auth.
-    $content = file_get_contents($file['url']);
+  $manually_uploaded_file = ($url[0] == '/' || strpos($url, 'http') === FALSE);
+
+  if (empty($url) || $manually_uploaded_file) {
+
+
+    // @TODO Downloading files using this method not work.
+
+
+    $site = $state['saved_values']['tpps_submission_import']['site'] ?? NULL;
+    if (empty($site)) {
+      return NULL;
+    }
+    $token = tpps_submission_file_token_get($file);
+    $url = $site . '/tpps/file/' . $file['fid'] . '/' . $token;
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  $content = file_get_contents($url, $use_include_path, $context);
   if (empty($content)) {
     return NULL;
   }
@@ -314,6 +337,7 @@ function tpps_submission_import_state_mods(array &$state, $new_accession) {
     = format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O');
   $submission_import['site']
     = $state['tpps_submission_export_site'] ?? 'https://treegenesdb.org';
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Store imported (original) Submission Form Version.
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
@@ -362,10 +386,10 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
       if (empty($file)) {
         continue;
       }
-      $new_file = tpps_submission_import_download_file($file);
+      $new_file = tpps_submission_import_download_file($state, $file);
       if (empty($new_file)) {
-        drupal_set_message(t('File @url is empty.',
-          ['@url' => l($file['url'], $file['url'])]), 'error'
+        drupal_set_message(
+          t('File @url is empty.', ['@url' => $file['url']]), 'error'
         );
         $form['rebuild'] = 1;
         return;

@@ -2144,6 +2144,17 @@ function tpps_menu_add_submission_pages(array &$items = []) {
     'file path' => TPPS_MODULE_PATH,
     'file' => 'pages/submission/purge_multiple.inc',
   ];
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Export manually uploaded file.
+  $items['tpps/file/%/%'] = [
+    'title' => "TPPS Submission's File",
+    'page callback' => 'tpps_submission_file_get',
+    'page arguments' => [2, 3],
+    'access arguments' => ['administer tpps module'],
+    // @todo Idea. Move to /pages/file/get.inc?
+    'file' => 'includes/submission_file.inc',
+    'type' => MENU_CALLBACK,
+  ];
 }
 
 /**

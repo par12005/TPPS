@@ -502,8 +502,14 @@ function tpps_flatten(array $state) {
 
           if (($geno['files']['vcf'] ?? NULL) > 0) {
             $file = file_load($geno['files']['vcf']);
-            $file_url = file_create_url($file->uri);
-            $data["$org_name VCF File (uploaded)"] = "<a href='$file_url' target='blank'>$file->filename</a>";
+            if ($file) {
+              $file_url = file_create_url($file->uri);
+              $data["$org_name VCF File (uploaded)"] = "<a href='$file_url' target='blank'>$file->filename</a>";
+            }
+            else {
+              drupal_set_message(t('VCF file is missing'), 'error');
+              $data["$org_name VCF File (uploaded)"] = '';
+            }
           }
         }
 
