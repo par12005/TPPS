@@ -98,6 +98,11 @@ function tpps_submission_export_manual_submit(array $form, array $form_state) {
  *   Returns associative array where key is File Id and value is an array
  *   with File Metadata returned by file_load() and additionally new
  *   item 'url' which is File's absolute URL.
+ *
+ * @TODO Minor. Get rid of this function.
+ * It was added because we didn't had orignal site base url in exported state
+ * array but now we have. Also all types of files now could be downloaded using
+ * 'tpps/file/<file_id>/<secure_token>' URL.
  */
 function tpps_submission_export_get_files_info(array &$fid_list) {
   $files = [];
@@ -106,6 +111,9 @@ function tpps_submission_export_get_files_info(array &$fid_list) {
       $file = file_load($fid);
       if ($file) {
         $file->url = file_create_url($file->uri);
+        // To detect files manually uploaded to server use this check:
+        // if ($file->uri[0] == '/') {}.
+        // For those files $file-url will have an absolute path to file.
         $files[$fid] = (array) $file;
       }
     }
@@ -164,7 +172,9 @@ function tpps_submission_export_file_report(array &$fid_list = [], array &$files
  *   Submission state.
  */
 function tpps_submission_export_fixes(array &$state) {
+  global $base_url;
   // This is form element which has a lot of HTML code which breaks
   // parsing of state on import. See TGDR1089.
   unset($state['complete form']['comments']['#prefix']);
+  $state['saved_values']['tpps_submission_import']['site'] == $base_url;
 }

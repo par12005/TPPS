@@ -193,8 +193,21 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
  * @return object
  *   Returns Managed File Object.
  */
-function tpps_submission_import_download_file(array $file) {
-  if (empty($content = file_get_contents($file['url']))) {
+function tpps_submission_import_download_file(array $state, array $file) {
+  $url = $file['url'] ?? NULL; if (
+    // Empty URL.
+    empty($url)
+    // Manually uploaded file.
+    || $uri[0] == '/' || strpos($url, 'http') === FALSE
+  ) {
+    $site = $state['saved_values']['tpps_submission_import']['site'] ?? NULL;
+    if (empty($site)) { 
+      return NULL;
+    }
+    $token = tpps_submission_file_token_get($file);
+    $url = $site . '/tpps/file/' . $file['fid'] . '/' . $token;
+  }
+  if (empty($content = file_get_contents($url))) {
     return NULL;
   }
   // Move file to Drupal.
@@ -302,13 +315,10 @@ function tpps_submission_import_process_files(array &$state, $new_accession, arr
   }
   else {
     foreach ($state['tpps_submission_export_files'] as $fid => $file) {
-      if (empty($file)
-        // This is file which was manually uploaded to remote server and
-        // absolute path specified.
-        || $file['uri'][0] == '/' || strpos($file['url'], 'http') === FALSE) {
+      if (empty($file)) {
         continue;
       }
-      $new_file = tpps_submission_import_download_file($file);
+      $new_file = tpps_submission_import_download_file($state $file);
       if (empty($new_file)) {
         drupal_set_message(t('File @url is empty.',
           ['@url' => l($file['url'], $file['url'])]), 'error'
