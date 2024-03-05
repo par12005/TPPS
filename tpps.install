@@ -58,6 +58,8 @@ function tpps_install() {
   // Submission Import.
   variable_set('tpps_staging_http_username', '');
   variable_set('tpps_staging_http_password', '');
+  // Files.
+  variable_set('tpps_file_use_api', FALSE);
 
   // [/VS]
   tpps_alter_tpps_submissions();
@@ -364,6 +366,7 @@ function tpps_uninstall() {
   // Theme Settings.
   variable_del('tpps_theme_fix_pager');
   variable_del('tpps_imported_studies_list');
+
   // Submission Import/Export.
   variable_del('tpps_submission_export_show_file_search_report');
   variable_del('tpps_submission_file_check_token');
@@ -371,6 +374,8 @@ function tpps_uninstall() {
   // Submission Import.
   variable_del('tpps_staging_http_username');
   variable_del('tpps_staging_http_password');
+  // Files.
+  variable_del('tpps_file_use_api');
   // [/VS]
 
   // Remove all incomplete submissions connected to user profiles.

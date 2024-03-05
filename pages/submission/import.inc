@@ -227,35 +227,22 @@ function tpps_submission_import_download_file(array $state, array $file) {
   $username = variable_get('tpps_staging_http_username', '');
   $password = variable_get('tpps_staging_http_password', '');
   $url = $file['url'] ?? NULL;
-
-  $use_include_path = FALSE;
-  $context = NULL;
-  // Staging server has Basic HTTP Authorization.
-  if (strpos($url, $staging_domain) === 0 && $username && $password) {
-    $auth = base64_encode($username . ':' . $password);
-    $context = stream_context_create(
-      ['http' => ['header' => 'Authorization: Basic ' . $auth]]
-    );
+  $site = $state['saved_values']['tpps_submission_import']['site'] ?? NULL;
+  if (
+    variable_get('tpps_file_use_api', FALSE)
+    // Manually uploaded files. Those files are stored in shared folder
+    // which could be accessible by production and dev-servers (not tested).
+    || (($url[0] == '/' || strpos($url, 'http') === FALSE) && !empty($site))
+    || empty($url)
+  ) {
+    $url = $site . '/tpps/file/' . $file['fid'] . '/get/'
+      // Secure Token.
+      . tpps_submission_file_token_get($file)
+      // This part is not required but allows to get correct
+      // filename of downloaded file.
+      . '/' . $file['filename'];
   }
-  $manually_uploaded_file = ($url[0] == '/' || strpos($url, 'http') === FALSE);
-
-  if (empty($url) || $manually_uploaded_file) {
-
-
-    // @TODO Downloading files using this method not work.
-
-
-    $site = $state['saved_values']['tpps_submission_import']['site'] ?? NULL;
-    if (empty($site)) {
-      return NULL;
-    }
-    $token = tpps_submission_file_token_get($file);
-    $url = $site . '/tpps/file/' . $file['fid'] . '/' . $token;
-  }
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $content = file_get_contents($url, $use_include_path, $context);
-  if (empty($content)) {
+  if (empty($content = tpps_file_get_contents($url))) {
     return NULL;
   }
   // Move file to Drupal.

@@ -19,18 +19,22 @@ function tpps_admin_imported_studies_report() {
   ];
   foreach ($list as $local => $remote) {
     $import_meta = tpps_submission_get_import_meta([], $local);
+    if (empty($import_meta)) {
+      // Study probably was removing when page reloads so just skip this.
+      continue;
+    }
     $interface = tpps_submission_interface_load($local) ?? [];
     $state = tpps_load_submission_state($local) ?? [];
 
     $rows[] = [
       l($local, 'tpps/submission/' . $local . '/view'),
-      $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY],
-      $import_meta['current_version'],
+      $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
+      $import_meta['current_version'] ?? NULL,
       (isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
       (isset($interface['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
-      $import_meta['full_date'],
-      $import_meta['accession_link'],
-      l($import_meta['site'], $import_meta['site']),
+      $import_meta['full_date'] ?? NULL,
+      $import_meta['accession_link'] ?? NULL,
+      l($import_meta['site'] ?? NULL, $import_meta['site'] ?? NULL),
       // Actions:
       implode(' | ', [
         // @TODO Use CSS class instead of HTML tags.
