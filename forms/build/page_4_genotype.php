@@ -95,9 +95,12 @@ function tpps_genotype_subform(array $chest) {
   }
   $marker_type_field_list = [
     // Field HTML name -> Marker Name.
+    // Note: values will be used in JS for 'marker-type' field.
     'does_study_include_snp_data' => 'SNPs',
     'does_study_include_ssr_cpssr_data' => 'SSRs/cpSSRs',
-    'does_study_include_other_genotypic_data' => 'Other Genotypic',
+    // Note: Should be used 'Other Genotypic' but left 'Other' to have
+    // 'marker-type' field backward compatibility.
+    'does_study_include_other_genotypic_data' => 'Other',
   ];
   $form['#attached']['js'][] = [
     'type' => 'setting',
@@ -116,8 +119,7 @@ function tpps_genotype_subform(array $chest) {
         '#title' => t('Does your study include @marker_name data?',
           [
             '@marker_name' => ($marker_name == 'Other'
-            // Just a quick fix :(.
-            ? strtolower($marker_name) : str_replace('s', '', $marker_name)),
+            ? t('other genotypic') : str_replace('s', '', $marker_name)),
           ]
         ),
         '#default_value' => $default_value,
@@ -136,6 +138,7 @@ function tpps_genotype_subform(array $chest) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
   // This field is hidden but left to avoid changes in submit_all.php script.
+  // @TODO remove this field and use new 3 fields.
   $fields['marker-type'] = [
     '#type' => 'select',
     '#multiple' => TRUE,
@@ -180,7 +183,7 @@ function tpps_genotype_subform(array $chest) {
     '#states' => [
       'visible' => [
         ':input[name="' . $organism_name . '[genotype]'
-        . '[does_study_include_other_data]"]' => ['value' => 'yes'],
+        . '[does_study_include_other_genotypic_data]"]' => ['value' => 'yes'],
       ],
     ],
   ];
@@ -206,13 +209,14 @@ function tpps_genotype_subform(array $chest) {
   // Note: Marker Type allows multiple values to be selected.
   //if (in_array('SNPs', $genotype_marker_type)) {
   //
-  //
-  // @TODO Relocated in v2. ['genotype', 'files'] -> ['genotype', 'SNPs'].
+  // Relocated in v2. ['genotype', 'files'] -> ['genotype', 'SNPs'].
   $upload_snp_association = tpps_get_ajax_value(
-    $form_state, [$organism_name, 'genotype', 'files', 'upload_snp_association'], 'Yes'
+    $form_state,
+    [$organism_name, 'genotype', 'files', 'upload_snp_association'],
+    'Yes'
   );
   if (tpps_is_genotype_data_type($form_state)) {
-    $fields['files']['upload_snp_association'] = [
+    $fields['SNPs']['upload_snp_association'] = [
       '#type' => 'select',
       '#title' => t('Would you like to upload a SNP association file?'),
       '#options' => [
@@ -220,7 +224,6 @@ function tpps_genotype_subform(array $chest) {
         'No' => t('No'),
       ],
       '#default_value' => $upload_snp_association,
-      // @TODO Use Drupal Form States.
       //'#ajax' => [
       //  'callback' => 'tpps_genotype_files_callback',
       //  'wrapper' => "$organism_name-genotype-files",
@@ -525,27 +528,25 @@ function tpps_genotype_subform(array $chest) {
     }
   }
 
-
-
-
-// @TODO Check if fields below must be relocated.
-
-
-
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Other Fieldset.
   $other_fieldset = 'other';
-  // Field was relocated (v.2). [] -> ['other'].
+  // Relocated in v2: [] -> ['other'].
+  // v1: This field was a textfield.
   $fields[$other_fieldset]['other-marker'] = [
-    // @TODO convert to select and relocate.
-    '#type' => 'textfield',
+    '#type' => 'select',
     '#title' => t('Other marker type: *'),
+    '#options' => [
+      'AFLPs' => t('AFLPs'),
+      'Indels' => t('Indels'),
+    ],
   ];
 
   // Field was relocated (v.2). ['files'] -> ['other'].
+  $file_field_name = 'other';
   $title = t('Other spreadsheet: '
     . '<br />please provide a spreadsheet with columns for the Plant ID '
     . 'of genotypes used in this study');
-  $file_field_name = 'other';
   $description = t('Please upload a spreadsheet file containing '
     . 'Genotype data. When your file is uploaded, you will be shown '
     . 'a table with your column header names, several drop-downs, '
@@ -570,20 +571,23 @@ function tpps_genotype_subform(array $chest) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Other Columns.
+  // Field [$other_fieldset]['other']['dynamic'].
   $default_dynamic = !empty($page4_values[$organism_name]['genotype'][$other_fieldset]['other-columns']);
   // Field was relocated (v.2). ['files'] -> ['other'].
-  $fields[$other_fieldset]['dynamic'] = [
+  $fields[$other_fieldset]['other']['dynamic'] = [
     '#type' => 'checkbox',
     '#title' => t('This file needs dynamic dropdown options for column data type specification'),
     '#ajax' => [
-      'wrapper' => "edit-$organism_name-genotype-files-other-ajax-wrapper",
+
+      // @TODO Check if this element exists on page.
+      'wrapper' => "edit-$organism_name-genotype-$other_fieldset-other-ajax-wrapper",
       'callback' => 'tpps_page_4_file_dynamic',
       'effect' => 'slide',
     ],
     '#default_value' => $default_dynamic,
   ];
   $dynamic = tpps_get_ajax_value($form_state,
-    [$organism_name, 'genotype', $other_fieldset, 'dynamic'],
+    [$organism_name, 'genotype', $other_fieldset, 'other', 'dynamic'],
     $default_dynamic,
     'other'
   );
@@ -599,7 +603,7 @@ function tpps_genotype_subform(array $chest) {
       '#value' => ['Genotype Data', 'Plant Identifier', 'N/A'],
     ];
   }
-  $fields['files']['other']['no-header'] = [];
+  $fields[$other_fieldset]['other']['no-header'] = [];
 
   return $fields;
 }

@@ -493,6 +493,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     $organism_number = $page1_values['organism']['number'];
     // List of relocated genotype fields from 'files' to 'SNPs' fieldset.
     // ['files'] -> ['SNPs'].
+    $snps_fieldset = 'SNPs';
     $files_to_snps_fields = [
       'genotyping-type',
       'file-type',
@@ -512,18 +513,18 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
     ];
     $to_other_fieldset = [
       // Textfield (must be select).
-      ['files', 'other-marker'],
+      ['files', 'other-marker'], // Select.
+      ['files', 'other'], // Managed file.
       ['files', 'other-columns'],
       // Other file-field subfields.
-      //['files', 'other', 'dynamic'],
-      //['files', 'other', 'columns'],
-      //['files', 'other', 'columns-options'],
-      //['files', 'other', 'columns-options'],
-      //['files', 'other', 'no-header'],
+      ['files', 'other', 'dynamic'],
+      ['files', 'other', 'columns'],
+      ['files', 'other', 'columns-options'],
+      ['files', 'other', 'no-header'],
       // Files.
-      ['files', 'other'],
     ];
 
+    $ssrs_fieldset = 'ssrs_cpssrs';
     $to_ssr_fieldset = [
       // Dropdown menu.
       ['SSRs/cpSSRs'],
@@ -541,7 +542,10 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       $field_name = 'ref-genome';
       $version_change_list['2']['move'][] = [
         'source' => array_merge($genotype_parents, [$field_name]),
-        'target' => array_merge($genotype_parents, ['SNPs', $field_name]),
+        'target' => array_merge(
+          $genotype_parents,
+          [$snps_fieldset, $field_name]
+        ),
       ];
       // 'files' to 'SNPs' fields.
       foreach ($files_to_snps_fields as $field_name) {
@@ -555,7 +559,10 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       foreach ($to_ssr_fieldset as $item) {
         $version_change_list['2']['move'][] = [
           'source' => array_merge($genotype_parents, $item),
-          'target' => array_merge($genotype_parents, ['ssrs_cpssrs', end($item)]),
+          'target' => array_merge(
+            $genotype_parents,
+            [$ssrs_fieldset, end($item)]
+          ),
         ];
       }
       // ['genotype'] -> ['genotype', 'other']

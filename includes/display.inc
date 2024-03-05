@@ -418,15 +418,18 @@ function tpps_flatten(array $state) {
               }
             }
           }
-          if (isset($geno['marker-type']['SSRs/cpSSRs']) and $geno['marker-type']['SSRs/cpSSRs'] and isset($geno['SSRs/cpSSRs']) and $geno['SSRs/cpSSRs'] != '') {
+          if (!empty($geno['marker-type']['SSRs/cpSSRs']) && !empty($geno['SSRs/cpSSRs'])) {
             $data["$org_name SSRs/cpSSRs Type"] = $geno['SSRs/cpSSRs'];
           }
-          if (isset($geno['marker-type']['Other']) and $geno['marker-type']['Other'] and isset($geno['other-marker']) and $geno['other-marker'] != '') {
+          if (!empty($geno['marker-type']['Other']) && !empty($geno['other-marker'])) {
             $data["$org_name Other Marker Type"] = $geno['other-marker'];
           }
 
-          if (isset($snps['ref-genome']) && $snps['ref-genome'] === 'bio'
-            && isset($geno['BioProject-id']) && $geno['BioProject-id'] != ''
+          if (
+            isset($snps['ref-genome'])
+            && $snps['ref-genome'] === 'bio'
+            && isset($geno['BioProject-id'])
+            && $geno['BioProject-id'] != ''
           ) {
             $data["$org_name BioProject Id"] = $geno['BioProject-id'];
 

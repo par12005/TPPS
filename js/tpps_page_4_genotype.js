@@ -66,6 +66,10 @@
             // We have 3 select boxes instead of 2 selectbox which allows
             // multiple selections. Original selectbox 'Marker Type' was left
             // to avoid changes in submit_all.php and merge conflicts.
+            //
+            // organism-1[genotype][does_study_include_other_genotypic_data]
+            // organism-1[genotype][does_study_include_snp_data]
+            // organism-1[genotype][does_study_include_ssr_cpssr_data]
             for (let i = 1; i <= settings.tpps.organismNumber; i++) {
               let markerTypeName = 'organism-' + i + '[genotype][marker-type][]';
               let $markerTypeField = $(':input[name="' + markerTypeName + '"]', $form);
