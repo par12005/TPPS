@@ -273,3 +273,10 @@ tr.odd {
   border: 1px solid #bebebe;
   background: #fff;
 }
+.tpps-form .form-type-managed-file,
+.tppsc-form .form-type-managed-file,
+.tpps-form  .form-type-radios,
+.tppsc-form .form-type-radios {
+  border-top: none;
+  border-bottom: none;
+}
