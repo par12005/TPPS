@@ -572,7 +572,7 @@ function tpps_form_build_file_field(array $chest) {
     );
     $parent_element[$field_name]['empty'] = [
       // Note: drupal_array_get_nested_value() don't allow to use default value.
-      '#default_value' => $empty_field_parent[$file_field_name]['other'] ?? 'NA',
+      '#default_value' => $empty_field_parent[$field_name]['other'] ?? 'NA',
     ];
   }
 

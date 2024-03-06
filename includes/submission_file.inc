@@ -83,7 +83,15 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   if ($values || $saved_values) {
     if ($values) {
       foreach (tpps_submission_file_get_parents($organism_number) as $parents) {
-        $fid_list[] = drupal_array_get_nested_value($values, $parents);
+        $fid = drupal_array_get_nested_value($values, $parents);
+        // Page 4/Genotype/Other (managed file field) has subfields and
+        // returns array so we need to skip this to avoid:
+        // Warning: array_flip(): Can only flip STRING and INTEGER values! in
+        // DrupalDefaultEntityController->load()
+        // (line 175 of /var/www/Drupal/includes/entity.inc).
+        if (!is_array($fid)) {
+          $fid_list[] = $fid;
+        }
       }
     }
     if ($saved_values) {
@@ -114,7 +122,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
     $rows[] = [
       check_plain($method),
       ($count ? check_plain($count) : t('Not found')),
-      check_plain(implode(', ', $list)),
+      ($count ? '' : check_plain(implode(', ', $list))),
     ];
   }
   if ($rows) {
@@ -148,11 +156,18 @@ function tpps_submission_file_set_status(array $state, $status = FILE_STATUS_PER
   $form_version = tpps_submission_form_version_get($state);
   $fid_list = tpps_submission_file_get_id_list($state);
   foreach ($fid_list as $fid) {
-    $file = file_load($fid ?? '');
-    if ($file && $file->status != $status) {
-      $file->status = $status;
-      file_save($file);
-      tpps_file_add_usage($file, $state['accession']);
+    if (is_numeric($fid) && !empty($fid)) {
+      // Page 4 / Genotype / Other field gives array instead of fid so we need
+      // to skip this to avoid:
+      // Warning: array_flip(): Can only flip STRING and INTEGER values! in
+      // DrupalDefaultEntityController->load()
+      // (line 175 of /var/www/Drupal/includes/entity.inc).
+      $file = file_load($fid);
+      if ($file && $file->status != $status) {
+        $file->status = $status;
+        file_save($file);
+        tpps_file_add_usage($file, $state['accession']);
+      }
     }
   }
 }
@@ -199,8 +214,9 @@ function tpps_submission_file_get_parents($organism_number = 1) {
       [$organism_id, 'genotype', 'files', 'ssrs'],
       [$organism_id, 'genotype', 'files', 'ssrs_extra'],
       [$organism_id, 'genotype', 'files', 'indels'],
-      [$organism_id, 'genotype', 'files', 'other'],
       [$organism_id, 'genotype', 'files', 'vcf'],
+
+      [$organism_id, 'genotype', 'files', 'other'],
     ]);
   }
   // Analysis.
