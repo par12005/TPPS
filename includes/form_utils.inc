@@ -338,7 +338,7 @@ function tpps_form_state_info(array &$new, array &$old) {
  *   The standardized file name prefix.
  */
 function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $prefix = NULL) {
-  if (!form_get_errors() && $file = file_load($fid)) {
+  if (!form_get_errors() && $file = tpps_file_load($fid)) {
     file_usage_add($file, 'tpps', 'tpps_project', substr($form_state['accession'], 4));
     if (!empty($org_num) and !empty($prefix)) {
       $species = implode('_', explode(' ',
@@ -723,24 +723,24 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
  * what is missing from the accession file.
  */
 function tpps_vcf_tree_validation($accession = NULL) {
-  $state = tpps_load_submission_state($accession);
+  //  $state = tpps_load_submission_state($accession);
+  $state = tpps_submission_interface_load($accession);
+
   $firstpage = $state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $state['saved_values'][TPPS_PAGE_3];
   $fourthpage = $state['saved_values'][TPPS_PAGE_4];
   $organism_number = $firstpage['organism']['number'];
   for ($i = 1; $i <= $organism_number; $i++) {
     $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
-    $vcf_fid = $genotype['files']['vcf'];
 
     // Check the type of VCF file (uploaded or in the cluser)
     // Get file location
-    if ($vcf_fid > 0) {
-      // File uploaded
-      $vcf_file = file_load($vcf_fid);
+    if ($vcf_file = tpps_file_load(($genotype['files']['vcf'] ?? NULL))) {
+      // File was uploaded.
       $location = tpps_get_location($vcf_file->uri);
     }
     else {
-      // File linked by curation in the cluster
+      // File linked by curation in the cluster.
       $location = $genotype['files']['local_vcf'];
     }
     if ($location == null || $location == "") {
@@ -754,7 +754,7 @@ function tpps_vcf_tree_validation($accession = NULL) {
     $tree_ids_vcf = [];
     while (($vcf_line = gzgets($vcf_content)) !== FALSE) {
       if (strpos($vcf_line, '#CHROM') !== FALSE) {
-        // get tabbed values
+        // get tabbed values.
         $columns = explode("\t", $vcf_line);
         $columns_count = count($columns);
         for ($j = 9; $j < $columns_count; $j++) {
@@ -854,7 +854,7 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   $job->logMessage("[INFO] TGDR Accession: $accession");
   $job->logMessage("[INFO] VCF File ID: $fid");
   $job->logMessage("[INFO] Organism Number: $org_num");
-  $vcf_file = file_load($fid);
+  $vcf_file = tpps_file_load($fid);
   if (!$vcf_file) {
     $job->logMessage("[ERROR] VCF File failed to load", array(), TRIPAL_ERROR);
     return;

@@ -393,7 +393,7 @@ function tpps_submission_purge($accession, $force = FALSE) {
     // Remove usage of files first.
     $fid_list = tpps_submission_file_get_id_list($state);
     foreach ($fid_list as $fid) {
-      if ($file = file_load($fid)) {
+      if ($file = tpps_file_load($fid)) {
         // Remove file usage record (not file itself).
         file_usage_delete($file, 'tpps', 'tpps_project', substr($accession, 4), 1);
         if ($force) {
@@ -808,12 +808,13 @@ function tpps_submission_rename_files($accession) {
         if ($name === '#NO_RENAME') {
           continue;
         }
-        $old_file = file_load($fid);
+        $old_file = tpps_file_load($fid);
         if ($old_file->uri[0] != '/') {
           $old_path = file_create_url($old_file->uri);
           // Prepare new file_name.
-          $file_load = file_load($fid);
-          $new_filename = $accession .'_'.$name . "." . tpps_get_path_extension($file_load->uri);
+          $file_load = tpps_file_load($fid);
+          $new_filename = $accession . '_' . $name . "."
+            . tpps_get_path_extension($file_load->uri);
           if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
             preg_match('/^(.*\/).*$/', $file->uri, $matches);
             $new_filename = $matches[1] . $new_filename;
@@ -825,8 +826,8 @@ function tpps_submission_rename_files($accession) {
             $record = $result->fetchObject();
           }
 
-          if(isset($record)) {
-            $file = file_load($record->fid);
+          if (isset($record)) {
+            $file = tpps_file_load($record->fid);
           }
           else {
             $file = tpps_rename_file($fid, "{$accession}_{$name}");
@@ -1123,7 +1124,7 @@ function tpps_submission_update_stats(array &$form_state) {
       for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
         $phenotype = $form_state['values']["organism-$i"]['phenotype'] ?? NULL;
         $form_state['stats']['unique_phenotypes'] += $phenotype['phenotypes-meta']['number'] ?? 0;
-        if (!empty($phenotype['file']) and file_load($phenotype['file'])) {
+        if (tpps_file_load($phenotype['file'])) {
           $rows = tpps_file_len($phenotype['file']) + !empty($phenotype['file-no-header']);
           if ($phenotype['format'] == 0) {
             $phenotype_file_name_cols = $phenotype['file-groups']['Phenotype Data']['0'];
@@ -1133,13 +1134,13 @@ function tpps_submission_update_stats(array &$form_state) {
             $form_state['stats']['phenotype_count'] += $rows;
           }
 
-          if (!empty($phenotype['metadata']) and file_load($phenotype['metadata'])) {
+          if (tpps_file_load($phenotype['metadata'])) {
             $form_state['stats']['unique_phenotypes'] += tpps_file_len($phenotype['metadata']) + !empty($phenotype['metadata-no-header']);
           }
 
           continue;
         }
-        if (!empty($phenotype['iso']) and file_load($phenotype['iso'])) {
+        if (tpps_file_load($phenotype['iso'])) {
           $headers = tpps_file_headers($phenotype['iso']);
           while (($k = array_search(NULL, $headers))) {
             unset($headers[$k]);

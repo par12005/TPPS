@@ -120,15 +120,12 @@ function tpps_submission_export_manual_submit(array $form, array $form_state) {
 function tpps_submission_export_get_files_info(array &$fid_list) {
   $files = [];
   foreach ($fid_list as $fid) {
-    if ($fid) {
-      $file = file_load($fid);
-      if ($file) {
-        $file->url = file_create_url($file->uri);
-        // To detect files manually uploaded to server use this check:
-        // if ($file->uri[0] == '/') {}.
-        // For those files $file-url will have an absolute path to file.
-        $files[$fid] = (array) $file;
-      }
+    if ($file = tpps_file_load($fid)) {
+      $file->url = file_create_url($file->uri);
+      // To detect files manually uploaded to server use this check:
+      // if ($file->uri[0] == '/') {}.
+      // For those files $file-url will have an absolute path to file.
+      $files[$fid] = (array) $file;
     }
   }
   return $files;

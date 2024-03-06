@@ -600,10 +600,8 @@ function tpps_form_build_file_field(array $chest) {
       $parent_element[$field_name]['#default_value']
         = $parent_element[$field_name]['#value'];
     }
-    if (
-      !empty($parent_element[$field_name]['#default_value'])
-      && ($file = file_load($parent_element[$field_name]['#default_value']))
-    ) {
+    $file = tpps_file_load($parent_element[$field_name]['#default_value'] ?? '');
+    if ($file) {
       // Stop using the file so it can be deleted if the user clicks 'remove'.
       if (variable_get('tpps_genotype_file_usage_delete', TRUE)) {
         // Study Id is a number in 'TGDRXXX'.

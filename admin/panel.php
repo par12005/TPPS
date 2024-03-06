@@ -138,7 +138,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
 
     foreach ($submission_interface['file_info'] as $files) {
       foreach ($files as $fid => $file_type) {
-        if (!empty($fid) && !empty($file = file_load($fid))) {
+        if ($file = tpps_file_load($fid)) {
           $form["edit_file_{$fid}_check"] = [
             '#type' => 'checkbox',
             '#title' => t('I would like to upload a revised version of this file'),
@@ -1097,9 +1097,9 @@ function tpps_admin_panel_validate($form, &$form_state) {
             );
           }
           if (!empty($form_state['values']["edit_file_{$fid}_file"])) {
-            // @TODO Why not use $fid to load file?
-            $file = file_load($form_state['values']["edit_file_{$fid}_file"]);
-            file_usage_add($file, 'tpps', 'tpps_project', substr($accession, 4));
+            if ($file = tpps_file_load($fid)) {
+              file_usage_add($file, 'tpps', 'tpps_project', substr($accession, 4));
+            }
           }
         }
       }
@@ -1378,9 +1378,11 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $page4_values = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
       $snps_fieldset = 'SNPs';
 
-      if (!empty($page4_values['organism-1']['genotype'][$snps_fieldset]['vcf'])) {
-        $vcf_fid = $page4_values['organism-1']['genotype'][$snps_fieldset]['vcf'];
-        $vcf_file = file_load($vcf_fid);
+      if (
+        $vcf_file = tpps_file_load(
+          ($page4_values['organism-1']['genotype'][$snps_fieldset]['vcf'] ?? NULL)
+        )
+      ) {
         $location = tpps_get_location($vcf_file->uri);
         $args = array($accession, $location);
         $jid = tripal_add_job("TPPS Generate PopStruct FROM VCF - $accession",

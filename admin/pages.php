@@ -49,8 +49,8 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
   $file_ids = [];
   $organism_count = $saved_values['1']['organism']['number'];
   for ($j = 1; $j <= $organism_count; $j++) {
-    // WARNING: DO NOT update because it uses
-    // Submission Form Version 1 (Submission Interface).
+    // WARNING:
+    // DO NOT update because it uses Submission Form Version 1.
     $parents = [
       // Page 3. Accession file.
       [TPPS_PAGE_3, 'tree-accession', 'species-' . $j, 'file'],
@@ -86,8 +86,7 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
   foreach ($file_lists as $title => $fid_list) {
     $sublist = [];
     foreach ($fid_list as $fid) {
-      $file = file_load($fid ?? '');
-      if ($file && $file->filesize) {
+      if ($file = tpps_file_load($fid)) {
         $sublist[] = '<strong>' . $fid . '</strong> - '
           . l($file->filename, file_create_url($file->uri), $options);
       }

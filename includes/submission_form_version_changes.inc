@@ -90,12 +90,12 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       ['files', 'other-marker'], // Select.
       ['files', 'other'], // Managed file.
       ['files', 'other-columns'],
-      // Other file-field subfields.
-      ['files', 'other', 'dynamic'],
-      ['files', 'other', 'columns'],
-      ['files', 'other', 'columns-options'],
-      ['files', 'other', 'no-header'],
-      // Files.
+      // Other file-field subfields. Those fields commented out and not shown
+      // at form right now.
+      //['files', 'other', 'dynamic'],
+      //['files', 'other', 'columns'],
+      //['files', 'other', 'columns-options'],
+      //['files', 'other', 'no-header'],
     ];
 
     $ssrs_fieldset = 'ssrs_cpssrs';

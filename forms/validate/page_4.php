@@ -345,7 +345,7 @@ function tpps_validate_phenotype(array &$phenotype, $org_num, array $form, array
       // We need to remove this file if it exists.
       if (!empty($phenotype['metadata'])) {
         // Remove already uploaded file.
-        $file = file_load($phenotype['metadata'] ?? '');
+        $file = tpps_file_load(($phenotype['metadata'] ?? ''));
         file_delete($file);
         // Clear metadatafile field.
         unset($phenotype['metadata']);
@@ -980,7 +980,9 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     }
     elseif (!form_get_errors()) {
       $accession_ids = tpps_parse_file_column($tree_accession_file, $id_col_accession_name);
-      $vcf_file = file_load($vcf);
+      if ($vcf) {
+        $vcf_file = file_load($vcf);
+      }
       if (trim($form_state['values']["organism-$org_num"]['genotype'][$snps_fieldset]['local_vcf']) != '') {
         $location = trim($form_state['values']["organism-$org_num"]['genotype'][$snps_fieldset]['local_vcf']);
       }

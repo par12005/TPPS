@@ -188,8 +188,7 @@ function tpps_doi_upload_files($id, array &$state) {
   $files = array_filter($files);
 
   foreach ($files as $file) {
-    $file = file_load($file);
-    if ($file->filesize < 20000000000) {
+    if ($file = tpps_file_load($file) && $file->filesize < 20000000000) {
       $path = drupal_realpath($file->uri);
       $data = array(
         'file' => curl_file_create($path, $file->filemime, $file->filename),

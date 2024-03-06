@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Functions to manage TPPS Submission's files.
+ * Functions to manage TPPS Submission's files (not files in common).
  *
  * To use:
  * module_load_include('inc', 'tpps', 'includes/submission_file');
@@ -102,7 +102,10 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
           // files then resubmitting form cause errors at site. Probably
           // correct solution is to redirect to submittion edit page
           // Note: Redirect using GET request not yet implemented. Only POST.
-          $fid_list[] = drupal_array_get_nested_value($saved_values[$step], $parents);
+          $fid = drupal_array_get_nested_value($saved_values[$step], $parents);
+          if (!is_array($fid)) {
+            $fid_list[] = $fid;
+          }
         }
       }
     }
@@ -156,18 +159,11 @@ function tpps_submission_file_set_status(array $state, $status = FILE_STATUS_PER
   $form_version = tpps_submission_form_version_get($state);
   $fid_list = tpps_submission_file_get_id_list($state);
   foreach ($fid_list as $fid) {
-    if (is_numeric($fid) && !empty($fid)) {
-      // Page 4 / Genotype / Other field gives array instead of fid so we need
-      // to skip this to avoid:
-      // Warning: array_flip(): Can only flip STRING and INTEGER values! in
-      // DrupalDefaultEntityController->load()
-      // (line 175 of /var/www/Drupal/includes/entity.inc).
-      $file = file_load($fid);
-      if ($file && $file->status != $status) {
-        $file->status = $status;
-        file_save($file);
-        tpps_file_add_usage($file, $state['accession']);
-      }
+    $file = tpps_file_load($fid);
+    if ($file && $file->status != $status) {
+      $file->status = $status;
+      file_save($file);
+      tpps_file_add_usage($file, $state['accession']);
     }
   }
 }
@@ -243,7 +239,7 @@ function tpps_submission_file_get_parents($organism_number = 1) {
  *   Returns a base-64 encoded sha-256 hmac, with + replaced with -,
  *   / with _ and any = padding characters removed.
  */
-function tpps_submission_file_token_get($file) {
+function tpps_file_generate_token($file) {
   $file = (array) $file;
   if (empty($file)) {
     $message = "Can't generate File Secure Token for empty file.";
@@ -256,32 +252,4 @@ function tpps_submission_file_token_get($file) {
   $data = json_encode($file);
   $key = variable_get('tpps_submission_file_salt', 'yFA5HRQ5k4AWbsBd');
   return drupal_hmac_base64($data, $key);
-}
-
-/**
- * Gets file content from remote server.
- *
- * @param string $url
- *   File URL.
- *
- * @return string
- *   Returns file content.
- */
-function tpps_file_get_contents($url) {
-  $staging_domain = 'https://tgwebdev.cam.uchc.edu';
-  $username = variable_get('tpps_staging_http_username', '');
-  $password = variable_get('tpps_staging_http_password', '');
-
-  // @TODO Minor. Replace file_get_contents() with curl which is faster.
-  $use_include_path = FALSE;
-  $context = NULL;
-  // Staging server has Basic HTTP Authorization.
-  if (strpos($url, $staging_domain) === 0 && $username && $password) {
-    $auth = base64_encode($username . ':' . $password);
-    $context = stream_context_create(
-      ['http' => ['header' => 'Authorization: Basic ' . $auth]]
-    );
-  }
-  $content = file_get_contents($url, $use_include_path, $context);
-  return $content;
 }

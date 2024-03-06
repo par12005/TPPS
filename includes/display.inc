@@ -504,8 +504,7 @@ function tpps_flatten(array $state) {
           }
 
           if (($geno['files']['vcf'] ?? NULL) > 0) {
-            $file = file_load($geno['files']['vcf']);
-            if ($file) {
+            if ($file = tpps_file_load($geno['files']['vcf'])) {
               $file_url = file_create_url($file->uri);
               $data["$org_name VCF File (uploaded)"] = l($file->filename,
                 $file_url, ['attributes' => ['target' => 'blank']]
@@ -641,7 +640,7 @@ function tpps_table_display(array &$state, array $options = array()) {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       if (
         preg_match('/File/', $key)
-        && ($file = file_load($val) === FALSE)
+        && ($file = tpps_file_load($val) === FALSE)
         && stripos($key_str, 'VCF File (cluster)') === FALSE
       ) {
         // FILE NOT FOUND.
@@ -654,10 +653,7 @@ function tpps_table_display(array &$state, array $options = array()) {
 
         $file_url = check_plain(file_create_url($file->uri));
         $val_str = "<a href='$file_url' target='blank'>$file_name</a>";
-        if (
-          !empty($state['revised_files'][$val])
-          && ($revised_file = file_load($state['revised_files'][$val]))
-        ) {
+        if ($revised_file = tpps_file_load($state['revised_files'][$val] ?? '')) {
           $val = $state['revised_files'][$val];
           $file_url = check_plain(file_create_url($revised_file->uri));
           $file_name = $revised_file->filename;

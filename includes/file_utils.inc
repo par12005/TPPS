@@ -63,7 +63,7 @@ function tpps_parse_file_helper($row, array &$options) {
  *   The number of lines or rows in the file.
  */
 function tpps_file_len($fid) {
-  $file = file_load($fid);
+  $file = tpps_file_load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   $count = 0;
@@ -113,7 +113,7 @@ function tpps_file_len_helper($row, array &$options = array()) {
  *   The length of the longest line in the file.
  */
 function tpps_file_width($fid) {
-  $file = file_load($fid);
+  $file = tpps_file_load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
@@ -281,7 +281,7 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     $options['preserve'] = FALSE;
   }
 
-  if (!empty($fid) and ($file = file_load($fid))) {
+  if ($file = tpps_file_load($fid)) {
     $new_filename = $new_name . "." . tpps_get_path_extension($file->uri);
     if (!preg_match('/^(.*\/)(.*)$/', $new_name, $matches)) {
       preg_match('/^(.*\/).*$/', $file->uri, $matches);
@@ -295,8 +295,8 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
       $result = db_query('SELECT f.fid
               FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
       $record = $result->fetchObject();
-      if(isset($record)) {
-        return file_load($record->fid);
+      if (isset($record)) {
+        return tpps_file_load($record->fid);
       }
       return file_copy($file, $new_filename, FILE_EXISTS_RENAME);
     }
@@ -305,9 +305,9 @@ function tpps_rename_file($fid, $new_name, array $options = array()) {
     FROM {file_managed} f WHERE f.uri = :uri', array(':uri' => $new_filename));
     $record = $result->fetchObject();
 
-    if(isset($record->fid)) {
+    if (isset($record->fid)) {
       // print_r("FID:" . $record->fid . "\n");
-      return file_load($record->fid);
+      return tpps_file_load($record->fid);
     }
     $file_object = file_move($file, $new_filename, FILE_EXISTS_RENAME);
     // print_r("FILE OBJECT:\n");
@@ -562,7 +562,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
   if ($form_state['stage'] == TPPS_PAGE_3) {
     for ($i = 1; $i <= $form_state['stats']['species_count']; $i++) {
       if (
-        ($file = file_load($form_state['values']['tree-accession']["species-$i"]['file']))
+        ($file = tpps_file_load($form_state['values']['tree-accession']["species-$i"]['file']))
         && $form_state['values']['tree-accession']["species-$i"]['file'] != 0
       ) {
         file_usage_add($file, 'tpps', 'tpps_project', $accession);
@@ -589,7 +589,7 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
     $values = &$form_state['values'] ?? NULL;
     if (isset($form['organism-1']['genotype'])) {
       for ($i = 1; $i <= $organism_number; $i++) {
-        $file = file_load($values["organism-$i"]['genotype']['SNPs']['snps-assay'] ?? '');
+        $file = tpps_file_load($values["organism-$i"]['genotype']['SNPs']['snps-assay'] ?? '');
         if ($file) {
           file_usage_add($file, 'tpps', 'tpps_project', $accession);
           $values["organism-$i"]['genotype']['files']['snps-assay-columns'] = [];
@@ -623,8 +623,9 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
       for ($i = 1; $i <= $form_state['saved_values'][TPPS_PAGE_1]['organism']['number']; $i++) {
         if (!empty($form_state['values']["organism-$i"]['phenotype']['normal-check'])) {
           if (
-            ($file = file_load($form_state['values']["organism-$i"]['phenotype']['file'] ?? ''))
-            && $form_state['values']["organism-$i"]['phenotype']['file'] != 0
+            $file = tpps_file_load(
+              $form_state['values']["organism-$i"]['phenotype']['file']
+            )
           ) {
             file_usage_add($file, 'tpps', 'tpps_project', $accession);
           }
@@ -642,8 +643,8 @@ function tpps_save_file_columns(array &$form, array &$form_state) {
 
           if ($form_state['values']["organism-$i"]['phenotype']['check'] != '0') {
             if (
-              ($file = file_load($form_state['values']["organism-$i"]['phenotype']['metadata'] ?? ''))
-              && $form_state['values']["organism-$i"]['phenotype']['metadata'] != 0
+              $file = tpps_file_load(
+                $form_state['values']["organism-$i"]['phenotype']['metadata'])
             ) {
               file_usage_add($file, 'tpps', 'tpps_project', $accession);
             }
@@ -1061,7 +1062,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
     $options['job']->setItemsHandled(0);
   }
 
-  $file = file_load($fid);
+  $file = tpps_file_load($fid);
   $file_location = tpps_get_location($file->uri);
 
   // Item / line counter
@@ -1131,7 +1132,7 @@ function tpps_file_iterator($fid, $function, array &$options = array()) {
  *   The generator for the file.
  */
 function tpps_file_generator($fid, array $options = array()) {
-  $file = file_load($fid);
+  $file = tpps_file_load($fid);
   $location = tpps_get_location($file->uri);
   $extension = tpps_get_path_extension($location);
   switch ($extension) {
@@ -1359,7 +1360,7 @@ function tpps_flat_generator($location, array $options = array()) {
  *   or an array if the file is being used by any modules.
  */
 function tpps_file_remove($fid) {
-  if ($fid && $file = file_load($fid)) {
+  if ($file = tpps_file_load($fid)) {
     file_usage_delete($file, 'tpps', 'tpps_project');
     if ($result = file_delete($file)) {
       watchdog('tpps', 'Removed file: <pre>@file</pre>',
@@ -1425,4 +1426,61 @@ function tpps_file_get_header($data, array &$options = []) {
     // Function was called as file iterator callback it $data is $row.
     $options['header'] = $data;
   }
+}
+
+/**
+ * More safe way to load managed file object.
+ *
+ * Checks $fid and file size.
+ *
+ * Usage:
+ *   $file = tpps_file_load($fid);
+ *   if ($file && $file->status != $status) {}
+ * Note: don't use in one condition.
+ * Wrong:
+ *   if ($file = tpps_file_load($fid) && $file->status != $status) {}
+ *
+ * @param int $fid
+ *   File Id.
+ *
+ * @return mixed
+ *   Returns FALSE in case of errors.
+ *   Returns Managed File object.
+ */
+function tpps_file_load($fid = NULL) {
+  if (!empty($fid) && is_numeric($fid) && $file = file_load($fid)) {
+    if ($file->filesize ?? FALSE) {
+      // Do not allows empty files with zero-size.
+      return $file;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Gets file content from remote server.
+ *
+ * @param string $url
+ *   File URL.
+ *
+ * @return string
+ *   Returns file content.
+ */
+function tpps_file_get_contents($url) {
+  $staging_domain = 'https://tgwebdev.cam.uchc.edu';
+  $username = variable_get('tpps_staging_http_username', '');
+  $password = variable_get('tpps_staging_http_password', '');
+
+  // @TODO Minor. Replace file_get_contents() with curl which is faster.
+  $use_include_path = FALSE;
+  $context = NULL;
+  // Staging server has Basic HTTP Authorization.
+  if (strpos($url, $staging_domain) === 0 && $username && $password) {
+    $auth = base64_encode($username . ':' . $password);
+    $context = stream_context_create(
+      ['http' => ['header' => 'Authorization: Basic ' . $auth]]
+    );
+  }
+  $content = file_get_contents($url, $use_include_path, $context);
+  return $content;
 }
