@@ -257,4 +257,7 @@ form div.warning {
 select option:selected {
   background: silver;
 }
+.tpps-hidden {
+  display: none;
+}
 /* [/VS] */

@@ -184,9 +184,15 @@ function tpps_genotype_subform(array $chest) {
     '#type' => 'fieldset',
     '#title' => t('Other Information:'),
     '#collapsible' => TRUE,
-    // This element used to update whole fieldset by AJAX-request.
-    '#prefix' => "<div id='$organism_name-genotype-$other_fieldset'>",
-    '#suffix' => '</div>',
+    // This element used to update whole fieldset by AJAX-request but this
+    // feature is disabled for now because is missing on mockups.
+    //'#prefix' => "<div id='$organism_name-genotype-$other_fieldset'>",
+    //'#suffix' => '</div>',
+    //
+    //
+    //
+// @TODO Check if disabled fields are in use by submit_all.php script.
+    //
     '#states' => [
       'visible' => [
         ':input[name="' . $organism_name . '[genotype]'
@@ -549,37 +555,43 @@ function tpps_genotype_subform(array $chest) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Other Columns.
   // Field [$other_fieldset]['other']['dynamic'].
-  $default_dynamic = !empty($page4_values[$organism_name]['genotype'][$other_fieldset]['other-columns']);
-  // Field was relocated (v.2). ['files'] -> ['other'].
-  $fields[$other_fieldset]['other']['dynamic'] = [
-    '#type' => 'checkbox',
-    '#title' => t('This file needs dynamic dropdown options for column data type specification'),
-    '#ajax' => [
-      // @TODO Check if this element exists on page.
-      'wrapper' => "edit-$organism_name-genotype-$other_fieldset-other-ajax-wrapper",
-      'callback' => 'tpps_page_4_file_dynamic',
-      'effect' => 'slide',
-    ],
-    '#default_value' => $default_dynamic,
-  ];
-  $dynamic = tpps_get_ajax_value($form_state,
-    [$organism_name, 'genotype', $other_fieldset, 'other', 'dynamic'],
-    $default_dynamic,
-    'other'
-  );
+  if (0) {
+    // Those fields was disabled because they are misssing on Meghan's Mockups,
+    // seems didn't work correctly for a long time and uses AJAX.
+    $default_dynamic = !empty($page4_values[$organism_name]['genotype'][$other_fieldset]['other-columns']);
+    // Field was relocated (v.2). ['files'] -> ['other'].
+    $fields[$other_fieldset]['dynamic'] = [
+      '#type' => 'checkbox',
+      '#title' => t('This file needs dynamic dropdown options for column data type specification'),
+      '#ajax' => [
+        // @TODO Check if this element exists on page.
+        // Reloads whole fieldset to show dynamic fields.
+        'wrapper' => "edit-$organism_name-genotype-$other_fieldset",
+        'callback' => 'tpps_page_4_file_dynamic',
+        'effect' => 'slide',
+      ],
+      '#default_value' => $default_dynamic,
+    ];
+    $dynamic = tpps_get_ajax_value($form_state,
+      [$organism_name, 'genotype', $other_fieldset, 'dynamic'],
+      $default_dynamic,
+      'other'
+    );
 
-  if ($dynamic) {
-    $fields[$other_fieldset]['other']['columns'] = [
-      '#description' => t('Please define which columns hold the required data: '
-        . '<br />Plant Identifier, Genotype Data'
-      ),
-    ];
-    $fields[$other_fieldset]['other']['columns-options'] = [
-      '#type' => 'hidden',
-      '#value' => ['Genotype Data', 'Plant Identifier', 'N/A'],
-    ];
+    // @TODO Show this fields using '#states'.
+    if ($dynamic) {
+      $fields[$other_fieldset]['columns'] = [
+        '#description' => t('Please define which columns hold the required data: '
+          . '<br />Plant Identifier, Genotype Data'
+        ),
+      ];
+      $fields[$other_fieldset]['columns-options'] = [
+        '#type' => 'hidden',
+        '#value' => ['Genotype Data', 'Plant Identifier', 'N/A'],
+      ];
+    }
+    $fields[$other_fieldset]['no-header'] = [];
   }
-  $fields[$other_fieldset]['other']['no-header'] = [];
 
   return $fields;
 }

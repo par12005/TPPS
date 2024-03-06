@@ -119,10 +119,10 @@ function tpps_genotype_snps_fieldset_callback(array $form, array &$form_state) {
  *   The element in the form to be updated.
  */
 function tpps_page_4_file_dynamic(array $form, array &$form_state) {
-
   $parents = $form_state['triggering_element']['#parents'];
   array_pop($parents);
 
   $element = drupal_array_get_nested_value($form, $parents);
+  // $element contains 'Other Information' fieldset which is parent.
   return $element;
 }

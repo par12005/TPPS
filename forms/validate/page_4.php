@@ -647,6 +647,7 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   $id = "organism-$org_num";
 
   $snps_fieldset = 'SNPs';
+  $other_fieldset = 'other';
   $snps = $genotype[$snps_fieldset] ?? NULL;
   $ref_genome = $genotype[$snps_fieldset]['ref-genome'] ?? NULL;
   $genotyping_type = $genotype[$snps_fieldset]['genotyping-type'] ?? [];
@@ -851,12 +852,10 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   if (!empty($marker_type['Other'])) {
-    $other_fieldset = 'other';
     tpps_is_required_field_empty($form_state,
       [$id, 'genotype', $other_fieldset, 'other-marker']
     );
     tpps_is_required_field_empty($form_state,
-  $snps_fieldset = 'SNPs';
       ['organism-' . $org_num, 'genotype', $other_fieldset, 'other']
     );
   }
