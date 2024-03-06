@@ -437,6 +437,8 @@ function tpps_form_add_report(array &$form, array $meta) {
 /**
  * Adds File Upload field to form.
  *
+ * WARNING: Currently could be used only at Page 4.
+ *
  * @param array $chest
  *   Data. Keys are:
  *   'form_state' array
@@ -466,11 +468,12 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     'description' => $description,
  *     'extensions' => $extensions, // Default: ['csv tsv xlsx']
  *     'states' => $states, // Default is ''.
- *     'empty_field_value' => 'NA',
+ *     'empty_field_value' => TRUE,
  *     // Element 'extra_elements' allow to add any not expected form elements.
  *     'extra_elements' => [],
  *     'use_fid' => FALSE, // Default is FALSE. See below.
  *     'show_extensions_in_description' => TRUE, // bool. Default is FALSE.
+ *     'page' => TPPS_PAGE_3; // int Default is TPPS_PAGE_4.
  *   ]);
  *
  *   List of fields which used 'fid'-related code:
@@ -499,13 +502,15 @@ function tpps_form_build_file_field(array $chest) {
   $allow_file_reuse = $chest['allow_file_reuse'] ?? FALSE;
   $parents = $chest['parents'] ?? [];
 
+  // @TODO Minor. Add page id to $chest['parents'].
+  $page = $chest['page'] ?? TPPS_PAGE_4;
   $title = $chest['title'] ?? '';
   $optional = $chest['optional'] ?? FALSE;
   $upload_location = $chest['upload_location'] ?? '';
   $extensions = $chest['extensions'] ?? ['csv tsv'];
   $description = $chest['description'] ?? '';
   $states = $chest['states'] ?? '';
-  $empty_field_value = $chest['empty_field_value'] ?? 'NA';
+  $empty_field_value = $chest['empty_field_value'] ?? FALSE;
   // Some fields have used this piece of code before.
   // To use: $meta['use_fid'] = TRUE; Default is FALSE.
   $use_fid = $chest['use_fid'] ?? FALSE;
@@ -560,12 +565,17 @@ function tpps_form_build_file_field(array $chest) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Customization.
   //
-  // Add extra text field for empty field value. Default is FALSE.
-  if (!empty($empty_field_value)) {
+  // Add a text-field for an empty field value. Default is FALSE.
+  if ($empty_field_value) {
+    $empty_field_parent = drupal_array_get_nested_value(
+      $form_state['saved_values'][$page], $parents
+    );
     $parent_element[$field_name]['empty'] = [
-      '#default_value' => $empty_field_value,
+      // Note: drupal_array_get_nested_value() don't allow to use default value.
+      '#default_value' => $empty_field_parent[$file_field_name]['other'] ?? 'NA',
     ];
   }
+
   // @TODO Minor. Think about using elements with leading '#' to use them as
   // defaults for fields.
   if (!empty($extra_elements)) {

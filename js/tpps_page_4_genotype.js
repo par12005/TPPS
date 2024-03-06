@@ -116,16 +116,18 @@
             // We can't use Drupal States API because it doesn't work with
             // multiple select form elements.
             for (let i = 1; i <= settings.tpps.organismNumber; i++) {
-              let ploidySelector = '[name="organism-' + i + '[genotype][files][ploidy]"]';
+              let ploidySelector = '[name="organism-' + i + '[genotype]['
+                + settings.tpps.ssrsFieldset + '][ploidy]"]';
               $(ploidySelector).change(function() {
                 for (const [value, description] of Object.entries(settings.tpps.ploidyDescriptions)) {
                   if ($(this).val() == value) {
                     for (const ssrFieldName of settings.tpps.ssrFields) {
-                      let ssrSelector = '[name="organism-' + i + '[genotype][files][' + ssrFieldName +']"]';
-                      console.log($(ssrSelector));
-                      console.log(
-                        $(ssrSelector).parents('.form-item').find('.description').html()
-                      );
+                      let ssrSelector = '[name="organism-' + i + '[genotype]['
+                        + settings.tpps.ssrsFieldset + '][' + ssrFieldName +']"]';
+                      //console.log($(ssrSelector));
+                      //console.log(
+                      //  $(ssrSelector).parents('.form-item').find('.description').html()
+                      //);
                       // @TODO Add 'description' with leading '<br/>
                       // console.log( $(this).val());
                       // console.log(ssrFieldName);
