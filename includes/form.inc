@@ -936,7 +936,7 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
     // Check if there is a list of parents.
     if (count($path) >= 1) {
       $result['parent_element'] = &drupal_array_get_nested_value($array, $path);
-      if (empty($result['parent_element'])) {
+      if (empty($result['parent_element']) && tpps_is_debug_mode()) {
         tpps_message(
           'Empty parent element. @path.', ['@path' => print_r($path, 1)]
         );

@@ -28,6 +28,7 @@ function tpps_admin_imported_studies_report() {
 
     $rows[] = [
       l($local, 'tpps/submission/' . $local . '/view'),
+      $state['status'] ?? NULL,
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
       (isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
@@ -67,6 +68,7 @@ function tpps_admin_imported_studies_report() {
   $output .= theme('table', [
     'header' => [
       t('Imported<br /><strong>Accession</strong>'),
+      t('Status'),
       t('Original') . $version_tags,
       t('Submitted') . $version_tags,
       t('State') . $version_tags,
