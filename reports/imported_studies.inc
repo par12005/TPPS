@@ -25,14 +25,16 @@ function tpps_admin_imported_studies_report() {
     }
     $interface = tpps_submission_interface_load($local) ?? [];
     $state = tpps_load_submission_state($local) ?? [];
+    $info = tpps_load_submission_info($local) ?? [];
 
     $rows[] = [
       l($local, 'tpps/submission/' . $local . '/view'),
       $state['status'] ?? NULL,
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
-      (isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
-      (isset($interface['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
+      $info['uid'] ?? NULL,
+      //(isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
+      //(isset($interface['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
       $import_meta['full_date'] ?? NULL,
       $import_meta['accession_link'] ?? NULL,
       l($import_meta['site'] ?? NULL, $import_meta['site'] ?? NULL),
@@ -71,8 +73,9 @@ function tpps_admin_imported_studies_report() {
       t('Status'),
       t('Original') . $version_tags,
       t('Submitted') . $version_tags,
-      t('State') . $version_tags,
-      t('Interface') . $version_tags,
+      t('Submitter<br />UID'),
+      //t('State') . $version_tags,
+      //t('Interface') . $version_tags,
       t('Import Date'),
       t('Original <br /><strong>Accession</strong>'),
       t('Original Site'),
