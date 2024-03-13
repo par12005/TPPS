@@ -12,8 +12,10 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
  */
 function tpps_submission_view_form(array $form, array $form_state, $accession = '') {
   tpps_submission_list_validate_accession($accession);
+  $submission = new Submission($accession);
+  $state = $submission->state;
 
-  if (empty($state = tpps_load_submission_state($accession))) {
+  if (empty($state)) {
     drupal_set_message(t('Submission "<strong>@accession</strong>" not found. '
       . 'Please choose from the list below.',
       ['@accession' => $accession]), 'error'
@@ -31,8 +33,8 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Import data.
-  module_load_include('inc', 'tpps', 'includes/submissions');
-  $import_meta = tpps_submission_get_import_meta($state);
+  //module_load_include('inc', 'tpps', 'includes/submissions');
+  $import_meta = $submission->getImportMeta();
   if (!empty($import_meta)) {
     tpps_form_add_report($form, [
       'import_metadata' => [

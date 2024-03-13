@@ -86,7 +86,6 @@ function tpps_manage_generate_all_materialized_views(array $form, array &$form_s
 function tpps_manage_submission_form(array &$form, array &$form_state, $accession = NULL) {
   global $base_url;
   $submission_info = tpps_load_submission_info($accession, 1);
-  // @TODO Rename $submission_interface with $submission_interface.
   $submission_interface = tpps_submission_interface_load($accession, 1);
 
   $page1_values = &$submission_interface['saved_values'][TPPS_PAGE_1] ?? NULL;

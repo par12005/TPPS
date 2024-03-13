@@ -646,67 +646,9 @@ function tpps_form_build_file_field(array $form_bus) {
   }
 }
 
-// ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// TPPS Array
-
-/**
- * Gets value of the nested element from the array.
- *
- * To get value by reference use:
- * $ref = &tpps_array_get_value($array, $parents);
- *
- * Shortcut for function drupal_array_get_nested_value() with default value.
- * See
- * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_array_get_nested_value/7.x#.
- *
- * Note:
- * This function is very common but gunction tpps_get_ajax_value() is more
- * specific. It does much more and works with 'values' and 'complete form'
- * elements of given arrays.
- *
- * @param array $array
- *   Array to search.
- * @param array $parents
- *   List of the element's parents (including element name).
- *   When empty array then original $array will be returned.
- *
- * @return mixed
- *   Returns the reference (!) to the value of the element of the array.
- *   Returns $default if element wasn't found in given array but not reference.
- *   Returns $array when $parents is an empty array.
- */
-function &tpps_array_get_value(array &$array, array $parents = []) {
-  $value = &drupal_array_get_nested_value($array, $parents, $key_exists);
-  if ($key_exists) {
-    return $value;
-  }
-  else {
-    $null = NULL;
-    return $null;
-  }
-}
-
-/**
- * Sets value of the nested element in the array.
- *
- * Shortcut for function drupal_array_set_nested_value().
- * See
- * https://api.drupal.org/api/drupal/includes%21common.inc/function/drupal_array_set_nested_value/7.x#.
- *
- * @param array $array
- *   Array to search.
- * @param array $parents
- *   List of the element's parents (including element name).
- *   When $parents is an empty array then $array = $value.
- * @param mixed $value
- *   The value.
- */
-function tpps_array_set_value(array &$array, array $parents, $value = NULL) {
-  drupal_array_set_nested_value($array, $parents, $value);
-}
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-// Chest
+// Form Bus is a way to share data between functions.
 
 /**
  * Gets submission value by short name from the $form_bus.

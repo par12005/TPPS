@@ -599,6 +599,8 @@ function tpps_flatten(array $state) {
  */
 function tpps_table_display(array &$state, array $options = array()) {
 
+  $submission = new Submission();
+  $submission->state = $state;
   $flat = tpps_flatten($state);
   $map_api_key = variable_get('tpps_maps_api_key', NULL);
 
@@ -618,7 +620,7 @@ function tpps_table_display(array &$state, array $options = array()) {
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       if ($key == 'tpps_submission_import') {
         $key_str = t('Submission Import Metadata');
-        $import_meta = tpps_submission_get_import_meta($state);
+        $import_meta = $submission->getImportMeta();
         $val_str = theme('item_list', [
           'items' => [
             t('Original Accession: !url', ['!url' => $import_meta['accession_link']]),
