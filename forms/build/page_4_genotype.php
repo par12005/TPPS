@@ -15,7 +15,7 @@
 /**
  * Creates fields describing the genotype data for the submission.
  *
- * @param array $chest
+ * @param array $form_bus
  *   Accosiative array with metadata.
  *
  *   Per study data:
@@ -41,30 +41,30 @@
  *
  * @TODO Do not return because we update $form.
  */
-function tpps_genotype_subform(array $chest) {
-  if (!isset($chest['organism_id']) || !isset($chest['type'])) {
+function tpps_genotype_subform(array $form_bus) {
+  if (!isset($form_bus['organism_id']) || !isset($form_bus['type'])) {
     return [];
   }
   $snps_fieldset = 'SNPs';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Map from the $chest.
-  $form = &$chest['form'];
-  $form_state = &$chest['form_state'];
-  $i = $chest['organism_id'];
-  $organism_count = $chest['organism_count'] ?? 1;
-  $type = $chest['type'] ?? '';
+  // Map from the $form_bus.
+  $form = &$form_bus['form'];
+  $form_state = &$form_bus['form_state'];
+  $i = $form_bus['organism_id'];
+  $organism_count = $form_bus['organism_count'] ?? 1;
+  $type = $form_bus['type'] ?? '';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Get "treasure" from the $chest.
+  // Get "treasure" from the $form_bus.
   $page4_values = &$form_state['saved_values'][TPPS_PAGE_4] ?? [];
-  $organism_count = $chest['page1_values']['organism']['number'];
+  $organism_count = $form_bus['page1_values']['organism']['number'];
   $organism_name = 'organism-' . $i;
   $genotype_dir = variable_get(
-    'tpps_' . $chest['type'] . '_files_dir',
-    'tpps_' . $chest['type']
+    'tpps_' . $form_bus['type'] . '_files_dir',
+    'tpps_' . $form_bus['type']
   );
   tpps_add_css_js('page_4_genotype', $form);
 
-  $fields = &$form[$organism_name][$chest['type']];
+  $fields = &$form[$organism_name][$form_bus['type']];
   $fields = [
     '#type' => 'fieldset',
     '#title' => t('Genotype Information:'),
@@ -79,7 +79,7 @@ function tpps_genotype_subform(array $chest) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Only for 1st organism.
   if ($i == 1) {
-    tpps_form_add_yesno_field(array_merge($chest,
+    tpps_form_add_yesno_field(array_merge($form_bus,
       [
         'parents' => [$organism_name, $type],
         'field_name' => 'are_genotype_markers_identical',
@@ -88,7 +88,7 @@ function tpps_genotype_subform(array $chest) {
       ]
     ));
     // Оnly for non-first questions. Next 3 questions are dependent on 1st one.
-    $chest['#states'] = [
+    $form_bus['#states'] = [
       'invisible' => [
         ':input[name="organism-1[genotype][are_genotype_markers_identical]"]' => ['value' => 0],
       ],
@@ -113,7 +113,7 @@ function tpps_genotype_subform(array $chest) {
       in_array($marker_name, $genotype_marker_type)
       ? 'yes' : (count($genotype_marker_type) ? 'no' : 0)
     );
-    tpps_form_add_yesno_field(array_merge($chest,
+    tpps_form_add_yesno_field(array_merge($form_bus,
       [
         'parents' => [$organism_name, $type],
         'field_name' => $field_name,
@@ -127,8 +127,8 @@ function tpps_genotype_subform(array $chest) {
       ]
     ));
   }
-  unset($chest['parents']);
-  unset($chest['#states']);
+  unset($form_bus['parents']);
+  unset($form_bus['#states']);
 
   // @TODO Hide not genotype information fieldset but organism fieldset.
   //'#states' => [
@@ -175,7 +175,7 @@ function tpps_genotype_subform(array $chest) {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // SNPs Fieldset's fields.
   tpps_page_4_marker_info($fields, $form_state, $organism_name);
-  tpps_page_4_genotype_ssrs(array_merge($chest, [
+  tpps_page_4_genotype_ssrs(array_merge($form_bus, [
     'organism_name' => $organism_name,
   ]));
   // Other.
@@ -272,7 +272,7 @@ function tpps_genotype_subform(array $chest) {
   $file_field_name = 'vcf';
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
-    tpps_add_dropdown_file_selector(array_merge($chest, [
+    tpps_add_dropdown_file_selector(array_merge($form_bus, [
       'form' => &$fields,
       // Note: 'parents' not yet implemented.
       'parents' => ['files'],
@@ -288,18 +288,18 @@ function tpps_genotype_subform(array $chest) {
   $file_field_name = 'vcf';
   $snps_fieldset = 'SNPs';
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  tpps_form_build_file_field(array_merge($chest, [
+  tpps_form_build_file_field(array_merge($form_bus, [
     'parents' => [$organism_name, 'genotype', $snps_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
-    'type' => $chest['type'],
+    'type' => $form_bus['type'],
     'description' => '',
     'extensions' => ['gz tar zip'],
   ]));
   if ($is_tppsc) {
     tpps_array_set_value(
-      $chest['form'],
+      $form_bus['form'],
       [$organism_name, 'genotype', $snps_fieldset, $file_field_name, '#states'],
       [
         'visible' => [
@@ -317,12 +317,12 @@ function tpps_genotype_subform(array $chest) {
   $title = t('SNP Assay File');
   $file_field_name = 'snps-assay';
   // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
-  tpps_form_build_file_field(array_merge($chest, [
+  tpps_form_build_file_field(array_merge($form_bus, [
     'parents' => [$organism_name, 'genotype', $snps_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
-    'type' => $chest['type'],
+    'type' => $form_bus['type'],
     // According to Meghan's mockup.
     // 'allow_file_reuse' => TRUE,
     'description' => t('Please provide a spreadsheet with columns '
@@ -367,7 +367,7 @@ function tpps_genotype_subform(array $chest) {
       'field_name' => $file_field_name,
       'title' => $title,
       'organism_name' => $organism_name,
-      'type' => $chest['type'],
+      'type' => $form_bus['type'],
     ]);
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
     $fields[$snps_fieldset]['assay-citation'] = [
@@ -394,7 +394,7 @@ function tpps_genotype_subform(array $chest) {
       'field_name' => $file_field_name,
       'title' => $title,
       'organism_name' => $organism_name,
-      'type' => $chest['type'],
+      'type' => $form_bus['type'],
       'description' => t('Please upload a spreadsheet file containing '
         . 'SNPs Association data. When your file is uploaded, you will '
         . 'be shown a table with your column header names, several '
@@ -417,7 +417,7 @@ function tpps_genotype_subform(array $chest) {
       [
         'empty' => [
           '#default_value' => tpps_array_get_value(
-            $chest['page4_values'],
+            $form_bus['page4_values'],
             [$organism_name, 'genotype', $snps_fieldset, $file_field_name, 'empty'])
             ?? 'NA',
         ],
@@ -484,7 +484,7 @@ function tpps_genotype_subform(array $chest) {
       'form_state' => $form_state,
       'parents' => [$organism_name, 'genotype', $snps_fieldset],
       'organism_name' => $organism_name,
-      'type' => $chest['type'],
+      'type' => $form_bus['type'],
       'field_name' => $file_field_name,
       'title' => $title,
       // @todo [VS] Replace with 'required' with default value 'TRUE'.
@@ -500,7 +500,7 @@ function tpps_genotype_subform(array $chest) {
       'form_state' => $form_state,
       'parents' => [$organism_name, 'genotype', $snps_fieldset],
       'organism_name' => $organism_name,
-      'type' => $chest['type'],
+      'type' => $form_bus['type'],
       'field_name' => $file_field_name,
       'title' => $title,
       'optional' => TRUE,
@@ -547,7 +547,7 @@ function tpps_genotype_subform(array $chest) {
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
-    'type' => $chest['type'],
+    'type' => $form_bus['type'],
     'description' => $description,
     'empty_field_value' => TRUE,
   ]);
@@ -888,25 +888,25 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 /**
  * Adds checkbox to select existing file or upload new one.
  *
- * @param array $chest
+ * @param array $form_bus
  *   Required data.
  *
  * @return mixed
  *   Returns value of file field.
  */
-function tpps_add_dropdown_file_selector(array $chest) {
-  if (!isset($chest['form']) || empty($chest['file_field_name'])
-    || empty($chest['file_name']) || empty($chest['organism_name'])
+function tpps_add_dropdown_file_selector(array $form_bus) {
+  if (!isset($form_bus['form']) || empty($form_bus['file_field_name'])
+    || empty($form_bus['file_name']) || empty($form_bus['organism_name'])
   ) {
     return;
   }
   $snps_fieldset = 'SNPs';
-  $form = &$chest['form'];
-  $file_field_name = $chest['file_field_name'];
-  $file_name = $chest['file_name'];
-  $organism_name = $chest['organism_name'];
+  $form = &$form_bus['form'];
+  $file_field_name = $form_bus['file_field_name'];
+  $file_name = $form_bus['file_name'];
+  $organism_name = $form_bus['organism_name'];
   // @TODO Use $parents instead of hardcoded 'files' element.
-  $parents = $chest['parents'];
+  $parents = $form_bus['parents'];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   module_load_include('inc', 'tpps', 'includes/common');
   $params = [
@@ -951,14 +951,14 @@ function tpps_add_dropdown_file_selector(array $chest) {
 /**
  * Adds SSRs/cpSSRs fields.
  *
- * @param array $chest
+ * @param array $form_bus
  *   Required metadata.
  */
-function tpps_page_4_genotype_ssrs(array $chest) {
-  $form = &$chest['form'];
-  // @TODO Minor. Replace 'genotype' with $chest['type'].
-  $organism_name = $chest['organism_name'];
-  $fields = &$form[$organism_name][$chest['type']];
+function tpps_page_4_genotype_ssrs(array $form_bus) {
+  $form = &$form_bus['form'];
+  // @TODO Minor. Replace 'genotype' with $form_bus['type'].
+  $organism_name = $form_bus['organism_name'];
+  $fields = &$form[$organism_name][$form_bus['type']];
   // SSRs/cpSSRs.
   $ssrs_fieldset = 'ssrs_cpssrs';
   $fields[$ssrs_fieldset] = [
@@ -988,7 +988,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
       'Both SSRs and cpSSRs' => t('Both SSRs and cpSSRs'),
     ],
     '#default_value' => tpps_get_ajax_value(
-      $chest['form_state'], [$organism_name, 'genotype', $ssr_type_select], 'SSRs'
+      $form_bus['form_state'], [$organism_name, 'genotype', $ssr_type_select], 'SSRs'
     ),
     '#states' => [
       'visible' => [
@@ -1011,7 +1011,7 @@ function tpps_page_4_genotype_ssrs(array $chest) {
       'Polyploid' => t('Polyploid'),
     ],
     '#default_value' => tpps_get_ajax_value(
-      $chest['form_state'], [$organism_name, 'genotype', 'files', 'ploidy'], 'Haploid'
+      $form_bus['form_state'], [$organism_name, 'genotype', 'files', 'ploidy'], 'Haploid'
     ),
   ];
   if (variable_get('tpps_page_4_update_ploidy_description', TRUE)) {
@@ -1055,12 +1055,12 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   // Field was relocated (v.2).
   //'source' => [$organism_name, 'genotype', 'files', 'ssrs'];
   //'target' => [$ssrs_fieldset, 'ssrs'];
-  tpps_form_build_file_field(array_merge($chest, [
+  tpps_form_build_file_field(array_merge($form_bus, [
     'parents' => [$organism_name, 'genotype', $ssrs_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
-    'type' => $chest['type'],
+    'type' => $form_bus['type'],
     'description' => t($ssr_field_description, ['@type' => 'SSR']),
     // Add extra text field for empty field value.
     'empty_field_value' => TRUE,
@@ -1107,12 +1107,12 @@ function tpps_page_4_genotype_ssrs(array $chest) {
   // Field was relocated (v.2).
   // ['saved_values', 4, "organism-$i", 'genotype', 'files', 'ssrs_extra'] =>
   // ['saved_values', 4, "organism-$i", 'genotype', $ssrs_fieldset, 'ssrs_extra'];
-  tpps_form_build_file_field(array_merge($chest, [
+  tpps_form_build_file_field(array_merge($form_bus, [
     'parents' => [$organism_name, 'genotype', $ssrs_fieldset],
     'field_name' => $file_field_name,
     'title' => $title,
     'organism_name' => $organism_name,
-    'type' => $chest['type'],
+    'type' => $form_bus['type'],
     'description' => t($ssr_field_description, ['@type' => 'cpSSR']),
     // Add extra text field for empty field value.
     'empty_field_value' => TRUE,

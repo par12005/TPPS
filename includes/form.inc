@@ -13,7 +13,7 @@
  *
  * The same buttons will be added above and below main form.
  *
- * @param array $chest
+ * @param array $form_bus
  *   Metadata where keys are:
  *   'form' array
  *     Drupal Form Array.
@@ -27,9 +27,9 @@
  *       'P' for phenotype,
  *       'E' for environment.
  */
-function tpps_form_add_buttons(array $chest) {
-  $form = &$chest['form'];
-  $page = $chest['page'];
+function tpps_form_add_buttons(array $form_bus) {
+  $form = &$form_bus['form'];
+  $page = $form_bus['page'];
   $scope_list = [
     'header' => -1000,
     'footer' => 1000,
@@ -71,9 +71,9 @@ function tpps_form_add_buttons(array $chest) {
         ];
 
         // Pre-validate VCF.
-        if (!empty($chest['data_type']) && preg_match('/G/', $chest['data_type'])) {
+        if (!empty($form_bus['data_type']) && preg_match('/G/', $form_bus['data_type'])) {
           $pre_valid_states = [];
-          for ($i = 1; $i <= $chest['organism_number']; $i++) {
+          for ($i = 1; $i <= $form_bus['organism_number']; $i++) {
             $pre_valid_states["input[name=\"organism-{$i}[genotype][SNPs][file-type][VCF]\"]"]
               = ['checked' => FALSE];
           }
@@ -328,7 +328,7 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
 /**
  * Adds selectbox with 'Yes/No' options to the form.
  *
- * @param array $chest
+ * @param array $form_bus
  *   Associative array with metadata to build the field. Keys are:
  *   'form' array
  *      Required. Drupal Form Array. E.g., &$form.
@@ -347,53 +347,53 @@ function tpps_form_search_field(array $array, $field_type = 'managed_file') {
  *     '#name' string
  *        Unique name in $form array and HTML 'name' attribute.
  */
-function tpps_form_add_yesno_field(array $chest) {
+function tpps_form_add_yesno_field(array $form_bus) {
 
   // Validate required elements.
-  if (empty($chest['form'])) {
+  if (empty($form_bus['form'])) {
     watchdog('tpps', 'Empty $form received', [], WATCHDOG_ERROR);
     return;
   }
   else {
-    $form = &$chest['form'];
+    $form = &$form_bus['form'];
   }
-  if (empty($chest['field_name']) || empty($chest['#title'])) {
+  if (empty($form_bus['field_name']) || empty($form_bus['#title'])) {
     watchdog('tpps', 'Empty "name" or "#title" received', [], WATCHDOG_ERROR);
     return;
   }
-  if (!isset($chest['organism_id'])) {
+  if (!isset($form_bus['organism_id'])) {
     return;
   }
-  $field_name = $chest['field_name'];
-  $i = $chest['organism_id'];
+  $field_name = $form_bus['field_name'];
+  $i = $form_bus['organism_id'];
 
   $organism_name = 'organism-' . $i;
 
   // $form_state is optional and used for default value only.
-  $form_state = &$chest['form_state'] ?? [];
-  unset($chest['form_state']);
+  $form_state = &$form_bus['form_state'] ?? [];
+  unset($form_bus['form_state']);
   // Default value.
   $page4_values = $form_state['saved_values'][TPPS_PAGE_4] ?? NULL;
   // Options.
   // Machine names are in lower case to indicate that it's not human readable
   // name which could be localized.
   $options = ['yes' => t('Yes'), 'no' => t('No')];
-  if (!($chest['#required'] ?? FALSE)) {
+  if (!($form_bus['#required'] ?? FALSE)) {
     $options = [0 => t('- Select -')] + $options;
   }
   // Build field using defaults.
   $defaults = [
     '#type' => 'select',
     '#options' => $options,
-    '#default_value' => ($chest['page4_values'][$field_name] ?? NULL),
+    '#default_value' => ($form_bus['page4_values'][$field_name] ?? NULL),
     '#tree' => TRUE,
 
   ];
-  $field = array_filter($chest, function ($e) {
+  $field = array_filter($form_bus, function ($e) {
     return strpos($e, '#') !== FALSE;
   }, ARRAY_FILTER_USE_KEY);
   $field = array_merge($defaults, $field);
-  $parents = array_merge(($chest['parents'] ?? []), [$field_name]);
+  $parents = array_merge(($form_bus['parents'] ?? []), [$field_name]);
   drupal_array_set_nested_value($form, $parents, $field);
 }
 
@@ -439,7 +439,7 @@ function tpps_form_add_report(array &$form, array $meta) {
  *
  * WARNING: Currently could be used only at Page 4.
  *
- * @param array $chest
+ * @param array $form_bus
  *   Data. Keys are:
  *   'form_state' array
  *     Submitted Form API values.
@@ -490,31 +490,31 @@ function tpps_form_add_report(array &$form, array $meta) {
  *     'vcf',
  *     'other'.
  */
-function tpps_form_build_file_field(array $chest) {
-  if (empty($field_name = $chest['field_name'])) {
+function tpps_form_build_file_field(array $form_bus) {
+  if (empty($field_name = $form_bus['field_name'])) {
     return;
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Map from the $chest.
-  $form = &$chest['form'];
-  $form_state = $chest['form_state'] ?? [];
-  $organism_name = $chest['organism_name'];
-  $allow_file_reuse = $chest['allow_file_reuse'] ?? FALSE;
-  $parents = $chest['parents'] ?? [];
+  // Map from the $form_bus.
+  $form = &$form_bus['form'];
+  $form_state = $form_bus['form_state'] ?? [];
+  $organism_name = $form_bus['organism_name'];
+  $allow_file_reuse = $form_bus['allow_file_reuse'] ?? FALSE;
+  $parents = $form_bus['parents'] ?? [];
 
-  // @TODO Minor. Add page id to $chest['parents'].
-  $page = $chest['page'] ?? TPPS_PAGE_4;
-  $title = $chest['title'] ?? '';
-  $optional = $chest['optional'] ?? FALSE;
-  $upload_location = $chest['upload_location'] ?? '';
-  $extensions = $chest['extensions'] ?? ['csv tsv'];
-  $description = $chest['description'] ?? '';
-  $states = $chest['states'] ?? '';
-  $empty_field_value = $chest['empty_field_value'] ?? FALSE;
+  // @TODO Minor. Add page id to $form_bus['parents'].
+  $page = $form_bus['page'] ?? TPPS_PAGE_4;
+  $title = $form_bus['title'] ?? '';
+  $optional = $form_bus['optional'] ?? FALSE;
+  $upload_location = $form_bus['upload_location'] ?? '';
+  $extensions = $form_bus['extensions'] ?? ['csv tsv'];
+  $description = $form_bus['description'] ?? '';
+  $states = $form_bus['states'] ?? '';
+  $empty_field_value = $form_bus['empty_field_value'] ?? FALSE;
   // Some fields have used this piece of code before.
   // To use: $meta['use_fid'] = TRUE; Default is FALSE.
-  $use_fid = $chest['use_fid'] ?? FALSE;
-  $extra_elements = $chest['extra_elements'] ?? [];
+  $use_fid = $form_bus['use_fid'] ?? FALSE;
+  $extra_elements = $form_bus['extra_elements'] ?? [];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get treasure.
   //
@@ -524,9 +524,9 @@ function tpps_form_build_file_field(array $chest) {
   // Main element to work with.
   $parent_element = &drupal_array_get_nested_value($form, $parents);
   // Upload folder.
-  if (empty($upload_location) && ($chest['type'] ?? FALSE)) {
+  if (empty($upload_location) && ($form_bus['type'] ?? FALSE)) {
     $upload_location == 'public://' . variable_get(
-      'tpps_' . $chest['type'] . '_files_dir', 'tpps_' . $chest['type']
+      'tpps_' . $form_bus['type'] . '_files_dir', 'tpps_' . $form_bus['type']
     );
   }
 
@@ -535,10 +535,10 @@ function tpps_form_build_file_field(array $chest) {
   // Note: This code is outdated and not tested. Currently not used but there
   // is a task about File Reusage and this code could became useful.
   if ($allow_file_reuse) {
-    $selector_name = $chest['field_name'] . '_file_selector';
+    $selector_name = $form_bus['field_name'] . '_file_selector';
     $parent_element[$selector_name] = [
       '#type' => 'checkbox',
-      '#title' => t('Reference Existing @title', ['@title' => $chest['title']]),
+      '#title' => t('Reference Existing @title', ['@title' => $form_bus['title']]),
       '#default_value' => tpps_get_ajax_value(
         $form_state, array_merge($parents, [$selector_name])
       ),
@@ -554,7 +554,7 @@ function tpps_form_build_file_field(array $chest) {
     '#upload_validators' => ['file_validate_extensions' => $extensions],
     '#description' => $description
     . ($debug_mode ? '<br/>Field name: <strong>' . $field_name . '</strong>' : '')
-    . (($chest['show_extensions_in_description'] ?? FALSE)
+    . (($form_bus['show_extensions_in_description'] ?? FALSE)
       ? t('<br/>Allowed file extensions: @list',
         ['@list' => implode(', ', $extensions)]) : ''),
     '#tree' => TRUE,
@@ -709,30 +709,30 @@ function tpps_array_set_value(array &$array, array $parents, $value = NULL) {
 // Chest
 
 /**
- * Gets submission value by short name from the $chest.
+ * Gets submission value by short name from the $form_bus.
  *
- * @param array $chest
+ * @param array $form_bus
  *   Metadata. Required keys are: 'form' and 'form_state'.
  * @param string $name
  *   Short name (synonym) of the field.
  *   Possible values are:
  *     'organism_name'
  *       Organism name. Requires 3rd argument: $organism_id.
- *       Usage: tpps_chest_get($chest, 'organism_name', $orgainsm_id).
+ *       Usage: tpps_form_bus_get($form_bus, 'organism_name', $orgainsm_id).
  *     'organism_count'
  *       Number of organisms in the study.
- *       Usage: tpps_chest_get($chest, 'organism_number').
+ *       Usage: tpps_form_bus_get($form_bus, 'organism_number').
  *
  * @return mixed
  *   Returns value if element not found.
  *
  * @TODO Replace with class Chest and find better name.
  */
-function &tpps_chest_get(array $chest, $name) {
+function &tpps_form_bus_get(array $form_bus, $name) {
   // Define NULL as variable to return it as reference.
   $null = NULL;
   // Validate.
-  if (empty($chest) || empty($name)) {
+  if (empty($form_bus) || empty($name)) {
     return $null;
   }
   // Prepare parents for TPPS Pages.
@@ -759,7 +759,7 @@ function &tpps_chest_get(array $chest, $name) {
 
   // Get value.
   if ($parents) {
-    $value = &drupal_array_get_nested_value($chest, $parents);
+    $value = &drupal_array_get_nested_value($form_bus, $parents);
     return $value;
   }
   else {
