@@ -835,7 +835,9 @@ function tpps_form_autofocus(array &$form = [], $fieldname = '', array $parents 
  *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
  */
 function tpps_form_is_tppsc(array $form_state) {
-  return (tpps_form_get_id($form_state) == 'tppsc_main');
+  $submission = new Submission();
+  $submission->state = $form_state;
+  return $submission->isTppsc();
 }
 
 /**
@@ -848,8 +850,9 @@ function tpps_form_is_tppsc(array $form_state) {
  *   Returns 'tpps_main' (default) or 'tppsc_main'.
  */
 function tpps_form_get_id(array $form_state) {
-  return $form_state['saved_values']['front_page']['form_id']
-    ?? $form_state['build_info']['form_id'] ?? 'tpps_main';
+  $submission = new Submission();
+  $submission->state = $form_state;
+  return $submission->getFormId();
 }
 
 /**
@@ -960,10 +963,14 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
  *   empty string if accession wasn't found in given Form State Array.
  */
 function tpps_form_get_accession(array $form_state, $only_number = FALSE) {
-  $accession = $form_state['accession'] ?? '';
-  return (string) (
-    ($only_number) ? str_replace('TGDR', '', $accession) : $accession
-  );
+  $submission = new Submission();
+  $submission->state = $form_state;
+  if ($only_number) {
+    return $submission->getAccessionNumber();
+  }
+  else {
+    return $submission->accession;
+  }
 }
 
 /**
@@ -1025,7 +1032,8 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
     }
     // User logged in, trying to load form from existing accession.
     elseif (isset($accession) && !isset($form_state['stage'])) {
-      $old_form_state = tpps_load_submission_state($accession);
+      $submission = new Submission($accession);
+      $old_form_state = $submission->state;
       tpps_form_state_info($form_state, $old_form_state);
     }
     // User logged in, no accession provided.
@@ -1047,7 +1055,8 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
           tpps_init_project($form_state);
           tpps_create_submission($form_state, $user->uid);
         }
-        $old_form_state = tpps_load_submission_state($frontpage_values['accession']);
+        $submission = new Submission($frontpage_values['accession']);
+        $old_form_state = $submission->state;
         tpps_form_state_info($form_state, $old_form_state);
       }
     }
@@ -1076,7 +1085,8 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
       }
       else {
         // First access, and with accession in link.
-        $old_form_state = tpps_load_submission_state($accession);
+        $submission = new Submission($accession);
+        $old_form_state = $submission->state;
         if (empty($old_form_state)) {
           drupal_goto('tpps');
         }
@@ -1099,7 +1109,8 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
         tpps_init_project($form_state, $accession);
         tpps_create_submission($form_state, $user->uid);
       }
-      $old_form_state = tpps_load_submission_state($frontpage_values['accession']);
+      $submission = new Submission($frontpage_values['accession']);
+      $old_form_state = $submission->state;
       if (!empty($old_form_state)) {
         tpps_form_state_info($form_state, $old_form_state);
       }

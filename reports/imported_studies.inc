@@ -18,18 +18,21 @@ function tpps_admin_imported_studies_report() {
     'query' => ['destination' => 'admin/reports/tpps/imported-studies'],
   ];
   foreach ($list as $local => $remote) {
-    $import_meta = tpps_submission_get_import_meta([], $local);
+    $submission = new Submission($local);
+    $state = $submission->state;
+    $import_meta = $submission->getImportMeta();
     if (empty($import_meta)) {
       // Study probably was removing when page reloads so just skip this.
       continue;
     }
     $interface = tpps_submission_interface_load($local) ?? [];
-    $state = tpps_load_submission_state($local) ?? [];
-    $info = tpps_load_submission_info($local) ?? [];
+    $info = $submission->info;
+
 
     $rows[] = [
       l($local, 'tpps/submission/' . $local . '/view'),
       $state['status'] ?? NULL,
+      ($interface['job_id'] ? tripal_get_job($interface['job_id'])->status : ''),
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
       $info['uid'] ?? NULL,
@@ -70,10 +73,11 @@ function tpps_admin_imported_studies_report() {
   $output .= theme('table', [
     'header' => [
       t('Imported<br /><strong>Accession</strong>'),
-      t('Status'),
+      t('Submission<br /><strong>Status</strong>'),
+      t('Tripal Job<br /><strong>Status</strong>'),
       t('Original') . $version_tags,
       t('Submitted') . $version_tags,
-      t('Submitter<br />UID'),
+      t('UID'),
       //t('State') . $version_tags,
       //t('Interface') . $version_tags,
       t('Import Date'),

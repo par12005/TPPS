@@ -6,6 +6,8 @@
  *
  * To use:
  * module_load_include('inc', 'tpps', 'includes/manage_doi');
+ *
+ * @todo Convert to 'doi' class.
  */
 
 /**
@@ -22,7 +24,8 @@
 function tpps_manage_doi($accession) {
   $output = "";
 
-  $form_state = tpps_load_submission_state($accession);
+  $submission = new Submission($accession);
+  $form_state = $submission->state;
 
   $token = variable_get('tpps_zenodo_api_key', NULL);
   if (!empty($token) and empty($form_state['zenodo_id'])) {

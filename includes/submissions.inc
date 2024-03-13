@@ -18,20 +18,6 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version');
 /**
  * Loads a TPPS Submission Info.
  *
- * Columns 'submission_state' and 'submission_interface' will be excluded
- * to reduce size of data and speed-up processing. To get:
- * - 'state': tpps_load_submission_state($accession);
- * - 'interface': tpps_submission_interface_load($accession);
- *
- * Caching:
- * Disabled (or cold cache): 11 msec
- * Drupal Cache Bin (warm cache): 3 msec.
- * Static Cache: 0.003 msec.
- *
- * Replacement:
- * tpps_load_submission($accession) -> tpps_load_submission_state($accession);
- * tpps_load_submission($accession, FALSE) -> tpps_load_submission_info($accession);
- *
  * @param string $accession
  *   The Submission Accession Number like 'TGDRxxxx'.
  * @param bool $reset
@@ -42,115 +28,22 @@ module_load_include('inc', 'tpps', 'includes/submission_form_version');
  *   Returns NULL if study wasn't found.
  */
 function tpps_load_submission_info($accession, $reset = FALSE) {
-  $key = $accession;
-  $static_cache = &drupal_static(__FUNCTION__);
-  $cache_submissions = variable_get('tpps_cache_submissions', FALSE);
-  if (!$cache_submissions || $reset || !isset($static_cache[$key])) {
-    $cid = __FUNCTION__;
-    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    $cache = cache_get($cid, $cache_bin);
-    if (!$cache_submissions || $reset || empty($cache) || !isset($cache->data[$key])) {
-      $cache->data[$key] = NULL;
-      // Get new data.
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // Exclude 'submission_interface' and 'submission_state' columns.
-      // To get them use:
-      // 'interface': tpps_submission_interface_load($accession);
-      // 'state': tpps_load_submission_state($accession);
-      $fields = array_diff(
-        array_keys(drupal_get_schema('tpps_submission')['fields']),
-        ['submission_interface', 'submission_state']
-      );
-      $result = db_select('tpps_submission', 's')
-        ->fields('s', $fields)
-        ->condition('accession', $accession)
-        ->range(0, 1)
-        ->execute()
-        ->fetchAssoc();
-
-      if (!$result) {
-        // Search for alternative accessions.
-        $query = db_select('tpps_submission', 's');
-        $query->join('tpps_submission_dbxref', 's_dbx',
-          's.tpps_submission_id = s_dbx.tpps_submission_id');
-        $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-        $query->fields('s', $fields);
-        $query->condition('dbx.accession', $accession);
-        $query->condition('s.status', 'Approved');
-        $query->range(0, 1);
-        $query = $query->execute();
-        $result = $query->fetchAssoc();
-      }
-      if ($result) {
-        $cache->data[$key] = $result;
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      cache_set($cid, $cache->data, $cache_bin);
-    }
-    $static_cache[$key] = $cache->data[$key] ?? NULL;
-  }
-  return $static_cache[$key] ?? NULL;
+  $submission = new Submission($accession);
+  return $submission->getInfo($reset);
 }
 
 /**
  * Loads a TPPS Submission Form State Array.
  *
- * Caching:
- * Disabled (or cold cache): 15 msec
- * Drupal Cache Bin (warm cache): 7 msec.
- * Static Cache: 0.004 msec.
- *
  * @param string $accession
  *   The accession number of the submission.
- * @param bool $reset
- *   Flag is cache must be resetted. Default if FALSE.
- *   RESET_CACHE could be used.
  *
  * @return mixed
  *   Returns Submission From State array or NULL if not found.
  */
 function tpps_load_submission_state($accession, $reset = FALSE) {
-  $key = $accession;
-  $static_cache = &drupal_static(__FUNCTION__);
-  $cache_submissions = variable_get('tpps_cache_submissions', FALSE);
-  if (!$cache_submissions || $reset || !isset($static_cache[$key])) {
-    // Get value.
-    $cid = __FUNCTION__;
-    $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-    $cache = cache_get($cid, $cache_bin);
-    if (!$cache_submissions || $reset || empty($cache) || !isset($cache->data[$key])) {
-      $cache->data[$key] = NULL;
-      // Get new data.
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      $result = db_select('tpps_submission', 's')
-        ->fields('s', ['submission_state'])
-        ->condition('accession', $accession)
-        ->range(0, 1)
-        ->execute()
-        ->fetchAssoc();
-      if (!$result) {
-        // Search for alternative accessions.
-        $query = db_select('tpps_submission', 's');
-        $query->join('tpps_submission_dbxref', 's_dbx',
-          's.tpps_submission_id = s_dbx.tpps_submission_id'
-        );
-        $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-        $query->fields('s', ['submission_state']);
-        $query->condition('dbx.accession', $accession);
-        $query->condition('s.status', 'Approved');
-        $query->range(0, 1);
-        $query = $query->execute();
-        $result = $query->fetchAssoc();
-      }
-      if ($result) {
-        $cache->data[$key] = unserialize($result['submission_state']);
-      }
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      cache_set($cid, $cache->data, $cache_bin);
-    }
-    $static_cache[$key] = $cache->data[$key] ?? NULL;
-  }
-  return $static_cache[$key] ?? NULL;
+  $submission = new Submission($accession);
+  return $submission->getState($reset);
 }
 
 /**
@@ -210,18 +103,8 @@ function tpps_load_submission_multiple(array $conditions = array(), $state = TRU
  *   The id of the user creating the submission.
  */
 function tpps_create_submission(array $state, $uid) {
-  $values = [
-    'uid' => $uid,
-    'status' => 'Incomplete',
-    'accession' => $state['accession'],
-    'dbxref_id' => $state['dbxref_id'],
-    'submission_state' => serialize($state),
-    'submission_interface' => serialize([]),
-  ];
-  db_insert('tpps_submission')->fields($values)->execute();
-  // Add default tag.
-  $is_tppsc = tpps_form_is_tppsc($state);
-  tpps_submission_add_tag($state['accession'], ($is_tppsc ? 'TPPSc' : 'TPPS'));
+  $submission = new Submission();
+  $submission->create($state, $uid);
 }
 
 /**
@@ -242,7 +125,8 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
 
   $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
   // Update the form state data for the study.
-  $state = tpps_load_submission_state($old_accession);
+  $submission = new Submission($old_accession);
+  $state = $submission->state;
   $interface = tpps_submission_interface_load($old_accession);
 
   $job->logMessage('Original submission data for ' . $old_accession);
@@ -302,12 +186,8 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
  *   Values for existing columns in DB table 'tpps_submission'.
  */
 function tpps_update_submission_info($accession, array $options = []) {
-  db_update('tpps_submission')
-    ->fields($options)
-    ->condition('accession', $accession)
-    ->execute();
-  // Reset cache.
-  tpps_load_submission_info($accession, 1);
+  $submission = new Submission($accession);
+  $submission->updateInfo($options);
 }
 
 /**
@@ -317,19 +197,10 @@ function tpps_update_submission_info($accession, array $options = []) {
  *   The Submission's Form State.
  */
 function tpps_update_submission_state(array &$form_state) {
-  if (empty($accession = $form_state['accession'] ?? NULL)) {
-    watchdog('tpps', "Submission Form State wan't updated because "
-      . "of empty 'accession' field.", [], WATCHDOG_ERROR
-    );
-    return;
-  }
-  $form_state['updated'] = time();
-  db_update('tpps_submission')
-    ->fields(['submission_state' => serialize($form_state)])
-    ->condition('accession', $accession)
-    ->execute();
-  // Reset cached version of submission state array.
-  tpps_load_submission_state($accession, 1);
+  $submission = new Submission();
+  $submission->updateState($form_state);
+  // Get updated Submission State.
+  $form_state = $submission->state;
 }
 
 /**
@@ -343,21 +214,8 @@ function tpps_update_submission_state(array &$form_state) {
  *   The accession of the submission. Format: TGDR12345.
  */
 function tpps_delete_submission($accession) {
-  $submission_info = tpps_load_submission_info($accession);
-  $dbxref_id = $submission_info['dbxref_id'];
-  $state = tpps_load_submission_state($accession);
-  db_delete('tpps_submission')
-    ->condition('accession', $accession)
-    ->execute();
-  if (empty($state['saved_values']['frontpage']['use_old_tgdr'])) {
-    db_delete('chado.dbxref')
-      ->condition('dbxref_id', $dbxref_id)
-      ->execute();
-  }
-  // If this study was imported we need to remove it from the list.
-  // @TODO Check if study was imported.
-  module_load_include('inc', 'tpps', 'includes/imported_studies_list');
-  tpps_imported_studies_list_remove_item($accession);
+  $submission = new Submission($accession);
+  $submission->delete();
 }
 
 /**
@@ -386,34 +244,8 @@ function tpps_submission_delete_callback($accession) {
  *   But for testing and Study Import file removement should be allowed.
  */
 function tpps_submission_purge($accession, $force = FALSE) {
-  $state = tpps_load_submission_state($accession);
-  // @TODO Minor. Query DB table 'file_usage' to find if there is orphan
-  // files related to this non-existing submission.
-  if (!empty($state)) {
-    // Remove usage of files first.
-    $fid_list = tpps_submission_file_get_id_list($state);
-    foreach ($fid_list as $fid) {
-      if ($file = tpps_file_load($fid)) {
-        // Remove file usage record (not file itself).
-        file_usage_delete($file, 'tpps', 'tpps_project', substr($accession, 4), 1);
-        if ($force) {
-          // Remove file from disk.
-          file_delete($file);
-        }
-      }
-    }
-  }
-  // Remove submission state from DB.
-  db_delete('tpps_submission')
-    ->condition('accession', $accession)
-    ->execute();
-  db_delete('chado.dbxref')
-    ->condition('accession', $accession)
-    ->execute();
-  // If this study was imported we need to remove it from the list.
-  // @TODO Check if study was imported to avoid extra moves.
-  module_load_include('inc', 'tpps', 'includes/imported_studies_list');
-  tpps_imported_studies_list_remove_item($accession);
+  $submission = new Submission($accession);
+  $submission->purge();
 }
 
 /**
@@ -521,6 +353,8 @@ function tpps_submission_tag_manage() {
  *
  * @return array
  *   The populated form object.
+ *
+ * @todo Minor. Move to includes/form.inc and rename to tpps_form_tag_create().
  */
 function tpps_submission_tag_create(array $form, array &$form_state) {
   // This will add the color picker to the TPPS submission tags edit-color
@@ -531,7 +365,7 @@ function tpps_submission_tag_create(array $form, array &$form_state) {
   );
   // @TODO [VS] This file must be stored under /sites/all/libraries to allow
   // other modules to reuse it and get updates independently from this module.
-  drupal_add_js(TPPS_MODULE_PATH. '/js/tag_colorpicker.js');
+  drupal_add_js(TPPS_MODULE_PATH . '/js/tag_colorpicker.js');
 
   $form['name'] = array(
     '#type' => 'textfield',
@@ -1172,7 +1006,8 @@ function tpps_submission_update_stats(array &$form_state) {
  */
 function tpps_submission_edit_publication(array $form, array &$form_state, $accession = NULL) {
   global $base_url;
-  $state = tpps_load_submission_state($accession);
+  $submission = new Submission($accession);
+  $state = $submission->state;
 
   $form['accession'] = [
     '#type' => 'hidden',
@@ -1240,7 +1075,8 @@ function tpps_submission_edit_publication_validate(&$form, &$form_state) {
  */
 function tpps_submission_edit_publication_submit($form, &$form_state) {
   $accession = $form_state['values']['accession'];
-  $state = tpps_load_submission_state($accession);
+  $submission = new Submission($accession);
+  $state = $submission->state;
   $submit_job = FALSE;
   $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
 
@@ -1371,65 +1207,4 @@ function tpps_submission_get_tgdr_number_list($is_optional = TRUE) {
     $list = [0 => '- Select -'] + $list;
   }
   return $list;
-}
-
-/**
- * Gets Import Metadata.
- *
- * Imported Studies has some extra information about export/import process.
- *
- * @param array $form_state
- *   TPPS Form State Array.
- * @param string $accession
- *   Study accession. E.g., 'TGDR1234'.
- *
- * @return array
- *   Returns Submission Import Meta with some useful extra items.
- */
-function tpps_submission_get_import_meta(array $form_state = [], $accession = NULL) {
-  // @TODO Minor. Use 'tpps' cache bin.
-  $output = [];
-  if (empty($form_state) && empty($accession)) {
-    watchdog('tpps', "Couldn't get Submission Import Metadata because Form "
-      . "State Array and Study Accession are empty.", [], WATCHDOG_ERROR);
-    return $output;
-  }
-
-  $state = $form_state;
-  if (empty($state)) {
-    $state = tpps_load_submission_state($accession);
-  }
-
-  $import_meta = $state['saved_values']['tpps_submission_import'] ?? [];
-  if (empty($import_meta)) {
-    return $output;
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Sanitize data.
-  foreach ($import_meta as $key => $value) {
-    if ($safe_key = check_plain(($key ?? '')) != $key) {
-      watchdog('tpps', "Submission Import Metadata value had not allowed "
-        . "symbols which was sanitized.", [], WATCHDOG_NOTICE);
-      unset($import_meta[$key]);
-    }
-    if ($safe_value = check_plain(($value ?? '')) != $value) {
-      watchdog('tpps', "Submission Import Metadata value had not allowed "
-        . "symbols which was sanitized.", [], WATCHDOG_NOTICE);
-      unset($import_meta[$key]);
-      $import_meta[$safe_key] = $safe_value;
-    }
-  }
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Add some useful items and default values.
-  $import_meta['site'] = $import_meta['site'] ?? 'https://treegenesdb.org';
-  $import_meta['accession_link'] = ($import_meta['site'])
-    ? l($import_meta['original_accession'], $import_meta['site']
-      . '/tpps/submission/' . $import_meta['original_accession'] . '/view')
-      : $import_meta['original_accession'];
-  // Full data: Human readable and timestamp.
-  $import_meta['full_date'] = $import_meta['imported_date']
-    . (empty($import_meta['imported']) ? ''
-    : ' [' . $import_meta['imported'] . ']');
-  $import_meta['current_version'] = $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY];
-  return $import_meta;
 }

@@ -451,8 +451,8 @@ function tpps_submission_form_version_migrate(array $form_state, $version, array
  *   Submission Form Version.
  */
 function test_tpps_submission_form_version_changes($accession, $version = 2) {
-  $state = tpps_load_submission_state($accession);
-  $changes = tpps_submission_form_version_changes($state, $version);
+  $submission = new Submission($accession);
+  $changes = tpps_submission_form_version_changes($submission->state, $version);
   drupal_set_message(var_export($changes, 1));
 }
 
@@ -468,8 +468,8 @@ function test_tpps_submission_form_version_action_move($accession, $version = 2)
   module_load_include('inc', 'tpps', 'includes/submission_interface');
   module_load_include('inc', 'tpps', 'includes/form');
 
-  $state = tpps_load_submission_state($accession);
-  $changes = tpps_submission_form_version_changes($state, $version);
+  $submission = new Submission($accession);
+  $changes = tpps_submission_form_version_changes($submission->state, $version);
   $item = $changes['move'][14];
   drupal_set_message(print_r($item, 1), 'item');
 

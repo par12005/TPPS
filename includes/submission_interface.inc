@@ -85,6 +85,13 @@
  * public.tpps_submission.status. Then update this code to use
  * Submission Interface only. Do not use tpps_update_submission() but
  * update db table directly to avoid $submission_interface update.
+ *
+ * @TODO Remove column 'Submission Interface' but it stores results of
+ * study processing which must be then stored in State and all the pages
+ * must be updated to use State instead of Interface.
+ * Generation of Submision Interface takes about 25-30 msec so there is no
+ * sense to store it in database because it must be updated each time when
+ * Submission State changes.
  */
 
 /**
@@ -113,8 +120,9 @@ function tpps_form_is_submission_interface(array $form_state) {
  *   Returns empty array if $form_state is empty too.
  */
 function tpps_submission_interface_new($accession) {
-  $form_state = tpps_load_submission_state($accession, 1);
-  $interface = tpps_submission_interface_generate($form_state);
+  $submission = new Submission($accession);
+  $submission->getState($reset = TRUE);
+  $interface = tpps_submission_interface_generate($submission->state);
   return tpps_submission_interface_save($interface);
 }
 
