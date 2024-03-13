@@ -59,7 +59,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
         $job->logMessage('[FATAL] ' . $line . "\n");
       }
     }
-    throw new Exception('Detected a missing file, please ensure missing files are resolved in the tpps-admin-panel and then rerun the study');
+    // throw new Exception('Detected a missing file, please ensure missing files are resolved in the tpps-admin-panel and then rerun the study');
   }
 
   $form_state['status'] = 'Submission Job Running';
@@ -108,6 +108,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
       $firstpage['publication']['title'],
       $form_state['ids']['project_id'],
     ));
+
 
     tpps_log("[INFO] Submitting Publication/Species information...");
     tpps_submit_page_1($form_state, $job);
@@ -356,7 +357,29 @@ function tpps_submit_page_1(array &$form_state, TripalJob &$job = NULL) {
     if (preg_match('/ x /', $species)) {
       $record['type_id'] = tpps_load_cvterm('speciesaggregate')->cvterm_id;
     }
-    $form_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
+
+    // Let's check to see if genus and species match, if so, get the id
+    // if it does not return any rows, then create organism
+    $organism_results = chado_query('SELECT * FROM chado.organism WHERE genus = :genus AND species = :species
+      AND infraspecific_name = :infra', [
+      ':genus' => $genus,
+      ':species' => $species,
+      ':infra' => $infra
+    ]);
+    $organism_results_id = -1;
+    // Check if an id exists in the database for this organism and remember it in ($organism_results_id)
+    foreach ($organism_results as $organism_row) {
+      $organism_results_id = $organism_row->organism_id;
+    }
+
+    // If no organism id was found in database, perform an insert
+    if ($organism_results_id == -1) {
+      $form_state['ids']['organism_ids'][$i] = tpps_chado_insert_record('organism', $record);
+    }
+    // If organism id was found in database, use it
+    else {
+      $form_state['ids']['organism_ids'][$i] = $organism_results_id;
+    }
 
     if (!empty(tpps_load_cvterm('Type'))) {
       tpps_chado_insert_record('organismprop', array(
@@ -875,6 +898,7 @@ function tpps_submit_page_4(array &$form_state, TripalJob &$job = NULL) {
   $organism_number = $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
   $species_codes = array();
 
+
   for ($i = 1; $i <= $organism_number; $i++) {
     // Get species codes.
     $species_codes[$form_state['ids']['organism_ids'][$i]] = current(chado_select_record('organismprop', array('value'), array(
@@ -1344,16 +1368,33 @@ function tpps_submit_genotype(array &$form_state, array $species_codes, $i, Trip
     'study_accession' => $form_state['saved_values'][TPPS_PAGE_1]['accession']
   );
 
+  // 2/29/2024 Add reference genome more consitently for all scenarios
+  if ($form_state['file_rank'] == NULL) {
+    $form_state['file_rank'] = 0;
+  }
+
   if ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url') {
     if ($genotype['tripal_fasta']['file_upload']) {
       // Uploaded new file.
       $assembly_user = $genotype['tripal_fasta']['file_upload'];
       tpps_add_project_file($form_state, $assembly_user);
+      tpps_chado_insert_record('projectprop', array(
+        'project_id' => $project_id,
+        'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
+        'value' => $assembly_user,
+        'rank' => $form_state['file_rank'],
+      ));
     }
     if ($genotype['tripal_fasta']['file_upload_existing']) {
       // Uploaded existing file.
       $assembly_user = $genotype['tripal_fasta']['file_upload_existing'];
       tpps_add_project_file($form_state, $assembly_user);
+      tpps_chado_insert_record('projectprop', array(
+        'project_id' => $project_id,
+        'type_id' => tpps_load_cvterm('file_path')->cvterm_id,
+        'value' => $assembly_user,
+        'rank' => $form_state['file_rank'],
+      ));
     }
     if ($genotype['tripal_fasta']['file_remote']) {
       // Provided url to file.
