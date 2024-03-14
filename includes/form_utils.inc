@@ -365,7 +365,7 @@ function tpps_pre_validate_init($accession = NULL) {
   }
   $params = drupal_get_query_parameters(NULL, array());
   $vcfs = $params['vcfs'] ?? NULL;
-  if (!is_array($vcfs) or empty($vcfs)) {
+  if (!is_array($vcfs) || empty($vcfs)) {
     drupal_json_output("No VCF file ids were provided");
     return;
   }
@@ -413,11 +413,16 @@ function tpps_pre_validate_init($accession = NULL) {
 
   $jobs = array();
   foreach ($vcfs as $org_num => $fid) {
-    $includes = array();
+    $includes = [];
     $includes[] = module_load_include('inc', 'tpps', 'includes/form_utils');
     $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-    $args = array($accession, $fid, $org_num);
-    $jobs[] = tripal_add_job("{$accession} Pre-validate VCF {$fid}", 'tpps', 'tpps_pre_validate', $args, $user->uid, 10, $includes, TRUE);
+    $args = [$accession, $fid, $org_num];
+    $jobs[] = tripal_add_job(
+      t('@accession Pre-validate VCF @fid',
+        ['@accession' => $accession, '@fid' => $fid]
+      ),
+      'tpps', 'tpps_pre_validate', $args, $user->uid, 10, $includes, TRUE
+    );
   }
   drupal_get_messages('status', TRUE);
 
