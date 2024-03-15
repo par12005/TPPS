@@ -4,6 +4,9 @@
   $('[data-toggle="tooltip"]').tooltip();
   var vcfPreValidateButton = '.vcf-pre-validate-button';
 
+
+
+
   function Supplemental_Files() {
     var files_add = $('#edit-files-add');
     var files_remove = $('#edit-files-remove');
@@ -155,11 +158,21 @@
   });
 
   var pending_jobs = {};
+
+  /**
+   * Checks status of the Tripal Job 'VCF File Pre-Validation'.
+   *
+   * @TODO Do not allow re-validation of the same file. Store status of
+   * the check in browser.
+   */
   function checkVCFJob(jid) {
+    // @TODO Use Drupal.settings.tpps.accession.
     var accession = $(':input[name="accession"]')[0].value;
-    var url = '/tpps/' + accession + '/pre-validate/' + jid + '/status';
-    var request = $.get(url);
-    request.done(function(job) {
+    $.ajax({
+      url: '/tpps/' + accession + '/pre-validate/' + jid + '/status',
+      type: 'GET',
+    })
+    .done(function(job){
       if (
         job === null
         || typeof job !== 'object'
@@ -184,8 +197,8 @@
         }
         // If no jobs are pending, enable the submit button.
         if (jobs_complete) {
-          $(vcfPreValidateButton).disabled = false;
-          console.log(Drupal.t('Jobs completed!'));
+          $(vcfPreValidateButton).prop('disabled', false);
+          console.log(Drupal.t('All the jobs was completed.'));
           var message = '<div class="alert alert-block alert-success messages '
             + 'status">' + Drupal.t('VCF File pre-validation completed!')
             + '</div>';
@@ -197,7 +210,7 @@
             }
           }
           else {
-            $('.review-and-submit-button').disabled = false;
+            $('.review-and-submit-button').prop('disabled', false);
           }
           $('.pre-validate-message').html(message);
         }
@@ -215,42 +228,69 @@
           checkVCFJob(job.job_id);
         }, 5000);
       }
+    })
+    .fail(function(job) {
+      $('.review-and-submit-button').prop('disabled', false);
+      $(vcfPreValidateButton).prop('disabled', false);
+      console.log('Failed.');
+      console.log(job);
     });
   }
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Click on 'Pre-validate my VCF Files' button.
   $(vcfPreValidateButton).attr('type', 'button');
   $(vcfPreValidateButton).click(function() {
     var accession = $(':input[name="accession"]')[0].value;
     console.log(Drupal.t('Initializing jobs...'));
 
-    // Get array of vcf fids.
-    var fids = $('input').filter(function () {
-      return this.name.match(/organism-[0-9]+\[genotype\]\[files\]\[vcf\]\[fid\]/);
-    });
-    var missing_vcf = false;
-    vcfs = {};
-    $.each(fids, function() {
-      if (this.value === "0") {
-        var check = $('input[name="' + this.name.substring(0, this.name.length - 9)
-          + 'local_vcf_check]"]')[0];
-        if (check.value === "1") {
-          path = $('#' + check.id.substring(0, check.id.length - 6))[0].value;
-          if (typeof path === 'string' && path.length != 0) {
-            this.value = path;
-          }
-          else {
-            missing_vcf = true;
-          }
-        }
-        else {
+    // Get real number of organisms.
+    let organismNumber = Drupal.settings.tpps.organismNumber || 1;
+    let vcfs = {};
+    let missing_vcf = false;
+    // Loop each organism to get VCF fid or path (local/remote).
+    for (let organismId = 1; organismId <= organismNumber; organismId++) {
+      let organismName = 'organism-' + organismId;
+      let vcfFileLocation = $('select[name="' + organismName
+        + '[genotype][files][vcf_file-location]'
+        + '"]').val();
+      // Note: 'remote' means already stored on remote server (path) and
+      // 'local' is stored on user's PC and must be uploaded via form.
+      if (vcfFileLocation == 'local') {
+        // Process File Id. Value 'local'.
+        let vcfFid = $('input[name="' + organismName
+          + '[genotype][files][vcf][fid]'
+          + '"]').val();
+        // Validate.
+        if (vcfFid === '0') {
           missing_vcf = true;
         }
+        else {
+          vcfs[organismId] = vcfFid;
+        }
       }
-      var org_num = this.name.match(/organism-([0-9]+)\[genotype\]\[files\]\[vcf\]\[fid\]/)[1];
-      vcfs[org_num] = this.value;
-    });
+      else {
+        // Process path. Value 'remote'.
+        let vcfPath = $('input[name="' + organismName
+          + '[genotype][files][local_vcf]' + '"]').val();
+        // Validate.
+        if (vcfPath.length == 0) {
+          missing_vcf = true;
+        }
+        else {
+          vcfs[organismId] = vcfPath;
+        }
+      }
+    }
 
-    if (!missing_vcf) {
+    if (missing_vcf) {
+      $('.pre-validate-message')
+        .html('<div class="alert alert-block alert-danger messages error">'
+          + Drupal.t('Please upload your VCF file before clicking the '
+          + 'pre-validate button') + '</div>'
+        );
+    }
+    else {
       $('.review-and-submit-button').prop('disabled', true);
       $(vcfPreValidateButton).prop('disabled', true);
       $.makeArray(vcfs).map((element) => { return element.value; });
@@ -264,18 +304,22 @@
           $('.pre-validate-message')
             .html('<div class="alert alert-block alert-danger messages error">'
               + jobs + '</div>');
-          $(vcfPreValidateButton).disabled = false;
+          $('.review-and-submit-button').prop('disabled', false);
+          $(vcfPreValidateButton).prop('disabled', false);
         }
         else if (!Array.isArray(jobs) || jobs.length == 0) {
           $('.pre-validate-message')
             .html('<div class="alert alert-block alert-danger messages error">'
               + Drupal.t('There was a problem with pre-validating your VCF '
               + 'files. Please reload the page and try again') + '</div>');
-          $(vcfPreValidateButton).disabled = false;
+          $('.review-and-submit-button').prop('disabled', false);
+          $(vcfPreValidateButton).prop('disabled', false);
         }
         else {
           console.log(Drupal.t('Jobs initialized!'));
-          console.log(jobs);
+          console.log(Drupal.t('List of jobs: \n!jobs',
+            {'!jobs': JSON.stringify(jobs, null, 2)}
+          ));
           for (job of jobs) {
             checkVCFJob(job);
             pending_jobs[job] = true;
@@ -287,15 +331,9 @@
         }
       });
     }
-    else {
-      $('.pre-validate-message')
-        .html('<div class="alert alert-block alert-danger messages error">'
-          + Drupal.t('Please upload your VCF file before clicking the '
-          + 'pre-validate button') + '</div>'
-        );
-    }
   });
 
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $('#edit-save-comments').attr('type', 'button');
 
   var details_tabs = $('.nav-tabs > .nav-item > .nav-link');
@@ -725,6 +763,7 @@ jQuery.fn.updateMap = function(locations, fid = "") {
 
   Drupal.behaviors.tpps = {
     attach: function (context, settings) {
+      let organismNumber = Drupal.settings.tpps.organismNumber || 1;
       // Attach event handlers only once.
       $('form[id^=tppsc-main]').once('tpps_page', function() {
         // Add code here. Will be attached once.
@@ -751,6 +790,25 @@ jQuery.fn.updateMap = function(locations, fid = "") {
       $('.tgdr_form_status a').on('click', function(e) {
         e.preventDefault();
       });
+
+      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Hide VCF pre-validation status messages when VCF changed.
+      for (let organismId = 1; organismId <= organismNumber; organismId++) {
+        let organismName = 'organism-' + organismId;
+        let vcfFileLocationFieldName = 'select[name="' + organismName
+          + '[genotype][files][vcf_file-location]' + '"]';
+        let vcfFileFieldName = 'input[name="' + organismName
+          + '[genotype][files][vcf][fid]' + '"]';
+        let vcfPathFieldName = 'input[name="' + organismName
+          + '[genotype][files][local_vcf]' + '"]';
+
+        $(vcfFileLocationFieldName).change(function() {
+          $('.pre-validate-message').hide();
+        });
+        $(vcfFileFieldName).blur(function() { $('.pre-validate-message').hide() });
+        $(vcfPathFieldName).blur(function() { $('.pre-validate-message').hide() });
+      }
+
     }
   };
 })(jQuery, Drupal);

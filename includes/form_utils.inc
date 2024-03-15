@@ -373,17 +373,24 @@ function tpps_pre_validate_init($accession = NULL) {
   global $user;
   $state['vcf_replace'] = array();
   foreach ($vcfs as $org_num => $fid) {
+    // @TODO Minor. Rename $fid because it's not always File Id.
+    // $fid is integer File Id for 'local' VCF files.
+    // and string Absolute path for remote VCF files.
     if (!file_load($fid)) {
       if (!is_string($fid)) {
-        drupal_json_output("Could not load one or more VCFs from file ID");
+        drupal_json_output(
+          t('Could not load VCF File with ID: @fid.', ['@fid' => $fid])
+        );
         return;
       }
       elseif (!file_exists($fid)) {
-        drupal_json_output("One or more VCF local paths was invalid");
+        drupal_json_output(
+          t('VCF local path is invalid: <br />@path', ['@path' => $fid])
+        );
         return;
       }
       else {
-        $existing_files = file_load_multiple(FALSE, array('uri' => $fid));
+        $existing_files = file_load_multiple(FALSE, ['uri' => $fid]);
         if (!empty($existing_files)) {
           $file = current($existing_files);
         }
@@ -407,11 +414,11 @@ function tpps_pre_validate_init($accession = NULL) {
     unset($state['vcf_replace']);
   }
 
-  $state['vcf_val_errors'] = array();
+  $state['vcf_val_errors'] = [];
   $state['vcf_validated'] = FALSE;
   tpps_update_submission($state);
 
-  $jobs = array();
+  $jobs = [];
   foreach ($vcfs as $org_num => $fid) {
     $includes = [];
     $includes[] = module_load_include('inc', 'tpps', 'includes/form_utils');
