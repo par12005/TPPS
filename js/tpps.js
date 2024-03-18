@@ -763,7 +763,6 @@ jQuery.fn.updateMap = function(locations, fid = "") {
 
   Drupal.behaviors.tpps = {
     attach: function (context, settings) {
-      let organismNumber = Drupal.settings.tpps.organismNumber || 1;
       // Attach event handlers only once.
       $('form[id^=tppsc-main]').once('tpps_page', function() {
         // Add code here. Will be attached once.
@@ -793,20 +792,23 @@ jQuery.fn.updateMap = function(locations, fid = "") {
 
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       // Hide VCF pre-validation status messages when VCF changed.
-      for (let organismId = 1; organismId <= organismNumber; organismId++) {
-        let organismName = 'organism-' + organismId;
-        let vcfFileLocationFieldName = 'select[name="' + organismName
-          + '[genotype][files][vcf_file-location]' + '"]';
-        let vcfFileFieldName = 'input[name="' + organismName
-          + '[genotype][files][vcf][fid]' + '"]';
-        let vcfPathFieldName = 'input[name="' + organismName
-          + '[genotype][files][local_vcf]' + '"]';
+      if ($('form.tpps-form').length || $('form.tppsc-form').length) {
+        let organismNumber = Drupal.settings.tpps.organismNumber || 1;
+        for (let organismId = 1; organismId <= organismNumber; organismId++) {
+          let organismName = 'organism-' + organismId;
+          let vcfFileLocationFieldName = 'select[name="' + organismName
+            + '[genotype][files][vcf_file-location]' + '"]';
+          let vcfFileFieldName = 'input[name="' + organismName
+            + '[genotype][files][vcf][fid]' + '"]';
+          let vcfPathFieldName = 'input[name="' + organismName
+            + '[genotype][files][local_vcf]' + '"]';
 
-        $(vcfFileLocationFieldName).change(function() {
-          $('.pre-validate-message').hide();
-        });
-        $(vcfFileFieldName).blur(function() { $('.pre-validate-message').hide() });
-        $(vcfPathFieldName).blur(function() { $('.pre-validate-message').hide() });
+          $(vcfFileLocationFieldName).change(function() {
+            $('.pre-validate-message').hide();
+          });
+          $(vcfFileFieldName).blur(function() { $('.pre-validate-message').hide() });
+          $(vcfPathFieldName).blur(function() { $('.pre-validate-message').hide() });
+        }
       }
 
     }
