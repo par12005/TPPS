@@ -942,6 +942,8 @@ function tpps_submission_clear_db($accession) {
   chado_query("DELETE FROM chado.phenotype_to_synonym WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
   echo "DELETE chado.phenotype values for project...\n";
   chado_query("DELETE FROM chado.phenotype WHERE phenotype_id IN (SELECT phenotype_id FROM chado.stock_phenotype WHERE stock_id IN ($stocks_sql))");
+  echo "DELETE chado.genotype_reads_per_plant values for accession $accession...\n";
+  chado_query("DELETE FROM chado.genotype_reads_per_plant WHERE study_accession = '" . strtoupper($accession) . "';");
   echo "DELETE chado.genotype_call values for project...\n";
   chado_query("DELETE FROM chado.genotype_call WHERE project_id = $project_id");
   echo "DELETE chado.stock_genotype values for project...\n";

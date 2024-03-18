@@ -697,7 +697,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   // Perform a database lookup as well using new query from Emily Grau (6/6/2023).
   $time_now = time();
   $time_expire_period = 3 * 24 * 60 * 60;
-  $time_genome_query_results_time = variable_get('tpps_genome_query_results_time', 0);
+  $time_genome_query_results_time = cache_get('tpps_genome_query_results_time', 'tpps');
   if ($time_now > ($time_genome_query_results_time + $time_expire_period)) {
     chado_query("DROP TABLE IF EXISTS chado.tpps_ref_genomes;", []);
     chado_query("CREATE TABLE chado.tpps_ref_genomes AS (
@@ -705,9 +705,9 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
       join chado.analysisfeature af on a.analysis_id = af.analysis_id
       join chado.feature f on af.feature_id = f.feature_id
       join chado.organism o on f.organism_id = o.organism_id
-      where f.type_id in (379,595,597,825,1245) AND a.name LIKE '% v%'
+      where f.type_id in (379,595,597,825,1245,422) AND a.name LIKE '% v%'
     )", []);
-    variable_set('tpps_genome_query_results_time', $time_now);
+    cache_set('tpps_genome_query_results_time', $time_now, 'tpps');
   }
   $genome_query_results = chado_query("select * FROM chado.tpps_ref_genomes;", []);
   foreach ($genome_query_results as $genome_query_row) {
