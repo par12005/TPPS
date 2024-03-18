@@ -829,7 +829,6 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
         else {
           $form_state['values'][$id]['genotype']['files']['vcf'] = $fid;
           $vcf = $fid;
-          $form_state['values'][$id]['genotype']['files']['local_vcf_check'] = NULL;
           $form_state['values'][$id]['genotype']['files']['local_vcf'] = NULL;
         }
       }
