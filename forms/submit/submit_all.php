@@ -4989,6 +4989,9 @@ function tpps_process_phenotype_meta($row, array &$options = array()) {
  *   The TripalJob object for the submission job.
  */
 function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(), TripalJob &$job = NULL) {
+  // tpps_log('Meta array');
+  // tpps_log(print_r($meta, true));
+  // tpps_log("\n");
   $cvt_cache = [];
   $local_cv = chado_get_cv(['name' => 'local']);
   $local_db = variable_get('tpps_local_db');
@@ -5046,12 +5049,18 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
             else {
               $cvterm_name = $data["{$type}-other"];
             }
-            $meta[$name]["{$type}_id"] = chado_insert_cvterm([
+            $cvterm_row_values = [
               'id' => "{$local_db->name}:{$data["{$type}-other"]}",
               'name' => $cvterm_name,
               'definition' => '',
               'cv_name' => $local_cv->name,
-            ])->cvterm_id;
+            ];
+            tpps_log("[CREATING] New CVTERM for custom unit FROM metafile\n");
+            tpps_log(print_r($cvterm_row_values, true));
+            
+            $meta[$name]["{$type}_id"] = chado_insert_cvterm($cvterm_row_values)->cvterm_id;
+            tpps_log('CVTERM ID (unit_cvterm_id): ' . $meta[$name]["{$type}_id"]);
+            tpps_log("\n");
             if (!empty($meta[$name]["{$type}_id"])) {
               if ($cvterm_name == 'no unit') {
                 // 'other-other'.
@@ -5090,8 +5099,11 @@ function tpps_refine_phenotype_meta(array &$meta, array $time_options = array(),
       }
       else {
         $message = t(
-         '[WARNING] Unit #@unit_id has no phenotype synonym.',
-         ['@unit_id' => $meta[$name]['unit_id']]
+         '[WARNING] Unit #@unit_id has no phenotype synonym. @raw',
+         [
+          '@unit_id' => $meta[$name]['unit_id'],
+          '@raw' => print_r($meta[$name], true),
+         ]
         );
         tpps_log($message);
       }
@@ -5275,7 +5287,7 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       $struct_id = $meta['struct_id'];
     }
 
-    $records['phenotype'][$phenotype_name] = array(
+    $phenotype_row_data = array(
       'uniquename' => $phenotype_name,
       'name' => $name,
       'attr_id' => $attr_id,
@@ -5285,6 +5297,10 @@ function tpps_process_phenotype_data($row, array &$options = []) {
       'observable_id' => $struct_id,
       'value' => $value,
     );
+    // tpps_log("Phenotype row data to be inserted\n");
+    // tpps_log(print_r($phenotype_row_data, true));
+    // tpps_log("\n");
+    $records['phenotype'][$phenotype_name] = $phenotype_row_data;
     $records['stock_phenotype'][$phenotype_name] = array(
       'stock_id' => $tree_info[$tree_id]['stock_id'],
       '#fk' => ['phenotype' => $phenotype_name],
@@ -5442,7 +5458,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   foreach ($row as $key => $val) {
     $key_index++;
     echo "ROW key:$key, val:$val\n";
-    tpps_log('[INFO] ROW KEY $key and ROW VAL $val');
+    tpps_log("[INFO] ROW KEY $key and ROW VAL $val");
     if (empty($headers[$key])) {
       continue;
     }
@@ -5625,7 +5641,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     $results = chado_query("SELECT feature_id FROM chado.feature
       WHERE uniquename = :uniquename", [
         ':uniquename' => $marker_name,
-        ':organism_id' => $organism_id
+        // ':organism_id' => $organism_id
     ]);
     $marker_name_id = NULL;
     foreach ($results as $row) {
@@ -5659,7 +5675,7 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
     $results = chado_query("SELECT feature_id FROM chado.feature
       WHERE uniquename = :uniquename", [
         ':uniquename' => $variant_name,
-        ':organism_id' => $organism_id
+        // ':organism_id' => $organism_id
     ]);
     $variant_name_id = NULL;
     foreach ($results as $row) {
