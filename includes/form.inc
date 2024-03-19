@@ -1095,6 +1095,7 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
       'tpps' => [
         'stage' => $form_state['stage'] ?? NULL,
         'accession' => $accession,
+        'organismNumber' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1,
       ],
     ],
     'type' => 'setting',
