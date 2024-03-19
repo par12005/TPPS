@@ -1149,7 +1149,7 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] = 'tpps-form';
-  $form['#attached']['js'] = [
+  $form['#attached']['js'][] = [
     'data' => [
       'tpps' => [
         'stage' => $form_state['stage'] ?? NULL,
@@ -1512,7 +1512,7 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] = 'tppsc-form';
-  $form['#attached']['js'] = [
+  $form['#attached']['js'][] = [
     'data' => [
       'tpps' => [
         'stage' => $form_state['stage'] ?? NULL,
