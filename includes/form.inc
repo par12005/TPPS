@@ -58,7 +58,11 @@ function tpps_form_add_buttons(array $form_bus) {
       case 'page_1':
         // Save, Next.
         $form[$scope]['Save'] = ['#type' => 'submit', '#value' => t('Save')];
-        $form[$scope]['Next'] = ['#type' => 'submit', '#value' => t('Next')];
+        $form[$scope]['Next'] = [
+          '#type' => 'submit',
+          '#value' => t('Next'),
+          '#attributes' => ['class' => ['next-button']],
+        ];
         break;
 
       case 'page_4':
@@ -68,6 +72,8 @@ function tpps_form_add_buttons(array $form_bus) {
         $form[$scope]['submit'] = [
           '#type' => 'submit',
           '#value' => t('Review and Submit'),
+          // We add class because we have buttons above and below the form.
+          '#attributes' => ['class' => ['review-and-submit-button']],
         ];
 
         // Pre-validate VCF.
@@ -86,8 +92,9 @@ function tpps_form_add_buttons(array $form_bus) {
               . 'you can click the "Pre-validate my VCF files" button to '
               . 'validate your VCF file in the background, before clicking '
               . '"Review Information and Submit".</div>',
+            '#attributes' => ['class' => ['vcf-pre-validate-button']],
           ];
-          $form[$scope]['Back']['#prefix'] = "<div id=\"pre-validate-message\"></div>";
+          $form[$scope]['pre_validate']['#prefix'] = '<div class="pre-validate-message"></div>';
         }
         break;
 

@@ -366,7 +366,7 @@ function tpps_pre_validate_init($accession = NULL) {
   }
   $params = drupal_get_query_parameters(NULL, array());
   $vcfs = $params['vcfs'] ?? NULL;
-  if (!is_array($vcfs) or empty($vcfs)) {
+  if (!is_array($vcfs) || empty($vcfs)) {
     drupal_json_output("No VCF file ids were provided");
     return;
   }
@@ -374,17 +374,24 @@ function tpps_pre_validate_init($accession = NULL) {
   global $user;
   $state['vcf_replace'] = array();
   foreach ($vcfs as $org_num => $fid) {
+    // @TODO Minor. Rename $fid because it's not always File Id.
+    // $fid is integer File Id for 'local' VCF files.
+    // and string Absolute path for remote VCF files.
     if (!file_load($fid)) {
       if (!is_string($fid)) {
-        drupal_json_output("Could not load one or more VCFs from file ID");
+        drupal_json_output(
+          t('Could not load VCF File with ID: @fid.', ['@fid' => $fid])
+        );
         return;
       }
       elseif (!file_exists($fid)) {
-        drupal_json_output("One or more VCF local paths was invalid");
+        drupal_json_output(
+          t('VCF local path is invalid: <br />@path', ['@path' => $fid])
+        );
         return;
       }
       else {
-        $existing_files = file_load_multiple(FALSE, array('uri' => $fid));
+        $existing_files = file_load_multiple(FALSE, ['uri' => $fid]);
         if (!empty($existing_files)) {
           $file = current($existing_files);
         }
@@ -408,17 +415,22 @@ function tpps_pre_validate_init($accession = NULL) {
     unset($state['vcf_replace']);
   }
 
-  $state['vcf_val_errors'] = array();
+  $state['vcf_val_errors'] = [];
   $state['vcf_validated'] = FALSE;
   tpps_update_submission_state($state);
 
-  $jobs = array();
+  $jobs = [];
   foreach ($vcfs as $org_num => $fid) {
-    $includes = array();
+    $includes = [];
     $includes[] = module_load_include('inc', 'tpps', 'includes/form_utils');
     $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-    $args = array($accession, $fid, $org_num);
-    $jobs[] = tripal_add_job("{$accession} Pre-validate VCF {$fid}", 'tpps', 'tpps_pre_validate', $args, $user->uid, 10, $includes, TRUE);
+    $args = [$accession, $fid, $org_num];
+    $jobs[] = tripal_add_job(
+      t('@accession Pre-validate VCF @fid',
+        ['@accession' => $accession, '@fid' => $fid]
+      ),
+      'tpps', 'tpps_pre_validate', $args, $user->uid, 10, $includes, TRUE
+    );
   }
   drupal_get_messages('status', TRUE);
 

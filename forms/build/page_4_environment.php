@@ -1,7 +1,8 @@
 <?php
+
 /**
  * @file
- * Define the helper functions for the GxPxE Data page.
+ * Page 4 Environmental related functions.
  */
 
 /**

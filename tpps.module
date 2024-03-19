@@ -131,24 +131,25 @@ function tpps_menu() {
     'access arguments' => ['access tpps form', 1],
   ];
 
-  $items['tpps/%/pre-validate'] = array(
+  // VCF Files Pre Validation AJAX-callbacks.
+  $items['tpps/%/pre-validate'] = [
     'title' => 'TPPS File Pre-Validation',
     'page callback' => 'tpps_pre_validate_init',
-    'page arguments' => array(1),
+    // File: includes/form_utils.in
+    // // File: includes/form_utils.incc
+    'page arguments' => [1],
     'access callback' => 'tpps_access',
-    'access arguments' => array('access tpps form', 1),
+    'access arguments' => ['access tpps form', 1],
     'type' => MENU_CALLBACK,
-  );
-
-  $items['tpps/%/pre-validate/%/status'] = array(
+  ];
+  $items['tpps/%/pre-validate/%/status'] = [
     'title' => 'TPPS File Pre-Validation',
     'page callback' => 'tpps_pre_validate_status',
-    'page arguments' => array(1, 3),
+    'page arguments' => [1, 3],
     'access callback' => 'tpps_access',
-    'access arguments' => array('access tpps form', 1),
+    'access arguments' => ['access tpps form', 1],
     'type' => MENU_CALLBACK,
-  );
-
+  ];
 
   // This will return information about a study's Accession tree ids vs VCF tree ids
   // First % = accession

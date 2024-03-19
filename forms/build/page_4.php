@@ -6,7 +6,6 @@
  */
 
 require_once 'page_4_ajax.php';
-require_once 'page_4_helper.php';
 require_once 'page_4_genotype.php';
 require_once 'page_4_environment.php';
 require_once 'page_4_phenotype.php';
