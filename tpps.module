@@ -1149,6 +1149,16 @@ function tpps_main(array $form, array &$form_state, $accession = NULL) {
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] = 'tpps-form';
+  $form['#attached']['js'] = [
+    'data' => [
+      'tpps' => [
+        'stage' => $form_state['stage'] ?? NULL,
+        'accession' => $accession,
+        'organismNumber' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1,
+      ],
+    ],
+    'type' => 'setting',
+  ];
 
   if (!isset($form_state['stage'])) {
     if (!isset($accession)) {
@@ -1502,6 +1512,16 @@ function tppsc_main(array $form, array &$form_state, $accession = NULL) {
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] = 'tppsc-form';
+  $form['#attached']['js'] = [
+    'data' => [
+      'tpps' => [
+        'stage' => $form_state['stage'] ?? NULL,
+        'accession' => $accession,
+        'organismNumber' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1,
+      ],
+    ],
+    'type' => 'setting',
+  ];
   // [/VS].
 
   // User not logged in, trying to access front page.
