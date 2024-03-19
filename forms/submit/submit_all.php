@@ -5777,6 +5777,19 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
         $genotype_id = $row->genotype_id;
       }
 
+      // RISH - 12/18/2023 - Requested by Emily
+      ob_start();
+      chado_insert_record('feature_genotype', [
+        'feature_id' => $variant_name_id,
+        'genotype_id' => $genotype_id,
+        'chromosome_id' => NULL,
+        'rank' => 0,
+        'cgroup' => 0,
+        'cvterm_id' => $type_cvterm,
+      ]);
+      // echo "feature_id: $variant_name_id, genotype_id: $genotype_id\n";
+      ob_end_clean();
+
       // [RISH] 07/06/2023 - REMOVED SO WE CAN USE HYBRID COPY SYSTEM
       // $records['genotype_call']["$stock_id-$genotype_name"] = array(
       //   'project_id' => $project_id,
