@@ -70,7 +70,7 @@ function tpps_file_len($fid) {
   $options = array(
     'count' => &$count,
   );
-  if ($extension == 'vcf') {
+  if (in_array($extension, ['vcf', 'gz', 'zip', 'tar'])) {
     $options['skip_prefix'] = '#';
   }
   tpps_file_iterator($fid, 'tpps_file_len_helper', $options);

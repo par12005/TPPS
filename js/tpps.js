@@ -1,12 +1,8 @@
 jQuery(document).ready(function ($) {
 
-
+  var vcfPreValidateButton = '.vcf-pre-validate-button';
   // Bootstrap tooltip functionality.
   jQuery('[data-toggle="tooltip"]').tooltip();
-  var vcfPreValidateButton = '.vcf-pre-validate-button';
-
-
-
 
   function Supplemental_Files() {
     var files_add = jQuery('#edit-files-add');

@@ -19,7 +19,7 @@
  */
 function tpps_generate_doi($accession) {
   global $base_url;
-  $state = tpps_load_submission_state($accession);
+  $state = tpps_submission_interface_load($accession);
   $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $page2_values = $state['saved_values'][TPPS_PAGE_2] ?? NULL;
 

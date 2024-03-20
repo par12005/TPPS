@@ -404,6 +404,19 @@ class Submission {
   }
 
   /**
+   * Checks if submission exists in database.
+   *
+   * Only study accession is required to find record in database.
+   *
+   * @return bool
+   *   Returns TRUE if record in database exists and FALSE otherwise.
+   */
+  public function isExists() {
+    // Note: We souldn't use cache here to always get most recent information.
+    return (bool) ($this->getInfo($reset = FALSE));
+  }
+
+  /**
    * Loads a TPPS Submission Info.
    *
    * Caching:
@@ -420,7 +433,7 @@ class Submission {
    */
   public function getInfo($reset = FALSE) {
     if (empty($this->accession)) {
-      return;
+      return NULL;
     }
     $key = $this->accession;
     $static_cache = &drupal_static(__METHOD__);

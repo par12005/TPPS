@@ -274,8 +274,6 @@ function tpps_genotype_subform(array $form_bus) {
   if ($is_tppsc) {
     tpps_add_dropdown_file_selector(array_merge($form_bus, [
       'form' => &$fields,
-      // Note: 'parents' not yet implemented.
-      'parents' => ['files'],
       'file_field_name' => $file_field_name,
       'file_name' => t('VCF'),
       'organism_name' => $organism_name,
@@ -905,8 +903,6 @@ function tpps_add_dropdown_file_selector(array $form_bus) {
   $file_field_name = $form_bus['file_field_name'];
   $file_name = $form_bus['file_name'];
   $organism_name = $form_bus['organism_name'];
-  // @TODO Use $parents instead of hardcoded 'files' element.
-  $parents = $form_bus['parents'];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   module_load_include('inc', 'tpps', 'includes/common');
   $params = [
@@ -1126,4 +1122,24 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
       ],
     ],
   ]));
+}
+
+/**
+ * Generates disabled managed field.
+ *
+ * When file already was uploaded.
+ *
+ * @param array $fields
+ *   Drupal Form API array with fields.
+ * @param string $file_field_name
+ *   Name of the managed file field.
+ *
+ *   @TODO Check if it's in use and remove if possible.
+ */
+function tpps_build_disabled_file_field(array &$fields, $file_field_name) {
+  $fields['files'][$file_field_name] = [
+    '#type' => 'managed_file',
+    '#tree' => TRUE,
+    '#access' => FALSE,
+  ];
 }

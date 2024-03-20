@@ -566,7 +566,7 @@ function tpps_form_build_file_field(array $form_bus) {
         ['@list' => implode(', ', $extensions)]) : ''),
     '#tree' => TRUE,
     '#states' => $states,
-    '#parents' => $parents,
+    //'#parents' => $parents,
   ];
   // dpm(print_r($parents, 1), 'parents of ' . $field_name);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -652,7 +652,6 @@ function tpps_form_build_file_field(array $form_bus) {
     ];
   }
 }
-
 
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 // Form Bus is a way to share data between functions.
@@ -1006,7 +1005,9 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
         }
         $submission = new Submission($frontpage_values['accession']);
         $old_form_state = $submission->state;
-        tpps_form_state_info($form_state, $old_form_state);
+        if (!empty($old_form_state)) {
+          tpps_form_state_info($form_state, $old_form_state);
+        }
       }
     }
 

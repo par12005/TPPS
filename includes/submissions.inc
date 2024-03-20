@@ -103,8 +103,10 @@ function tpps_load_submission_multiple(array $conditions = array(), $state = TRU
  *   The id of the user creating the submission.
  */
 function tpps_create_submission(array $state, $uid) {
-  $submission = new Submission();
-  $submission->create($state, $uid);
+  $submission = new Submission(($state['accession'] ?? NULL));
+  if (empty($submission->isExists())) {
+    $submission->create($state, $uid);
+  }
 }
 
 /**
