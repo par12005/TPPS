@@ -726,51 +726,44 @@ function &tpps_form_bus_get(array $form_bus, $name) {
  *
  * @param array $form
  *   Drupal Form API Array to be updated.
- * @param string $fieldname
- *   Field name. Use key from $form array. Example: 'tpps_submission_accession'.
- *   When $fieldname is empty we just do not add JS
- *   because it's not critical feature.
- * @param array $parents
- *   Optional and not critical. Allows to remove 'autofocus' attribute.
+ * @param array $path
+ *   List of parents (if any) and field name.
  *
  * @TODO Minor. Use CSS id intead of name attribute to set focus.
  */
-function tpps_form_autofocus(array &$form = [], $fieldname = '', array $parents = []) {
+function tpps_form_autofocus(array &$form = NULL, array $path) {
   // Delay in msec.
   $timeout = 1000;
-  if (empty($fieldname)) {
+  if (empty($field = drupal_array_get_nested_value($form, $path) ?? NULL)) {
     return;
   }
-  if ($parents) {
-    $path = array_merge($parents, [$fieldname]);
-    // We need not Drupal From API Field name but HTML fieldname.
-    // Example: 'publication[status]'.
-    $html_fieldname = str_replace(
-      $parents[0] . ']', $parents[0], implode('][', $path)
-    ) . ']';
-    $field = drupal_array_get_nested_value($form, $path) ?? NULL;
+  // HTML fieldname (not from field name).
+  if ($field['#type'] == 'managed_file') {
+    // Example: files[tree-accession_species-1_file].
+    $html_name = 'files[' . implode('_', $path) . ']';
+  }
+  elseif (count($path) == 1) {
+    // E.g., 'data-type'.
+    $html_name = $path[0];
   }
   else {
-    $html_fieldname = $fieldname;
-    $field = $form[$fieldname] ?? NULL;
+    // E.g., 'organism-1[genotype][SNPs][vcf]'.
+    $html_name = str_replace($path[0] . '[', $path[0], implode('][', $path)) . ']';
   }
-  if ($field && !empty($html_fieldname)) {
-    // Do nothing if field not found at form.
-    tpps_add_css_js('autofocus', $form);
-    $form['#attached']['js'][] = [
-      'type' => 'setting',
-      'data' => [
-        'tpps' => [
-          'autoFocus' => [
-            'FieldName' => $html_fieldname,
-            'Timeout' => $timeout,
-          ],
+  tpps_add_css_js('autofocus', $form);
+  $form['#attached']['js'][] = [
+    'type' => 'setting',
+    'data' => [
+      'tpps' => [
+        'autoFocus' => [
+          'FieldName' => check_plain($html_name),
+          'Timeout' => check_plain($timeout),
         ],
       ],
-    ];
-    // @TODO Minor. Field could be not on 1st level.
-    unset($field['#attributes']['autofocus']);
-  }
+    ],
+  ];
+  // @TODO Minor. Field could be not on 1st level.
+  unset($field['#attributes']['autofocus']);
 }
 
 /**

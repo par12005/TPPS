@@ -81,7 +81,7 @@ function tpps_front_create_form(array &$form, array $form_state) {
           '#default_value' => $form_state['saved_values']['frontpage']['accession'] ?? 'new',
         ];
       }
-      tpps_form_autofocus($form, 'accession');
+      tpps_form_autofocus($form, ['accession']);
       $form['use_old_tgdr'] = [
         '#type' => 'checkbox',
         '#title' => t('I would like to use an existing TGDR number'),

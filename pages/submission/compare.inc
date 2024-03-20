@@ -34,7 +34,7 @@ function tpps_submission_compare_form(array $form, array &$form_state, $accessio
     '#default_value' => $accession_2 ?? array_key_first($accession_list) ?? '',
     '#required' => TRUE,
   ];
-  tpps_form_autofocus($form, 'tpps_submission_accession_2');
+  tpps_form_autofocus($form, ['tpps_submission_accession_2']);
   tpps_submission_list_add_buttons($form);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);

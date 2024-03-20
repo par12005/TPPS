@@ -83,7 +83,7 @@ function tpps_submission_import_form(array $form, array &$form_state, $accession
     '#description' => t('Default is "Approved" which allows to run Tripal job just after import.'),
   ];
   $form['#validate'][] = 'tpps_submission_import_form_validate';
-  tpps_form_autofocus($form, 'tpps_submission_import_accession');
+  tpps_form_autofocus($form, ['tpps_submission_import_accession']);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   tpps_submission_list_add_buttons($form);

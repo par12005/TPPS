@@ -70,7 +70,7 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     '#value' => t('Manual Export'),
     '#submit' => ['tpps_submission_export_manual_submit'],
   ];
-  tpps_form_autofocus($form, 'tpps_submission_export_state');
+  tpps_form_autofocus($form, ['tpps_submission_export_state']);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('submission_export', $form);
   tpps_add_css_js('theme', $form);

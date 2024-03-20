@@ -129,7 +129,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
     '#default_value' =>
       tpps_get_ajax_value($form_state, ['publication', 'status'], ''),
   ];
-  tpps_form_autofocus($form, 'status', ['publication']);
+  tpps_form_autofocus($form, ['publication', 'status']);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // DOI Fields.
   //

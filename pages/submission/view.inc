@@ -100,8 +100,6 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   }
 
   //tpps_submission_list_add_buttons($form);
-  // Autofocus disabled because it's more important to scroll then compare.
-  // tpps_form_autofocus($form, 'tpps_submission_accession_2');
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
   return $form;
