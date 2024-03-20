@@ -782,9 +782,6 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
     if ($is_step2_genotype) {
       if ($genotype[$snps_fieldset]['upload_snp_association'] == 'Yes') {
         tpps_is_required_field_empty($form_state,
-          ['organism-' . $org_num, 'genotype', $snps_fieldset, 'snps-association']
-        );
-        tpps_is_required_field_empty($form_state,
           ['organism-' . $org_num, 'genotype', $snps_fielset, 'snps-association-type']
         );
         tpps_is_required_field_empty($form_state,
@@ -796,9 +793,6 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
       );
       tpps_is_required_field_empty($form_state,
         ['organism-' . $org_num, 'genotype', $snps_fieldset, 'snps-assay']
-      );
-      tpps_is_required_field_empty($form_state,
-        ['organism-' . $org_num, 'genotype', $snps_fieldset, 'assay-design']
       );
     }
 

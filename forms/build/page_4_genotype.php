@@ -365,6 +365,7 @@ function tpps_genotype_subform(array $form_bus) {
       'title' => $title,
       'organism_name' => $organism_name,
       'type' => $form_bus['type'],
+      'optional' => TRUE,
     ]);
     // Field was relocated (v.2). ['files'] -> [$snps_fieldset].
     $fields[$snps_fieldset]['assay-citation'] = [
@@ -411,6 +412,7 @@ function tpps_genotype_subform(array $form_bus) {
         . '(which should match the gene reference) and '
         . 'a SNP Annotation (non synonymous, coding, etc).'),
       '#tree' => TRUE,
+      'optional' => TRUE,
     ]);
 
     $fields[$snps_fieldset][$file_field_name] = array_merge(
