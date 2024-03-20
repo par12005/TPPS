@@ -532,7 +532,7 @@ function tpps_form_build_file_field(array $form_bus) {
   $parent_element = &drupal_array_get_nested_value($form, $parents);
   // Upload folder.
   if (empty($upload_location) && ($form_bus['type'] ?? FALSE)) {
-    $upload_location == 'public://' . variable_get(
+    $upload_location = 'public://' . variable_get(
       'tpps_' . $form_bus['type'] . '_files_dir', 'tpps_' . $form_bus['type']
     );
   }
@@ -629,7 +629,7 @@ function tpps_form_build_file_field(array $form_bus) {
       '#title' => t($title . ': please select an already existing '
         . 'spreadsheet with columns for the Plant ID of genotypes '
         . 'used in this study: *'),
-      //'#upload_location' => $upload_location,
+      '#upload_location' => $upload_location,
       '#autocomplete_path' => 'tpps/autocomplete/' . $field_name,
       '#description' => t("Please select an already existing spreadsheet "
         . "file containing SNP Genotype Assay data. The format of this "

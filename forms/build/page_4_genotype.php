@@ -269,12 +269,11 @@ function tpps_genotype_subform(array $form_bus) {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // VCF Location.
-  $file_field_name = 'vcf';
   $is_tppsc = (($form_state['build_info']['form_id'] ?? 'tpps_main') == 'tppsc_main');
   if ($is_tppsc) {
     tpps_add_dropdown_file_selector(array_merge($form_bus, [
       'form' => &$fields,
-      'file_field_name' => $file_field_name,
+      'file_field_name' => 'vcf',
       'file_name' => t('VCF'),
       'organism_name' => $organism_name,
     ]));
@@ -376,7 +375,11 @@ function tpps_genotype_subform(array $form_bus) {
     ];
   }
   else {
-    tpps_build_disabled_file_field($fields, $file_field_name);
+    $fields[$snps_fieldset][$file_field_name] = [
+      '#type' => 'managed_file',
+      '#tree' => TRUE,
+      '#access' => FALSE,
+    ];
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -507,7 +510,11 @@ function tpps_genotype_subform(array $form_bus) {
   else {
     $file_field_list = ['snps-association', 'snps-pop-struct', 'snps-kinship'];
     foreach ($file_field_list as $file_field_name) {
-      tpps_build_disabled_file_field($fields, $file_field_name);
+      $fields[$snps_fieldset][$file_field_name] = [
+        '#type' => 'managed_file',
+        '#tree' => TRUE,
+        '#access' => FALSE,
+      ];
     }
   }
 
@@ -1122,24 +1129,4 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
       ],
     ],
   ]));
-}
-
-/**
- * Generates disabled managed field.
- *
- * When file already was uploaded.
- *
- * @param array $fields
- *   Drupal Form API array with fields.
- * @param string $file_field_name
- *   Name of the managed file field.
- *
- *   @TODO Check if it's in use and remove if possible.
- */
-function tpps_build_disabled_file_field(array &$fields, $file_field_name) {
-  $fields['files'][$file_field_name] = [
-    '#type' => 'managed_file',
-    '#tree' => TRUE,
-    '#access' => FALSE,
-  ];
 }
