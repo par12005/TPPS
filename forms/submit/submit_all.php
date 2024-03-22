@@ -6320,6 +6320,7 @@ function tpps_generate_all_genotype_materialized_views() {
  *   The project ID of the study. NOT THE STUDY ACCESSION!
  */
 function tpps_generate_genotype_materialized_view($project_id) {
+  
   // Ensure the project_id is an integer.
   $project_id = intval($project_id);
   if ($project_id <= 0) {
@@ -6334,11 +6335,12 @@ function tpps_generate_genotype_materialized_view($project_id) {
 
   // V3 - Emily decided to use tables (3/20/2024)
   $table_name = $view_name; // the table names will be the same as what the view names used to be
-  echo "Attempting to drop table (if exist): " . $view_name . "\n";
-  chado_query("DROP TABLE IF EXISTS " . $table_name . ";");
-  echo "Attempting to create table (if it does not exist): " . $table_name . "\n";
-  chado_query('select create_project_genotype_table(' . $project_id . ');');
-  echo "Genotype view table has finished being generated: " . $table_name . "\n";
+  // chado_query('SET search_path TO chado,public;');
+  // echo "Attempting to drop table (if exist): " . $view_name . "\n";
+  // chado_query("DROP TABLE IF EXISTS " . $table_name . ";");
+  // echo "Attempting to create table (if it does not exist): " . $table_name . "\n";
+  // chado_query("select create_project_genotype_table($project_id);");
+  // echo "Genotype view table has finished being generated: " . $table_name . "\n";
 
   // echo "Attempting to create materialized view (if it does not exist): " . $view_name . "\n";
 
