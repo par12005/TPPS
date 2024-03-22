@@ -5457,8 +5457,8 @@ function tpps_process_genotype_spreadsheet($row, array &$options = array()) {
   $tree_id = NULL;
   foreach ($row as $key => $val) {
     $key_index++;
-    echo "ROW key:$key, val:$val\n";
-    tpps_log("[INFO] ROW KEY $key and ROW VAL $val");
+    // echo "ROW key:$key, val:$val\n";
+    // tpps_log("[INFO] ROW KEY $key and ROW VAL $val");
     if (empty($headers[$key])) {
       continue;
     }
