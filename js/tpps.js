@@ -645,7 +645,14 @@ function initMap() {
       maps[fid + '_total_long'];
     });
   }
-  if (window.location.pathname.match(detail_regex) || (typeof Drupal.settings.tpps.study_locations !== 'undefined')) {
+  if (
+    typeof Drupal.settings.tpps != 'undefined'
+    && typeof Drupal.settings.tpps.tree_info != 'undefined'
+    && (
+      window.location.pathname.match(detail_regex)
+      || typeof Drupal.settings.tpps.study_locations !== 'undefined'
+    )
+  ) {
     maps[''] = new google.maps.Map(document.getElementById('_map_wrapper'), {
       center: {lat:0, lng:0},
       zoom: 5,
