@@ -699,7 +699,7 @@ function tpps_submission_rename_files($accession) {
  * @return void
  */
 function tpps_submission_clear_db_extra($accession) {
-  // FOR LATER USE MAYBE
+  // FOR LATER USE MAYBE.
   echo "Deleting genotypeprop data...\n";
   $start_time = time();
   chado_query("
@@ -710,24 +710,22 @@ function tpps_submission_clear_db_extra($accession) {
   $end_time = time();
   echo "Time taken to complete: " . ($end_time - $start_time) . "\n";
 
-
-  // FOR EACH ORGANISM IN THIS STUDY
-  $organism_count = $state['saved_values']['1']['organism']['number'];
-  for ($i = 1; $i <= $organism_count; $i++) {
-    // GET THE ORGANISM NAME / GENUS SPECIES
-    $organism = $state['saved_values'][1]['organism'][$i];
+  // FOR EACH ORGANISM IN THIS STUDY.
+  for ($i = 1; $i <= ($state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1); $i++) {
+    // GET THE ORGANISM NAME / GENUS SPECIES.
+    $organism = $state['saved_values'][TPPS_PAGE_1]['organism'][$i];
     $organism_name = $organism['name'];
-    // Lookup the organism_id from the organism_name
-    $organism_name_parts = explode(' ',$organism_name);
+    // Lookup the organism_id from the organism_name.
+    $organism_name_parts = explode(' ', $organism_name);
     $genus = $organism_name_parts[0];
     $species = '';
     $organism_name_parts_count = count($organism_name_parts);
-    for ($j=1; $j < $organism_name_parts_count; $j++) {
+    for ($j = 1; $j < $organism_name_parts_count; $j++) {
       $species .= $organism_name_parts[$j] . ' ';
     }
     $species = trim($species);
 
-    // LOOKUP ORGANISM_ID
+    // LOOKUP ORGANISM_ID.
     $results = chado_query('SELECT * FROM chado.organism WHERE genus ILIKE :genus AND species ILIKE :species LIMIT 1;',[
       ':genus' => $genus,
       ':species' => $species

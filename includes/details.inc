@@ -832,7 +832,6 @@ function tpps_details_get_study_file_ids(array $state) {
   $submission_interface = tpps_submission_interface_generate($state);
   $saved_values = $submission_interface['saved_values'];
   // print_r($saved_values);
-  $organism_count = $saved_values['1']['organism']['number'] ?? NULL;
   $file_ids = [];
   $page4_file_list = [
     // Phenotype files.
@@ -845,13 +844,13 @@ function tpps_details_get_study_file_ids(array $state) {
     ['genotype', 'files', 'ssrs'],
     ['genotype', 'files', 'ssrs_extra'],
   ];
-  for ($j = 1; $j <= $organism_count; $j++) {
+  for ($j = 1; $j <= ($saved_values[TPPS_PAGE_1]['organism']['number'] ?? 1); $j++) {
     // Page 3.
-    $file_ids[] = $saved_values[3]['tree-accession']['species-' . $j]['file'] ?? NULL;
+    $file_ids[] = $saved_values[TPPS_PAGE_3]['tree-accession']['species-' . $j]['file'] ?? NULL;
     // Page 4.
     foreach ($page4_file_list as $parents) {
       $file_ids[] = drupal_array_get_nested_value(
-        $saved_values[4]['organism-' . $j],
+        $saved_values[TPPS_PAGE_4]['organism-' . $j],
         $parents
       );
     }

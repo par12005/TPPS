@@ -85,23 +85,6 @@ require_once 'includes/easy_report.inc';
  * Implements hook_menu().
  */
 function tpps_menu() {
-  // TPPSc.
-  $items['tppsc'] = [
-    'title' => 'Internal TPPS pipeline',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tppsc_main'],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['access tpps form'],
-  ];
-
-  $items['tppsc/%'] = [
-    'title' => 'Internal TPPS pipeline',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tppsc_main', 1],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['access tpps form', 1],
-  ];
-
   $items['admin/config/content/tppsc'] = [
     'title' => 'TPPSC Settings',
     'description' => 'Configuration for TPPSC module',
@@ -113,43 +96,62 @@ function tpps_menu() {
     'file' => 'admin/config.php',
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // TPPS
-  $items['tpps'] = [
-    'title' => 'Tripal Plant PopGen Submit',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_main'],
-    'access arguments' => ['access content'],
-    // 'access callback' => 'tpps_access',
-    // 'access arguments' => array('access tpps form'),
-  ];
-
-  $items['tpps/%'] = [
-    'title' => 'Tripal Plant PopGen Submit',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => ['tpps_main', 1],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['access tpps form', 1],
-  ];
-
   // VCF Files Pre Validation AJAX-callbacks.
-  $items['tpps/%/pre-validate'] = [
-    'title' => 'TPPS File Pre-Validation',
-    'page callback' => 'tpps_pre_validate_init',
-    // File: includes/form_utils.in
-    // // File: includes/form_utils.incc
-    'page arguments' => [1],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['access tpps form', 1],
-    'type' => MENU_CALLBACK,
-  ];
-  $items['tpps/%/pre-validate/%/status'] = [
-    'title' => 'TPPS File Pre-Validation',
-    'page callback' => 'tpps_pre_validate_status',
-    'page arguments' => [1, 3],
-    'access callback' => 'tpps_access',
-    'access arguments' => ['access tpps form', 1],
-    'type' => MENU_CALLBACK,
-  ];
+  // Note:
+  // Adding an extra menu routes allows to avoid extra load of submission
+  // state array from DB. When this load will be cached this could be removed.
+  // Those 2 items below are the same but only 'c' added in path.
+  // Dynamically generated paths (for search purposes):
+  //   TPPS Form:
+  //     'tpps',
+  //     'tpps/%',
+  //     'tpps/%/pre-validate',
+  //     'tpps/%/pre-validate/%/status',
+  //   TPPSc:
+  //     'tppsc',
+  //     'tppsc/%',
+  //     'tppsc/%/pre-validate',
+  //     'tppsc/%/pre-validate/%/status',
+  foreach (['tpps', 'tppsc'] as $form_type) {
+    $items[$form_type] = [
+      'title' => ($form_type == 'tppsc'
+        ? 'Internal TPPS pipeline' : 'Tripal Plant PopGen Submit'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => [$form_type . '_main'],
+      // TPPSc only. TPPS see below.
+      'access callback' => 'tpps_access',
+      'access arguments' => ['access tpps form'],
+    ];
+    if ($form_type == 'tpps') {
+      $items[$form_type]['access arguments'] = ['access content'];
+      unset($items[$form_type]['access callback']);
+    }
+    $items[$form_type . '/%'] = [
+      'title' => ($form_type == 'tppsc'
+        ? 'Internal TPPS pipeline' : 'Tripal Plant PopGen Submit'),
+      'page callback' => 'drupal_get_form',
+      'page arguments' => [$form_type . '_main', 1],
+      'access callback' => 'tpps_access',
+      'access arguments' => ['access tpps form', 1],
+    ];
+    $items[$form_type . '/%/pre-validate'] = [
+      'title' => 'TPPS File Pre-Validation',
+      // File: includes/form_utils.inc.
+      'page callback' => 'tpps_pre_validate_init',
+      'page arguments' => [1],
+      'access callback' => 'tpps_access',
+      'access arguments' => ['access tpps form', 1],
+      'type' => MENU_CALLBACK,
+    ];
+    $items[$form_type . '/%/pre-validate/%/status'] = [
+      'title' => 'TPPS File Pre-Validation',
+      'page callback' => 'tpps_pre_validate_status',
+      'page arguments' => [1, 3],
+      'access callback' => 'tpps_access',
+      'access arguments' => ['access tpps form', 1],
+      'type' => MENU_CALLBACK,
+    ];
+  }
 
   // This will return information about a study's Accession tree ids vs VCF tree ids
   // First % = accession
@@ -481,67 +483,51 @@ function tpps_permission() {
  */
 function tpps_access() {
   global $user;
-
+  // Drupal Superuser.
   if ($user->uid == 1) {
     return TRUE;
   }
 
+  // User's permissions.
   $args = func_get_args();
   $permission = $args[0] ?? NULL;
-  if (gettype($permission) != 'string') {
+  if (gettype($permission) != 'string' || !user_access($permission)) {
     return FALSE;
   }
 
-  if (!user_access($permission)) {
-    return FALSE;
-  }
-
+  // Special case. Study accession, owner and status.
   switch ($permission) {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'access tpps form':
       $accession = $args[1] ?? NULL;
       if (empty($accession) || $accession == 'new') {
         return TRUE;
       }
-
-      preg_match('/^([^\/]+)\/?.*$/', $_GET['q'], $matches);
-      $form_type = $matches[1] ?? NULL;
-      $full_state = tpps_load_submission_state($accession);
-
-      $submission_info = tpps_load_submission_info($accession);
-      $submission_type = $full_state['tpps_type'] ?? 'tpps';
-
-      // TPPSc Form.
-      if ($submission_type == 'tppsc') {
-        if (
-          !empty($submission_info)
-          // @TODO Minor. Probably it's too much checks for this case.
-          && (
-            $submission_type == $form_type
-            || preg_match('/^tppsc\/TGDR[0-9]+$/', $_GET['q'])
-          )
-        ) {
-          return TRUE;
-        }
+      $submission = new Submission($accession);
+      if (!$submission->isExists()) {
+        // Study has no record in tpps_submission table.
+        return FALSE;
       }
-      elseif ($submission_type == 'tpps') {
+      if ($submission->isTppsc()) {
+        return TRUE;
+      }
+      else {
         // TPPS Form.
-        if ($submission_info
-          && $submission_info['status'] == "Incomplete"
+        $submission_info = $submission->getInfo();
+        if ($submission_info['status'] == "Incomplete"
           && $submission_info['uid'] == $user->uid
-          && (
-            $submission_type == $form_type
-            || preg_match('/^tpps\/TGDR[0-9]+$/', $_GET['q'])
-          )
         ) {
           return TRUE;
         }
       }
       return FALSE;
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'user tpps submissions':
       $uid = $args[1] ?? NULL;
       return (!empty($uid) && $uid == $user->uid);
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'view own tpps submission':
       $accession = $args[1] ?? NULL;
       // Allow admins to access any study.
@@ -559,20 +545,22 @@ function tpps_access() {
       }
       return FALSE;
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'tpps delete submission':
       $accession = $args[1] ?? NULL;
       if (($submission_info = tpps_load_submission_info($accession))) {
         if (
           $submission_info['status'] == "Incomplete"
-          and $user->uid == $submission_info['uid']
+          && $user->uid == $submission_info['uid']
         ) {
           return TRUE;
         }
       }
       return FALSE;
 
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     default:
-      // @TODO This is unsafe.
+      // @todo Minor. Check if this is safe. Better to deny access by default.
       return TRUE;
   }
 }
@@ -1171,26 +1159,22 @@ function tpps_page_build(&$page) {
 }
 
 /**
- * This function creates the main TPPS form.
+ * Creates the main TPPS form.
  *
- * Loads query parameters, ensures the user is logged in, loads old form and
- * form_state information, and calls the appropriate page function.
+ * Provides the form based on which step the user is on.
  *
  * @param array $form
- *   The actual TPPS form.
+ *   The form to be created.
  * @param array $form_state
- *   The state of the TPPS form - note that this may be overwritten if the user
- *   is loading an old form.
- *
- * @global stdClass $user
- *   The user trying to access the TPPS form.
+ *   The state of the form to be created.
  *
  * @return array
- *   The created form.
+ *   Returns the completed form.
  */
 function tpps_main(array $form, array &$form_state, $accession = NULL) {
-  // @TODO Minor.Use the same function to build form but set form_id manually.
+  // @todo Minor.Use the same function to build form but set form_id manually.
   module_load_include('inc', 'tpps', 'includes/form');
+  // Note: we use the same function to build TPPS and TPPSc forms.
   return tpps_form_build_main($form, $form_state, $accession);
 }
 
@@ -1459,6 +1443,8 @@ function tpps_main_submit($form, &$form_state) {
 // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 /**
+ * Creates the main TPPSc form.
+ *
  * Provides the form based on which step the user is on.
  *
  * @param array $form
@@ -1470,8 +1456,9 @@ function tpps_main_submit($form, &$form_state) {
  *   Returns the completed form.
  */
 function tppsc_main(array $form, array &$form_state, $accession = NULL) {
-  // @TODO Minor.Use the same function to build form but set form_id manually.
+  // @todo Minor.Use the same function to build form but set form_id manually.
   module_load_include('inc', 'tpps', 'includes/form');
+  // Note: we use the same function to build TPPS and TPPSc forms.
   return tpps_form_build_main($form, $form_state, $accession);
 }
 

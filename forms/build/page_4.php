@@ -36,7 +36,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     }
   }
   $form['#tree'] = TRUE;
-  for ($i = 1; $i <= tpps_form_bus_get($form_bus, 'organism_count'); $i++) {
+  for ($i = 1; $i <= tpps_form_bus_get($form_bus, 'organism_number'); $i++) {
     $form_bus['organism_id'] = $i;
     $name = tpps_form_bus_get($form_bus, 'organism_name', $i);
     $form["organism-$i"] = [
@@ -177,7 +177,10 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Button's weight: -1000 (header) and 1000 (footer).
-  tpps_form_add_buttons(array_merge($form_bus, ['page' => 'page_4']));
+  tpps_form_add_buttons(array_merge($form_bus, [
+    'page' => 'page_4',
+    'organism_number' => tpps_form_bus_get($form_bus, 'organism_number'),
+  ]));
   // Curation Tool's weight: 1100 (under button's in footer).
   tpps_add_curation_tool($form_bus);
   // Now JS is empty but could be used later.

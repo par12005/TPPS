@@ -77,16 +77,16 @@ function tpps_form_add_buttons(array $form_bus) {
         ];
 
         // Pre-validate VCF.
-        if (!empty($form_bus['data_type']) && preg_match('/G/', $form_bus['data_type'])) {
+        if ($form['form_type']['#value'] == 'tppsc') {
           $pre_valid_states = [];
           for ($i = 1; $i <= $form_bus['organism_number']; $i++) {
-            $pre_valid_states["input[name=\"organism-{$i}[genotype][SNPs][file-type][VCF]\"]"]
-              = ['checked' => FALSE];
+            $pre_valid_states["[name=\"organism-{$i}[genotype][SNPs][file-type]\"]"]
+              = ['value' => 'VCF'];
           }
           $form[$scope]['pre_validate'] = [
             '#type' => 'button',
             '#value' => t('Pre-validate my VCF files'),
-            '#states' => ['invisible' => $pre_valid_states],
+            '#states' => ['visible' => $pre_valid_states],
             '#suffix' => '<div>Sometimes large VCF files can cause problems '
               . 'during the validation step. If your VCF file is very large, '
               . 'you can click the "Pre-validate my VCF files" button to '
@@ -667,7 +667,7 @@ function tpps_form_build_file_field(array $form_bus) {
  *     'organism_name'
  *       Organism name. Requires 3rd argument: $organism_id.
  *       Usage: tpps_form_bus_get($form_bus, 'organism_name', $orgainsm_id).
- *     'organism_count'
+ *     'organism_number'
  *       Number of organisms in the study.
  *       Usage: tpps_form_bus_get($form_bus, 'organism_number').
  *
@@ -698,10 +698,8 @@ function &tpps_form_bus_get(array $form_bus, $name) {
       );
       break;
 
-    case 'organism_count':
-      $parents = array_merge($page_parents[1],
-        ['organism', 'number']
-      );
+    case 'organism_number':
+      $parents = array_merge($page_parents[1], ['organism', 'number']);
       break;
   }
 
@@ -952,6 +950,10 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   // CSS form id is changing because of AJAX requests so we use form's class
   // in CSS rules instead of form's id with regex.
   $form['#attributes']['class'][] = ($is_tppsc) ? 'tppsc-form' : 'tpps-form';
+  $form['form_type'] = [
+    '#type' => 'hidden',
+    '#value' => ($is_tppsc) ? 'tppsc' : 'tpps',
+  ];
   // Use the same validator- and submitter-function for both forms (TPPS/TPPSc).
   $form['#validate'][] = 'tpps_main_validate';
   $form['#submit'][] = 'tpps_main_submit';
@@ -1091,16 +1093,6 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Must be after tpps_init_project() which sets accession for new studies.
   $accession = $form_state['accession'] ?? $frontpage_values['accession'] ?? NULL;
-  $form['#attached']['js'][] = [
-    'data' => [
-      'tpps' => [
-        'stage' => $form_state['stage'] ?? NULL,
-        'accession' => $accession,
-        'organismNumber' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1,
-      ],
-    ],
-    'type' => 'setting',
-  ];
   // Hidden form accession element.
   // Note: Adding this elements to $form heare require all sub-functions to
   // use reference and not return $form array.
@@ -1174,5 +1166,16 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
       drupal_set_message(t('Invalid form stage.'), 'error');
       break;
   }
+  $form['#attached']['js'][] = [
+    'data' => [
+      'tpps' => [
+        'stage' => $form_state['stage'] ?? NULL,
+        'accession' => $accession,
+        'organismNumber' => $form_state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? 1,
+        'formType' => $form_state['tpps_type'] ?? 'tpps',
+      ],
+    ],
+    'type' => 'setting',
+  ];
   return $form;
 }

@@ -47,8 +47,7 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $file_ids = [];
-  $organism_count = $saved_values['1']['organism']['number'];
-  for ($j = 1; $j <= $organism_count; $j++) {
+  for ($j = 1; $j <= $saved_values[TPPS_PAGE_1]['organism']['number']; $j++) {
     // WARNING:
     // DO NOT update because it uses Submission Form Version 1.
     $parents = [

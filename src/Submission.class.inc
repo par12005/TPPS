@@ -342,13 +342,23 @@ class Submission {
   }
 
   /**
-   * Checks if current form is TPPSc form.
+   * Checks if form type is 'tppsc'.
    *
    * @return bool
    *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
    */
   public function isTppsc() {
     return ($this->getFormId() == 'tppsc_main');
+  }
+
+  /**
+   * Checks if form type is 'tpps' (but not 'tppsc').
+   *
+   * @return bool
+   *   Returns TRUE if form Id is 'tpps_main' and FALSE otherwise.
+   */
+  public function isTpps() {
+    return !$this->isTppsc();
   }
 
   /**
@@ -408,12 +418,15 @@ class Submission {
    *
    * Only study accession is required to find record in database.
    *
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *   Set to TRUE if you think cached version could be outdated.
+   *
    * @return bool
    *   Returns TRUE if record in database exists and FALSE otherwise.
    */
-  public function isExists() {
-    // Note: We souldn't use cache here to always get most recent information.
-    return (bool) ($this->getInfo($reset = FALSE));
+  public function isExists($reset = FALSE) {
+    return (bool) ($this->getInfo($reset));
   }
 
   /**

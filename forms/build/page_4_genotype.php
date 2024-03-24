@@ -51,12 +51,12 @@ function tpps_genotype_subform(array $form_bus) {
   $form = &$form_bus['form'];
   $form_state = &$form_bus['form_state'];
   $i = $form_bus['organism_id'];
-  $organism_count = $form_bus['organism_count'] ?? 1;
+  $organism_number = $form_bus['organism_number'] ?? 1;
+  //$organism_number = $form_bus['page1_values']['organism']['number'];
   $type = $form_bus['type'] ?? '';
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Get "treasure" from the $form_bus.
   $page4_values = &$form_state['saved_values'][TPPS_PAGE_4] ?? [];
-  $organism_count = $form_bus['page1_values']['organism']['number'];
   $organism_name = 'organism-' . $i;
   $genotype_dir = variable_get(
     'tpps_' . $form_bus['type'] . '_files_dir',
@@ -84,7 +84,7 @@ function tpps_genotype_subform(array $form_bus) {
         'parents' => [$organism_name, $type],
         'field_name' => 'are_genotype_markers_identical',
         '#title' => t('Are your genotype markers identical accross species?'),
-        '#default_value' => (($organism_count == 1) ? 'yes' : 0),
+        '#default_value' => (($organism_number == 1) ? 'yes' : 0),
       ]
     ));
     // Оnly for non-first questions. Next 3 questions are dependent on 1st one.
