@@ -6335,12 +6335,12 @@ function tpps_generate_genotype_materialized_view($project_id) {
 
   // V3 - Emily decided to use tables (3/20/2024)
   $table_name = $view_name; // the table names will be the same as what the view names used to be
-  // chado_query('SET search_path TO chado,public;');
-  // echo "Attempting to drop table (if exist): " . $view_name . "\n";
-  // chado_query("DROP TABLE IF EXISTS " . $table_name . ";");
-  // echo "Attempting to create table (if it does not exist): " . $table_name . "\n";
-  // chado_query("select create_project_genotype_table($project_id);");
-  // echo "Genotype view table has finished being generated: " . $table_name . "\n";
+  chado_query('SET search_path TO chado,public;');
+  echo "Attempting to drop table (if exist): " . $view_name . "\n";
+  chado_query("DROP TABLE IF EXISTS " . $table_name . ";");
+  echo "Attempting to create table (if it does not exist): " . $table_name . "\n";
+  chado_query("select create_project_genotype_table(" . intval($project_id) . ");");
+  echo "Genotype view table has finished being generated: " . $table_name . "\n";
 
   // echo "Attempting to create materialized view (if it does not exist): " . $view_name . "\n";
 
