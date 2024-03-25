@@ -97,22 +97,8 @@ function tpps_menu() {
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // VCF Files Pre Validation AJAX-callbacks.
-  // Note:
-  // Adding an extra menu routes allows to avoid extra load of submission
-  // state array from DB. When this load will be cached this could be removed.
-  // Those 2 items below are the same but only 'c' added in path.
-  // Dynamically generated paths (for search purposes):
-  //   TPPS Form:
-  //     'tpps',
-  //     'tpps/%',
-  //     'tpps/%/pre-validate',
-  //     'tpps/%/pre-validate/%/status',
-  //   TPPSc:
-  //     'tppsc',
-  //     'tppsc/%',
-  //     'tppsc/%/pre-validate',
-  //     'tppsc/%/pre-validate/%/status',
   foreach (['tpps', 'tppsc'] as $form_type) {
+    // Dynamically generated paths: 'tpps', 'tppsc'.
     $items[$form_type] = [
       'title' => ($form_type == 'tppsc'
         ? 'Internal TPPS pipeline' : 'Tripal Plant PopGen Submit'),
@@ -126,6 +112,7 @@ function tpps_menu() {
       $items[$form_type]['access arguments'] = ['access content'];
       unset($items[$form_type]['access callback']);
     }
+    // Dynamically generated paths: 'tpps/%', 'tppsc/%'.
     $items[$form_type . '/%'] = [
       'title' => ($form_type == 'tppsc'
         ? 'Internal TPPS pipeline' : 'Tripal Plant PopGen Submit'),
@@ -134,24 +121,24 @@ function tpps_menu() {
       'access callback' => 'tpps_access',
       'access arguments' => ['access tpps form', 1],
     ];
-    $items[$form_type . '/%/pre-validate'] = [
-      'title' => 'TPPS File Pre-Validation',
-      // File: includes/form_utils.inc.
-      'page callback' => 'tpps_pre_validate_init',
-      'page arguments' => [1],
-      'access callback' => 'tpps_access',
-      'access arguments' => ['access tpps form', 1],
-      'type' => MENU_CALLBACK,
-    ];
-    $items[$form_type . '/%/pre-validate/%/status'] = [
-      'title' => 'TPPS File Pre-Validation',
-      'page callback' => 'tpps_pre_validate_status',
-      'page arguments' => [1, 3],
-      'access callback' => 'tpps_access',
-      'access arguments' => ['access tpps form', 1],
-      'type' => MENU_CALLBACK,
-    ];
   }
+  $items['tpps/%/pre-validate'] = [
+    'title' => 'TPPS File Pre-Validation',
+    // File: includes/form_utils.inc.
+    'page callback' => 'tpps_pre_validate_init',
+    'page arguments' => [1],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access tpps form', 1],
+    'type' => MENU_CALLBACK,
+  ];
+  $items['tpps/%/pre-validate/%/status'] = [
+    'title' => 'TPPS File Pre-Validation',
+    'page callback' => 'tpps_pre_validate_status',
+    'page arguments' => [1, 3],
+    'access callback' => 'tpps_access',
+    'access arguments' => ['access tpps form', 1],
+    'type' => MENU_CALLBACK,
+  ];
 
   // This will return information about a study's Accession tree ids vs VCF tree ids
   // First % = accession
