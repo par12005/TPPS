@@ -67,17 +67,17 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show the data!
-  $interface = tpps_submission_interface_load($accession, RESET_CACHE) ?? [];
+  $shared_state = $submission->loadSharedState();
 
-  drupal_set_message('Real Interface Version: ' .
-    (isset($interface['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
+  drupal_set_message('Real Shared State Version: ' .
+    (isset($shared_state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
   );
-  drupal_set_message('Real State Version: ' .
+  drupal_set_message('Real Form State Version: ' .
     (isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
   );
 
   $dumps = [
-    'Submission Interface' => tpps_array_dump($interface),
+    'Shared State' => tpps_array_dump($shared_state),
     'Form State' => tpps_array_dump($state),
   ];
   foreach ($dumps as $type => $data) {

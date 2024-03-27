@@ -27,12 +27,14 @@ function tpps_admin_imported_studies_report() {
     }
     $interface = tpps_submission_interface_load($local) ?? [];
     $info = $submission->info;
-
-
+    if (!empty($interface['job_id'])) {
+      $job = tripal_get_job($interface['job_id']);
+      $job_status = ($job ? $job->status : NULL);
+    }
     $rows[] = [
       l($local, 'tpps/submission/' . $local . '/view'),
       $state['status'] ?? NULL,
-      ($interface['job_id'] ? tripal_get_job($interface['job_id'])->status : ''),
+      $job->status ?? '',
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
       $info['uid'] ?? NULL,

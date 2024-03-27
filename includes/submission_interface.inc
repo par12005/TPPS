@@ -121,9 +121,7 @@ function tpps_form_is_submission_interface(array $form_state) {
  */
 function tpps_submission_interface_new($accession) {
   $submission = new Submission($accession);
-  $submission->getState($reset = TRUE);
-  $interface = tpps_submission_interface_generate($submission->state);
-  return tpps_submission_interface_save($interface);
+  return $submission->createSharedState();
 }
 
 /**
@@ -133,10 +131,8 @@ function tpps_submission_interface_new($accession) {
  *   Study Accession. E.g., 'TGDR12345'.
  */
 function tpps_submission_interface_remove($accession) {
-  db_update('tpps_submission')
-    ->fields(['submission_interface' => 'a:0:{}'])
-    ->condition('accession', $accession)
-    ->execute();
+  $submission = new Submission($accession);
+  $submission->removeSharedState();
 }
 
 /**
@@ -146,8 +142,8 @@ function tpps_submission_interface_remove($accession) {
  *   Study accession.
  */
 function tpps_submistion_interface_recreate($accession) {
-  tpps_submission_interface_remove($accession);
-  tpps_submission_interface_new($accession);
+  $submission = new Submission($accession);
+  $submission->recreateSharedState();
 }
 
 /**
@@ -165,23 +161,10 @@ function tpps_submistion_interface_recreate($accession) {
  *   Returns empty array if $form_state is empty too.
  */
 function tpps_submission_interface_generate(array $form_state = []) {
-  if (empty($form_state)) {
-    tpps_message('Empty Submission Form State.', [], 'warning');
-    return [];
-  }
-  module_load_include('inc', 'tpps', 'includes/submission_form_version');
-
-  // Initialize Submission Interface.
-  // Do NOT change $form_state but update $interface instead.
-  $interface = $form_state;
-  $interface['is_submission_interface'] = TRUE;
-
-  // We need to apply changes from 1st to $current version to have
-  // incremental changes.
-  tpps_submission_form_version_downgrade_to_latest($form_state, $interface);
-  tpps_submission_interface_purify($interface);
-
-  return $interface;
+  $submission = new Submission();
+  $submission->state = $form_state;
+  $submission->generateSharedState();
+  return $submission->sharedState;
 }
 
 /**
@@ -197,50 +180,10 @@ function tpps_submission_interface_generate(array $form_state = []) {
  *   Returns empty array if Submission wan't found.
  */
 function tpps_submission_interface_load($accession) {
-  $result = db_select('tpps_submission', 's')
-    ->fields('s', ['submission_interface'])
-    ->condition('accession', $accession)
-    ->range(0, 1)
-    ->execute()->fetchAssoc();
-  if (!$result) {
-    // Try to find study by 'accession' in 'tpps_submission_dbxref' table.
-    $query = db_select('tpps_submission', 's');
-    $query->join(
-      'tpps_submission_dbxref',
-      's_dbx',
-      's.tpps_submission_id = s_dbx.tpps_submission_id'
-    );
-    $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-    $query->fields('s', ['submission_interface'])
-      ->condition('dbx.accession', $accession)
-      ->condition('s.status', 'Approved')
-      ->range(0, 1);
-    $result = $query->execute()->fetchAssoc();
-  }
-  // Process results.
-  if ($result) {
-    if (!empty($result['submission_interface'])) {
-      $interface = unserialize($result['submission_interface']);
-      // Interface could be an empty array which when serialized
-      // is non-empty string and we need to check after unserialization.
-      if (!empty($interface)) {
-        return $interface;
-      }
-    }
-    // Create new Submission Interface and return it.
-    $message = 'Submission Interface Array was generated for @accession '
-     . 'because it was empty.';
-    $params = ['@accession' => $accession];
-    tpps_message($message, $params, 'warning');
-    $interface = tpps_submission_interface_new($accession);
-    if (!empty($interface)) {
-      return $interface;
-    }
-  }
-  else {
-    // We should return empty array to not break other code which expects array.
-    return [];
-  }
+  // @TODO Update related code.
+  $submission = new Submission($accession);
+  $submission->loadSharedState();
+  return $submission->sharedState;
 }
 
 /**
@@ -275,36 +218,13 @@ function tpps_submission_interface_load($accession) {
  *   Returns NULL if $form_state or Study accession is empty.
  */
 function tpps_submission_interface_save(array &$interface, $status = NULL) {
-  if (empty($interface) || empty($interface['accession'])) {
-    return NULL;
-  }
-
-  $accession = $interface['accession'];
-  // Merge or overwrite?
-  if (variable_get('tpps_submission_interface_merge_on_update', FALSE)) {
-    $interface = array_merge(
-      tpps_submission_interface_load($accession, RESET_CACHE),
-      $interface
-    );
-  }
-  // Note: REQUEST_TIME couldn't be used because called from CLI script and
-  // processing could take long time from script call.
-  $interface['updated'] = time();
-
-  // Prepare data for query.
-  $fields = [];
-  if ($status) {
-    $fields['status'] = $interface['status'] = $status;
-  }
-  $fields['submission_interface'] = serialize($interface);
-
-  db_update('tpps_submission')
-    ->fields($fields)
-    ->condition('accession', $accession)
-    ->execute();
-  return $interface;
+  // @WARNING: Reference!
+  $submission = new Submission();
+  $submission->sharedState = $interface;
+  $submission->saveSharedState($status);
+  // Note: arrays updates during save.
+  $interface = $submission->sharedState;
 }
-
 
 /**
  * Reduce size of the Submission Interface array.
@@ -315,97 +235,10 @@ function tpps_submission_interface_save(array &$interface, $status = NULL) {
  *   Submission Interface.
  */
 function tpps_submission_interface_purify(array &$interface) {
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Remove useless elemLnts to reduce size.
-  $change_list = [
-    // We unset not used items instead of copy required items from
-    // $form_state because if new elements will be found they will be
-    // left for sure. It's safer.
-    'unset' => [
-      // List of path to the items in $interface at the top (1st) level.
-      'build_info',
-      'temporary',
-      'programmed',
-      'programmed_bypass_access_check',
-      'cache',
-      'rebuild',
-      'rebuild_info',
-      'redirect',
-      'submitted',
-      'executed',
-      'method',
-      'groups',
-      'buttons',
-      'input',
-      'values',
-      'complete form',
-      'process_input',
-      'invalid_token',
-      'triggering_element',
-      'clicked_button',
-      ['saved_values', 'form_build_id'],
-      'tpps_submission_export_files',
-      // @TODO Submission Form Version is useless for pipeline processing
-      // but could be useful for debugging.
-      //['saved_values', TPPS_SUBMISSION_FORM_VERSION_KEY],
-
-      // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-      // List of the fields which must be left.
-      // Required by submit_all() and tpps_table_display() and sub-functions.
-      // 'saved_values',
-      // 'dbxref_id',
-      // 'created',
-      // 'accession',
-      // 'status',
-      // 'stats',
-      // 'ids',
-      // 'tpps_type',
-      // 'file_info',
-      // 'updated',
-      // 'approved',
-      // 'completed',
-      // 'loaded',
-      // 'submitting_uid',
-      // 'job_id',
-      // 'revised_files',
-      // 'admin_comments',
-      // 'alternative_accessions',
-      // 'data',
-      // 'tree_info'.
-      //
-      //  Probably could be unset:
-      // 'stage',
-    ],
-  ];
-
-  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Dynamic (repeated) changes.
-  //
-  // Remove Drupal's internal fields used for form building.
-  // Note: Those fields are stored in column tpps_submission.submission_state.
-  $page_list = [
-    'frontpage', TPPS_PAGE_1, TPPS_PAGE_2, TPPS_PAGE_3, TPPS_PAGE_4, 'summarypage',
-  ];
-  $drupal_internal_fields = [
-    // Note: Page 1 has not 'Back' button.
-    'Back',
-    'Save',
-    'Next',
-    'form_build_id',
-    'form_token',
-    'form_id',
-    'op',
-    '#cleared',
-    // Only for Page 4.
-    'submit',
-    'diagnostics-curation',
-  ];
-  foreach ($page_list as $page) {
-    foreach ($drupal_internal_fields as $field) {
-      $change_list['unset'][] = ['saved_values', $page, $field];
-    }
-  }
-
-  module_load_include('inc', 'tpps', 'includes/array');
-  tpps_array_apply_changes($change_list, $interface);
+  // WARNING: Reference!
+  $submission = new Submission();
+  $submission->sharedState = $interface;
+  $submission->purifySharedState();
+  // Note: arrays updates during save.
+  $interface = $submission->sharedState;
 }

@@ -572,12 +572,14 @@ function tpps_submission_add_tag($accession, $tag) {
   $tags = tpps_submission_get_tags($accession) ?? [];
   if (!array_key_exists($tag, $tags)) {
     $submission_info = tpps_load_submission_info($accession);
-    db_insert('tpps_submission_tag')
-      ->fields([
-        'tpps_submission_id' => $submission_info['tpps_submission_id'],
-        'tpps_tag_id' => $tag,
-      ])
-      ->execute();
+    if (!empty($submission_info['tpps_submission_id'])) {
+      db_insert('tpps_submission_tag')
+        ->fields([
+          'tpps_submission_id' => $submission_info['tpps_submission_id'],
+          'tpps_tag_id' => $tag,
+        ])
+        ->execute();
+    }
   }
 }
 

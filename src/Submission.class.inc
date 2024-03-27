@@ -5,7 +5,11 @@
  * Contains 'Submission' class.
  *
  * @todo Add submission's tag code from include/submission.inc
- * @todo Add Submission Interface and rename.
+ *
+ * Questions:
+ * 1. Should class create watchdog messages? Probably no. Create exceptions.
+ * 2. Should methods return data or just update class's properties?
+ *    Returning is better because require less code to work.
  */
 
 /**
@@ -34,7 +38,17 @@ class Submission {
    *
    * @var array
    */
-  protected $state;
+  protected $state = [];
+
+  /**
+   * Submission State for pipeline processing and other pages.
+   *
+   * This state is a 1st version of Submission Form State but without some
+   * useless (but huge) for processing items/
+   *
+   * @var array
+   */
+  protected $sharedState = [];
 
   /**
    * Submission's Information.
@@ -43,14 +57,7 @@ class Submission {
    *
    * @var mixed
    */
-  protected $info;
-
-  /**
-   * Submission Interface.
-   *
-   * @var array
-   */
-  protected $pipeline;
+  protected $info = [];
 
   /**
    * Should data be cached in 'tpps' cache bin?
@@ -59,8 +66,16 @@ class Submission {
    */
   protected $useCache = FALSE;
 
+  /**
+   * Submission status.
+   *
+   * Note: There are 2 places which store status:
+   *   1. public.tpps_submision.status
+   *   2. public.tpps_submision.submission_state subitem 'status'.
+   *
+   * @var string
+   */
   protected $status;
-
 
   /**
    * Class constructor.
@@ -148,7 +163,7 @@ class Submission {
       ->condition('accession', $this->accession)
       ->range(0, 1)
       ->execute()
-      ->fetchAssoc();
+      ->fetchField();
     if (!$result) {
       // Search for alternative accessions.
       $query = db_select('tpps_submission', 's');
@@ -161,12 +176,11 @@ class Submission {
       $query->condition('s.status', 'Approved');
       $query->range(0, 1);
       $query = $query->execute();
-      // @todo Use fetchField().
-      $result = $query->fetchAssoc();
+      $result = $query->fetchField();
     }
     if ($result) {
       // Return and set property.
-      return $this->state = unserialize($result['submission_state']) ?? NULL;
+      return $this->state = (unserialize($result) ?? []);
     }
   }
 
@@ -202,13 +216,10 @@ class Submission {
    *   Returns array.
    */
   public function getState(bool $reset = FALSE) {
-    if (!empty($this->state)) {
-      return $this->state;
+    if ($reset || (empty($this->state) && !empty($this->accession))) {
+      $this->loadState();
     }
-    elseif (!empty($this->accession) || $reset) {
-      return $this->state = $this->loadState();
-    }
-    return [];
+    return $this->state ?? [];
   }
 
   /**
@@ -222,6 +233,51 @@ class Submission {
       ->execute();
   }
 
+  /**
+   * Saves Submission.
+   */
+  public function save() {
+
+
+    // @TODO Improve to store only non-empty data.
+    // Store also status.
+    $this->saveState();
+    $this->saveSharedState();
+
+    return;
+    // Shared State.
+    if (empty($interface) || empty($interface['accession'])) {
+      return NULL;
+    }
+
+    $accession = $interface['accession'];
+    // Merge or overwrite?
+    if (variable_get('tpps_submission_interface_merge_on_update', FALSE)) {
+      $this->loadSharedState();
+      $interface = array_merge($this->sharedState, $interface);
+    }
+    // Note: REQUEST_TIME couldn't be used because called from CLI script and
+    // processing could take long time from script call.
+    $interface['updated'] = time();
+
+    // Prepare data for query.
+    $fields = [];
+    if ($status) {
+      $fields['status'] = $interface['status'] = $status;
+    }
+    $fields['submission_interface'] = serialize($interface);
+
+    db_update('tpps_submission')
+      ->fields($fields)
+      ->condition('accession', $accession)
+      ->execute();
+
+
+
+
+
+
+  }
 
   /**
    * Updates Submission state in object and in database.
@@ -426,6 +482,7 @@ class Submission {
    *   Returns TRUE if record in database exists and FALSE otherwise.
    */
   public function isExists($reset = FALSE) {
+    // @TODO create property to store.
     return (bool) ($this->getInfo($reset));
   }
 
@@ -556,6 +613,295 @@ class Submission {
     }
     $import_meta['current_version'] = $this->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY];
     return $import_meta;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Submission's Shared State (3S, former Submission Interface).
+
+
+  /**
+   * Get Submission's state.
+   *
+   * Caching:
+   *   Disabled (or cold cache): 12 msec
+   *   Drupal Cache Bin (warm cache): 4 msec.
+   *   Static Cache: 0.004 msec.
+   *
+   * @param bool $reset
+   *   Flag is cache must be resetted. Default if FALSE.
+   *   RESET_CACHE could be used.
+   *
+   * @return array
+   *   Returns array.
+   */
+  public function getSharedState(bool $reset = FALSE) {
+    if (
+      $reset
+      || (empty($this->sharedState) && !empty($this->accession))
+    ) {
+      $this->loadSharedState();
+    }
+    return $this->sharedState ?? [];
+  }
+
+  /**
+   * Creates new Submission's Shared State (3S).
+   *
+   * @return mixed
+   *   Returns array with datastructure prepared for TPPS pipeline
+   *   (submit_all.php script).
+   *   Returns empty array if $form_state is empty too.
+   */
+  public function createSharedState() {
+    $this->getState(RESET_CACHE);
+    $this->generateSharedState();
+    $this->saveSharedState();
+    return $this->sharedState;
+  }
+
+  /**
+   * Removes and create from scratch Submission Interface.
+   */
+  public function recreateSharedState() {
+    $this->removeSharedState();
+    $this->createSharedState();
+  }
+
+  /**
+   * Removes Submission's Shared State.
+   */
+  public function removeSharedState() {
+    db_update('tpps_submission')
+      ->fields(['submission_interface' => 'a:0:{}'])
+      ->condition('accession', $this->accession)
+      ->execute();
+  }
+
+  /**
+   * Generates Submission Shared State.
+   *
+   * WARNING:
+   * This method do not update record in database. Use:
+   * createSharedState() or saveSharedState() to store in DB.
+   *
+   * @param array $state
+   *   Drupal Form State array.
+   *
+   * @return mixed
+   *   Returns array with datastructure prepared for TPPS pipeline
+   *   (submit_all.php script).
+   *   Returns empty array if $form_state is empty too.
+   */
+  public function generateSharedState(array $state = []) {
+    $this->state = (!empty($state) ? $state : $this->getState(RESET_CACHE));
+
+    // @TODO Avoid this hard linking.
+    module_load_include('inc', 'tpps', 'includes/submission_form_version');
+    $this->sharedState = $this->state;
+
+// @TODO Important: Rename.
+
+    $this->sharedState['is_submission_interface'] = TRUE;
+
+    // We need to apply changes from 1st to $current version to have
+    // incremental changes.
+    tpps_submission_form_version_downgrade_to_latest($this->state, $this->sharedState);
+    $this->purifySharedState();
+    $this->saveSharedState();
+
+    return $this->sharedState;
+  }
+
+  /**
+   * Store Submission Shared State to database.
+   *
+   * By default given array will overwrite SIA stored in DB but it could contain
+   * extra data if processing was completed and to store those data we could
+   * merge existing SIA with new values. To do this set variable:
+   *  variable_set('tpps_submission_interface_merge_on_update', TRUE);
+   * or use admin/config/tpps/form/main
+   * to check parameter 'Merge Submission Interface on update'.
+   *
+   * To update submission's status:
+   *   tpps_update_submission_info($accession, $data);
+   * To update submission's Form State:
+   *   tpps_update_submission_state($form_state);
+   *
+   * To remove submission Interface Array:
+   *   tpps_submission_interface_remove($accession);
+   * WARNING: do not use 'phppgadmin' because it can't edit serialized data.
+   *
+   * @param string $status
+   *   Optional. Study processing status.
+   *   This value will be added to the Submission Interface Array and to
+   *   public.tpps_submission.status column.
+   */
+  public function saveSharedState($status = NULL) {
+    if (empty($this->sharedState) || empty($this->accession)) {
+      return;
+    }
+    $this->sharedState['updated'] = time();
+    $fields = [];
+    if ($status) {
+      $fields['status'] = $this->sharedState['status'] = $status;
+    }
+    $fields['submission_interface'] = serialize($this->sharedState);
+
+    db_update('tpps_submission')
+      ->fields($fields)
+      ->condition('accession', $this->accession)
+      ->execute();
+  }
+
+  /**
+   * Loads Submission's Shared State (3S).
+   *
+   * @return array
+   *   Returns loaded from DB Submission's Shared State (3S)
+   *   Returns an empty array to not break other code which expects array.
+   */
+  public function loadSharedState() {
+    if (!empty($this->accession)) {
+      // @TODO Add caching.
+      $result = db_select('tpps_submission', 's')
+        ->fields('s', ['submission_interface'])
+        ->condition('accession', $this->accession)
+        ->range(0, 1)
+        ->execute()
+        ->fetchField();
+
+      // @TODO Minor. Check and remove if possible.
+      if (empty($result)) {
+        // Try to find study by 'accession' in 'tpps_submission_dbxref' table.
+        $query = db_select('tpps_submission', 's');
+        $query->join(
+          'tpps_submission_dbxref',
+          's_dbx',
+          's.tpps_submission_id = s_dbx.tpps_submission_id'
+        );
+        $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
+        $query->fields('s', ['submission_interface'])
+          ->condition('dbx.accession', $this->accession)
+          ->condition('s.status', 'Approved')
+          ->range(0, 1);
+        $result = $query->execute()->fetchField();
+      }
+
+      // Process results.
+      if (!empty($result)) {
+        $this->sharedState = unserialize($result);
+        //$message = 'Submission Interface Array was generated for @accession '
+        // . 'because it was empty.';
+        //$params = ['@accession' => $this->accession];
+        //tpps_message($message, $params, 'warning');
+      }
+    }
+    if (empty($this->sharedState)) {
+      //$this->createSharedState();
+      $this->generateSharedState();
+    }
+    return $this->sharedState ?? [];
+  }
+
+  /**
+   * Reduce size of the Submission Interface array.
+   *
+   * 3S items which doesn't used by pipeline processing script will be removed.
+   */
+  public function purifySharedState() {
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Remove useless elemLnts to reduce size.
+    $change_list = [
+      // We unset not used items instead of copy required items from
+      // $form_state because if new elements will be found they will be
+      // left for sure. It's safer.
+      'unset' => [
+        // List of path to the items in $interface at the top (1st) level.
+        'build_info',
+        'temporary',
+        'programmed',
+        'programmed_bypass_access_check',
+        'cache',
+        'rebuild',
+        'rebuild_info',
+        'redirect',
+        'submitted',
+        'executed',
+        'method',
+        'groups',
+        'buttons',
+        'input',
+        'values',
+        'complete form',
+        'process_input',
+        'invalid_token',
+        'triggering_element',
+        'clicked_button',
+        ['saved_values', 'form_build_id'],
+        'tpps_submission_export_files',
+        // @TODO Submission Form Version is useless for pipeline processing
+        // but could be useful for debugging.
+        //['saved_values', TPPS_SUBMISSION_FORM_VERSION_KEY],
+
+        // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+        // List of the fields which must be left.
+        // Required by submit_all() and tpps_table_display() and sub-functions.
+        // 'saved_values',
+        // 'dbxref_id',
+        // 'created',
+        // 'accession',
+        // 'status',
+        // 'stats',
+        // 'ids',
+        // 'tpps_type',
+        // 'file_info',
+        // 'updated',
+        // 'approved',
+        // 'completed',
+        // 'loaded',
+        // 'submitting_uid',
+        // 'job_id',
+        // 'revised_files',
+        // 'admin_comments',
+        // 'alternative_accessions',
+        // 'data',
+        // 'tree_info'.
+        //
+        //  Probably could be unset:
+        // 'stage',
+      ],
+    ];
+
+    // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    // Dynamic (repeated) changes.
+    //
+    // Remove Drupal's internal fields used for form building.
+    // Note: Those fields are stored in column tpps_submission.submission_state.
+    $page_list = [
+      'frontpage', TPPS_PAGE_1, TPPS_PAGE_2, TPPS_PAGE_3, TPPS_PAGE_4, 'summarypage',
+    ];
+    $drupal_internal_fields = [
+      // Note: Page 1 has not 'Back' button.
+      'Back',
+      'Save',
+      'Next',
+      'form_build_id',
+      'form_token',
+      'form_id',
+      'op',
+      '#cleared',
+      // Only for Page 4.
+      'submit',
+      'diagnostics-curation',
+    ];
+    foreach ($page_list as $page) {
+      foreach ($drupal_internal_fields as $field) {
+        $change_list['unset'][] = ['saved_values', $page, $field];
+      }
+    }
+
+    module_load_include('inc', 'tpps', 'includes/array');
+    tpps_array_apply_changes($change_list, $this->sharedState);
   }
 
 }

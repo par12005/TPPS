@@ -820,6 +820,7 @@ function tpps_completed_display($accession = NULL) {
   $output = '';
 
   $interface = tpps_submission_interface_load($accession);
+  //dpm(print_r($interface, 1));
   $values = $interface['saved_values'];
 
   // @TODO Move CSS to /css/tpps.css. Check if scope must be 'header'.
