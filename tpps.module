@@ -1390,7 +1390,7 @@ function tpps_main_submit($form, &$form_state) {
         $submission = new Submission($accession);
         $submission->state = $form_state;
         $submission->generateSharedState();
-        $submission->saveSharedState();
+        $submission->save();
 
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         tpps_submit_email($form_state);

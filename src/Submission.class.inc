@@ -88,7 +88,7 @@ class Submission {
    * @param string $accession
    *   Study accession. Format is 'TGDRxxxx'.
    *   If $accession wasn't specified then it left unset and
-   *   could be set using $submission->setState($state) which will
+   *   could be set using $submission->state = $state which will
    *   populate $this->accession with value form $state array.
    */
   public function __construct(string $accession = NULL) {
@@ -155,16 +155,8 @@ class Submission {
   // Properties:
   // - $state array - Submission's State.
   //
-  // Method:
-  // - saveState() - Sync memory to Db.
-  //
   // @TODO Get rid of this methods.
   // - getState() - From memory. Loads from DB if missing.
-  //   @TODO Replace with $submission->state.
-  // - setState($state) - In memory.
-  //   @TODO Replace with $submission->state.
-  // - updateState($state) = setState() + saveState().
-  //   @TODO Replace with $submission->state =...  and saveState().
   //
   // To set/get/update an item:
   // $submission = new Submission($accession);
@@ -173,66 +165,57 @@ class Submission {
   /**
    * Setter for $state.
    *
+   * WARNING: This method will be called when:
+   * $submission->state = $state;
+   * but not:
+   * $submission->state[$element] = $value;
+   *
    * @param array $state
    *   Submission State Array.
-   *
-   * @todo Add caching.
    */
   public function setState(array $state) {
-    // Accession.
-    if (!empty($state['accession'])) {
-      $this->accession = $state['accession'];
-    }
     $this->state = $state;
+    // Accession.
+    if (!empty($this->state['accession'])) {
+      $this->accession = $this->state['accession'];
+    }
+  }
+
+  /**
+   * Setter for $accession.
+   *
+   * Note:
+   * If Submission::load() will be called later then this change
+   * will be overwritten. To avoid this use:
+   * $submission->load();
+   * $submission->accession = $accession;
+   * $submission->save();
+   *
+   * @param string $accession
+   *   Submission Accession. E.g., 'TGDR12345'.
+   */
+  public function setAccession($accession) {
+    $this->accession = $accession;
+    $this->state['accession'] = $this->sharedState['accession'] = $accession;
   }
 
   /**
    * Get Submission's state.
    *
-   * Caching:
-   *   Disabled (or cold cache): 12 msec
-   *   Drupal Cache Bin (warm cache): 4 msec.
-   *   Static Cache: 0.004 msec.
+   * Will be called any type $submission->state requested.
+   * See Submission:__get().
    *
    * @param bool $reset
    *   Flag is cache must be resetted. Default if FALSE.
    *   RESET_CACHE could be used.
    *
    * @return array
-   *   Returns array.
+   *   Returns an reference to the Submission's State.
    */
   public function &getState(bool $reset = FALSE) {
     if ($reset || (empty($this->state) && !empty($this->accession))) {
       $this->load();
     }
-    return $this->state;
-  }
-
-  /**
-   * Saves Submission State to database.
-   */
-  public function saveState() {
-    $this->state['updated'] = time();
-    db_update('tpps_submission')
-      ->fields(['submission_state' => serialize($this->state)])
-      ->condition('accession', $this->accession)
-      ->execute();
-  }
-
-  /**
-   * Updates Submission state in object and in database.
-   *
-   * Update = Set + Save.
-   *
-   * @param array $state
-   *   Submission State Array.
-   *
-   * @return array
-   *   Returns new (updated) Submission State Array.
-   */
-  public function updateState(array $state) {
-    $this->setState($state);
-    $this->saveState();
     return $this->state;
   }
 
@@ -246,39 +229,34 @@ class Submission {
 
   /**
    * Saves Submission.
+   *
+   * @param string $status
+   *   Optional. Study processing status.
+   *   This value will be added to the Submission Interface Array and to
+   *   public.tpps_submission.status column.
    */
-  public function save() {
-
-
-    // @TODO Improve to store only non-empty data.
-    // Store also status.
-    $this->state['updated'] = time();
-    $this->sharedState['updated'] = time();
-    // @TODO Set status (if any).
-    $this->saveState();
-    $this->saveSharedState();
-
-    return;
-    // Shared State.
-    if (empty($interface) || empty($interface['accession'])) {
-      return NULL;
+  public function save($status = NULL) {
+    if (empty($this->accession)) {
+      return;
     }
-
-    $accession = $interface['accession'];
+    // Study status.
+    $this->status = $status ?? $this->status;
+    $this->state['status'] = $this->sharedState['status']
+      = $this->info['status'] = $this->status;
+    // Update time.
     // Note: REQUEST_TIME couldn't be used because called from CLI script and
     // processing could take long time from script call.
-    $interface['updated'] = time();
+    $this->state['updated'] = $this->sharedState['updated'] = time();
 
     // Prepare data for query.
     $fields = [];
-    if ($status) {
-      $fields['status'] = $interface['status'] = $status;
-    }
-    $fields['submission_interface'] = serialize($interface);
+    $fields['status'] = ($this->info['status'] ?? 'Incomplete');
+    $fields['submission_state'] = serialize($this->state ?? []);
+    $fields['submission_interface'] = serialize($this->sharedState ?? []);
 
     db_update('tpps_submission')
       ->fields($fields)
-      ->condition('accession', $accession)
+      ->condition('accession', $this->accession)
       ->execute();
   }
 
@@ -356,8 +334,8 @@ class Submission {
    */
   public function create(array $state, $uid = NULL) {
     global $user;
-    $this->setState($state, $force = TRUE);
-    $values = [
+    $this->state = $state;
+    $fields = [
       'uid' => $uid ?? $user->uid,
       'status' => 'Incomplete',
       'accession' => $this->state['accession'],
@@ -365,7 +343,7 @@ class Submission {
       'submission_state' => serialize($this->state),
       'submission_interface' => serialize([]),
     ];
-    db_insert('tpps_submission')->fields($values)->execute();
+    db_insert('tpps_submission')->fields($fields)->execute();
     // Add default tag.
     $tag = $this->isTppsc() ? 'TPPSc' : 'TPPS';
     tpps_submission_add_tag($this->accession, $tag);
@@ -422,7 +400,7 @@ class Submission {
       $this->sharedState = unserialize($result['submission_interface'] ?? '') ?? [];
       if (empty($this->sharedState)) {
         $this->generateSharedState();
-        $this->saveSharedState();
+        $this->save();
       }
       return TRUE;
     }
@@ -504,37 +482,15 @@ class Submission {
   /**
    * Loads a TPPS Submission Info.
    *
-   * Caching:
-   * Disabled (or cold cache): 11 msec
-   * Drupal Cache Bin (warm cache): 3 msec.
-   * Static Cache: 0.003 msec.
-   *
    * @param bool $reset
    *   Flag is cache must be resetted. Default if FALSE.
    *
-   * @return mixed
-   *   Returns an array with Submission's Info from DB table 'tpps_submission'.
-   *   Returns NULL if study wasn't found.
-   *
-   *   @TODO Remove.
+   * @return array
+   *   Returns an reference to the Submission's Info.
    */
-  public function &getInfo($reset = FALSE) {
-    if (empty($this->accession)) {
-      return NULL;
-    }
-    $key = $this->accession;
-    $static_cache = &drupal_static(__METHOD__);
-    $cache_submissions = variable_get('tpps_cache_submissions', FALSE);
-    if (!$cache_submissions || $reset || !isset($static_cache[$key])) {
-      $cid = __METHOD__;
-      $cache_bin = TPPS_CACHE_BIN ?? 'cache';
-      $cache = cache_get($cid, $cache_bin);
-      if (!$cache_submissions || $reset || empty($cache) || !isset($cache->data[$key])) {
-        $this->load();
-        $cache->data[$key] = $this->info ?? NULL;
-        cache_set($cid, $cache->data, $cache_bin);
-      }
-      $static_cache[$key] = $cache->data[$key] ?? NULL;
+  public function &getInfo(bool $reset = FALSE) {
+    if ($reset || (empty($this->info) && !empty($this->accession))) {
+      $this->load();
     }
     return $this->info;
   }
@@ -648,7 +604,7 @@ class Submission {
    *   RESET_CACHE could be used.
    *
    * @return array
-   *   Returns array.
+   *   Returns an reference to the Submission's SharedState.
    */
   public function &getSharedState(bool $reset = FALSE) {
     if ($reset || (empty($this->sharedState) && !empty($this->accession))) {
@@ -671,8 +627,9 @@ class Submission {
    * Generates Submission Shared State.
    *
    * WARNING:
-   * This method do not update record in database.
-   * Use saveSharedState() to store in DB.
+   * This method don't update record in database to have ability to get
+   * Shared State for processing and for temporary use.
+   * Use Submission::save() to store in DB.
    *
    * @param array $state
    *   Drupal Form State array.
@@ -694,40 +651,6 @@ class Submission {
     $this->purifySharedState();
 
     return $this->sharedState;
-  }
-
-  /**
-   * Store Submission Shared State to database.
-   *
-   * To update submission's status:
-   *   tpps_update_submission_info($accession, $data);
-   * To update submission's Form State:
-   *   tpps_update_submission_state($form_state);
-   *
-   * To remove SharedState:
-   *   $this->removeSharedState();
-   * WARNING: do not use 'phppgadmin' because it can't edit serialized data.
-   *
-   * @param string $status
-   *   Optional. Study processing status.
-   *   This value will be added to the Submission Interface Array and to
-   *   public.tpps_submission.status column.
-   */
-  public function saveSharedState($status = NULL) {
-    if (empty($this->sharedState) || empty($this->accession)) {
-      return;
-    }
-    $this->sharedState['updated'] = time();
-    $fields = [];
-    if ($status) {
-      $fields['status'] = $this->sharedState['status'] = $status;
-    }
-    $fields['submission_interface'] = serialize($this->sharedState);
-
-    db_update('tpps_submission')
-      ->fields($fields)
-      ->condition('accession', $this->accession)
-      ->execute();
   }
 
   /**

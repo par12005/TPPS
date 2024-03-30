@@ -94,8 +94,7 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
   $page4_values = &$submission->sharedState['saved_values'][TPPS_PAGE_4] ?? NULL;
 
   if (empty($submission->sharedState['status'])) {
-    $submission->sharedState['status'] = $submission->info['status'];
-    tpps_submission_interface_save($submission->sharedState, $submission->info['status']);
+    $submission->save($submission->info['status']);
   }
   $options = [];
   $display = l(t("Back to TPPS Admin Panel"), "$base_url/tpps-admin-panel");
@@ -684,9 +683,11 @@ function tpps_manage_submission_form(array &$form, array &$form_state, $accessio
  *   The updated form element.
  */
 function tpps_save_admin_comments(array $form, array $form_state) {
-  $state = tpps_submission_interface($form_state['values']['accession']);
-  $state['admin_comments'] = $form_state['values']['admin-comments'];
-  tpps_submission_interface_save($state);
+  $accession = $form_state['values']['accession'] ?? NULL;
+  $submission = new Submission($accession);
+  $submission->state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
+  $submission->save();
+
   drupal_set_message(t('Comments saved successfully'), 'status');
   return $form['admin-comments'];
 }
@@ -1151,21 +1152,18 @@ function tpps_admin_panel_submit($form, &$form_state) {
   global $base_url;
 
   $accession = $form_state['values']['accession'];
-  $submission->info = tpps_load_submission_info($accession);
+  $submission = new Submission($accession);
   $tpps_submission_id = $submission->info['tpps_submission_id'];
   $owner = user_load($submission->info['uid']);
   $to = $owner->mail;
-
-  $submission = new Submission($accession);
-  $submission->load();
   $state = $submission->state;
 
-  $state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
-  $page1_values = $state['saved_values'][TPPS_PAGE_1] ?? NULL;
+  $submission->state['admin_comments'] = $form_state['values']['admin-comments'] ?? NULL;
+  $page1_values = $submission->state['saved_values'][TPPS_PAGE_1] ?? NULL;
   $from = variable_get('site_mail', '');
 
   // @TODO Minor. We could try find type using '#form_id' under $state['values'].
-  $type = $state['tpps_type'] ?? 'tpps';
+  $type = $submission->state['tpps_type'] ?? 'tpps';
   $type_label = ($type == 'tpps') ? t('TPPS') : t('TPPSC');
 
   $params = [];
@@ -1247,11 +1245,11 @@ function tpps_admin_panel_submit($form, &$form_state) {
     case 'run_vcf_snps_to_flat_file':
       // TODO Flat files functions and Tripal job.
       global $user;
-      $project_id = $state['ids']['project_id'] ?? NULL;
-      $includes = array();
+      $project_id = $submission->state['ids']['project_id'] ?? NULL;
+      $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
-      $args = array($state);
+      $args = [$submission->state];
       $jid = tripal_add_job("Generate VCF to SNPs Flat file - $accession "
         . "(project_id=$project_id)", 'tpps',
         'tpps_genotypes_to_flat_files_and_find_studies_overlaps',
@@ -1262,20 +1260,20 @@ function tpps_admin_panel_submit($form, &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'save_vcf_import_mode':
       if ($form_state['values']['DISABLE_VCF_IMPORT'] == 1) {
-        $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
+        $submission->state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
       }
       else {
-        $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
+        $submission->state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
       }
-      tpps_submission_interface_save($state);
+      $submission->save();
       drupal_set_message(t('VCF disable import setting saved'));
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'save_vcf_import_mode':
       $mode = $form_state['values']['VCF_IMPORT_MODE'] ?? 'hybrid';
-      $state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = $mode;
-      tpps_submission_interface_save($state);
+      $submission->state['saved_values'][TPPS_PAGE_1]['vcf_import_mode'] = $mode;
+      $submission->save();
       drupal_set_message(
         t('VCF import mode saved as @mode".', ['@mode' => $mode])
       );
@@ -1284,13 +1282,15 @@ function tpps_admin_panel_submit($form, &$form_state) {
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'regenerate_genotype_materialized_view':
       global $user;
-      $project_id = $state['ids']['project_id'] ?? NULL;
+      $project_id = $submission->state['ids']['project_id'] ?? NULL;
       $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = [$project_id];
-      $jid = tripal_add_job("Generate materialized view for $accession "
-        . "(project_id=$project_id)",
+      $jid = tripal_add_job(
+        t('Generate materialized view for @accession (project_id=@project_id)'
+          ['@accession' => $accession, '@project_id' => $project_id]
+        ),
         'tpps', 'tpps_generate_genotype_materialized_view',
         $args, $user->uid, 10, $includes, TRUE
       );
@@ -1363,8 +1363,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
         'tpps', 'tpps_submit_all',
         $args, $state['submitting_uid'], 10, $includes, TRUE
       );
-      $state['job_id'] = $jid;
-      tpps_submission_interface_save($state);
+      $submission->state['job_id'] = $jid;
+      $submission->save();
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1372,7 +1372,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       global $user;
       $includes = [];
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
-      $page4_values = $state['saved_values'][TPPS_PAGE_4] ?? NULL;
+      $page4_values = &$submission->state['saved_values'][TPPS_PAGE_4] ?? NULL;
       $snps_fieldset = 'SNPs';
 
       if (
@@ -1441,7 +1441,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       if ($form_state['values']['CHANGE_TPPS_TYPE'] == 'tppsc') {
         // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 1;
         // Set the state tpps_type to tppsc.
-        $state['tpps_type'] = 'tppsc';
+        $submission->state['tpps_type'] = 'tppsc';
 
         // Update the submission tag table which in term will get rippled
         // into the ct_trees_all_view materialized view that filters
@@ -1458,7 +1458,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       else {
         // $state['saved_values'][TPPS_PAGE_1]['disable_vcf_import'] = 0;
         // Set the state tpps_type to tpps
-        $state['tpps_type'] = 'tpps';
+        $submission->state['tpps_type'] = 'tpps';
 
         // Update the submission tag table which in term will get rippled
         // into the ct_trees_all_view materialized view that filters
@@ -1472,17 +1472,22 @@ function tpps_admin_panel_submit($form, &$form_state) {
           ]
         );
       }
-      tpps_submission_interface_save($state);
-      drupal_set_message(t('Updated study TPPS type: ') . $state['tpps_type']);
+      $submission->save();
+      drupal_set_message(t('Updated study TPPS type: @type.',
+        ['@type' => $submission->state['tpps_type'])
+      );
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'reject':
       $lang = user_preferred_language($owner);
       drupal_mail('tpps', 'user_rejected', $to, $lang, $params, $from, TRUE);
-      $state['status'] = 'Incomplete';
-      tpps_submission_interface_save($state);
-      tpps_update_submission_info($accession, ['status' => $state['status']]);
+      $submission->state['status'] = 'Incomplete';
+      $submission->save();
+
+// @TODO Update.
+      tpps_update_submission_info($accession, ['status' => $submission->state['status']]);
+
       drupal_set_message(t('Submission Rejected. Message has been sent to user.'));
       drupal_goto('<front>');
       break;
@@ -1492,28 +1497,29 @@ function tpps_admin_panel_submit($form, &$form_state) {
       module_load_include('php', 'tpps', 'forms/submit/submit_all');
       global $user;
       $uid = $user->uid;
-      $state['submitting_uid'] = $user->uid;
-      $state['status'] = 'Approved';
+      $submission->state['submitting_uid'] = $user->uid;
+      $submission->state['status'] = 'Approved';
 
       $params['subject'] = "$type_label Submission Approved: "
-        . "{$state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
-      $params['accession'] = $state['accession'];
+        . "{$submission->state['saved_values'][TPPS_PAGE_1]['publication']['title']}";
+      $params['accession'] = $submission->state['accession'];
       drupal_set_message(t('Submission Approved! Message has been sent to user.'));
       $lang = user_preferred_language(user_load_by_name($to));
       drupal_mail('tpps', 'user_approved', $to, $lang, $params, $from, TRUE);
-      $state['revised_files'] = $state['revised_files'] ?? [];
-      foreach ($state['file_info'] as $files) {
+      $submission->state['revised_files'] = $submission->state['revised_files'] ?? [];
+      foreach ($submission->state['file_info'] as $files) {
         foreach ($files as $fid => $file_type) {
           if (!empty($form_state['values']["edit_file_{$fid}_check"])) {
-            $state['revised_files'][$fid] = $form_state['values']["edit_file_{$fid}_file"];
+            $submission->state['revised_files'][$fid]
+              = $form_state['values']["edit_file_{$fid}_file"];
           }
         }
       }
       if (!empty($form_state['values']['study_location'])) {
-        $state['saved_values'][TPPS_PAGE_3]['study_location']['type']
+        $submission->state['saved_values'][TPPS_PAGE_3]['study_location']['type']
           = $form_state['values']['study_location']['type'];
         for ($i = 1; $i <= $form_state['values']['study_location']['locations']['number']; $i++) {
-          $state['saved_values'][TPPS_PAGE_3]['study_location']['locations'][$i]
+          $submission->state['saved_values'][TPPS_PAGE_3]['study_location']['locations'][$i]
             = $form_state['values']['study_location']['locations'][$i];
         }
       }
@@ -1522,86 +1528,94 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $includes[] = module_load_include('php', 'tpps', 'forms/submit/submit_all');
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = [$accession];
-      if ($state['saved_values']['summarypage']['release']) {
+      if ($submission->state['saved_values']['summarypage']['release']) {
         $jid = tripal_add_job("$type_label Record Submission - $accession",
           'tpps', 'tpps_submit_all',
-          $args, $state['submitting_uid'], 10, $includes, TRUE
+          $args, $submission->state['submitting_uid'], 10, $includes, TRUE
         );
-        $state['job_id'] = $jid;
+        $submission->state['job_id'] = $jid;
       }
       else {
-        $date = $state['saved_values']['summarypage']['release-date'];
+        $date = $submission->state['saved_values']['summarypage']['release-date'];
         $time = strtotime("{$date['year']}-{$date['month']}-{$date['day']}");
         if (time() > $time) {
           $jid = tripal_add_job("$type_label Record Submission - $accession",
             'tpps', 'tpps_submit_all',
-            $args, $state['submitting_uid'], 10, $includes, TRUE
+            $args, $submission->state['submitting_uid'], 10, $includes, TRUE
           );
-          $state['job_id'] = $jid;
+          $submission->state['job_id'] = $jid;
         }
         else {
           $delayed_submissions = variable_get('tpps_delayed_submissions', []);
           $delayed_submissions[$accession] = $accession;
           variable_set('tpps_delayed_submissions', $delayed_submissions);
-          $state['status'] = 'Approved - Delayed Submission Release';
+          $submission->state['status'] = 'Approved - Delayed Submission Release';
         }
       }
-      tpps_submission_interface_save($state);
+      $submission->save();
+
+
       tpps_update_submission_info($accession, ['status' => $state['status']]);
+
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'change_date':
-      $state['saved_values']['summarypage']['release-date'] = $form_state['values']['date'];
-      tpps_submission_interface_save($state);
+      $submission->state['saved_values']['summarypage']['release-date']
+        = $form_state['values']['date'];
+      $submission->save();
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'change_state_status':
-      $state['status'] = $form_state['values']['state-status'];
-      tpps_submission_interface_save($state);
-      tpps_update_submission_info($accession, ['status' => $state['status']]);
+      $submission->state['status'] = $form_state['values']['state-status'];
+      $submission->save();
+      tpps_update_submission_info($accession,
+        ['status' => $submission->state['status']]
+      );
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'change_study_view_role':
       $view_role = $form_state['values']['CHANGE_STUDY_VIEW_ROLE'];
       if ($view_role > 0) {
-        $state['study_view_role'] = $view_role;
+        $submission->state['study_view_role'] = $view_role;
         drupal_set_message(t(
           'Study view role has been set to @role',
-          ['@role' => user_roles(true)[$view_role]]
+          ['@role' => user_roles(TRUE)[$view_role]]
         ));
       }
       else {
-        unset($state['study_view_role']);
+        unset($submission->state['study_view_role']);
         drupal_set_message(t('Study view role set to public all users'));
       }
-      tpps_submission_interface_save($state);
+      $submission->save();
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'save_alternative_accessions':
-      $old_alt_acc = $state['alternative_accessions'] ?? '';
+      $old_alt_acc = $submission->state['alternative_accessions'] ?? '';
       $new_alt_acc = $form_state['values']['alternative_accessions'];
       if ($old_alt_acc != $new_alt_acc) {
-        tpps_submission_add_alternative_accession($state, explode(',', $new_alt_acc));
-        $state['alternative_accessions'] = $new_alt_acc;
-        tpps_submission_interface_save($state);
+        tpps_submission_add_alternative_accession(
+          $submission->state, explode(',', $new_alt_acc)
+        );
+        $submission->state['alternative_accessions'] = $new_alt_acc;
+        $submission->save();
       }
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'change_submission_owner':
       $new_user = user_load_by_mail($form_state['values']['new_owner']);
-      $state['submitting_uid'] = $new_user->uid;
+      $submission->state['submitting_uid'] = $new_user->uid;
       tpps_update_submission_info($accession, ['uid' => $new_user->uid]);
-      tpps_submission_interface_save($state);
+      $submission->save();
       break;
 
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     case 'sync_publication_data':
-      $project_id = $state['ids']['project_id'] ?? NULL;
+      $project_id = $submission->state['ids']['project_id'] ?? NULL;
       $pub_id = db_select('chado.project_pub', 'p')
         ->fields('p', ['pub_id'])
         ->condition('project_id', $project_id)
@@ -1635,21 +1649,21 @@ function tpps_admin_panel_submit($form, &$form_state) {
             $pub_title = $publication_entity->title;
             if ($pub_title != "") {
               drupal_set_message('Found a valid publication title, syncing with study.');
-              $state['title'] = $pub_title;
+              $submission->state['title'] = $pub_title;
             }
           }
           if (isset($publication_entity->tpub__year['und'][0]['safe_value'])) {
             $pub_year = $publication_entity->tpub__year['und'][0]['safe_value'];
             if ($pub_year != "") {
               drupal_set_message('Found a valid publication year, synced with study.');
-              $state['pyear'] = $pub_year;
+              $submission->state['pyear'] = $pub_year;
             }
           }
           if (isset($publication_entity->tpub__abstract['und'][0]['value'])) {
             $pub_abstract = $publication_entity->tpub__abstract['und'][0]['value'];
             if ($pub_abstract != "") {
               drupal_set_message('Found a valid publication abstract, synced with study.');
-              $state['abstract'] = $pub_abstract;
+              $submission->state['abstract'] = $pub_abstract;
             }
           }
           if (isset($publication_entity->tpub__authors['und'][0]['value'])) {
@@ -1665,7 +1679,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
                   array_push($filtered_matches, $match);
                 }
                 if (count($filtered_matches) > 0) {
-                  $state['authors'] = $filtered_matches;
+                  $submission->state['authors'] = $filtered_matches;
                   drupal_set_message(t('Found valid publication authors, '
                     . 'synced with study.')
                   );
@@ -1674,15 +1688,16 @@ function tpps_admin_panel_submit($form, &$form_state) {
             }
           }
           // Update Submision Interface.
-          tpps_submission_interface_save($state);
+          $submission->save();
           drupal_set_message(t('Done.'));
         }
       }
       else {
-        drupal_set_message(t('Could not find a valid pub_id for this study. '
+        $message = t('Could not find a valid pub_id for this study. '
           . 'Edit via TPPSc and make sure you have connected this '
           . 'study to a valid paper'
-        ));
+        );
+        drupal_set_message($message);
       }
       break;
 

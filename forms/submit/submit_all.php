@@ -28,6 +28,16 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   global $tpps_job;
   global $tpps_job_logger;
 
+  // Get Submission Shared State (3S).
+  $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    // This could happen when study was removed but someone clicks 'Re-run'
+    // Tripal job at page /admin/tripal/tripal_jobs'.
+    $message = t("Submission @accession doesn't exist.",
+      ['@accession' => $accession]);
+    throw new Exception($message);
+  }
+
   $tpps_job = $job;
   // Get public path.
   $log_path = drupal_realpath('public://') . '/tpps_job_logs/';
@@ -46,22 +56,11 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   tpps_log('[INFO] Setting up...');
   $job->setInterval(1);
 
-  // Get Submission Shared State (3S).
-  $submission = new Submission($accession);
-  if ($submission->doesNotExist()) {
-    // This could happen when study was removed but someone clicks 'Re-run'
-    // Tripal job at page /admin/tripal/tripal_jobs'.
-    $message = t("Submission @accession doesn't exist.",
-      ['@accession' => $accession]);
-    throw new Exception($message);
-  }
-  $shared_state = $submission->getSharedState(RESET_CACHE);
-
   // PATCH to check if VCF exists, then remove the assay design.
   // Advised by Meghan 7/6/2023.
 
   // Do check for missing files, this is a bit crude but it works.
-  $display_results = strip_tags(tpps_table_display($shared_state));
+  $display_results = strip_tags(tpps_table_display($submission->sharedState));
   // Find 'missing file' string.
   echo $display_results;
   if (stripos($display_results, 'file missing') !== FALSE) {
@@ -77,32 +76,32 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   }
 
   // Update 'updated' field with current time and 'status' field.
-  tpps_submission_interface_save($shared_state, 'Submission Job Running');
+  $submission->save('Submission Job Running');
   $transaction = db_transaction();
   try {
 
     // RISH 7/18/2023 - Run some checks before going through most of the genotype
     // processing (this will error out if an issue is found to avoid long failing loads)
-    $page1_values = $shared_state['saved_values'][TPPS_PAGE_1];
-    $page4_values = $shared_state['saved_values'][TPPS_PAGE_4];
+    $page1_values = &$submission->sharedState['saved_values'][TPPS_PAGE_1];
+    $page4_values = &$submission->sharedState['saved_values'][TPPS_PAGE_4];
     $organism_number = $page1_values['organism']['number'];
     for ($i = 1; $i <= $organism_number; $i++) {
-      tpps_genotype_initial_checks($shared_state, $i, $job);
+      tpps_genotype_initial_checks($submission->sharedState, $i, $job);
     }
 
     tpps_log('[INFO] Clearing Database...');
     tpps_submission_clear_db($accession);
     tpps_log('[INFO] Database Cleared');
-    $project_id = $shared_state['ids']['project_id'] ?? NULL;
+    $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
 
 
     tpps_submission_clear_default_tags($accession);
-    $shared_state['file_rank'] = 0;
-    $shared_state['ids'] = [];
+    $submission->sharedState['file_rank'] = 0;
+    $submission->sharedState['ids'] = [];
 
     tpps_log('[INFO] Creating project record...');
-    $shared_state['title'] = $page1_values['publication']['title'];
-    $shared_state['abstract'] = $page1_values['publication']['abstract'];
+    $submission->sharedState['title'] = $page1_values['publication']['title'];
+    $submission->sharedState['abstract'] = $page1_values['publication']['abstract'];
     $project_record = array(
       'name' => $page1_values['publication']['title'],
       'description' => $page1_values['publication']['abstract'],
@@ -110,36 +109,38 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     if (!empty($project_id)) {
       $project_record['project_id'] = $project_id;
     }
-    $shared_state['ids']['project_id'] = tpps_chado_insert_record('project', $project_record);
+    $submission->sharedState['ids']['project_id'] = tpps_chado_insert_record(
+      'project', $project_record
+    );
     tpps_log(
       '[INFO] Project record created. project_id: @pid\n',
-      ['@pid' => $shared_state['ids']['project_id']]
+      ['@pid' => $submission->sharedState['ids']['project_id']]
     );
 
     tpps_tripal_entity_publish('Project', [
       $page1_values['publication']['title'],
-      $shared_state['ids']['project_id'],
+      $submission->sharedState['ids']['project_id'],
     ]);
 
 
     tpps_log("[INFO] Submitting Publication/Species information...");
-    tpps_submit_page_1($shared_state, $job);
+    tpps_submit_page_1($submission->sharedState, $job);
     tpps_log("[INFO] Publication/Species information submitted!\n");
 
     tpps_log("[INFO] Submitting Study Details...");
-    tpps_submit_page_2($shared_state, $job);
+    tpps_submit_page_2($submission->sharedState, $job);
     tpps_log("[INFO] Study Details sumbitted!\n");
 
     tpps_log("[INFO] Submitting Accession information...");
-    tpps_submit_page_3($shared_state, $job);
+    tpps_submit_page_3($submission->sharedState, $job);
     tpps_log("[INFO] Accession information submitted!\n");
 
     tpps_log("[INFO] Submitting Raw data...");
-    tpps_submit_page_4($shared_state, $job);
+    tpps_submit_page_4($submission->sharedState, $job);
     tpps_log("[INFO] Raw data submitted!\n");
 
     tpps_log("[INFO] Submitting Summary information...");
-    tpps_submit_summary($shared_state);
+    tpps_submit_summary($submission->sharedState);
     tpps_log("[INFO] Summary information submitted!\n");
 
     tpps_log("[INFO] Renaming files...");
@@ -149,8 +150,8 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     tpps_log("[INFO] Finishing up...");
     // Functions starting from tpps_submit_page_1() update $shared_state array
     // with new data so now we are going to update db record.
-    $shared_state['loaded'] = time();
-    tpps_submission_interface_save($shared_state, TPPS_STATUS_PENDING_APPROVED);
+    $submission->sharedState['loaded'] = time();
+    $submission->save(TPPS_STATUS_PENDING_APPROVED);
     tpps_log("[INFO] Complete!");
 
     fclose($tpps_job_logger['log_file_handle']);
@@ -160,10 +161,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
     $transaction->rollback();
     // Restore status of study because processing failed.
     $submission = new Submission($accession);
-    $submission->load();
-    $shared_state = $submission->sharedState;
-
-    tpps_submission_interface_save($shared_state, TPPS_STATUS_PENDING_APPROVAL);
+    $submission->save(TPPS_STATUS_PENDING_APPROVAL);
 
     tpps_log('[ERROR] Job failed', [], TRIPAL_ERROR);
     tpps_log('[ERROR] Error message: @msg', ['@msg' => $e->getMessage()], TRIPAL_ERROR);

@@ -834,8 +834,8 @@ function tpps_details_get_study_file_ids(array $state) {
 
   $submission = new Submission();
   $submission->generateSharedState($state);
-  $submission->saveSharedState();
-  $saved_values = $submission->sharedState['saved_values'];
+  $submission->save();
+  $saved_values = &$submission->sharedState['saved_values'];
   // print_r($saved_values);
   $file_ids = [];
   $page4_file_list = [

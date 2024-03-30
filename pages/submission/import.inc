@@ -235,7 +235,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     $submission->state = $state;
     // Note: SharedState will be stored to db.
     $submission->generateSharedState();
-    $submission->saveSharedState();
+    $submission->save();
   }
 
   if ($submit_form) {

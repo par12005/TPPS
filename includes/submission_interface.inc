@@ -93,32 +93,3 @@
  * sense to store it in database because it must be updated each time when
  * Submission State changes.
  */
-
-/**
- * Updates Submission Interface using given array.
- *
- * To update submission's status:
- *   tpps_update_submission_info($accession, $data);
- * To update submission's Form State:
- *   tpps_update_submission_state($form_state);
- *
- * @param array $interface
- *   The Submission Interface Array.
- * @param string $status
- *   Optional. Study processing status.
- *   This value will be added to the Submission Interface Array and to
- *   public.tpps_submission.status column.
- *
- * @return mixed
- *   Returns Submission Interface Array which will have updated 'status' and
- *   'updated' fields.
- *   Returns NULL if $form_state or Study accession is empty.
- */
-function tpps_submission_interface_save(array &$interface, $status = NULL) {
-  // @WARNING: Reference!
-  $submission = new Submission();
-  $submission->sharedState = $interface;
-  $submission->saveSharedState($status);
-  // Note: arrays updates during save.
-  $interface = $submission->sharedState;
-}

@@ -56,6 +56,8 @@ function tpps_load_submission_state($accession, $reset = FALSE) {
  *
  * @return array
  *   An array of loaded TPPS submissions or their form_states.
+ *
+ * @TODO Replace with class Submission.
  */
 function tpps_load_submission_multiple(array $conditions = array(), $state = TRUE) {
   $submissions = [];
@@ -217,7 +219,9 @@ function tpps_update_submission_info($accession, array $options = []) {
  */
 function tpps_update_submission_state(array &$form_state) {
   $submission = new Submission();
-  $submission->updateState($form_state);
+  $submission->state = &$form_state;
+  $submission->save();
+  // @TODO Check if this is really needed.
   // Get updated Submission State.
   $form_state = $submission->state;
 }
@@ -705,7 +709,7 @@ function tpps_submission_rename_files($accession) {
         }
       }
     }
-    $submission->saveSharedState();
+    $submission->save();
   }
 }
 
@@ -917,7 +921,7 @@ function tpps_submission_clear_db($accession) {
   }
 
   $submission->sharedState['ids'] = ['project_id' => $project_id];
-  $submission->saveSharedState();
+  $submission->save();
   return TRUE;
 }
 
