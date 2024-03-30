@@ -10,7 +10,7 @@
  * Submission interface initially is a copy of the Submission Form State
  * modified for Submission Pipeline to always have the same structure and
  * data format (type). For this each Submission Form State has version
- * (default version is '1') and function tpps_submission_interface_generate()
+ * (default version is '1') and function $submission->generateSharedState()
  * will convert existing $form_state to the $submission_interface which
  * will be stored in public.tpps_submissions database table.
  *
@@ -105,105 +105,17 @@
  *   Returns FALSE otherwise.
  */
 function tpps_form_is_submission_interface(array $form_state) {
+  // @TODO Rewrite code to remove this function and do not have it in Submission class.
   return (($form_state['is_submission_interface'] ?? NULL) == TRUE);
-}
-
-/**
- * Generates new Submission Interface by Submission Accession.
- *
- * @param string $accession
- *   Study Accession.
- *
- * @return mixed
- *   Returns array with datastructure prepared for TPPS pipeline
- *   (submit_all.php script).
- *   Returns empty array if $form_state is empty too.
- */
-function tpps_submission_interface_new($accession) {
-  $submission = new Submission($accession);
-  return $submission->createSharedState();
-}
-
-/**
- * Removes Submission Interface Array.
- *
- * @param string $accession
- *   Study Accession. E.g., 'TGDR12345'.
- */
-function tpps_submission_interface_remove($accession) {
-  $submission = new Submission($accession);
-  $submission->removeSharedState();
-}
-
-/**
- * Removes and create from scratch Submission Interface.
- *
- * @param string $accession
- *   Study accession.
- */
-function tpps_submistion_interface_recreate($accession) {
-  $submission = new Submission($accession);
-  $submission->recreateSharedState();
-}
-
-/**
- * Creates Submission Interface from $form_state array.
- *
- * WARNING:
- * Use tpps_submission_interface_save() to store interface in DB.
- *
- * @param array $form_state
- *   Drupal Form State array.
- *
- * @return mixed
- *   Returns array with datastructure prepared for TPPS pipeline
- *   (submit_all.php script).
- *   Returns empty array if $form_state is empty too.
- */
-function tpps_submission_interface_generate(array $form_state = []) {
-  $submission = new Submission();
-  $submission->state = $form_state;
-  $submission->generateSharedState();
-  return $submission->sharedState;
-}
-
-/**
- * Gets existing or creates new Submission Interface for given study.
- *
- * Note: Forked tpps_load_submission(). Code was improved.
- *
- * @param string $accession
- *   The accession of the submission in format 'TGDRxxxx'.
- *
- * @return array
- *   Returns Submission Interface Array which is ready for pipeline processing.
- *   Returns empty array if Submission wan't found.
- */
-function tpps_submission_interface_load($accession) {
-  // @TODO Update related code.
-  $submission = new Submission($accession);
-  $submission->loadSharedState();
-  return $submission->sharedState;
 }
 
 /**
  * Updates Submission Interface using given array.
  *
- * By default given array will overwrite SIA stored in DB but it could contain
- * extra data if processing was completed and to store those data we could
- * merge existing SIA with new values. To do this set variable:
- *  variable_set('tpps_submission_interface_merge_on_update', TRUE);
- * or use admin/config/tpps/form/main
- * to check parameter 'Merge Submission Interface on update'.
- *
  * To update submission's status:
  *   tpps_update_submission_info($accession, $data);
  * To update submission's Form State:
  *   tpps_update_submission_state($form_state);
- *
- * To remove submission Interface Array:
- *   tpps_submission_interface_remove($accession);
- * WARNING: do not use 'phppgadmin' because it can't edit serialized data.
  *
  * @param array $interface
  *   The Submission Interface Array.
@@ -222,23 +134,6 @@ function tpps_submission_interface_save(array &$interface, $status = NULL) {
   $submission = new Submission();
   $submission->sharedState = $interface;
   $submission->saveSharedState($status);
-  // Note: arrays updates during save.
-  $interface = $submission->sharedState;
-}
-
-/**
- * Reduce size of the Submission Interface array.
- *
- * Items not used by pipeline processing script will be removed.
- *
- * @param array $interface
- *   Submission Interface.
- */
-function tpps_submission_interface_purify(array &$interface) {
-  // WARNING: Reference!
-  $submission = new Submission();
-  $submission->sharedState = $interface;
-  $submission->purifySharedState();
   // Note: arrays updates during save.
   $interface = $submission->sharedState;
 }

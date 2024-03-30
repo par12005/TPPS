@@ -64,7 +64,9 @@ function tpps_details($accession = NULL) {
   }
 
   $output = l(t('Return to TPPS Details'), $base_url . '/tpps/details');
-  $state = tpps_submission_interface_load($accession);
+  $submission = new Submission($accession);
+  $submission->load();
+  $state = $submission->state;
   if (!empty($state)) {
     if (isset($state['study_view_role'])) {
       // If more than 0, then a view role was set by curation team
@@ -278,8 +280,9 @@ function tpps_details_tab($accession, $type) {
   }
   else {
     $function = "tpps_details_$type";
-    $state = tpps_submission_interface_load($accession);
-    print($function($state));
+    $submission = new Submission($accession);
+    $submission->load();
+    print($function($submission->sharedState));
   }
 }
 
@@ -824,13 +827,15 @@ function tpps_details_study(array &$state) {
  *   Returns list of File Ids.
  *
  * @todo Minor. Use tpps_submission_file_get_parents().
- * @todo Remove if possible. Probably not in used.
+ * @todo Probably not in use and outdated. Remove if possible.
  * (Called by orphan function tpps_details_study()).
  */
 function tpps_details_get_study_file_ids(array $state) {
-  // Note: Submission Form Version 1 (= Submission Interface).
-  $submission_interface = tpps_submission_interface_generate($state);
-  $saved_values = $submission_interface['saved_values'];
+
+  $submission = new Submission();
+  $submission->generateSharedState($state);
+  $submission->saveSharedState();
+  $saved_values = $submission->sharedState['saved_values'];
   // print_r($saved_values);
   $file_ids = [];
   $page4_file_list = [

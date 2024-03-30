@@ -26,11 +26,13 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
     drupal_set_message(t('Empty accession.'), 'error');
     return '';
   }
-  $submission_interface = tpps_submission_interface_load($accession);
+  $submission = new Submission($accession);
+  $submission->load();
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $project_file_ids = [];
   // Get file_ids from project_id.
-  $project_id = $submission_interface['ids']['project_id'] ?? NULL;
+  $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
   $results = chado_query(
     'SELECT * FROM tpps_project_file_managed WHERE project_id = :project_id',
     [':project_id' => $project_id]
@@ -40,7 +42,7 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
     array_push($project_file_ids, $row->fid);
   }
   sort($project_file_ids);
-  $saved_values = $submission_interface['saved_values'] ?? NULL;
+  $saved_values = $submission->sharedState['saved_values'] ?? NULL;
   if (empty($saved_values)) {
     drupal_set_message(t('Empty "saved_values" in Submission Interface.'));
     return ' ';
@@ -72,7 +74,7 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
   sort($file_ids);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // History/State files.
-  $overall_file_ids = $submission_interface['files'] ?? [];
+  $overall_file_ids = $submission->sharedState['files'] ?? [];
   sort($overall_file_ids);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Output report.

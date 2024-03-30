@@ -331,6 +331,7 @@ function tpps_admin_settings_validate($form, &$form_state) {
 /**
  * Used to move old submissions to the new TPPS submission table.
  *
+ * Warning: Submission class can't be used here.
  * Older versions of TPPS stored submissions in the public.variable table, but
  * newer versions use the public.tpps_submission table. This function moves
  * previously completed submissions to the new table. It works best if the
@@ -365,9 +366,8 @@ function tpps_update_old_submissions() {
         'accession' => $accession,
         'dbxref_id' => $dbxref_id,
         'submission_state' => serialize($state),
-        'submission_interface' => serialize(
-          tpps_submission_interface_generate($state)
-        ),
+        // Shared State will be created later automatically.
+        'submission_interface' => serialize([]),
       ))
       ->execute();
     variable_del($result->name);

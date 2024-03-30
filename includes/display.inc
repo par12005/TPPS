@@ -819,9 +819,9 @@ function tpps_completed_display($accession = NULL) {
   global $user;
   $output = '';
 
-  $interface = tpps_submission_interface_load($accession);
-  //dpm(print_r($interface, 1));
-  $values = $interface['saved_values'];
+  $submission = new Submission($accession);
+  $submission->load();
+  $values = $submission->sharedState['saved_values'];
 
   // @TODO Move CSS to /css/tpps.css. Check if scope must be 'header'.
   $css = "
@@ -851,7 +851,7 @@ function tpps_completed_display($accession = NULL) {
       'tpps/' . $accession . '/edit-publication', ['absolute' => TRUE]);
   }
 
-  $output .= tpps_table_display($interface);
+  $output .= tpps_table_display($submission->sharedState);
   tpps_add_css_js('main');
   return render($output);
 }

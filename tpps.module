@@ -491,7 +491,7 @@ function tpps_access() {
         return TRUE;
       }
       $submission = new Submission($accession);
-      if (!$submission->isExists()) {
+      if ($submission->doesNotExist()) {
         // Study has no record in tpps_submission table.
         return FALSE;
       }
@@ -1386,13 +1386,12 @@ function tpps_main_submit($form, &$form_state) {
           $accession, ['status' => $form_state['status']]
         );
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-        // Save Submission Interface Array.
-        // Note:
-        // We don't use tpps_submission_interface_new($accession)
-        // because $form_state has most recent changes and we could
-        // avoid extra DB query here.
-        $interface = tpps_submission_interface_generate($form_state);
-        tpps_submission_interface_save($interface);
+        // Save Submission Shared State.
+        $submission = new Submission($accession);
+        $submission->state = $form_state;
+        $submission->generateSharedState();
+        $submission->saveSharedState();
+
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         tpps_submit_email($form_state);
         drupal_goto('completed-submission/' . $accession);

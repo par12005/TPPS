@@ -90,6 +90,7 @@ class Submission {
     // @TODO Validate $accession.
     if (!empty($accession)) {
       $this->accession = $accession;
+      $this->load(RESET_CACHE);
     }
     $this->useCache = variable_get('tpps_cache_submissions', FALSE);
   }
@@ -127,7 +128,7 @@ class Submission {
    * @return mixed
    *   Returns property value.
    */
-  public function __get($name) {
+  public function &__get($name) {
     // Allow to overwrite magic with custom getter.
     $func = 'get' . ucfirst($name);
     if (method_exists($this, $func)) {
@@ -138,51 +139,31 @@ class Submission {
         return $this->$name;
       }
       else {
-        throw new InexistentPropertyException("Inexistent property: $name");
+        throw new Exception("Inexistent property: $name");
       }
     }
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // State
-
-  /**
-   * Loads a TPPS Submission Form State Array.
-   *
-   * @return array
-   *   Returns Submission Form State array.
-   */
-  public function loadState() {
-    if (empty($this->accession)) {
-      // @todo Throw exception.
-      watchdog('tpps', "Submission: Empty accession.", [], WATCHDOG_ERROR);
-      return [];
-    }
-    $result = db_select('tpps_submission', 's')
-      ->fields('s', ['submission_state'])
-      ->condition('accession', $this->accession)
-      ->range(0, 1)
-      ->execute()
-      ->fetchField();
-    if (!$result) {
-      // Search for alternative accessions.
-      $query = db_select('tpps_submission', 's');
-      $query->join('tpps_submission_dbxref', 's_dbx',
-        's.tpps_submission_id = s_dbx.tpps_submission_id'
-      );
-      $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-      $query->fields('s', ['submission_state']);
-      $query->condition('dbx.accession', $this->accession);
-      $query->condition('s.status', 'Approved');
-      $query->range(0, 1);
-      $query = $query->execute();
-      $result = $query->fetchField();
-    }
-    if ($result) {
-      // Return and set property.
-      return $this->state = (unserialize($result) ?? []);
-    }
-  }
+  // State.
+  //
+  // Properties:
+  // - $state array - Submission's State.
+  //
+  // Method:
+  // - saveState() - Sync memory to Db.
+  //
+  // @TODO Get rid of this methods.
+  // - getState() - From memory. Loads from DB if missing.
+  //   @TODO Replace with $submission->state.
+  // - setState($state) - In memory.
+  //   @TODO Replace with $submission->state.
+  // - updateState($state) = setState() + saveState().
+  //   @TODO Replace with $submission->state =...  and saveState().
+  //
+  // To set/get/update an item:
+  // $submission = new Submission($accession);
+  // $submission-state[$item_name] = $item_value;
 
   /**
    * Setter for $state.
@@ -215,11 +196,11 @@ class Submission {
    * @return array
    *   Returns array.
    */
-  public function getState(bool $reset = FALSE) {
+  public function &getState(bool $reset = FALSE) {
     if ($reset || (empty($this->state) && !empty($this->accession))) {
-      $this->loadState();
+      $this->load();
     }
-    return $this->state ?? [];
+    return $this->state;
   }
 
   /**
@@ -231,52 +212,6 @@ class Submission {
       ->fields(['submission_state' => serialize($this->state)])
       ->condition('accession', $this->accession)
       ->execute();
-  }
-
-  /**
-   * Saves Submission.
-   */
-  public function save() {
-
-
-    // @TODO Improve to store only non-empty data.
-    // Store also status.
-    $this->saveState();
-    $this->saveSharedState();
-
-    return;
-    // Shared State.
-    if (empty($interface) || empty($interface['accession'])) {
-      return NULL;
-    }
-
-    $accession = $interface['accession'];
-    // Merge or overwrite?
-    if (variable_get('tpps_submission_interface_merge_on_update', FALSE)) {
-      $this->loadSharedState();
-      $interface = array_merge($this->sharedState, $interface);
-    }
-    // Note: REQUEST_TIME couldn't be used because called from CLI script and
-    // processing could take long time from script call.
-    $interface['updated'] = time();
-
-    // Prepare data for query.
-    $fields = [];
-    if ($status) {
-      $fields['status'] = $interface['status'] = $status;
-    }
-    $fields['submission_interface'] = serialize($interface);
-
-    db_update('tpps_submission')
-      ->fields($fields)
-      ->condition('accession', $accession)
-      ->execute();
-
-
-
-
-
-
   }
 
   /**
@@ -298,26 +233,70 @@ class Submission {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submision Common methods.
+  // create() - object and DB
+  // save() - Sync object to DB
+  // load() - Sync DB to object.
+  // delete() - remove from DB
+  // purge() - remove study and files in DB.
+
+  /**
+   * Saves Submission.
+   */
+  public function save() {
+
+
+    // @TODO Improve to store only non-empty data.
+    // Store also status.
+    $this->state['updated'] = time();
+    $this->sharedState['updated'] = time();
+    // @TODO Set status (if any).
+    $this->saveState();
+    $this->saveSharedState();
+
+    return;
+    // Shared State.
+    if (empty($interface) || empty($interface['accession'])) {
+      return NULL;
+    }
+
+    $accession = $interface['accession'];
+    // Note: REQUEST_TIME couldn't be used because called from CLI script and
+    // processing could take long time from script call.
+    $interface['updated'] = time();
+
+    // Prepare data for query.
+    $fields = [];
+    if ($status) {
+      $fields['status'] = $interface['status'] = $status;
+    }
+    $fields['submission_interface'] = serialize($interface);
+
+    db_update('tpps_submission')
+      ->fields($fields)
+      ->condition('accession', $accession)
+      ->execute();
+  }
 
   /**
    * Delete submission from database.
    */
   public function delete() {
+    if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
+      $dbxref_id = $this->info['dbxref_id'] ?? NULL;
+      if ($dbxref_id) {
+        db_delete('chado.dbxref')
+          ->condition('dbxref_id', $dbxref_id)
+          ->execute();
+      }
+    }
     db_delete('tpps_submission')
       ->condition('accession', $this->accession)
       ->execute();
-    if (empty($this->state['saved_values']['frontpage']['use_old_tgdr'])) {
-      $submission_info = tpps_load_submission_info($this->accession);
-      $dbxref_id = $submission_info['dbxref_id'];
-      db_delete('chado.dbxref')
-        ->condition('dbxref_id', $dbxref_id)
-        ->execute();
-    }
     // If this study was imported we need to remove it from the list.
     // @TODO Check if study was imported.
     module_load_include('inc', 'tpps', 'includes/imported_studies_list');
     tpps_imported_studies_list_remove_item($this->accession);
-    $this->accession = $this->state = NULL;
+    $this->accession = $this->state = $this->sharedState = NULL;
   }
 
   /**
@@ -359,18 +338,8 @@ class Submission {
     // @todo Check if study was imported to avoid extra moves.
     module_load_include('inc', 'tpps', 'includes/imported_studies_list');
     tpps_imported_studies_list_remove_item($this->accession);
+    $this->accession = $this->state = $this->sharedState = NULL;
   }
-
-  /**
-   * Get only number (without 'TGDR' prefix) of Submission accession.
-   *
-   * @return int
-   *   Return accession number.
-   */
-  public function getAccessionNumber() {
-    return str_replace('TGDR', '', $this->accession);
-  }
-
 
   /**
    * Create new record in database.
@@ -395,6 +364,77 @@ class Submission {
     // Add default tag.
     $tag = $this->isTppsc() ? 'TPPSc' : 'TPPS';
     tpps_submission_add_tag($this->accession, $tag);
+  }
+
+  /**
+   * Loads Submission's data.
+   *
+   * Note: all the submission data will be loaded but with single SQL-request
+   * instead of 3 requests if data loaded separately.
+   *
+   * To avoid reload the same study use global $submission object.
+   *
+   * @return bool
+   *   Returns TRUE in case of success load (even if there is no data).
+   *   Returns FALSE if Submission's load failed.
+   */
+  public function load() {
+    if (empty($this->accession)) {
+      return FALSE;
+    }
+
+    $result = db_select('tpps_submission', 's')
+      ->fields('s')
+      ->condition('accession', $this->accession)
+      ->range(0, 1)
+      ->execute()
+      ->fetchAssoc();
+
+    if (!$result) {
+      // Search for alternative accessions.
+      $query = db_select('tpps_submission', 's');
+      $query->join(
+        'tpps_submission_dbxref',
+        's_dbx',
+        's.tpps_submission_id = s_dbx.tpps_submission_id');
+      $query->join(
+        'chado.dbxref',
+        'dbx',
+        'dbx.dbxref_id = s_dbx.dbxref_id'
+      );
+      $result = $query->fields('s')
+        ->condition('dbx.accession', $this->accession)
+        ->range(0, 1)
+        ->execute()
+        ->fetchAssoc();
+    }
+    if ($result) {
+      $this->info = $result;
+      unset($this->info['submission_state']);
+      unset($this->info['submission_interface']);
+      $this->status = $this->info['status'] ?? NULL;
+      $this->state = unserialize($result['submission_state'] ?? '') ?? [];
+      $this->sharedState = unserialize($result['submission_interface'] ?? '') ?? [];
+      if (empty($this->sharedState)) {
+        $this->generateSharedState();
+        $this->saveSharedState();
+      }
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Helpers
+
+  /**
+   * Get only number (without 'TGDR' prefix) of Submission accession.
+   *
+   * @return int
+   *   Return accession number.
+   */
+  public function &getAccessionNumber() {
+    return str_replace('TGDR', '', $this->accession);
   }
 
   /**
@@ -432,58 +472,28 @@ class Submission {
   // Info.
 
   /**
-   * Loads a TPPS Submission Info from database.
-   */
-  public function loadInfo() {
-    if (empty($this->accession)) {
-      return;
-    }
-    // Columns 'submission_state' and 'submission_interface' will be excluded
-    // to reduce size of data and speed-up processing.
-    $fields = array_diff(
-      array_keys(drupal_get_schema('tpps_submission')['fields']),
-      ['submission_interface', 'submission_state']
-    );
-    $result = db_select('tpps_submission', 's')
-      ->fields('s', $fields)
-      ->condition('accession', $this->accession)
-      ->range(0, 1)
-      ->execute()
-      ->fetchAssoc();
-
-    if (!$result) {
-      // Search for alternative accessions.
-      $query = db_select('tpps_submission', 's');
-      $query->join('tpps_submission_dbxref', 's_dbx',
-        's.tpps_submission_id = s_dbx.tpps_submission_id');
-      $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-      $query->fields('s', $fields);
-      $query->condition('dbx.accession', $this->accession);
-      $query->condition('s.status', 'Approved');
-      $query->range(0, 1);
-      $query = $query->execute();
-      $result = $query->fetchAssoc();
-    }
-    if ($result) {
-      $this->info = $result;
-    }
-  }
-
-  /**
    * Checks if submission exists in database.
    *
    * Only study accession is required to find record in database.
    *
-   * @param bool $reset
-   *   Flag is cache must be resetted. Default if FALSE.
-   *   Set to TRUE if you think cached version could be outdated.
+   * @return bool
+   *   Returns TRUE if record in database exists and FALSE otherwise.
+   */
+  public function doesExist() {
+    $this->load();
+    return (bool) (
+      !empty($this->accession) && !empty($this->info) && !empty($this->state)
+    );
+  }
+
+  /**
+   * Check if submission doesn't exist.
    *
    * @return bool
    *   Returns TRUE if record in database exists and FALSE otherwise.
    */
-  public function isExists($reset = FALSE) {
-    // @TODO create property to store.
-    return (bool) ($this->getInfo($reset));
+  public function doesNotExist() {
+    return !($this->doesExist());
   }
 
   /**
@@ -500,8 +510,10 @@ class Submission {
    * @return mixed
    *   Returns an array with Submission's Info from DB table 'tpps_submission'.
    *   Returns NULL if study wasn't found.
+   *
+   *   @TODO Remove.
    */
-  public function getInfo($reset = FALSE) {
+  public function &getInfo($reset = FALSE) {
     if (empty($this->accession)) {
       return NULL;
     }
@@ -513,13 +525,13 @@ class Submission {
       $cache_bin = TPPS_CACHE_BIN ?? 'cache';
       $cache = cache_get($cid, $cache_bin);
       if (!$cache_submissions || $reset || empty($cache) || !isset($cache->data[$key])) {
-        $this->loadInfo();
+        $this->load();
         $cache->data[$key] = $this->info ?? NULL;
         cache_set($cid, $cache->data, $cache_bin);
       }
       $static_cache[$key] = $cache->data[$key] ?? NULL;
     }
-    return $static_cache[$key] ?? NULL;
+    return $this->info;
   }
 
   /**
@@ -573,12 +585,12 @@ class Submission {
    */
   public function getImportMeta() {
     $output = [];
-    if (empty($this->state) && empty($this->accession)) {
-      watchdog('tpps', "Couldn't get Submission Import Metadata because Form "
-        . "State Array and Study Accession are empty.", [], WATCHDOG_ERROR);
+    $this->getState();
+    if ($this->doesNotExist()) {
       return $output;
     }
 
+    // @TODO Create property $importMeta?
     $import_meta = $this->state['saved_values']['tpps_submission_import'];
     if (empty($import_meta)) {
       return $output;
@@ -618,7 +630,6 @@ class Submission {
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission's Shared State (3S, former Submission Interface).
 
-
   /**
    * Get Submission's state.
    *
@@ -634,37 +645,11 @@ class Submission {
    * @return array
    *   Returns array.
    */
-  public function getSharedState(bool $reset = FALSE) {
-    if (
-      $reset
-      || (empty($this->sharedState) && !empty($this->accession))
-    ) {
-      $this->loadSharedState();
+  public function &getSharedState(bool $reset = FALSE) {
+    if ($reset || (empty($this->sharedState) && !empty($this->accession))) {
+      $this->load();
     }
-    return $this->sharedState ?? [];
-  }
-
-  /**
-   * Creates new Submission's Shared State (3S).
-   *
-   * @return mixed
-   *   Returns array with datastructure prepared for TPPS pipeline
-   *   (submit_all.php script).
-   *   Returns empty array if $form_state is empty too.
-   */
-  public function createSharedState() {
-    $this->getState(RESET_CACHE);
-    $this->generateSharedState();
-    $this->saveSharedState();
     return $this->sharedState;
-  }
-
-  /**
-   * Removes and create from scratch Submission Interface.
-   */
-  public function recreateSharedState() {
-    $this->removeSharedState();
-    $this->createSharedState();
   }
 
   /**
@@ -681,8 +666,8 @@ class Submission {
    * Generates Submission Shared State.
    *
    * WARNING:
-   * This method do not update record in database. Use:
-   * createSharedState() or saveSharedState() to store in DB.
+   * This method do not update record in database.
+   * Use saveSharedState() to store in DB.
    *
    * @param array $state
    *   Drupal Form State array.
@@ -699,7 +684,7 @@ class Submission {
     module_load_include('inc', 'tpps', 'includes/submission_form_version');
     $this->sharedState = $this->state;
 
-// @TODO Important: Rename.
+// @TODO Important: Rename variable.
 
     $this->sharedState['is_submission_interface'] = TRUE;
 
@@ -707,7 +692,6 @@ class Submission {
     // incremental changes.
     tpps_submission_form_version_downgrade_to_latest($this->state, $this->sharedState);
     $this->purifySharedState();
-    $this->saveSharedState();
 
     return $this->sharedState;
   }
@@ -715,20 +699,13 @@ class Submission {
   /**
    * Store Submission Shared State to database.
    *
-   * By default given array will overwrite SIA stored in DB but it could contain
-   * extra data if processing was completed and to store those data we could
-   * merge existing SIA with new values. To do this set variable:
-   *  variable_set('tpps_submission_interface_merge_on_update', TRUE);
-   * or use admin/config/tpps/form/main
-   * to check parameter 'Merge Submission Interface on update'.
-   *
    * To update submission's status:
    *   tpps_update_submission_info($accession, $data);
    * To update submission's Form State:
    *   tpps_update_submission_state($form_state);
    *
-   * To remove submission Interface Array:
-   *   tpps_submission_interface_remove($accession);
+   * To remove SharedState:
+   *   $this->removeSharedState();
    * WARNING: do not use 'phppgadmin' because it can't edit serialized data.
    *
    * @param string $status
@@ -751,56 +728,6 @@ class Submission {
       ->fields($fields)
       ->condition('accession', $this->accession)
       ->execute();
-  }
-
-  /**
-   * Loads Submission's Shared State (3S).
-   *
-   * @return array
-   *   Returns loaded from DB Submission's Shared State (3S)
-   *   Returns an empty array to not break other code which expects array.
-   */
-  public function loadSharedState() {
-    if (!empty($this->accession)) {
-      // @TODO Add caching.
-      $result = db_select('tpps_submission', 's')
-        ->fields('s', ['submission_interface'])
-        ->condition('accession', $this->accession)
-        ->range(0, 1)
-        ->execute()
-        ->fetchField();
-
-      // @TODO Minor. Check and remove if possible.
-      if (empty($result)) {
-        // Try to find study by 'accession' in 'tpps_submission_dbxref' table.
-        $query = db_select('tpps_submission', 's');
-        $query->join(
-          'tpps_submission_dbxref',
-          's_dbx',
-          's.tpps_submission_id = s_dbx.tpps_submission_id'
-        );
-        $query->join('chado.dbxref', 'dbx', 'dbx.dbxref_id = s_dbx.dbxref_id');
-        $query->fields('s', ['submission_interface'])
-          ->condition('dbx.accession', $this->accession)
-          ->condition('s.status', 'Approved')
-          ->range(0, 1);
-        $result = $query->execute()->fetchField();
-      }
-
-      // Process results.
-      if (!empty($result)) {
-        $this->sharedState = unserialize($result);
-        //$message = 'Submission Interface Array was generated for @accession '
-        // . 'because it was empty.';
-        //$params = ['@accession' => $this->accession];
-        //tpps_message($message, $params, 'warning');
-      }
-    }
-    if (empty($this->sharedState)) {
-      //$this->createSharedState();
-      $this->generateSharedState();
-    }
-    return $this->sharedState ?? [];
   }
 
   /**
@@ -902,6 +829,10 @@ class Submission {
 
     module_load_include('inc', 'tpps', 'includes/array');
     tpps_array_apply_changes($change_list, $this->sharedState);
+  }
+
+  public function isSharedState($state) {
+
   }
 
 }

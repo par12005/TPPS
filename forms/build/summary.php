@@ -30,9 +30,11 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   tpps_add_css_js('theme', $form);
 
   $accession = tpps_form_get_accession($form_state);
-  $submission_interface = tpps_submission_interface_load($accession);
+  $submission = new Submission($accession);
+  $submission->load();
+
   $form['table_display'] = [
-    '#markup' => tpps_table_display($submission_interface),
+    '#markup' => tpps_table_display($submission->sharedState),
   ];
   $form['comments'] = [
     '#type' => 'textarea',

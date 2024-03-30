@@ -231,8 +231,11 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
     tpps_update_submission_state($state);
     drupal_set_message(t('Submission Form Version was upgraded.'));
 
-    $interface = tpps_submission_interface_generate($form_state);
-    tpps_submission_interface_save($interface);
+    $submission = new Submission($accession);
+    $submission->state = $state;
+    // Note: SharedState will be stored to db.
+    $submission->generateSharedState();
+    $submission->saveSharedState();
   }
 
   if ($submit_form) {

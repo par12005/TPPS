@@ -13,9 +13,8 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
 function tpps_submission_view_form(array $form, array $form_state, $accession = '') {
   tpps_submission_list_validate_accession($accession);
   $submission = new Submission($accession);
-  $state = $submission->state;
 
-  if (empty($state)) {
+  if ($submission->doesNotExist()) {
     drupal_set_message(t('Submission "<strong>@accession</strong>" not found. '
       . 'Please choose from the list below.',
       ['@accession' => $accession]), 'error'
@@ -67,18 +66,17 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show the data!
-  $shared_state = $submission->loadSharedState();
 
   drupal_set_message('Real Shared State Version: ' .
-    (isset($shared_state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
+    (isset($submission->sharedState['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
   );
   drupal_set_message('Real Form State Version: ' .
-    (isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
+    (isset($submission->state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
   );
 
   $dumps = [
-    'Shared State' => tpps_array_dump($shared_state),
-    'Form State' => tpps_array_dump($state),
+    'Shared State' => tpps_array_dump($submission->sharedState),
+    'Form State' => tpps_array_dump($submission->state),
   ];
   foreach ($dumps as $type => $data) {
     $form[$type] = [

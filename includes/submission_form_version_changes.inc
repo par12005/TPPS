@@ -32,7 +32,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
   $version_change_list = [
     // Version 1 is a initial version.
     // Submission Interface is a version 1 without some unnecessary elements.
-    // See tpps_submission_interface_purify();
+    // See Submission:purifySharedState();
     '1' => [],
     // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     // #86ayw8a7k Genotype Logic changes.

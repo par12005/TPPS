@@ -19,27 +19,28 @@ function tpps_admin_imported_studies_report() {
   ];
   foreach ($list as $local => $remote) {
     $submission = new Submission($local);
-    $state = $submission->state;
-    $import_meta = $submission->getImportMeta();
-    if (empty($import_meta)) {
-      // Study probably was removing when page reloads so just skip this.
+    if ($submission->doesNotExist()) {
+      tpps_message(
+        'Submission @accession not exists.',
+        ['@accession' => $local], 'error'
+      );
       continue;
     }
-    $interface = tpps_submission_interface_load($local) ?? [];
-    $info = $submission->info;
-    if (!empty($interface['job_id'])) {
-      $job = tripal_get_job($interface['job_id']);
+    $import_meta = $submission->getImportMeta();
+
+    if (!empty($submission->sharedState['job_id'])) {
+      ob_start();
+      $job = tripal_get_job($submission->sharedState['job_id']);
       $job_status = ($job ? $job->status : NULL);
+      ob_end_clean();
     }
     $rows[] = [
       l($local, 'tpps/submission/' . $local . '/view'),
-      $state['status'] ?? NULL,
+      $submission->state['status'] ?? NULL,
       $job->status ?? '',
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
-      $info['uid'] ?? NULL,
-      //(isset($state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
-      //(isset($interface['saved_values'][1]['publication']['publication_doi']) ? 2 : 1),
+      $submission->info['uid'] ?? NULL,
       $import_meta['full_date'] ?? NULL,
       $import_meta['accession_link'] ?? NULL,
       l($import_meta['site'] ?? NULL, $import_meta['site'] ?? NULL),
@@ -80,8 +81,6 @@ function tpps_admin_imported_studies_report() {
       t('Original') . $version_tags,
       t('Submitted') . $version_tags,
       t('UID'),
-      //t('State') . $version_tags,
-      //t('Interface') . $version_tags,
       t('Import Date'),
       t('Original <br /><strong>Accession</strong>'),
       t('Original Site'),

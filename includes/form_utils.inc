@@ -736,7 +736,9 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
  */
 function tpps_vcf_tree_validation($accession = NULL) {
   //  $state = tpps_load_submission_state($accession);
-  $state = tpps_submission_interface_load($accession);
+  $submission = new Submission($accession);
+  $submission->load();
+  $state = $submission->state;
 
   $firstpage = $state['saved_values'][TPPS_PAGE_1];
   $thirdpage = $state['saved_values'][TPPS_PAGE_3];

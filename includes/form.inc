@@ -903,7 +903,7 @@ function &tpps_form_get_path(array &$array = NULL, $path = NULL) {
  */
 function tpps_form_get_accession(array $form_state, $only_number = FALSE) {
   $submission = new Submission();
-  $submission->state = $form_state;
+  $submission->setState($form_state);
   if ($only_number) {
     return $submission->getAccessionNumber();
   }

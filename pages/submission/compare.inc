@@ -155,8 +155,13 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show comparison report.
-  $interface_1 = tpps_submission_interface_load($accession_1) ?? [];
-  $interface_2 = tpps_submission_interface_load($accession_2) ?? [];
+  $submission_1 = new Submission($accession_1);
+  $submission_1->load();
+  $interface_1 = $submission_1->sharedState;
+
+  $submission_2 = new Submission($accession_1);
+  $submission_2->load();
+  $interface_2 = $submission_2->sharedState;
 
   $interface_diff_1 = array_diff_assoc_recursive($interface_1, $interface_2);
   $interface_diff_2 = array_diff_assoc_recursive($interface_2, $interface_1);

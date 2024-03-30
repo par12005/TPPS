@@ -48,7 +48,7 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
 
   // Get Submission Shared State (3S).
   $submission = new Submission($accession);
-  if (!$submission->isExists()) {
+  if ($submission->doesNotExist()) {
     // This could happen when study was removed but someone clicks 'Re-run'
     // Tripal job at page /admin/tripal/tripal_jobs'.
     $message = t("Submission @accession doesn't exist.",
@@ -159,7 +159,10 @@ function tpps_submit_all($accession, TripalJob $job = NULL) {
   catch (Exception $e) {
     $transaction->rollback();
     // Restore status of study because processing failed.
-    $shared_state = tpps_submission_interface_load($accession);
+    $submission = new Submission($accession);
+    $submission->load();
+    $shared_state = $submission->sharedState;
+
     tpps_submission_interface_save($shared_state, TPPS_STATUS_PENDING_APPROVAL);
 
     tpps_log('[ERROR] Job failed', [], TRIPAL_ERROR);
@@ -1798,7 +1801,9 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
 
   // Go through each additional study and run genotypes to flat file.
   foreach ($study_accessions_with_potential_overlaps as $study_accession) {
-    $study_state = tpps_submission_interface_load($study_accession);
+    $submission = new Submission($study_accession);
+    $submission->load();
+    $study_state = $submission->sharedState;
 
     $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     echo "Study organism number for $study_accession is $study_organism_number\n";
@@ -1840,7 +1845,9 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
     (select unnest(markers) as marker from chado.studies_with_markers where accession = '" . $accession . "');");
   foreach ($accession_results as $row) {
     $study_accession = $row->accession;
-    $study_state = tpps_submission_interface_load($study_accession);
+    $submission = new Submission($study_accession);
+    $submission->load();
+    $study_state = $submission->sharedState;
     $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     for ($i = 1; $i <= $study_organism_number; $i++) {
       $snps_flat_file_location = $dest_folder . '/' . $study_accession . '-' . $i . '-snps.csv';
@@ -1906,7 +1913,6 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
 
   // Go through each study other than the original and get repeats
   foreach ($unique_pairs as $pair) {
-    // $study_state = tpps_submission_interface_load($study_accession);
     $snps_flat_file_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-sorted.csv';
     $snps_flat_file_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-sorted.csv';
     $repeats_location = $dest_folder . '/' . $pair[0] . "-" . $pair[1] . "-repeats.csv";
@@ -1926,7 +1932,6 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
 
   // Remove repeats from corresponding studies.
   foreach ($unique_pairs as $pair) {
-    // $study_state = tpps_submission_interface_load($study_accession);
     $snps_flat_file_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-sorted.csv';
     $snps_flat_file_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-sorted.csv';
     $repeats_location = $dest_folder . '/' . $pair[0] . "-" . $pair[1] . "-repeats.csv";
@@ -1949,8 +1954,6 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
 
   // Distinct repeats_removed.
   foreach ($unique_pairs as $pair) {
-    // $study_state = tpps_submission_interface_load($study_accession);
-
     $repeats_removed_location_1 = $dest_folder . '/' . $pair[0] . '-1-snps-repeats-removed.csv';
     $repeats_removed_location_2 = $dest_folder . '/' . $pair[1] . '-1-snps-repeats-removed.csv';
 
@@ -6299,10 +6302,10 @@ function tpps_generate_all_genotype_materialized_views() {
   foreach ($results as $row) {
     $current_count = $current_count + 1;
     echo "Processing genotype materialized view: $current_count of $total\n";
-    // Get the submission Interface.
-    $state = tpps_submission_interface_load($row->accession);
-    // Check if there's a project_id in the submission state.
-    $project_id = $state['ids']['project_id'] ?? NULL;
+    // Get the Submission Shared State.
+    $submission = new Submission($row->accession);
+    $submission->load();
+    $project_id = $submission->state['ids']['project_id'] ?? NULL;
     // Once the project_id is not NULL, we're good.
     if (isset($project_id)) {
       tpps_generate_genotype_materialized_view($project_id);
@@ -6320,7 +6323,7 @@ function tpps_generate_all_genotype_materialized_views() {
  *   The project ID of the study. NOT THE STUDY ACCESSION!
  */
 function tpps_generate_genotype_materialized_view($project_id) {
-  
+
   // Ensure the project_id is an integer.
   $project_id = intval($project_id);
   if ($project_id <= 0) {

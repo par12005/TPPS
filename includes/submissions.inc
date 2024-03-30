@@ -104,7 +104,7 @@ function tpps_load_submission_multiple(array $conditions = array(), $state = TRU
  */
 function tpps_create_submission(array $state, $uid) {
   $submission = new Submission(($state['accession'] ?? NULL));
-  if (empty($submission->isExists())) {
+  if ($submission->doesNotExist()) {
     $submission->create($state, $uid);
   }
 }
@@ -125,22 +125,30 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   // Clear the db of all data for the old study accession
   // tpps_submission_clear_db($old_accession);
 
-  $job->logMessage('[INFO] Alter submission state data from ' . $old_accession . ' to ' . $new_accession);
+  $message = t('[INFO] Alter submission state data from @old_accession '
+    . 'to @new_accession.',
+    ['@old_accession' => $old_accession, '@new_accession' => $new_accession]
+  );
+  $job->logMessage($message);
+
   // Update the form state data for the study.
   $submission = new Submission($old_accession);
-  $state = $submission->state;
-  $interface = tpps_submission_interface_load($old_accession);
+  $submission->load();
 
   $job->logMessage('Original submission data for ' . $old_accession);
-  $job->logMessage(print_r($state, 1));
+  $job->logMessage(print_r($submission->state, 1));
 
   // Update the TGDR with the new_accession.
   module_load_include('inc', 'tpps', 'includes/array');
-  $state = tpps_array_replace($state, $old_accession, $new_accession);
-  $interface = tpps_array_replace($interface, $old_accession, $new_accession);
+  $submission->state = tpps_array_replace(
+    $submission->state, $old_accession, $new_accession
+  );
+  $submission->sharedState = tpps_array_replace(
+    $submission->sharedState, $old_accession, $new_accession
+  );
 
   $job->logMessage('New submission data for ' . $new_accession);
-  $job->logMessage(print_r($state, 1));
+  $job->logMessage(print_r($submission->state, 1));
 
   // The call of tpps_update_submission() below will not work here
   // because it tries to update a non-existing TGDR (the new one has
@@ -149,19 +157,25 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
   // So instead of this function tpps_update_submission, manually do it
   // tpps_update_submission($state);
 
+  // @TODO First update accession in 'tpps_submission' then:
+  // $submission->accession = $new_accession;
+  // $submission->status = 'Approved';
+  // $submission->save();
   $state['updated'] = time();
   db_update('tpps_submission')
     ->fields([
       'status' => 'Approved',
       // Note: REQUEST_TIME couldn't be used because this function also
       // called from submit_all.php and time() != REQUEST_TIME.
-      'submission_state' => serialize($state),
-      'submission_interface' => serialize($interface),
+      'submission_state' => serialize($submission->state),
+      'submission_interface' => serialize($submission->sharedState),
     ])
     ->condition('accession', $old_accession)
     ->execute();
 
-  $job->logMessage('[INFO] Update tpps_submission table study ' . $old_accession . ' to ' . $new_accession);
+  $job->logMessage('[INFO] Update tpps_submission table study '
+    . $old_accession . ' to ' . $new_accession
+  );
   // Now change the accession number in the tpps_submission table.
   $transaction = db_transaction();
   try {
@@ -176,7 +190,10 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
     throw $e;
   }
 
-  $job->logMessage('Completed! The next job in the queue should reimport the study data for ' . $new_accession);
+  $message = t('Completed! The next job in the queue should reimport the '
+    . 'study data for @accession.', ['@accession' => $new_accession]
+  );
+  $job->logMessage($message);
 }
 
 /**
@@ -634,15 +651,13 @@ function tpps_get_tag_id($name) {
  *   The accession number of the submission to change file names.
  */
 function tpps_submission_rename_files($accession) {
-
-  // @TODO Rename $state into $interface.
-  // @TODO Get $interface as a param instead of loading it again.
-  $state = tpps_submission_interface_load($accession);
-  if (!empty($state['file_info'])) {
-    $state['files'] = array();
-    foreach ($state['file_info'] as $page_files) {
+  $submission = new Submission($accession);
+  $submission->load();
+  if (!empty($submission->sharedState['file_info'])) {
+    $submission->sharedState['files'] = array();
+    foreach ($submission->sharedState['file_info'] as $page_files) {
       foreach ($page_files as $fid => $name) {
-        $state['files'][] = $fid;
+        $submission->sharedState['files'][] = $fid;
         if ($name === '#NO_RENAME') {
           continue;
         }
@@ -675,29 +690,32 @@ function tpps_submission_rename_files($accession) {
 
           $new_path = file_create_url($file->uri);
           chado_update_record('projectprop', array(
-            'project_id' => $state['ids']['project_id'],
+            'project_id' => $submission->sharedState['ids']['project_id'],
             'value' => $old_path,
           ), array(
             'value' => $new_path,
           ));
         }
-        if (!empty($state['revised_files'][$fid])) {
-          $rev_fid = $state['revised_files'][$fid];
-          $state['files'][] = $rev_fid;
+        if (!empty($submission->sharedState['revised_files'][$fid])) {
+          $rev_fid = $submission->sharedState['revised_files'][$fid];
+          $submission->sharedState['files'][] = $rev_fid;
           $file = tpps_rename_file($rev_fid, "{$accession}_{$name}_revised");
           $file->status = FILE_STATUS_PERMANENT;
           file_save($file);
         }
       }
     }
-    tpps_submission_interface_save($state);
+    $submission->saveSharedState();
   }
 }
 
 /**
- * This function will clear additional db information for a specific study
- * such as genotypeprop data as well as feature data
- * @param mixed $accession
+ * Clears additional db information for a specific study.
+ *
+ * Such as genotypeprop data as well as feature data.
+ *
+ * @param string $accession
+ *   Study accession.
  * @return void
  */
 function tpps_submission_clear_db_extra($accession) {
@@ -837,10 +855,11 @@ function tpps_submission_full_clear_db($project_id) {
  *   Returns TRUE if submission successfully cleared.
  */
 function tpps_submission_clear_db($accession) {
-  // @TODO Minor. Rename $state with $submission_interface.
-  $state = tpps_submission_interface_load($accession);
-  $state['file_rank'] = 0;
-  $project_id = $state['ids']['project_id'] ?? NULL;
+  $submission = new Submission($accession);
+  $submission->load();
+
+  $submission->sharedState['file_rank'] = 0;
+  $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
   if (empty($project_id)) {
     return FALSE;
   }
@@ -897,8 +916,8 @@ function tpps_submission_clear_db($accession) {
     ]);
   }
 
-  $state['ids'] = ['project_id' => $project_id];
-  tpps_submission_interface_save($state);
+  $submission->sharedState['ids'] = ['project_id' => $project_id];
+  $submission->saveSharedState();
   return TRUE;
 }
 
