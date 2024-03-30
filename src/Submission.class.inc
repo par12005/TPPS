@@ -4,6 +4,11 @@
  * @file
  * Contains 'Submission' class.
  *
+ * @todo
+ * 1. Review save() method.
+ * 2. Remove save*().
+ * 3. Remove get*().
+ *
  * @todo Add submission's tag code from include/submission.inc
  *
  * Questions:
@@ -683,11 +688,6 @@ class Submission {
     // @TODO Avoid this hard linking.
     module_load_include('inc', 'tpps', 'includes/submission_form_version');
     $this->sharedState = $this->state;
-
-// @TODO Important: Rename variable.
-
-    $this->sharedState['is_submission_interface'] = TRUE;
-
     // We need to apply changes from 1st to $current version to have
     // incremental changes.
     tpps_submission_form_version_downgrade_to_latest($this->state, $this->sharedState);

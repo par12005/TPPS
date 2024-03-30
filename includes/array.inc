@@ -269,7 +269,6 @@ function tpps_array_move(array &$array, array $action_data) {
         if ($target['field_name'] == 'doi' || $source['field_name'] == 'doi') {
           $message = 'SIA Action "move": '
             . 'target field is not empty and will be overwritten.<br />'
-            . 'Is interface: @is_interface. <br />'
             . 'Direction: @direction. <br />'
             . 'Form Version: @form_version. <br />'
             . "Target's field value: <pre>@field_value</pre>"
@@ -288,7 +287,6 @@ function tpps_array_move(array &$array, array $action_data) {
               ? var_export($array['saved_values'][1]['publication'] ?? NULL, 1)
               : ''
             ),
-            '@is_interface' => (tpps_form_is_submission_interface($array) ? 'yes' : 'no'),
             '@direction' => (!empty($array['saved_values'][1]['doi']) ? 'upgrade' : 'downgrade'),
             '@form_version' => $array['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY],
           ];

@@ -95,21 +95,6 @@
  */
 
 /**
- * Checks if given array is Submission Interface Array.
- *
- * @param array $form_state
- *   Form State array.
- *
- * @return bool
- *   Returns TRUE if given array is a Submission Interface Array.
- *   Returns FALSE otherwise.
- */
-function tpps_form_is_submission_interface(array $form_state) {
-  // @TODO Rewrite code to remove this function and do not have it in Submission class.
-  return (($form_state['is_submission_interface'] ?? NULL) == TRUE);
-}
-
-/**
  * Updates Submission Interface using given array.
  *
  * To update submission's status:

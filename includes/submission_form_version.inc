@@ -223,11 +223,9 @@ function tpps_submission_form_version_downgrade(array $form_state, $version, arr
   $success = tpps_submission_form_version_migrate($form_state, $version, $result, $direction);
   if (tpps_is_debug_mode()) {
     tpps_message(
-      '@type of @accession was @directiond from @from_version to @to_version '
+      'Study @accession was @directiond from @from_version to @to_version '
         . 'version: @status',
       [
-        '@type' => (tpps_form_is_submission_interface($result)
-          ? t('Interface') : t('State')),
         // Downgrade to version 1 but use change list for update to version 2.
         '@from_version' => $version,
         '@to_version' => $version - 1,
@@ -317,11 +315,9 @@ function tpps_submission_form_version_upgrade(array $form_state, $version, array
   $success = tpps_submission_form_version_migrate($form_state, $version, $result, $direction);
   if (tpps_is_debug_mode()) {
     tpps_message(
-      '@type of @accession was @directiond from @from_version to @to_version '
+      'Study @accession was @directiond from @from_version to @to_version '
         . 'version: @status',
       [
-        '@type' => (tpps_form_is_submission_interface($result)
-          ? t('Interface') : t('State')),
         '@from_version' => $form_version,
         '@to_version' => $version,
         '@direction' => $direction,
