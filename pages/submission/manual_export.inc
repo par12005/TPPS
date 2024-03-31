@@ -46,7 +46,6 @@ function tpps_submission_manual_export_form(array $form, array &$form_state) {
       'tpps_submission_file_get_parents',
       // Needed but already in main branch.
       // 'tpps_form_search_field',
-      // 'tpps_form_get_organism_number',
     ];
     foreach ($function_list as $function_name) {
       if (function_exists($function_name)) {

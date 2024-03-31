@@ -89,10 +89,10 @@ function tpps_doi_get_accession($doi, $reset = FALSE) {
   $cache = cache_get($cid, $cache_bin);
   $is_cache_allowed = variable_get('tpps_page_1_cache_ajax_responses', TRUE);
   if ($reset || !$is_cache_allowed || empty($cache)) {
-    $all_submissions = chado_query("SELECT submission_interface FROM public.tpps_submission;");
+    $all_submissions = chado_query('SELECT shared_state FROM public.tpps_submission');
     foreach ($all_submissions as $item) {
-      $submission_interface = unserialize($item->submission_interface);
-      $submission_doi = strtolower($submission_interface['saved_values'][TPPS_PAGE_1]['doi'] ?? NULL);
+      $shared_state = unserialize($item->shared_state);
+      $submission_doi = strtolower($shared_state['saved_values'][TPPS_PAGE_1]['doi'] ?? NULL);
       if ($submission_doi) {
         $cache->data[$submission_doi] = $item->accession ?? NULL;
       }

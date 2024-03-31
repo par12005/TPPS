@@ -443,8 +443,8 @@ function tpps_schema() {
         'size' => 'big',
         'not null' => TRUE,
       ],
-      'submission_interface' => [
-        'description' => 'Data for pipeline processing.',
+      'shared_state' => [
+        'description' => 'Submission Shared State for pipeline processing.',
         'type' => 'text',
         'size' => 'medium',
         'not null' => TRUE,
@@ -2161,21 +2161,12 @@ function tpps_update_7122() {
 }
 
 /**
- * Adds new column 'submission_interface' to 'tpps_submission' table.
+ * Adds new column 'shared_state' to 'tpps_submission' table.
  */
 function tpps_update_7123() {
   $table_name = 'public.tpps_submission';
-  $column_name = 'submission_interface';
+  $column_name = 'shared_state';
   if (!db_field_exists($table_name, $column_name)) {
-    $schema = drupal_get_schema($table_name);
-    // @TODO Test this update.
-    // db_add_field() not work but maybe because drupal's db user has no
-    // permission to alter tables?
-    // But executed in pgmyadmin query worked:
-    //   ALTER TABLE tpps_submission ADD COLUMN submission_interface text;
-    //
-    //db_add_field($table_name, $column_name, $schema['fields'][$column_name]);
-    $sql = 'ALTER TABLE tpps_submission ADD COLUMN submission_interface text;';
-    db_query($sql);
+    db_query('ALTER TABLE tpps_submission ADD COLUMN shared_state text;');
   }
 }

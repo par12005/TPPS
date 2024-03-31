@@ -6,8 +6,6 @@
  *
  * @todo
  * 1. Review save() method.
- * 2. Remove save*().
- * 3. Remove get*().
  *
  * @todo Add submission's tag code from include/submission.inc
  *
@@ -252,7 +250,7 @@ class Submission {
     $fields = [];
     $fields['status'] = ($this->info['status'] ?? 'Incomplete');
     $fields['submission_state'] = serialize($this->state ?? []);
-    $fields['submission_interface'] = serialize($this->sharedState ?? []);
+    $fields['shared_state'] = serialize($this->sharedState ?? []);
 
     db_update('tpps_submission')
       ->fields($fields)
@@ -341,7 +339,7 @@ class Submission {
       'accession' => $this->state['accession'],
       'dbxref_id' => $this->state['dbxref_id'],
       'submission_state' => serialize($this->state),
-      'submission_interface' => serialize([]),
+      'shared_state' => serialize([]),
     ];
     db_insert('tpps_submission')->fields($fields)->execute();
     // Add default tag.
@@ -394,10 +392,10 @@ class Submission {
     if ($result) {
       $this->info = $result;
       unset($this->info['submission_state']);
-      unset($this->info['submission_interface']);
+      unset($this->info['shared_state']);
       $this->status = $this->info['status'] ?? NULL;
       $this->state = unserialize($result['submission_state'] ?? '') ?? [];
-      $this->sharedState = unserialize($result['submission_interface'] ?? '') ?? [];
+      $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
       if (empty($this->sharedState)) {
         $this->generateSharedState();
         $this->save();
@@ -421,7 +419,28 @@ class Submission {
   }
 
   /**
+   * Gets number of the organisms.
+   *
+   * Note: Could be used when TPPS Page 1 submitted.
+   *
+   * @return int
+   *   Returns number of organisms in submission.
+   *   Rerurns NULL if submission doesn't exist.
+   */
+  public function getOrganismNumber() {
+    if ($this->doesNotExist()) {
+      return NULL;
+    }
+    return (
+      $this->state['saved_values'][TPPS_PAGE_1]['organism']['number']
+      ?? $this->sharedState['saved_values'][TPPS_PAGE_1]['organism']['number']
+      ?? NULL
+    );
+  }
+
+  /**
    * Checks if form type is 'tppsc'.
+   *
    *
    * @return bool
    *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
@@ -590,6 +609,13 @@ class Submission {
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Submission's Shared State (3S, former Submission Interface).
+  //
+  // Submission Shared State initially is a copy of the Submission Form State
+  // modified for Submission Pipeline to always have the same structure and
+  // data format (type). For this each Submission Form State has version
+  // (default version is '1') and function Submission::generateSharedState()
+  // will convert existing $form_state to the Submission Shared State (3S)
+  // which will be stored in 'public.tpps_submissions' database table.
 
   /**
    * Get Submission's state.
@@ -618,7 +644,7 @@ class Submission {
    */
   public function removeSharedState() {
     db_update('tpps_submission')
-      ->fields(['submission_interface' => 'a:0:{}'])
+      ->fields(['shared_state' => 'a:0:{}'])
       ->condition('accession', $this->accession)
       ->execute();
   }

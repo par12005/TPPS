@@ -168,7 +168,6 @@ function tpps_array_apply_changes(array $change_list, &$result) {
  *   Data required for this action.
  *   See tpps_submission_form_get_change_list().
  *   Each item is path to the single field.
- *   For more details about format see: tpps_submission_interface_action_path().
  *
  * @return bool
  *   Returns TRUE if action was successfully applied.

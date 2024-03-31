@@ -12,7 +12,6 @@
  */
 
 module_load_include('inc', 'tpps', 'includes/submission_file');
-module_load_include('inc', 'tpps', 'includes/submission_interface');
 module_load_include('inc', 'tpps', 'includes/submission_form_version');
 
 /**
@@ -61,13 +60,10 @@ function tpps_load_submission_state($accession, $reset = FALSE) {
  */
 function tpps_load_submission_multiple(array $conditions = array(), $state = TRUE) {
   $submissions = [];
-  $query = db_select('tpps_submission', 's');
-  // Exclude 'submission_interface' column.
-  $query->fields('s', array_diff(
-    array_keys(drupal_get_schema('tpps_submission')['fields']),
-    ['submission_interface']
-  ));
-
+  $fields = array_diff(
+    array_keys(drupal_get_schema('tpps_submission')['fields']), ['shared_state']
+  );
+  $query = db_select('tpps_submission', 's')->fields('s', $fields);
   if (!empty($conditions)) {
     foreach ($conditions as $key => $cond) {
       if (!empty($cond)) {
@@ -170,7 +166,7 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
       // Note: REQUEST_TIME couldn't be used because this function also
       // called from submit_all.php and time() != REQUEST_TIME.
       'submission_state' => serialize($submission->state),
-      'submission_interface' => serialize($submission->sharedState),
+      'shared_state' => serialize($submission->sharedState),
     ])
     ->condition('accession', $old_accession)
     ->execute();
@@ -1173,10 +1169,8 @@ function tpps_submission_get_accession_list(array $conditions = [], $remove_empt
   $key = serialize($conditions);
   $is_cache_allowed = variable_get('tpps_front_cache_accession_list', FALSE);
   if (!$is_cache_allowed || $reset || empty($cache) || empty($cache->data[$key])) {
-    // Exclude 'submission_interface' column.
     $fields = array_diff(
-      array_keys(drupal_get_schema('tpps_submission')['fields']),
-      ['submission_interface']
+      array_keys(drupal_get_schema('tpps_submission')['fields']), ['shared_state']
     );
     $query = db_select('tpps_submission', 's')->fields('s', $fields);
     foreach ($conditions as $item) {

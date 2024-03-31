@@ -23,17 +23,17 @@
  */
 function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   // We use Submission Form Version 1 to avoid updates on each form change.
-  $submission_interface = $state;
-  tpps_submission_form_version_downgrade_to_latest($state, $submission_interface);
+  $submission = new Submission();
+  $submission->state = $state;
 
-  $complete_form = $submission_interface['complete form'] ?? NULL;
-  $saved_values = $submission_interface['saved_values'] ?? NULL;
-  $values = $submission_interface['values'] ?? NULL;
-  $interface_files = $submission_interface['files'] ?? [];
-  $file_info = $submission_interface['file_info'] ?? NULL;
+  $complete_form = $submission->sharedState['complete form'] ?? NULL;
+  $saved_values = $submission->sharedState['saved_values'] ?? NULL;
+  $values = $submission->sharedState['values'] ?? NULL;
+  $interface_files = $submission->sharedState['files'] ?? [];
+  $file_info = $submission->sharedState['file_info'] ?? NULL;
 
   module_load_include('inc', 'tpps', 'includes/form');
-  $organism_number = tpps_form_get_organism_number($submission_interface);
+  $organism_number = $submission->getOrgnaismNumber();
   $result = [];
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);

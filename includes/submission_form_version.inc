@@ -461,7 +461,6 @@ function test_tpps_submission_form_version_changes($accession, $version = 2) {
  *   Submission Form Version.
  */
 function test_tpps_submission_form_version_action_move($accession, $version = 2) {
-  module_load_include('inc', 'tpps', 'includes/submission_interface');
   module_load_include('inc', 'tpps', 'includes/form');
 
   $submission = new Submission($accession);

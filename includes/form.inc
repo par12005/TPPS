@@ -255,22 +255,6 @@ function tpps_form_navigation_bar(array &$form, array $form_state) {
 }
 
 /**
- * Get number of organisms.
- *
- * Note: Could be used when TPPS Page 1 submitted.
- *
- * @param array $state
- *   Drupal Form API State array.
- *
- * @return mixed
- *   Returns integer number of organisms.
- *   Returns NULL if TPPS Page 1 wasn't yet submitted.
- */
-function tpps_form_get_organism_number(array $state) {
-  return ($state['saved_values'][TPPS_PAGE_1]['organism']['number'] ?? NULL);
-}
-
-/**
  * Searches for a field of given type in array.
  *
  * @param array $array
@@ -829,7 +813,6 @@ function tpps_form_get_study_type($key = NULL) {
  * drupal_array_get_nested_value() but to unset (or relocate) you need
  * to have parent element by reference. This function get's parent element
  * and suggests to store field name in the end of the list of parents.
- * Used in includes/submission_interface.inc.
  *
  * @param array $array
  *   Array where field will be searched.

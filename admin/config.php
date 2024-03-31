@@ -367,7 +367,7 @@ function tpps_update_old_submissions() {
         'dbxref_id' => $dbxref_id,
         'submission_state' => serialize($state),
         // Shared State will be created later automatically.
-        'submission_interface' => serialize([]),
+        'shared_state' => serialize([]),
       ))
       ->execute();
     variable_del($result->name);
