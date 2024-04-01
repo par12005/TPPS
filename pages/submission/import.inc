@@ -179,21 +179,19 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Get original (old) accession from $state (Submission Form State Array).
   $submission = new Submission();
   $submission->state = $state;
-  //$original_accession = tpps_form_get_accession($state);
-  $original_accession = $submission->accession;
 
   // Modify before files processing to have updated import meta data.
   // Store original accession.
   // @TODO Minor. Remove 'saved_values' but be sure to restore those values
   // when submission reopened using '/tppsc' form.
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
-  $state['saved_values']['tpps_submission_import'] = [
+  $submission_version = $submission->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1;
+  $submission->state['saved_values']['tpps_submission_import'] = [
     'original_accession' => $submission->accession,
     'imported' => REQUEST_TIME,
     'imported_date' => format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O'),
     'site' => $submission->state['tpps_submission_export_site'] ?? 'https://treegenesdb.org',
-    TPPS_SUBMISSION_FORM_VERSION_KEY
-      => $submission->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1,
+    TPPS_SUBMISSION_FORM_VERSION_KEY => $submission_version,
   ];
   // Files.
   tpps_submission_import_process_files($submission->state, $accession, $form);
@@ -216,9 +214,9 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   if ($submission_new_status != 'Do not change') {
     $submission->info['status']
       = $submission->state['status']
-      = $submission->state['values']['status']
-      = $submission->state['saved_values']['status']
-      = $submission_new_status;
+        = $submission->state['values']['status']
+          = $submission->state['saved_values']['status']
+            = $submission_new_status;
   }
   // Update a list of imported studies.
   tpps_imported_studies_list_add_item($accession, $submission->accession);
@@ -228,7 +226,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
 
   if ($upgrade_version) {
     // Upgrade to latest Submission Form Version.
-    tpps_submission_form_version_upgrade_to_latest($submision->state, $submission->state);
+    tpps_submission_form_version_upgrade_to_latest($submission->state, $submission->state);
     drupal_set_message(t('Submission Form Version was upgraded.'));
     // Note: SharedState will be stored to db.
     $submission->generateSharedState();

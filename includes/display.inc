@@ -621,6 +621,7 @@ function tpps_table_display(array &$state, array $options = array()) {
       if ($key == 'tpps_submission_import') {
         $key_str = t('Submission Import Metadata');
         $import_meta = $submission->getImportMeta();
+        $version = $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? '-';
         $val_str = theme('item_list', [
           'items' => [
             t('Original Accession: !url', ['!url' => $import_meta['accession_link']]),
@@ -628,9 +629,7 @@ function tpps_table_display(array &$state, array $options = array()) {
             t('Original site: !site.',
               ['!site' => l($import_meta['site'], $import_meta['site'])]
             ),
-            t('Original Submision Form Version: @version.',
-              ['@version' => $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY]]
-            ),
+            t('Original Submision Form Version: @version.', ['@version' => $version]),
           ],
         ]);
       }

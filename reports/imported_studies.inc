@@ -28,16 +28,23 @@ function tpps_admin_imported_studies_report() {
     }
     $import_meta = $submission->getImportMeta();
 
+    // Get Tripal Job status.
     if (!empty($submission->sharedState['job_id'])) {
-      ob_start();
-      $job = tripal_get_job($submission->sharedState['job_id']);
-      $job_status = ($job ? $job->status : NULL);
-      ob_end_clean();
+      try {
+        $job = new TripalJob();
+        $job->load($submission->sharedState['job_id']);
+        $job_status = $job->getJob()->status;
+      }
+      catch (Exception $e) {
+        if ($e->getMessage() != "Cannot find a job with this ID provided.") {
+          throw $e;
+        }
+      }
     }
     $rows[] = [
       l($local, 'tpps/submission/' . $local . '/view'),
       $submission->state['status'] ?? NULL,
-      $job->status ?? '',
+      $job_status ?? '-',
       $import_meta[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL,
       $import_meta['current_version'] ?? NULL,
       $submission->info['uid'] ?? NULL,

@@ -605,7 +605,7 @@ class Submission {
         . '/tpps/submission/' . $import_meta['original_accession'] . '/view')
         : $import_meta['original_accession'];
     // Full data: Human readable and timestamp.
-    $import_meta['full_date'] = $import_meta['imported_date'];
+    $import_meta['full_date'] = $import_meta['imported_date'] ?? '';
     if (variable_get('tpps_imported_study_report_show_timestamp', FALSE)) {
       $import_meta['full_date'] .= (empty($import_meta['imported']) ? ''
         : ' [' . $import_meta['imported'] . ']');
