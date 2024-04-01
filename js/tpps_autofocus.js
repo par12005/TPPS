@@ -13,8 +13,10 @@
   $(document).ready(function() {
     setTimeout(
       function() {
-        $('[name="' + Drupal.settings.tpps.autoFocus.FieldName + '"')
-          .get(0).focus();
+        var $element = $('[name="' + Drupal.settings.tpps.autoFocus.FieldName + '"');
+        if (typeof $element != 'undefined' ) {
+          $element.get(0).focus();
+        }
       },
       Drupal.settings.tpps.autoFocus.Timeout
     );
