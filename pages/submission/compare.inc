@@ -52,8 +52,7 @@ function tpps_submission_compare_form_submit(array $form, array &$form_state) {
     drupal_set_message(t('Submission @accession_1 and @accession_2 are equal.',
       ['@accession_1' => $accession_1, '@accession_2' => $accession_2]
     ));
-    $form_state['rebuild'] = 1;
-    return;
+    drupal_goto('tpps/submission/' . $accession_1);
   }
   if ($accession_1 && !$accession_2) {
     drupal_goto('tpps/submission/' . $accession_1 . '/compare');

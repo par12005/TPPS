@@ -72,9 +72,10 @@ class Submission {
   /**
    * Submission status.
    *
-   * Note: There are 2 places which store status:
-   *   1. public.tpps_submision.status
-   *   2. public.tpps_submision.submission_state subitem 'status'.
+   * Places where submision's status is stored (and must be updated):
+   *   - public.tpps_submision.status
+   *   - public.tpps_submision.submission_state subitem 'status'.
+   *   - public.tpps_submision.shared_state subitem 'status'.
    *
    * @var string
    */
@@ -395,13 +396,16 @@ class Submission {
       $this->info = $result;
       unset($this->info['submission_state']);
       unset($this->info['shared_state']);
-      $this->status = $this->info['status'] ?? NULL;
       $this->state = unserialize($result['submission_state'] ?? '') ?? [];
       $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
       if (empty($this->sharedState)) {
         $this->generateSharedState();
         $this->save();
       }
+      $this->status = $this->info['status']
+        ?? $this->state['status']
+        ?? $this->sharedState['status']
+        ?? 'Incomplete';
       return TRUE;
     }
     return FALSE;
