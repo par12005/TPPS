@@ -260,4 +260,8 @@ select option:selected {
 .tpps-hidden {
   display: none;
 }
+/* Overwrite css injector */
+form .fieldset-title {
+  text-transform: none !important;
+}
 /* [/VS] */

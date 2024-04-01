@@ -136,7 +136,7 @@ form.tpps-admin-panel fieldset legend span.fieldset-legend,
 form.tppsc-form       fieldset legend span.fieldset-legend {
   padding-left: 12px;
   font-size: 16px;
-  text-transform: uppercase;
+  /*text-transform: uppercase;*/
   font-weight: 600;
   color: #555;
 }
