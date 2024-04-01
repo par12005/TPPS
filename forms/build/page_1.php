@@ -55,7 +55,8 @@ function tpps_page_1_create_regular_form(array $form, array &$form_state) {
   $file_upload_location = 'public://' . variable_get('tpps_study_photo_files_dir', 'tpps_study_photos');
   $form['study_photo'] = array(
     '#type' => 'fieldset',
-    '#title' => '<div class="fieldset-title">Study Cover Photo: (Optional)</div>',
+    '#title' => '<div class="fieldset-title">'
+    . t('STUDY COVER PHOTO: (Optional)') . '</div>',
     '#tree' => FALSE,
     '#collapsible' => TRUE,
   );
@@ -110,7 +111,7 @@ function tpps_page_1_create_curation_form(array &$form, array &$form_state) {
   // Publication.
   $form['publication'] = [
     '#type' => 'fieldset',
-    '#title' => t('Publication Information'),
+    '#title' => t('PUBLICATION INFORMATION'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
     '#prefix' => '<div id="publication-container">',

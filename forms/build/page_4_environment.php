@@ -23,7 +23,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
 
   $form[$id]['environment'] = array(
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Environmental Information:</div>'),
+    '#title' => t('<div class="fieldset-title">ENVIRONMENTAL INFORMATION:</div>'),
     '#collapsible' => TRUE,
     '#tree' => TRUE,
   );
@@ -97,7 +97,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
 
     $form[$id]['environment']['env_layers_groups'] = array(
       '#type' => 'fieldset',
-      '#title' => 'CartograPlant Environmental Layer Groups: *',
+      '#title' => t('CARTOGRAPLANT ENVIRONMENTAL LAYER GROUPS: *'),
       '#collapsible' => TRUE,
     );
 
@@ -109,13 +109,13 @@ function tpps_environment(array &$form, array &$form_state, $id) {
 
     $form[$id]['environment']['env_layers'] = array(
       '#type' => 'fieldset',
-      '#title' => 'CartograPlant Environmental Layers: *',
+      '#title' => 'CARTOGRAPLANT ENVIRONMENTAL LAYERS: *',
       '#collapsible' => TRUE,
     );
 
     $form[$id]['environment']['env_params'] = array(
       '#type' => 'fieldset',
-      '#title' => 'CartograPlant Environmental Layer Parameters: *',
+      '#title' => 'CARTOGRAPLANT ENVIRONMENTAL LAYER PARAMETERS: *',
       '#collapsible' => TRUE,
     );
 
@@ -144,7 +144,7 @@ function tpps_environment(array &$form, array &$form_state, $id) {
       if (!empty($layer_params)) {
         $form[$id]['environment']['env_params']["$layer_title"] = array(
           '#type' => 'fieldset',
-          '#title' => "$layer_title Parameters",
+          '#title' => strtoupper("$layer_title Parameters"),
           '#description' => t('Please select the parameters you used from the @title layer.', array('@title' => $layer_title)),
           '#states' => array(
             'visible' => array(

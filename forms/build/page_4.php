@@ -41,7 +41,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
     $name = tpps_form_bus_get($form_bus, 'organism_name', $i);
     $form["organism-$i"] = [
       '#type' => 'fieldset',
-      '#title' => t($name),
+      '#title' => t(strtoupper($name)),
       '#tree' => TRUE,
       '#collapsible' => TRUE,
     ];
@@ -218,7 +218,7 @@ function tpps_add_curation_tool(array $form_bus) {
 
   $form['diagnostics-curation'] = [
     '#type' => 'fieldset',
-    '#title' => '🌟 Curation Diagnostics',
+    '#title' => '🌟 CURATION DIAGNOSTICS',
     '#description' => 'These diagnostics <b>require you to save this package</b> '
       . 'with data before functions will work',
     // Must be below navigation buttons Back/Next which has weight 1000 in footer.

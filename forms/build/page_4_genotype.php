@@ -67,7 +67,7 @@ function tpps_genotype_subform(array $form_bus) {
   $fields = &$form[$organism_name][$form_bus['type']];
   $fields = [
     '#type' => 'fieldset',
-    '#title' => t('Genotype Information:'),
+    '#title' => t('GENOTYPE INFORMATION:')),
     '#collapsible' => TRUE,
     '#weight' => 0,
   ];
@@ -78,12 +78,12 @@ function tpps_genotype_subform(array $form_bus) {
   );
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Only for 1st organism.
-  if ($i == 1) {
+  if ($i == 1 && $organism_number > 1) {
     tpps_form_add_yesno_field(array_merge($form_bus,
       [
         'parents' => [$organism_name, $type],
         'field_name' => 'are_genotype_markers_identical',
-        '#title' => t('Are your genotype markers identical accross species?'),
+        '#title' => t('Are your genotype markers identical across species?'),
         '#default_value' => (($organism_number == 1) ? 'yes' : 0),
       ]
     ));
@@ -159,7 +159,7 @@ function tpps_genotype_subform(array $form_bus) {
   // SNPs.
   $fields[$snps_fieldset] = [
     '#type' => 'fieldset',
-    '#title' => t('SNPs Information:'),
+    '#title' => t('SNPs INFORMATION:'),
     '#collapsible' => TRUE,
     // This element used to update whole fieldset by AJAX-request.
     '#prefix' => "<div id='$organism_name-genotype-$snps_fieldset'>",
@@ -182,7 +182,7 @@ function tpps_genotype_subform(array $form_bus) {
   $other_fieldset = 'other';
   $fields[$other_fieldset] = [
     '#type' => 'fieldset',
-    '#title' => t('Other Information:'),
+    '#title' => t('OTHER INFORMATION:'),
     '#collapsible' => TRUE,
     // This element used to update whole fieldset by AJAX-request but this
     // feature is disabled for now because is missing on mockups.
@@ -782,7 +782,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   tripal_load_include_importer_class($class);
   $eutils = tripal_get_importer_form(array(), $form_state, $class);
   $eutils['#type'] = 'fieldset';
-  $eutils['#title'] = 'Tripal Eutils BioProject Loader';
+  $eutils['#title'] = t('TRIPAL EUTILS BIOPROJECT LOADER');
   $eutils['#states'] = [
     'visible' => [
       ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'bio'],
@@ -832,7 +832,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
 
   $fasta = tripal_get_importer_form(array(), $form_state, $class);
   $fasta['#type'] = 'fieldset';
-  $fasta['#title'] = 'Tripal FASTA Loader';
+  $fasta['#title'] = t('TRIPAL FASTA LOADER');
   $fasta['#states'] = [
     'visible' => [
       [
@@ -968,7 +968,7 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
   $ssrs_fieldset = 'ssrs_cpssrs';
   $fields[$ssrs_fieldset] = [
     '#type' => 'fieldset',
-    '#title' => t('SSRs/cpSSRs Information:'),
+    '#title' => t('SSRs/cpSSRs INFORMATION:'),
     '#collapsible' => TRUE,
     '#states' => [
       'visible' => [

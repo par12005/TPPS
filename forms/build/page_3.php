@@ -42,7 +42,7 @@ function tpps_page_3_create_form(array &$form, array &$form_state) {
 
   $form['tree-accession'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Plant Accession Information'),
+    '#title' => t('PLANT ACCESSION INFORMATION'),
     '#tree' => TRUE,
     '#prefix' => '<div id="tpps_accession">',
     '#suffix' => '</div>',

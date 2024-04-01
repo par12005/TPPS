@@ -29,12 +29,13 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   //$form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
 
-  $accession = tpps_form_get_accession($form_state);
-  $submission = new Submission($accession);
-  $submission->load();
+  //$accession = tpps_form_get_accession($form_state);
+  $submission = new Submission();
+  $submission->state = $form_state;
+  dpm($submission->accession, 'accession');
 
   $form['table_display'] = [
-    '#markup' => tpps_table_display($submission->sharedState),
+    '#markup' => tpps_table_display($submission->sharedState) . ' sdfsdf' ,
   ];
   $form['comments'] = [
     '#type' => 'textarea',
@@ -46,7 +47,7 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   $form['files'] = [
     '#type' => 'fieldset',
     '#tree' => TRUE,
-    '#title' => t('Additional Files'),
+    '#title' => t('ADDITIONAL FILES'),
     '#description' => t('If there are any additional files you would like '
       . 'to include with your submission, please upload up to 10 files here.'),
     '#collapsible' => TRUE,
@@ -105,7 +106,7 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   ];
   $form['analysis'] = [
     '#type' => 'fieldset',
-    '#title' => t('Analysis'),
+    '#title' => t('ANALYSIS'),
     '#tree' => TRUE,
   ];
   foreach ($analysis_options as $option => $label) {
@@ -157,8 +158,8 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   if (!empty($new_species) && !empty($tree_pics_dir)) {
     $form['tree_pictures'] = [
       '#type' => 'fieldset',
-      '#title' => t('The following plants are new in the database '
-        . 'and will need pictures:'),
+      '#title' => t('THE FOLLOWING PLANTS ARE NEW IN THE DATABASE '
+        . 'AND WILL NEED PICTURES:'),
       '#tree' => TRUE,
     ];
     foreach ($new_species as $org) {

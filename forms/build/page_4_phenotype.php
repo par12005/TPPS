@@ -24,7 +24,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
   $form[$id]['phenotype'] = [
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Phenotype Information:</div>'),
+    '#title' => t('<div class="fieldset-title">PHENOTYPE INFORMATION:</div>'),
     '#tree' => TRUE,
     '#prefix' => "<div id=\"phenotype-main-$id\">",
     '#suffix' => '</div>',
@@ -700,7 +700,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
     $form[$id]['phenotype']['time'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Time options'),
+      '#title' => t('TIME OPTIONS'),
     );
 
     if ($time_default) {
@@ -741,7 +741,7 @@ function tpps_phenotype(array &$form, array &$form_state, array $values, $id) {
 
       $form[$id]['phenotype']['time']['time_values'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Phenotype Time values:'),
+        '#title' => t('PHENOTYPE TIME VALUES:'),
       );
 
       foreach ($time_options as $key => $name) {

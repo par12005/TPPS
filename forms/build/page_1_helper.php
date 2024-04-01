@@ -54,7 +54,8 @@ function tpps_publication(array &$form, array $values, array $form_state) {
 
   $form['publication'] = array(
     '#type' => 'fieldset',
-    '#title' => t('<div class="fieldset-title">Publication Information:</div>'),
+    '#title' => '<div class="fieldset-title">' . t('PUBLICATION INFORMATION:')
+    . '</div>'),
     '#tree' => TRUE,
     '#collapsible' => TRUE,
   );
@@ -275,7 +276,8 @@ function tppsc_organism(array &$form, array &$form_state) {
   $form['organism'] = array(
     '#type' => 'fieldset',
     '#tree' => TRUE,
-    '#title' => t('<div class="fieldset-title">Organism information:</div>'),
+    '#title' => '<div class="fieldset-title">' . t('ORGANISM INFORMATION:')
+    . '</div>',
     '#description' => t('Please provide the name(s) of the species included in this publication.'),
     '#collapsible' => TRUE,
     '#prefix' => '<div id="organism-wrapper">',
