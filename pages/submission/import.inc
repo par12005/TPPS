@@ -121,7 +121,7 @@ function tpps_submission_import_form_validate(array &$form, array &$form_state) 
       ]
     )
   ) {
-    //form_set_error('tpps_submission_import_status', t('Submission status is wrong.'));
+    form_set_error('tpps_submission_import_status', t('Submission status is wrong.'));
   }
 }
 
@@ -205,6 +205,7 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Add record to DB table. Status will be 'Incomplete'.
   // @TODO Create earlier. or better use save().
   $submission->create($submission->state, $user->uid);
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Status.
   // Having 'Incomplete' status is safe if we then programmatically submit form
@@ -212,12 +213,11 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // better to have 'Pending Approval' status or maybe even 'Approved'
   //
   if ($submission_new_status != 'Do not change') {
-    $submission->info['status']
-      = $submission->state['status']
-        = $submission->state['values']['status']
-          = $submission->state['saved_values']['status']
-            = $submission_new_status;
+    $submission->state['status'] = $submission_new_status;
   }
+  $submission->info['status'] = $submission->state['values']['status']
+    = $submission->state['saved_values']['status'] = $submission->state['status'];
+
   // Update a list of imported studies.
   tpps_imported_studies_list_add_item($accession, $submission->accession);
   // Clear cached list of studies to have new items at 'frontpage'.
