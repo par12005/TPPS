@@ -704,8 +704,14 @@ function tpps_admin_panel_top(array &$form) {
 
   tpps_admin_panel_reports($form);
   $submission_list = tpps_load_submission_multiple([]);
-
-  $pending = $approved = $incomplete = $unpublished_old = $submitting_user_cache = [];
+  // Note: order in this list defines order of the tables at page.
+  $output = [
+    'unpublished_old' => [],
+    'pending' => [],
+    'approved' => [],
+    'incomplete' => [],
+  ];
+  $submitting_user_cache = [];
   $mail_cvterm = tpps_load_cvterm('email')->cvterm_id;
 
   foreach ($submission_list as $accession => $submission) {
@@ -726,7 +732,7 @@ function tpps_admin_panel_top(array &$form) {
     }
     $submitting_user = $submitting_user_cache[$uid] ?? NULL;
 
-    if (!empty($submission->state)) {
+    if ($submission->doesExist()) {
       switch ($submission->status) {
         case 'Pending Approval':
           $row = [
@@ -737,7 +743,7 @@ function tpps_admin_panel_top(array &$form) {
             ? date("F j, Y, g:i a", $submission->state['completed']) : "Unknown",
             tpps_show_tags(tpps_submission_get_tags($accession)),
           ];
-          $pending[(int) substr($accession, 4)] = $row;
+          $output['pending'][(int) substr($accession, 4)] = $row;
           break;
 
         case 'Approved':
@@ -800,7 +806,7 @@ function tpps_admin_panel_top(array &$form) {
                   'tpps/' . $accession . '/edit-publication'
                 );
               }
-              $unpublished_old[(int) substr($accession, 4)] = $row;
+              $output['unpublished_old'][(int) substr($accession, 4)] = $row;
             }
           }
 
@@ -825,7 +831,7 @@ function tpps_admin_panel_top(array &$form) {
             $status_label,
             tpps_show_tags(tpps_submission_get_tags($accession)),
           ];
-          $approved[(int) substr($accession, 4)] = $row;
+          $output['approved'][(int) substr($accession, 4)] = $row;
           break;
 
         default:
@@ -855,130 +861,108 @@ function tpps_admin_panel_top(array &$form) {
               break;
           }
 
-          $row = [
+          $date = (
+            !empty($submission->state['updated'])
+            ? date("F j, Y, g:i a", $submission->state['updated'])
+            : t('Unknown')
+          );
+          $title = $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title']
+            ?? t('Title not provided yet');
+          $output['incomplete'][(int) substr($accession, 4)] = [
             l($accession, '/tpps-admin-panel/' . $accession),
             $submitting_user,
-            $submission->state['saved_values'][TPPS_PAGE_1]['publication']['title'] ?? t('Title not provided yet'),
+            $title,
             $stage,
-            !empty($submission->state['updated'])
-            ? date("F j, Y, g:i a", $submission->state['updated']) : t('Unknown'),
+            $date,
             tpps_show_tags(tpps_submission_get_tags($accession)),
           ];
-          $incomplete[(int) substr($accession, 4)] = $row;
           break;
       }
     }
   }
 
-  krsort($pending);
-  krsort($approved);
-  krsort($incomplete);
-
+  // List of general tasks.
   $params = ['attributes' => ['target' => '_blank']];
-  $general_tasks = [
-    l(t('Refresh all genotype materialized views'),
-      'tpps-admin-panel/refresh-genotypes-materialized-views', $params
-    ),
-    l(t('TPPS Submission Tools'), 'tpps/submission', $params),
-  ];
+  $tasks_list = theme('item_list', [
+    'items' => [
+      l(
+        t('Refresh all genotype materialized views'),
+        'tpps-admin-panel/refresh-genotypes-materialized-views',
+        $params
+      ),
+      l(t('TPPS Submission Tools'), 'tpps/submission', $params),
+    ]
+  ]);
   $form['general_tasks'] = [
     '#type' => 'fieldset',
     '#title' => t('General tasks'),
     '#collapsible' => TRUE,
-    'table' => ['#markup' => theme('item_list', ['items' => $general_tasks])],
+    'tasks' => ['#markup' => $task_list],
   ];
 
-  $vars = [
-    'attributes' => ['class' => ['view', 'tpps_table']],
-    'caption' => '',
-    'colgroups' => NULL,
-    'sticky' => FALSE,
-    'empty' => '',
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Show lists.
+  // Table header.
+  $header = [
+    'unpublished_old' => [
+      t('Accession Number'),
+      t('Approval date'),
+      t('Publication Status'),
+      t('Submission Owner'),
+      t('Actions'),
+    ],
+    'pending' => [
+      t('Accession Number'),
+      t('Submitting User'),
+      t('Title'),
+      t('Date Submitted'),
+      t('Tags'),
+    ],
+    'approved' => [
+      t('Accession Number'),
+      t('Submitting User'),
+      t('Title'),
+      t('Status'),
+      t('Tags'),
+    ],
+    'incomplete' => [
+      t('Accession Number'),
+      t('Submitting User'),
+      t('Title'),
+      t('Stage'),
+      t('Last Updated'),
+      t('Tags'),
+    ],
   ];
-
-  $vars['header'] = [
-    t('Accession Number'),
-    t('Approval date'),
-    t('Publication Status'),
-    t('Submission Owner'),
-    t('Actions'),
+  // Fieldset title.
+  $title = [
+    'unpublished_old' => t('Unpublished approved TPPS submissions'),
+    'pending' => t('Pending TPPS submissions'),
+    'approved' => t('Approved TPPS submissions'),
+    'incomplete' => t('Incomplete TPPS submissions'),
   ];
-  $vars['rows'] = $unpublished_old;
-  $unpublished_table = theme('table', $vars);
-
-  $vars['header'] = [
-    t('Accession Number'),
-    t('Submitting User'),
-    t('Title'),
-    t('Date Submitted'),
-    t('Tags'),
-  ];
-  $vars['rows'] = $pending;
-  $pending_table = theme('table', $vars);
-
-  $vars['header'] = [
-    t('Accession Number'),
-    t('Submitting User'),
-    t('Title'),
-    t('Status'),
-    t('Tags'),
-  ];
-  $vars['rows'] = $approved;
-  $approved_table = theme('table', $vars);
-
-  $vars['header'] = [
-    t('Accession Number'),
-    t('Submitting User'),
-    t('Title'),
-    t('Stage'),
-    t('Last Updated'),
-    t('Tags'),
-  ];
-  $vars['rows'] = $incomplete;
-  $incomplete_table = theme('table', $vars);
-
-  if (!empty($unpublished_old)) {
-    $form['unpublished_old'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Unpublished Approved TPPS Submissions'),
-      '#collapsible' => TRUE,
-      'table' => array(
-        '#markup' => $unpublished_table,
-      ),
-    );
+  foreach ($output as $status_name => $status_list) {
+    if (!empty($status_list)) {
+      krsort($status_list);
+      $form[$status_name] = [
+        '#type' => 'fieldset',
+        '#title' => $title[$status_name],
+        '#collapsible' => TRUE,
+      ];
+      $table = theme('table', [
+        'header' => $header[$status_name],
+        'rows' => $status_list,
+        'attributes' => ['class' => ['view', 'tpps_table']],
+        'caption' => '',
+        'colgroups' => NULL,
+        'sticky' => FALSE,
+        'empty' => '',
+      ]);
+      $form[$status_name]['table'] = ['#markup' => $table];
+    }
   }
-
-  if (!empty($pending)) {
-    $form['pending'] = [
-      '#type' => 'fieldset',
-      '#title' => t('Pending TPPS submissions'),
-      '#collapsible' => TRUE,
-      'table' => ['#markup' => $pending_table],
-    ];
-  }
-
-  if (!empty($approved)) {
-    $form['approved'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Approved TPPS submissions'),
-      '#collapsible' => TRUE,
-      'table' => array(
-        '#markup' => $approved_table,
-      ),
-    );
-  }
-
-  if (!empty($incomplete)) {
-    $form['incomplete'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Incomplete TPPS submissions'),
-      '#collapsible' => TRUE,
-      'table' => array(
-        '#markup' => $incomplete_table,
-      ),
-    );
-  }
-
+  // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+  // Old TGDR Submissions to be resubmitted.
   $subquery = db_select('tpps_submission', 's');
   $subquery->fields('s', array('accession'));
   $query = db_select('chado.dbxref', 'dbx');
@@ -1289,7 +1273,7 @@ function tpps_admin_panel_submit($form, &$form_state) {
       $includes[] = module_load_include('inc', 'tpps', 'includes/file_parsing');
       $args = [$project_id];
       $jid = tripal_add_job(
-        t('Generate materialized view for @accession (project_id=@project_id)'
+        t('Generate materialized view for @accession (project_id=@project_id)',
           ['@accession' => $accession, '@project_id' => $project_id]
         ),
         'tpps', 'tpps_generate_genotype_materialized_view',
@@ -1474,8 +1458,8 @@ function tpps_admin_panel_submit($form, &$form_state) {
         );
       }
       $submission->save();
-      drupal_set_message(t('Updated study TPPS type: @type.',
-        ['@type' => $submission->state['tpps_type'])
+      drupal_set_message(
+        t('Updated study TPPS type: @type.', ['@type' => $submission->state['tpps_type']])
       );
       break;
 
