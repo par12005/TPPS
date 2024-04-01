@@ -29,13 +29,12 @@ function tpps_summary_create_form(array &$form, array $form_state) {
   //$form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);
 
-  //$accession = tpps_form_get_accession($form_state);
   $submission = new Submission();
   $submission->state = $form_state;
-  dpm($submission->accession, 'accession');
+  $submission->generateSharedState();
 
   $form['table_display'] = [
-    '#markup' => tpps_table_display($submission->sharedState) . ' sdfsdf' ,
+    '#markup' => tpps_table_display($submission->sharedState),
   ];
   $form['comments'] = [
     '#type' => 'textarea',

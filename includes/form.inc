@@ -1043,12 +1043,6 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   // Set version for 'Submission Interface' feature.
   // Note: We need to set version before 'update' version.
   // Create a hidden form field to store  Submission Form Version.
-  if (tpps_is_debug_mode()) {
-    drupal_set_message(__FUNCTION__ . '()<br>' . 'Saved Values: '
-      . $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY]
-    );
-  }
-
   $form[TPPS_SUBMISSION_FORM_VERSION_KEY] = [
     '#type' => 'hidden',
     '#value' => $form_state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1,
