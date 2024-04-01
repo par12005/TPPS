@@ -67,7 +67,7 @@ function tpps_genotype_subform(array $form_bus) {
   $fields = &$form[$organism_name][$form_bus['type']];
   $fields = [
     '#type' => 'fieldset',
-    '#title' => t('GENOTYPE INFORMATION:')),
+    '#title' => t('GENOTYPE INFORMATION:'),
     '#collapsible' => TRUE,
     '#weight' => 0,
   ];

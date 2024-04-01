@@ -52,25 +52,25 @@ function tpps_user_info(array &$form, array $values) {
  */
 function tpps_publication(array &$form, array $values, array $form_state) {
 
-  $form['publication'] = array(
+  $form['publication'] = [
     '#type' => 'fieldset',
-    '#title' => '<div class="fieldset-title">' . t('PUBLICATION INFORMATION:')
-    . '</div>'),
+    '#title' => '<div class="fieldset-title">'
+      . t('PUBLICATION INFORMATION:') . '</div>',
     '#tree' => TRUE,
     '#collapsible' => TRUE,
-  );
+  ];
 
   tpps_secondary_authors($form, $values, $form_state);
 
   $form['publication']['status'] = [
     '#type' => 'select',
     '#title' => t('Publication Status: *'),
-    '#options' => array(
+    '#options' => [
       0 => t('- Select -'),
       'In Preparation or Submitted' => t('In Preparation or Submitted'),
       'In Press' => t('In Press'),
       'Published' => t('Published'),
-    ),
+    ],
     '#ajax' => [
       'callback' => 'tpps_pub_status',
       'wrapper' => 'pubyear',
@@ -79,18 +79,18 @@ function tpps_publication(array &$form, array $values, array $form_state) {
 
   tpps_year($form, $values, $form_state);
 
-  $form['publication']['title'] = array(
+  $form['publication']['title'] = [
     '#type' => 'textfield',
     '#title' => t('Title of Publication/Study: *'),
-  );
+  ];
   // if(isset($values['publication']['title']) && $values['publication']['title'] != "") {
   //   $form['publication']['title']['#value'] = $values['publication']['title'];
   // }
 
-  $form['publication']['abstract'] = array(
+  $form['publication']['abstract'] = [
     '#type' => 'textarea',
     '#title' => t('Abstract/Description: *'),
-  );
+  ];
   // if(isset($values['publication']['abstract']) && $values['publication']['abstract'] != "") {
   //   $form['publication']['abstract']['#value'] = $values['publication']['abstract'];
   // }

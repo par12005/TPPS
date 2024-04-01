@@ -1254,26 +1254,16 @@ function tpps_main_submit($form, &$form_state) {
   $submission = new Submission();
   $submission->state = &$form_state;
 
-  $saved_values = &$submission->state['saved_values'] ?? NULL;
-  $values = &$submission->state['values'] ?? NULL;
+  $saved_values = &$form_state['saved_values'] ?? NULL;
+  $values = &$form_state['values'] ?? NULL;
   module_load_include('inc', 'tpps', 'includes/form');
   module_load_include('inc', 'tpps', 'includes/submission_file');
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
 
-  // Set Submission Form Version.
-  if (tpps_is_debug_mode()) {
-    drupal_set_message(__FUNCTION__ . '()'
-      . '<br />Form State Accession: ' . $submission->accession
-      . '<br />Form: <pre>' . print_r($submission->accession, 1) . '</pre>'
-      . '<br />Saved Values: ' . $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-      . '<br />Values: ' . $values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-    );
-  }
-
   // Get Submission Form Version.
-  $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-    = $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
-    ?? ($values[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL);
+  $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY] =
+    $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
+      ?? ($values[TPPS_SUBMISSION_FORM_VERSION_KEY] ?? NULL);
   if (empty($saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY])) {
     if ($submission->accession) {
       $saved_values[TPPS_SUBMISSION_FORM_VERSION_KEY]
@@ -1323,7 +1313,6 @@ function tpps_main_submit($form, &$form_state) {
     tpps_submission_file_set_status($form_state, 0);
   }
   $saved_values[$form_state['stage']] = $values;
-  $persist = TRUE;
 
   // This happens when the user clicks Save, notice this if clause will do a return.
   // This means after saving, the form will be rebuilt based on the rebuild key = TRUE.
@@ -1348,7 +1337,6 @@ function tpps_main_submit($form, &$form_state) {
   $is_back_button = ($triggering_element == 'Back');
   switch ($form_state['stage']) {
     case 'frontpage':
-      $persist = FALSE;
       $form_state['stage'] = TPPS_PAGE_1;
       break;
 
@@ -1399,13 +1387,10 @@ function tpps_main_submit($form, &$form_state) {
   }
   $saved_values['form_build_id'] = $values['form_build_id'];
 
-  if ($persist) {
-    // Update for all pages except 'frontpage'.
-    $submission = new Submission();
-    $submission->state = $form_state;
-    $submission->info['status'] = $form_state['status'];
-    $submission->save();
-  }
+  $submission->state = $form_state;
+  $submission->info['status'] = $form_state['status'];
+  $submission->save();
+
   if ($form_state['stage'] == TPPS_PAGE_1) {
     // When non-empty (after Page1 submit) study was added we need to
     // reset cached lists of accessions.

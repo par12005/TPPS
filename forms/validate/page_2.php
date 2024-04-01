@@ -241,9 +241,5 @@ function tpps_page_2_validate_form(array &$form, array &$form_state) {
         }
       }
     }
-
   }
-
-
-
 }

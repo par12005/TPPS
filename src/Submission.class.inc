@@ -238,6 +238,12 @@ class Submission {
     if (empty($this->accession)) {
       return;
     }
+
+    // This is extra time for processing and this is not expected here.
+    //if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
+    //  $this->generateSharedState();
+    //}
+
     // Study status.
     $this->status = $status ?? $this->status;
     $this->state['status'] = $this->sharedState['status']
@@ -398,9 +404,9 @@ class Submission {
       unset($this->info['shared_state']);
       $this->state = unserialize($result['submission_state'] ?? '') ?? [];
       $this->sharedState = unserialize($result['shared_state'] ?? '') ?? [];
-      if (empty($this->sharedState)) {
+
+      if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
         $this->generateSharedState();
-        $this->save();
       }
       $this->status = $this->info['status']
         ?? $this->state['status']
@@ -578,7 +584,7 @@ class Submission {
     }
 
     // @TODO Create property $importMeta?
-    $import_meta = $this->state['saved_values']['tpps_submission_import'];
+    $import_meta = $this->state['saved_values']['tpps_submission_import'] ?? NULL;
     if (empty($import_meta)) {
       return $output;
     }
@@ -682,7 +688,6 @@ class Submission {
     module_load_include('inc', 'tpps', 'includes/submission_form_version');
     tpps_submission_form_version_downgrade_to_latest($this->state, $this->sharedState);
     $this->purifySharedState();
-
     return $this->sharedState;
   }
 
@@ -789,6 +794,25 @@ class Submission {
 
   public function isSharedState($state) {
 
+  }
+
+  /**
+   * Dumps object properties using dpm().
+   *
+   * @param string $name
+   *   Name of the property.
+   *
+   */
+  public function dump($name) {
+    if (property_exists($this, $name)) {
+      $caller_function = debug_backtrace(
+        !DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2)[1]['function'];
+      dpm('Caller: ' . $caller_function);
+      dpm(print_r($this->$name, 1), $name);
+    }
+    else {
+      dpm(t("Property @name doesn't exist.", ['@name' => $name]));
+    }
   }
 
 }

@@ -33,7 +33,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   $file_info = $submission->sharedState['file_info'] ?? NULL;
 
   module_load_include('inc', 'tpps', 'includes/form');
-  $organism_number = $submission->getOrgnaismNumber();
+  $organism_number = $submission->getOrganismNumber();
   $result = [];
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('theme', $form);

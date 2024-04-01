@@ -29,6 +29,7 @@
  *   Returns all version's changes.
  */
 function tpps_submission_form_version_changes(array $form_state, $version = NULL) {
+  //dpm(print_r(debug_backtrace(!DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS, 2), 1));
   $version_change_list = [
     // Version 1 is a initial version.
     // Submission Interface is a version 1 without some unnecessary elements.
@@ -64,7 +65,7 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
   // #86ayw8a7k Relocate genotype fields.
   if (!empty($form_state['saved_values'][TPPS_PAGE_1])) {
     $page1_values = $form_state['saved_values'][TPPS_PAGE_1];
-    $organism_number = $page1_values['organism']['number'];
+    $organism_number = $page1_values['organism']['number'] ?? 1;
     // List of relocated genotype fields from 'files' to 'SNPs' fieldset.
     // ['files'] -> ['SNPs'].
     $snps_fieldset = 'SNPs';
