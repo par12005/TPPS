@@ -855,7 +855,9 @@ function tpps_validate_genotype(array &$genotype, $org_num, array $form, array &
   }
   // [/VS]
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $loaded_state = tpps_load_submission_state($form_state['accession']);
+  $accession = $form_state['accession'] ?? NULL;
+  $submission = new Submission($accession);
+  $loaded_state = $submission->state;
   if (!empty($loaded_state['vcf_replace'])) {
     foreach ($loaded_state['vcf_replace'] as $org_num => $fid) {
       $file = file_load($fid ?? '');

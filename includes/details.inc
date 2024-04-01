@@ -65,14 +65,12 @@ function tpps_details($accession = NULL) {
 
   $output = l(t('Return to TPPS Details'), $base_url . '/tpps/details');
   $submission = new Submission($accession);
-  $submission->load();
-  $state = $submission->state;
-  if (!empty($state)) {
-    if (isset($state['study_view_role'])) {
+  if (!empty($submission->state)) {
+    if (isset($submission->state['study_view_role'])) {
       // If more than 0, then a view role was set by curation team
-      if ($state['study_view_role'] > 0) {
+      if ($submission->state['study_view_role'] > 0) {
         if (
-          !in_array(user_roles($true)[$state['study_view_role']], $user->roles)
+          !in_array(user_roles($true)[$submission->state['study_view_role']], $user->roles)
           // @TODO Minor. Admins must always has access so this check could
           // be done earlier and avoid extra checks.
           && !in_array('administrator', $user->roles)
@@ -86,7 +84,7 @@ function tpps_details($accession = NULL) {
       }
     }
 
-    if ($state['status'] != 'Approved') {
+    if ($submission->state['status'] != 'Approved') {
       drupal_set_message(
         t('This submission is still under construction. Some of the information '
         . 'may be available here, but please keep in mind that it may be '
@@ -108,14 +106,17 @@ function tpps_details($accession = NULL) {
       async defer></script>"
       . "<div id=\"_map_wrapper\"></div>";
     $tree_info = [];
-    if (!empty($state['tree_info'])) {
-      foreach ($state['tree_info'] as $name => $info) {
-        if (!empty($info['lat']) and !empty($info['lng'])) {
-          $tree_info[] = array(
+    if (!empty($submission->state['tree_info'])) {
+      foreach ($submission->state['tree_info'] as $name => $info) {
+        if (
+          !empty($info['lat'])
+          and !empty($info['lng'])
+        ) {
+          $tree_info[] = [
             $name,
             $info['lat'],
             $info['lng'],
-          );
+          ];
         }
       }
       drupal_add_js(['tpps' => ['tree_info' => $tree_info]], 'setting');
@@ -125,10 +126,10 @@ function tpps_details($accession = NULL) {
     tpps_add_css_js('main');
     // [/VS].
 
-    if (!empty($pub_link = $state['title'] ?? NULL)) {
+    if (!empty($pub_link = ($submission->state['title'] ?? NULL))) {
       $pub_id = db_select('chado.project_pub', 'p')
         ->fields('p', array('pub_id'))
-        ->condition('project_id', $state['ids']['project_id'])
+        ->condition('project_id', $submission->state['ids']['project_id'])
         ->execute()->fetchObject()->pub_id ?? NULL;
       if (!empty($pub_id)) {
         $bundle = tripal_load_bundle_entity(array('label' => 'Publication'));
@@ -137,8 +138,8 @@ function tpps_details($accession = NULL) {
       }
       $output .= "<h2>$pub_link</h2>";
     }
-    $output .= tpps_show_tags(tpps_submission_get_tags($state['accession']));
-    if ($primary_author = $state['authors'][0] ?? NULL) {
+    $output .= tpps_show_tags(tpps_submission_get_tags($accession));
+    if ($primary_author = $submission->state['authors'][0] ?? NULL) {
       if (preg_match('/,/', $primary_author)) {
         $parts = explode(',', $primary_author);
         $lastname = trim($parts[0]);
@@ -147,15 +148,15 @@ function tpps_details($accession = NULL) {
         $parts = explode(' ', $primary_author);
         $lastname = $parts[count($parts) - 1];
       }
-      $output .= "<h4>$lastname et al {$state['pyear']}";
-      if (!empty($state['journal'])) {
-        $output .= " published in {$state['journal']}";
+      $output .= "<h4>$lastname et al {$submission->state['pyear']}";
+      if (!empty($submission->state['journal'])) {
+        $output .= " published in {$submission->state['journal']}";
       }
       $output .= "</h4>";
       // @TODO Minor. Use l() and drupal_add_js().
       $output .= "<div id=\"abstract\"><a href=\"#abstract\">Click to show abstract</a></div>"
         . "<script>jQuery(document).ready(jQuery('#abstract').on('click', function() {
-            jQuery('#abstract')[0].innerHTML = `{$state['abstract']}`;
+            jQuery('#abstract')[0].innerHTML = `{$submission->state['abstract']}`;
           }));</script>";
     }
     else {
@@ -173,20 +174,24 @@ function tpps_details($accession = NULL) {
       );
     }
 
-    // @TODO We already loaded $state. Try to reuse it instead of loading it again.
-    $submission_info = tpps_load_submission_info($accession);
+    $page1_values = &$submission->state['saved_values'][TPPS_PAGE_1];
     if (
-      $state['saved_values'][TPPS_PAGE_1]['publication']['status'] != 'Published'
-      && $user->uid == $submission_info['uid']
+      $page1_values['publication']['status'] != 'Published'
+      && $user->uid == $submission->info['uid']
     ) {
       $items[] = l(t('Edit publication information'), 'tpps/' . $accession . '/edit-publication');
     }
     $output .= theme('item_list', ['items' => $items]);
-    $output .= tpps_details_tabs($state);
+    $output .= tpps_details_tabs($submission->state);
     return $output;
   }
 
-  drupal_set_message(t('This submission is pending resubmission through the new TPPS pipeline. Some of the information may be available here, but please keep in mind that it may be incomplete or subject to change in the near future.'), 'warning');
+  drupal_set_message(t('This submission is pending resubmission through the '
+    . 'new TPPS pipeline. Some of the information may be available here, '
+    . 'but please keep in mind that it may be incomplete or subject to '
+    . 'change in the near future.'),
+    'warning'
+  );
 
   if (function_exists('tpps_details_byaccession_page')) {
     $output .= @tpps_details_byaccession_page()['raw_markup']['#markup'];
@@ -449,8 +454,11 @@ function tpps_details_top() {
     }
 
     $warning = "";
-    if (empty(tpps_load_submission_state($sub->accession))) {
-      $warning = "<img src='$base_url/misc/message-16-warning.png' title='This study has not yet been resubmitted through the new TPPS pipeline'> ";
+    $submission = new Submission($sub->accession);
+    if ($submission->doesNotExist()) {
+      $title = t('This study has not yet been resubmitted through the new TPPS pipeline');
+      $warning = "<img src='$base_url/misc/message-16-warning.png' title='"
+        . $title . "'> ";
     }
 
     $row = array(

@@ -749,21 +749,6 @@ function tpps_form_autofocus(array &$form = NULL, array $path) {
 }
 
 /**
- * Checks if current form is TPPSc form.
- *
- * @param array $form_state
- *   Drupal Form State array.
- *
- * @return bool
- *   Returns TRUE if form Id is 'tppsc_main' and FALSE otherwise.
- */
-function tpps_form_is_tppsc(array $form_state) {
-  $submission = new Submission();
-  $submission->state = $form_state;
-  return $submission->isTppsc();
-}
-
-/**
  * Get TPPS Form Id.
  *
  * @param array $form_state
@@ -1035,9 +1020,12 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
           $accession = $frontpage_values['custom_accession'];
         }
         tpps_init_project($form_state, $accession);
-        tpps_create_submission($form_state, $user->uid);
+        $submission = new Submission();
+        $submission->create($form_state, $user->uid);
       }
-      $submission = new Submission($frontpage_values['accession']);
+      else {
+        $submission = new Submission($frontpage_values['accession']);
+      }
       $old_form_state = $submission->state;
       if (!empty($old_form_state)) {
         tpps_form_state_info($form_state, $old_form_state);
@@ -1071,7 +1059,9 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
 
   // Upgrade to latest Submission Form Version.
   tpps_submission_form_version_upgrade_to_latest($form_state, $form_state);
-  tpps_update_submission_state($form_state);
+  $submission = new Submission();
+  $submission->state = &$form_state;
+  $submission->save();
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Must be after tpps_init_project() which sets accession for new studies.
@@ -1109,7 +1099,10 @@ function tpps_form_build_main(array $form, array &$form_state, $accession = NULL
   }
   elseif ($is_tppsc) {
     $form_state['tpps_type'] = 'tppsc';
-    tpps_update_submission_state($form_state);
+
+    $submission->state = $form_state;
+    $submission->save();
+
     if (variable_get('tpps_top_bar', 'status') == 'status') {
       module_load_include('inc', 'tpps', 'includes/status_bar');
       tpps_status_bar($form, $form_state);

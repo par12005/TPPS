@@ -820,8 +820,7 @@ function tpps_completed_display($accession = NULL) {
   $output = '';
 
   $submission = new Submission($accession);
-  $submission->load();
-  $values = $submission->sharedState['saved_values'];
+  $saved_values = $submission->sharedState['saved_values'];
 
   // @TODO Move CSS to /css/tpps.css. Check if scope must be 'header'.
   $css = "
@@ -833,7 +832,7 @@ function tpps_completed_display($accession = NULL) {
   }
   ";
   drupal_add_css($css, 'inline');
-  $title = $values[TPPS_PAGE_1]['publication']['title'];
+  $title = $saved_values[TPPS_PAGE_1]['publication']['title'];
 
   $output .= "<label for='tpps_$accession'>{$title}</label><p>"
     . t('You can view the TPPS Details page with completed and approved TPPS '
@@ -841,10 +840,9 @@ function tpps_completed_display($accession = NULL) {
       // @TODO Minor. Do we really need an absolute link here?
       ['@link' => url('tpps/details/$accession', ['absolute' => TRUE])]
     ) . '</p>';
-  $submission_info = tpps_load_submission_info($accession);
   if (
-    $values[TPPS_PAGE_1]['publication']['status'] != 'Published'
-    && $user->uid == $submission_info['uid']
+    $saved_values[TPPS_PAGE_1]['publication']['status'] != 'Published'
+    && $user->uid == $submission->info['uid']
   ) {
     // @TODO Minor. Do we really need an absolute link here?
     $output .= l(t('Edit publication information'),
@@ -880,26 +878,27 @@ function tpps_tab_create($uid) {
   $params = drupal_get_query_parameters();
 
   if (isset($params['accession']) && ($params['action'] ?? NULL) === 'DELETE') {
-    tpps_delete_submission($params['accession']);
+    $submission = new Submission($params['accession']);
+    $submission->delete();
     drupal_goto("user/{$uid}/tpps");
   }
 
-  $states = tpps_load_submission_multiple([
-    'status' => 'Incomplete',
-    'uid' => $user->uid,
-  ]);
+  $submission_list = tpps_load_submission_multiple(
+    ['status' => 'Incomplete', 'uid' => $user->uid]
+  );
 
-  $rows = array();
-  foreach ($states as $state) {
-    $prefix = !empty($state['tpps_type']) ? $state['tpps_type'] : 'tpps';
-    $page_1 = &$state['saved_values'][TPPS_PAGE_1];
+  $rows = [];
+  foreach ($submission_list as $accession => $submission) {
+    $prefix = !empty($submission->state['tpps_type'])
+      ? $submission->state['tpps_type'] : 'tpps';
+    $page_1 = &$submission->state['saved_values'][TPPS_PAGE_1];
     $title = $abstract = $accession_cell = NULL;
 
     if (isset($page_1['publication']['title'])) {
-      $title = "<a href='$base_url/$prefix/{$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
+      $title = "<a href='$base_url/$prefix/{$accession}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
     }
     else {
-      $title = "<a href='$base_url/$prefix/{$state['accession']}' style='text-decoration: underline;'>No Title</a>";
+      $title = "<a href='$base_url/$prefix/{$accession}' style='text-decoration: underline;'>No Title</a>";
     }
 
     if (isset($page_1['publication']['abstract'])) {
@@ -909,24 +908,27 @@ function tpps_tab_create($uid) {
       }
     }
 
-    if (isset($state['accession'])) {
-      $accession_cell = "<input type='submit' id='delete-{$state['accession']}' onclick='";
+    if (isset($accession)) {
+      $accession_cell = "<input type='submit' id='delete-{$accession}' onclick='";
       $name = isset($page_1['publication']['title']) ? ' titled ' . $page_1['publication']['title'] : '';
-      $name = str_replace("'", "", $name); // remove single quotes
-      $name = str_replace('"', "", $name); // remove double quotes
+      $name = str_replace("'", "", $name); // Remove single quotes.
+      $name = str_replace('"', "", $name); // Remove double quotes.
       // @TODO It's not safe to use only JS confirmation.
-      $accession_cell .= "if (confirm(\"Attention! \\n\\nAre you sure you want to delete your submission{$name}?\\nThis action cannot be undone, and all of your data will be lost!\")){window.location.href = \"$base_url/tpps-submission/{$state['accession']}/delete\"}";
+      $accession_cell .= "if (confirm(\"Attention! \\n\\nAre you sure you want "
+        . "to delete your submission{$name}?\\nThis action cannot be undone, "
+        . "and all of your data will be lost!\")){window.location.href "
+        . "= \"$base_url/tpps-submission/{$accession}/delete\"}";
       $accession_cell .= "' name='op' class='form-button' value='Delete'>";
     }
 
-    $rows[] = array(
+    $rows[] = [
       $title,
       isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : "",
       isset($page_1['organism']['number']) ? $page_1['organism']['number'] : "",
       isset($abstract) ? $abstract : "",
       isset($page_1['publication']['journal']) ? $page_1['publication']['journal'] : "",
       isset($accession_cell) ? $accession_cell : "",
-    );
+    ];
   }
 
   $headers = array(
@@ -950,24 +952,29 @@ function tpps_tab_create($uid) {
     'empty' => '',
   );
 
-  $final = isset($state) ? "<div class='tpps_table'><label for='tpps_incomplete_table'>Incomplete Submissions</label>" . theme('table', $vars) . '</div>' : "";
-  $state = NULL;
+  $final = isset($submission->state) ? "<div class='tpps_table'><label for="
+    . "'tpps_incomplete_table'>Incomplete Submissions</label>"
+    . theme('table', $vars) . '</div>' : "";
+  $submission_list = [];
 
-  $states = tpps_load_submission_multiple(array(
-    'status' => array('Pending Approval', 'Approved'),
+  $submission_list = tpps_load_submission_multiple([
+    'status' => ['Pending Approval', 'Approved'],
     'uid' => $user->uid,
-  ));
+  ]);
 
   $rows = array();
-  foreach ($states as $state) {
-    $page_1 = &$state['saved_values'][TPPS_PAGE_1];
+  foreach ($submission_list as $accession => $submission) {
+    $page_1 = &$submission->state['saved_values'][TPPS_PAGE_1];
     $title = $abstract = NULL;
 
     if (isset($page_1['publication']['title'])) {
-      $title = "<a href='$base_url/completed-submission/{$state['accession']}' style='text-decoration: underline;'>" . check_plain($page_1['publication']['title']) . "</a>";
+      $title = "<a href='$base_url/completed-submission/{$accession}' "
+        . "style='text-decoration: underline;'>"
+        . check_plain($page_1['publication']['title']) . "</a>";
     }
     else {
-      $title = "<a href='$base_url/completed-submission/{$state['accession']}' style='text-decoration: underline;'>No Title</a>";
+      $title = "<a href='$base_url/completed-submission/{$accession}' "
+        . "style='text-decoration: underline;'>No Title</a>";
     }
 
     if (isset($page_1['publication']['abstract'])) {
@@ -977,14 +984,14 @@ function tpps_tab_create($uid) {
       }
     }
 
-    $rows[] = array(
-      isset($title) ? $title : "",
-      isset($page_1['primaryAuthor']) ? $page_1['primaryAuthor'] : "",
-      isset($page_1['organism']['number']) ? $page_1['organism']['number'] : "",
-      isset($abstract) ? $abstract : "",
-      isset($page_1['publication']['journal']) ? $page_1['publication']['journal'] : "",
-      isset($state['status']) ? $state['status'] : "",
-    );
+    $rows[] = [
+      $title ?? '',
+      $page_1['primaryAuthor'] ?? '',
+      $page_1['organism']['number'] ?? '',
+      $abstract ?? '',
+      $page_1['publication']['journal'] ?? '',
+      ($submission->state['status'] ?? ''),
+    ];
   }
 
   $headers[] = 'Status';
@@ -992,7 +999,9 @@ function tpps_tab_create($uid) {
   $vars['rows'] = $rows;
   $vars['attributes']['id'] = 'tpps_complete_table';
 
-  $final .= isset($state) ? "<div class='tpps_table'><label for='tpps_complete_table'>Complete Submissions</label>" . theme('table', $vars) . '</div>' : "";
+  $final .= isset($submission->state)
+    ? "<div class='tpps_table'><label for='tpps_complete_table'>Complete "
+    . "Submissions</label>" . theme('table', $vars) . '</div>' : "";
 
   if (empty($final)) {
     $final .= "<h2>Could not find any Submissions</h2>";

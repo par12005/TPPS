@@ -4432,7 +4432,8 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
   // If study accession value exists, use this to look up the form_state.
   $form_state = NULL;
   if (isset($options['study_accession'])) {
-    $form_state = tpps_load_submission_state($options['study_accession']);
+    $submission = new Submission($options['study_accession']);
+    $form_state = $submission->state;
   }
   elseif (isset($options['form_state'])) {
     $form_state = $options['form_state'];
@@ -4517,7 +4518,6 @@ function tpps_generate_genotype_sample_file_from_vcf($options = NULL) {
         echo "Real managed real path: " . drupal_realpath($file->uri) . "\n";
         // We could store this in the submit_state - TODO if we need this
         // $form_state['saved_values'][TPPS_PAGE_4]["organism-$i"]['genotype']['vcf_sample_list'] = $file->fid;
-        // tpps_update_submission_state($form_state);
         // print_r($sample_list_data);
       } // end else
     } // end for

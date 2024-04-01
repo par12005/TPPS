@@ -35,19 +35,19 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     '#required' => TRUE,
   ];
   // Get Submission State.
-  $state = tpps_load_submission_state($accession);
-  tpps_submission_export_fixes($state);
+  $submission = new Submission($accession);
+  tpps_submission_export_fixes($submission->state);
 
   // Files.
-  $fid_list = tpps_submission_file_get_id_list($state, $form);
+  $fid_list = tpps_submission_file_get_id_list($submission->state, $form);
   $files = tpps_submission_export_get_files_info($fid_list);
   if (empty($form_state['input'])) {
     // This check allows to avoid double processing files when new accession
     // was selected and button 'Export' clicked to update data.
     tpps_submission_export_file_report($fid_list, $files, $form);
   }
-  $state['tpps_submission_export_files'] = $files;
-  $state['tpps_submission_export_site'] = $base_url;
+  $submission->state['tpps_submission_export_files'] = $files;
+  $submission->state['tpps_submission_export_site'] = $base_url;
 
   $form['tpps_submission_export_state'] = [
     '#type' => 'textarea',

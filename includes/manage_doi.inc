@@ -25,21 +25,27 @@ function tpps_manage_doi($accession) {
   $output = "";
 
   $submission = new Submission($accession);
-  $form_state = $submission->state;
 
   $token = variable_get('tpps_zenodo_api_key', NULL);
-  if (!empty($token) and empty($form_state['zenodo_id'])) {
-    $form_state['zenodo_id'] = tpps_generate_doi($accession)->id;
-    $doi_object = tpps_doi_publish($form_state['zenodo_id']);
-    tpps_update_submission_state($form_state);
-    $output .= "<h4>DOI successfully published!</h4>";
-  }
-  elseif (!empty($token) and !empty($form_state['zenodo_id'])) {
-    $doi_object = tpps_doi_load($form_state['zenodo_id']);
+  if (!empty($token)) {
+    if (empty($submission->state['zenodo_id'])) {
+      $submission->state['zenodo_id'] = tpps_generate_doi($accession)->id;
+      $doi_object = tpps_doi_publish($submission->state['zenodo_id']);
+      $submission->save();
+      $output .= "<h4>DOI successfully published!</h4>";
+    }
+    else {
+      $doi_object = tpps_doi_load($form_state['zenodo_id']);
+    }
   }
 
-  if (empty($token) or empty($doi_object) or (isset($doi_object->status) and $doi_object->status != 200)) {
-    $output .= "<h4>Unable to load Zenodo DOI. There is likely a problem with the Zenodo API key. Please contact your system administrator.</h4>";
+  if (
+    empty($token)
+    || empty($doi_object)
+    || (isset($doi_object->status) && $doi_object->status != 200)
+  ) {
+    $output .= "<h4>Unable to load Zenodo DOI. There is likely a problem with "
+      . "the Zenodo API key. Please contact your system administrator.</h4>";
   }
   else {
     $doi = $doi_object->doi;
@@ -48,10 +54,8 @@ function tpps_manage_doi($accession) {
     $output .= "DOI: <a target=\"blank\" href=\"$url\">$doi</a><br>"
     . "DOI Badge: <a target=\"blank\" href=\"$badge\"><img src=\"$badge\"></a><br>";
   }
-
   return render($output);
 }
-
 
 /**
  * Returns expression for matching DOIs.

@@ -332,7 +332,9 @@ class Submission {
    */
   public function create(array $state, $uid = NULL) {
     global $user;
+
     $this->state = $state;
+    $this->accession = $this->state['accession'];
     $fields = [
       'uid' => $uid ?? $user->uid,
       'status' => 'Incomplete',
@@ -466,6 +468,7 @@ class Submission {
    *   Returns 'tpps_main' or 'tppsc_main'.
    */
   public function getFormId() {
+    // $is_tppsc = (($form_state['tpps_type'] ?? NULL) == 'tppsc');
     return $this->state['saved_values']['front_page']['form_id']
       ?? $this->state['build_info']['form_id'] ?? 'tpps_main';
   }
@@ -666,13 +669,13 @@ class Submission {
    *   Returns empty array if $form_state is empty too.
    */
   public function generateSharedState(array $state = []) {
-    $this->state = (!empty($state) ? $state : $this->getState(RESET_CACHE));
+    $this->state = !empty($state) ? $state : $this->state;
 
-    // @TODO Avoid this hard linking.
-    module_load_include('inc', 'tpps', 'includes/submission_form_version');
     $this->sharedState = $this->state;
     // We need to apply changes from 1st to $current version to have
     // incremental changes.
+    // @TODO Avoid this hard linking.
+    module_load_include('inc', 'tpps', 'includes/submission_form_version');
     tpps_submission_form_version_downgrade_to_latest($this->state, $this->sharedState);
     $this->purifySharedState();
 

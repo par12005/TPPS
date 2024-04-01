@@ -153,12 +153,8 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Remove existing study (if any).
   if ($values['tpps_submission_import_accession'] != 'new') {
     // Remove submission and files.
-    //
-    // Why don't use tpps_update_submission_state()?
-    // Because it doesn't manage files and study's record in table
-    // 'chado.dbxref' will not be removed (left).
-    // It only overwrites record in 'chado.tpps_submission' table.
-    tpps_submission_purge($accession, $force = TRUE);
+    $submission = new Submission($accession);
+    $submission->purge();
   }
 
   $state_raw = trim($values['tpps_submission_import_state']);
@@ -181,7 +177,10 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // Now $state contains submitted submission state array.
 
   // Get original (old) accession from $state (Submission Form State Array).
-  $original_accession = tpps_form_get_accession($state);
+  $submission = new Submission();
+  $submission->state = $state;
+  //$original_accession = tpps_form_get_accession($state);
+  $original_accession = $submission->accession;
 
   // Modify before files processing to have updated import meta data.
   // Store original accession.
@@ -189,23 +188,25 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // when submission reopened using '/tppsc' form.
   module_load_include('inc', 'tpps', 'includes/submission_form_version');
   $state['saved_values']['tpps_submission_import'] = [
-    'original_accession' => $original_accession,
+    'original_accession' => $submission->accession,
     'imported' => REQUEST_TIME,
     'imported_date' => format_date(REQUEST_TIME, 'custom', 'Y-m-d h:s:i O'),
-    'site' => $state['tpps_submission_export_site'] ?? 'https://treegenesdb.org',
+    'site' => $submission->state['tpps_submission_export_site'] ?? 'https://treegenesdb.org',
     TPPS_SUBMISSION_FORM_VERSION_KEY
-    => $state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1,
+      => $submission->state['saved_values'][TPPS_SUBMISSION_FORM_VERSION_KEY] ?? 1,
   ];
   // Files.
-  tpps_submission_import_process_files($state, $accession, $form);
+  tpps_submission_import_process_files($submission->state, $accession, $form);
   // Main modification must be done after file processing complete.
-  tpps_submission_import_state_mods($state, $accession);
+  tpps_submission_import_state_mods($submission->state, $accession);
   // We need to restore original accession because function
   // tpps_submission_import_state_mods() overwrites it.
-  $state['saved_values']['tpps_submission_import']['original_accession'] = $original_accession;
+  $submission->state['saved_values']['tpps_submission_import']['original_accession']
+    = $submission->accession;
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Add record to DB table. Status will be 'Incomplete'.
-  tpps_create_submission($state, $user->uid);
+  // @TODO Create earlier. or better use save().
+  $submission->create($submission->state, $user->uid);
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Status.
   // Having 'Incomplete' status is safe if we then programmatically submit form
@@ -213,26 +214,22 @@ function tpps_submission_import_form_submit(array $form, array &$form_state) {
   // better to have 'Pending Approval' status or maybe even 'Approved'
   //
   if ($submission_new_status != 'Do not change') {
-    $state['status']
-      = $state['values']['status']
-        = $state['saved_values']['status']
-          = $submission_new_status;
-    tpps_update_submission_info($accession, ['status' => $submission_new_status]);
+    $submission->info['status']
+      = $submission->state['status']
+      = $submission->state['values']['status']
+      = $submission->state['saved_values']['status']
+      = $submission_new_status;
   }
   // Update a list of imported studies.
-  tpps_imported_studies_list_add_item($accession, $original_accession);
+  tpps_imported_studies_list_add_item($accession, $submission->accession);
   // Clear cached list of studies to have new items at 'frontpage'.
   // @TODO Minor. Clear only accession list.
   cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
 
   if ($upgrade_version) {
     // Upgrade to latest Submission Form Version.
-    tpps_submission_form_version_upgrade_to_latest($state, $state);
-    tpps_update_submission_state($state);
+    tpps_submission_form_version_upgrade_to_latest($submision->state, $submission->state);
     drupal_set_message(t('Submission Form Version was upgraded.'));
-
-    $submission = new Submission($accession);
-    $submission->state = $state;
     // Note: SharedState will be stored to db.
     $submission->generateSharedState();
     $submission->save();

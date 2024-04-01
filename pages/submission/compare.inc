@@ -122,13 +122,13 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
     '#value' => $accession_2,
   ];
   module_load_include('inc', 'tpps', 'includes/submission');
+  $submission_1 = new Submission($accession_1);
+  $submission_2 = new Submission($accession_2);
   $form_state_diff_1 = array_diff_assoc_recursive(
-    tpps_load_submission_state($accession_1),
-    tpps_load_submission_state($accession_2)
+    $submission_1->state, $submission_2->state
   );
   $form_state_diff_2 = array_diff_assoc_recursive(
-    tpps_load_submission_state($accession_2),
-    tpps_load_submission_state($accession_1)
+    $submission_2->state, $submission_1->state
   );
 
   if (empty($form_state_diff_1) && empty($form_state_diff_2)) {

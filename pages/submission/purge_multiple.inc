@@ -79,15 +79,18 @@ function tpps_submission_purge_multiple_form_submit(array $form, array &$form_st
     foreach ($accession_list as $accession) {
       if ($accession == 'all_broken') {
         $data = tpps_submission_purge_multiple_get_range();
+        $submission = new Submission();
         for ($i = $data['latest_accession']; $i >= $data['last_real_accession']; $i--) {
-          tpps_submission_purge('TGDR' . $i, $remove_files = TRUE);
+          $submission->accession = 'TGDR' . $i;
+          $submission->purge();
           drupal_set_message(t("Submission @accession and it's files was "
             . "removed and cache was cleared.", ['@accession' => 'TGDR' . $i]
           ));
         }
       }
       else {
-        tpps_submission_purge($accession, $remove_files = TRUE);
+        $submission = new Submission($accession);
+        $submission->purge();
         drupal_set_message(
           t("Submission @accession and it's files was removed and cache was cleared.",
             ['@accession' => $accession]

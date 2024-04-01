@@ -114,7 +114,7 @@ function tpps_api_submission_query() {
  *   An array of submissions that satisfy the provided conditions.
  */
 function tpps_api_submission_std_query(array &$conditions) {
-  $args = array();
+  $args = [];
   $valid_args = tpps_table_columns('tpps_submission');
   foreach ($conditions as $key => $val) {
     if (array_search($key, $valid_args)) {
@@ -123,13 +123,13 @@ function tpps_api_submission_std_query(array &$conditions) {
     }
   }
 
-  $states = tpps_load_submission_multiple($args);
-  $results = array();
-  foreach ($states as $state) {
-    if (!isset($state['ids']['project_id'])) {
-      continue;
+  $submission_list = tpps_load_submission_multiple($args);
+  $results = [];
+  foreach ($submission_list as $submission) {
+    $project_id = $submission->state['ids']['project_id'] ?? NULL;
+    if (!empty($project_id)) {
+      $results[$project_id] = $submission->state;
     }
-    $results[$state['ids']['project_id']] = $state;
   }
   return $results;
 }
@@ -185,11 +185,12 @@ function tpps_api_submission_info() {
     $entities = $params['entities'];
   }
 
-  $accessions = explode(',', $params['accessions']);
-  $states = tpps_load_submission_multiple(array('accession' => $accessions));
-  $pids = array();
-  foreach ($states as $state) {
-    $pids[] = $state['ids']['project_id'];
+  $submission_list = tpps_load_submission_multiple(
+    ['accession' => explode(',', $params['accessions'])]
+  );
+  $pids = [];
+  foreach ($submission_list as $submission) {
+    $pids[] = $submission->state['ids']['project_id'];
   }
   $data_types = explode(',', $params['data']);
   $results = array();

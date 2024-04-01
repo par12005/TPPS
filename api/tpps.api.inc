@@ -60,15 +60,15 @@ function tpps_api_paths() {
   // tpps/api/submission calls tpps_load_submission on a provided accession.
   // If a valid TPPS submission exists for the accession, it will return the
   // form_state of the submission.
-  $items['tpps/api/submission/%'] = array(
+  $items['tpps/api/submission/%'] = [
     'title' => 'TPPS Raw Submissions',
-    'page callback' => 'tpps_load_submission_state',
+    'page callback' => 'tpps_api_get_submission_state',
     'page arguments' => [3],
     'access callback' => 'tpps_access',
-    'access arguments' => array('access content'),
+    'access arguments' => ['access content'],
     'delivery callback' => 'drupal_json_output',
     'type' => MENU_CALLBACK,
-  );
+  ];
 
   // tpps/api/submissions calls tpps_api_submission_query. If no query
   // conditions are provided, it will return information about all of the
@@ -161,8 +161,8 @@ function tpps_api_check_accession($accession = NULL) {
   if (empty($accession)) {
     return FALSE;
   }
-
-  return tpps_load_submission_state($accession) ? TRUE : FALSE;
+  $submission = new Submission($accession);
+  return $submission->doesExist();
 }
 
 /**
@@ -172,9 +172,9 @@ function tpps_api_check_accession($accession = NULL) {
  *   The accession number of the submission with the associated files.
  */
 function tpps_api_compress_files($accession = NULL) {
-  $state = tpps_load_submission_state($accession);
-  if (empty($state)) {
-    throw new Exception('Invalid state accession number');
+  $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    throw new Exception('Invalid accession of submission.');
   }
   ob_end_clean();
   $zip_name = "{$accession}_files.zip";
@@ -183,7 +183,7 @@ function tpps_api_compress_files($accession = NULL) {
   }
   $zip_loc = drupal_realpath(TPPS_TEMP_ZIP) . '/' . $zip_name;
 
-  $files = $state['files'];
+  $files = $submission->state['files'];
   foreach ($files as $fid) {
     $file_str[] = str_replace(' ', '\\ ', drupal_realpath(file_load($fid)->uri));
   }

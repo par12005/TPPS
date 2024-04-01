@@ -359,20 +359,20 @@ function tpps_preserve_valid_file(array &$form_state, $fid, $org_num = NULL, $pr
  *   The accession of the submission to pre-validate.
  */
 function tpps_pre_validate_init($accession = NULL) {
-  $state = tpps_load_submission_state($accession);
-  if (empty($accession) or empty($state)) {
-    drupal_json_output("Submission could not be loaded from accession");
-    return;
-  }
-  $params = drupal_get_query_parameters(NULL, array());
+  $params = drupal_get_query_parameters(NULL, []);
   $vcfs = $params['vcfs'] ?? NULL;
   if (!is_array($vcfs) || empty($vcfs)) {
     drupal_json_output("No VCF file ids were provided");
     return;
   }
+  $submission = new Submission($accession);
+  if ($submission->doesNotExist()) {
+    drupal_json_output("Submission could not be loaded from accession");
+    return;
+  }
 
   global $user;
-  $state['vcf_replace'] = array();
+  $submission->state['vcf_replace'] = [];
   foreach ($vcfs as $org_num => $fid) {
     // @TODO Minor. Rename $fid because it's not always File Id.
     // $fid is integer File Id for 'local' VCF files.
@@ -407,17 +407,17 @@ function tpps_pre_validate_init($accession = NULL) {
         }
 
         $vcfs[$org_num] = $file->fid;
-        $state['vcf_replace'][$org_num] = $file->fid;
+        $submission->state['vcf_replace'][$org_num] = $file->fid;
       }
     }
   }
-  if (empty($state['vcf_replace'])) {
-    unset($state['vcf_replace']);
+  if (empty($submission->state['vcf_replace'])) {
+    unset($submission->state['vcf_replace']);
   }
 
-  $state['vcf_val_errors'] = [];
-  $state['vcf_validated'] = FALSE;
-  tpps_update_submission_state($state);
+  $submission->state['vcf_val_errors'] = [];
+  $submission->state['vcf_validated'] = FALSE;
+  $submission->save();
 
   $jobs = [];
   foreach ($vcfs as $org_num => $fid) {
@@ -441,13 +441,16 @@ function tpps_pre_validate_init($accession = NULL) {
  * Shows the diff between accession file tree ids and vcf tree ids.
  */
 function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i = 1) {
-  require_once(__DIR__ . '/../forms/submit/submit_all.php');
-  $form_state = tpps_load_submission_state($accession);
-  $results_accession_file_tree_ids = tpps_accession_get_accession_file_tree_ids($form_state, $i);
+  require_once __DIR__ . '/../forms/submit/submit_all.php';
+  $submission = new Submission($accession);
+  $results_accession_file_tree_ids = tpps_accession_get_accession_file_tree_ids(
+    $submission->state, $i
+  );
 
-  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
-  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
+  $page4_values = &$submission->state['saved_values'][TPPS_PAGE_4];
+  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  // Note: returns array['status','location'].
+  $vcf_location = tpps_vcf_location($submission->state, $i);
   $results_vcf_file_tree_ids = [];
   if ($vcf_location['status'] == 'exists') {
     $results_vcf_file_tree_ids = tpps_genotype_get_vcf_tree_ids($vcf_location['location']);
@@ -455,8 +458,14 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
   // echo json_encode($results_accession_file_tree_ids);
   // echo json_encode($results_vcf_file_tree_ids);
 
-  $results_not_overlapping_in_vcf_file = array_diff($results_accession_file_tree_ids['values'], $results_vcf_file_tree_ids['values']);
-  $results_not_overlapping_in_accession_file = array_diff($results_vcf_file_tree_ids['values'], $results_accession_file_tree_ids['values']);
+  $results_not_overlapping_in_vcf_file = array_diff(
+    $results_accession_file_tree_ids['values'],
+    $results_vcf_file_tree_ids['values']
+  );
+  $results_not_overlapping_in_accession_file = array_diff(
+    $results_vcf_file_tree_ids['values'],
+    $results_accession_file_tree_ids['values']
+  );
   $overall_results = [
     'tree_ids_not_in_vcf' => $results_not_overlapping_in_vcf_file,
     'tree_ids_not_in_vcf_count' => count($results_not_overlapping_in_vcf_file),
@@ -473,10 +482,10 @@ function tpps_compare_accession_file_vs_vcf_file_tree_ids($accession = NULL, $i 
  * Gets all tree_ids detected from a tree accession file.
  */
 function tpps_accession_file_tree_ids($accession = NULL, $i = 1) {
-  // @TODO [VS] Check if this include really required. Seems it's not used.
   require_once __DIR__ . '/../forms/submit/submit_all.php';
-  $form_state = tpps_load_submission_state($accession);
-  drupal_json_output(tpps_accession_get_accession_file_tree_ids($form_state, $i));
+  $submission = new Submission($accession);
+  $output = tpps_accession_get_accession_file_tree_ids($submission->state, $i);
+  drupal_json_output($output);
 }
 
 /**
@@ -548,16 +557,16 @@ function tpps_accession_file_tree_ids_iterate_line($row, &$options, $job = NULL)
 function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
   require_once __DIR__ . '/../forms/submit/submit_all.php';
 
-  $form_state = tpps_load_submission_state($accession);
-  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
+  $submission = new Submission($accession);
+  $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
+  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
   // Returns array['status','location'].
-  $vcf_location = tpps_vcf_location($form_state, $i);
-  $result = [];
+  $vcf_location = tpps_vcf_location($submission->state, $i);
+  $output = [];
   if ($vcf_location['status'] == 'exists') {
-    $result = tpps_genotype_get_vcf_tree_ids($vcf_location['location']);
+    $output = tpps_genotype_get_vcf_tree_ids($vcf_location['location']);
   }
-  drupal_json_output($result);
+  drupal_json_output($output);
 }
 
 /**
@@ -568,32 +577,35 @@ function tpps_vcf_tree_ids($accession = NULL, $i = 1) {
 function tpps_vcf_markers($accession = NULL, $i = 1) {
   require_once __DIR__ . '/../forms/submit/submit_all.php';
 
-  $form_state = tpps_load_submission_state($accession);
-  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
-  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
-  $result = [];
+  $submission = new Submission($accession);
+  $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
+  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  // Note: returns array['status','location'].
+  $vcf_location = tpps_vcf_location($submission->state, $i);
+  $output = [];
   if ($vcf_location['status'] == 'exists') {
-    $result = tpps_genotype_get_vcf_markers($vcf_location['location']);
+    $output = tpps_genotype_get_vcf_markers($vcf_location['location']);
   }
-  drupal_json_output($result);
+  drupal_json_output($output);
 }
 
 function tpps_snps_assay_markers($accession = NULL, $i = 1) {
-  require_once(__DIR__ . '/../forms/submit/submit_all.php');
-  $form_state = tpps_load_submission_state($accession);
-  $snps_assay_location = tpps_snps_assay_location($form_state, $i); // returns array['status', 'location'];
-  // print_r($snps_assay_location);
-  $result = [];
+  require_once __DIR__ . '/../forms/submit/submit_all.php';
+  $submission = new Submission($accession);
+  $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
+  // Note: returns array['status', 'location'].
+  $snps_assay_location = tpps_snps_assay_location($submission->state, $i);
+  $output = [];
   if ($snps_assay_location['status'] == 'exists') {
-    $result = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
+    $output = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
   }
-  drupal_json_output($result);
+  drupal_json_output($output);
 }
 
 // function tpps_assay_design_markers($accession = NULL, $i = 1) {
 //   require_once(__DIR__ . '/../forms/submit/submit_all.php');
-//   $form_state = tpps_load_submission_state($accession);
+//   $submission = new Submission($accession);
+//   $form_state = $submission->state;
 //   $assay_design_location = tpps_assay_design_location($form_state, $i); // returns array['status', 'location'];
 //   // print_r($snps_assay_location);
 //   $result = [];
@@ -605,8 +617,9 @@ function tpps_snps_assay_markers($accession = NULL, $i = 1) {
 
 function tpps_assay_design_markers($accession = NULL, $i = 1) {
   require_once __DIR__ . '/../forms/submit/submit_all.php';
-  $form_state = tpps_load_submission_state($accession);
-  drupal_json_output(tpps_get_assay_design_file_markers($form_state, $i));
+  $submission = new Submission($accession);
+  $output = tpps_get_assay_design_file_markers($submission->state, $i);
+  drupal_json_output($output);
 }
 
 /**
@@ -690,16 +703,17 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers($accession = NULL, $i = 
 
 /**
  * This function will do the actual comparing between vcf_markers and snps_assay markers
- * and returns an array
+ * and returns an array.
  */
 function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession = NULL, $i = 1) {
-  require_once(__DIR__ . '/../forms/submit/submit_all.php');
+  require_once __DIR__ . '/../forms/submit/submit_all.php';
 
-  // VCF markers
-  $form_state = tpps_load_submission_state($accession);
-  $fourthpage = $form_state['saved_values'][TPPS_PAGE_4];
-  $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
-  $vcf_location = tpps_vcf_location($form_state, $i); // returns array['status','location'];
+  // VCF markers.
+  $submission = new Submission($accession);
+  $page4_values = $submission->state['saved_values'][TPPS_PAGE_4];
+  $genotype = $page4_values["organism-$i"]['genotype'] ?? NULL;
+  // Note: returns array['status','location'].
+  $vcf_location = tpps_vcf_location($form_state, $i);
   $results_vcf_markers = [
     'values' => []
   ];
@@ -707,9 +721,9 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
     $results_vcf_markers = tpps_genotype_get_vcf_markers($vcf_location['location']);
   }
 
-  // SNPS Assay Markers
-  $form_state = tpps_load_submission_state($accession);
-  $snps_assay_location = tpps_snps_assay_location($form_state, $i); // returns array['status', 'location'];
+  // SNPS Assay Markers.
+  // Note: returns array['status', 'location'].
+  $snps_assay_location = tpps_snps_assay_location($submission->state, $i);
   // print_r($snps_assay_location);
   $results_snps_assay_markers = [
     'values' => []
@@ -718,8 +732,14 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
     $results_snps_assay_markers = tpps_genotype_get_snps_assay_markers($snps_assay_location['fid']);
   }
 
-  $results_not_overlapping_in_vcf = array_diff($results_snps_assay_markers['values'], $results_vcf_markers['values']);
-  $results_not_overlapping_in_snps_assay = array_diff($results_vcf_markers['values'], $results_snps_assay_markers['values']);
+  $results_not_overlapping_in_vcf = array_diff(
+    $results_snps_assay_markers['values'],
+    $results_vcf_markers['values']
+  );
+  $results_not_overlapping_in_snps_assay = array_diff(
+    $results_vcf_markers['values'],
+    $results_snps_assay_markers['values']
+  );
   $overall_results = [
     'markers_not_in_vcf' => $results_not_overlapping_in_vcf,
     'markers_not_in_vcf_count' => count($results_not_overlapping_in_vcf),
@@ -730,20 +750,20 @@ function tpps_compare_vcf_markers_vs_snps_assay_markers_results_array($accession
 }
 
 /**
+ * Validates VCF tree.
+ *
  * This code can be used to check missing tree ids in accession file
  * It gets all vcf tree_ids and compares it with the accession file to see
  * what is missing from the accession file.
  */
 function tpps_vcf_tree_validation($accession = NULL) {
-  //  $state = tpps_load_submission_state($accession);
   $submission = new Submission($accession);
-  $submission->load();
-  $state = $submission->state;
 
-  $firstpage = $state['saved_values'][TPPS_PAGE_1];
-  $thirdpage = $state['saved_values'][TPPS_PAGE_3];
-  $fourthpage = $state['saved_values'][TPPS_PAGE_4];
+  $firstpage = $submission->state['saved_values'][TPPS_PAGE_1];
+  $thirdpage = $submission->state['saved_values'][TPPS_PAGE_3];
+  $fourthpage = $submission->state['saved_values'][TPPS_PAGE_4];
   $organism_number = $firstpage['organism']['number'];
+
   for ($i = 1; $i <= $organism_number; $i++) {
     $genotype = $fourthpage["organism-$i"]['genotype'] ?? NULL;
 
@@ -823,7 +843,7 @@ function tpps_vcf_tree_validation($accession = NULL) {
 function tpps_get_tree_ids_from_iterator($row, array &$options, $job = NULL) {
   // print_r($options);
   // print_r($row);
-  $options['tree_ids'][trim($row[$options['column_tree_id']])] = true;
+  $options['tree_ids'][trim($row[$options['column_tree_id']])] = TRUE;
 }
 
 /**
@@ -836,16 +856,14 @@ function tpps_get_tree_ids_from_iterator($row, array &$options, $job = NULL) {
  */
 function tpps_pre_validate_status($accession = NULL, $jid = NULL) {
   $job = tripal_get_job($jid);
-
   if ($job->status == 'Completed') {
-    $state = tpps_load_submission_state($accession);
-    $job->val_errors = $state['vcf_val_errors'] ?? array();
+    $submission = new Submission($accession);
+    $job->val_errors = $submission->state['vcf_val_errors'] ?? [];
     if (empty($job->val_errors)) {
-      $state['vcf_validated'] = TRUE;
-      tpps_update_submission_state($state);
+      $submission->state['vcf_validated'] = TRUE;
+      $submission->save();
     }
   }
-
   drupal_json_output($job);
 }
 
@@ -875,15 +893,16 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
   }
   $job->logMessage("[INFO] VCF File Location: {$vcf_file->uri}");
 
-  $state = tpps_load_submission_state($accession);
-  if (empty($state['saved_values'][TPPS_PAGE_3]['tree-accession']['check'])) {
+  $submission = new Submission($accession);
+  $page3_values = &$submission->state['saved_values'][TPPS_PAGE_3];
+  if (empty($page3_values['tree-accession']['check'])) {
     $species_index = 'species-1';
   }
   else {
     $species_index = "species-$org_num";
   }
-  $tree_accession_file = $state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file'];
-  $id_col_accession_name = $state['saved_values'][TPPS_PAGE_3]['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
+  $tree_accession_file = $page3_values['tree-accession'][$species_index]['file'];
+  $id_col_accession_name = $page3_values['tree-accession'][$species_index]['file-groups']['Tree Id']['1'];
   $accession_ids = tpps_parse_file_column($tree_accession_file, $id_col_accession_name);
 
   $job->logMessage("[INFO] Extracting VCF archive...");
@@ -901,14 +920,14 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
     }
   }
 
-  $state_errors = $state['vcf_val_errors'] ?? array();
+  $state_errors = $submission->state['vcf_val_errors'] ?? [];
   if (count($stocks) == 0) {
     $message = "unable to parse Plant Identifiers. The format of your VCF file must be invalid";
     $job->logMessage("[ERROR] $message", array(), TRIPAL_ERROR);
     $state_errors[] = "Genotype VCF File: $message";
   }
   else {
-    $missing_plants = array();
+    $missing_plants = [];
     foreach ($stocks as $stock_id) {
       if (array_search($stock_id, $accession_ids) === FALSE) {
         $missing_plants[] = $stock_id;
@@ -926,9 +945,7 @@ function tpps_pre_validate($accession, $fid, $org_num, $job = NULL) {
     $job->logMessage("[INFO] VCF Validated successfully - no errors!");
   }
   else {
-    $state['vcf_val_errors'] = $state_errors;
-    tpps_update_submission_state($state);
+    $submission->state['vcf_val_errors'] = $state_errors;
+    $submission->save();
   }
 }
-
-

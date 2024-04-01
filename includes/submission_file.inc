@@ -81,8 +81,9 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
   $method_name = 'hardcoded';
   $fid_list = [];
   if ($values || $saved_values) {
+    $parent_list = tpps_submission_file_get_parents($organism_number);
     if ($values) {
-      foreach (tpps_submission_file_get_parents($organism_number) as $parents) {
+      foreach ($parent_list as $parents) {
         $fid = drupal_array_get_nested_value($values, $parents);
         // Page 4/Genotype/Other (managed file field) has subfields and
         // returns array so we need to skip this to avoid:
@@ -95,7 +96,7 @@ function tpps_submission_file_get_id_list(array $state, array &$form = []) {
       }
     }
     if ($saved_values) {
-      foreach (tpps_submission_file_get_parents($organism_number) as $parents) {
+      foreach ($parent_list as $parents) {
         $step = ($parents[0] == 'tree-accession') ? TPPS_PAGE_3 : TPPS_PAGE_4;
         if (!empty($saved_values[$step])) {
           // When form became outdated (6+ hours) and cron removed temporary

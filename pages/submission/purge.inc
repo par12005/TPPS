@@ -51,7 +51,8 @@ function tpps_submission_purge_form_submit(array $form, array &$form_state) {
   $accession = $form_state['values']['tpps_submission_accession'] ?? NULL;
   tpps_submission_list_validate_accession($accession);
   // Remove study.
-  tpps_submission_purge($accession, $remove_files = TRUE);
+  $submission = new Submission($accession);
+  $submission->purge();
   cache_clear_all('*', (TPPS_CACHE_BIN ?? 'cache'), TRUE);
   drupal_set_message(
     t("Submission @accession and it's files was removed and cache was cleared.",

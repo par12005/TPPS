@@ -23,9 +23,9 @@ require_once 'page_2_helper.php';
  *   The completed Study Design form.
  */
 function tpps_page_2_create_form(array &$form, array $form_state) {
-  module_load_include('inc', 'tpps', 'includes/form');
-  $is_tppsc = tpps_form_is_tppsc($form_state);
-  if (!$is_tppsc) {
+  $submission = new Submission();
+  $submission->state = $form_state;
+  if (!$submission->isTppsc()) {
     tpps_study_date('Starting', $form, $form_state);
     tpps_study_date('Ending', $form, $form_state);
   }
@@ -64,7 +64,7 @@ function tpps_page_2_create_form(array &$form, array $form_state) {
     '#title' => t('Study Type: *'),
     '#options' => tpps_form_get_study_type(),
   ];
-  if (!$is_tppsc) {
+  if (!$submission->isTppsc()) {
     $form['study_type']['#ajax'] = [
       'wrapper' => 'study_info',
       'callback' => 'tpps_study_type_callback',

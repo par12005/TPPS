@@ -102,35 +102,43 @@ class SubmissionsTest extends TripalTestCase {
   public function testUpdateSubmission() {
     $state = $this->loginAndCreateEmptySubmission();
     $accession = $state['accession'];
+    $submission = new Submission($accession);
 
-    $new_state = $state;
-    $new_state['saved_values'][TPPS_PAGE_1]['publication'] = array(
+    $new_item = [
       'title' => 'TPPS test title',
-    );
-    tpps_update_submission_state($new_state);
-    $result = tpps_load_submission($accession);
-    $this->assertNotEmpty($result['updated']);
-    $this->assertNotEmpty($result['saved_values'][TPPS_PAGE_1]['publication']);
-    $this->assertEquals($new_state['saved_values'][TPPS_PAGE_1]['publication'], $result['saved_values'][TPPS_PAGE_1]['publication']);
-    $updated = $result['updated'];
-    sleep(1);
-    tpps_update_submission_state($result);
-    $result = tpps_load_submission_state($accession);
-    $this->assertGreaterThan($updated, $result['updated']);
+    ];
+    $submission->state['saved_values'][TPPS_PAGE_1]['publication'] = $new_item;
+    $submission->save();
 
-    $new_state['status'] = 'Approved';
-    tpps_update_submission_info($accession, $new_state);
-    $result = tpps_load_submission_info($accession);
-    $this->assertEquals('Approved', $result['status']);
+    $submission->load();
+    $this->assertNotEmpty($submision->state['updated']);
+    $this->assertNotEmpty($submission->state['saved_values'][TPPS_PAGE_1]['publication']);
+    $this->assertEquals(
+      $submission->state['saved_values'][TPPS_PAGE_1]['publication'],
+      $new_item
+    );
+    $updated = $submission->state['updated'];
+    sleep(1);
+
+    $submission->save();
+    $submisison->load();
+    $this->assertGreaterThan($updated, $submission->state['updated']);
+
+    $submission->state['status'] = 'Approved';
+    $submission->save();
+    $this->assertEquals('Approved', $submission->status);
   }
 
   /**
-   * This method tests the tpps_delete_submission() function.
+   * This method tests the Submission::delete() method.
    *
-   * Checks that tpps_delete_submission() removes the submission from the
-   * tpps_submission table. For non-TPPSc submissions and submissions that do
-   * not use an old TGDR number, checks that tpps_delete_submission() also
-   * removes the submission from the chado.dbxref table.
+   * Checks that Submission::delete() removes the submission from the
+   * 'tpps_submission' table. For non-TPPSc submissions and submissions that do
+   * not use an old TGDR number, checks that also the submission removed
+   * from the chado.dbxref table.
+   *
+   * @TODO Check if files are removed.
+   * @TODO Check purge() method.
    */
   public function testDeleteSubmission() {
     $state = $this->loginAndCreateEmptySubmission();
@@ -139,8 +147,11 @@ class SubmissionsTest extends TripalTestCase {
 
     $this->assertNotEmpty(tpps_load_submission($accession));
 
-    tpps_delete_submission($accession);
-    $this->assertEmpty(tpps_load_submission($accession));
+    $submission = new Submission($accession);
+    $submission->delete();
+
+    $submission = new Submission($accession);
+    $this->assertEmpty($submision->doesExist());
 
     $query = db_select('chado.dbxref', 'dbx')
       ->fields('dbx')
