@@ -1401,7 +1401,7 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
     $form_state['file_rank'] = 0;
   }
 
-  if ($genotype['ref-genome'] == 'manual' or $genotype['ref-genome'] == 'manual2' or $genotype['ref-genome'] == 'url') {
+  if (in_array($genotype['ref-genome'], ['manual', 'manual2', 'url'])) {
     if ($genotype['tripal_fasta']['file_upload']) {
       // Uploaded new file.
       $assembly_user = $genotype['tripal_fasta']['file_upload'];
@@ -1443,7 +1443,6 @@ function tpps_submit_genotype(array &$shared_state, array $species_codes, $i, Tr
       'value' => $genotype['ref-genome'],
     ));
   }
-
 
   if (!empty($genotype['files']['snps-assay'])) {
 

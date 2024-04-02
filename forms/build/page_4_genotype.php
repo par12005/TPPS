@@ -118,6 +118,10 @@ function tpps_genotype_subform(array $form_bus) {
       [
         'parents' => [$organism_name, $type],
         'field_name' => $field_name,
+        // For search purpose only list of dynamically built items:
+        // Does your study include SNP data?
+        // Does your study include SSR/cpSSR data?
+        // Does your study include other genotypic data?
         '#title' => t('Does your study include @marker_name data?',
           [
             '@marker_name' => ($marker_name == 'Other'
@@ -735,7 +739,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   }
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  // Field 'Reference Assembly'.
+  // Field 'Reference Assembly used:'.
   // Perform a database lookup as well using new query from Emily Grau (6/6/2023).
   // @TODO Move this to constant or (better) to settings page.
   $time_expire_period = 3 * 24 * 60 * 60;
@@ -767,15 +771,13 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     "manual2" => 'I can upload my own reference transcriptome file',
     "none" => 'I am unable to provide a reference assembly',
   ]);
-
-  // Field was relocated (v.2).
-  // 'source' => [$id, 'genotype', 'ref-genome'],
-  // 'target' => [$id, 'genotype', $snps_fieldset, 'ref-genome'],
-  $fields[$snps_fieldset]['ref-genome'] = [
+  $fields['ref-genome'] = [
     '#type' => 'select',
     '#title' => t('Reference Assembly used: *'),
     '#options' => $ref_genome_arr,
+    '#weight' => -100,
   ];
+
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   //require_once drupal_get_path('module', 'tripal') . '/includes/tripal.importer.inc';
   module_load_include('inc', 'tripal', '/includes/tripal.importer');
@@ -786,7 +788,7 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $eutils['#title'] = t('TRIPAL EUTILS BIOPROJECT LOADER');
   $eutils['#states'] = [
     'visible' => [
-      ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'bio'],
+      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'bio'],
     ],
   ];
   $eutils['accession']['#description'] = t('Valid examples: 12384, 394253, 66853, PRJNA185471');
@@ -837,11 +839,11 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
   $fasta['#states'] = [
     'visible' => [
       [
-        [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'url']],
+        [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url']],
         'or',
-        [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'manual']],
+        [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
         'or',
-        [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'manual2']],
+        [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
       ],
     ],
   ];
@@ -878,15 +880,15 @@ function tpps_page_4_ref(array &$fields, array &$form_state, $id) {
     = $fasta['file']['file_upload_existing']['#states'] = [
       'visible' => [
         [
-          [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'manual']],
+          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual']],
           'or',
-          [':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'manual2']],
+          [':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'manual2']],
         ],
       ],
     ];
   $fasta['file']['file_remote']['#states'] = [
     'visible' => [
-      ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][ref-genome]"]' => ['value' => 'url'],
+      ':input[name="' . $id . '[genotype][ref-genome]"]' => ['value' => 'url'],
     ],
   ];
 
@@ -1019,6 +1021,12 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
     '#default_value' => tpps_get_ajax_value(
       $form_bus['form_state'], [$organism_name, 'genotype', 'files', 'ploidy'], 'Haploid'
     ),
+    '#states' => [
+      'invisible' => [
+        '[name="' . $organism_name . '[genotype][' . $ssrs_fieldset . '][' . $ssr_type_select . ']"]'
+        => ['value' => 'cpSSRs'],
+      ],
+    ],
   ];
   if (variable_get('tpps_page_4_update_ploidy_description', TRUE)) {
     // Allow 'Ploidy' field desctiption be update on the fly.
@@ -1075,7 +1083,7 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
     // Visible when: 'SSRs' or 'Both SSRs and cpSSRs'.
     'states' => [
       'invisible' => [
-        ':input[name="' . $organism_name . '[genotype][' . $ssr_type_select . ']"]'
+        '[name="' . $organism_name . '[genotype][' . $ssrs_fieldset . '][' . $ssr_type_select . ']"]'
         => ['value' => 'cpSSRs'],
       ],
     ],
@@ -1127,7 +1135,7 @@ function tpps_page_4_genotype_ssrs(array $form_bus) {
     // Visible when: 'cpSSRs' or 'Both SSRs and cpSSRs'.
     'states' => [
       'invisible' => [
-        ':input[name="' . $organism_name . '[genotype][' . $ssr_type_select . ']"]'
+        '[name="' . $organism_name . '[genotype][' . $ssrs_fieldset . '][' . $ssr_type_select . ']"]'
         => ['value' => 'SSRs'],
       ],
     ],

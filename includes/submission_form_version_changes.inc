@@ -113,15 +113,6 @@ function tpps_submission_form_version_changes(array $form_state, $version = NULL
       $genotype_parents = [
         'saved_values', TPPS_PAGE_4, 'organism-' . $i, 'genotype',
       ];
-      // 'ref-genome' field.
-      $field_name = 'ref-genome';
-      $version_change_list['2']['move'][] = [
-        'source' => array_merge($genotype_parents, [$field_name]),
-        'target' => array_merge(
-          $genotype_parents,
-          [$snps_fieldset, $field_name]
-        ),
-      ];
       // 'files' to 'SNPs' fields.
       foreach ($files_to_snps_fields as $field_name) {
         $version_change_list['2']['move'][] = [

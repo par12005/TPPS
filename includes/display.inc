@@ -341,28 +341,28 @@ function tpps_flatten(array $state) {
               }
             }
 
-            if (isset($pheno['check']) and $pheno['check'] and isset($pheno['metadata']) and $pheno['metadata']) {
+            if (!empty($pheno['check']) && !empty($pheno['metadata'])) {
               $data["$org_name Phenotype Metadata File"] = $pheno['metadata'];
             }
 
-            if (isset($pheno['file']) and $pheno['file']) {
+            if (!empty($pheno['file'])) {
               $data["$org_name Phenotype File"] = $pheno['file'];
             }
-            $data["$org_name Phenotypes Assessed"] = isset($pheno['phenotype_count']) ? $pheno['phenotype_count'] : NULL;
+            $data["$org_name Phenotypes Assessed"] = $pheno['phenotype_count'] ?? NULL;
           }
 
           // Rish comments: 21 March 2023
           // Based on the example of TGDR465, there is a single ISO file that can be uploaded
           // I *think* the headers should match each phenotype name that is added manually
           // from the previous part of page 4
-          if (isset($pheno['file']) and $pheno['file']) {
+          if (!empty($pheno['file'])) {
             $data["$org_name Phenotype File"] = $pheno['file'];
           }
         }
 
         if (isset($org['genotype'])) {
           $geno = &$org['genotype'];
-          $snp = $geno['SNPs'];
+          $snps_fieldset = $geno['SNPs'];
 
           $marker_types = [];
           // Note: $geno['marker-type'] is not set for phenotype studies.
@@ -371,69 +371,91 @@ function tpps_flatten(array $state) {
               $marker_types[] = $key;
             }
           }
-          $data["$org_name Genotype Marker Types"] = isset($marker_types) ? implode(', ', $marker_types) : NULL;
+          $data["$org_name Genotype Marker Types"]
+            = implode(', ', ($marker_types ?? []));
 
-          if (isset($geno['marker-type']['SNPs']) and $geno['marker-type']['SNPs']) {
-            if (isset($snp['genotyping-design']) and $snp['genotyping-design']) {
-              $geno_design_options = array(
+          if (!empty($geno['marker-type']['SNPs'])) {
+            if (!empty($snps_fieldset['genotyping-design'])) {
+              $geno_design_options =[
                 1 => 'GBS',
                 2 => 'Targeted Capture',
                 3 => 'Whole Genome Resequencing',
                 4 => 'RNA-Seq',
                 5 => 'Genotyping Array',
-              );
-              if (isset($geno_design_options[$snp['genotyping-design']])) {
-                $data["$org_name Genotyping Design"] = $geno_design_options[$snp['genotyping-design']];
+              ];
+              if (isset($geno_design_options[$snps_fieldset['genotyping-design']])) {
+                $data["$org_name Genotyping Design"]
+                  = $geno_design_options[$snps_fieldset['genotyping-design']];
               }
 
-              if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'GBS' and isset($snp['GBS']) and $snp['GBS']) {
-                $gbs_options = array(
+              if (
+                ($data["$org_name Genotyping Design"] ?? NULL) == 'GBS'
+                && !empty($snps_fieldset['GBS'])
+              ) {
+                $gbs_options = [
                   1 => 'RADSeq',
                   2 => 'ddRAD-Seq',
                   3 => 'NextRAD',
                   4 => 'RAPTURE',
                   5 => 'Other',
-                );
-                if (isset($gbs_options[$snp['GBS']])) {
-                  $data["$org_name GBS Type"] = $gbs_options[$snp['GBS']];
+                ];
+                if (isset($gbs_options[$snps_fieldset['GBS']])) {
+                  $data["$org_name GBS Type"] = $gbs_options[$snps_fieldset['GBS']];
                 }
 
-                if (isset($data["$org_name GBS Type"]) and $data["$org_name GBS Type"] == 'Other' and isset($snp['GBS-other']) and $snp['GBS-other'] != '') {
-                  $data["$org_name Custom GBS Type"] = $snp['GBS-other'];
+                if (
+                  ($data["$org_name GBS Type"] ?? NULL) == 'Other'
+                  && !empty($snps_fieldset['GBS-other'])
+                ) {
+                  $data["$org_name Custom GBS Type"] = $snps_fieldset['GBS-other'];
                 }
               }
 
-              if (isset($data["$org_name Genotyping Design"]) and $data["$org_name Genotyping Design"] == 'Targeted Capture' and isset($snp['targeted-capture']) and $snp['targeted-capture']) {
+              if (
+                ($data["$org_name Genotyping Design"] ?? NULL) == 'Targeted Capture'
+                && !empty($snps_fieldset['targeted-capture'])
+              ) {
                 $targeted_capture_options = array(
                   1 => 'Exome Capture',
                   2 => 'Other',
                 );
-                if (isset($targeted_capture_options[$snp['targeted-capture']])) {
-                  $data["$org_name Targeted Capture Type"] = $targeted_capture_options[$snp['targeted-capture']];
+                if (isset($targeted_capture_options[$snps_fieldset['targeted-capture']])) {
+                  $data["$org_name Targeted Capture Type"]
+                    = $targeted_capture_options[$snps_fieldset['targeted-capture']];
                 }
 
-                if (isset($data["$org_name Targeted Capture Type"]) and $data["$org_name Targeted Capture Type"] == 'Other' and isset($snp['targeted-capture-other']) and $snp['targeted-capture-other'] != '') {
-                  $data["$org_name Custom Targeted Capture Type"] = $snp['targeted-capture-other'];
+                if (
+                  ($data["$org_name Targeted Capture Type"] ?? NULL) == 'Other'
+                  && !empty($snps_fieldset['targeted-capture-other'])
+                ) {
+                  $data["$org_name Custom Targeted Capture Type"]
+                    = $snps_fieldset['targeted-capture-other'];
                 }
               }
             }
           }
-          if (!empty($geno['marker-type']['SSRs/cpSSRs']) && !empty($geno['SSRs/cpSSRs'])) {
+          if (
+            !empty($geno['marker-type']['SSRs/cpSSRs'])
+            && !empty($geno['SSRs/cpSSRs'])
+          ) {
             $data["$org_name SSRs/cpSSRs Type"] = $geno['SSRs/cpSSRs'];
           }
-          if (!empty($geno['marker-type']['Other']) && !empty($geno['other-marker'])) {
+          if (
+            !empty($geno['marker-type']['Other'])
+            && !empty($geno['other-marker'])
+          ) {
             $data["$org_name Other Marker Type"] = $geno['other-marker'];
           }
 
           if (
-            isset($snps['ref-genome'])
-            && $snps['ref-genome'] === 'bio'
+            isset($geno['ref-genome'])
+            && $geno['ref-genome'] === 'bio'
             && isset($geno['BioProject-id'])
             && $geno['BioProject-id'] != ''
           ) {
             $data["$org_name BioProject Id"] = $geno['BioProject-id'];
 
-            if (isset($geno['assembly-auto']) and gettype($geno['assembly-auto']) === 'array') {
+            if (is_array($geno['assembly-auto'] ?? NULL)) {
               $count = 1;
               foreach ($geno['assembly-auto'] as $id => $check) {
                 if (isset($check) and $check) {
@@ -444,11 +466,8 @@ function tpps_flatten(array $state) {
             }
           }
           elseif (
-            isset($spns['ref-genome'])
-            && (
-              $snps['ref-genome'] === 'manual'
-              || $snps['ref-genome'] === 'manual2'
-            )
+            isset($geno['ref-genome'])
+            && in_array($geno['ref-genome'], ['manual', 'manual2'])
             && isset($geno['tripal_fasta']['file']['file_upload'])
             and isset($geno['tripal_fasta']['file']['file_upload_existing'])
             and (
@@ -457,22 +476,22 @@ function tpps_flatten(array $state) {
             )
           ) {
             if ($geno['tripal_fasta']['file']['file_upload']) {
-              $data["$org_name Uploaded Reference File"] = $geno['tripal_fasta']['file']['file_upload'];
+              $data["$org_name Uploaded Reference File"]
+                = $geno['tripal_fasta']['file']['file_upload'];
             }
             if ($geno['tripal_fasta']['file']['file_upload_existing']) {
-              $data["$org_name Reference File"] = $geno['tripal_fasta']['file']['file_upload_existing'];
+              $data["$org_name Reference File"]
+                = $geno['tripal_fasta']['file']['file_upload_existing'];
             }
           }
           elseif (
-            isset($snps['ref-genome'])
-            && $snps['ref-genome'] === 'url'
-            && isset($geno['tripal_fasta']['file']['file_remote'])
-            && $geno['tripal_fasta']['file']['file_remote']
+            ($geno['ref-genome'] ?? NULL) == 'url'
+            && !empty($geno['tripal_fasta']['file']['file_remote'])
           ) {
             $data["$org_name Website of reference file"] = $geno['tripal_fasta']['file']['file_remote'];
           }
-          elseif (isset($snps['ref-genome']) and $snps['ref-genome']) {
-            $data["$org_name Reference Genome"] = $snps['ref-genome'];
+          elseif (!empty($geno['ref-genome'])) {
+            $data["$org_name Reference Genome"] = $geno['ref-genome'];
           }
 
           if (!empty($geno['SNPs']['snps-assay'])) {
