@@ -239,7 +239,7 @@ class Submission {
       return;
     }
 
-    // This is extra time for processing and this is not expected here.
+    // @TODO Do we need to recreate/merge SharedState when Submission::state was changed?
     //if (empty($this->sharedState) || empty($this->sharedState['accession'])) {
     //  $this->generateSharedState();
     //}
