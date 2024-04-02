@@ -558,13 +558,15 @@ function tpps_form_build_file_field(array $form_bus) {
   //
   // Add a text-field for an empty field value. Default is FALSE.
   if ($empty_field_value) {
-    $empty_field_parent = drupal_array_get_nested_value(
-      $form_state['saved_values'][$page], $parents
-    );
-    $parent_element[$field_name]['empty'] = [
-      // Note: drupal_array_get_nested_value() don't allow to use default value.
-      '#default_value' => $empty_field_parent[$field_name]['other'] ?? 'NA',
-    ];
+    // When form wasn't yet submitted or saved then there is no value.
+    if (!empty($form_state['saved_values'][$page])) {
+      $empty_field_parent = drupal_array_get_nested_value(
+        $form_state['saved_values'][$page], $parents
+      );
+      $empty_field_default_value = $empty_field_parent[$field_name]['other'] ?? NULL;
+    }
+    $parent_element[$field_name]['empty']['#default_value']
+      = $empty_field_default_value ?? 'NA';
   }
 
   // @TODO Minor. Think about using elements with leading '#' to use them as
