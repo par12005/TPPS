@@ -1365,9 +1365,8 @@ function tpps_main_submit($form, &$form_state) {
         $submission->state['completed'] = time();
         tpps_submission_file_set_status($submission->state, FILE_STATUS_PERMANENT);
         // Save Submission Info.
-        $submission->info['status'] = $form_state['status'];
         $submission->generateSharedState();
-        $submission->save();
+        $submission->save('Pending Approval');
         // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         tpps_submit_email($form_state);
         drupal_goto('completed-submission/' . $submission->accession);
@@ -1387,8 +1386,7 @@ function tpps_main_submit($form, &$form_state) {
   }
   $saved_values['form_build_id'] = $values['form_build_id'];
 
-  $submission->state = $form_state;
-  $submission->info['status'] = $form_state['status'];
+  //$submission->state = $form_state;
   $submission->save();
 
   if ($form_state['stage'] == TPPS_PAGE_1) {
