@@ -568,6 +568,7 @@ function tpps_genotype_subform(array $form_bus) {
   // Other Columns.
   // Field [$other_fieldset]['other']['dynamic'].
   if (0) {
+    // NOTE:
     // Those fields was disabled because they are misssing on Meghan's Mockups,
     // seems didn't work correctly for a long time and uses AJAX.
     $default_dynamic = !empty($page4_values[$organism_name]['genotype'][$other_fieldset]['other-columns']);
@@ -631,6 +632,9 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       4 => t('RNA-Seq'),
       5 => t('Genotyping Array'),
     ],
+    '#default_value' => tpps_get_ajax_value($form_state,
+      [$id, 'genotype', $snps_fieldset, 'genotyping-design']
+    ),
   ];
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // GBS Type.
@@ -645,21 +649,28 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       4 => t('RAPTURE'),
       5 => t('Other'),
     ],
+    '#default_value' => tpps_get_ajax_value($form_state,
+      [$id, 'genotype', $snps_fieldset, 'GBS']
+    ),
     '#states' => [
       'visible' => [
         ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' =>
-        ['value' => '1'],
+          ['value' => '1'],
       ],
     ],
   ];
   $fields[$snps_fieldset]['GBS-other'] = [
     '#type' => 'textfield',
     '#title' => t('Other GBS Type: *'),
+    '#default_value' => tpps_get_ajax_value($form_state,
+      [$id, 'genotype', $snps_fieldset, 'GBS-other']
+    ),
     '#states' => [
       'visible' => [
-        ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][GBS]"]' => ['value' => '5'],
+        ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][GBS]"]' =>
+          ['value' => '5'],
         ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' =>
-        ['value' => '1'],
+          ['value' => '1'],
       ],
     ],
   ];
@@ -673,9 +684,13 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
       1 => t('Exome Capture'),
       2 => t('Other'),
     ],
+    '#default_value' => tpps_get_ajax_value($form_state,
+      [$id, 'genotype', $snps_fieldset, 'targeted-capture']
+    ),
     '#states' => [
       'visible' => [
-        ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' => ['value' => '2'],
+        ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' =>
+          ['value' => '2'],
       ],
     ],
   ];
@@ -683,10 +698,15 @@ function tpps_page_4_marker_info(array &$fields, array $form_state, $id) {
   $fields[$snps_fieldset]['targeted-capture-other'] = [
     '#type' => 'textfield',
     '#title' => t('Other Targeted Capture: *'),
+    '#default_value' => tpps_get_ajax_value($form_state,
+      [$id, 'genotype', $snps_fieldset, 'targeted-capture-other']
+    ),
     '#states' => [
       'visible' => [
-        ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][targeted-capture]"]' => ['value' => '2'],
-        ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' => ['value' => '2'],
+        ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][targeted-capture]"]' =>
+          ['value' => '2'],
+        ':input[name="' . $id . '[genotype][' . $snps_fieldset . '][genotyping-design]"]' =>
+          ['value' => '2'],
       ],
     ],
   ];
