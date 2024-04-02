@@ -530,8 +530,9 @@ function tpps_flatten(array $state) {
               );
             }
             else {
-              drupal_set_message(t('VCF file is missing'), 'error');
-              $data["$org_name VCF File (uploaded)"] = $file->filename . ' ';
+              drupal_set_message(t('Uploaded VCF file is missing'), 'error');
+              // Value must be not empty to fire error message.
+              $data["$org_name VCF File (uploaded)"] = '&nbsp';
             }
           }
         }
@@ -621,10 +622,11 @@ function tpps_table_display(array &$state, array $options = array()) {
   $submission = new Submission();
   $submission->state = $state;
   $flat = tpps_flatten($state);
+
   $map_api_key = variable_get('tpps_maps_api_key', NULL);
 
   $rows = [];
-  $content = "";
+  $content = '';
   foreach ($flat as $key => $val) {
     if ($key[0] != '#') {
       // [VS] Added extra space which must not be visible at site but
@@ -633,9 +635,20 @@ function tpps_table_display(array &$state, array $options = array()) {
       // Some items are arrays and this cause a lot of warnings about using
       // check_plain() for arrays. Other way is to skip array processing at all
       // or use empty string for arrays.
-      $val_str = filter_xss(check_plain(
-        (is_array($val) ? var_export($val, 1) : $val)
-      ));
+      // @TODO Probably better way is to use check_plain() for each field and
+      // count it's content.
+      if (
+        // Exclude VCF files which has a hyperlink instead of File Id.
+        stripos($key_str, 'VCF File (cluster)') === FALSE
+        && stripos($key_str, 'VCF File (uploaded)') === FALSE
+      ) {
+        $val_str = filter_xss(check_plain(
+          (is_array($val) ? var_export($val, 1) : $val)
+        ));
+      }
+      else {
+        $val_str = $val;
+      }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
       if ($key == 'tpps_submission_import') {
         $key_str = t('Submission Import Metadata');
@@ -658,12 +671,17 @@ function tpps_table_display(array &$state, array $options = array()) {
         continue;
       }
       // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+      // Files.
       if (
         preg_match('/File/', $key)
         && ($file = tpps_file_load($val) === FALSE)
+        // VCF files are gzipped value is not the File Id but a hyperlink to
+        // file which could be downloaded and manually reviewed because
+        // preview not work for gzipped files.
         && stripos($key_str, 'VCF File (cluster)') === FALSE
+        && stripos($key_str, 'VCF File (uploaded)') === FALSE
       ) {
-        // FILE NOT FOUND.
+        // SOS. FILE NOT FOUND.
         $val_str .= ' <span style="font-size: 32px;">🆘</span><span>(File missing)</span>';
       }
       if (preg_match('/File/', $key) and ($file = file_load($val))) {
@@ -854,10 +872,13 @@ function tpps_completed_display($accession = NULL) {
 
   $output .= "<label for='tpps_$accession'>{$title}</label><p>"
     . t('You can view the TPPS Details page with completed and approved TPPS '
-      . 'and TGDR data <a href="@link">here</a>',
-      // @TODO Minor. Do we really need an absolute link here?
-      ['@link' => url('tpps/details/$accession', ['absolute' => TRUE])]
-    ) . '</p>';
+      . 'and TGDR data <a href="@link">here</a>.',
+      ['@link' => url('tpps/details/' . $accession)]
+    );
+  if (tpps_is_admin_or_curation()) {
+    $output .= ' [ ' . l(t('TPPS Admin Panel'),
+      'tpps-admin-panel/' . $accession) . ' ].</p>';
+  }
   if (
     $saved_values[TPPS_PAGE_1]['publication']['status'] != 'Published'
     && $user->uid == $submission->info['uid']

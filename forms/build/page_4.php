@@ -199,8 +199,7 @@ function tpps_page_4_create_form(array &$form, array &$form_state) {
  */
 function tpps_add_curation_tool(array $form_bus) {
   global $user;
-  // Only for curation team and admins.
-  if (!in_array('administrator', $user->roles) && !in_array('Curation', $user->roles)) {
+  if (!tpps_is_admin_or_curation()) {
     return;
   }
   $form = &$form_bus['form'];

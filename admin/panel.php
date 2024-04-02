@@ -883,7 +883,7 @@ function tpps_admin_panel_top(array &$form) {
 
   // List of general tasks.
   $params = ['attributes' => ['target' => '_blank']];
-  $tasks_list = theme('item_list', [
+  $task_list = theme('item_list', [
     'items' => [
       l(
         t('Refresh all genotype materialized views'),

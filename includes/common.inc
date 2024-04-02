@@ -109,3 +109,18 @@ function tpps_message($message, array $params = [], $type = 'status') {
   watchdog('tpps', $message, $params, ($types[$type] ?? WATCHDOG_NOTICE));
   drupal_set_message(t($message, $params), $type);
 }
+
+/**
+ * Checks if curation team member or administrator.
+ *
+ * @return bool
+ *   Returns TRUE if current user belongs to 'Curation' or 'administrator'
+ *   groups and FALSE otherwise.
+ */
+function tpps_is_admin_or_curation() {
+  global $user;
+  return (
+    in_array('administrator', $user->roles)
+    || in_array('Curation', $user->roles)
+  );
+}
