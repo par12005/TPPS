@@ -64,13 +64,14 @@ function tpps_genotype_subform(array $form_bus) {
   );
   tpps_add_css_js('page_4_genotype', $form);
 
-  $fields = &$form[$organism_name][$form_bus['type']];
-  $fields = [
+  $form_bus['form'][$organism_name][$type] = [
     '#type' => 'fieldset',
     '#title' => t('GENOTYPE INFORMATION:'),
     '#collapsible' => TRUE,
-    '#weight' => 0,
+    '#tree' => TRUE,
+    //'#weight' => 0,
   ];
+  $fields = &$form_bus['form'][$organism_name][$type];
 
   $marker_parents = [$organism_name, 'genotype', 'marker-type'];
   $genotype_marker_type = array_keys(
