@@ -135,16 +135,10 @@ function tpps_genotype_subform(array $form_bus) {
   unset($form_bus['parents']);
   unset($form_bus['#states']);
 
-  // @TODO Hide not genotype information fieldset but organism fieldset.
-  //'#states' => [
-  //  'visible' => [
-  //    ':input[name="are_genotype_markers_identical"]' => ['value' => 'no'],
-  //  ],
-  //],
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-
-  // This field is hidden but left to avoid changes in submit_all.php script.
-  // @TODO remove this field and use new 3 fields.
+  // This field is hidden but left to avoid changes in submit_all.php script
+  // and also this field used to filter/search studies. It could be converted
+  // into hidden field.
   $fields['marker-type'] = [
     '#type' => 'select',
     '#multiple' => TRUE,

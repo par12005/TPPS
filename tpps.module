@@ -1386,7 +1386,7 @@ function tpps_main_submit($form, &$form_state) {
   }
   $saved_values['form_build_id'] = $values['form_build_id'];
 
-  //$submission->state = $form_state;
+  $submission->state = $form_state;
   $submission->save();
 
   if ($form_state['stage'] == TPPS_PAGE_1) {
