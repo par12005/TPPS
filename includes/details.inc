@@ -286,7 +286,6 @@ function tpps_details_tab($accession, $type) {
   else {
     $function = "tpps_details_$type";
     $submission = new Submission($accession);
-    $submission->load();
     print($function($submission->sharedState));
   }
 }

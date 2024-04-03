@@ -1799,7 +1799,6 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
   // Go through each additional study and run genotypes to flat file.
   foreach ($study_accessions_with_potential_overlaps as $study_accession) {
     $submission = new Submission($study_accession);
-    $submission->load();
     $study_state = $submission->sharedState;
 
     $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
@@ -1843,7 +1842,6 @@ function tpps_genotypes_to_flat_files_and_find_studies_overlaps($form_state, $re
   foreach ($accession_results as $row) {
     $study_accession = $row->accession;
     $submission = new Submission($study_accession);
-    $submission->load();
     $study_state = $submission->sharedState;
     $study_organism_number = $study_state['saved_values'][TPPS_PAGE_1]['organism']['number'];
     for ($i = 1; $i <= $study_organism_number; $i++) {
@@ -6302,7 +6300,6 @@ function tpps_generate_all_genotype_materialized_views() {
     echo "Processing genotype materialized view: $current_count of $total\n";
     // Get the Submission Shared State.
     $submission = new Submission($row->accession);
-    $submission->load();
     $project_id = $submission->state['ids']['project_id'] ?? NULL;
     // Once the project_id is not NULL, we're good.
     if (isset($project_id)) {

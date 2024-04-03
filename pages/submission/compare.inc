@@ -155,20 +155,18 @@ function tpps_submission_compare(array $form, array &$form_state, $accession_1 =
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show comparison report.
   $submission_1 = new Submission($accession_1);
-  $submission_1->load();
-  $interface_1 = $submission_1->sharedState;
+  $shared_state1 = $submission_1->sharedState;
 
-  $submission_2 = new Submission($accession_1);
-  $submission_2->load();
-  $interface_2 = $submission_2->sharedState;
+  $submission_2 = new Submission($accession_2);
+  $shared_state2 = $submission_2->sharedState;
 
-  $interface_diff_1 = array_diff_assoc_recursive($interface_1, $interface_2);
-  $interface_diff_2 = array_diff_assoc_recursive($interface_2, $interface_1);
+  $shared_statediff_1 = array_diff_assoc_recursive($shared_state1, $shared_state2);
+  $shared_statediff_2 = array_diff_assoc_recursive($shared_state2, $shared_state1);
 
   $dumps = [
     'Submission Interface' => [
-      'parsed_1' => tpps_array_dump($interface_diff_1, $sticky = FALSE),
-      'parsed_2' => tpps_array_dump($interface_diff_2, $sticky = FALSE),
+      'parsed_1' => tpps_array_dump($shared_statediff_1, $sticky = FALSE),
+      'parsed_2' => tpps_array_dump($shared_statediff_2, $sticky = FALSE),
     ],
     'Form State' => [
       'parsed_1' => tpps_array_dump($form_state_diff_1, $sticky = FALSE),

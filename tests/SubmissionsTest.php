@@ -121,6 +121,7 @@ class SubmissionsTest extends TripalTestCase {
     sleep(1);
 
     $submission->save();
+
     $submisison->load();
     $this->assertGreaterThan($updated, $submission->state['updated']);
 

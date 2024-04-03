@@ -114,7 +114,6 @@ function tpps_change_tgdr_number($old_accession, $new_accession, TripalJob $job 
 
   // Update the form state data for the study.
   $submission = new Submission($old_accession);
-  $submission->load();
 
   $job->logMessage('Original submission data for ' . $old_accession);
   $job->logMessage(print_r($submission->state, 1));
@@ -775,8 +774,6 @@ function tpps_submission_full_clear_db($project_id) {
  */
 function tpps_submission_clear_db($accession) {
   $submission = new Submission($accession);
-  $submission->load();
-
   $submission->sharedState['file_rank'] = 0;
   $project_id = $submission->sharedState['ids']['project_id'] ?? NULL;
   if (empty($project_id)) {

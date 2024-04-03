@@ -27,7 +27,6 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
     return '';
   }
   $submission = new Submission($accession);
-  $submission->load();
 
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   $project_file_ids = [];
