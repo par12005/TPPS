@@ -44,14 +44,14 @@
  * 5. Search module's code for a field name and update if necessary.
  * 6. Add new items to the Version Change List below.
  *
- * There is no need to update function tpps_flatten() because it expects
- * Submission Interface Array.
+ * There is no need to update Submission::flatten() because it
+ * uses Submission Shared State.
  *
- * How to update Submission Interface?
+ * How to change/modify structure of the Submission Shared State?
  * 1. Update submit_all.php
  * 2. Update this file.
  * 3. tpps_table_display().
- * 4. tpps_flatten().
+ * 4. Submission::flatten().
  * 5. Other code which uses Submission Interface.
  *
  * ----------------------------------------------------------------------------

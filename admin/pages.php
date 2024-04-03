@@ -13,7 +13,6 @@
  * missing. This will thus detect old files.
  * Menu path:
  * /tpps-admin-panel/file-diagnostics/TGDR%%%
-
  *
  * @param string $accession
  *   Study accession in format 'TGDRxxxx'.
@@ -36,14 +35,14 @@ function tpps_admin_files_diagnostics_page($accession = NULL) {
     'SELECT * FROM tpps_project_file_managed WHERE project_id = :project_id',
     [':project_id' => $project_id]
   );
-  // @TODO Minor. Replace with regular query.
+  // @TODO Minor. Use Drupal DB API to get result in an array. fetchCol();
   foreach ($results as $row) {
     array_push($project_file_ids, $row->fid);
   }
   sort($project_file_ids);
   $saved_values = $submission->sharedState['saved_values'] ?? NULL;
   if (empty($saved_values)) {
-    drupal_set_message(t('Empty "saved_values" in Submission Interface.'));
+    drupal_set_message(t('Empty "saved_values" in Submission Shared State.'));
     return ' ';
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

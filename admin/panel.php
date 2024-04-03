@@ -1688,7 +1688,6 @@ function tpps_admin_panel_submit($form, &$form_state) {
               }
             }
           }
-          // Update Submision Interface.
           $submission->save();
           drupal_set_message(t('Done.'));
         }

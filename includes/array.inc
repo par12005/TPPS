@@ -129,7 +129,6 @@ function tpps_array_dump(array $array, $sticky = TRUE) {
  *   Note: no version numbers here.
  * @param mixed $result
  *   Array which must be changed.
- *   This could be a submission form state array or Submission Interface Array.
  *
  * @TODO Minor. Return TRUE if all actions applied with success.
  */
@@ -160,10 +159,10 @@ function tpps_array_apply_changes(array $change_list, &$result) {
 /**
  * Submission Interface Action 'unset'.
  *
- * Given list of fields will be removed/unset in Submission Interface.
+ * Given list of fields will be removed/unset in given array.
  *
  * @param array $array
- *   Array which will be updated passed by reference.
+ *   Array to be modified.
  * @param array $action_data
  *   Data required for this action.
  *   See tpps_submission_form_get_change_list().
@@ -177,7 +176,7 @@ function tpps_array_unset(array &$array, array $action_data) {
   module_load_include('inc', 'tpps', 'includes/form');
   foreach ($action_data as $key => $item) {
     if (empty($item)) {
-      $message = 'SI Action "unset" #@key failed. One of the required '
+      $message = 'Array modification "unset" #@key failed. One of the required '
         . 'fields is empty.<br />Value: <pre>@item</pre>.';
       $params = ['@key' => $key, '@item' => print_r($item, 1)];
       tpps_message($message, $params, 'debug');
@@ -185,7 +184,7 @@ function tpps_array_unset(array &$array, array $action_data) {
     }
     $target = &tpps_form_get_path($array, $item);
     if (empty($target['parent_element']) || empty($target['field_name'])) {
-      $message = "SIA Action 'unset' can't find element for #@key."
+      $message = "Array modification 'unset' can't find element for #@key."
         . '<br />Value: <pre>@item</pre>. ';
       $params = ['@key' => $key, '@item' => print_r($item, 1)];
       tpps_message($message, $params, 'debug');
@@ -200,13 +199,12 @@ function tpps_array_unset(array &$array, array $action_data) {
 }
 
 /**
- * Submission Interface Action 'move'.
+ * Array modificaiton 'move'.
  *
- * Given list of fields will be moved/relocate to the new location inside
- * Submission Interface Array.
+ * Given list of fields will be moved/relocate to the new location.
  *
  * @param array $array
- *   Submission Interface passed by reference so no need to return it.
+ *   Array to be modified.
  * @param array $action_data
  *   Data required for this action.
  *   See tpps_submission_form_get_change_list().
@@ -235,7 +233,7 @@ function tpps_array_move(array &$array, array $action_data) {
       empty($source['parent_element']) || empty($source['field_name'])
       || empty($target['parent_element']) || empty($target['field_name'])
     ) {
-      $message = 'SIA Action "move" #@key failed. One of the required '
+      $message = 'Array modification "move" #@key failed. One of the required '
         . 'fields is empty.<br />Value: <pre>@item</pre>.';
       $params = ['@key' => $key, '@item' => print_r($item, 1)];
       tpps_message($message, $params, 'debug');
@@ -244,7 +242,7 @@ function tpps_array_move(array &$array, array $action_data) {
     // Note: $source['parent_element'] and $target['parent_element']
     // are a references to the elements inside $array.
     if (!array_key_exists($source['field_name'], $source['parent_element'])) {
-      $message = 'SIA Action "move" #@key failed. Source field not found.'
+      $message = 'Array modification "move" #@key failed. Source field not found.'
         . '<br />Value: <pre>@item</pre>.';
       $params = ['@key' => $key, '@item' => print_r($item, 1)];
       tpps_message($message, $params, 'debug');
@@ -254,7 +252,7 @@ function tpps_array_move(array &$array, array $action_data) {
     $target_field_value = $target['parent_element'][$target['field_name']] ?? NULL;
     if (!empty($target_field_value)) {
       if ($target['field_name'] == 'doi' || $source['field_name'] == 'doi') {
-        $message = 'SIA Action "move": '
+        $message = 'Array modification "move": '
           . 'target field is not empty and will be overwritten.<br />'
           . 'Direction: @direction. <br />'
           . 'Form Version: @form_version. <br />'

@@ -206,7 +206,7 @@ function tpps_job_logger_write($string, $replacements = []) {
  * Submits Publication and Species data to the database.
  *
  * @param array $shared_state
- *   Submission Interface Array.
+ *   Submission Shared State. See class Submission.
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
@@ -506,7 +506,7 @@ function tpps_submit_page_1(array &$shared_state, TripalJob &$job = NULL) {
  * Submits Study Design data to the database.
  *
  * @param array $shared_state
- *   The state of the form being submitted.
+ *   Submission Shared State. See class Submission.
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
@@ -681,7 +681,7 @@ function tpps_submit_page_2(array &$shared_state, TripalJob &$job = NULL) {
  * Submits Plant Accession data to the database.
  *
  * @param array $shared_state
- *   The state of the form being submitted.
+ *   Submission Shared State. See class Submission.
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
@@ -916,7 +916,7 @@ function tpps_submit_page_3(array &$shared_state, TripalJob &$job = NULL) {
  * Parsing Tripal Job due to its size.
  *
  * @param array $shared_state
- *   The state of the form being submitted.
+ *   Submission Shared State. See class Submission.
  * @param TripalJob $job
  *   The TripalJob object for the submission job.
  */
@@ -1066,7 +1066,7 @@ function tpps_submit_page_4(array &$shared_state, TripalJob &$job = NULL) {
  * Submits phenotype information for one species.
  *
  * @param array $shared_state
- *   The TPPS submission object.
+ *   Submission Shared State. See class Submission.
  * @param int $i
  *   The organism number we are submitting.
  * @param TripalJob $job
@@ -1297,7 +1297,7 @@ function tpps_submit_phenotype(array &$shared_state, $i, TripalJob &$job = NULL)
  * Submits genotype information for one species.
  *
  * @param array $shared_state
- *   The TPPS submission object.
+ *   Submission Shared State. See class Submission.
  * @param array $species_codes
  *   An array of 4-letter species codes associated with the submission.
  * @param int $i

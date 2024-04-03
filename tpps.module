@@ -1441,26 +1441,24 @@ function tpps_block_view_alter(&$data, $block) {
       drupal_add_css($css, 'inline');
 
       $data['subject'] = t('TPPS Status');
+
       $content = "<div class='tgdr_status_block'>";
       if (preg_match('/tppsc?\/(TGDR.*)/', $_GET['q'], $matches)) {
         $accession = $matches[1];
-        $submission = new Submission($accession);
-        $form_state = $submission->state;
       }
       elseif (isset($_REQUEST['accession'])) {
         $accession = $_REQUEST['accession'];
-        $submission = new Submission($accession);
-        $form_state = $submission->state;
       }
       else {
         $content .= '</div>';
         $data['content'] = filter_xss($content);
         break;
       }
-      $ok = "<img src='$base_url/misc/message-16-ok.png'>";
-      $form_state['saved_values'][TPPS_PAGE_2]['study_info'] = NULL;
-      $flat = tpps_flatten($form_state);
+      $submission = new Submission($accession);
+      $submission->state['saved_values'][TPPS_PAGE_2]['study_info'] = NULL;
+      $flat = $submission->flatten();
 
+      $ok = "<img src='$base_url/misc/message-16-ok.png'>";
       $map_api_key = variable_get('tpps_maps_api_key', NULL);
       foreach ($flat as $item => $val) {
         if ($item[0] !== '#') {
@@ -1533,6 +1531,7 @@ function tpps_block_view_alter(&$data, $block) {
             $val_str = "<a id=\"sidebar_map\" style=\"cursor:pointer\">$val_str</a>";
             if (isset($query) and !empty($map_api_key)) {
               $map = "<iframe frameborder=\\\"0\\\" style=\\\"border:0;width:100%;height:100%\\\" src=\\\"https://www.google.com/maps?q=$query&output=embed&key=$map_api_key&z=5\\\" allowfullscreen> </iframe></div>";
+              // @TODO Move to JS file.
               $js = "jQuery(document).ready(function ($) {
                 jQuery(\"#sidebar_map\").click(function() {
                   jQuery(\"#sidebar_map_wrapper\").remove();
