@@ -10,7 +10,7 @@ module_load_include('inc', 'tpps', 'pages/submission/list');
 /**
  * Menu callback. Shows a single submission data.
  */
-function tpps_submission_view_form(array $form, array $form_state, $accession = '') {
+function tpps_submission_view_form(array $form, array $form_state, $accession = '', $type = '') {
   tpps_submission_list_validate_accession($accession);
   $submission = new Submission($accession);
 
@@ -53,47 +53,71 @@ function tpps_submission_view_form(array $form, array $form_state, $accession = 
     ]);
   }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-  $form['tpps_submission_accession_2'] = [
-    '#type' => 'select',
-    '#title' => t('Accession to compare with'),
-    '#options' => tpps_submission_get_accession_list(),
-  ];
-  $form['actions'] = ['#type' => 'container'];
-  $form['actions']['compare'] = [
-    '#type' => 'submit',
-    '#value' => t('Compare'),
-    '#submit' => ['tpps_submission_view_form_submit'],
-  ];
+  if (empty($type)) {
+    $form['tpps_submission_accession_2'] = [
+      '#type' => 'select',
+      '#title' => t('Accession to compare with'),
+      '#options' => tpps_submission_get_accession_list(),
+    ];
+    $form['actions'] = ['#type' => 'container'];
+    $form['actions']['compare'] = [
+      '#type' => 'submit',
+      '#value' => t('Compare'),
+      '#submit' => ['tpps_submission_view_form_submit'],
+    ];
+    drupal_set_message('Real Shared State Version: ' .
+      (isset($submission->sharedState['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
+    );
+    drupal_set_message('Real Form State Version: ' .
+      (isset($submission->state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
+    );
+  }
   // ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   // Show the data!
 
-  drupal_set_message('Real Shared State Version: ' .
-    (isset($submission->sharedState['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
-  );
-  drupal_set_message('Real Form State Version: ' .
-    (isset($submission->state['saved_values'][1]['publication']['publication_doi']) ? 2 : 1)
-  );
+  if ($type == 'state') {
+    $dumps = ['state'];
+  }
+  elseif (in_array($type, ['shared_state', 'sharedState'])) {
+    $dumps = ['sharedState'];
+  }
+  else {
+    $dumps = ['sharedState', 'state'];
+  }
 
-  $dumps = [
-    'Shared State' => tpps_array_dump($submission->sharedState),
-    'Form State' => tpps_array_dump($submission->state),
-  ];
-  foreach ($dumps as $type => $data) {
+  foreach (['sharedState', 'state'] as $data_type) {
+    // Huge: 5M, Normal: 25K.
+    $max_len = variable_get('tpps_dump_max_len_' . $data_type, 50000);
+    $state = $submission->$data_type;
+
+    // Remove huge element which added by Tripal Job.
+    unset($state['data']);
     $form[$type] = [
       '#type' => 'fieldset',
       '#title' => t(ucfirst($type)),
       '#collapsed' => FALSE,
       '#collapsible' => TRUE,
     ];
-    foreach ($data as $key => $item) {
-      $form[$type][$key . '_container'] = [
-        '#type' => 'fieldset',
-        '#title' => ($item['title'] ?? $key)
-          . ($item['count'] ? ' (' . $item['count'] . ')' : ''),
-        '#collapsible' => TRUE,
-        '#collapsed' => TRUE,
-        'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
+    if (strlen(json_encode($state)) > $max_len) {
+      $form[$type]['container'] = [
+        // Need to set manually text color because theme 'dawn' set
+        // grey for PRE elements.
+        '#markup' => '<pre style="color: white;">'
+          . var_export($state, 1) . '</pre>'
       ];
+    }
+    else {
+      $data = tpps_array_dump($state);
+      foreach ($data as $key => $item) {
+        $form[$type][$key . '_container'] = [
+          '#type' => 'fieldset',
+          '#title' => ($item['title'] ?? $key)
+            . ($item['count'] ? ' (' . $item['count'] . ')' : ''),
+          '#collapsible' => TRUE,
+          '#collapsed' => TRUE,
+          'plain_items' => ['#markup' => ($item['data'] ?? NULL)],
+        ];
+      }
     }
   }
 

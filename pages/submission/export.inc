@@ -63,13 +63,6 @@ function tpps_submission_export_form(array $form, array &$form_state, $accession
     ],
   ];
   tpps_submission_list_add_buttons($form);
-  // Add extra 'Manual Export' button.
-  $form['actions']['manual_export'] = [
-    '#type' => 'submit',
-    '#name' => 'manual_export',
-    '#value' => t('Manual Export'),
-    '#submit' => ['tpps_submission_export_manual_submit'],
-  ];
   tpps_form_autofocus($form, ['tpps_submission_export_state']);
   $form['#attributes']['class'][] = 'tpps-submission';
   tpps_add_css_js('submission_export', $form);
@@ -90,15 +83,6 @@ function tpps_submission_export_form_submit(array $form, array $form_state) {
   tpps_submission_list_validate_accession($accession);
   drupal_goto('tpps/submission/' . $accession . '/export');
 
-}
-
-/**
- * Form submitter. Redirects to manual export page.
- */
-function tpps_submission_export_manual_submit(array $form, array $form_state) {
-  $accession = $form_state['values']['tpps_submission_accession'];
-  tpps_submission_list_validate_accession($accession);
-  drupal_goto('tpps/submission/' . $accession . '/manual_export');
 }
 
 /**
